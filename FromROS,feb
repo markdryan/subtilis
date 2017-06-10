@@ -1,0 +1,4 @@
+Set FromROS$Dir <Obey$Dir>
+If "%0"="" Then Error Usage: ToROS |<target-dir>
+Set FromROS$TargetDir %0
+Run <FromROS$Dir>.FromROSBAS

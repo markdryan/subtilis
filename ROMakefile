@@ -1,0 +1,35 @@
+# Makefile for basicc
+
+COMPONENT = basicc
+
+OBJS = stream lexer error compiler utils keywords
+
+INSTDIR ?= <Obey$Dir>
+
+include CApp
+
+clean::
+        ${WIPE} ${INSTAPP} ${WFLAGS}
+
+# Dynamic dependencies:
+o.stream:	c.stream
+o.stream:	h.stream
+o.stream:	h.error
+o.stream:	h.config
+o.lexer:	c.lexer
+o.lexer:	h.lexer
+o.lexer:	h.stream
+o.lexer:	h.error
+o.lexer:	h.config
+o.error:	c.error
+o.error:	h.error
+o.error:	h.config
+o.compiler:	c.compiler
+o.compiler:	h.error
+o.compiler:	h.config
+o.compiler:	h.lexer
+o.compiler:	h.stream
+o.compiler:	h.error
+o.utils:	c.utils
+o.utils:	h.config
+o.utils:	h.utils

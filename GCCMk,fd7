@@ -1,0 +1,4 @@
+Dir <Obey$Dir>
+Set CC gcc
+WimpSlot -min 17000k
+make %0
