@@ -1,5 +1,8 @@
 # Subtilis
 
+[![Build Status](https://travis-ci.org/markdryan/subtilis.svg?branch=master)](https://travis-ci.org/markdryan/subtilis)
+
+
 A BASIC (BBC) compiler for retro computers.  (At least that's the plan.  Right now
 there's nothing but a half complete lexical analyser.)
 
