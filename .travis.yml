@@ -1,0 +1,14 @@
+language: c
+
+compiler:
+  - clang
+  - gcc
+
+install:
+ - wget https://raw.githubusercontent.com/torvalds/linux/master/scripts/checkpatch.pl
+ - wget https://raw.githubusercontent.com/torvalds/linux/master/scripts/spelling.txt
+ - wget https://raw.githubusercontent.com/torvalds/linux/master/scripts/const_structs.checkpatch
+
+script:
+ - make check
+ - perl checkpatch.pl --no-tree -f --strict --show-types --ignore NEW_TYPEDEFS --ignore PREFER_KERNEL_TYPES --ignore SPLIT_STRING *.c *.h
