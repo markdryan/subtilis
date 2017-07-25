@@ -19,14 +19,14 @@ Patches should pass [checkpath.pl](https://raw.githubusercontent.com/torvalds/li
 checkpatch.pl --no-tree -f --strict --show-types --ignore NEW_TYPEDEFS --ignore PREFER_KERNEL_TYPES --ignore SPLIT_STRING
 `
 
-Code should be formatted using clang-format.  A .clang-format file is provided in
+Code should be formatted using clang-format 3.9.  A .clang-format file is provided in
 the repository, so it's simply a matter of running
 
 `
 clang-format -i *.c *.h
 `
 
-Formatting and coding standard rules are validate by the travis builds.  Changes
+Formatting and coding standard rules are validated by the travis builds.  Changes
 will be automatically requested for any non-conforming patch.
 
 
