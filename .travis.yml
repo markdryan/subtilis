@@ -16,6 +16,6 @@ install:
  - wget https://raw.githubusercontent.com/torvalds/linux/master/scripts/const_structs.checkpatch
 
 script:
- - make check
+ - CFLAGS="-g -fsanitize=address -fno-omit-frame-pointer -Wall -Werror" make check
  - perl checkpatch.pl --no-tree -f --strict --show-types --ignore NEW_TYPEDEFS --ignore PREFER_KERNEL_TYPES --ignore SPLIT_STRING *.c *.h
  - ./check-format.sh

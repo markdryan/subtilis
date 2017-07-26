@@ -345,6 +345,7 @@ static int prv_check_keywords(subtilis_lexer_t *l)
 static int prv_test_keywords(void)
 {
 	int i;
+	int retval;
 	subtilis_buffer buf;
 	subtilis_error_t err;
 	const char sep[] = "\n \r \t";
@@ -375,9 +376,12 @@ static int prv_test_keywords(void)
 		goto on_error;
 	}
 
-	return prv_test_wrapper(subtilis_buffer_get_string(&buf),
-				SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_keywords);
+	retval = prv_test_wrapper(subtilis_buffer_get_string(&buf),
+				  SUBTILIS_CONFIG_LEXER_BUF_SIZE,
+				  prv_check_keywords);
+
+	subtilis_buffer_free(&buf);
+	return retval;
 
 on_error:
 	printf(": [FAIL]\n");
@@ -841,6 +845,7 @@ static int prv_test_number_too_long(void)
 	subtilis_buffer buf;
 	subtilis_error_t err;
 	int i;
+	int retval = 1;
 
 	printf("lexer_number_too_long");
 	subtilis_buffer_init(&buf, 512);
@@ -848,7 +853,7 @@ static int prv_test_number_too_long(void)
 	subtilis_buffer_append_reserve(&buf, SUBTILIS_MAX_TOKEN_SIZE + 1, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);
-		return 1;
+		goto on_error;
 	}
 	for (i = 0; i < SUBTILIS_MAX_TOKEN_SIZE + 1; i++)
 		buf.buffer->data[i] = '0' + i % 10;
@@ -856,12 +861,16 @@ static int prv_test_number_too_long(void)
 	subtilis_buffer_zero_terminate(&buf, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);
-		return 1;
+		goto on_error;
 	}
 
-	return prv_test_wrapper(subtilis_buffer_get_string(&buf),
-				SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_number_too_large);
+	retval = prv_test_wrapper(subtilis_buffer_get_string(&buf),
+				  SUBTILIS_CONFIG_LEXER_BUF_SIZE,
+				  prv_check_number_too_large);
+
+on_error:
+	subtilis_buffer_free(&buf);
+	return retval;
 }
 
 static int prv_test_number_too_large(void)
