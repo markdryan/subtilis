@@ -19,13 +19,13 @@
 
 #include "buffer.h"
 
-void subtilis_buffer_init(subtilis_buffer *buffer, size_t granularity)
+void subtilis_buffer_init(subtilis_buffer_t *buffer, size_t granularity)
 {
-	memset(buffer, 0, sizeof(subtilis_buffer));
+	memset(buffer, 0, sizeof(subtilis_buffer_t));
 	buffer->granularity = granularity;
 }
 
-void subtilis_buffer_reserve(subtilis_buffer *buffer, size_t length,
+void subtilis_buffer_reserve(subtilis_buffer_t *buffer, size_t length,
 			     subtilis_error_t *err)
 {
 	size_t rem = 0;
@@ -57,7 +57,7 @@ void subtilis_buffer_reserve(subtilis_buffer *buffer, size_t length,
 	buffer->buffer = b;
 }
 
-void subtilis_buffer_expand_if_full(subtilis_buffer *buffer,
+void subtilis_buffer_expand_if_full(subtilis_buffer_t *buffer,
 				    subtilis_error_t *err)
 {
 	subtilis_fixed_buffer_t *b = buffer->buffer;
@@ -69,7 +69,7 @@ void subtilis_buffer_expand_if_full(subtilis_buffer *buffer,
 					buffer->granularity + b->max_size, err);
 }
 
-void subtilis_buffer_append_reserve(subtilis_buffer *buffer, size_t length,
+void subtilis_buffer_append_reserve(subtilis_buffer_t *buffer, size_t length,
 				    subtilis_error_t *err)
 {
 	size_t new_end = length;
@@ -91,7 +91,7 @@ void subtilis_buffer_append_reserve(subtilis_buffer *buffer, size_t length,
 	b->end = new_end;
 }
 
-void subtilis_buffer_append(subtilis_buffer *buffer, const void *data,
+void subtilis_buffer_append(subtilis_buffer_t *buffer, const void *data,
 			    size_t length, subtilis_error_t *err)
 {
 	size_t old_size = subtilis_buffer_get_size(buffer);
@@ -103,13 +103,13 @@ void subtilis_buffer_append(subtilis_buffer *buffer, const void *data,
 	(void)memcpy(buffer->buffer->data + old_size, data, length);
 }
 
-void subtilis_buffer_append_string(subtilis_buffer *buffer, const char *str,
+void subtilis_buffer_append_string(subtilis_buffer_t *buffer, const char *str,
 				   subtilis_error_t *err)
 {
 	subtilis_buffer_append(buffer, str, strlen(str), err);
 }
 
-void subtilis_buffer_insert(subtilis_buffer *buffer, size_t pos,
+void subtilis_buffer_insert(subtilis_buffer_t *buffer, size_t pos,
 			    const void *data, size_t length,
 			    subtilis_error_t *err)
 {
@@ -138,8 +138,8 @@ void subtilis_buffer_insert(subtilis_buffer *buffer, size_t pos,
 	b->end += length;
 }
 
-void subtilis_buffer_delete(subtilis_buffer *buffer, size_t pos, size_t length,
-			    subtilis_error_t *err)
+void subtilis_buffer_delete(subtilis_buffer_t *buffer, size_t pos,
+			    size_t length, subtilis_error_t *err)
 {
 	size_t last_pos = pos + length;
 	void *move_to;
@@ -171,7 +171,7 @@ void subtilis_buffer_delete(subtilis_buffer *buffer, size_t pos, size_t length,
 	}
 }
 
-void subtilis_buffer_zero_terminate(subtilis_buffer *buffer,
+void subtilis_buffer_zero_terminate(subtilis_buffer_t *buffer,
 				    subtilis_error_t *err)
 {
 	uint8_t zero = 0;
@@ -181,7 +181,7 @@ void subtilis_buffer_zero_terminate(subtilis_buffer *buffer,
 		subtilis_buffer_append(buffer, &zero, 1, err);
 }
 
-void subtilis_buffer_free(subtilis_buffer *buffer)
+void subtilis_buffer_free(subtilis_buffer_t *buffer)
 {
 	if (!buffer->buffer)
 		return;
@@ -190,7 +190,7 @@ void subtilis_buffer_free(subtilis_buffer *buffer)
 	buffer->buffer = 0;
 }
 
-void subtilis_buffer_reset(subtilis_buffer *buffer)
+void subtilis_buffer_reset(subtilis_buffer_t *buffer)
 {
 	subtilis_fixed_buffer_t *b = buffer->buffer;
 
@@ -200,28 +200,28 @@ void subtilis_buffer_reset(subtilis_buffer *buffer)
 	}
 }
 
-size_t subtilis_buffer_get_size(const subtilis_buffer *buffer)
+size_t subtilis_buffer_get_size(const subtilis_buffer_t *buffer)
 {
 	subtilis_fixed_buffer_t *b = buffer->buffer;
 
 	return (b) ? b->end - b->start : 0;
 }
 
-size_t subtilis_buffer_get_max_size(const subtilis_buffer *buffer)
+size_t subtilis_buffer_get_max_size(const subtilis_buffer_t *buffer)
 {
 	subtilis_fixed_buffer_t *b = buffer->buffer;
 
 	return (b) ? b->max_size : 0;
 }
 
-size_t subtilis_buffer_get_space(const subtilis_buffer *buffer)
+size_t subtilis_buffer_get_space(const subtilis_buffer_t *buffer)
 {
 	subtilis_fixed_buffer_t *b = buffer->buffer;
 
 	return (b) ? (b->max_size - (b->end - b->start)) : 0;
 }
 
-const char *subtilis_buffer_get_string(const subtilis_buffer *buffer)
+const char *subtilis_buffer_get_string(const subtilis_buffer_t *buffer)
 {
 	subtilis_fixed_buffer_t *b = buffer->buffer;
 

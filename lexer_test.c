@@ -346,7 +346,7 @@ static int prv_test_keywords(void)
 {
 	int i;
 	int retval;
-	subtilis_buffer buf;
+	subtilis_buffer_t buf;
 	subtilis_error_t err;
 	const char sep[] = "\n \r \t";
 
@@ -842,7 +842,7 @@ static int prv_check_number_too_large(subtilis_lexer_t *l)
 
 static int prv_test_number_too_long(void)
 {
-	subtilis_buffer buf;
+	subtilis_buffer_t buf;
 	subtilis_error_t err;
 	int i;
 	int retval = 1;
