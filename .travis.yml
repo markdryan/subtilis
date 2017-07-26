@@ -1,5 +1,11 @@
 language: c
 
+before_script:
+  - echo "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.9 main" | sudo tee -a /etc/apt/sources.list
+  - wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+  - sudo apt-get update -qq
+  - sudo apt-get install clang-format-3.9 -y
+
 compiler:
   - clang
   - gcc
@@ -12,3 +18,4 @@ install:
 script:
  - make check
  - perl checkpatch.pl --no-tree -f --strict --show-types --ignore NEW_TYPEDEFS --ignore PREFER_KERNEL_TYPES --ignore SPLIT_STRING *.c *.h
+ - ./check-format.sh

@@ -102,7 +102,7 @@ static void prv_ensure_buffer(subtilis_lexer_t *l, subtilis_error_t *err)
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	// TODO:  This is wrong.  We should set this to 0 before we return
+	/* TODO:  This is wrong.  We should set this to 0 before we return */
 
 	l->index = 0;
 }
@@ -122,7 +122,7 @@ static bool prv_is_whitespace(char c)
 	return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
-// TODO: This needs to be a bit mask or something
+/* TODO: This needs to be a bit mask or something */
 static bool prv_is_simple_operator(char c)
 {
 	return c == '/' || c == '*' || c == '(' || c == ')' || c == ':' ||
@@ -323,6 +323,7 @@ static void prv_process_binary(subtilis_lexer_t *l, subtilis_token_t *t,
 	prv_parse_integer(l, t, 2, err);
 }
 
+/* TODO: This code is wrong could lead to loop terminating early */
 static void prv_process_string(subtilis_lexer_t *l, subtilis_token_t *t,
 			       subtilis_error_t *err)
 {
@@ -354,8 +355,6 @@ static void prv_process_string(subtilis_lexer_t *l, subtilis_token_t *t,
 			t->buf[t->token_size++] = l->buffer[l->index++];
 		}
 	} while (l->index == l->buf_end);
-
-// TODO: Above code is wrong could lead to loop terminating early
 
 done:
 
