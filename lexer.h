@@ -19,8 +19,11 @@
 
 #include <stdint.h>
 
+#include "buffer.h"
 #include "keywords.h"
 #include "stream.h"
+
+/* Does not apply to strings which are limitless in size */
 
 #define SUBTILIS_MAX_TOKEN_SIZE 255
 
@@ -68,8 +71,7 @@ struct _subtilis_token_t {
 		double real;
 		subtilis_identifier_type_t id_type;
 	} tok;
-	char buf[SUBTILIS_MAX_TOKEN_SIZE + 1];
-	size_t token_size;
+	subtilis_buffer_t buf;
 };
 
 typedef struct _subtilis_token_t subtilis_token_t;
@@ -80,7 +82,9 @@ subtilis_lexer_t *subtilis_lexer_new(subtilis_stream_t *s, size_t buf_size,
 void subtilis_lexer_delete(subtilis_lexer_t *l, subtilis_error_t *err);
 void subtilis_lexer_get(subtilis_lexer_t *l, subtilis_token_t *t,
 			subtilis_error_t *err);
-void subtilis_init_token(subtilis_token_t *t);
+subtilis_token_t *subtilis_token_new(subtilis_error_t *err);
+const char *subtilis_token_get_text(subtilis_token_t *t);
+void subtilis_token_delete(subtilis_token_t *t);
 void subtilis_dump_token(subtilis_token_t *t);
 
 #endif

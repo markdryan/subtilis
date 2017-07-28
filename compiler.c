@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 	subtilis_error_t err;
 	subtilis_stream_t s;
 	subtilis_lexer_t *l = NULL;
-	subtilis_token_t t;
+	subtilis_token_t *t = NULL;
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: basicc file\n");
@@ -39,18 +39,24 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	t = subtilis_token_new(&err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	do {
-		subtilis_lexer_get(l, &t, &err);
+		subtilis_lexer_get(l, t, &err);
 		if (err.type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		subtilis_dump_token(&t);
-	} while (t.type != SUBTILIS_TOKEN_EOF);
+		subtilis_dump_token(t);
+	} while (t->type != SUBTILIS_TOKEN_EOF);
 
+	subtilis_token_delete(t);
 	subtilis_lexer_delete(l, &err);
 
 	return 0;
 
 cleanup:
+	subtilis_token_delete(t);
 	if (l)
 		subtilis_lexer_delete(l, &err);
 	else

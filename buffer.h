@@ -55,6 +55,7 @@ void subtilis_buffer_delete(subtilis_buffer_t *buffer, size_t pos,
 			    size_t length, subtilis_error_t *err);
 void subtilis_buffer_zero_terminate(subtilis_buffer_t *buffer,
 				    subtilis_error_t *err);
+void subtilis_buffer_remove_terminator(subtilis_buffer_t *buffer);
 void subtilis_buffer_free(subtilis_buffer_t *buffer);
 void subtilis_buffer_reset(subtilis_buffer_t *buffer);
 size_t subtilis_buffer_get_size(const subtilis_buffer_t *buffer);
