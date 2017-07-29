@@ -64,20 +64,12 @@ static int prv_test_too_long(subtilis_lexer_t *l, subtilis_token_t *t,
 			     subtilis_error_type_t err_type)
 {
 	subtilis_error_t err;
-	const char *tbuf;
 
 	subtilis_error_init(&err);
 	subtilis_lexer_get(l, t, &err);
 	if (err.type != err_type) {
 		fprintf(stderr, "Expected error %d got %d\n", err_type,
 			err.type);
-		return 1;
-	}
-
-	tbuf = subtilis_token_get_text(t);
-	if (strlen(tbuf) > SUBTILIS_MAX_TOKEN_SIZE) {
-		fprintf(stderr, "Token overflow.  l->token_size = %zu\n",
-			subtilis_buffer_get_size(&t->buf));
 		return 1;
 	}
 

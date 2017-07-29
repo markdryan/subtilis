@@ -62,11 +62,17 @@ void subtilis_lexer_delete(subtilis_lexer_t *l, subtilis_error_t *err)
 }
 
 /* subtilis_token_new will reserve SUBTILIS_MAX_TOKEN_SIZE + 1 in bytes for the
- * token's buffer.  All tokens apart from strings must be less than or equal to
- * SUBTILIS_MAX_TOKEN_SIZE in size so we don't need to check for errors
- * when appending to the token buffer.  In most cases we can use
- * prv_set_first and prv_set_next but when processing strings we'll need to use
- * prv_set_next_with_err.
+ * token's buffer.  As long as token processing code doesn't write more than
+ * SUBTILIS_MAX_TOKEN_SIZE into the token buffer, it can use prv_set_first,
+ * prv_set_next and subtilis_token_get_text without having to worry about
+ * errors.  subtilis_lexer_get always zero terminates the token buffer so it is
+ * always safe to use subtilis_token_get_text to retrieve the zero terminated
+ * token text after subtilis_lexer_get has returned without error.  When
+ * the token text must be included into an error string also use
+ * subtilis_token_get_text?  There is of course a chance this can fail but what
+ * are we going to do with the error.  A constant error string will be written
+ * in place of the token text to the error message.  In all other cases,
+ * prv_set_next_with_err and subtilis_token_get_text_with_err should be used.
  */
 
 static void prv_set_next_with_err(subtilis_lexer_t *l, subtilis_token_t *t,
@@ -108,6 +114,15 @@ const char *subtilis_token_get_text(subtilis_token_t *t)
 	return tbuf;
 }
 
+const char *subtilis_token_get_text_with_err(subtilis_token_t *t,
+					     subtilis_error_t *err)
+{
+	subtilis_buffer_zero_terminate(&t->buf, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	return subtilis_buffer_get_string(&t->buf);
+}
+
 static void prv_ensure_buffer(subtilis_lexer_t *l, subtilis_error_t *err)
 {
 	if (l->index < l->buf_end)
@@ -127,7 +142,7 @@ static void prv_ensure_token_buffer(subtilis_lexer_t *l, subtilis_token_t *t,
 {
 	const char *tbuf;
 
-	if (subtilis_buffer_get_size(&t->buf) < SUBTILIS_MAX_TOKEN_SIZE)
+	if (subtilis_buffer_get_size(&t->buf) <= SUBTILIS_MAX_TOKEN_SIZE)
 		return;
 
 	tbuf = subtilis_token_get_text(t);
@@ -223,13 +238,12 @@ static bool prv_extract_number(subtilis_lexer_t *l, subtilis_token_t *t,
 			break;
 		}
 
-		prv_ensure_token_buffer(l, t, err,
-					SUBTILIS_ERROR_NUMBER_TOO_LONG);
+		prv_set_next_with_err(l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			break;
-
-		prv_set_next(l, t);
 	}
+
+	prv_ensure_token_buffer(l, t, err, SUBTILIS_ERROR_NUMBER_TOO_LONG);
 
 	return processed;
 }
@@ -247,11 +261,16 @@ static subtilis_token_end_t prv_float_end(subtilis_lexer_t *l,
 static void prv_process_float(subtilis_lexer_t *l, subtilis_token_t *t,
 			      subtilis_error_t *err)
 {
+	const char *tbuf;
+
 	prv_set_first(l, t, SUBTILIS_TOKEN_REAL);
 	if (!prv_extract_number(l, t, prv_float_end, err))
 		return;
 
-	t->tok.real = atof(subtilis_token_get_text(t));
+	tbuf = subtilis_token_get_text_with_err(t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	t->tok.real = atof(tbuf);
 }
 
 /* TODO:  Need to figure out if maximum negative int constant is correct */
@@ -261,7 +280,11 @@ static void prv_parse_integer(subtilis_lexer_t *l, subtilis_token_t *t,
 {
 	char *end_ptr = 0;
 	unsigned long num;
-	const char *tbuf = subtilis_token_get_text(t);
+	const char *tbuf;
+
+	tbuf = subtilis_token_get_text_with_err(t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	errno = 0;
 	num = strtoul(tbuf, &end_ptr, base);
@@ -402,31 +425,30 @@ static void prv_validate_identifier(subtilis_lexer_t *l, subtilis_token_t *t,
 		if (!((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
 		      (ch >= '0' && ch <= '9') || (ch == '_')))
 			break;
-		prv_ensure_token_buffer(l, t, err,
-					SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
+		prv_set_next_with_err(l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		prv_set_next(l, t);
 	}
 
 	if (l->index == l->buf_end) {
 		t->tok.id_type = SUBTILIS_IDENTIFIER_REAL;
-		return;
-	}
-
-	if (ch == '$') {
+	} else if (ch == '$') {
 		t->tok.id_type = SUBTILIS_IDENTIFIER_STRING;
+		prv_set_next_with_err(l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 	} else if (ch == '%') {
 		t->tok.id_type = SUBTILIS_IDENTIFIER_INTEGER;
+		prv_set_next_with_err(l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 	} else {
 		t->tok.id_type = SUBTILIS_IDENTIFIER_REAL;
-		return;
 	}
 
 	prv_ensure_token_buffer(l, t, err, SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	prv_set_next(l, t);
 }
 
 static void prv_process_identifier(subtilis_lexer_t *l, char ch,
@@ -476,7 +498,6 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 	bool possible_fn = false;
 	bool possible_proc = false;
 	const char *tbuf;
-	size_t len;
 
 	prv_set_first(l, t, SUBTILIS_TOKEN_UNKNOWN);
 
@@ -491,41 +512,38 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 		ch = l->buffer[l->index];
 		if (!(ch >= 'A' && ch <= 'Z'))
 			break;
-		prv_ensure_token_buffer(l, t, err,
-					SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
+		prv_set_next_with_err(l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		prv_set_next(l, t);
 	}
 
 	if (l->index < l->buf_end) {
 		if (ch == '$') {
-			prv_ensure_token_buffer(
-			    l, t, err, SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
+			prv_set_next_with_err(l, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-			prv_set_next(l, t);
-			possible_id = false;
 			prv_ensure_buffer(l, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 			if ((l->index < l->buf_end) &&
 			    (l->buffer[l->index] == '#')) {
-				prv_ensure_token_buffer(
-				    l, t, err,
-				    SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
+				possible_id = false;
+				prv_set_next_with_err(l, t, err);
 				if (err->type != SUBTILIS_ERROR_OK)
 					return;
-				prv_set_next(l, t);
 			}
 		} else if (ch == '#') {
-			prv_ensure_token_buffer(
-			    l, t, err, SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
+			possible_id = false;
+			prv_set_next_with_err(l, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-			prv_set_next(l, t);
 		}
 	}
+
+	/* There's no need to check token length here.  If it's a keyword
+	 * the length must be less than SUBTILIS_MAX_TOKEN_SIZE.  Otherwise
+	 * the token size will be checked by prv_validate_identifier.
+	 */
 
 	/* This will zero terminate the token buffer.  This is what we need
 	 * for performing the various string comparsions we're going to do
@@ -533,8 +551,9 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 	 * keyword.
 	 */
 
-	tbuf = subtilis_token_get_text(t);
-	len = subtilis_buffer_get_size(&t->buf);
+	tbuf = subtilis_token_get_text_with_err(t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	// TODO: bsearch may not be efficient for large files.
 
@@ -548,26 +567,33 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 		}
 	}
 
-	key.str = subtilis_token_get_text(t);
+	key.str = tbuf;
 	kw =
 	    bsearch(&key, subtilis_keywords_list,
 		    sizeof(subtilis_keywords_list) / sizeof(subtilis_keyword_t),
 		    sizeof(subtilis_keyword_t), prv_compare_keyword);
 
-	if (!kw) {
-		if (!possible_id) {
-			subtilis_error_set_unknown_token(
-			    err, tbuf, l->stream->name, l->line);
-		} else {
-			subtilis_buffer_remove_terminator(&t->buf);
-			t->type = SUBTILIS_TOKEN_IDENTIFIER;
-			prv_validate_identifier(l, t, err);
-		}
+	if (kw) {
+		t->type = SUBTILIS_TOKEN_KEYWORD;
+		t->tok.keyword.type = kw->type;
+		t->tok.keyword.supported = kw->supported;
 		return;
 	}
-	t->type = SUBTILIS_TOKEN_KEYWORD;
-	t->tok.keyword.type = kw->type;
-	t->tok.keyword.supported = kw->supported;
+
+	subtilis_buffer_remove_terminator(&t->buf);
+	if (possible_id) {
+		t->type = SUBTILIS_TOKEN_IDENTIFIER;
+		prv_validate_identifier(l, t, err);
+		return;
+	}
+
+	/* It's an invalid token */
+
+	prv_ensure_token_buffer(l, t, err, SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	tbuf = subtilis_token_get_text(t);
+	subtilis_error_set_unknown_token(err, tbuf, l->stream->name, l->line);
 }
 
 static void prv_process_unknown(subtilis_lexer_t *l, char ch,
@@ -586,11 +612,9 @@ static void prv_process_unknown(subtilis_lexer_t *l, char ch,
 		ch = l->buffer[l->index];
 		if (prv_is_separator(ch))
 			break;
-		prv_ensure_token_buffer(l, t, err,
-					SUBTILIS_ERROR_UNKNOWN_TOKEN);
+		prv_set_next_with_err(l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		prv_set_next(l, t);
 	}
 
 	tbuf = subtilis_token_get_text(t);
@@ -731,4 +755,7 @@ void subtilis_lexer_get(subtilis_lexer_t *l, subtilis_token_t *t,
 	if ((err->type != SUBTILIS_ERROR_OK) || (l->index == l->buf_end))
 		return;
 	prv_process_token(l, t, err);
+	if (err != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_buffer_zero_terminate(&t->buf, err);
 }
