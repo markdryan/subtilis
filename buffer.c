@@ -181,6 +181,17 @@ void subtilis_buffer_zero_terminate(subtilis_buffer_t *buffer,
 		subtilis_buffer_append(buffer, &zero, 1, err);
 }
 
+void subtilis_buffer_remove_terminator(subtilis_buffer_t *buffer)
+{
+	subtilis_fixed_buffer_t *b = buffer->buffer;
+
+	if (!b)
+		return;
+
+	while ((b->end > b->start) && (((char *)b->data)[b->end - 1] == 0))
+		b->end--;
+}
+
 void subtilis_buffer_free(subtilis_buffer_t *buffer)
 {
 	if (!buffer->buffer)
