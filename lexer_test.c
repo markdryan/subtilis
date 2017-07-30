@@ -21,6 +21,13 @@
 #include "buffer.h"
 #include "lexer.h"
 
+/* clang-format off */
+static const size_t buffer_sizes[] = {
+	1, 2, 3, 5, 7, 16, SUBTILIS_CONFIG_LEXER_BUF_SIZE
+};
+
+/* clang-format on */
+
 static int prv_test_wrapper(const char *text, size_t buf_size,
 			    int (*fn)(subtilis_lexer_t *, subtilis_token_t *))
 {
@@ -47,7 +54,6 @@ static int prv_test_wrapper(const char *text, size_t buf_size,
 	retval = fn(l, t);
 	subtilis_lexer_delete(l, &err);
 	subtilis_token_delete(t);
-	printf(": [%s]\n", retval ? "FAIL" : "OK");
 
 	return retval;
 
@@ -149,56 +155,82 @@ static int prv_check_max_real_var(subtilis_lexer_t *l, subtilis_token_t *t)
 static int prv_test_real_var_too_long(void)
 {
 	char str[SUBTILIS_MAX_TOKEN_SIZE + 2];
+	size_t i;
+	int res = 0;
 
 	memset(str, 'a', SUBTILIS_MAX_TOKEN_SIZE + 1);
 	str[SUBTILIS_MAX_TOKEN_SIZE + 1] = 0;
 
 	printf("lexer_real_var_too_long");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_id_too_long);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i],
+					prv_check_id_too_long);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_test_real_var_upper_too_long(void)
 {
 	char str[SUBTILIS_MAX_TOKEN_SIZE + 2];
+	size_t i;
+	int res = 0;
 
 	memset(str, 'A', SUBTILIS_MAX_TOKEN_SIZE + 1);
 	str[SUBTILIS_MAX_TOKEN_SIZE + 1] = 0;
 
 	printf("lexer_real_var_upper_too_long");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_id_too_long);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i],
+					prv_check_id_too_long);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_test_string_var_upper_too_long(void)
 {
 	char str[SUBTILIS_MAX_TOKEN_SIZE + 2];
+	size_t i;
+	int res = 0;
 
 	memset(str, 'A', SUBTILIS_MAX_TOKEN_SIZE);
 	str[SUBTILIS_MAX_TOKEN_SIZE] = '$';
 	str[SUBTILIS_MAX_TOKEN_SIZE + 1] = 0;
 
 	printf("lexer_string_var_upper_too_long");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_id_too_long);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i],
+					prv_check_id_too_long);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_test_id_hash_var_upper_too_long(void)
 {
 	char str[SUBTILIS_MAX_TOKEN_SIZE + 2];
+	size_t i;
+	int res = 0;
 
 	memset(str, 'A', SUBTILIS_MAX_TOKEN_SIZE);
 	str[SUBTILIS_MAX_TOKEN_SIZE] = '#';
 	str[SUBTILIS_MAX_TOKEN_SIZE + 1] = 0;
 
 	printf("lexer_id_hash_var_upper_too_long");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_id_too_long);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i],
+					prv_check_id_too_long);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_test_string_hash_var_upper_too_long(void)
 {
 	char str[SUBTILIS_MAX_TOKEN_SIZE + 2];
+	size_t i;
+	int res = 0;
 
 	memset(str, 'A', SUBTILIS_MAX_TOKEN_SIZE - 1);
 	str[SUBTILIS_MAX_TOKEN_SIZE - 1] = '$';
@@ -206,39 +238,57 @@ static int prv_test_string_hash_var_upper_too_long(void)
 	str[SUBTILIS_MAX_TOKEN_SIZE + 1] = 0;
 
 	printf("lexer_string_hash_var_upper_too_long");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_id_too_long);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i],
+					prv_check_id_too_long);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_test_string_var_too_long(void)
 {
 	char str[SUBTILIS_MAX_TOKEN_SIZE + 2];
+	size_t i;
+	int res = 0;
 
 	memset(str, 'a', SUBTILIS_MAX_TOKEN_SIZE);
 	str[SUBTILIS_MAX_TOKEN_SIZE] = '$';
 	str[SUBTILIS_MAX_TOKEN_SIZE + 1] = 0;
 
 	printf("lexer_string_var_too_long");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_id_too_long);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i],
+					prv_check_id_too_long);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_test_int_var_too_long(void)
 {
 	char str[SUBTILIS_MAX_TOKEN_SIZE + 2];
+	size_t i;
+	int res = 0;
 
 	memset(str, 'a', SUBTILIS_MAX_TOKEN_SIZE);
 	str[SUBTILIS_MAX_TOKEN_SIZE] = '%';
 	str[SUBTILIS_MAX_TOKEN_SIZE + 1] = 0;
 
 	printf("lexer_int_var_too_long");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_id_too_long);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i],
+					prv_check_id_too_long);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_test_max_int_var(void)
 {
 	char str[SUBTILIS_MAX_TOKEN_SIZE * 2 + 1 + 1];
+	size_t i;
+	int res = 0;
 
 	memset(str, 'a', SUBTILIS_MAX_TOKEN_SIZE - 1);
 	str[SUBTILIS_MAX_TOKEN_SIZE - 1] = '%';
@@ -249,13 +299,19 @@ static int prv_test_max_int_var(void)
 	str[(SUBTILIS_MAX_TOKEN_SIZE * 2) + 1] = 0;
 
 	printf("lexer_max_int_var");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_max_int_var);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i],
+					prv_check_max_int_var);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_test_max_str_var(void)
 {
 	char str[SUBTILIS_MAX_TOKEN_SIZE * 2 + 1 + 1];
+	size_t i;
+	int res = 0;
 
 	memset(str, 'a', SUBTILIS_MAX_TOKEN_SIZE - 1);
 	str[SUBTILIS_MAX_TOKEN_SIZE - 1] = '$';
@@ -266,13 +322,19 @@ static int prv_test_max_str_var(void)
 	str[(SUBTILIS_MAX_TOKEN_SIZE * 2) + 1] = 0;
 
 	printf("lexer_max_str_var");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_max_str_var);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i],
+					prv_check_max_str_var);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_test_max_real_var(void)
 {
 	char str[SUBTILIS_MAX_TOKEN_SIZE * 2 + 1 + 1];
+	size_t i;
+	int res = 0;
 
 	memset(str, 'a', SUBTILIS_MAX_TOKEN_SIZE);
 	str[SUBTILIS_MAX_TOKEN_SIZE] = '+';
@@ -280,8 +342,12 @@ static int prv_test_max_real_var(void)
 	str[(SUBTILIS_MAX_TOKEN_SIZE * 2) + 1] = 0;
 
 	printf("lexer_max_real_var");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_max_real_var);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i],
+					prv_check_max_real_var);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_check_keywords(subtilis_lexer_t *l, subtilis_token_t *t)
@@ -325,19 +391,20 @@ static int prv_check_keywords(subtilis_lexer_t *l, subtilis_token_t *t)
 
 static int prv_test_keywords(void)
 {
-	int i;
-	int retval;
+	int j;
 	subtilis_buffer_t buf;
 	subtilis_error_t err;
+	size_t i;
+	int res = 0;
 	const char sep[] = "\n \r \t";
 
 	printf("lexer_keywords");
 
 	subtilis_error_init(&err);
 	subtilis_buffer_init(&buf, 4096);
-	for (i = 0; i < SUBTILIS_KEYWORD_MAX; i++) {
-		subtilis_buffer_append(&buf, subtilis_keywords_list[i].str,
-				       strlen(subtilis_keywords_list[i].str),
+	for (j = 0; j < SUBTILIS_KEYWORD_MAX; j++) {
+		subtilis_buffer_append(&buf, subtilis_keywords_list[j].str,
+				       strlen(subtilis_keywords_list[j].str),
 				       &err);
 		if (err.type != SUBTILIS_ERROR_OK) {
 			subtilis_error_fprintf(stderr, &err, true);
@@ -357,12 +424,13 @@ static int prv_test_keywords(void)
 		goto on_error;
 	}
 
-	retval = prv_test_wrapper(subtilis_buffer_get_string(&buf),
-				  SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				  prv_check_keywords);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(subtilis_buffer_get_string(&buf),
+					buffer_sizes[i], prv_check_keywords);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
 
 	subtilis_buffer_free(&buf);
-	return retval;
+	return res;
 
 on_error:
 	printf(": [FAIL]\n");
@@ -435,20 +503,31 @@ static int prv_check_empty(subtilis_lexer_t *l, subtilis_token_t *t)
 
 static int prv_test_procedure_call(void)
 {
+	size_t i;
+	int res = 0;
 	const char *str = "PROCINVOKEME PROCinvokeme";
 
 	printf("lexer_procedure_call");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_procedure_call);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i],
+					prv_check_procedure_call);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_test_empty(void)
 {
+	size_t i;
+	int res = 0;
 	const char *str = "";
 
 	printf("lexer_empty");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_empty);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i], prv_check_empty);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_check_bad_proc_name(subtilis_lexer_t *l, subtilis_token_t *t,
@@ -477,11 +556,17 @@ static int prv_check_proc_typed(subtilis_lexer_t *l, subtilis_token_t *t)
 
 static int prv_test_proc_typed(void)
 {
+	size_t i;
+	int res = 0;
 	const char *str = "PROCcalculate% PROCcalculate$";
 
 	printf("lexer_proc_typed");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_proc_typed);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i],
+					prv_check_proc_typed);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_check_fn_typed(subtilis_lexer_t *l, subtilis_token_t *t)
@@ -491,11 +576,17 @@ static int prv_check_fn_typed(subtilis_lexer_t *l, subtilis_token_t *t)
 
 static int prv_test_fn_typed(void)
 {
+	size_t i;
+	int res = 0;
 	const char *str = "FNcalculate% FNcalculate$";
 
 	printf("lexer_fn_typed");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_fn_typed);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |=
+		    prv_test_wrapper(str, buffer_sizes[i], prv_check_fn_typed);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_check_int(subtilis_lexer_t *l, subtilis_token_t *t)
@@ -570,12 +661,17 @@ static int prv_check_int(subtilis_lexer_t *l, subtilis_token_t *t)
 
 static int prv_test_int(void)
 {
+	size_t i;
+	int res = 0;
 	const char *str = "12345 67890 &12345 &67890 &abcef 2147483647"
 			  "%10101010 -255 -&ff -%11111111";
 
 	printf("lexer_int");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_int);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i], prv_check_int);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_check_real(subtilis_lexer_t *l, subtilis_token_t *t)
@@ -650,11 +746,16 @@ static int prv_check_real(subtilis_lexer_t *l, subtilis_token_t *t)
 
 static int prv_test_real(void)
 {
+	size_t i;
+	int res = 0;
 	const char *str = "12345.67890 0.314 .314 -0.314 -.314";
 
 	printf("lexer_real");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_real);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i], prv_check_real);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_check_vars(subtilis_lexer_t *l, subtilis_token_t *t,
@@ -710,12 +811,18 @@ static int prv_check_real_vars(subtilis_lexer_t *l, subtilis_token_t *t)
 
 static int prv_test_real_vars(void)
 {
+	size_t i;
+	int res = 0;
 	const char *str = "The quick brown fox jumps over the lazy dog"
 			  " floating_point PROcedure index001of2";
 
 	printf("lexer_real_vars");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_real_vars);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |=
+		    prv_test_wrapper(str, buffer_sizes[i], prv_check_real_vars);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_check_int_vars(subtilis_lexer_t *l, subtilis_token_t *t)
@@ -731,12 +838,18 @@ static int prv_check_int_vars(subtilis_lexer_t *l, subtilis_token_t *t)
 
 static int prv_test_int_vars(void)
 {
+	size_t i;
+	int res = 0;
 	const char *str = "The% quick% brown% fox% jumps% over% the% lazy% dog%"
 			  " floating_point% PROcedure% index001of2%";
 
 	printf("lexer_int_vars");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_int_vars);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |=
+		    prv_test_wrapper(str, buffer_sizes[i], prv_check_int_vars);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_check_str_vars(subtilis_lexer_t *l, subtilis_token_t *t)
@@ -752,12 +865,18 @@ static int prv_check_str_vars(subtilis_lexer_t *l, subtilis_token_t *t)
 
 static int prv_test_str_vars(void)
 {
+	size_t i;
+	int res = 0;
 	const char *str = "The$ quick$ brown$ fox$ jumps$ over$ the$ lazy$ dog$"
 			  " floating_point$ PROcedure$ index001of2$";
 
 	printf("lexer_str_vars");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_str_vars);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |=
+		    prv_test_wrapper(str, buffer_sizes[i], prv_check_str_vars);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_check_operators(subtilis_lexer_t *l, subtilis_token_t *t)
@@ -800,13 +919,19 @@ static int prv_check_operators(subtilis_lexer_t *l, subtilis_token_t *t)
 
 static int prv_test_operators(void)
 {
+	size_t i;
+	int res = 0;
 	const char *str =
 	    "< << > >> >>> >= <= += -= + - <> ^ ( ) / | ? : ; , [ ] ~"
 	    " * $";
 
 	printf("lexer_operators");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_operators);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |=
+		    prv_test_wrapper(str, buffer_sizes[i], prv_check_operators);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_check_number_too_large(subtilis_lexer_t *l, subtilis_token_t *t)
@@ -828,8 +953,9 @@ static int prv_test_number_too_long(void)
 {
 	subtilis_buffer_t buf;
 	subtilis_error_t err;
-	int i;
-	int retval = 1;
+	int j;
+	size_t i;
+	int res = 1;
 
 	printf("lexer_number_too_long");
 	subtilis_buffer_init(&buf, 512);
@@ -839,8 +965,8 @@ static int prv_test_number_too_long(void)
 		subtilis_error_fprintf(stderr, &err, true);
 		goto on_error;
 	}
-	for (i = 0; i < SUBTILIS_MAX_TOKEN_SIZE + 1; i++)
-		buf.buffer->data[i] = '0' + i % 10;
+	for (j = 0; j < SUBTILIS_MAX_TOKEN_SIZE + 1; j++)
+		buf.buffer->data[j] = '0' + j % 10;
 
 	subtilis_buffer_zero_terminate(&buf, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
@@ -848,21 +974,31 @@ static int prv_test_number_too_long(void)
 		goto on_error;
 	}
 
-	retval = prv_test_wrapper(subtilis_buffer_get_string(&buf),
-				  SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				  prv_check_number_too_large);
+	res = 0;
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(subtilis_buffer_get_string(&buf),
+					buffer_sizes[i],
+					prv_check_number_too_large);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
 
 on_error:
 	subtilis_buffer_free(&buf);
-	return retval;
+	return res;
 }
 
 static int prv_test_number_too_large(void)
 {
+	size_t i;
+	int res = 0;
+
 	printf("lexer_number_too_large");
 
-	return prv_test_wrapper("2147483648", SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_number_too_large);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper("2147483648", buffer_sizes[i],
+					prv_check_number_too_large);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_check_strings(subtilis_lexer_t *l, subtilis_token_t *t)
@@ -901,12 +1037,18 @@ static int prv_check_strings(subtilis_lexer_t *l, subtilis_token_t *t)
 
 static int prv_test_string(void)
 {
+	size_t i;
 	const char *str = "\"one two three four five size 0 1 2\""
 			  " \"\"\"No way\"\", he said\"";
+	int res = 0;
 
 	printf("lexer_strings");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_strings);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |=
+		    prv_test_wrapper(str, buffer_sizes[i], prv_check_strings);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_check_big_string(subtilis_lexer_t *l, subtilis_token_t *t)
@@ -943,19 +1085,23 @@ static int prv_check_big_string(subtilis_lexer_t *l, subtilis_token_t *t)
 
 static int prv_test_big_string(void)
 {
-	subtilis_error_t err;
+	size_t i;
 	const size_t content_len = SUBTILIS_MAX_TOKEN_SIZE * 2;
 	char str[content_len + 3];
+	int res = 0;
 
-	subtilis_error_init(&err);
 	str[0] = '"';
 	str[content_len + 2] = 0;
 	str[content_len + 1] = '"';
 	memset(&str[1], '1', content_len);
 
 	printf("lexer_big_string");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_big_string);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i],
+					prv_check_big_string);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_check_string_unterminated(subtilis_lexer_t *l,
@@ -976,11 +1122,17 @@ static int prv_check_string_unterminated(subtilis_lexer_t *l,
 
 static int prv_test_string_unterminated(void)
 {
+	size_t i;
 	const char *str = "\"Unterminated";
+	int res = 0;
 
 	printf("lexer_string_unterminated");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_string_unterminated);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i],
+					prv_check_string_unterminated);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 static int prv_check_unknown(subtilis_lexer_t *l, subtilis_token_t *t)
@@ -1021,11 +1173,19 @@ static int prv_check_unknown(subtilis_lexer_t *l, subtilis_token_t *t)
 
 static int prv_test_unknown(void)
 {
+	size_t i;
 	const char *str = "#UNKNOWN #1234567890";
+	int res = 0;
 
 	printf("lexer_unknown");
-	return prv_test_wrapper(str, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
-				prv_check_unknown);
+
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |=
+		    prv_test_wrapper(str, buffer_sizes[i], prv_check_unknown);
+
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
 }
 
 /* TODO

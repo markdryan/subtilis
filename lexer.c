@@ -378,20 +378,26 @@ static void prv_process_string(subtilis_lexer_t *l, subtilis_token_t *t,
 			goto unterminated;
 
 		while (l->index < l->buf_end) {
-			if (l->buffer[l->index] == '"') {
-				if ((l->index + 1 == l->buf_end) ||
-				    (l->buffer[l->index + 1] != '"'))
-					goto done;
-				l->index++;
-			}
 			prv_set_next_with_err(l, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
+			if (l->buffer[l->index - 1] != '"')
+				continue;
+
+			prv_ensure_buffer(l, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto done;
+			if ((l->index == l->buf_end) ||
+			    (l->buffer[l->index] != '"'))
+				goto done;
+			l->index++;
 		}
 	} while (l->index == l->buf_end);
 
 done:
-	l->index++;
+
+	subtilis_buffer_delete(&t->buf, subtilis_buffer_get_size(&t->buf) - 1,
+			       1, err);
 
 	return;
 
