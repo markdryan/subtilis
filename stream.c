@@ -79,7 +79,7 @@ static size_t prv_text_read(void *ptr, size_t n, void *handle,
 		n = left;
 
 	memcpy(ptr, &stream->text[stream->read], n);
-	stream->read = n;
+	stream->read += n;
 
 	return n;
 }
