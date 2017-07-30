@@ -123,7 +123,7 @@ const char *subtilis_token_get_text_with_err(subtilis_token_t *t,
 	return subtilis_buffer_get_string(&t->buf);
 }
 
-static void prv_ensure_buffer(subtilis_lexer_t *l, subtilis_error_t *err)
+static void prv_ensure_input(subtilis_lexer_t *l, subtilis_error_t *err)
 {
 	if (l->index < l->buf_end)
 		return;
@@ -136,9 +136,9 @@ static void prv_ensure_buffer(subtilis_lexer_t *l, subtilis_error_t *err)
 	l->index = 0;
 }
 
-static void prv_ensure_token_buffer(subtilis_lexer_t *l, subtilis_token_t *t,
-				    subtilis_error_t *err,
-				    subtilis_error_type_t type)
+static void prv_check_token_buffer(subtilis_lexer_t *l, subtilis_token_t *t,
+				   subtilis_error_t *err,
+				   subtilis_error_type_t type)
 {
 	const char *tbuf;
 
@@ -177,7 +177,7 @@ static void prv_process_complex_operator(subtilis_lexer_t *l,
 	ch = l->buffer[l->index];
 
 	prv_set_first(l, t, SUBTILIS_TOKEN_OPERATOR);
-	prv_ensure_buffer(l, err);
+	prv_ensure_input(l, err);
 	if ((err->type != SUBTILIS_ERROR_OK) || (l->index == l->buf_end))
 		return;
 
@@ -200,7 +200,7 @@ static void prv_process_complex_operator(subtilis_lexer_t *l,
 			return;
 		prv_set_next(l, t);
 
-		prv_ensure_buffer(l, err);
+		prv_ensure_input(l, err);
 		if ((err->type != SUBTILIS_ERROR_OK) ||
 		    (l->index == l->buf_end))
 			break;
@@ -223,7 +223,7 @@ static bool prv_extract_number(subtilis_lexer_t *l, subtilis_token_t *t,
 	bool processed = false;
 
 	for (;;) {
-		prv_ensure_buffer(l, err);
+		prv_ensure_input(l, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			break;
 		if (l->index == l->buf_end) {
@@ -243,7 +243,7 @@ static bool prv_extract_number(subtilis_lexer_t *l, subtilis_token_t *t,
 			break;
 	}
 
-	prv_ensure_token_buffer(l, t, err, SUBTILIS_ERROR_NUMBER_TOO_LONG);
+	prv_check_token_buffer(l, t, err, SUBTILIS_ERROR_NUMBER_TOO_LONG);
 
 	return processed;
 }
@@ -371,7 +371,7 @@ static void prv_process_string(subtilis_lexer_t *l, subtilis_token_t *t,
 	l->index++;
 	t->type = SUBTILIS_TOKEN_STRING;
 	do {
-		prv_ensure_buffer(l, err);
+		prv_ensure_input(l, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		if (l->index == l->buf_end)
@@ -384,7 +384,7 @@ static void prv_process_string(subtilis_lexer_t *l, subtilis_token_t *t,
 			if (l->buffer[l->index - 1] != '"')
 				continue;
 
-			prv_ensure_buffer(l, err);
+			prv_ensure_input(l, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto done;
 			if ((l->index == l->buf_end) ||
@@ -421,7 +421,7 @@ static void prv_validate_identifier(subtilis_lexer_t *l, subtilis_token_t *t,
 	char ch;
 
 	for (;;) {
-		prv_ensure_buffer(l, err);
+		prv_ensure_input(l, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		if (l->index == l->buf_end)
@@ -452,7 +452,7 @@ static void prv_validate_identifier(subtilis_lexer_t *l, subtilis_token_t *t,
 		t->tok.id_type = SUBTILIS_IDENTIFIER_REAL;
 	}
 
-	prv_ensure_token_buffer(l, t, err, SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
+	prv_check_token_buffer(l, t, err, SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 }
@@ -509,7 +509,7 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 
 	/* TODO: We have very similar loops elsewhere */
 	for (;;) {
-		prv_ensure_buffer(l, err);
+		prv_ensure_input(l, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		if (l->index == l->buf_end)
@@ -528,7 +528,7 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 			prv_set_next_with_err(l, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-			prv_ensure_buffer(l, err);
+			prv_ensure_input(l, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 			if ((l->index < l->buf_end) &&
@@ -595,7 +595,7 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 
 	/* It's an invalid token */
 
-	prv_ensure_token_buffer(l, t, err, SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
+	prv_check_token_buffer(l, t, err, SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	tbuf = subtilis_token_get_text(t);
@@ -609,7 +609,7 @@ static void prv_process_unknown(subtilis_lexer_t *l, char ch,
 
 	prv_set_first(l, t, SUBTILIS_TOKEN_UNKNOWN);
 	for (;;) {
-		prv_ensure_buffer(l, err);
+		prv_ensure_input(l, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		if (l->index == l->buf_end)
@@ -690,7 +690,7 @@ static void prv_skip_white(subtilis_lexer_t *l, subtilis_error_t *err)
 			l->index++;
 		}
 
-		prv_ensure_buffer(l, err);
+		prv_ensure_input(l, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
