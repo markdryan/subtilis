@@ -4,5 +4,5 @@ basicc,ff8
 *.o
 default.profdata
 default.profraw
-lexer_test
+unit_tests
 *,e1f

@@ -1,5 +1,6 @@
 DEPS = stream.h lexer.h config.h error.h utils.h keywords.h buffer.h
 OBJ = stream.o lexer.o error.o utils.o keywords.o buffer.o
+UNIT_OBJS = unit_tests.o lexer_test.o
 
 CFLAGS ?= -O3 -Wall -Werror
 
@@ -9,11 +10,11 @@ CFLAGS ?= -O3 -Wall -Werror
 basicc: compiler.o $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)
 
-lexer_test: lexer_test.o $(OBJ)
+unit_tests: $(UNIT_OBJS) $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)
 
 clean:
-	rm basicc *.o lexer_test
+	rm basicc *.o unit_tests
 
-check: lexer_test
-	./lexer_test
+check: unit_tests
+	./unit_tests
