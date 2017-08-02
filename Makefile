@@ -1,6 +1,6 @@
 DEPS = stream.h lexer.h config.h error.h utils.h keywords.h buffer.h
-OBJ = stream.o lexer.o error.o utils.o keywords.o buffer.o
-UNIT_OBJS = unit_tests.o lexer_test.o
+OBJ = stream.o lexer.o error.o utils.o keywords.o buffer.o parser.o
+UNIT_OBJS = unit_tests.o lexer_test.o parser_test.o
 
 CFLAGS ?= -O3 -Wall -Werror
 

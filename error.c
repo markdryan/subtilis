@@ -66,7 +66,28 @@ static subtilis_error_desc_t prv_errors[] = {
 	{"Bad function name: %s.\n", 1},
 
 	/* SUBTILIS_ERROR_ASSERTION_FAILED */
-	{"Assertion failed.\n", 1},
+	{"Assertion failed.\n", 0},
+
+	/* SUBTILIS_ERROR_KEYWORD_EXPECTED */
+	{"Keyword expected, found %s.\n", 1},
+
+	/* SUBTILIS_ERROR_NOT_SUPPORTED */
+	{"Keyword %s not supported.\n", 1},
+
+	/* SUBTILIS_ID_EXPECTED */
+	{"Identifer expected found %s.\n", 1},
+
+	/* SUBTILIS_ERROR_ASSIGNMENT_OP_EXPECTED */
+	{"Assignment operator (=, +=, -=)  expected found %s.\n", 1},
+
+	/* SUBTILIS_ERROR_EXP_EXPECTED */
+	{"Expression  expected found %s.\n", 1},
+
+	/* SUBTILIS_ERROR_RIGHT_BKT_EXPECTED */
+	{")  expected found %s.\n", 1},
+
+	/* SUBTILIS_ERROR_INTEGER_EXPECTED */
+	{"Integer expected found %s.\n", 1},
 };
 
 /* clang-format on */

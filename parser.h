@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-#include "lexer_test.h"
-#include "parser_test.h"
+#ifndef __SUBTILIS_PARSER_H
+#define __SUBTILIS_PARSER_H
 
-int main(int argc, char *argv[])
-{
-	int failure = 0;
+#include "lexer.h"
 
-	failure |= lexer_test();
-	failure |= parser_test();
+void subtilis_parse(subtilis_lexer_t *l, subtilis_error_t *err);
 
-	return failure;
-}
+#endif
