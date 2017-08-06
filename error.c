@@ -88,6 +88,12 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_INTEGER_EXPECTED */
 	{"Integer expected found %s.\n", 1},
+
+	/* SUBTILIS_ERROR_BAD_EXPRESSION */
+	{"Bad expression.\n", 0},
+
+	/* SUBTILIS_ERROR_DIVIDE_BY_ZERO */
+	{"Divide by zero.\n", 0},
 };
 
 /* clang-format on */

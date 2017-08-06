@@ -17,8 +17,10 @@
 #ifndef __SUBTILIS_PARSER_H
 #define __SUBTILIS_PARSER_H
 
+#include "ir.h"
 #include "lexer.h"
 
-void subtilis_parse(subtilis_lexer_t *l, subtilis_error_t *err);
+void subtilis_parse(subtilis_lexer_t *l, subtilis_ir_program_t *p,
+		    subtilis_error_t *err);
 
 #endif

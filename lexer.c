@@ -761,7 +761,7 @@ void subtilis_lexer_get(subtilis_lexer_t *l, subtilis_token_t *t,
 	if ((err->type != SUBTILIS_ERROR_OK) || (l->index == l->buf_end))
 		return;
 	prv_process_token(l, t, err);
-	if (err != SUBTILIS_ERROR_OK)
+	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	subtilis_buffer_zero_terminate(&t->buf, err);
 }

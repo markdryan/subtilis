@@ -19,11 +19,14 @@
 #include "lexer.h"
 #include "parser.h"
 
-static int prv_test_wrapper(const char *text, int (*fn)(subtilis_lexer_t *))
+static int prv_test_wrapper(const char *text,
+			    int (*fn)(subtilis_lexer_t *,
+				      subtilis_ir_program_t *))
 {
 	subtilis_stream_t s;
 	subtilis_error_t err;
-	subtilis_lexer_t *l;
+	subtilis_lexer_t *l = NULL;
+	subtilis_ir_program_t *p = NULL;
 	int retval;
 
 	subtilis_error_init(&err);
@@ -36,25 +39,36 @@ static int prv_test_wrapper(const char *text, int (*fn)(subtilis_lexer_t *))
 		s.close(s.handle, &err);
 		goto fail;
 	}
-	retval = fn(l);
+
+	p = subtilis_ir_program_new(&err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	retval = fn(l, p);
+
 	printf(": [%s]\n", retval ? "FAIL" : "OK");
+
+	subtilis_ir_program_delete(p);
 	subtilis_lexer_delete(l, &err);
 
 	return retval;
 
 fail:
 	printf(": [FAIL]\n");
+
 	subtilis_error_fprintf(stderr, &err, true);
+	subtilis_ir_program_delete(p);
+	subtilis_lexer_delete(l, &err);
 
 	return 1;
 }
 
-static int prv_check_not_keyword(subtilis_lexer_t *l)
+static int prv_check_not_keyword(subtilis_lexer_t *l, subtilis_ir_program_t *p)
 {
 	subtilis_error_t err;
 
 	subtilis_error_init(&err);
-	subtilis_parse(l, &err);
+	subtilis_parse(l, p, &err);
 	if (err.type != SUBTILIS_ERROR_KEYWORD_EXPECTED) {
 		fprintf(stderr, "Expected err %d, got %d\n",
 			SUBTILIS_ERROR_KEYWORD_EXPECTED, err.type);
@@ -64,12 +78,12 @@ static int prv_check_not_keyword(subtilis_lexer_t *l)
 	return 0;
 }
 
-static int prv_check_parse_ok(subtilis_lexer_t *l)
+static int prv_check_parse_ok(subtilis_lexer_t *l, subtilis_ir_program_t *p)
 {
 	subtilis_error_t err;
 
 	subtilis_error_init(&err);
-	subtilis_parse(l, &err);
+	subtilis_parse(l, p, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);
 		return 1;

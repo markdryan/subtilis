@@ -1,0 +1,246 @@
+/*
+ * Copyright (c) 2017 Mark Ryan
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "config.h"
+#include "ir.h"
+
+subtilis_ir_program_t *subtilis_ir_program_new(subtilis_error_t *err)
+{
+	subtilis_ir_program_t *p = malloc(sizeof(*p));
+
+	if (!p) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+	p->max_len = 0;
+	p->reg_counter = SUBTILIS_IR_REG_TEMP_START;
+	p->len = 0;
+	p->ops = NULL;
+
+	return p;
+}
+
+static void prv_ensure_buffer(subtilis_ir_program_t *p, subtilis_error_t *err)
+{
+	subtilis_ir_op_t **new_ops;
+	size_t new_max;
+
+	if (p->len < p->max_len)
+		return;
+
+	new_max = p->max_len + SUBTILIS_CONFIG_PROGRAM_GRAN;
+	new_ops = realloc(p->ops, new_max * sizeof(subtilis_ir_op_t *));
+	if (!new_ops) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	p->max_len = new_max;
+	p->ops = new_ops;
+}
+
+static void prv_ir_op_delete(subtilis_ir_op_t *op)
+{
+	if (!op)
+		return;
+
+	if (op->type == SUBTILIS_OP_INSTR) {
+		if (op->op.instr.type == SUBTILIS_OP_INSTR_LOADI_STR)
+			subtilis_buffer_free(&op->op.instr.operands[2].str);
+	}
+	free(op);
+}
+
+void subtilis_ir_program_delete(subtilis_ir_program_t *p)
+{
+	size_t i;
+
+	if (!p)
+		return;
+
+	for (i = 0; i < p->len; i++)
+		prv_ir_op_delete(p->ops[i]);
+	free(p->ops);
+	free(p);
+}
+
+size_t subtilis_ir_program_add_instr(subtilis_ir_program_t *p,
+				     subtilis_op_instr_type_t type,
+				     subtilis_ir_operand_t op1,
+				     subtilis_ir_operand_t op2,
+				     subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+
+	op0.reg = p->reg_counter;
+	subtilis_ir_program_add_instr_reg(p, type, op0, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+	p->reg_counter++;
+	return op0.reg;
+}
+
+void subtilis_ir_program_add_instr_reg(subtilis_ir_program_t *p,
+				       subtilis_op_instr_type_t type,
+				       subtilis_ir_operand_t op0,
+				       subtilis_ir_operand_t op1,
+				       subtilis_ir_operand_t op2,
+				       subtilis_error_t *err)
+{
+	subtilis_ir_op_t *op;
+	subtilis_ir_inst_t *instr;
+
+	prv_ensure_buffer(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op = malloc(sizeof(*op));
+	if (!op) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+
+	op->type = SUBTILIS_OP_INSTR;
+	instr = &op->op.instr;
+	instr->type = type;
+	instr->operands[0] = op0;
+	instr->operands[1] = op1;
+	instr->operands[2] = op2;
+
+	p->ops[p->len++] = op;
+}
+
+/* The ordering of this table is very important.  The functions it
+ * contains must correspond to the enumerated types in
+ * subtilis_op_instr_type_t
+ */
+
+typedef void (*subtilis_ir_dump_fn)(subtilis_ir_op_t *op);
+
+struct subtilis_ir_op_desc_t_ {
+	const char *const name;
+	subtilis_ir_dump_fn fn;
+};
+
+typedef struct subtilis_ir_op_desc_t_ subtilis_ir_op_desc_t;
+
+static void prv_dump_reg_reg_reg(subtilis_ir_op_t *op)
+{
+	subtilis_ir_inst_t *instr = &op->op.instr;
+
+	printf("%zu, %zu, %zu", instr->operands[0].reg, instr->operands[1].reg,
+	       instr->operands[2].reg);
+}
+
+static void prv_dump_reg_reg_i32(subtilis_ir_op_t *op)
+{
+	subtilis_ir_inst_t *instr = &op->op.instr;
+
+	printf("%zu, %zu, %d", instr->operands[0].reg, instr->operands[1].reg,
+	       instr->operands[2].integer);
+}
+
+static void prv_dump_i32_reg_reg(subtilis_ir_op_t *op)
+{
+	subtilis_ir_inst_t *instr = &op->op.instr;
+
+	printf("%d, %zu, %zu", instr->operands[0].integer,
+	       instr->operands[1].reg, instr->operands[2].reg);
+}
+
+static void prv_dump_reg_reg_real(subtilis_ir_op_t *op)
+{
+	subtilis_ir_inst_t *instr = &op->op.instr;
+
+	printf("%zu, %zu, %lf", instr->operands[0].reg, instr->operands[1].reg,
+	       instr->operands[2].real);
+}
+
+static void prv_dump_reg_i32(subtilis_ir_op_t *op)
+{
+	subtilis_ir_inst_t *instr = &op->op.instr;
+
+	printf("%zu, %d", instr->operands[0].reg, instr->operands[1].integer);
+}
+
+static void prv_dump_reg_real(subtilis_ir_op_t *op)
+{
+	subtilis_ir_inst_t *instr = &op->op.instr;
+
+	printf("%zu, %lf", instr->operands[0].reg, instr->operands[1].real);
+}
+
+static void prv_dump_reg_str(subtilis_ir_op_t *op)
+{
+	subtilis_ir_inst_t *instr = &op->op.instr;
+	const char *tbuf = subtilis_buffer_get_string(&instr->operands[1].str);
+
+	printf("%zu, %s", instr->operands[0].reg, tbuf);
+}
+
+/* clang-format off */
+static const subtilis_ir_op_desc_t op_dump_fns[] = {
+	{ "addi32", prv_dump_reg_reg_reg },  /* SUBTILIS_OP_INSTR_ADD_I32 */
+	{ "addr", prv_dump_reg_reg_reg },    /* SUBTILIS_OP_INSTR_ADD_REAL */
+	{ "adds", prv_dump_reg_reg_reg },    /* SUBTILIS_OP_INSTR_ADD_STR */
+	{ "subi32", prv_dump_reg_reg_reg },  /* SUBTILIS_OP_INSTR_SUB_I32 */
+	{ "subr", prv_dump_reg_reg_reg },    /* SUBTILIS_OP_INSTR_SUB_REAL */
+	{ "muli32", prv_dump_reg_reg_reg },  /* SUBTILIS_OP_INSTR_MUL_I32 */
+	{ "mulr", prv_dump_reg_reg_reg },    /* SUBTILIS_OP_INSTR_MUL_REAL */
+	{ "divi32", prv_dump_reg_reg_reg },  /* SUBTILIS_OP_INSTR_DIV_I32 */
+	{ "divr", prv_dump_reg_reg_reg },    /* SUBTILIS_OP_INSTR_DIV_REAL */
+	{ "addii32", prv_dump_reg_reg_i32 }, /* SUBTILIS_OP_INSTR_ADDI_I32 */
+	{ "addir", prv_dump_reg_reg_real },  /* SUBTILIS_OP_INSTR_ADDI_REAL */
+	{ "subii32", prv_dump_reg_reg_i32 }, /* SUBTILIS_OP_INSTR_SUBI_I32 */
+	{ "subir", prv_dump_reg_reg_real },  /* SUBTILIS_OP_INSTR_SUBI_REAL */
+	{ "mulii32", prv_dump_reg_reg_i32},  /* SUBTILIS_OP_INSTR_MULI_I32 */
+	{ "mulir", prv_dump_reg_reg_real},   /* SUBTILIS_OP_INSTR_MULI_REAL */
+	{ "divii32", prv_dump_reg_reg_i32},  /* SUBTILIS_OP_INSTR_DIVI_I32 */
+	{ "divir", prv_dump_reg_reg_i32},    /* SUBTILIS_OP_INSTR_DIVI_REAL */
+	{ "loadii32", prv_dump_reg_i32},     /* SUBTILIS_OP_INSTR_LOADI_I32 */
+	{ "loadir", prv_dump_reg_real},      /* SUBTILIS_OP_INSTR_LOADI_REAL */
+	{ "loadis", prv_dump_reg_str},       /* SUBTILIS_OP_INSTR_LOADI_STR */
+	{ "loadi32", prv_dump_reg_reg_i32},  /* SUBTILIS_OP_INSTR_LOAD_I32 */
+	{ "loadr", prv_dump_reg_reg_i32},    /* SUBTILIS_OP_INSTR_LOAD_REAL */
+	{ "loads", prv_dump_reg_reg_i32},    /* SUBTILIS_OP_INSTR_LOAD_STR */
+	{ "storeii32", prv_dump_i32_reg_reg},/* SUBTILIS_OP_INSTR_STOREI_I32 */
+	{ "storeir", prv_dump_reg_real},     /* SUBTILIS_OP_INSTR_STOREI_REAL */
+	{ "storeis", prv_dump_reg_str},      /* SUBTILIS_OP_INSTR_STOREI_STR */
+	{ "storei32", prv_dump_reg_reg_i32}, /* SUBTILIS_OP_INSTR_STORE_I32 */
+	{ "storer", prv_dump_reg_reg_i32},   /* SUBTILIS_OP_INSTR_STORE_REAL */
+	{ "stores", prv_dump_reg_reg_i32},   /* SUBTILIS_OP_INSTR_STORE_STR */
+};
+
+/* clang-format on */
+
+void subtilis_ir_program_dump(subtilis_ir_program_t *p)
+{
+	size_t i;
+	subtilis_op_instr_type_t itype;
+
+	for (i = 0; i < p->len; i++) {
+		if (!p->ops[i])
+			continue;
+		if (p->ops[i]->type != SUBTILIS_OP_INSTR)
+			continue;
+		itype = p->ops[i]->op.instr.type;
+		printf("%s ", op_dump_fns[itype].name);
+		op_dump_fns[itype].fn(p->ops[i]);
+		printf("\n");
+	}
+}

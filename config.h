@@ -35,4 +35,8 @@
 #define SUBTILIS_CONFIG_PATH_SEPARATOR '.'
 #endif
 
+#ifndef SUBTILIS_CONFIG_PROGRAM_GRAN
+#define SUBTILIS_CONFIG_PROGRAM_GRAN (64 * 1024)
+#endif
+
 #endif

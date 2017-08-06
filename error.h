@@ -43,6 +43,8 @@ typedef enum {
 	SUBTILIS_ERROR_EXP_EXPECTED,
 	SUBTILIS_ERROR_RIGHT_BKT_EXPECTED,
 	SUBTILIS_ERROR_INTEGER_EXPECTED,
+	SUBTILIS_ERROR_BAD_EXPRESSION,
+	SUBTILIS_ERROR_DIVIDE_BY_ZERO,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -118,6 +120,12 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_integer_expected(e, str, file, line)                \
 	subtilis_error_set1(e, SUBTILIS_ERROR_INTEGER_EXPECTED, str, __FILE__, \
 			    __LINE__)
+#define subtilis_error_set_bad_expression(e, file, line)                       \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_BAD_EXPRESSION, __FILE__,   \
+				 __LINE__)
+#define subtilis_error_set_divide_by_zero(e, file, line)                       \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_DIVIDE_BY_ZERO, __FILE__,   \
+				 __LINE__)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,
