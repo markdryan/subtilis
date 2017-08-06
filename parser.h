@@ -14,29 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_CONFIG_H
-#define __SUBTILIS_CONFIG_H
+#ifndef __SUBTILIS_PARSER_H
+#define __SUBTILIS_PARSER_H
 
-/* Global constants that can be overridden at build time. */
+#include "ir.h"
+#include "lexer.h"
 
-#ifndef SUBTILIS_CONFIG_LEXER_BUF_SIZE
-#define SUBTILIS_CONFIG_LEXER_BUF_SIZE (128 * 1024)
-#endif
-
-#ifndef SUBTILIS_CONFIG_PATH_MAX
-#define SUBTILIS_CONFIG_PATH_MAX 512
-#endif
-
-#ifndef SUBTILIS_CONFIG_ERROR_LEN
-#define SUBTILIS_CONFIG_ERROR_LEN 1024
-#endif
-
-#ifndef SUBTILIS_CONFIG_PATH_SEPARATOR
-#define SUBTILIS_CONFIG_PATH_SEPARATOR '.'
-#endif
-
-#ifndef SUBTILIS_CONFIG_PROGRAM_GRAN
-#define SUBTILIS_CONFIG_PROGRAM_GRAN (64 * 1024)
-#endif
+void subtilis_parse(subtilis_lexer_t *l, subtilis_ir_program_t *p,
+		    subtilis_error_t *err);
 
 #endif

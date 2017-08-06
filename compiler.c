@@ -18,13 +18,14 @@
 
 #include "error.h"
 #include "lexer.h"
+#include "parser.h"
 
 int main(int argc, char *argv[])
 {
 	subtilis_error_t err;
 	subtilis_stream_t s;
 	subtilis_lexer_t *l = NULL;
-	subtilis_token_t *t = NULL;
+	subtilis_ir_program_t *p = NULL;
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: basicc file\n");
@@ -39,24 +40,23 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	t = subtilis_token_new(&err);
+	p = subtilis_ir_program_new(&err);
 	if (err.type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		goto fail;
 
-	do {
-		subtilis_lexer_get(l, t, &err);
-		if (err.type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-		subtilis_dump_token(t);
-	} while (t->type != SUBTILIS_TOKEN_EOF);
+	subtilis_parse(l, p, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
 
-	subtilis_token_delete(t);
+	subtilis_ir_program_dump(p);
+
+	subtilis_ir_program_delete(p);
 	subtilis_lexer_delete(l, &err);
 
 	return 0;
 
 cleanup:
-	subtilis_token_delete(t);
+	subtilis_ir_program_delete(p);
 	if (l)
 		subtilis_lexer_delete(l, &err);
 	else

@@ -1193,7 +1193,7 @@ static int prv_test_unknown(void)
  * array indexes
  */
 
-int main(int argc, char *argv[])
+int lexer_test(void)
 {
 	int failure = 0;
 

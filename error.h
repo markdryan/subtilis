@@ -36,6 +36,15 @@ typedef enum {
 	SUBTILIS_ERROR_BAD_PROC_NAME,
 	SUBTILIS_ERROR_BAD_FN_NAME,
 	SUBTILIS_ERROR_ASSERTION_FAILED,
+	SUBTILIS_ERROR_KEYWORD_EXPECTED,
+	SUBTILIS_ERROR_ID_EXPECTED,
+	SUBTILIS_ERROR_NOT_SUPPORTED,
+	SUBTILIS_ERROR_ASSIGNMENT_OP_EXPECTED,
+	SUBTILIS_ERROR_EXP_EXPECTED,
+	SUBTILIS_ERROR_RIGHT_BKT_EXPECTED,
+	SUBTILIS_ERROR_INTEGER_EXPECTED,
+	SUBTILIS_ERROR_BAD_EXPRESSION,
+	SUBTILIS_ERROR_DIVIDE_BY_ZERO,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -86,6 +95,36 @@ void subtilis_error_init(subtilis_error_t *e);
 	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_FN_NAME, str, file, line)
 #define subtilis_error_set_asssertion_failed(e)                                \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_ASSERTION_FAILED, __FILE__, \
+				 __LINE__)
+#define subtilis_error_set_asssertion_failed(e)                                \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_ASSERTION_FAILED, __FILE__, \
+				 __LINE__)
+#define subtilis_error_set_keyword_expected(e, str, file, line)                \
+	subtilis_error_set1(e, SUBTILIS_ERROR_KEYWORD_EXPECTED, str, __FILE__, \
+			    __LINE__)
+#define subtilis_error_set_not_supported(e, str, file, line)                   \
+	subtilis_error_set1(e, SUBTILIS_ERROR_NOT_SUPPORTED, str, __FILE__,    \
+			    __LINE__)
+#define subtilis_error_set_id_expected(e, str, file, line)                     \
+	subtilis_error_set1(e, SUBTILIS_ERROR_ID_EXPECTED, str, __FILE__,      \
+			    __LINE__)
+#define subtilis_error_set_assignment_op_expected(e, str, file, line)          \
+	subtilis_error_set1(e, SUBTILIS_ERROR_ASSIGNMENT_OP_EXPECTED, str,     \
+			    __FILE__, __LINE__)
+#define subtilis_error_set_exp_expected(e, str, file, line)                    \
+	subtilis_error_set1(e, SUBTILIS_ERROR_EXP_EXPECTED, str, __FILE__,     \
+			    __LINE__)
+#define subtilis_error_set_right_bkt_expected(e, str, file, line)              \
+	subtilis_error_set1(e, SUBTILIS_ERROR_RIGHT_BKT_EXPECTED, str,         \
+			    __FILE__, __LINE__)
+#define subtilis_error_set_integer_expected(e, str, file, line)                \
+	subtilis_error_set1(e, SUBTILIS_ERROR_INTEGER_EXPECTED, str, __FILE__, \
+			    __LINE__)
+#define subtilis_error_set_bad_expression(e, file, line)                       \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_BAD_EXPRESSION, __FILE__,   \
+				 __LINE__)
+#define subtilis_error_set_divide_by_zero(e, file, line)                       \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_DIVIDE_BY_ZERO, __FILE__,   \
 				 __LINE__)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
