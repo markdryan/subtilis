@@ -14,17 +14,9 @@
  * limitations under the License.
  */
 
-#include "lexer_test.h"
-#include "parser_test.h"
-#include "symbol_table_test.h"
+#ifndef __SUBTILIS_SYMBOL_TABLE_TEST_H
+#define __SUBTILIS_SYMBOL_TABLE_TEST_H
 
-int main(int argc, char *argv[])
-{
-	int failure = 0;
+int symbol_table_test(void);
 
-	failure |= lexer_test();
-	failure |= symbol_table_test();
-	failure |= parser_test();
-
-	return failure;
-}
+#endif
