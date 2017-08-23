@@ -53,7 +53,7 @@ void subtilis_hashtable_delete(subtilis_hashtable_t *h);
 size_t subtilis_hashtable_perfection(subtilis_hashtable_t *h);
 bool subtilis_hashtable_insert(subtilis_hashtable_t *h, void *k, void *v,
 			       subtilis_error_t *err);
-bool subtilis_hashtable_remove(subtilis_hashtable_t *h, void *k);
+bool subtilis_hashtable_remove(subtilis_hashtable_t *h, const void *k);
 void subtilis_hashtable_reset(subtilis_hashtable_t *h);
 size_t subtilis_hashtable_sdbm(subtilis_hashtable_t *h, const void *k);
 size_t subtilis_hashtable_djb2(subtilis_hashtable_t *h, const void *k);

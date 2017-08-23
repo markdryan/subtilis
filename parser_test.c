@@ -20,8 +20,7 @@
 #include "parser.h"
 
 static int prv_test_wrapper(const char *text,
-			    int (*fn)(subtilis_lexer_t *,
-				      subtilis_parser_t *))
+			    int (*fn)(subtilis_lexer_t *, subtilis_parser_t *))
 {
 	subtilis_stream_t s;
 	subtilis_error_t err;

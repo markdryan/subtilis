@@ -28,6 +28,7 @@ static int prv_test_type(subtilis_symbol_table_t *st, subtilis_token_t *t,
 	const subtilis_symbol_t *s;
 	size_t loc;
 	size_t total = 0;
+	const char *tbuf;
 
 	t->tok.id_type = id_type;
 
@@ -46,7 +47,9 @@ static int prv_test_type(subtilis_symbol_table_t *st, subtilis_token_t *t,
 				subtilis_error_fprintf(stderr, err, true);
 				return 1;
 			}
-			s = subtilis_symbol_table_insert(st, t, err);
+			tbuf = subtilis_token_get_text(t);
+			s = subtilis_symbol_table_insert(st, tbuf,
+							 t->tok.id_type, err);
 			if (err->type != SUBTILIS_ERROR_OK) {
 				subtilis_error_fprintf(stderr, err, true);
 				return 1;
@@ -57,7 +60,7 @@ static int prv_test_type(subtilis_symbol_table_t *st, subtilis_token_t *t,
 					s->loc, loc, s->size, exp);
 				return 1;
 			}
-			if (!subtilis_symbol_table_lookup(st, t)) {
+			if (!subtilis_symbol_table_lookup(st, tbuf)) {
 				fprintf(stderr, "Symbol lookup %s failed\n",
 					subtilis_token_get_text(t));
 				return 1;

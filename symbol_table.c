@@ -56,19 +56,19 @@ void subtilis_symbol_table_delete(subtilis_symbol_table_t *st)
 }
 
 const subtilis_symbol_t *
-subtilis_symbol_table_insert(subtilis_symbol_table_t *st, subtilis_token_t *t,
+subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
+			     subtilis_identifier_type_t id_type,
 			     subtilis_error_t *err)
 {
 	subtilis_symbol_t *sym;
-	char *key = NULL;
-	const char *str = subtilis_token_get_text(t);
+	char *key_dup = NULL;
 
-	sym = subtilis_hashtable_find(st->h, str);
+	sym = subtilis_hashtable_find(st->h, key);
 	if (sym)
 		return sym;
 
-	key = strdup(str);
-	if (!key)
+	key_dup = strdup(key);
+	if (!key_dup)
 		goto on_error;
 
 	sym = malloc(sizeof(*sym));
@@ -80,7 +80,7 @@ subtilis_symbol_table_insert(subtilis_symbol_table_t *st, subtilis_token_t *t,
 	// add support for other integer types.
 
 	sym->loc = st->allocated;
-	switch (t->tok.id_type) {
+	switch (id_type) {
 	case SUBTILIS_IDENTIFIER_REAL:
 		sym->size = 8;
 		break;
@@ -92,9 +92,9 @@ subtilis_symbol_table_insert(subtilis_symbol_table_t *st, subtilis_token_t *t,
 		break;
 	}
 
-	sym->t = t->tok.id_type;
+	sym->t = id_type;
 
-	(void)subtilis_hashtable_insert(st->h, key, sym, err);
+	(void)subtilis_hashtable_insert(st->h, key_dup, sym, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -105,17 +105,20 @@ subtilis_symbol_table_insert(subtilis_symbol_table_t *st, subtilis_token_t *t,
 on_error:
 	subtilis_error_set_oom(err);
 
-	free(key);
+	free(key_dup);
 	free(sym);
 	return NULL;
 }
 
-const subtilis_symbol_t *
-subtilis_symbol_table_lookup(subtilis_symbol_table_t *st, subtilis_token_t *t)
+bool subtilis_symbol_table_remove(subtilis_symbol_table_t *st, const char *key)
 {
-	const char *str = subtilis_token_get_text(t);
+	return subtilis_hashtable_remove(st->h, key);
+}
 
-	return subtilis_hashtable_find(st->h, str);
+const subtilis_symbol_t *
+subtilis_symbol_table_lookup(subtilis_symbol_table_t *st, const char *key)
+{
+	return subtilis_hashtable_find(st->h, key);
 }
 
 void subtilis_symbol_table_reset(subtilis_symbol_table_t *st)

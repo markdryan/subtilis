@@ -140,7 +140,7 @@ bool subtilis_hashtable_insert(subtilis_hashtable_t *h, void *k, void *v,
 	return true;
 }
 
-bool subtilis_hashtable_remove(subtilis_hashtable_t *h, void *k)
+bool subtilis_hashtable_remove(subtilis_hashtable_t *h, const void *k)
 {
 	subtilis_hashtable_node_t *n;
 	subtilis_hashtable_node_t *old_n = NULL;
