@@ -19,8 +19,19 @@
 
 #include "ir.h"
 #include "lexer.h"
+#include "symbol_table.h"
 
-void subtilis_parse(subtilis_lexer_t *l, subtilis_ir_program_t *p,
-		    subtilis_error_t *err);
+struct subtilis_parser_t_ {
+	subtilis_lexer_t *l;
+	subtilis_ir_program_t *p;
+	subtilis_symbol_table_t *st;
+};
+
+typedef struct subtilis_parser_t_ subtilis_parser_t;
+
+subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
+				       subtilis_error_t *err);
+void subtilis_parse(subtilis_parser_t *p, subtilis_error_t *err);
+void subtilis_parser_delete(subtilis_parser_t *p);
 
 #endif

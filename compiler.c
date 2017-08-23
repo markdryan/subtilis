@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 	subtilis_error_t err;
 	subtilis_stream_t s;
 	subtilis_lexer_t *l = NULL;
-	subtilis_ir_program_t *p = NULL;
+	subtilis_parser_t *p = NULL;
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: basicc file\n");
@@ -40,23 +40,23 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	p = subtilis_ir_program_new(&err);
+	p = subtilis_parser_new(l, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
-		goto fail;
+		goto cleanup;
 
-	subtilis_parse(l, p, &err);
+	subtilis_parse(p, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
-		goto fail;
+		goto cleanup;
 
-	subtilis_ir_program_dump(p);
+	subtilis_ir_program_dump(p->p);
 
-	subtilis_ir_program_delete(p);
+	subtilis_parser_delete(p);
 	subtilis_lexer_delete(l, &err);
 
 	return 0;
 
 cleanup:
-	subtilis_ir_program_delete(p);
+	subtilis_parser_delete(p);
 	if (l)
 		subtilis_lexer_delete(l, &err);
 	else
