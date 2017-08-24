@@ -94,6 +94,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_DIVIDE_BY_ZERO */
 	{"Divide by zero.\n", 0},
+
+	/* SUBTILIS_ERROR_UNKNOWN_VARIABLE */
+	{"Unknown variable %s.\n", 1},
 };
 
 /* clang-format on */

@@ -14,24 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_PARSER_H
-#define __SUBTILIS_PARSER_H
+#ifndef __SUBTILIS_SYMBOL_TABLE_TEST_H
+#define __SUBTILIS_SYMBOL_TABLE_TEST_H
 
-#include "ir.h"
-#include "lexer.h"
-#include "symbol_table.h"
-
-struct subtilis_parser_t_ {
-	subtilis_lexer_t *l;
-	subtilis_ir_program_t *p;
-	subtilis_symbol_table_t *st;
-};
-
-typedef struct subtilis_parser_t_ subtilis_parser_t;
-
-subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
-				       subtilis_error_t *err);
-void subtilis_parse(subtilis_parser_t *p, subtilis_error_t *err);
-void subtilis_parser_delete(subtilis_parser_t *p);
+int symbol_table_test(void);
 
 #endif

@@ -17,6 +17,8 @@
 #ifndef __SUBTILIS_KEYWORD_H__
 #define __SUBTILIS_KEYWORD_H__
 
+#include <stdbool.h>
+
 typedef enum {
 	SUBTILIS_KEYWORD_ABS,
 	SUBTILIS_KEYWORD_ACS,

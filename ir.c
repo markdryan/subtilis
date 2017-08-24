@@ -155,12 +155,12 @@ static void prv_dump_reg_reg_i32(subtilis_ir_op_t *op)
 	       instr->operands[2].integer);
 }
 
-static void prv_dump_i32_reg_reg(subtilis_ir_op_t *op)
+static void prv_dump_i32_reg_i32(subtilis_ir_op_t *op)
 {
 	subtilis_ir_inst_t *instr = &op->op.instr;
 
-	printf("%d, %zu, %zu", instr->operands[0].integer,
-	       instr->operands[1].reg, instr->operands[2].reg);
+	printf("%d, %zu, %d", instr->operands[0].integer,
+	       instr->operands[1].reg, instr->operands[2].integer);
 }
 
 static void prv_dump_reg_reg_real(subtilis_ir_op_t *op)
@@ -218,7 +218,7 @@ static const subtilis_ir_op_desc_t op_dump_fns[] = {
 	{ "loadi32", prv_dump_reg_reg_i32},  /* SUBTILIS_OP_INSTR_LOAD_I32 */
 	{ "loadr", prv_dump_reg_reg_i32},    /* SUBTILIS_OP_INSTR_LOAD_REAL */
 	{ "loads", prv_dump_reg_reg_i32},    /* SUBTILIS_OP_INSTR_LOAD_STR */
-	{ "storeii32", prv_dump_i32_reg_reg},/* SUBTILIS_OP_INSTR_STOREI_I32 */
+	{ "storeii32", prv_dump_i32_reg_i32},/* SUBTILIS_OP_INSTR_STOREI_I32 */
 	{ "storeir", prv_dump_reg_real},     /* SUBTILIS_OP_INSTR_STOREI_REAL */
 	{ "storeis", prv_dump_reg_str},      /* SUBTILIS_OP_INSTR_STOREI_STR */
 	{ "storei32", prv_dump_reg_reg_i32}, /* SUBTILIS_OP_INSTR_STORE_I32 */
