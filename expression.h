@@ -30,9 +30,16 @@ typedef enum {
 	SUBTILIS_EXP_STRING,
 } subtilis_exp_type_t;
 
+union subtilis_exp_operand_t_ {
+	subtilis_ir_operand_t ir_op;
+	subtilis_buffer_t str;
+};
+
+typedef union subtilis_exp_operand_t_ subtilis_exp_operand_t;
+
 struct subtilis_exp_t_ {
 	subtilis_exp_type_t type;
-	subtilis_ir_operand_t exp;
+	subtilis_exp_operand_t exp;
 };
 
 typedef struct subtilis_exp_t_ subtilis_exp_t;
