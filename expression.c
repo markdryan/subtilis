@@ -44,7 +44,7 @@ subtilis_exp_t *subtilis_exp_new_var(subtilis_exp_type_t type, unsigned int reg,
 		return NULL;
 	}
 	e->type = type;
-	e->exp.reg = reg;
+	e->exp.ir_op.reg = reg;
 
 	return e;
 }
@@ -58,7 +58,7 @@ subtilis_exp_t *subtilis_exp_new_int32(int32_t integer, subtilis_error_t *err)
 		return NULL;
 	}
 	e->type = SUBTILIS_EXP_CONST_INTEGER;
-	e->exp.integer = integer;
+	e->exp.ir_op.integer = integer;
 
 	return e;
 }
@@ -72,7 +72,7 @@ subtilis_exp_t *subtilis_exp_new_real(double real, subtilis_error_t *err)
 		return NULL;
 	}
 	e->type = SUBTILIS_EXP_CONST_REAL;
-	e->exp.real = real;
+	e->exp.ir_op.real = real;
 
 	return e;
 }
@@ -106,10 +106,11 @@ subtilis_exp_t *subtilis_exp_add(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 	case SUBTILIS_EXP_CONST_INTEGER:
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
-			a1->exp.integer += a2->exp.integer;
+			a1->exp.ir_op.integer += a2->exp.ir_op.integer;
 			break;
 		case SUBTILIS_EXP_CONST_REAL:
-			a1->exp.real = ((double)a1->exp.integer) + a2->exp.real;
+			a1->exp.ir_op.real = ((double)a1->exp.ir_op.integer) +
+					     a2->exp.ir_op.real;
 			a1->type = SUBTILIS_EXP_CONST_REAL;
 			break;
 		case SUBTILIS_EXP_CONST_STRING:
@@ -124,10 +125,10 @@ subtilis_exp_t *subtilis_exp_add(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 	case SUBTILIS_EXP_CONST_REAL:
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
-			a1->exp.real += (double)a2->exp.integer;
+			a1->exp.ir_op.real += (double)a2->exp.ir_op.integer;
 			break;
 		case SUBTILIS_EXP_CONST_REAL:
-			a1->exp.real += a2->exp.real;
+			a1->exp.ir_op.real += a2->exp.ir_op.real;
 			break;
 		case SUBTILIS_EXP_CONST_STRING:
 			subtilis_error_set_bad_expression(err, l->stream->name,
@@ -160,9 +161,9 @@ subtilis_exp_t *subtilis_exp_add(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
 			reg = subtilis_ir_program_add_instr(
-			    p, SUBTILIS_OP_INSTR_ADDI_I32, a1->exp, a2->exp,
-			    err);
-			a1->exp.reg = reg;
+			    p, SUBTILIS_OP_INSTR_ADDI_I32, a1->exp.ir_op,
+			    a2->exp.ir_op, err);
+			a1->exp.ir_op.reg = reg;
 			break;
 		case SUBTILIS_EXP_CONST_REAL:
 		case SUBTILIS_EXP_CONST_STRING:
@@ -171,9 +172,9 @@ subtilis_exp_t *subtilis_exp_add(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 			break;
 		case SUBTILIS_EXP_INTEGER:
 			reg = subtilis_ir_program_add_instr(
-			    p, SUBTILIS_OP_INSTR_ADD_I32, a1->exp, a2->exp,
-			    err);
-			a1->exp.reg = reg;
+			    p, SUBTILIS_OP_INSTR_ADD_I32, a1->exp.ir_op,
+			    a2->exp.ir_op, err);
+			a1->exp.ir_op.reg = reg;
 		case SUBTILIS_EXP_REAL:
 		case SUBTILIS_EXP_STRING:
 			subtilis_error_set_bad_expression(err, l->stream->name,
@@ -217,10 +218,11 @@ subtilis_exp_t *subtilis_exp_mul(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 	case SUBTILIS_EXP_CONST_INTEGER:
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
-			a1->exp.integer *= a2->exp.integer;
+			a1->exp.ir_op.integer *= a2->exp.ir_op.integer;
 			break;
 		case SUBTILIS_EXP_CONST_REAL:
-			a1->exp.real = ((double)a1->exp.integer) * a2->exp.real;
+			a1->exp.ir_op.real = ((double)a1->exp.ir_op.integer) *
+					     a2->exp.ir_op.real;
 			a1->type = SUBTILIS_EXP_CONST_REAL;
 			break;
 		default:
@@ -232,10 +234,10 @@ subtilis_exp_t *subtilis_exp_mul(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 	case SUBTILIS_EXP_CONST_REAL:
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
-			a1->exp.real *= (double)a2->exp.integer;
+			a1->exp.ir_op.real *= (double)a2->exp.ir_op.integer;
 			break;
 		case SUBTILIS_EXP_CONST_REAL:
-			a1->exp.real *= a2->exp.real;
+			a1->exp.ir_op.real *= a2->exp.ir_op.real;
 			break;
 		default:
 			subtilis_error_set_bad_expression(err, l->stream->name,
@@ -251,9 +253,9 @@ subtilis_exp_t *subtilis_exp_mul(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
 			reg = subtilis_ir_program_add_instr(
-			    p, SUBTILIS_OP_INSTR_MULI_I32, a1->exp, a2->exp,
-			    err);
-			a1->exp.reg = reg;
+			    p, SUBTILIS_OP_INSTR_MULI_I32, a1->exp.ir_op,
+			    a2->exp.ir_op, err);
+			a1->exp.ir_op.reg = reg;
 			break;
 		case SUBTILIS_EXP_CONST_REAL:
 		case SUBTILIS_EXP_CONST_STRING:
@@ -262,9 +264,9 @@ subtilis_exp_t *subtilis_exp_mul(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 			break;
 		case SUBTILIS_EXP_INTEGER:
 			reg = subtilis_ir_program_add_instr(
-			    p, SUBTILIS_OP_INSTR_MUL_I32, a1->exp, a2->exp,
-			    err);
-			a1->exp.reg = reg;
+			    p, SUBTILIS_OP_INSTR_MUL_I32, a1->exp.ir_op,
+			    a2->exp.ir_op, err);
+			a1->exp.ir_op.reg = reg;
 		case SUBTILIS_EXP_REAL:
 		default:
 			subtilis_error_set_bad_expression(err, l->stream->name,
@@ -294,22 +296,25 @@ subtilis_exp_t *subtilis_exp_div(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 {
 	size_t reg;
 
+	// TODO: this can't be correct.  We need to preserve order.
+
 	prv_order_expressions(&a1, &a2);
 
 	switch (a1->type) {
 	case SUBTILIS_EXP_CONST_INTEGER:
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
-			if (a2->exp.integer == 0) {
+			if (a2->exp.ir_op.integer == 0) {
 				subtilis_error_set_divide_by_zero(
 				    err, l->stream->name, l->line);
 				break;
 			}
-			a1->exp.integer /= a2->exp.integer;
+			a1->exp.ir_op.integer /= a2->exp.ir_op.integer;
 			break;
 		case SUBTILIS_EXP_CONST_REAL:
 			/* TODO I need a divide by zero check here? */
-			a1->exp.real = ((double)a1->exp.integer) / a2->exp.real;
+			a1->exp.ir_op.real = ((double)a1->exp.ir_op.integer) /
+					     a2->exp.ir_op.real;
 			a1->type = SUBTILIS_EXP_CONST_REAL;
 			break;
 		default:
@@ -322,11 +327,11 @@ subtilis_exp_t *subtilis_exp_div(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
 			/* TODO I need a divide by zero check here? */
-			a1->exp.real /= (double)a2->exp.integer;
+			a1->exp.ir_op.real /= (double)a2->exp.ir_op.integer;
 			break;
 		case SUBTILIS_EXP_CONST_REAL:
 			/* TODO I need a divide by zero check here? */
-			a1->exp.real /= a2->exp.real;
+			a1->exp.ir_op.real /= a2->exp.ir_op.real;
 			break;
 		default:
 			subtilis_error_set_bad_expression(err, l->stream->name,
@@ -341,15 +346,15 @@ subtilis_exp_t *subtilis_exp_div(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 	case SUBTILIS_EXP_INTEGER:
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
-			if (a2->exp.integer == 0) {
+			if (a2->exp.ir_op.integer == 0) {
 				subtilis_error_set_divide_by_zero(
 				    err, l->stream->name, l->line);
 				break;
 			}
 			reg = subtilis_ir_program_add_instr(
-			    p, SUBTILIS_OP_INSTR_DIV_I32, a1->exp, a2->exp,
-			    err);
-			a1->exp.reg = reg;
+			    p, SUBTILIS_OP_INSTR_DIV_I32, a1->exp.ir_op,
+			    a2->exp.ir_op, err);
+			a1->exp.ir_op.reg = reg;
 			break;
 		case SUBTILIS_EXP_CONST_REAL:
 		case SUBTILIS_EXP_CONST_STRING:
@@ -358,9 +363,9 @@ subtilis_exp_t *subtilis_exp_div(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 			break;
 		case SUBTILIS_EXP_INTEGER:
 			reg = subtilis_ir_program_add_instr(
-			    p, SUBTILIS_OP_INSTR_DIV_I32, a1->exp, a2->exp,
-			    err);
-			a1->exp.reg = reg;
+			    p, SUBTILIS_OP_INSTR_DIV_I32, a1->exp.ir_op,
+			    a2->exp.ir_op, err);
+			a1->exp.ir_op.reg = reg;
 		case SUBTILIS_EXP_REAL:
 		default:
 			subtilis_error_set_bad_expression(err, l->stream->name,

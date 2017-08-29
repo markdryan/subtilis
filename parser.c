@@ -91,7 +91,7 @@ static subtilis_exp_t *prv_variable(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 	op1.reg = SUBTILIS_IR_REG_GLOBAL;
 	op2.integer = s->loc;
-	reg = subtilis_ir_program_add_instr(p->p, SUBTILIS_OP_INSTR_LOAD_I32,
+	reg = subtilis_ir_program_add_instr(p->p, SUBTILIS_OP_INSTR_LOADO_I32,
 					    op1, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
@@ -251,6 +251,7 @@ static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_ir_operand_t op2;
 	subtilis_op_instr_type_t instr;
 	const subtilis_symbol_t *s;
+	size_t reg;
 
 	tbuf = subtilis_token_get_text(t);
 
@@ -280,27 +281,40 @@ static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 
 	switch (e->type) {
 	case SUBTILIS_EXP_CONST_INTEGER:
-		instr = SUBTILIS_OP_INSTR_STOREI_I32;
+		reg = subtilis_ir_program_add_instr2(
+		    p->p, SUBTILIS_OP_INSTR_MOVI_I32, e->exp.ir_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		subtilis_exp_delete(e);
+		e = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		instr = SUBTILIS_OP_INSTR_STOREO_I32;
 		break;
 	case SUBTILIS_EXP_CONST_REAL:
-		instr = SUBTILIS_OP_INSTR_STOREI_REAL;
+		instr = SUBTILIS_OP_INSTR_STOREO_REAL;
 		break;
 	case SUBTILIS_EXP_CONST_STRING:
-		instr = SUBTILIS_OP_INSTR_STOREI_STR;
-		break;
+		subtilis_error_set_not_supported(err, tbuf, p->l->stream->name,
+						 p->l->line);
+		goto cleanup;
 	case SUBTILIS_EXP_INTEGER:
-		instr = SUBTILIS_OP_INSTR_STORE_I32;
+		instr = SUBTILIS_OP_INSTR_STOREO_I32;
 		break;
 	case SUBTILIS_EXP_REAL:
-		instr = SUBTILIS_OP_INSTR_STORE_REAL;
+		instr = SUBTILIS_OP_INSTR_STOREO_REAL;
 		break;
 	case SUBTILIS_EXP_STRING:
-		instr = SUBTILIS_OP_INSTR_STORE_STR;
-		break;
+		subtilis_error_set_not_supported(err, tbuf, p->l->stream->name,
+						 p->l->line);
+		goto cleanup;
 	}
 	op1.reg = SUBTILIS_IR_REG_GLOBAL;
 	op2.integer = s->loc;
-	subtilis_ir_program_add_instr_reg(p->p, instr, e->exp, op1, op2, err);
+	subtilis_ir_program_add_instr_reg(p->p, instr, e->exp.ir_op, op1, op2,
+					  err);
+
+cleanup:
 	subtilis_exp_delete(e);
 }
 
