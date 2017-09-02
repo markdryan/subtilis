@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
+#include <string.h>
+
 #include "parser_test.h"
 
 #include "lexer.h"
 #include "parser.h"
+#include "vm.h"
 
 static int prv_test_wrapper(const char *text,
-			    int (*fn)(subtilis_lexer_t *, subtilis_parser_t *))
+			    int (*fn)(subtilis_lexer_t *, subtilis_parser_t *,
+				      const char *expected),
+			    const char *expected)
 {
 	subtilis_stream_t s;
 	subtilis_error_t err;
@@ -43,7 +48,7 @@ static int prv_test_wrapper(const char *text,
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	retval = fn(l, p);
+	retval = fn(l, p, expected);
 
 	printf(": [%s]\n", retval ? "FAIL" : "OK");
 
@@ -62,7 +67,8 @@ fail:
 	return 1;
 }
 
-static int prv_check_not_keyword(subtilis_lexer_t *l, subtilis_parser_t *p)
+static int prv_check_not_keyword(subtilis_lexer_t *l, subtilis_parser_t *p,
+				 const char *expected)
 {
 	subtilis_error_t err;
 
@@ -77,38 +83,96 @@ static int prv_check_not_keyword(subtilis_lexer_t *l, subtilis_parser_t *p)
 	return 0;
 }
 
-static int prv_check_parse_ok(subtilis_lexer_t *l, subtilis_parser_t *p)
+/*
+ * static int prv_check_parse_ok(subtilis_lexer_t *l, subtilis_parser_t *p,
+ *			      const char *expected)
+ * {
+ *	subtilis_error_t err;
+ *
+ *	subtilis_error_init(&err);
+ *	subtilis_parse(p, &err);
+ *	if (err.type != SUBTILIS_ERROR_OK) {
+ *		subtilis_error_fprintf(stderr, &err, true);
+ *		return 1;
+ *	}
+ *
+ *	return 0;
+ *}
+ */
+
+static int prv_check_eval_res(subtilis_lexer_t *l, subtilis_parser_t *p,
+			      const char *expected)
 {
+	subtilis_buffer_t b;
 	subtilis_error_t err;
+	const char *tbuf;
+	subitlis_vm_t *vm = NULL;
+	int retval = 1;
 
 	subtilis_error_init(&err);
+	subtilis_buffer_init(&b, 1024);
+
 	subtilis_parse(p, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);
-		return 1;
+		goto cleanup;
 	}
 
-	return 0;
+	vm = subitlis_vm_new(p->p, p->st, &err);
+	if (err.type != SUBTILIS_ERROR_OK) {
+		subtilis_error_fprintf(stderr, &err, true);
+		goto cleanup;
+	}
+
+	subitlis_vm_run(vm, &b, &err);
+	if (err.type != SUBTILIS_ERROR_OK) {
+		subtilis_error_fprintf(stderr, &err, true);
+		goto cleanup;
+	}
+
+	subtilis_buffer_zero_terminate(&b, &err);
+	if (err.type != SUBTILIS_ERROR_OK) {
+		subtilis_error_fprintf(stderr, &err, true);
+		goto cleanup;
+	}
+
+	tbuf = subtilis_buffer_get_string(&b);
+
+	if (strcmp(tbuf, expected)) {
+		fprintf(stderr, "Expected result %s got %s\n", expected, tbuf);
+		goto cleanup;
+	}
+
+	retval = 0;
+
+cleanup:
+
+	subitlis_vm_delete(vm);
+	subtilis_buffer_free(&b);
+
+	return retval;
 }
 
 static int prv_test_let(void)
 {
+	const char *let_test = "LET b% = 99\n"
+			       "PRINT 10 + 10 + b%\n";
+
 	printf("parser_let");
-	return prv_test_wrapper("LET x% = (10 * 3 * 3 + 1) /2",
-				prv_check_parse_ok);
+	return prv_test_wrapper(let_test, prv_check_eval_res, "119\n");
 }
 
 static int prv_test_print(void)
 {
 	printf("parser_print");
-	return prv_test_wrapper("PRINT (10 * 3 * 3 + 1) /2",
-				prv_check_parse_ok);
+	return prv_test_wrapper("PRINT (10 * 3 * 3 + 1) / 2",
+				prv_check_eval_res, "45\n");
 }
 
 static int prv_test_not_keyword(void)
 {
 	printf("parser_not_keyword");
-	return prv_test_wrapper("id", prv_check_not_keyword);
+	return prv_test_wrapper("id", prv_check_not_keyword, NULL);
 }
 
 int parser_test(void)

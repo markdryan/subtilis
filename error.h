@@ -60,6 +60,8 @@ struct _subtilis_error_t {
 
 typedef struct _subtilis_error_t subtilis_error_t;
 
+/* TODO: Line numbers are not being correctly recorded in some error messages */
+
 void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set0(e, t, f, l)                                        \
 	subtilis_error_set_full(e, t, "", "", f, l, __FILE__, __LINE__)

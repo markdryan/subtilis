@@ -38,6 +38,11 @@ typedef enum {
 	SUBTILIS_OP_PHI,
 } subtilis_op_type_t;
 
+/* IMPORTANT.
+ * Don't change the order of these enums.  There are static arrays
+ * in ir.c and vm.c that rely on this ordering.
+ */
+
 typedef enum {
 	/*
 	 * addi32 r0, r1, r2
@@ -349,6 +354,14 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_MOVFP,
+
+	/*
+	 * printi32 r0
+	 *
+	 * Prints the 32 bit integer stored in r0 to the output stream.
+	 */
+
+	SUBTILIS_OP_INSTR_PRINT_I32,
 } subtilis_op_instr_type_t;
 
 // TODO: Need a type for pointer offsets.  These may not always
@@ -398,6 +411,10 @@ size_t subtilis_ir_program_add_instr2(subtilis_ir_program_t *p,
 				      subtilis_op_instr_type_t type,
 				      subtilis_ir_operand_t op1,
 				      subtilis_error_t *err);
+void subtilis_ir_program_add_instr_no_reg(subtilis_ir_program_t *p,
+					  subtilis_op_instr_type_t type,
+					  subtilis_ir_operand_t op1,
+					  subtilis_error_t *err);
 void subtilis_ir_program_add_instr_reg(subtilis_ir_program_t *p,
 				       subtilis_op_instr_type_t type,
 				       subtilis_ir_operand_t op0,

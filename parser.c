@@ -340,8 +340,33 @@ static void prv_print(subtilis_parser_t *p, subtilis_token_t *t,
 		      subtilis_error_t *err)
 {
 	subtilis_exp_t *e = NULL;
+	size_t reg;
 
 	e = prv_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	switch (e->type) {
+	case SUBTILIS_EXP_CONST_INTEGER:
+		/* TODO this code is duplicated with prv_assignment */
+		reg = subtilis_ir_program_add_instr2(
+		    p->p, SUBTILIS_OP_INSTR_MOVI_I32, e->exp.ir_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		subtilis_exp_delete(e);
+		e = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	case SUBTILIS_EXP_INTEGER:
+		subtilis_ir_program_add_instr_no_reg(
+		    p->p, SUBTILIS_OP_INSTR_PRINT_I32, e->exp.ir_op, err);
+		break;
+	default:
+		subtilis_error_set_asssertion_failed(err);
+		goto cleanup;
+	}
+
+cleanup:
 	subtilis_exp_delete(e);
 }
 
