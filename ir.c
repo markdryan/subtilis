@@ -95,6 +95,19 @@ size_t subtilis_ir_program_add_instr2(subtilis_ir_program_t *p,
 	return subtilis_ir_program_add_instr(p, type, op1, op2, err);
 }
 
+void subtilis_ir_program_add_instr_no_reg(subtilis_ir_program_t *p,
+					  subtilis_op_instr_type_t type,
+					  subtilis_ir_operand_t op0,
+					  subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+
+	memset(&op1, 0, sizeof(op1));
+	memset(&op2, 0, sizeof(op2));
+	subtilis_ir_program_add_instr_reg(p, type, op0, op1, op2, err);
+}
+
 void subtilis_ir_program_add_instr_reg(subtilis_ir_program_t *p,
 				       subtilis_op_instr_type_t type,
 				       subtilis_ir_operand_t op0,
@@ -184,6 +197,13 @@ static void prv_dump_reg_reg(subtilis_ir_op_t *op)
 	printf("r%zu, r%zu", instr->operands[0].reg, instr->operands[1].reg);
 }
 
+static void prv_dump_reg(subtilis_ir_op_t *op)
+{
+	subtilis_ir_inst_t *instr = &op->op.instr;
+
+	printf("r%zu", instr->operands[0].reg);
+}
+
 /* clang-format off */
 static const subtilis_ir_op_desc_t op_dump_fns[] = {
 	{ "addi32", prv_dump_reg_reg_reg },  /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -214,6 +234,7 @@ static const subtilis_ir_op_desc_t op_dump_fns[] = {
 	{ "movir", prv_dump_reg_real},       /* SUBTILIS_OP_INSTR_MOV_REAL */
 	{ "mov", prv_dump_reg_reg},          /* SUBTILIS_OP_INSTR_MOV */
 	{ "movfp", prv_dump_reg_reg},        /* SUBTILIS_OP_INSTR_MOVFP */
+	{ "printi32", prv_dump_reg},         /* SUBTILIS_OP_INSTR_PRINT_I32 */
 };
 
 /* clang-format on */
