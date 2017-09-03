@@ -2,7 +2,8 @@ DEPS = stream.h lexer.h config.h error.h utils.h keywords.h buffer.h expression.
 OBJ = stream.o lexer.o error.o utils.o keywords.o buffer.o parser.o expression.o ir.o hash_table.o symbol_table.o
 UNIT_OBJS = unit_tests.o lexer_test.o parser_test.o symbol_table_test.o vm.o
 
-CFLAGS ?= -O3 -Wall -Werror
+CFLAGS ?= -O3
+CFLAGS += -Wall -Werror
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
