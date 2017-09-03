@@ -32,6 +32,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	subtilis_error_init(&err);
 	subtilis_stream_from_file(&s, argv[1], &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
