@@ -25,6 +25,9 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_program_t *p,
 {
 	subitlis_vm_t *vm = calloc(sizeof(*vm), 1);
 
+	//	printf("\n");
+	//	subtilis_ir_program_dump(p);
+
 	if (!vm) {
 		subtilis_error_set_oom(err);
 		return NULL;
@@ -96,25 +99,25 @@ static void prv_divi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		subtilis_error_set_divide_by_zero(err, "", 0);
 		return;
 	}
-	vm->regs[ops[0].reg] = vm->regs[ops[0].reg] / divisor;
+	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] / divisor;
 }
 
 static void prv_addii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	vm->regs[ops[0].reg] = vm->regs[ops[1].integer] + ops[2].integer;
+	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] + ops[2].integer;
 }
 
 static void prv_subii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	vm->regs[ops[0].reg] = vm->regs[ops[1].integer] - ops[2].integer;
+	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] - ops[2].integer;
 }
 
-static void prv_rsubii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
-			 subtilis_ir_operand_t *ops, subtilis_error_t *err)
+static void prv_divii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	vm->regs[ops[0].reg] = ops[2].integer - vm->regs[ops[1].integer];
+	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] / ops[2].integer;
 }
 
 static void prv_printi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
@@ -124,6 +127,24 @@ static void prv_printi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 
 	sprintf(buf, "%d\n", vm->regs[ops[0].reg]);
 	subtilis_buffer_append_string(b, buf, err);
+}
+
+static void prv_rsubii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			 subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = ops[2].integer - vm->regs[ops[1].reg];
+}
+
+static void prv_rdivii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			 subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int32_t divisor = vm->regs[ops[1].reg];
+
+	if (divisor == 0) {
+		subtilis_error_set_divide_by_zero(err, "", 0);
+		return;
+	}
+	vm->regs[ops[0].reg] = ops[2].integer / divisor;
 }
 
 /* clang-format off */
@@ -142,7 +163,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	NULL,                                /* SUBTILIS_OP_INSTR_SUBI_REAL */
 	NULL,                                /* SUBTILIS_OP_INSTR_MULI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_MULI_REAL */
-	NULL,                                /* SUBTILIS_OP_INSTR_DIVI_I32 */
+	prv_divii32,                         /* SUBTILIS_OP_INSTR_DIVI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_DIVI_REAL */
 	prv_loadoi32,                        /* SUBTILIS_OP_INSTR_LOADO_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_LOADO_REAL */
@@ -159,6 +180,8 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_printi32,                        /* SUBTILIS_OP_INSTR_PRINT_I32 */
 	prv_rsubii32,                        /* SUBTILIS_OP_INSTR_RSUBI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_RSUBI_REAL */
+	prv_rdivii32,                        /* SUBTILIS_OP_INSTR_RDIVI_I32 */
+	NULL,                                /* SUBTILIS_OP_INSTR_RDIVI_REAL */
 };
 
 /* clang-format on */

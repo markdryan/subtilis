@@ -377,10 +377,9 @@ subtilis_exp_t *subtilis_exp_div(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err)
 {
 	size_t reg;
+	subtilis_op_instr_type_t instr;
 
-	// TODO: this can't be correct.  We need to preserve order.
-
-	prv_order_expressions(&a1, &a2);
+	bool swapped = prv_order_expressions(&a1, &a2);
 
 	switch (a1->type) {
 	case SUBTILIS_EXP_CONST_INTEGER:
@@ -428,14 +427,18 @@ subtilis_exp_t *subtilis_exp_div(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 	case SUBTILIS_EXP_INTEGER:
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
-			if (a2->exp.ir_op.integer == 0) {
-				subtilis_error_set_divide_by_zero(
-				    err, l->stream->name, l->line);
-				break;
+			if (swapped) {
+				instr = SUBTILIS_OP_INSTR_RDIVI_I32;
+			} else {
+				if (a2->exp.ir_op.integer == 0) {
+					subtilis_error_set_divide_by_zero(
+					    err, l->stream->name, l->line);
+					break;
+				}
+				instr = SUBTILIS_OP_INSTR_DIVI_I32;
 			}
 			reg = subtilis_ir_program_add_instr(
-			    p, SUBTILIS_OP_INSTR_DIV_I32, a1->exp.ir_op,
-			    a2->exp.ir_op, err);
+			    p, instr, a1->exp.ir_op, a2->exp.ir_op, err);
 			a1->exp.ir_op.reg = reg;
 			break;
 		case SUBTILIS_EXP_CONST_REAL:

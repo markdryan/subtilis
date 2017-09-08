@@ -173,6 +173,17 @@ static int prv_test_subtraction(void)
 	return prv_test_wrapper(sub_test, prv_check_eval_res, "-96\n");
 }
 
+static int prv_test_division(void)
+{
+	const char *sub_test = "LET b% = 100 / 5\n"
+			       "LET c% = 1000 / b% / 10\n"
+			       "LET d% = c% / 2\n"
+			       "PRINT d%\n";
+
+	printf("parser_division");
+	return prv_test_wrapper(sub_test, prv_check_eval_res, "2\n");
+}
+
 static int prv_test_print(void)
 {
 	printf("parser_print");
@@ -194,6 +205,7 @@ int parser_test(void)
 	failure |= prv_test_let();
 	failure |= prv_test_print();
 	failure |= prv_test_subtraction();
+	failure |= prv_test_division();
 
 	return failure;
 }
