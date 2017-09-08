@@ -362,6 +362,30 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_PRINT_I32,
+
+	/*
+	 * rsubii32 r0, r1, #i32
+	 *
+	 * Subtracts a 32 bit integer stored in a register from a
+	 * 32 bit integer immediate constant.  The result is stored in a second
+	 * register.
+	 *
+	 * r0 = #i32 - r1
+	 */
+
+	SUBTILIS_OP_INSTR_RSUBI_I32,
+
+	/*
+	 * rsubir fp0, fp1, #r
+	 *
+	 * Subtracts a 64 bit double stored in a register from a 64 bit double
+	 * immediate constant.  The result is stored in a second register.
+	 *
+	 * fp0 = #r - fp1
+	 */
+
+	SUBTILIS_OP_INSTR_RSUBI_REAL,
+
 } subtilis_op_instr_type_t;
 
 // TODO: Need a type for pointer offsets.  These may not always

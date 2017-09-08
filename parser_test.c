@@ -162,6 +162,17 @@ static int prv_test_let(void)
 	return prv_test_wrapper(let_test, prv_check_eval_res, "119\n");
 }
 
+static int prv_test_subtraction(void)
+{
+	const char *sub_test = "LET b% = 100 - 5\n"
+			       "LET c% = 10 - b% -10\n"
+			       "LET d% = c% - 1\n"
+			       "PRINT d%\n";
+
+	printf("parser_subtraction");
+	return prv_test_wrapper(sub_test, prv_check_eval_res, "-96\n");
+}
+
 static int prv_test_print(void)
 {
 	printf("parser_print");
@@ -182,6 +193,7 @@ int parser_test(void)
 	failure |= prv_test_not_keyword();
 	failure |= prv_test_let();
 	failure |= prv_test_print();
+	failure |= prv_test_subtraction();
 
 	return failure;
 }

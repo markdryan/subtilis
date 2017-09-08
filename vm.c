@@ -56,6 +56,13 @@ fail:
 typedef void (*subtilis_vm_op_fn)(subitlis_vm_t *, subtilis_buffer_t *,
 				  subtilis_ir_operand_t *, subtilis_error_t *);
 
+static void prv_subi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] =
+	    vm->regs[ops[1].integer] - vm->regs[ops[2].integer];
+}
+
 static void prv_movii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -98,6 +105,18 @@ static void prv_addii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = vm->regs[ops[1].integer] + ops[2].integer;
 }
 
+static void prv_subii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->regs[ops[1].integer] - ops[2].integer;
+}
+
+static void prv_rsubii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			 subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = ops[2].integer - vm->regs[ops[1].integer];
+}
+
 static void prv_printi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			 subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -111,7 +130,7 @@ static void prv_printi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 static subtilis_vm_op_fn op_execute_fns[] = {
 	NULL,                                /* SUBTILIS_OP_INSTR_ADD_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_ADD_REAL */
-	NULL,                                /* SUBTILIS_OP_INSTR_SUB_I32 */
+	prv_subi32,                          /* SUBTILIS_OP_INSTR_SUB_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_SUB_REAL */
 	NULL,                                /* SUBTILIS_OP_INSTR_MUL_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_MUL_REAL */
@@ -119,7 +138,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	NULL,                                /* SUBTILIS_OP_INSTR_DIV_REAL */
 	prv_addii32,                         /* SUBTILIS_OP_INSTR_ADDI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_ADDI_REAL */
-	NULL,                                /* SUBTILIS_OP_INSTR_SUBI_I32 */
+	prv_subii32,                         /* SUBTILIS_OP_INSTR_SUBI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_SUBI_REAL */
 	NULL,                                /* SUBTILIS_OP_INSTR_MULI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_MULI_REAL */
@@ -138,6 +157,8 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	NULL,                                /* SUBTILIS_OP_INSTR_MOV */
 	NULL,                                /* SUBTILIS_OP_INSTR_MOVFP */
 	prv_printi32,                        /* SUBTILIS_OP_INSTR_PRINT_I32 */
+	prv_rsubii32,                        /* SUBTILIS_OP_INSTR_RSUBI_I32 */
+	NULL,                                /* SUBTILIS_OP_INSTR_RSUBI_REAL */
 };
 
 /* clang-format on */

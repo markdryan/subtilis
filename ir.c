@@ -235,6 +235,8 @@ static const subtilis_ir_op_desc_t op_dump_fns[] = {
 	{ "mov", prv_dump_reg_reg},          /* SUBTILIS_OP_INSTR_MOV */
 	{ "movfp", prv_dump_reg_reg},        /* SUBTILIS_OP_INSTR_MOVFP */
 	{ "printi32", prv_dump_reg},         /* SUBTILIS_OP_INSTR_PRINT_I32 */
+	{ "rsubii32", prv_dump_reg_reg_i32 },/* SUBTILIS_OP_INSTR_RSUBI_I32 */
+	{ "rsubir", prv_dump_reg_reg_real }, /* SUBTILIS_OP_INSTR_RSUBI_REAL */
 };
 
 /* clang-format on */
