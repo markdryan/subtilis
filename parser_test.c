@@ -162,26 +162,45 @@ static int prv_test_let(void)
 	return prv_test_wrapper(let_test, prv_check_eval_res, "119\n");
 }
 
-static int prv_test_subtraction(void)
+struct expression_test_t_ {
+	const char *name;
+	const char *source;
+	const char *result;
+};
+
+typedef struct expression_test_t_ expression_test_t;
+
+/* clang-format off */
+static const expression_test_t expression_tests[] = {
+	{ "parser_subtraction",
+	  "LET b% = 100 - 5\n"
+	  "LET c% = 10 - b% -10\n"
+	  "LET d% = c% - 1\n"
+	  "PRINT d%\n",
+	  "-96\n"},
+	{ "parser_division",
+	  "LET b% = 100 / 5\n"
+	  "LET c% = 1000 / b% / 10\n"
+	  "LET d% = c% / 2\n"
+	  "PRINT d%\n",
+	  "2\n"},
+};
+
+/* clang-format on */
+
+static int prv_test_expressions(void)
 {
-	const char *sub_test = "LET b% = 100 - 5\n"
-			       "LET c% = 10 - b% -10\n"
-			       "LET d% = c% - 1\n"
-			       "PRINT d%\n";
+	size_t i;
+	int retval = 0;
 
-	printf("parser_subtraction");
-	return prv_test_wrapper(sub_test, prv_check_eval_res, "-96\n");
-}
+	for (i = 0; i < sizeof(expression_tests) / sizeof(expression_test_t);
+	     i++) {
+		printf("%s", expression_tests[i].name);
+		retval |= prv_test_wrapper(expression_tests[i].source,
+			prv_check_eval_res, expression_tests[i].result);
+	}
 
-static int prv_test_division(void)
-{
-	const char *sub_test = "LET b% = 100 / 5\n"
-			       "LET c% = 1000 / b% / 10\n"
-			       "LET d% = c% / 2\n"
-			       "PRINT d%\n";
-
-	printf("parser_division");
-	return prv_test_wrapper(sub_test, prv_check_eval_res, "2\n");
+	return retval;
 }
 
 static int prv_test_print(void)
@@ -204,8 +223,7 @@ int parser_test(void)
 	failure |= prv_test_not_keyword();
 	failure |= prv_test_let();
 	failure |= prv_test_print();
-	failure |= prv_test_subtraction();
-	failure |= prv_test_division();
+	failure |= prv_test_expressions();
 
 	return failure;
 }
