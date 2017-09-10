@@ -175,21 +175,21 @@ static const expression_test_t expression_tests[] = {
 	{ "parser_subtraction",
 	  "LET b% = 100 - 5\n"
 	  "LET c% = 10 - b% -10\n"
-	  "LET d% = c% - 1\n"
+	  "LET d% = c% - b% - 1\n"
 	  "PRINT d%\n",
-	  "-96\n"},
+	  "-191\n"},
 	{ "parser_division",
 	  "LET b% = 100 / 5\n"
 	  "LET c% = 1000 / b% / 10\n"
-	  "LET d% = c% / 2\n"
+	  "LET d% = b% / c% / 2\n"
 	  "PRINT d%\n",
 	  "2\n"},
 	{ "parser_multiplication",
 	  "LET b% = 1 * 10\n"
 	  "LET c% = 10 * b% * 5\n"
-	  "LET d% = c% * 2\n"
+	  "LET d% = c% * 2 * b%\n"
 	  "PRINT d%\n",
-	  "1000\n"},
+	  "10000\n"},
 	{ "parser_addition",
 	  "LET b% = &ff + 10\n"
 	  "LET c% = &10 + b% + 5\n"
