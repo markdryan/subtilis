@@ -181,6 +181,7 @@ subtilis_exp_t *subtilis_exp_add(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 			    p, SUBTILIS_OP_INSTR_ADD_I32, a1->exp.ir_op,
 			    a2->exp.ir_op, err);
 			a1->exp.ir_op.reg = reg;
+			break;
 		case SUBTILIS_EXP_REAL:
 		case SUBTILIS_EXP_STRING:
 			subtilis_error_set_bad_expression(err, l->stream->name,
@@ -263,6 +264,7 @@ subtilis_exp_t *subtilis_exp_sub(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 			    p, SUBTILIS_OP_INSTR_SUB_I32, a1->exp.ir_op,
 			    a2->exp.ir_op, err);
 			a1->exp.ir_op.reg = reg;
+			break;
 		case SUBTILIS_EXP_REAL:
 		case SUBTILIS_EXP_STRING:
 			subtilis_error_set_bad_expression(err, l->stream->name,
@@ -349,6 +351,7 @@ subtilis_exp_t *subtilis_exp_mul(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 			    p, SUBTILIS_OP_INSTR_MUL_I32, a1->exp.ir_op,
 			    a2->exp.ir_op, err);
 			a1->exp.ir_op.reg = reg;
+			break;
 		case SUBTILIS_EXP_REAL:
 		default:
 			subtilis_error_set_bad_expression(err, l->stream->name,
@@ -451,6 +454,7 @@ subtilis_exp_t *subtilis_exp_div(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 			    p, SUBTILIS_OP_INSTR_DIV_I32, a1->exp.ir_op,
 			    a2->exp.ir_op, err);
 			a1->exp.ir_op.reg = reg;
+			break;
 		case SUBTILIS_EXP_REAL:
 		default:
 			subtilis_error_set_bad_expression(err, l->stream->name,

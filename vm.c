@@ -59,6 +59,13 @@ fail:
 typedef void (*subtilis_vm_op_fn)(subitlis_vm_t *, subtilis_buffer_t *,
 				  subtilis_ir_operand_t *, subtilis_error_t *);
 
+static void prv_addi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] =
+	    vm->regs[ops[1].integer] + vm->regs[ops[2].integer];
+}
+
 static void prv_subi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -162,7 +169,7 @@ static void prv_rdivii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
-	NULL,                                /* SUBTILIS_OP_INSTR_ADD_I32 */
+	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_ADD_REAL */
 	prv_subi32,                          /* SUBTILIS_OP_INSTR_SUB_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_SUB_REAL */

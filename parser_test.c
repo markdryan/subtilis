@@ -190,6 +190,12 @@ static const expression_test_t expression_tests[] = {
 	  "LET d% = c% * 2\n"
 	  "PRINT d%\n",
 	  "1000\n"},
+	{ "parser_addition",
+	  "LET b% = &ff + 10\n"
+	  "LET c% = &10 + b% + 5\n"
+	  "LET d% = c% + 2 + b%\n"
+	  "PRINT d%\n",
+	  "553\n"},
 };
 
 /* clang-format on */
