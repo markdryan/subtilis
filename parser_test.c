@@ -184,6 +184,12 @@ static const expression_test_t expression_tests[] = {
 	  "LET d% = c% / 2\n"
 	  "PRINT d%\n",
 	  "2\n"},
+	{ "parser_multiplication",
+	  "LET b% = 1 * 10\n"
+	  "LET c% = 10 * b% * 5\n"
+	  "LET d% = c% * 2\n"
+	  "PRINT d%\n",
+	  "1000\n"},
 };
 
 /* clang-format on */
@@ -197,7 +203,8 @@ static int prv_test_expressions(void)
 	     i++) {
 		printf("%s", expression_tests[i].name);
 		retval |= prv_test_wrapper(expression_tests[i].source,
-			prv_check_eval_res, expression_tests[i].result);
+					   prv_check_eval_res,
+					   expression_tests[i].result);
 	}
 
 	return retval;

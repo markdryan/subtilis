@@ -66,6 +66,13 @@ static void prv_subi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	    vm->regs[ops[1].integer] - vm->regs[ops[2].integer];
 }
 
+static void prv_muli32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] =
+	    vm->regs[ops[1].integer] * vm->regs[ops[2].integer];
+}
+
 static void prv_movii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -114,6 +121,12 @@ static void prv_subii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] - ops[2].integer;
 }
 
+static void prv_mulii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] * ops[2].integer;
+}
+
 static void prv_divii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -153,7 +166,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	NULL,                                /* SUBTILIS_OP_INSTR_ADD_REAL */
 	prv_subi32,                          /* SUBTILIS_OP_INSTR_SUB_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_SUB_REAL */
-	NULL,                                /* SUBTILIS_OP_INSTR_MUL_I32 */
+	prv_muli32,                          /* SUBTILIS_OP_INSTR_MUL_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_MUL_REAL */
 	prv_divi32,                          /* SUBTILIS_OP_INSTR_DIV_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_DIV_REAL */
@@ -161,7 +174,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	NULL,                                /* SUBTILIS_OP_INSTR_ADDI_REAL */
 	prv_subii32,                         /* SUBTILIS_OP_INSTR_SUBI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_SUBI_REAL */
-	NULL,                                /* SUBTILIS_OP_INSTR_MULI_I32 */
+	prv_mulii32,                         /* SUBTILIS_OP_INSTR_MULI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_MULI_REAL */
 	prv_divii32,                         /* SUBTILIS_OP_INSTR_DIVI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_DIVI_REAL */
