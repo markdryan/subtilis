@@ -1,4 +1,5 @@
 Dir <Obey$Dir>
 Set CC gcc
+Set CFLAGS "-g -mlibscl"
 WimpSlot -min 17000k
 make %0

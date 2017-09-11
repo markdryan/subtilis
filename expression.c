@@ -18,7 +18,10 @@
 
 #include "expression.h"
 
-static void prv_order_expressions(subtilis_exp_t **a1, subtilis_exp_t **a2)
+/* Swap the arguments if necessary to ensure that the constant comes last
+ * Returns true if arguments have been swapped.
+ */
+static bool prv_order_expressions(subtilis_exp_t **a1, subtilis_exp_t **a2)
 {
 	subtilis_exp_t *e1 = *a1;
 	subtilis_exp_t *e2 = *a2;
@@ -31,7 +34,10 @@ static void prv_order_expressions(subtilis_exp_t **a1, subtilis_exp_t **a2)
 	     e1->type == SUBTILIS_EXP_CONST_STRING)) {
 		*a1 = e2;
 		*a2 = e1;
+		return true;
 	}
+
+	return false;
 }
 
 subtilis_exp_t *subtilis_exp_new_var(subtilis_exp_type_t type, unsigned int reg,
@@ -100,7 +106,7 @@ subtilis_exp_t *subtilis_exp_add(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 	size_t len;
 	size_t reg;
 
-	prv_order_expressions(&a1, &a2);
+	(void)prv_order_expressions(&a1, &a2);
 
 	switch (a1->type) {
 	case SUBTILIS_EXP_CONST_INTEGER:
@@ -175,6 +181,7 @@ subtilis_exp_t *subtilis_exp_add(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 			    p, SUBTILIS_OP_INSTR_ADD_I32, a1->exp.ir_op,
 			    a2->exp.ir_op, err);
 			a1->exp.ir_op.reg = reg;
+			break;
 		case SUBTILIS_EXP_REAL:
 		case SUBTILIS_EXP_STRING:
 			subtilis_error_set_bad_expression(err, l->stream->name,
@@ -204,7 +211,84 @@ subtilis_exp_t *subtilis_exp_add(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 subtilis_exp_t *subtilis_exp_sub(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	return NULL;
+	size_t reg;
+	subtilis_op_instr_type_t instr;
+
+	bool swapped = prv_order_expressions(&a1, &a2);
+
+	switch (a1->type) {
+	case SUBTILIS_EXP_CONST_INTEGER:
+		switch (a2->type) {
+		case SUBTILIS_EXP_CONST_INTEGER:
+			a1->exp.ir_op.integer -= a2->exp.ir_op.integer;
+			break;
+		case SUBTILIS_EXP_CONST_REAL:
+			a1->exp.ir_op.real = ((double)a1->exp.ir_op.integer) -
+					     a2->exp.ir_op.real;
+			a1->type = SUBTILIS_EXP_CONST_REAL;
+			break;
+		default:
+			subtilis_error_set_asssertion_failed(err);
+			break;
+		}
+		break;
+	case SUBTILIS_EXP_CONST_REAL:
+		switch (a2->type) {
+		case SUBTILIS_EXP_CONST_INTEGER:
+			a1->exp.ir_op.real -= (double)a2->exp.ir_op.integer;
+			break;
+		case SUBTILIS_EXP_CONST_REAL:
+			a1->exp.ir_op.real -= a2->exp.ir_op.real;
+			break;
+		default:
+			subtilis_error_set_asssertion_failed(err);
+			break;
+		}
+		break;
+	case SUBTILIS_EXP_INTEGER:
+		switch (a2->type) {
+		case SUBTILIS_EXP_CONST_INTEGER:
+			instr = swapped ? SUBTILIS_OP_INSTR_RSUBI_I32
+					: SUBTILIS_OP_INSTR_SUBI_I32;
+			reg = subtilis_ir_program_add_instr(
+			    p, instr, a1->exp.ir_op, a2->exp.ir_op, err);
+			a1->exp.ir_op.reg = reg;
+			break;
+		case SUBTILIS_EXP_CONST_REAL:
+		case SUBTILIS_EXP_CONST_STRING:
+			subtilis_error_set_bad_expression(err, l->stream->name,
+							  l->line);
+			break;
+		case SUBTILIS_EXP_INTEGER:
+			reg = subtilis_ir_program_add_instr(
+			    p, SUBTILIS_OP_INSTR_SUB_I32, a1->exp.ir_op,
+			    a2->exp.ir_op, err);
+			a1->exp.ir_op.reg = reg;
+			break;
+		case SUBTILIS_EXP_REAL:
+		case SUBTILIS_EXP_STRING:
+			subtilis_error_set_bad_expression(err, l->stream->name,
+							  l->line);
+			break;
+		default:
+			subtilis_error_set_asssertion_failed(err);
+			break;
+		}
+		break;
+	case SUBTILIS_EXP_REAL:
+	case SUBTILIS_EXP_STRING:
+	default:
+		subtilis_error_set_asssertion_failed(err);
+		break;
+	}
+
+	subtilis_exp_delete(a2);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(a1);
+		a1 = NULL;
+	}
+
+	return a1;
 }
 
 subtilis_exp_t *subtilis_exp_mul(subtilis_ir_program_t *p, subtilis_exp_t *a1,
@@ -212,7 +296,7 @@ subtilis_exp_t *subtilis_exp_mul(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 {
 	size_t reg;
 
-	prv_order_expressions(&a1, &a2);
+	(void)prv_order_expressions(&a1, &a2);
 
 	switch (a1->type) {
 	case SUBTILIS_EXP_CONST_INTEGER:
@@ -267,6 +351,7 @@ subtilis_exp_t *subtilis_exp_mul(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 			    p, SUBTILIS_OP_INSTR_MUL_I32, a1->exp.ir_op,
 			    a2->exp.ir_op, err);
 			a1->exp.ir_op.reg = reg;
+			break;
 		case SUBTILIS_EXP_REAL:
 		default:
 			subtilis_error_set_bad_expression(err, l->stream->name,
@@ -295,10 +380,9 @@ subtilis_exp_t *subtilis_exp_div(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err)
 {
 	size_t reg;
+	subtilis_op_instr_type_t instr;
 
-	// TODO: this can't be correct.  We need to preserve order.
-
-	prv_order_expressions(&a1, &a2);
+	bool swapped = prv_order_expressions(&a1, &a2);
 
 	switch (a1->type) {
 	case SUBTILIS_EXP_CONST_INTEGER:
@@ -346,14 +430,18 @@ subtilis_exp_t *subtilis_exp_div(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 	case SUBTILIS_EXP_INTEGER:
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
-			if (a2->exp.ir_op.integer == 0) {
-				subtilis_error_set_divide_by_zero(
-				    err, l->stream->name, l->line);
-				break;
+			if (swapped) {
+				instr = SUBTILIS_OP_INSTR_RDIVI_I32;
+			} else {
+				if (a2->exp.ir_op.integer == 0) {
+					subtilis_error_set_divide_by_zero(
+					    err, l->stream->name, l->line);
+					break;
+				}
+				instr = SUBTILIS_OP_INSTR_DIVI_I32;
 			}
 			reg = subtilis_ir_program_add_instr(
-			    p, SUBTILIS_OP_INSTR_DIV_I32, a1->exp.ir_op,
-			    a2->exp.ir_op, err);
+			    p, instr, a1->exp.ir_op, a2->exp.ir_op, err);
 			a1->exp.ir_op.reg = reg;
 			break;
 		case SUBTILIS_EXP_CONST_REAL:
@@ -366,6 +454,7 @@ subtilis_exp_t *subtilis_exp_div(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 			    p, SUBTILIS_OP_INSTR_DIV_I32, a1->exp.ir_op,
 			    a2->exp.ir_op, err);
 			a1->exp.ir_op.reg = reg;
+			break;
 		case SUBTILIS_EXP_REAL:
 		default:
 			subtilis_error_set_bad_expression(err, l->stream->name,
@@ -388,6 +477,46 @@ subtilis_exp_t *subtilis_exp_div(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 	}
 
 	return a1;
+}
+
+subtilis_exp_t *subtilis_exp_unary_minus(subtilis_ir_program_t *p,
+					 subtilis_exp_t *e,
+					 subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_ir_operand_t operand;
+
+	switch (e->type) {
+	case SUBTILIS_EXP_CONST_INTEGER:
+		e->exp.ir_op.integer = -e->exp.ir_op.integer;
+		break;
+	case SUBTILIS_EXP_INTEGER:
+		operand.integer = 0;
+		reg = subtilis_ir_program_add_instr(
+		    p, SUBTILIS_OP_INSTR_RSUBI_I32, e->exp.ir_op, operand, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		e->exp.ir_op.reg = reg;
+		break;
+	case SUBTILIS_EXP_CONST_REAL:
+		e->exp.ir_op.real = -e->exp.ir_op.real;
+		break;
+	case SUBTILIS_EXP_CONST_STRING:
+	case SUBTILIS_EXP_REAL:
+	case SUBTILIS_EXP_STRING:
+	default:
+		subtilis_error_set_bad_expression(err, l->stream->name,
+						  l->line);
+		goto cleanup;
+	}
+
+	return e;
+
+cleanup:
+
+	subtilis_exp_delete(e);
+
+	return NULL;
 }
 
 void subtilis_exp_delete(subtilis_exp_t *e)
