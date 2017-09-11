@@ -98,6 +98,38 @@ static subtilis_exp_t *prv_variable(subtilis_parser_t *p, subtilis_token_t *t,
 	return subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
 }
 
+static subtilis_exp_t *prv_bracketed_exp(subtilis_parser_t *p,
+					 subtilis_token_t *t,
+					 subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_exp_t *e;
+
+	e = prv_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ")")) {
+		subtilis_error_set_right_bkt_expected(
+		    err, tbuf, p->l->stream->name, p->l->line);
+		return NULL;
+	}
+
+	return e;
+}
+
+static subtilis_exp_t *prv_unary_minus_exp(subtilis_parser_t *p,
+					   subtilis_token_t *t,
+					   subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+
+	e = prv_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	return subtilis_exp_unary_minus(p->p, e, err);
+}
+
 static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
@@ -112,20 +144,25 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			goto cleanup;
 		break;
 	case SUBTILIS_TOKEN_OPERATOR:
-		if (strcmp(tbuf, "(")) {
+		if (!strcmp(tbuf, "(")) {
+			e = prv_bracketed_exp(p, t, err);
+		} else {
+			if (!strcmp(tbuf, "-")) {
+				e = prv_unary_minus_exp(p, t, err);
+				if (err->type != SUBTILIS_ERROR_OK)
+					goto cleanup;
+				/* we don't want to read another token here.It's
+				 * already been read by the recursive call to
+				 * prv_expression.
+				 */
+				return e;
+			}
 			subtilis_error_set_exp_expected(
-			    err, tbuf, p->l->stream->name, p->l->line);
+			    err, "( or - ", p->l->stream->name, p->l->line);
 			goto cleanup;
 		}
-		e = prv_expression(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		tbuf = subtilis_token_get_text(t);
-		if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ")")) {
-			subtilis_error_set_right_bkt_expected(
-			    err, tbuf, p->l->stream->name, p->l->line);
-			goto cleanup;
-		}
 		break;
 	case SUBTILIS_TOKEN_IDENTIFIER:
 		e = prv_variable(p, t, tbuf, err);

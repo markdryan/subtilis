@@ -201,6 +201,12 @@ static const expression_test_t expression_tests[] = {
 	  "LET b% = ((((10 - a%) -5) * 10))\n"
 	  "PRINT b%",
 	  "30\n"},
+	{ "parser_unary_minus",
+	  "LET b% = -110\n"
+	  "LET c% = -b%\n"
+	  "LET d% = 10 - -(c% - 0)\n"
+	  "PRINT d%\n",
+	  "120\n"},
 };
 
 /* clang-format on */
