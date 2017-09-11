@@ -4,7 +4,7 @@
 
 
 A BASIC (BBC) compiler for retro computers.  (At least that's the plan.  Right now
-there's nothing but a half complete lexical analyser.)
+there's nothing but a half complete front end.)
 
 BASIC is over 50 years old and may not be the most respected of computer
 languages, but it, at least the BBC variant of BASIC, is not that bad really.
@@ -18,4 +18,6 @@ the test in the Subtilis project.
 The tentative plan for the project is to first create a compiler for a subset of
 the existing BBC BASIC V features and then figure out a way of adding modern
 constructs to the lanuage.  To start with there will probably only be two target
-OSes, RISCOS 4 and RISCOS 5, and one CPU family StrongARM or greater.
+OSes, RISCOS 3 and RISCOS 4, and one CPU family, ARM 2 or greater.  Ultimately
+the goal is to create a 6502 backend for the BBC micro as well, but this is a
+long way off.
