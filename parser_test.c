@@ -196,6 +196,11 @@ static const expression_test_t expression_tests[] = {
 	  "LET d% = c% + 2 + b%\n"
 	  "PRINT d%\n",
 	  "553\n"},
+	{ "nested_expression",
+	  "LET a% = (1 + 1)\n"
+	  "LET b% = ((((10 - a%) -5) * 10))\n"
+	  "PRINT b%",
+	  "30\n"},
 };
 
 /* clang-format on */
