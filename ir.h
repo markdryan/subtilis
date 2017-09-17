@@ -408,6 +408,27 @@ typedef enum {
 
 	SUBTILIS_OP_INSTR_RDIVI_REAL,
 
+	/*
+	 * andi32 r0, r1, r2
+	 *
+	 * Ands two 32 bit signed integers stored in registers and stores the
+	 * result in another register.
+	 *
+	 * r0 = r1 & r2
+	 */
+	SUBTILIS_OP_INSTR_AND_I32,
+
+	/*
+	 * andii32 r0, r1, #i32
+	 *
+	 * Ands a 32 bit immediate constant with a 32 bit integer stored
+	 * in a register.  The result is stored in a second register.
+	 *
+	 * r0 = r1 & #i32
+	 */
+
+	SUBTILIS_OP_INSTR_ANDI_I32,
+
 } subtilis_op_instr_type_t;
 
 // TODO: Need a type for pointer offsets.  These may not always
