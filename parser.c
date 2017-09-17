@@ -169,6 +169,25 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		break;
+	case SUBTILIS_TOKEN_KEYWORD:
+		switch (t->tok.keyword.type) {
+		case SUBTILIS_KEYWORD_TRUE:
+			e = subtilis_exp_new_int32(-1, err);
+			if (!e)
+				goto cleanup;
+			break;
+		case SUBTILIS_KEYWORD_FALSE:
+			e = subtilis_exp_new_int32(0, err);
+			if (!e)
+				goto cleanup;
+			break;
+		default:
+			subtilis_error_set_exp_expected(
+			    err, "TRUE or FALSE expected", p->l->stream->name,
+			    p->l->line);
+			goto cleanup;
+		}
+		break;
 	default:
 		subtilis_error_set_exp_expected(err, tbuf, p->l->stream->name,
 						p->l->line);
@@ -285,14 +304,12 @@ static subtilis_exp_t *prv_priority5(subtilis_parser_t *p, subtilis_token_t *t,
 static subtilis_exp_t *prv_priority6(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
-	const char *tbuf;
 	subtilis_exp_t *e1 = NULL;
 	subtilis_exp_t *e2 = NULL;
 
 	e1 = prv_priority5(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	tbuf = subtilis_token_get_text(t);
 	while ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
 	       (t->tok.keyword.type == SUBTILIS_KEYWORD_AND)) {
 		subtilis_lexer_get(p->l, t, err);
