@@ -190,42 +190,7 @@ cleanup:
 static subtilis_exp_t *prv_priority2(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
-	const char *tbuf;
-	subtilis_exp_t *e1 = NULL;
-	subtilis_exp_t *e2 = NULL;
-	subtilis_exp_fn_t exp_fn;
-
-	e1 = prv_priority1(p, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-	while (t->type == SUBTILIS_TOKEN_OPERATOR) {
-		tbuf = subtilis_token_get_text(t);
-		if (!strcmp(tbuf, "*"))
-			exp_fn = subtilis_exp_mul;
-		else if (!strcmp(tbuf, "/"))
-			exp_fn = subtilis_exp_div;
-		else
-			break;
-		subtilis_lexer_get(p->l, t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-		e2 = prv_priority1(p, t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-
-		e1 = exp_fn(p->p, e1, e2, err);
-		e2 = NULL;
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-	}
-
-	return e1;
-
-cleanup:
-
-	subtilis_exp_delete(e2);
-	subtilis_exp_delete(e1);
-	return NULL;
+	return prv_priority1(p, t, err);
 }
 
 static subtilis_exp_t *prv_priority3(subtilis_parser_t *p, subtilis_token_t *t,
@@ -239,13 +204,12 @@ static subtilis_exp_t *prv_priority3(subtilis_parser_t *p, subtilis_token_t *t,
 	e1 = prv_priority2(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	tbuf = subtilis_token_get_text(t);
 	while (t->type == SUBTILIS_TOKEN_OPERATOR) {
 		tbuf = subtilis_token_get_text(t);
-		if (!strcmp(tbuf, "+"))
-			exp_fn = subtilis_exp_add;
-		else if (!strcmp(tbuf, "-"))
-			exp_fn = subtilis_exp_sub;
+		if (!strcmp(tbuf, "*"))
+			exp_fn = subtilis_exp_mul;
+		else if (!strcmp(tbuf, "/"))
+			exp_fn = subtilis_exp_div;
 		else
 			break;
 		subtilis_lexer_get(p->l, t, err);
@@ -270,13 +234,73 @@ cleanup:
 	return NULL;
 }
 
+static subtilis_exp_t *prv_priority4(subtilis_parser_t *p, subtilis_token_t *t,
+				     subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_exp_t *e1 = NULL;
+	subtilis_exp_t *e2 = NULL;
+	subtilis_exp_fn_t exp_fn;
+
+	e1 = prv_priority3(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	tbuf = subtilis_token_get_text(t);
+	while (t->type == SUBTILIS_TOKEN_OPERATOR) {
+		tbuf = subtilis_token_get_text(t);
+		if (!strcmp(tbuf, "+"))
+			exp_fn = subtilis_exp_add;
+		else if (!strcmp(tbuf, "-"))
+			exp_fn = subtilis_exp_sub;
+		else
+			break;
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		e2 = prv_priority3(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		e1 = exp_fn(p->p, e1, e2, err);
+		e2 = NULL;
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	return e1;
+
+cleanup:
+
+	subtilis_exp_delete(e2);
+	subtilis_exp_delete(e1);
+	return NULL;
+}
+
+static subtilis_exp_t *prv_priority5(subtilis_parser_t *p, subtilis_token_t *t,
+				     subtilis_error_t *err)
+{
+	return prv_priority4(p, t, err);
+}
+
+static subtilis_exp_t *prv_priority6(subtilis_parser_t *p, subtilis_token_t *t,
+				     subtilis_error_t *err)
+{
+	return prv_priority5(p, t, err);
+}
+
+static subtilis_exp_t *prv_priority7(subtilis_parser_t *p, subtilis_token_t *t,
+				     subtilis_error_t *err)
+{
+	return prv_priority6(p, t, err);
+}
+
 static subtilis_exp_t *prv_expression(subtilis_parser_t *p, subtilis_token_t *t,
 				      subtilis_error_t *err)
 {
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	return prv_priority3(p, t, err);
+	return prv_priority7(p, t, err);
 }
 
 static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
