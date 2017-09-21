@@ -519,6 +519,87 @@ cleanup:
 	return NULL;
 }
 
+subtilis_exp_t *subtilis_exp_and(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+				 subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	size_t reg;
+
+	(void)prv_order_expressions(&a1, &a2);
+
+	switch (a1->type) {
+	case SUBTILIS_EXP_CONST_INTEGER:
+		switch (a2->type) {
+		case SUBTILIS_EXP_CONST_INTEGER:
+			a1->exp.ir_op.integer &= a2->exp.ir_op.integer;
+			break;
+		case SUBTILIS_EXP_CONST_REAL:
+			subtilis_error_set_asssertion_failed(err);
+			break;
+		case SUBTILIS_EXP_CONST_STRING:
+			subtilis_error_set_bad_expression(err, l->stream->name,
+							  l->line);
+			break;
+		default:
+			subtilis_error_set_asssertion_failed(err);
+			break;
+		}
+		break;
+	case SUBTILIS_EXP_CONST_REAL:
+		switch (a2->type) {
+		default:
+			subtilis_error_set_asssertion_failed(err);
+			break;
+		}
+		break;
+	case SUBTILIS_EXP_CONST_STRING:
+		subtilis_error_set_bad_expression(err, l->stream->name,
+						  l->line);
+		break;
+	case SUBTILIS_EXP_INTEGER:
+		switch (a2->type) {
+		case SUBTILIS_EXP_CONST_INTEGER:
+			reg = subtilis_ir_program_add_instr(
+			    p, SUBTILIS_OP_INSTR_ANDI_I32, a1->exp.ir_op,
+			    a2->exp.ir_op, err);
+			a1->exp.ir_op.reg = reg;
+			break;
+		case SUBTILIS_EXP_CONST_REAL:
+		case SUBTILIS_EXP_CONST_STRING:
+			subtilis_error_set_bad_expression(err, l->stream->name,
+							  l->line);
+			break;
+		case SUBTILIS_EXP_INTEGER:
+			reg = subtilis_ir_program_add_instr(
+			    p, SUBTILIS_OP_INSTR_AND_I32, a1->exp.ir_op,
+			    a2->exp.ir_op, err);
+			a1->exp.ir_op.reg = reg;
+			break;
+		case SUBTILIS_EXP_REAL:
+		case SUBTILIS_EXP_STRING:
+			subtilis_error_set_bad_expression(err, l->stream->name,
+							  l->line);
+			break;
+		default:
+			subtilis_error_set_asssertion_failed(err);
+			break;
+		}
+		break;
+	case SUBTILIS_EXP_REAL:
+	case SUBTILIS_EXP_STRING:
+	default:
+		subtilis_error_set_asssertion_failed(err);
+		break;
+	}
+
+	subtilis_exp_delete(a2);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(a1);
+		a1 = NULL;
+	}
+
+	return a1;
+}
+
 void subtilis_exp_delete(subtilis_exp_t *e)
 {
 	if (!e)

@@ -239,6 +239,8 @@ static const subtilis_ir_op_desc_t op_dump_fns[] = {
 	{ "rsubir", prv_dump_reg_reg_real }, /* SUBTILIS_OP_INSTR_RSUBI_REAL */
 	{ "rdivii32", prv_dump_reg_reg_i32}, /* SUBTILIS_OP_INSTR_RDIVI_I32 */
 	{ "rdivir", prv_dump_reg_reg_i32},   /* SUBTILIS_OP_INSTR_RDIVI_REAL */
+	{ "andi32", prv_dump_reg_reg_reg},   /* SUBTILIS_OP_INSTR_AND_I32 */
+	{ "andii32", prv_dump_reg_reg_i32},  /* SUBTILIS_OP_INSTR_ANDI_I32 */
 };
 
 /* clang-format on */
