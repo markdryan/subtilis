@@ -310,8 +310,8 @@ static subtilis_exp_t *prv_priority6(subtilis_parser_t *p, subtilis_token_t *t,
 	e1 = prv_priority5(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	while ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
-	       (t->tok.keyword.type == SUBTILIS_KEYWORD_AND)) {
+	while (t->type == SUBTILIS_TOKEN_KEYWORD &&
+	       t->tok.keyword.type == SUBTILIS_KEYWORD_AND) {
 		subtilis_lexer_get(p->l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
@@ -336,7 +336,39 @@ cleanup:
 static subtilis_exp_t *prv_priority7(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
-	return prv_priority6(p, t, err);
+	subtilis_exp_t *e1 = NULL;
+	subtilis_exp_t *e2 = NULL;
+	subtilis_exp_fn_t exp_fn;
+
+	e1 = prv_priority6(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	while (t->type == SUBTILIS_TOKEN_KEYWORD) {
+		if (t->tok.keyword.type == SUBTILIS_KEYWORD_EOR)
+			exp_fn = subtilis_exp_eor;
+		else if (t->tok.keyword.type == SUBTILIS_KEYWORD_OR)
+			exp_fn = subtilis_exp_or;
+		else
+			break;
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		e2 = prv_priority6(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		e1 = exp_fn(p->p, e1, e2, err);
+		e2 = NULL;
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	return e1;
+
+cleanup:
+
+	subtilis_exp_delete(e2);
+	subtilis_exp_delete(e1);
+	return NULL;
 }
 
 static subtilis_exp_t *prv_expression(subtilis_parser_t *p, subtilis_token_t *t,

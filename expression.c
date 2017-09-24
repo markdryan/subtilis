@@ -18,10 +18,6 @@
 
 #include "expression.h"
 
-/* Swap the arguments if necessary to ensure that the constant comes last
- * Returns true if arguments have been swapped.
- */
-
 typedef void (*subtilis_const_op_t)(subtilis_exp_t *, subtilis_exp_t *);
 
 struct subtilis_commutative_exp_t_ {
@@ -33,6 +29,10 @@ struct subtilis_commutative_exp_t_ {
 };
 
 typedef struct subtilis_commutative_exp_t_ subtilis_commutative_exp_t;
+
+/* Swap the arguments if necessary to ensure that the constant comes last
+ * Returns true if arguments have been swapped.
+ */
 
 static bool prv_order_expressions(subtilis_exp_t **a1, subtilis_exp_t **a2)
 {
@@ -547,6 +547,70 @@ subtilis_exp_t *subtilis_exp_and(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 	    .op_real_real = prv_and_real_real,
 	    .in_var_imm = SUBTILIS_OP_INSTR_ANDI_I32,
 	    .in_var_var = SUBTILIS_OP_INSTR_AND_I32,
+	};
+
+	return prv_exp_commutative(p, a1, a2, &com, err);
+}
+
+static void prv_or_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.integer |= a2->exp.ir_op.integer;
+}
+
+static void prv_or_int_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.real =
+	    (double)(a1->exp.ir_op.integer | ((int32_t)a2->exp.ir_op.real));
+	a1->type = SUBTILIS_EXP_CONST_REAL;
+}
+
+static void prv_or_real_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.real =
+	    (double)((int32_t)a1->exp.ir_op.real | (int32_t)a2->exp.ir_op.real);
+}
+
+subtilis_exp_t *subtilis_exp_or(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+				subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	subtilis_commutative_exp_t com = {
+	    .op_int_int = prv_or_int_int,
+	    .op_int_real = prv_or_int_real,
+	    .op_real_real = prv_or_real_real,
+	    .in_var_imm = SUBTILIS_OP_INSTR_ORI_I32,
+	    .in_var_var = SUBTILIS_OP_INSTR_OR_I32,
+	};
+
+	return prv_exp_commutative(p, a1, a2, &com, err);
+}
+
+static void prv_eor_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.integer ^= a2->exp.ir_op.integer;
+}
+
+static void prv_eor_int_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.real =
+	    (double)(a1->exp.ir_op.integer ^ ((int32_t)a2->exp.ir_op.real));
+	a1->type = SUBTILIS_EXP_CONST_REAL;
+}
+
+static void prv_eor_real_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.real =
+	    (double)((int32_t)a1->exp.ir_op.real ^ (int32_t)a2->exp.ir_op.real);
+}
+
+subtilis_exp_t *subtilis_exp_eor(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+				 subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	subtilis_commutative_exp_t com = {
+	    .op_int_int = prv_eor_int_int,
+	    .op_int_real = prv_eor_int_real,
+	    .op_real_real = prv_eor_real_real,
+	    .in_var_imm = SUBTILIS_OP_INSTR_EORI_I32,
+	    .in_var_var = SUBTILIS_OP_INSTR_EOR_I32,
 	};
 
 	return prv_exp_commutative(p, a1, a2, &com, err);

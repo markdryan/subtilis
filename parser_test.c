@@ -214,6 +214,27 @@ static const expression_test_t expression_tests[] = {
 	  "PRINT c%\n"
 	  "PRINT 255 AND 128\n",
 	  "-1\n0\n128\n"},
+	{ "parser_or",
+	  "LET b% = -1\n"
+	  "PRINT b% OR -1 OR TRUE OR b%\n"
+	  "LET c% = b% OR FALSE\n"
+	  "PRINT c%\n"
+	  "PRINT FALSE OR FALSE\n"
+	  "LET d% = FALSE\n"
+	  "PRINT d% OR FALSE\n"
+	  "PRINT 64 OR 128\n",
+	  "-1\n-1\n0\n0\n192\n"},
+	{ "parser_eor",
+	  "LET b% = -1\n"
+	  "PRINT b% EOR -1 EOR TRUE EOR b%\n"
+	  "LET c% = b% EOR FALSE\n"
+	  "PRINT c%\n"
+	  "PRINT FALSE EOR FALSE\n"
+	  "PRINT TRUE EOR TRUE\n"
+	  "LET d% = FALSE\n"
+	  "PRINT d% EOR FALSE\n"
+	  "PRINT 192 EOR 128\n",
+	  "0\n-1\n0\n0\n0\n64\n"},
 };
 
 /* clang-format on */
