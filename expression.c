@@ -18,10 +18,6 @@
 
 #include "expression.h"
 
-/* Swap the arguments if necessary to ensure that the constant comes last
- * Returns true if arguments have been swapped.
- */
-
 typedef void (*subtilis_const_op_t)(subtilis_exp_t *, subtilis_exp_t *);
 
 struct subtilis_commutative_exp_t_ {
@@ -33,6 +29,10 @@ struct subtilis_commutative_exp_t_ {
 };
 
 typedef struct subtilis_commutative_exp_t_ subtilis_commutative_exp_t;
+
+/* Swap the arguments if necessary to ensure that the constant comes last
+ * Returns true if arguments have been swapped.
+ */
 
 static bool prv_order_expressions(subtilis_exp_t **a1, subtilis_exp_t **a2)
 {
