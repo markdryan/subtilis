@@ -66,6 +66,8 @@ subtilis_exp_t *subtilis_exp_div(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_and(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err);
+subtilis_exp_t *subtilis_exp_or(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+				subtilis_exp_t *a2, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_unary_minus(subtilis_ir_program_t *p,
 					 subtilis_exp_t *e,
 					 subtilis_error_t *err);

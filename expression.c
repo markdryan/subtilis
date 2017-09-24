@@ -552,6 +552,38 @@ subtilis_exp_t *subtilis_exp_and(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 	return prv_exp_commutative(p, a1, a2, &com, err);
 }
 
+static void prv_or_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.integer |= a2->exp.ir_op.integer;
+}
+
+static void prv_or_int_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.real =
+	    (double)(a1->exp.ir_op.integer | ((int32_t)a2->exp.ir_op.real));
+	a1->type = SUBTILIS_EXP_CONST_REAL;
+}
+
+static void prv_or_real_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.real =
+	    (double)((int32_t)a1->exp.ir_op.real | (int32_t)a2->exp.ir_op.real);
+}
+
+subtilis_exp_t *subtilis_exp_or(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+				subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	subtilis_commutative_exp_t com = {
+	    .op_int_int = prv_or_int_int,
+	    .op_int_real = prv_or_int_real,
+	    .op_real_real = prv_or_real_real,
+	    .in_var_imm = SUBTILIS_OP_INSTR_ORI_I32,
+	    .in_var_var = SUBTILIS_OP_INSTR_OR_I32,
+	};
+
+	return prv_exp_commutative(p, a1, a2, &com, err);
+}
+
 void subtilis_exp_delete(subtilis_exp_t *e)
 {
 	if (!e)
