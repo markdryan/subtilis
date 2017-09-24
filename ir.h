@@ -449,6 +449,27 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_ORI_I32,
+
+	/*
+	 * eori32 r0, r1, r2
+	 *
+	 * Eors two 32 bit signed integers stored in registers and stores the
+	 * result in another register.
+	 *
+	 * r0 = r1 ^ r2
+	 */
+	SUBTILIS_OP_INSTR_EOR_I32,
+
+	/*
+	 * eorii32 r0, r1, #i32
+	 *
+	 * Eors a 32 bit immediate constant with a 32 bit integer stored
+	 * in a register.  The result is stored in a second register.
+	 *
+	 * r0 = r1 ^ #i32
+	 */
+
+	SUBTILIS_OP_INSTR_EORI_I32,
 } subtilis_op_instr_type_t;
 
 // TODO: Need a type for pointer offsets.  These may not always

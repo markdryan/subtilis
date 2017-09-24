@@ -193,6 +193,19 @@ static void prv_orii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] | ops[2].integer;
 }
 
+static void prv_eori32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] =
+	    vm->regs[ops[1].integer] ^ vm->regs[ops[2].integer];
+}
+
+static void prv_eorii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] ^ ops[2].integer;
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -232,6 +245,8 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_andii32,                         /* SUBTILIS_OP_INSTR_ANDI_I32 */
 	prv_ori32,                           /* SUBTILIS_OP_INSTR_OR_I32 */
 	prv_orii32,                          /* SUBTILIS_OP_INSTR_ORI_I32 */
+	prv_eori32,                          /* SUBTILIS_OP_INSTR_EOR_I32 */
+	prv_eorii32,                         /* SUBTILIS_OP_INSTR_EORI_I32 */
 };
 
 /* clang-format on */
