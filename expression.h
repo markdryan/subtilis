@@ -73,6 +73,8 @@ subtilis_exp_t *subtilis_exp_eor(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 subtilis_exp_t *subtilis_exp_unary_minus(subtilis_ir_program_t *p,
 					 subtilis_exp_t *e,
 					 subtilis_error_t *err);
+subtilis_exp_t *subtilis_exp_not(subtilis_ir_program_t *p, subtilis_exp_t *e,
+				 subtilis_error_t *err);
 
 void subtilis_exp_delete(subtilis_exp_t *e);
 
