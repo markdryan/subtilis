@@ -520,6 +520,43 @@ cleanup:
 	return NULL;
 }
 
+subtilis_exp_t *subtilis_exp_not(subtilis_ir_program_t *p, subtilis_exp_t *e,
+				 subtilis_error_t *err)
+{
+	size_t reg;
+
+	switch (e->type) {
+	case SUBTILIS_EXP_CONST_INTEGER:
+		e->exp.ir_op.integer = ~e->exp.ir_op.integer;
+		break;
+	case SUBTILIS_EXP_INTEGER:
+		reg = subtilis_ir_program_add_instr2(
+		    p, SUBTILIS_OP_INSTR_NOT_I32, e->exp.ir_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		e->exp.ir_op.reg = reg;
+		break;
+	case SUBTILIS_EXP_CONST_REAL:
+		e->exp.ir_op.real = (double)~((int32_t)e->exp.ir_op.real);
+		break;
+	case SUBTILIS_EXP_CONST_STRING:
+	case SUBTILIS_EXP_REAL:
+	case SUBTILIS_EXP_STRING:
+	default:
+		subtilis_error_set_bad_expression(err, l->stream->name,
+						  l->line);
+		goto cleanup;
+	}
+
+	return e;
+
+cleanup:
+
+	subtilis_exp_delete(e);
+
+	return NULL;
+}
+
 static void prv_and_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
 {
 	a1->exp.ir_op.integer &= a2->exp.ir_op.integer;

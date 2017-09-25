@@ -235,6 +235,12 @@ static const expression_test_t expression_tests[] = {
 	  "PRINT d% EOR FALSE\n"
 	  "PRINT 192 EOR 128\n",
 	  "0\n-1\n0\n0\n0\n64\n"},
+	{ "parser_not",
+	  "LET b% = -1\n"
+	  "PRINT NOT b%\n"
+	  "PRINT NOT NOT b%\n"
+	  "PRINT NOT TRUE\n",
+	  "0\n-1\n0\n"},
 };
 
 /* clang-format on */

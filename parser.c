@@ -130,6 +130,17 @@ static subtilis_exp_t *prv_unary_minus_exp(subtilis_parser_t *p,
 	return subtilis_exp_unary_minus(p->p, e, err);
 }
 
+static subtilis_exp_t *prv_not_exp(subtilis_parser_t *p, subtilis_token_t *t,
+				   subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+
+	e = prv_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	return subtilis_exp_not(p->p, e, err);
+}
+
 static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
@@ -181,10 +192,15 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			if (!e)
 				goto cleanup;
 			break;
+		case SUBTILIS_KEYWORD_NOT:
+			e = prv_not_exp(p, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+			return e;
 		default:
 			subtilis_error_set_exp_expected(
-			    err, "TRUE or FALSE expected", p->l->stream->name,
-			    p->l->line);
+			    err, "TRUE or FALSE or NOTexpected",
+			    p->l->stream->name, p->l->line);
 			goto cleanup;
 		}
 		break;

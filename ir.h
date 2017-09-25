@@ -470,6 +470,17 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_EORI_I32,
+
+	/*
+	 * noti32 r0, r1
+	 *
+	 * Stores the complement of a 32 bit integer stored in a register
+	 * in a second register.
+	 *
+	 * r0 = ~r1
+	 */
+
+	SUBTILIS_OP_INSTR_NOT_I32,
 } subtilis_op_instr_type_t;
 
 // TODO: Need a type for pointer offsets.  These may not always

@@ -244,7 +244,8 @@ static const subtilis_ir_op_desc_t op_dump_fns[] = {
 	{ "ori32", prv_dump_reg_reg_reg},    /* SUBTILIS_OP_INSTR_OR_I32 */
 	{ "orii32", prv_dump_reg_reg_i32},   /* SUBTILIS_OP_INSTR_ORI_I32 */
 	{ "eori32", prv_dump_reg_reg_reg},   /* SUBTILIS_OP_INSTR_EOR_I32 */
-	{ "eorii32", prv_dump_reg_reg_i32}   /* SUBTILIS_OP_INSTR_EORI_I32 */
+	{ "eorii32", prv_dump_reg_reg_i32},  /* SUBTILIS_OP_INSTR_EORI_I32 */
+	{ "noti32", prv_dump_reg_reg},       /* SUBTILIS_OP_INSTR_NOT_I32 */
 };
 
 /* clang-format on */
