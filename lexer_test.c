@@ -595,9 +595,8 @@ static int prv_check_int(subtilis_lexer_t *l, subtilis_token_t *t)
 	int i;
 	const char *tbuf;
 
-	const int expected[] = {
-	    12345, 67890, 0x12345, 0x67890, 0xabcef, 2147483647, 170,
-	};
+	const int expected[] = {12345,   67890,      0x12345, 0x67890,
+				0xabcef, 2147483647, 170,     0xffffffff};
 
 	const int expected_signed[] = {255, 0xff, 255};
 
@@ -663,8 +662,8 @@ static int prv_test_int(void)
 {
 	size_t i;
 	int res = 0;
-	const char *str = "12345 67890 &12345 &67890 &abcef 2147483647"
-			  "%10101010 -255 -&ff -%11111111";
+	const char *str = "12345 67890 &12345 &67890 &abcef 2147483647 "
+			  "%10101010 &ffffffff -255 -&ff -%11111111";
 
 	printf("lexer_int");
 	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
@@ -995,6 +994,9 @@ static int prv_test_number_too_large(void)
 
 	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
 		res |= prv_test_wrapper("2147483648", buffer_sizes[i],
+					prv_check_number_too_large);
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper("&100000000", buffer_sizes[i],
 					prv_check_number_too_large);
 	printf(": [%s]\n", res ? "FAIL" : "OK");
 
