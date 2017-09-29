@@ -205,8 +205,9 @@ static const expression_test_t expression_tests[] = {
 	  "LET b% = -110\n"
 	  "LET c% = -b%\n"
 	  "LET d% = 10 - -(c% - 0)\n"
-	  "PRINT d%\n",
-	  "120\n"},
+	  "PRINT d%\n"
+	  "PRINT -&ffffffff\n",
+	  "120\n1\n"},
 	{ "parser_and",
 	  "LET b% = -1\n"
 	  "PRINT b% AND -1 AND TRUE AND b%"
@@ -239,8 +240,9 @@ static const expression_test_t expression_tests[] = {
 	  "LET b% = -1\n"
 	  "PRINT NOT b%\n"
 	  "PRINT NOT NOT b%\n"
-	  "PRINT NOT TRUE\n",
-	  "0\n-1\n0\n"},
+	  "PRINT NOT TRUE\n"
+	  "PRINT NOT &fffffff0\n",
+	  "0\n-1\n0\n15\n"},
 };
 
 /* clang-format on */
