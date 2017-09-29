@@ -273,7 +273,7 @@ static void prv_process_float(subtilis_lexer_t *l, subtilis_token_t *t,
 	t->tok.real = atof(tbuf);
 }
 
-/* TODO:  Need to figure out if maximum negative int constant is correct */
+/* TODO:  The maximum negative int constant is incorrect */
 
 static void prv_parse_integer(subtilis_lexer_t *l, subtilis_token_t *t,
 			      int base, subtilis_error_t *err)
@@ -288,11 +288,17 @@ static void prv_parse_integer(subtilis_lexer_t *l, subtilis_token_t *t,
 
 	errno = 0;
 	num = strtoul(tbuf, &end_ptr, base);
-	if (*end_ptr != 0 || errno != 0 || num > 2147483647) {
+	if (*end_ptr != 0 || errno != 0) {
 		subtilis_error_set_number_too_long(err, tbuf, l->stream->name,
 						   l->line);
 		return;
 	}
+	if ((base == 10 && num > 2147483647) || (num > 0xffffffff)) {
+		subtilis_error_set_number_too_long(err, tbuf, l->stream->name,
+						   l->line);
+		return;
+	}
+
 	t->tok.integer = (int32_t)num;
 }
 
