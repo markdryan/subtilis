@@ -103,35 +103,27 @@ void subtilis_error_init(subtilis_error_t *e);
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_ASSERTION_FAILED, __FILE__, \
 				 __LINE__)
 #define subtilis_error_set_keyword_expected(e, str, file, line)                \
-	subtilis_error_set1(e, SUBTILIS_ERROR_KEYWORD_EXPECTED, str, __FILE__, \
-			    __LINE__)
+	subtilis_error_set1(e, SUBTILIS_ERROR_KEYWORD_EXPECTED, str, file, line)
 #define subtilis_error_set_not_supported(e, str, file, line)                   \
-	subtilis_error_set1(e, SUBTILIS_ERROR_NOT_SUPPORTED, str, __FILE__,    \
-			    __LINE__)
+	subtilis_error_set1(e, SUBTILIS_ERROR_NOT_SUPPORTED, str, file, line)
 #define subtilis_error_set_id_expected(e, str, file, line)                     \
-	subtilis_error_set1(e, SUBTILIS_ERROR_ID_EXPECTED, str, __FILE__,      \
-			    __LINE__)
+	subtilis_error_set1(e, SUBTILIS_ERROR_ID_EXPECTED, str, file, line)
 #define subtilis_error_set_assignment_op_expected(e, str, file, line)          \
 	subtilis_error_set1(e, SUBTILIS_ERROR_ASSIGNMENT_OP_EXPECTED, str,     \
-			    __FILE__, __LINE__)
+			    file, line)
 #define subtilis_error_set_exp_expected(e, str, file, line)                    \
-	subtilis_error_set1(e, SUBTILIS_ERROR_EXP_EXPECTED, str, __FILE__,     \
-			    __LINE__)
+	subtilis_error_set1(e, SUBTILIS_ERROR_EXP_EXPECTED, str, file, line)
 #define subtilis_error_set_right_bkt_expected(e, str, file, line)              \
-	subtilis_error_set1(e, SUBTILIS_ERROR_RIGHT_BKT_EXPECTED, str,         \
-			    __FILE__, __LINE__)
+	subtilis_error_set1(e, SUBTILIS_ERROR_RIGHT_BKT_EXPECTED, str, file,   \
+			    line)
 #define subtilis_error_set_integer_expected(e, str, file, line)                \
-	subtilis_error_set1(e, SUBTILIS_ERROR_INTEGER_EXPECTED, str, __FILE__, \
-			    __LINE__)
+	subtilis_error_set1(e, SUBTILIS_ERROR_INTEGER_EXPECTED, str, file, line)
 #define subtilis_error_set_bad_expression(e, file, line)                       \
-	subtilis_error_set_basic(e, SUBTILIS_ERROR_BAD_EXPRESSION, __FILE__,   \
-				 __LINE__)
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_BAD_EXPRESSION, file, line)
 #define subtilis_error_set_divide_by_zero(e, file, line)                       \
-	subtilis_error_set_basic(e, SUBTILIS_ERROR_DIVIDE_BY_ZERO, __FILE__,   \
-				 __LINE__)
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_DIVIDE_BY_ZERO, file, line)
 #define subtilis_error_set_unknown_variable(e, str, file, line)                \
-	subtilis_error_set1(e, SUBTILIS_ERROR_UNKNOWN_VARIABLE, str, __FILE__, \
-			    __LINE__)
+	subtilis_error_set1(e, SUBTILIS_ERROR_UNKNOWN_VARIABLE, str, file, line)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,

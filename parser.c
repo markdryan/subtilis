@@ -127,7 +127,7 @@ static subtilis_exp_t *prv_unary_minus_exp(subtilis_parser_t *p,
 	e = prv_expression(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	return subtilis_exp_unary_minus(p->p, e, err);
+	return subtilis_exp_unary_minus(p, e, err);
 }
 
 static subtilis_exp_t *prv_not_exp(subtilis_parser_t *p, subtilis_token_t *t,
@@ -138,7 +138,7 @@ static subtilis_exp_t *prv_not_exp(subtilis_parser_t *p, subtilis_token_t *t,
 	e = prv_expression(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	return subtilis_exp_not(p->p, e, err);
+	return subtilis_exp_not(p, e, err);
 }
 
 static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
@@ -254,7 +254,7 @@ static subtilis_exp_t *prv_priority3(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		e1 = exp_fn(p->p, e1, e2, err);
+		e1 = exp_fn(p, e1, e2, err);
 		e2 = NULL;
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
@@ -296,7 +296,7 @@ static subtilis_exp_t *prv_priority4(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		e1 = exp_fn(p->p, e1, e2, err);
+		e1 = exp_fn(p, e1, e2, err);
 		e2 = NULL;
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
@@ -334,7 +334,7 @@ static subtilis_exp_t *prv_priority6(subtilis_parser_t *p, subtilis_token_t *t,
 		e2 = prv_priority5(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		e1 = subtilis_exp_and(p->p, e1, e2, err);
+		e1 = subtilis_exp_and(p, e1, e2, err);
 		e2 = NULL;
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
@@ -372,7 +372,7 @@ static subtilis_exp_t *prv_priority7(subtilis_parser_t *p, subtilis_token_t *t,
 		e2 = prv_priority6(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		e1 = exp_fn(p->p, e1, e2, err);
+		e1 = exp_fn(p, e1, e2, err);
 		e2 = NULL;
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
