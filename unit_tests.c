@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <locale.h>
+
 #include "lexer_test.h"
 #include "parser_test.h"
 #include "symbol_table_test.h"
@@ -21,6 +23,8 @@
 int main(int argc, char *argv[])
 {
 	int failure = 0;
+
+	setlocale(LC_ALL, "C");
 
 	failure |= lexer_test();
 	failure |= symbol_table_test();
