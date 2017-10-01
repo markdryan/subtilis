@@ -243,6 +243,26 @@ static const expression_test_t expression_tests[] = {
 	  "PRINT NOT TRUE\n"
 	  "PRINT NOT &fffffff0\n",
 	  "0\n-1\n0\n15\n"},
+	{ "parser_eq",
+	  "LET b% = &ff\n"
+	  "PRINT 10 = 5 + 5\n"
+	  "PRINT b% = 255\n"
+	  "PRINT b% = 254\n"
+	  "LET c% = 255\n"
+	  "PRINT c% = b%\n"
+	  "LET c% = b% = 254\n"
+	  "PRINT c%\n",
+	  "-1\n-1\n0\n-1\n0\n"},
+	{ "parser_neq",
+	  "LET b% = &ff\n"
+	  "PRINT 10 <> 5 + 5\n"
+	  "PRINT b% <> 255\n"
+	  "PRINT b% <> 254\n"
+	  "LET c% = 255\n"
+	  "PRINT c% <> b%\n"
+	  "LET c% = b% <> 254\n"
+	  "PRINT c%\n",
+	  "0\n0\n-1\n0\n-1\n"},
 };
 
 /* clang-format on */
