@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <locale.h>
 #include <stdio.h>
 
 #include "error.h"
@@ -31,6 +32,8 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Usage: basicc file\n");
 		return 1;
 	}
+
+	setlocale(LC_ALL, "C");
 
 	subtilis_error_init(&err);
 	subtilis_stream_from_file(&s, argv[1], &err);
