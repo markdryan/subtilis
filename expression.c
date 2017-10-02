@@ -81,7 +81,7 @@ static subtilis_exp_t *prv_exp_commutative(subtilis_parser_t *p,
 	case SUBTILIS_EXP_CONST_REAL:
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
-			com->op_int_real(a1, a2);
+			com->op_int_real(a2, a1);
 			break;
 		case SUBTILIS_EXP_CONST_REAL:
 			com->op_real_real(a1, a2);
