@@ -238,6 +238,32 @@ static void prv_neqii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] == ops[2].integer ? 0 : -1;
 }
 
+static void prv_gti32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		      subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] =
+	    vm->regs[ops[1].integer] > vm->regs[ops[2].integer] ? -1 : 0;
+}
+
+static void prv_gtii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] > ops[2].integer ? -1 : 0;
+}
+
+static void prv_ltei32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] =
+	    vm->regs[ops[1].integer] <= vm->regs[ops[2].integer] ? -1 : 0;
+}
+
+static void prv_lteii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] <= ops[2].integer ? -1 : 0;
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -284,6 +310,10 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_eqii32,                          /* SUBTILIS_OP_INSTR_EQI_I32 */
 	prv_neqi32,                          /* SUBTILIS_OP_INSTR_NEQ_I32 */
 	prv_neqii32,                         /* SUBTILIS_OP_INSTR_NEQI_I32 */
+	prv_gti32,                           /* SUBTILIS_OP_INSTR_GT_I32 */
+	prv_gtii32,                          /* SUBTILIS_OP_INSTR_GTI_I32 */
+	prv_ltei32,                          /* SUBTILIS_OP_INSTR_LTE_I32 */
+	prv_lteii32,                         /* SUBTILIS_OP_INSTR_LTEI_I32 */
 };
 
 /* clang-format on */
