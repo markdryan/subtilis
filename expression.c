@@ -810,6 +810,162 @@ subtilis_exp_t *subtilis_exp_neq(subtilis_parser_t *p, subtilis_exp_t *a1,
 	return prv_exp_commutative(p, a1, a2, &com, err);
 }
 
+static void prv_gt_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.integer =
+	    a1->exp.ir_op.integer > a2->exp.ir_op.integer ? -1 : 0;
+}
+
+static void prv_gt_int_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.integer =
+	    ((double)a1->exp.ir_op.integer) > a2->exp.ir_op.real ? -1 : 0;
+}
+
+static void prv_gt_real_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.integer =
+	    a1->exp.ir_op.real > ((double)a2->exp.ir_op.integer) ? -1 : 0;
+	a1->type = SUBTILIS_EXP_CONST_INTEGER;
+}
+
+static void prv_gt_real_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.integer =
+	    a1->exp.ir_op.real > a2->exp.ir_op.real ? -1 : 0;
+	a1->type = SUBTILIS_EXP_CONST_INTEGER;
+}
+
+static void prv_gt_intvar_int(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+			      subtilis_exp_t *a2, bool swapped,
+			      subtilis_error_t *err)
+{
+	subtilis_op_instr_type_t instr;
+	size_t reg;
+
+	instr =
+	    swapped ? SUBTILIS_OP_INSTR_LTEI_I32 : SUBTILIS_OP_INSTR_GTI_I32;
+	reg = subtilis_ir_program_add_instr(p, instr, a1->exp.ir_op,
+					    a2->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	a1->exp.ir_op.reg = reg;
+}
+
+static void prv_gt_intvar_intvar(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+				 subtilis_exp_t *a2, bool swapped,
+				 subtilis_error_t *err)
+{
+	size_t reg;
+
+	reg = subtilis_ir_program_add_instr(p, SUBTILIS_OP_INSTR_GT_I32,
+					    a1->exp.ir_op, a2->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	a1->exp.ir_op.reg = reg;
+}
+
+subtilis_exp_t *subtilis_exp_gt(subtilis_parser_t *p, subtilis_exp_t *a1,
+				subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	subtilis_non_commutative_exp_t no = {
+	    .op_int_int = prv_gt_int_int,
+	    .op_int_real = prv_gt_int_real,
+	    .op_real_int = prv_gt_real_int,
+	    .op_real_real = prv_gt_real_real,
+	    .op_intvar_int = prv_gt_intvar_int,
+	    .op_intvar_intvar = prv_gt_intvar_intvar,
+	};
+
+	if ((a1->type == SUBTILIS_EXP_CONST_STRING ||
+	     a1->type == SUBTILIS_EXP_STRING) &&
+	    (a2->type == SUBTILIS_EXP_CONST_STRING ||
+	     a2->type == SUBTILIS_EXP_STRING)) {
+		subtilis_error_set_asssertion_failed(err);
+		return NULL;
+	}
+
+	return prv_exp_non_commutative(p, a1, a2, &no, err);
+}
+
+static void prv_lte_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.integer =
+	    a1->exp.ir_op.integer <= a2->exp.ir_op.integer ? -1 : 0;
+}
+
+static void prv_lte_int_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.integer =
+	    ((double)a1->exp.ir_op.integer) <= a2->exp.ir_op.real ? -1 : 0;
+}
+
+static void prv_lte_real_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.integer =
+	    a1->exp.ir_op.real <= ((double)a2->exp.ir_op.integer) ? -1 : 0;
+	a1->type = SUBTILIS_EXP_CONST_INTEGER;
+}
+
+static void prv_lte_real_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
+{
+	a1->exp.ir_op.integer =
+	    a1->exp.ir_op.real <= a2->exp.ir_op.real ? -1 : 0;
+	a1->type = SUBTILIS_EXP_CONST_INTEGER;
+}
+
+static void prv_lte_intvar_int(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+			       subtilis_exp_t *a2, bool swapped,
+			       subtilis_error_t *err)
+{
+	subtilis_op_instr_type_t instr;
+	size_t reg;
+
+	instr =
+	    swapped ? SUBTILIS_OP_INSTR_GTI_I32 : SUBTILIS_OP_INSTR_LTEI_I32;
+	reg = subtilis_ir_program_add_instr(p, instr, a1->exp.ir_op,
+					    a2->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	a1->exp.ir_op.reg = reg;
+}
+
+static void prv_lte_intvar_intvar(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+				  subtilis_exp_t *a2, bool swapped,
+				  subtilis_error_t *err)
+{
+	size_t reg;
+
+	reg = subtilis_ir_program_add_instr(p, SUBTILIS_OP_INSTR_LTE_I32,
+					    a1->exp.ir_op, a2->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	a1->exp.ir_op.reg = reg;
+}
+
+subtilis_exp_t *subtilis_exp_lte(subtilis_parser_t *p, subtilis_exp_t *a1,
+				 subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	subtilis_non_commutative_exp_t no = {
+	    .op_int_int = prv_lte_int_int,
+	    .op_int_real = prv_lte_int_real,
+	    .op_real_int = prv_lte_real_int,
+	    .op_real_real = prv_lte_real_real,
+	    .op_intvar_int = prv_lte_intvar_int,
+	    .op_intvar_intvar = prv_lte_intvar_intvar,
+	};
+
+	if ((a1->type == SUBTILIS_EXP_CONST_STRING ||
+	     a1->type == SUBTILIS_EXP_STRING) &&
+	    (a2->type == SUBTILIS_EXP_CONST_STRING ||
+	     a2->type == SUBTILIS_EXP_STRING)) {
+		subtilis_error_set_asssertion_failed(err);
+		return NULL;
+	}
+
+	return prv_exp_non_commutative(p, a1, a2, &no, err);
+}
+
 void subtilis_exp_delete(subtilis_exp_t *e)
 {
 	if (!e)

@@ -524,6 +524,50 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_NEQI_I32,
+
+	/*
+	 * gti32 r0, r1, r2
+	 *
+	 * Compares the 32 bit integers in r1 and r2, storing -1 in
+	 * r0 if r1 > r2 and 0 otherwise.
+	 *
+	 * r0 = r1 > r2 ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_GT_I32,
+	/*
+	 * gtii32 r0, r1, i32
+	 *
+	 * Compares the 32 bit integers in r1 with a 32 bit immediate
+	 * constant, storing -1 in r0 if the value in r1 is greater than
+	 * the immediate constant and 0 otherwise.
+	 *
+	 * r0 = r1 > i32 ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_GTI_I32,
+
+	/*
+	 * ltei32 r0, r1, r2
+	 *
+	 * Compares the 32 bit integers in r1 and r2, storing -1 in
+	 * r0 if r1 <= r2 and 0 otherwise.
+	 *
+	 * r0 = r1 <= r2 ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_LTE_I32,
+	/*
+	 * lteii32 r0, r1, i32
+	 *
+	 * Compares the 32 bit integers in r1 with a 32 bit immediate
+	 * constant, storing -1 in r0 if the value in r1 is less than
+	 * or equal to the immediate constant and 0 otherwise.
+	 *
+	 * r0 = r1 <= i32 ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_LTEI_I32,
 } subtilis_op_instr_type_t;
 
 // TODO: Need a type for pointer offsets.  These may not always
