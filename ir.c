@@ -254,6 +254,10 @@ static const subtilis_ir_op_desc_t op_dump_fns[] = {
 	{ "gtii32", prv_dump_reg_reg_i32},   /* SUBTILIS_OP_INSTR_GTII_I32 */
 	{ "ltei32", prv_dump_reg_reg_reg},   /* SUBTILIS_OP_INSTR_LTE_I32 */
 	{ "lteii32", prv_dump_reg_reg_i32},  /* SUBTILIS_OP_INSTR_LTEI_I32 */
+	{ "lti32", prv_dump_reg_reg_reg},    /* SUBTILIS_OP_INSTR_LT_I32 */
+	{ "ltii32", prv_dump_reg_reg_i32},   /* SUBTILIS_OP_INSTR_LTII_I32 */
+	{ "gtei32", prv_dump_reg_reg_reg},   /* SUBTILIS_OP_INSTR_GTE_I32 */
+	{ "gteii32", prv_dump_reg_reg_i32},  /* SUBTILIS_OP_INSTR_GTEI_I32 */
 };
 
 /* clang-format on */

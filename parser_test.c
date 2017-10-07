@@ -283,6 +283,26 @@ static const expression_test_t expression_tests[] = {
 	  "LET c% = b% <= 254\n"
 	  "PRINT c%\n",
 	  "-1\n-1\n0\n-1\n0\n"},
+	{ "parser_lt",
+	  "LET b% = &ff\n"
+	  "PRINT 10 < 5 + 5\n"
+	  "PRINT b% < 255\n"
+	  "PRINT 256 < b%\n"
+	  "LET c% = 255\n"
+	  "PRINT c% < b%\n"
+	  "LET c% = 254 < b%\n"
+	  "PRINT c%\n",
+	  "0\n0\n0\n0\n-1\n"},
+	{ "parser_gte",
+	  "LET b% = &ff\n"
+	  "PRINT 10 >= 5 + 5\n"
+	  "PRINT b% >= 255\n"
+	  "PRINT 256 >= b%\n"
+	  "LET c% = 255\n"
+	  "PRINT c% >= b%\n"
+	  "LET c% = 254 >= b%\n"
+	  "PRINT c%\n",
+	  "-1\n-1\n-1\n-1\n0\n"},
 };
 
 /* clang-format on */
