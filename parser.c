@@ -333,6 +333,10 @@ static subtilis_exp_t *prv_priority5(subtilis_parser_t *p, subtilis_token_t *t,
 			exp_fn = subtilis_exp_gt;
 		else if (!strcmp(tbuf, "<="))
 			exp_fn = subtilis_exp_lte;
+		else if (!strcmp(tbuf, "<"))
+			exp_fn = subtilis_exp_lt;
+		else if (!strcmp(tbuf, ">="))
+			exp_fn = subtilis_exp_gte;
 		else
 			break;
 		subtilis_lexer_get(p->l, t, err);
