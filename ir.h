@@ -35,6 +35,7 @@ enum {
 
 typedef enum {
 	SUBTILIS_OP_INSTR,
+	SUBTILIS_OP_LABEL,
 	SUBTILIS_OP_PHI,
 } subtilis_op_type_t;
 
@@ -617,6 +618,25 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_GTEI_I32,
+
+	/*
+	 * JMPC r0, label1, label2
+	 *
+	 * Jumps to label1 if the value of r0 is non zero and jumps to label2
+	 * otherwise.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_JMPC,
+
+	/*
+	 * JMPC label1
+	 *
+	 * Unconditionally Jumps to label1.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_JMP,
 } subtilis_op_instr_type_t;
 
 // TODO: Need a type for pointer offsets.  These may not always
@@ -626,6 +646,7 @@ union subtilis_ir_operand_t_ {
 	int32_t integer;
 	double real;
 	size_t reg;
+	size_t label;
 };
 
 typedef union subtilis_ir_operand_t_ subtilis_ir_operand_t;
@@ -641,6 +662,7 @@ struct subtilis_ir_op_t_ {
 	subtilis_op_type_t type;
 	union {
 		subtilis_ir_inst_t instr;
+		size_t label;
 	} op;
 };
 
@@ -648,6 +670,7 @@ typedef struct subtilis_ir_op_t_ subtilis_ir_op_t;
 
 struct subtilis_ir_program_t_ {
 	size_t reg_counter;
+	size_t label_counter;
 	size_t len;
 	size_t max_len;
 	subtilis_ir_op_t **ops;
@@ -677,5 +700,8 @@ void subtilis_ir_program_add_instr_reg(subtilis_ir_program_t *p,
 				       subtilis_ir_operand_t op2,
 				       subtilis_error_t *err);
 void subtilis_ir_program_dump(subtilis_ir_program_t *p);
+size_t subtilis_ir_program_new_label(subtilis_ir_program_t *p);
+void subtilis_ir_program_add_label(subtilis_ir_program_t *p, size_t l,
+				   subtilis_error_t *err);
 
 #endif

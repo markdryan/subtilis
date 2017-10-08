@@ -46,6 +46,9 @@ typedef enum {
 	SUBTILIS_ERROR_BAD_EXPRESSION,
 	SUBTILIS_ERROR_DIVIDE_BY_ZERO,
 	SUBTILIS_ERROR_UNKNOWN_VARIABLE,
+	SUBTILIS_ERROR_INTEGER_EXP_EXPECTED,
+	SUBTILIS_ERROR_EXPECTED,
+	SUBTILIS_ERROR_COMPOUND_NOT_TERM,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -124,6 +127,14 @@ void subtilis_error_init(subtilis_error_t *e);
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_DIVIDE_BY_ZERO, file, line)
 #define subtilis_error_set_unknown_variable(e, str, file, line)                \
 	subtilis_error_set1(e, SUBTILIS_ERROR_UNKNOWN_VARIABLE, str, file, line)
+#define subtilis_error_set_integer_exp_expected(e, file, line)                 \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_INTEGER_EXP_EXPECTED, file, \
+				 line)
+#define subtilis_error_set_expected(e, exp, found, file, line)                 \
+	subtilis_error_set2(e, SUBTILIS_ERROR_EXPECTED, exp, found, file, line)
+#define subtilis_error_set_compund_not_term(e, file, line)                     \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_COMPOUND_NOT_TERM, file,    \
+				 line)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,

@@ -30,6 +30,9 @@ struct subitlis_vm_t_ {
 	subtilis_ir_program_t *p;
 	subtilis_symbol_table_t *st;
 	size_t pc;
+	size_t *labels;
+	size_t label_len;
+	size_t max_labels;
 };
 
 typedef struct subitlis_vm_t_ subitlis_vm_t;

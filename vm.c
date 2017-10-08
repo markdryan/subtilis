@@ -19,6 +19,41 @@
 
 #include "vm.h"
 
+static void prv_ensure_label_buffer(subitlis_vm_t *vm, size_t label,
+				    subtilis_error_t *err)
+{
+	size_t new_max;
+	size_t *new_labels;
+
+	if (label < vm->max_labels)
+		return;
+
+	new_max = label + SUBTILIS_CONFIG_LABEL_GRAN;
+	new_labels = realloc(vm->labels, new_max * sizeof(size_t));
+	if (!new_labels) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	vm->max_labels = new_max;
+	vm->labels = new_labels;
+}
+
+static void prv_compute_labels(subitlis_vm_t *vm, subtilis_error_t *err)
+{
+	size_t i;
+	size_t label;
+
+	for (i = 0; i < vm->p->len; i++) {
+		if (vm->p->ops[i]->type != SUBTILIS_OP_LABEL)
+			continue;
+		label = vm->p->ops[i]->op.label;
+		prv_ensure_label_buffer(vm, label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		vm->labels[label] = i;
+	}
+}
+
 subitlis_vm_t *subitlis_vm_new(subtilis_ir_program_t *p,
 			       subtilis_symbol_table_t *st,
 			       subtilis_error_t *err)
@@ -27,6 +62,9 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_program_t *p,
 
 	//	printf("\n");
 	//	subtilis_ir_program_dump(p);
+
+	vm->labels = NULL;
+	vm->max_labels = 0;
 
 	if (!vm) {
 		subtilis_error_set_oom(err);
@@ -47,6 +85,10 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_program_t *p,
 
 	vm->p = p;
 	vm->st = st;
+
+	prv_compute_labels(vm, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto fail;
 
 	return vm;
 
@@ -290,6 +332,40 @@ static void prv_gteii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] >= ops[2].integer ? -1 : 0;
 }
 
+static void prv_jmpc(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	size_t label;
+
+	label = (vm->regs[ops[0].reg]) ? ops[1].label : ops[2].label;
+	if (label > vm->max_labels) {
+		subtilis_error_set_asssertion_failed(err);
+		return;
+	}
+	vm->pc = vm->labels[label];
+	if (vm->pc >= vm->p->len) {
+		subtilis_error_set_asssertion_failed(err);
+		return;
+	}
+}
+
+static void prv_jmp(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	size_t label;
+
+	label = ops[0].label;
+	if (label > vm->max_labels) {
+		subtilis_error_set_asssertion_failed(err);
+		return;
+	}
+	vm->pc = vm->labels[label];
+	if (vm->pc >= vm->p->len) {
+		subtilis_error_set_asssertion_failed(err);
+		return;
+	}
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -344,6 +420,8 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_ltii32,                          /* SUBTILIS_OP_INSTR_LTI_I32 */
 	prv_gtei32,                          /* SUBTILIS_OP_INSTR_GTE_I32 */
 	prv_gteii32,                         /* SUBTILIS_OP_INSTR_GTEI_I32 */
+	prv_jmpc,                            /* SUBTILIS_OP_INSTR_JMPC */
+	prv_jmp,                             /* SUBTILIS_OP_INSTR_JMP */
 };
 
 /* clang-format on */
@@ -351,18 +429,17 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 void subitlis_vm_run(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		     subtilis_error_t *err)
 {
-	size_t i;
 	subtilis_ir_operand_t *ops;
 	subtilis_vm_op_fn fn;
 	subtilis_op_instr_type_t itype;
 
-	for (i = 0; i < vm->p->len; i++) {
-		if (!vm->p->ops[i])
+	for (vm->pc = 0; vm->pc < vm->p->len; vm->pc++) {
+		if (!vm->p->ops[vm->pc])
 			continue;
-		if (vm->p->ops[i]->type != SUBTILIS_OP_INSTR)
+		if (vm->p->ops[vm->pc]->type != SUBTILIS_OP_INSTR)
 			continue;
-		itype = vm->p->ops[i]->op.instr.type;
-		ops = vm->p->ops[i]->op.instr.operands;
+		itype = vm->p->ops[vm->pc]->op.instr.type;
+		ops = vm->p->ops[vm->pc]->op.instr.operands;
 		fn = op_execute_fns[itype];
 		if (!fn) {
 			subtilis_error_set_asssertion_failed(err);
@@ -378,6 +455,7 @@ void subitlis_vm_delete(subitlis_vm_t *vm)
 {
 	if (!vm)
 		return;
+	free(vm->labels);
 	free(vm->regs);
 	free(vm->globals);
 	free(vm);
