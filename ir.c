@@ -31,6 +31,7 @@ subtilis_ir_program_t *subtilis_ir_program_new(subtilis_error_t *err)
 	}
 	p->max_len = 0;
 	p->reg_counter = SUBTILIS_IR_REG_TEMP_START;
+	p->label_counter = 0;
 	p->len = 0;
 	p->ops = NULL;
 
@@ -176,6 +177,14 @@ static void prv_dump_reg_reg_real(subtilis_ir_op_t *op)
 	       instr->operands[1].reg, instr->operands[2].real);
 }
 
+static void prv_dump_reg_label_label(subtilis_ir_op_t *op)
+{
+	subtilis_ir_inst_t *instr = &op->op.instr;
+
+	printf("r%zu, label_%zu, label_%zu", instr->operands[0].reg,
+	       instr->operands[1].label, instr->operands[2].label);
+}
+
 static void prv_dump_reg_i32(subtilis_ir_op_t *op)
 {
 	subtilis_ir_inst_t *instr = &op->op.instr;
@@ -202,6 +211,13 @@ static void prv_dump_reg(subtilis_ir_op_t *op)
 	subtilis_ir_inst_t *instr = &op->op.instr;
 
 	printf("r%zu", instr->operands[0].reg);
+}
+
+static void prv_dump_label(subtilis_ir_op_t *op)
+{
+	subtilis_ir_inst_t *instr = &op->op.instr;
+
+	printf("label_%zu", instr->operands[0].reg);
 }
 
 /* clang-format off */
@@ -258,6 +274,8 @@ static const subtilis_ir_op_desc_t op_dump_fns[] = {
 	{ "ltii32", prv_dump_reg_reg_i32},   /* SUBTILIS_OP_INSTR_LTII_I32 */
 	{ "gtei32", prv_dump_reg_reg_reg},   /* SUBTILIS_OP_INSTR_GTE_I32 */
 	{ "gteii32", prv_dump_reg_reg_i32},  /* SUBTILIS_OP_INSTR_GTEI_I32 */
+	{ "jmpc", prv_dump_reg_label_label}, /* SUBTILIS_OP_INSTR_JMPC */
+	{ "jmp", prv_dump_label},            /* SUBTILIS_OP_INSTR_JMP */
 };
 
 /* clang-format on */
@@ -270,11 +288,39 @@ void subtilis_ir_program_dump(subtilis_ir_program_t *p)
 	for (i = 0; i < p->len; i++) {
 		if (!p->ops[i])
 			continue;
-		if (p->ops[i]->type != SUBTILIS_OP_INSTR)
+		if (p->ops[i]->type == SUBTILIS_OP_INSTR) {
+			itype = p->ops[i]->op.instr.type;
+			printf("\t%s ", op_dump_fns[itype].name);
+			op_dump_fns[itype].fn(p->ops[i]);
+		} else if (p->ops[i]->type == SUBTILIS_OP_LABEL) {
+			printf("label_%zu", p->ops[i]->op.label);
+		} else {
 			continue;
-		itype = p->ops[i]->op.instr.type;
-		printf("%s ", op_dump_fns[itype].name);
-		op_dump_fns[itype].fn(p->ops[i]);
+		}
 		printf("\n");
 	}
+}
+
+size_t subtilis_ir_program_new_label(subtilis_ir_program_t *p)
+{
+	return p->label_counter++;
+}
+
+void subtilis_ir_program_add_label(subtilis_ir_program_t *p, size_t l,
+				   subtilis_error_t *err)
+{
+	subtilis_ir_op_t *op;
+
+	prv_ensure_buffer(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op = malloc(sizeof(*op));
+	if (!op) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	op->type = SUBTILIS_OP_LABEL;
+	op->op.label = l;
+	p->ops[p->len++] = op;
 }

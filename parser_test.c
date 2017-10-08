@@ -303,6 +303,20 @@ static const expression_test_t expression_tests[] = {
 	  "LET c% = 254 >= b%\n"
 	  "PRINT c%\n",
 	  "-1\n-1\n-1\n-1\n0\n"},
+	{ "parser_if",
+	  "IF 10 >= 5 + 5 THEN\n"
+	  "  PRINT TRUE\n"
+	  "ELSE\n"
+	  "  PRINT FALSE\n"
+	  "ENDIF\n"
+	  "PRINT 32\n"
+	  "LET b% = &ff\n"
+	  "IF b% > 255 THEN PRINT 100 ENDIF\n"
+	  "IF b% <= 255 THEN\n"
+	  "  PRINT 200\n"
+	  "  PRINT 300\n"
+	  "ENDIF\n",
+	  "-1\n32\n200\n300\n"},
 };
 
 /* clang-format on */

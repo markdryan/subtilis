@@ -568,6 +568,175 @@ cleanup:
 	subtilis_exp_delete(e);
 }
 
+static subtilis_keyword_type_t
+prv_if_compund(subtilis_parser_t *p, subtilis_token_t *t, subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_keyword_fn fn;
+	subtilis_keyword_type_t key_type = SUBTILIS_KEYWORD_MAX;
+	unsigned int start;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return key_type;
+	start = p->l->line;
+	while (t->type != SUBTILIS_TOKEN_EOF) {
+		if (t->type != SUBTILIS_TOKEN_KEYWORD) {
+			tbuf = subtilis_token_get_text(t);
+			subtilis_error_set_keyword_expected(
+			    err, tbuf, p->l->stream->name, p->l->line);
+			return key_type;
+		}
+
+		key_type = t->tok.keyword.type;
+		if ((key_type == SUBTILIS_KEYWORD_ELSE) ||
+		    (key_type == SUBTILIS_KEYWORD_ENDIF))
+			break;
+
+		fn = keyword_fns[key_type];
+		if (!fn) {
+			tbuf = subtilis_token_get_text(t);
+			subtilis_error_set_not_supported(
+			    err, tbuf, p->l->stream->name, p->l->line);
+			return key_type;
+		}
+		fn(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return key_type;
+	}
+
+	if (t->type == SUBTILIS_TOKEN_EOF)
+		subtilis_error_set_compund_not_term(err, p->l->stream->name,
+						    start);
+
+	return key_type;
+}
+
+static void prv_compound(subtilis_parser_t *p, subtilis_token_t *t,
+			 subtilis_keyword_type_t end_key, subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_keyword_fn fn;
+	unsigned int start;
+	subtilis_keyword_type_t key_type;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	start = p->l->line;
+	while (t->type != SUBTILIS_TOKEN_EOF) {
+		if (t->type != SUBTILIS_TOKEN_KEYWORD) {
+			tbuf = subtilis_token_get_text(t);
+			subtilis_error_set_keyword_expected(
+			    err, tbuf, p->l->stream->name, p->l->line);
+			return;
+		}
+
+		key_type = t->tok.keyword.type;
+		if (key_type == end_key)
+			break;
+
+		fn = keyword_fns[key_type];
+		if (!fn) {
+			tbuf = subtilis_token_get_text(t);
+			subtilis_error_set_not_supported(
+			    err, tbuf, p->l->stream->name, p->l->line);
+			return;
+		}
+		fn(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	if (t->type == SUBTILIS_TOKEN_EOF)
+		subtilis_error_set_compund_not_term(err, p->l->stream->name,
+						    start);
+}
+
+static void prv_if(subtilis_parser_t *p, subtilis_token_t *t,
+		   subtilis_error_t *err)
+{
+	subtilis_exp_t *e = NULL;
+	const char *tbuf;
+	subtilis_ir_operand_t cond;
+	subtilis_ir_operand_t true_label;
+	subtilis_ir_operand_t false_label;
+	subtilis_ir_operand_t end_label;
+	subtilis_keyword_type_t key_type;
+
+	e = prv_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/* TODO: Probably need to allow for floating point numbers as well
+	 * here
+	 */
+
+	if (e->type == SUBTILIS_EXP_CONST_INTEGER) {
+		cond.reg = subtilis_ir_program_add_instr2(
+		    p->p, SUBTILIS_OP_INSTR_MOVI_I32, e->exp.ir_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	} else if (e->type == SUBTILIS_EXP_INTEGER) {
+		cond.reg = e->exp.ir_op.reg;
+	} else {
+		subtilis_error_set_integer_exp_expected(err, p->l->stream->name,
+							p->l->line);
+		goto cleanup;
+	}
+
+	if ((t->type != SUBTILIS_TOKEN_KEYWORD) ||
+	    (t->tok.keyword.type != SUBTILIS_KEYWORD_THEN)) {
+		tbuf = subtilis_token_get_text(t);
+		subtilis_error_set_expected(err, "THEN", tbuf,
+					    p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
+	true_label.reg = subtilis_ir_program_new_label(p->p);
+	false_label.reg = subtilis_ir_program_new_label(p->p);
+
+	subtilis_ir_program_add_instr_reg(p->p, SUBTILIS_OP_INSTR_JMPC, cond,
+					  true_label, false_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	subtilis_ir_program_add_label(p->p, true_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	key_type = prv_if_compund(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (key_type == SUBTILIS_KEYWORD_ELSE) {
+		end_label.reg = subtilis_ir_program_new_label(p->p);
+		subtilis_ir_program_add_instr_no_reg(
+		    p->p, SUBTILIS_OP_INSTR_JMP, end_label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		subtilis_ir_program_add_label(p->p, false_label.reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		prv_compound(p, t, SUBTILIS_KEYWORD_ENDIF, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		subtilis_ir_program_add_label(p->p, end_label.reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	} else {
+		subtilis_ir_program_add_label(p->p, false_label.reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+cleanup:
+	subtilis_exp_delete(e);
+}
+
 void prv_root(subtilis_parser_t *p, subtilis_token_t *t, subtilis_error_t *err)
 {
 	const char *tbuf;
@@ -680,7 +849,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_GOTO */
 	NULL, /* SUBTILIS_KEYWORD_HELP */
 	NULL, /* SUBTILIS_KEYWORD_HIMEM */
-	NULL, /* SUBTILIS_KEYWORD_IF */
+	prv_if, /* SUBTILIS_KEYWORD_IF */
 	NULL, /* SUBTILIS_KEYWORD_INKEY */
 	NULL, /* SUBTILIS_KEYWORD_INKEY_STR */
 	NULL, /* SUBTILIS_KEYWORD_INPUT */

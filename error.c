@@ -97,6 +97,15 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_UNKNOWN_VARIABLE */
 	{"Unknown variable %s.\n", 1},
+
+	/* SUBTILIS_ERROR_INTEGER_EXP_EXPECTED */
+	{"Integer expression expected .\n", 0},
+
+	/* SUBTILIS_ERROR_EXPECTED */
+	{"%s expected, found %s .\n", 2},
+
+	/* SUBTILIS_COMPOUND_NOT_TERM */
+	{"Compund statement not terminated.\n", 0},
 };
 
 /* clang-format on */
