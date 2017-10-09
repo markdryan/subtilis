@@ -1,0 +1,5 @@
+LET i% = 0
+WHILE i% < 5
+  PRINT i%
+  LET i%=i%+1
+ENDWHILE
