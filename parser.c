@@ -650,10 +650,47 @@ static void prv_compound(subtilis_parser_t *p, subtilis_token_t *t,
 						    start);
 }
 
+static subtilis_exp_t *prv_conditional_exp(subtilis_parser_t *p,
+					   subtilis_token_t *t,
+					   subtilis_ir_operand_t *cond,
+					   subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+	size_t reg;
+
+	e = prv_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	/* TODO: Probably need to allow for floating point numbers as well
+	 * here
+	 */
+
+	if (e->type == SUBTILIS_EXP_CONST_INTEGER) {
+		reg = subtilis_ir_program_add_instr2(
+		    p->p, SUBTILIS_OP_INSTR_MOVI_I32, e->exp.ir_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		cond->reg = reg;
+	} else if (e->type == SUBTILIS_EXP_INTEGER) {
+		cond->reg = e->exp.ir_op.reg;
+	} else {
+		subtilis_error_set_integer_exp_expected(err, p->l->stream->name,
+							p->l->line);
+		goto cleanup;
+	}
+
+	return e;
+
+cleanup:
+	subtilis_exp_delete(e);
+	return NULL;
+}
+
 static void prv_if(subtilis_parser_t *p, subtilis_token_t *t,
 		   subtilis_error_t *err)
 {
-	subtilis_exp_t *e = NULL;
+	subtilis_exp_t *e;
 	const char *tbuf;
 	subtilis_ir_operand_t cond;
 	subtilis_ir_operand_t true_label;
@@ -661,26 +698,9 @@ static void prv_if(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_ir_operand_t end_label;
 	subtilis_keyword_type_t key_type;
 
-	e = prv_expression(p, t, err);
+	e = prv_conditional_exp(p, t, &cond, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-
-	/* TODO: Probably need to allow for floating point numbers as well
-	 * here
-	 */
-
-	if (e->type == SUBTILIS_EXP_CONST_INTEGER) {
-		cond.reg = subtilis_ir_program_add_instr2(
-		    p->p, SUBTILIS_OP_INSTR_MOVI_I32, e->exp.ir_op, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-	} else if (e->type == SUBTILIS_EXP_INTEGER) {
-		cond.reg = e->exp.ir_op.reg;
-	} else {
-		subtilis_error_set_integer_exp_expected(err, p->l->stream->name,
-							p->l->line);
-		goto cleanup;
-	}
 
 	if ((t->type != SUBTILIS_TOKEN_KEYWORD) ||
 	    (t->tok.keyword.type != SUBTILIS_KEYWORD_THEN)) {
@@ -751,26 +771,9 @@ static void prv_while(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = prv_expression(p, t, err);
+	e = prv_conditional_exp(p, t, &cond, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-
-	/* TODO: Probably need to allow for floating point numbers as well
-	 * here
-	 */
-
-	if (e->type == SUBTILIS_EXP_CONST_INTEGER) {
-		cond.reg = subtilis_ir_program_add_instr2(
-		    p->p, SUBTILIS_OP_INSTR_MOVI_I32, e->exp.ir_op, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-	} else if (e->type == SUBTILIS_EXP_INTEGER) {
-		cond.reg = e->exp.ir_op.reg;
-	} else {
-		subtilis_error_set_integer_exp_expected(err, p->l->stream->name,
-							p->l->line);
-		goto cleanup;
-	}
 
 	true_label.reg = subtilis_ir_program_new_label(p->p);
 	false_label.reg = subtilis_ir_program_new_label(p->p);
