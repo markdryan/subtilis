@@ -317,6 +317,24 @@ static const expression_test_t expression_tests[] = {
 	  "  PRINT 300\n"
 	  "ENDIF\n",
 	  "-1\n32\n200\n300\n"},
+	{ "parser_while",
+	  "LET i% = 0\n"
+	  "WHILE i% < 5\n"
+	  "  PRINT i%\n"
+	  "  LET i%=i%+1\n"
+	  "ENDWHILE\n",
+	  "0\n1\n2\n3\n4\n"},
+	{ "parser_if_and_while",
+	  "LET i% = 0\n"
+	  "WHILE i% < 6\n"
+	  "  IF i% AND 1 THEN\n"
+	  "    PRINT FALSE\n"
+	  "  ELSE\n"
+	  "    PRINT TRUE\n"
+	  "  ENDIF\n"
+	  "  LET i%=i%+1\n"
+	  "ENDWHILE\n",
+	  "-1\n0\n-1\n0\n-1\n0\n"},
 };
 
 /* clang-format on */
