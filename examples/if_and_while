@@ -1,0 +1,9 @@
+LET i% = 0
+WHILE i% < 6
+  IF i% AND 1 THEN
+    PRINT FALSE
+  ELSE
+    PRINT TRUE
+  ENDIF
+  LET i%=i%+1
+ENDWHILE
