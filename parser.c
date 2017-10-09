@@ -620,9 +620,6 @@ static void prv_compound(subtilis_parser_t *p, subtilis_token_t *t,
 	unsigned int start;
 	subtilis_keyword_type_t key_type;
 
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 	start = p->l->line;
 	while (t->type != SUBTILIS_TOKEN_EOF) {
 		if (t->type != SUBTILIS_TOKEN_KEYWORD) {
@@ -717,6 +714,9 @@ static void prv_if(subtilis_parser_t *p, subtilis_token_t *t,
 		subtilis_ir_program_add_label(p->p, false_label.reg, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 		prv_compound(p, t, SUBTILIS_KEYWORD_ENDIF, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
@@ -728,6 +728,74 @@ static void prv_if(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 	}
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+cleanup:
+	subtilis_exp_delete(e);
+}
+
+static void prv_while(subtilis_parser_t *p, subtilis_token_t *t,
+		      subtilis_error_t *err)
+{
+	subtilis_exp_t *e = NULL;
+	subtilis_ir_operand_t cond;
+	subtilis_ir_operand_t start_label;
+	subtilis_ir_operand_t true_label;
+	subtilis_ir_operand_t false_label;
+
+	start_label.reg = subtilis_ir_program_new_label(p->p);
+	subtilis_ir_program_add_label(p->p, start_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = prv_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/* TODO: Probably need to allow for floating point numbers as well
+	 * here
+	 */
+
+	if (e->type == SUBTILIS_EXP_CONST_INTEGER) {
+		cond.reg = subtilis_ir_program_add_instr2(
+		    p->p, SUBTILIS_OP_INSTR_MOVI_I32, e->exp.ir_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	} else if (e->type == SUBTILIS_EXP_INTEGER) {
+		cond.reg = e->exp.ir_op.reg;
+	} else {
+		subtilis_error_set_integer_exp_expected(err, p->l->stream->name,
+							p->l->line);
+		goto cleanup;
+	}
+
+	true_label.reg = subtilis_ir_program_new_label(p->p);
+	false_label.reg = subtilis_ir_program_new_label(p->p);
+
+	subtilis_ir_program_add_instr_reg(p->p, SUBTILIS_OP_INSTR_JMPC, cond,
+					  true_label, false_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_program_add_label(p->p, true_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_compound(p, t, SUBTILIS_KEYWORD_ENDWHILE, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_program_add_instr_no_reg(p->p, SUBTILIS_OP_INSTR_JMP,
+					     start_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_program_add_label(p->p, false_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -950,7 +1018,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_VPOS */
 	NULL, /* SUBTILIS_KEYWORD_WAIT */
 	NULL, /* SUBTILIS_KEYWORD_WHEN */
-	NULL, /* SUBTILIS_KEYWORD_WHILE */
+	prv_while, /* SUBTILIS_KEYWORD_WHILE */
 	NULL, /* SUBTILIS_KEYWORD_WIDTH */
 };
 
