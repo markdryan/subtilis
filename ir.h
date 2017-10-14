@@ -639,6 +639,18 @@ typedef enum {
 	SUBTILIS_OP_INSTR_JMP,
 } subtilis_op_instr_type_t;
 
+typedef enum {
+	SUBTILIS_OP_CLASS_REG_REG_REG,
+	SUBTILIS_OP_CLASS_REG_REG_I32,
+	SUBTILIS_OP_CLASS_REG_REG_REAL,
+	SUBTILIS_OP_CLASS_REG_LABEL_LABEL,
+	SUBTILIS_OP_CLASS_REG_I32,
+	SUBTILIS_OP_CLASS_REG_REAL,
+	SUBTILIS_OP_CLASS_REG_REG,
+	SUBTILIS_OP_CLASS_REG,
+	SUBTILIS_OP_CLASS_LABEL,
+} subtilis_op_instr_class_t;
+
 // TODO: Need a type for pointer offsets.  These may not always
 // be 32bit integers.
 
