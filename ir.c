@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -146,9 +148,27 @@ struct subtilis_ir_op_desc_t_ {
 
 typedef struct subtilis_ir_op_desc_t_ subtilis_ir_op_desc_t;
 
+typedef enum {
+	SUBTILIS_IR_OPERAND_REGISTER,
+	SUBTILIS_IR_OPERAND_I32,
+	SUBTILIS_IR_OPERAND_REAL,
+	SUBTILIS_IR_OPERAND_LABEL,
+} subtilis_ir_operand_class_t;
+
+struct subtilis_ir_class_info_t_ {
+	size_t op_count;
+	subtilis_ir_operand_class_t classes[3];
+};
+
+typedef struct subtilis_ir_class_info_t_ subtilis_ir_class_info_t;
+
 /* The ordering of this table is very important.  The entries in
-   it must correspond to the enumerated types in
+ * it must correspond to the enumerated types in
  * subtilis_op_instr_type_t
+ */
+
+/* TODO We should probably order this by alpabetical ordering
+ * of instructions so we can do a bsearch
  */
 
 /* clang-format off */
@@ -209,6 +229,27 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "jmp", SUBTILIS_OP_CLASS_LABEL},
 };
 
+/*
+ * Must match the order of the enumerated types declared in
+ * subtilis_op_instr_class_t.
+ */
+
+static const subtilis_ir_class_info_t class_details[] = {
+	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER,
+	      SUBTILIS_IR_OPERAND_REGISTER} },
+	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER,
+	      SUBTILIS_IR_OPERAND_I32} },
+	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER,
+	      SUBTILIS_IR_OPERAND_REAL} },
+	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_LABEL,
+	      SUBTILIS_IR_OPERAND_LABEL} },
+	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_I32} },
+	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REAL} },
+	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER} },
+	{1, { SUBTILIS_IR_OPERAND_REGISTER} },
+	{1, { SUBTILIS_IR_OPERAND_LABEL} }
+};
+
 /* clang-format on */
 
 static void prv_dump_instr(subtilis_ir_inst_t *instr)
@@ -263,7 +304,7 @@ void subtilis_ir_program_dump(subtilis_ir_program_t *p)
 			prv_dump_instr(&p->ops[i]->op.instr);
 		else if (p->ops[i]->type == SUBTILIS_OP_LABEL)
 			printf("label_%zu", p->ops[i]->op.label);
-		 else
+		else
 			continue;
 		printf("\n");
 	}
@@ -293,3 +334,184 @@ void subtilis_ir_program_add_label(subtilis_ir_program_t *p, size_t l,
 	p->ops[p->len++] = op;
 }
 
+/*
+ * Not using strsep as not sure it will be available on all C compilers
+ * subtilis will be compiled with.
+ */
+
+static bool prv_is_white_space(const char *s)
+{
+	return *s == ' ' || *s == '\t' || *s == '\n' || *s == '\r';
+}
+
+#define LABEL_STR_SIZE (sizeof("label_") - 1)
+
+static void prv_parse_label(const char *text, subtilis_ir_label_match_t *label,
+			    subtilis_error_t *err)
+{
+	unsigned long num;
+	char *end_ptr = 0;
+
+	if (!strcmp(text, "*")) {
+		label->label = 0;
+		label->op_match = SUBTILIS_OP_MATCH_ANY;
+		return;
+	}
+
+	errno = 0;
+	num = strtoul(text, &end_ptr, 10);
+	if (*end_ptr != 0 || errno != 0 || num > INT_MAX) {
+		subtilis_error_set_asssertion_failed(err);
+		return;
+	}
+
+	label->label = (size_t)num;
+	label->op_match = SUBTILIS_OP_MATCH_FLOATING;
+}
+
+static const char *prv_parse_operands(const char *rule,
+				      subtilis_ir_op_match_t *match,
+				      subtilis_error_t *err)
+{
+	const int max_op = 32;
+	char operand[max_op];
+	size_t i;
+	size_t j;
+	const subtilis_ir_class_info_t *details;
+	unsigned long num;
+	const char *num_ptr;
+	char *end_ptr = 0;
+	subtilis_ir_label_match_t label;
+
+	details = &class_details[op_desc[match->op.instr.type].cls];
+
+	for (j = 0; j < details->op_count; j++) {
+		while (prv_is_white_space(rule))
+			rule++;
+
+		for (i = 0; *rule && i < max_op && !prv_is_white_space(rule);
+		     i++) {
+			if (*rule == ',') {
+				rule++;
+				break;
+			}
+			operand[i] = *rule++;
+		}
+		operand[i] = 0;
+		if (!strcmp(operand, "*")) {
+			match->op.instr.op_match[j] = SUBTILIS_OP_MATCH_ANY;
+		} else if (!strncmp(operand, "label_", LABEL_STR_SIZE)) {
+			if (details->classes[j] != SUBTILIS_IR_OPERAND_LABEL) {
+				subtilis_error_set_asssertion_failed(err);
+				return NULL;
+			}
+			prv_parse_label(operand + LABEL_STR_SIZE, &label, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return NULL;
+			match->op.instr.operands[j].label = label.label;
+			match->op.instr.op_match[j] = label.op_match;
+		} else if (operand[0] == '#') {
+			if (details->classes[j] != SUBTILIS_IR_OPERAND_I32) {
+				subtilis_error_set_asssertion_failed(err);
+				return NULL;
+			}
+			errno = 0;
+			num = strtoul(operand + 1, &end_ptr, 10);
+			if (*end_ptr != 0 || errno != 0 || num > INT_MAX) {
+				subtilis_error_set_asssertion_failed(err);
+				return NULL;
+			}
+			match->op.instr.operands[j].integer = num;
+			match->op.instr.op_match[j] = SUBTILIS_OP_MATCH_FIXED;
+		} else if (operand[0] == 'r') {
+			if (details->classes[j] !=
+			    SUBTILIS_IR_OPERAND_REGISTER) {
+				subtilis_error_set_asssertion_failed(err);
+				return NULL;
+			}
+			num_ptr = operand + 1;
+			if (operand[1] == 0) {
+				subtilis_error_set_asssertion_failed(err);
+				return NULL;
+			} else if (operand[1] == '_') {
+				match->op.instr.op_match[j] =
+				    SUBTILIS_OP_MATCH_FLOATING;
+				num_ptr++;
+			} else {
+				match->op.instr.op_match[j] =
+				    SUBTILIS_OP_MATCH_FIXED;
+			}
+			errno = 0;
+			num = strtoul(num_ptr, &end_ptr, 10);
+			if (*end_ptr != 0 || errno != 0 || num > INT_MAX) {
+				subtilis_error_set_asssertion_failed(err);
+				return NULL;
+			}
+			match->op.instr.operands[j].reg = num;
+		}
+	}
+
+	return rule;
+}
+
+static const char *prv_parse_match(const char *rule,
+				   subtilis_ir_op_match_t *match,
+				   subtilis_error_t *err)
+{
+	const int max_instr = 32;
+	char instr[max_instr];
+	size_t i;
+
+	while (prv_is_white_space(rule))
+		rule++;
+	if (!rule[0])
+		return NULL;
+
+	for (i = 0; *rule && i < max_instr && !prv_is_white_space(rule); i++)
+		instr[i] = *rule++;
+	instr[i] = 0;
+
+	if (!strncmp(instr, "label_", LABEL_STR_SIZE)) {
+		match->type = SUBTILIS_OP_LABEL;
+		prv_parse_label(instr + LABEL_STR_SIZE, &match->op.label, err);
+		return rule;
+	}
+
+	for (i = 0; i < sizeof(op_desc) / sizeof(subtilis_ir_op_desc_t); i++)
+		if (!strcmp(instr, op_desc[i].name))
+			break;
+
+	if (i == sizeof(op_desc) / sizeof(subtilis_ir_op_desc_t)) {
+		subtilis_error_set_asssertion_failed(err);
+		return NULL;
+	}
+
+	match->type = SUBTILIS_OP_INSTR;
+	match->op.instr.type = i;
+	return prv_parse_operands(rule, match, err);
+}
+
+void subtilis_ir_parse_rules(const subtilis_ir_rule_raw_t *raw,
+			     subtilis_ir_rule_t *parsed, size_t count,
+			     subtilis_error_t *err)
+{
+	size_t i;
+	size_t j;
+	const char *rule;
+
+	for (i = 0; i < count; i++) {
+		rule = raw[i].text;
+		j = 0;
+		while (
+		    j < SUBTILIS_IR_MAX_MATCHES &&
+		    (rule = prv_parse_match(rule, &parsed[i].matches[j], err)))
+			j++;
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		if (j == 0) {
+			subtilis_error_set_asssertion_failed(err);
+			return;
+		}
+		parsed[i].action = raw[i].action;
+	}
+}
