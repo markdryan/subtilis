@@ -37,6 +37,7 @@ typedef enum {
 	SUBTILIS_OP_INSTR,
 	SUBTILIS_OP_LABEL,
 	SUBTILIS_OP_PHI,
+	SUBTILIS_OP_MAX,
 } subtilis_op_type_t;
 
 /* IMPORTANT.
@@ -639,6 +640,18 @@ typedef enum {
 	SUBTILIS_OP_INSTR_JMP,
 } subtilis_op_instr_type_t;
 
+typedef enum {
+	SUBTILIS_OP_CLASS_REG_REG_REG,
+	SUBTILIS_OP_CLASS_REG_REG_I32,
+	SUBTILIS_OP_CLASS_REG_REG_REAL,
+	SUBTILIS_OP_CLASS_REG_LABEL_LABEL,
+	SUBTILIS_OP_CLASS_REG_I32,
+	SUBTILIS_OP_CLASS_REG_REAL,
+	SUBTILIS_OP_CLASS_REG_REG,
+	SUBTILIS_OP_CLASS_REG,
+	SUBTILIS_OP_CLASS_LABEL,
+} subtilis_op_instr_class_t;
+
 // TODO: Need a type for pointer offsets.  These may not always
 // be 32bit integers.
 
@@ -668,6 +681,37 @@ struct subtilis_ir_op_t_ {
 
 typedef struct subtilis_ir_op_t_ subtilis_ir_op_t;
 
+typedef enum {
+	SUBTILIS_OP_MATCH_ANY,
+	SUBTILIS_OP_MATCH_FIXED,
+	SUBTILIS_OP_MATCH_FLOATING,
+} subtilis_op_match_type_t;
+
+struct subtilis_ir_inst_match_t_ {
+	subtilis_op_instr_type_t type;
+	subtilis_ir_operand_t operands[3];
+	subtilis_op_match_type_t op_match[3];
+};
+
+typedef struct subtilis_ir_inst_match_t_ subtilis_ir_inst_match_t;
+
+struct subtilis_ir_label_match_t_ {
+	size_t label;
+	subtilis_op_match_type_t op_match;
+};
+
+typedef struct subtilis_ir_label_match_t_ subtilis_ir_label_match_t;
+
+struct subtilis_ir_op_match_t_ {
+	subtilis_op_type_t type;
+	union {
+		subtilis_ir_inst_match_t instr;
+		subtilis_ir_label_match_t label;
+	} op;
+};
+
+typedef struct subtilis_ir_op_match_t_ subtilis_ir_op_match_t;
+
 struct subtilis_ir_program_t_ {
 	size_t reg_counter;
 	size_t label_counter;
@@ -677,6 +721,25 @@ struct subtilis_ir_program_t_ {
 };
 
 typedef struct subtilis_ir_program_t_ subtilis_ir_program_t;
+
+typedef void (*subtilis_ir_action_t)(subtilis_ir_program_t *p, size_t start,
+				     void *user_data, subtilis_error_t *err);
+
+#define SUBTILIS_IR_MAX_MATCHES 5
+
+struct subtilis_ir_rule_t_ {
+	subtilis_ir_op_match_t matches[SUBTILIS_IR_MAX_MATCHES];
+	subtilis_ir_action_t action;
+};
+
+typedef struct subtilis_ir_rule_t_ subtilis_ir_rule_t;
+
+struct subtilis_ir_rule_raw_t_ {
+	const char *text;
+	subtilis_ir_action_t action;
+};
+
+typedef struct subtilis_ir_rule_raw_t_ subtilis_ir_rule_raw_t;
 
 subtilis_ir_program_t *subtilis_ir_program_new(subtilis_error_t *err);
 void subtilis_ir_program_delete(subtilis_ir_program_t *p);
@@ -703,5 +766,7 @@ void subtilis_ir_program_dump(subtilis_ir_program_t *p);
 size_t subtilis_ir_program_new_label(subtilis_ir_program_t *p);
 void subtilis_ir_program_add_label(subtilis_ir_program_t *p, size_t l,
 				   subtilis_error_t *err);
-
+void subtilis_ir_parse_rules(const subtilis_ir_rule_raw_t *raw,
+			     subtilis_ir_rule_t *parsed, size_t count,
+			     subtilis_error_t *err);
 #endif
