@@ -19,6 +19,7 @@
 
 #include "ir.h"
 #include "ir_test.h"
+#include "parser_test.h"
 
 static int prv_validate_instruction(subtilis_ir_op_match_t *matches,
 				    subtilis_op_instr_type_t typ)
@@ -297,6 +298,141 @@ fail:
 	return 1;
 }
 
+struct ir_test_matcher_data_t_ {
+	int sequence[32];
+	int count;
+};
+
+typedef struct ir_test_matcher_data_t_ ir_test_matcher_data_t;
+
+static void prv_matched_1(subtilis_ir_program_t *p, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	ir_test_matcher_data_t *d = (ir_test_matcher_data_t *)user_data;
+
+	d->sequence[d->count++] = 1;
+}
+
+static void prv_matched_2(subtilis_ir_program_t *p, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	ir_test_matcher_data_t *d = (ir_test_matcher_data_t *)user_data;
+
+	d->sequence[d->count++] = 2;
+}
+
+static void prv_matched_3(subtilis_ir_program_t *p, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	ir_test_matcher_data_t *d = (ir_test_matcher_data_t *)user_data;
+
+	d->sequence[d->count++] = 3;
+}
+
+static void prv_matched_4(subtilis_ir_program_t *p, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	ir_test_matcher_data_t *d = (ir_test_matcher_data_t *)user_data;
+
+	d->sequence[d->count++] = 4;
+}
+
+static void prv_matched_5(subtilis_ir_program_t *p, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	ir_test_matcher_data_t *d = (ir_test_matcher_data_t *)user_data;
+
+	d->sequence[d->count++] = 5;
+}
+
+static void prv_matched_6(subtilis_ir_program_t *p, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	ir_test_matcher_data_t *d = (ir_test_matcher_data_t *)user_data;
+
+	d->sequence[d->count++] = 6;
+}
+
+static void prv_matched_7(subtilis_ir_program_t *p, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	ir_test_matcher_data_t *d = (ir_test_matcher_data_t *)user_data;
+
+	d->sequence[d->count++] = 7;
+}
+
+static int prv_check_matcher(subtilis_lexer_t *l, subtilis_parser_t *p,
+			     const char *expected)
+{
+	ir_test_matcher_data_t data;
+	subtilis_error_t err;
+	int i;
+	const subtilis_ir_rule_raw_t raw_rules[] = {
+	    {"ltii32 r_1, *, *\n"
+	     "jmpc r_1, label_1, *\n"
+	     "label_1",
+	     prv_matched_1},
+	    {"ltii32 *, *, *", prv_matched_2},
+	    {"movii32 *, #1", prv_matched_3},
+	    {"movii32 *, *", prv_matched_4},
+	    {"storeoi32 *, *, *", prv_matched_5},
+	    {"loadoi32 *, *, *", prv_matched_6},
+	    {"label_1", prv_matched_7},
+	};
+	const size_t rule_count =
+	    sizeof(raw_rules) / sizeof(subtilis_ir_rule_raw_t);
+	subtilis_ir_rule_t parsed[rule_count];
+	const size_t rule_order[] = {3, 5, 4, 5, 6, 1, 6, 2, 5, 7};
+
+	subtilis_error_init(&err);
+	subtilis_parse(p, &err);
+	if (err.type != SUBTILIS_ERROR_OK) {
+		subtilis_error_fprintf(stderr, &err, true);
+		return 1;
+	}
+
+	data.count = 0;
+
+	subtilis_ir_parse_rules(raw_rules, parsed, rule_count, &err);
+	if (err.type != SUBTILIS_ERROR_OK) {
+		subtilis_error_fprintf(stderr, &err, true);
+		return 1;
+	}
+
+	subtilis_ir_match(p->p, parsed, rule_count, &data, &err);
+	if (err.type != SUBTILIS_ERROR_OK) {
+		subtilis_error_fprintf(stderr, &err, true);
+		return 1;
+	}
+
+	if (data.count != sizeof(rule_order) / sizeof(size_t)) {
+		fprintf(stderr, "Bad number of rules, expected %zu got %d",
+			sizeof(rule_order) / sizeof(size_t), data.count);
+		return 1;
+	}
+
+	for (i = 0; i < data.count; i++)
+		if (rule_order[i] != data.sequence[i]) {
+			fprintf(stderr, "Bad Match, expected %zu got %d",
+				rule_order[i], data.sequence[i]);
+			return 1;
+		}
+
+	return 0;
+}
+
+static int prv_test_matcher(void)
+{
+	const char *source = "LET x% = 1\n"
+			     "LET y% = 0\n"
+			     "IF x% < 1 THEN\n"
+			     "  LET y% = x% < 1\n"
+			     "ENDIF\n";
+
+	printf("ir_test_matcher");
+	return parser_test_wrapper(source, prv_check_matcher, NULL);
+}
+
 int ir_test(void)
 {
 	int res;
@@ -306,6 +442,7 @@ int ir_test(void)
 	res |= prv_test_regs_rule();
 	res |= prv_test_floating_rule();
 	res |= prv_test_label_rule();
+	res |= prv_test_matcher();
 
 	return res;
 }

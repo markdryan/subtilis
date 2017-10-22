@@ -729,6 +729,7 @@ typedef void (*subtilis_ir_action_t)(subtilis_ir_program_t *p, size_t start,
 
 struct subtilis_ir_rule_t_ {
 	subtilis_ir_op_match_t matches[SUBTILIS_IR_MAX_MATCHES];
+	size_t matches_count;
 	subtilis_ir_action_t action;
 };
 
@@ -769,4 +770,7 @@ void subtilis_ir_program_add_label(subtilis_ir_program_t *p, size_t l,
 void subtilis_ir_parse_rules(const subtilis_ir_rule_raw_t *raw,
 			     subtilis_ir_rule_t *parsed, size_t count,
 			     subtilis_error_t *err);
+void subtilis_ir_match(subtilis_ir_program_t *p, subtilis_ir_rule_t *rules,
+		       size_t rule_count, void *user_data,
+		       subtilis_error_t *err);
 #endif
