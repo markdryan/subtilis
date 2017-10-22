@@ -17,6 +17,12 @@
 #ifndef __SUBTILIS_PARSER_TEST_H
 #define __SUBTILIS_PARSER_TEST_H
 
+#include "parser.h"
+
 int parser_test(void);
+int parser_test_wrapper(const char *text,
+			int (*fn)(subtilis_lexer_t *, subtilis_parser_t *,
+				  const char *expected),
+			const char *expected);
 
 #endif

@@ -22,10 +22,10 @@
 #include "parser.h"
 #include "vm.h"
 
-static int prv_test_wrapper(const char *text,
-			    int (*fn)(subtilis_lexer_t *, subtilis_parser_t *,
-				      const char *expected),
-			    const char *expected)
+int parser_test_wrapper(const char *text,
+			int (*fn)(subtilis_lexer_t *, subtilis_parser_t *,
+				  const char *expected),
+			const char *expected)
 {
 	subtilis_stream_t s;
 	subtilis_error_t err;
@@ -159,7 +159,7 @@ static int prv_test_let(void)
 			       "PRINT 10 + 10 + b%\n";
 
 	printf("parser_let");
-	return prv_test_wrapper(let_test, prv_check_eval_res, "119\n");
+	return parser_test_wrapper(let_test, prv_check_eval_res, "119\n");
 }
 
 struct expression_test_t_ {
@@ -347,9 +347,9 @@ static int prv_test_expressions(void)
 	for (i = 0; i < sizeof(expression_tests) / sizeof(expression_test_t);
 	     i++) {
 		printf("%s", expression_tests[i].name);
-		retval |= prv_test_wrapper(expression_tests[i].source,
-					   prv_check_eval_res,
-					   expression_tests[i].result);
+		retval |= parser_test_wrapper(expression_tests[i].source,
+					      prv_check_eval_res,
+					      expression_tests[i].result);
 	}
 
 	return retval;
@@ -358,14 +358,14 @@ static int prv_test_expressions(void)
 static int prv_test_print(void)
 {
 	printf("parser_print");
-	return prv_test_wrapper("PRINT (10 * 3 * 3 + 1) / 2",
-				prv_check_eval_res, "45\n");
+	return parser_test_wrapper("PRINT (10 * 3 * 3 + 1) / 2",
+				   prv_check_eval_res, "45\n");
 }
 
 static int prv_test_not_keyword(void)
 {
 	printf("parser_not_keyword");
-	return prv_test_wrapper("id", prv_check_not_keyword, NULL);
+	return parser_test_wrapper("id", prv_check_not_keyword, NULL);
 }
 
 int parser_test(void)

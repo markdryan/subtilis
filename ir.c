@@ -513,5 +513,183 @@ void subtilis_ir_parse_rules(const subtilis_ir_rule_raw_t *raw,
 			return;
 		}
 		parsed[i].action = raw[i].action;
+		parsed[i].matches_count = j;
+	}
+}
+
+#define MAX_MATCH_WILDCARDS 16
+
+struct subtilis_ir_match_pair_t_ {
+	size_t key;
+	size_t value;
+};
+
+typedef struct subtilis_ir_match_pair_t_ subtilis_ir_match_pair_t;
+
+struct subtilis_ir_match_state_t_ {
+	subtilis_ir_match_pair_t regs[MAX_MATCH_WILDCARDS];
+	subtilis_ir_match_pair_t labels[MAX_MATCH_WILDCARDS];
+	size_t regs_count;
+	size_t labels_count;
+};
+
+typedef struct subtilis_ir_match_state_t_ subtilis_ir_match_state_t;
+
+static bool prv_process_floating_label(subtilis_ir_match_state_t *state,
+				       size_t instr_label, size_t match_label,
+				       subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_ir_match_pair_t *pair;
+
+	for (i = 0;
+	     i < state->labels_count && state->labels[i].key != match_label;
+	     i++)
+		;
+	if (i == state->labels_count) {
+		if (i == MAX_MATCH_WILDCARDS) {
+			subtilis_error_set_asssertion_failed(err);
+			return false;
+		}
+		pair = &state->labels[i];
+		pair->key = match_label;
+		pair->value = instr_label;
+		state->labels_count++;
+		return true;
+	}
+
+	return state->labels[i].value == instr_label;
+}
+
+static bool prv_process_floating_reg(subtilis_ir_match_state_t *state,
+				     size_t instr_reg, size_t match_reg,
+				     subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_ir_match_pair_t *pair;
+
+	for (i = 0; i < state->regs_count && state->regs[i].key != match_reg;
+	     i++)
+		;
+	if (i == state->regs_count) {
+		if (i == MAX_MATCH_WILDCARDS) {
+			subtilis_error_set_asssertion_failed(err);
+			return false;
+		}
+		pair = &state->regs[i];
+		pair->key = match_reg;
+		pair->value = instr_reg;
+		state->regs_count++;
+		return true;
+	}
+
+	return state->regs[i].value == instr_reg;
+}
+
+static bool prv_match_op(subtilis_ir_op_t *op, subtilis_ir_op_match_t *match,
+			 subtilis_ir_match_state_t *state,
+			 subtilis_error_t *err)
+{
+	size_t j;
+	subtilis_ir_inst_t *instr;
+	subtilis_ir_inst_match_t *match_instr;
+	const subtilis_ir_class_info_t *details;
+
+	if (op->type != match->type)
+		return false;
+	if (op->type == SUBTILIS_OP_LABEL)
+		return prv_process_floating_label(state, op->op.label,
+						  match->op.label.label, err);
+
+	instr = &op->op.instr;
+	match_instr = &match->op.instr;
+	if (instr->type != match_instr->type)
+		return false;
+
+	details = &class_details[op_desc[match->op.instr.type].cls];
+
+	for (j = 0; j < details->op_count; j++) {
+		if (match_instr->op_match[j] == SUBTILIS_OP_MATCH_ANY)
+			continue;
+		if (match_instr->op_match[j] == SUBTILIS_OP_MATCH_FIXED) {
+			switch (details->classes[j]) {
+			case SUBTILIS_IR_OPERAND_REGISTER:
+				if (match_instr->operands[j].reg ==
+				    instr->operands[j].reg)
+					continue;
+				break;
+			case SUBTILIS_IR_OPERAND_I32:
+				if (match_instr->operands[j].integer ==
+				    instr->operands[j].integer)
+					continue;
+				break;
+			case SUBTILIS_IR_OPERAND_REAL:
+				if (match_instr->operands[j].real ==
+				    instr->operands[j].real)
+					continue;
+				break;
+			default:
+				subtilis_error_set_asssertion_failed(err);
+				return false;
+			}
+			return false;
+		}
+		switch (details->classes[j]) {
+		case SUBTILIS_IR_OPERAND_REGISTER:
+			if (prv_process_floating_reg(
+				state, instr->operands[j].reg,
+				match_instr->operands[j].reg, err))
+				continue;
+			break;
+		case SUBTILIS_IR_OPERAND_LABEL:
+			if (prv_process_floating_label(
+				state, instr->operands[j].label,
+				match_instr->operands[j].label, err))
+				continue;
+			break;
+		default:
+			subtilis_error_set_asssertion_failed(err);
+			return false;
+		}
+		return false;
+	}
+
+	return true;
+}
+
+void subtilis_ir_match(subtilis_ir_program_t *p, subtilis_ir_rule_t *rules,
+		       size_t rule_count, void *user_data,
+		       subtilis_error_t *err)
+{
+	size_t pc;
+	size_t i;
+	size_t j;
+	subtilis_ir_match_state_t state;
+	subtilis_ir_op_t *op;
+
+	for (pc = 0; pc < p->len;) {
+		for (i = 0; i < rule_count; i++) {
+			state.regs_count = 0;
+			state.labels_count = 0;
+			for (j = 0; j < rules[i].matches_count; j++) {
+				op = p->ops[pc + j];
+				if (!prv_match_op(op, &rules[i].matches[j],
+						  &state, err))
+					break;
+			}
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			if (j == rules[i].matches_count) {
+				rules[i].action(p, pc, user_data, err);
+				if (err->type != SUBTILIS_ERROR_OK)
+					return;
+				pc += j;
+				break;
+			}
+		}
+		if (i == rule_count) {
+			subtilis_error_set_asssertion_failed(err);
+			return;
+		}
 	}
 }
