@@ -20,6 +20,7 @@
 
 #include "buffer.h"
 #include "lexer.h"
+#include "lexer_test.h"
 
 /* clang-format off */
 static const size_t buffer_sizes[] = {

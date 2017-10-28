@@ -132,7 +132,7 @@ void subtilis_buffer_insert(subtilis_buffer_t *buffer, size_t pos,
 	b = buffer->buffer;
 	move_from = b->data + pos + b->start;
 	if (pos < size)
-		memmove(move_from + length, move_from, size - pos);
+		memmove(((char *)move_from) + length, move_from, size - pos);
 
 	memcpy(move_from, data, length);
 	b->end += length;
@@ -163,8 +163,8 @@ void subtilis_buffer_delete(subtilis_buffer_t *buffer, size_t pos,
 	if (last_pos == size) {
 		b->end = pos + b->start;
 	} else {
-		move_to = b->data + pos + b->start;
-		move_from = move_to + length;
+		move_to = ((char *)b->data) + pos + b->start;
+		move_from = ((char *)move_to) + length;
 		bytes_to_move = size - last_pos;
 		memmove(move_to, move_from, bytes_to_move);
 		b->end -= length;

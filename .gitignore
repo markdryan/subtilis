@@ -1,6 +1,7 @@
 *~
 basicc
 basicc,ff8
+unit_tests,ff8
 *.o
 default.profdata
 default.profraw

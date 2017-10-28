@@ -67,9 +67,10 @@ subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 	if (sym)
 		return sym;
 
-	key_dup = strdup(key);
+	key_dup = malloc(strlen(key) + 1);
 	if (!key_dup)
 		goto on_error;
+	(void)strcpy(key_dup, key);
 
 	sym = malloc(sizeof(*sym));
 	if (!sym)

@@ -421,7 +421,7 @@ static const char *prv_parse_operands(const char *rule,
 				subtilis_error_set_asssertion_failed(err);
 				return NULL;
 			}
-			match->op.instr.operands[j].integer = num;
+			match->op.instr.operands[j].integer = (int32_t)num;
 			match->op.instr.op_match[j] = SUBTILIS_OP_MATCH_FIXED;
 		} else if (operand[0] == 'r') {
 			if (details->classes[j] !=
@@ -447,7 +447,7 @@ static const char *prv_parse_operands(const char *rule,
 				subtilis_error_set_asssertion_failed(err);
 				return NULL;
 			}
-			match->op.instr.operands[j].reg = num;
+			match->op.instr.operands[j].reg = (int32_t)num;
 		}
 	}
 
@@ -487,7 +487,7 @@ static const char *prv_parse_match(const char *rule,
 	}
 
 	match->type = SUBTILIS_OP_INSTR;
-	match->op.instr.type = i;
+	match->op.instr.type = (subtilis_op_instr_type_t)i;
 	return prv_parse_operands(rule, match, err);
 }
 

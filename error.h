@@ -102,9 +102,6 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_asssertion_failed(e)                                \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_ASSERTION_FAILED, __FILE__, \
 				 __LINE__)
-#define subtilis_error_set_asssertion_failed(e)                                \
-	subtilis_error_set_basic(e, SUBTILIS_ERROR_ASSERTION_FAILED, __FILE__, \
-				 __LINE__)
 #define subtilis_error_set_keyword_expected(e, str, file, line)                \
 	subtilis_error_set1(e, SUBTILIS_ERROR_KEYWORD_EXPECTED, str, file, line)
 #define subtilis_error_set_not_supported(e, str, file, line)                   \

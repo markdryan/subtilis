@@ -1,3 +1,4 @@
 Dir <Obey$Dir>
 amu -f ROMakefile clean
+amu -f ROUnitMakefile clean
 stripdepnd
