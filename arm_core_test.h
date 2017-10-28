@@ -14,25 +14,9 @@
  * limitations under the License.
  */
 
-#include <locale.h>
+#ifndef __SUBTILIS_ARM_CORE_TEST_H
+#define __SUBTILIS_ARM_CORE_TEST_H
 
-#include "arm_core_test.h"
-#include "ir_test.h"
-#include "lexer_test.h"
-#include "parser_test.h"
-#include "symbol_table_test.h"
+int arm_core_test(void);
 
-int main(int argc, char *argv[])
-{
-	int failure = 0;
-
-	setlocale(LC_ALL, "C");
-
-	failure |= lexer_test();
-	failure |= symbol_table_test();
-	failure |= parser_test();
-	failure |= ir_test();
-	failure |= arm_core_test();
-
-	return failure;
-}
+#endif
