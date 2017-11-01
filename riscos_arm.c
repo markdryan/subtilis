@@ -22,9 +22,11 @@ void prv_add_preamble(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
 {
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_data_instr_t *datai;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
 
 	instr =
-	    subtilis_arm_program_add_instr(arm_p, SUBTILIS_ARM_CCODE_SWI, err);
+	    subtilis_arm_program_add_instr(arm_p, SUBTILIS_ARM_INSTR_SWI, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -34,19 +36,29 @@ void prv_add_preamble(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
 	// TODO we need to check that the globals are not too big
 	// for the amount of memory we have been allocated by the OS
 
+	dest.type = SUBTILIS_ARM_REG_FIXED;
+	dest.num = 12;
+	op1.type = SUBTILIS_ARM_REG_FIXED;
+	op1.num = 1;
+
+	subtilis_arm_add_sub_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
+				 arm_p->globals, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	instr =
-	    subtilis_arm_program_add_instr(arm_p, SUBTILIS_ARM_CCODE_SUB, err);
+	    subtilis_arm_program_add_instr(arm_p, SUBTILIS_ARM_INSTR_MOV, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	datai = &instr->operands.data;
+	datai->status = false;
 	datai->ccode = SUBTILIS_ARM_CCODE_AL;
 	datai->dest.type = SUBTILIS_ARM_REG_FIXED;
-
-	datai->dest.num = 12;
-
-	datai->op1.type = SUBTILIS_ARM_REG_FIXED;
-	//	datai->op1.num = r1;
+	datai->dest.num = 13;
+	datai->op2.type = SUBTILIS_ARM_OP2_REG;
+	datai->op2.op.reg.type = SUBTILIS_ARM_REG_FIXED;
+	datai->op2.op.reg.num = 12;
 }
 
 /* clang-format off */
@@ -71,6 +83,10 @@ subtilis_riscos_generate(
 
 	arm_p = subtilis_arm_program_new(p->reg_counter, p->label_counter,
 					 globals, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_add_preamble(arm_p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

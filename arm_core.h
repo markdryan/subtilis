@@ -89,31 +89,32 @@ typedef enum {
 } subtilis_arm_ccode_type_t;
 
 typedef enum {
-	SUBTILIS_ARM_CCODE_AND = 0,
-	SUBTILIS_ARM_CCODE_EOR = 1,
-	SUBTILIS_ARM_CCODE_SUB = 2,
-	SUBTILIS_ARM_CCODE_RSB = 3,
+	SUBTILIS_ARM_INSTR_AND = 0,
+	SUBTILIS_ARM_INSTR_EOR = 1,
+	SUBTILIS_ARM_INSTR_SUB = 2,
+	SUBTILIS_ARM_INSTR_RSB = 3,
 	SUBTILIS_ARM_INSTR_ADD = 4,
-	SUBTILIS_ARM_CCODE_ADC = 5,
-	SUBTILIS_ARM_CCODE_SBC = 6,
-	SUBTILIS_ARM_CCODE_RSC = 7,
-	SUBTILIS_ARM_CCODE_TST = 8,
-	SUBTILIS_ARM_CCODE_TEQ = 9,
-	SUBTILIS_ARM_CCODE_CMP = 10,
-	SUBTILIS_ARM_CCODE_CMN = 11,
-	SUBTILIS_ARM_CCODE_ORR = 12,
-	SUBTILIS_ARM_CCODE_MOV = 13,
-	SUBTILIS_ARM_CCODE_BIC = 14,
-	SUBTILIS_ARM_CCODE_MVN = 15,
-	SUBTILIS_ARM_CCODE_MUL,
-	SUBTILIS_ARM_CCODE_MLA,
-	SUBTILIS_ARM_CCODE_LDR,
-	SUBTILIS_ARM_CCODE_STR,
-	SUBTILIS_ARM_CCODE_LDM,
-	SUBTILIS_ARM_CCODE_STM,
-	SUBTILIS_ARM_CCODE_B,
-	SUBTILIS_ARM_CCODE_BL,
-	SUBTILIS_ARM_CCODE_SWI,
+	SUBTILIS_ARM_INSTR_ADC = 5,
+	SUBTILIS_ARM_INSTR_SBC = 6,
+	SUBTILIS_ARM_INSTR_RSC = 7,
+	SUBTILIS_ARM_INSTR_TST = 8,
+	SUBTILIS_ARM_INSTR_TEQ = 9,
+	SUBTILIS_ARM_INSTR_CMP = 10,
+	SUBTILIS_ARM_INSTR_CMN = 11,
+	SUBTILIS_ARM_INSTR_ORR = 12,
+	SUBTILIS_ARM_INSTR_MOV = 13,
+	SUBTILIS_ARM_INSTR_BIC = 14,
+	SUBTILIS_ARM_INSTR_MVN = 15,
+	SUBTILIS_ARM_INSTR_MUL,
+	SUBTILIS_ARM_INSTR_MLA,
+	SUBTILIS_ARM_INSTR_LDR,
+	SUBTILIS_ARM_INSTR_STR,
+	SUBTILIS_ARM_INSTR_LDM,
+	SUBTILIS_ARM_INSTR_STM,
+	SUBTILIS_ARM_INSTR_B,
+	SUBTILIS_ARM_INSTR_BL,
+	SUBTILIS_ARM_INSTR_SWI,
+	SUBTILIS_ARM_INSTR_LDRC,
 } subtilis_arm_instr_type_t;
 
 struct subtilis_arm_data_instr_t_ {
@@ -163,6 +164,14 @@ struct subtilis_arm_swi_instr_t_ {
 
 typedef struct subtilis_arm_swi_instr_t_ subtilis_arm_swi_instr_t;
 
+struct subtilis_arm_ldrc_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_reg_t dest;
+	size_t label;
+};
+
+typedef struct subtilis_arm_ldrc_instr_t_ subtilis_arm_ldrc_instr_t;
+
 struct subtilis_arm_instr_t_ {
 	subtilis_arm_instr_type_t type;
 	union {
@@ -171,6 +180,7 @@ struct subtilis_arm_instr_t_ {
 		subtilis_arm_mtran_instr_t mtran;
 		subtilis_arm_br_instr_t br;
 		subtilis_arm_swi_instr_t swi;
+		subtilis_arm_ldrc_instr_t ldrc;
 	} operands;
 };
 
@@ -186,6 +196,13 @@ struct subtilis_arm_op_t_ {
 
 typedef struct subtilis_arm_op_t_ subtilis_arm_op_t;
 
+struct subtilis_arm_constant_t_ {
+	uint32_t integer;
+	size_t label;
+};
+
+typedef struct subtilis_arm_constant_t_ subtilis_arm_constant_t;
+
 struct subtilis_arm_program_t_ {
 	size_t reg_counter;
 	size_t label_counter;
@@ -193,6 +210,9 @@ struct subtilis_arm_program_t_ {
 	size_t max_len;
 	subtilis_arm_op_t *ops;
 	size_t globals;
+	subtilis_arm_constant_t *constants;
+	size_t constant_count;
+	size_t max_constants;
 };
 
 typedef struct subtilis_arm_program_t_ subtilis_arm_program_t;
@@ -209,7 +229,26 @@ subtilis_arm_instr_t *
 subtilis_arm_program_add_instr(subtilis_arm_program_t *p,
 			       subtilis_arm_instr_type_t type,
 			       subtilis_error_t *err);
-
+subtilis_arm_instr_t *subtilis_arm_program_dup_instr(subtilis_arm_program_t *p,
+						     subtilis_error_t *err);
 bool subtilis_arm_encode_imm(int32_t num, uint32_t *encoded);
+bool subtilis_arm_encode_lvl2_imm(int32_t num, uint32_t *encoded1,
+				  uint32_t *encoded2);
+
+void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
+			       subtilis_arm_instr_type_t itype,
+			       subtilis_arm_instr_type_t alt_type,
+			       subtilis_arm_ccode_type_t ccode, bool status,
+			       subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			       int32_t op2, subtilis_error_t *err);
+
+#define subtilis_arm_add_add_imm(p, cc, s, dst, op1, op2, err)                 \
+	subtilis_arm_add_data_imm(p, SUBTILIS_ARM_INSTR_ADD,                   \
+				  SUBTILIS_ARM_INSTR_SUB, cc, s, dst, op1,     \
+				  op2, err)
+#define subtilis_arm_add_sub_imm(p, cc, s, dst, op1, op2, err)                 \
+	subtilis_arm_add_data_imm(p, SUBTILIS_ARM_INSTR_SUB,                   \
+				  SUBTILIS_ARM_INSTR_ADD, cc, s, dst, op1,     \
+				  op2, err)
 
 #endif

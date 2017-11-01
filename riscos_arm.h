@@ -19,8 +19,11 @@
 
 #include "arm_core.h"
 
-subtilis_arm_program_t *subtilis_riscos_generate(
-    subtilis_ir_program_t *p, const subtilis_ir_rule_raw_t *rules_raw,
-    size_t rule_count, size_t globals, subtilis_error_t *err);
+/* clang-format off */
+subtilis_arm_program_t *
+subtilis_riscos_generate(
+	subtilis_ir_program_t *p, const subtilis_ir_rule_raw_t *rules_raw,
+	size_t rule_count, size_t globals, subtilis_error_t *err);
+/* clang-format on */
 
 #endif
