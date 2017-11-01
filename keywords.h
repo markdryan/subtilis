@@ -197,6 +197,6 @@ struct _subtilis_keyword_t {
 
 typedef struct _subtilis_keyword_t subtilis_keyword_t;
 
-const subtilis_keyword_t subtilis_keywords_list[SUBTILIS_KEYWORD_MAX];
+extern const subtilis_keyword_t subtilis_keywords_list[SUBTILIS_KEYWORD_MAX];
 
 #endif

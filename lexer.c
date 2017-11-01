@@ -317,8 +317,8 @@ static subtilis_token_end_t prv_decimal_end(subtilis_lexer_t *l,
 	return SUBTILIS_TOKEN_END_TOKEN;
 }
 
-static void prv_process_decimal(subtilis_lexer_t *l, char ch,
-				subtilis_token_t *t, subtilis_error_t *err)
+static void prv_process_decimal(subtilis_lexer_t *l, subtilis_token_t *t,
+				subtilis_error_t *err)
 {
 	prv_set_first(l, t, SUBTILIS_TOKEN_INTEGER);
 	if (!prv_extract_number(l, t, prv_decimal_end, err))
@@ -463,8 +463,8 @@ static void prv_validate_identifier(subtilis_lexer_t *l, subtilis_token_t *t,
 		return;
 }
 
-static void prv_process_identifier(subtilis_lexer_t *l, char ch,
-				   subtilis_token_t *t, subtilis_error_t *err)
+static void prv_process_identifier(subtilis_lexer_t *l, subtilis_token_t *t,
+				   subtilis_error_t *err)
 {
 	prv_set_first(l, t, SUBTILIS_TOKEN_IDENTIFIER);
 	prv_validate_identifier(l, t, err);
@@ -654,7 +654,7 @@ static void prv_process_token(subtilis_lexer_t *l, subtilis_token_t *t,
 	}
 
 	if (ch >= '0' && ch <= '9') {
-		prv_process_decimal(l, ch, t, err);
+		prv_process_decimal(l, t, err);
 		return;
 	}
 
@@ -679,7 +679,7 @@ static void prv_process_token(subtilis_lexer_t *l, subtilis_token_t *t,
 	}
 
 	if ((ch >= 'a' && ch <= 'z') || (ch == '_')) {
-		prv_process_identifier(l, ch, t, err);
+		prv_process_identifier(l, t, err);
 		return;
 	}
 

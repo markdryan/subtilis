@@ -14,25 +14,16 @@
  * limitations under the License.
  */
 
-#include <locale.h>
+#ifndef __SUBTILIS_RISCOS_ARM_H
+#define __SUBTILIS_RISCOS_ARM_H
 
-#include "arm_core_test.h"
-#include "ir_test.h"
-#include "lexer_test.h"
-#include "parser_test.h"
-#include "symbol_table_test.h"
+#include "arm_core.h"
 
-int main(int argc, char *argv[])
-{
-	int failure = 0;
+/* clang-format off */
+subtilis_arm_program_t *
+subtilis_riscos_generate(
+	subtilis_ir_program_t *p, const subtilis_ir_rule_raw_t *rules_raw,
+	size_t rule_count, size_t globals, subtilis_error_t *err);
+/* clang-format on */
 
-	setlocale(LC_ALL, "C");
-
-	failure |= lexer_test();
-	failure |= symbol_table_test();
-	failure |= parser_test();
-	failure |= ir_test();
-	failure |= arm_core_test();
-
-	return failure;
-}
+#endif
