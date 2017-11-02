@@ -251,4 +251,5 @@ void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
 				  SUBTILIS_ARM_INSTR_ADD, cc, s, dst, op1,     \
 				  op2, err)
 
+void subtilis_arm_program_dump(subtilis_arm_program_t *p);
 #endif

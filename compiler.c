@@ -20,6 +20,7 @@
 #include "error.h"
 #include "lexer.h"
 #include "parser.h"
+#include "riscos_arm.h"
 
 int main(int argc, char *argv[])
 {
@@ -27,6 +28,7 @@ int main(int argc, char *argv[])
 	subtilis_stream_t s;
 	subtilis_lexer_t *l = NULL;
 	subtilis_parser_t *p = NULL;
+	subtilis_arm_program_t *arm_p = NULL;
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: basicc file\n");
@@ -52,14 +54,20 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_ir_program_dump(p->p);
+	arm_p = subtilis_riscos_generate(p->p, NULL, 0, p->st->allocated, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
+	subtilis_arm_program_dump(arm_p);
+
+	subtilis_arm_program_delete(arm_p);
 	subtilis_parser_delete(p);
 	subtilis_lexer_delete(l, &err);
 
 	return 0;
 
 cleanup:
+	subtilis_arm_program_delete(arm_p);
 	subtilis_parser_delete(p);
 	if (l)
 		subtilis_lexer_delete(l, &err);
