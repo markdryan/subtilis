@@ -332,3 +332,186 @@ void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
 		return;
 	datai->op2.op.integer = encoded2;
 }
+
+/* clang-format off */
+
+static const char *const ccode_desc[] = {
+	"EQ", // SUBTILIS_ARM_CCODE_EQ
+	"NE", // SUBTILIS_ARM_CCODE_NE
+	"CS", // SUBTILIS_ARM_CCODE_CS
+	"CC", // SUBTILIS_ARM_CCODE_CC
+	"MI", // SUBTILIS_ARM_CCODE_MI
+	"PL", // SUBTILIS_ARM_CCODE_PL
+	"VS", // SUBTILIS_ARM_CCODE_VS
+	"VC", // SUBTILIS_ARM_CCODE_VC
+	"HI", // SUBTILIS_ARM_CCODE_HI
+	"LS", // SUBTILIS_ARM_CCODE_LS
+	"GE", // SUBTILIS_ARM_CCODE_GE
+	"LT", // SUBTILIS_ARM_CCODE_LT
+	"GT", // SUBTILIS_ARM_CCODE_GT
+	"LE", // SUBTILIS_ARM_CCODE_LE
+	"AL", // SUBTILIS_ARM_CCODE_AL
+	"NV", // SUBTILIS_ARM_CCODE_NV
+};
+
+static const char *const instr_desc[] = {
+	"AND", // SUBTILIS_ARM_INSTR_AND
+	"EOR", // SUBTILIS_ARM_INSTR_EOR
+	"SUB", // SUBTILIS_ARM_INSTR_SUB
+	"RSB", // SUBTILIS_ARM_INSTR_RSB
+	"ADD", // SUBTILIS_ARM_INSTR_ADD
+	"ADC", // SUBTILIS_ARM_INSTR_ADC
+	"SBC", // SUBTILIS_ARM_INSTR_SBC
+	"RSC", // SUBTILIS_ARM_INSTR_RSC
+	"TST", // SUBTILIS_ARM_INSTR_TST
+	"TEQ", // SUBTILIS_ARM_INSTR_TEQ
+	"CMP", // SUBTILIS_ARM_INSTR_CMP
+	"CMN", // SUBTILIS_ARM_INSTR_CMN
+	"ORR", // SUBTILIS_ARM_INSTR_ORR
+	"MOV", // SUBTILIS_ARM_INSTR_MOV
+	"BIC", // SUBTILIS_ARM_INSTR_BIC
+	"MVN", // SUBTILIS_ARM_INSTR_MVN
+	"MUL", // SUBTILIS_ARM_INSTR_MUL
+	"MLA", // SUBTILIS_ARM_INSTR_MLA
+	"LDR", // SUBTILIS_ARM_INSTR_LDR
+	"STR", // SUBTILIS_ARM_INSTR_STR
+	"LDM", // SUBTILIS_ARM_INSTR_LDM
+	"STM", // SUBTILIS_ARM_INSTR_STM
+	"B",   // SUBTILIS_ARM_INSTR_B
+	"BL",  // SUBTILIS_ARM_INSTR_BL
+	"SWI", // SUBTILIS_ARM_INSTR_SWI
+	"LDR", //SUBTILIS_ARM_INSTR_LDRC
+};
+
+static const char *const shift_desc[] = {
+	"LSL", // SUBTILIS_ARM_SHIFT_LSL
+	"ASL", // SUBTILIS_ARM_SHIFT_ASL
+	"LSR", // SUBTILIS_ARM_SHIFT_LSR
+	"ASR", // SUBTILIS_ARM_SHIFT_ASR
+	"ROR", // SUBTILIS_ARM_SHIFT_ROR
+	"RRX", // SUBTILIS_ARM_SHIFT_RRX
+};
+
+/* clang-format on */
+
+static void prv_dump_op2(subtilis_arm_op2_t *op2)
+{
+	switch (op2->type) {
+	case SUBTILIS_ARM_OP2_REG:
+		printf(", R%zu", op2->op.reg.num);
+		break;
+	case SUBTILIS_ARM_OP2_I32:
+		printf(", #%d", op2->op.integer);
+		break;
+	default:
+		printf(", R%zu, %s #%d", op2->op.shift.reg.num,
+		       shift_desc[op2->op.shift.type], op2->op.shift.shift);
+		break;
+	}
+}
+
+static void prv_dump_mov_instr(subtilis_arm_data_instr_t *instr)
+{
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	if (instr->status)
+		printf("S");
+	printf(" R%zu", instr->dest.num);
+	prv_dump_op2(&instr->op2);
+	printf("\n");
+}
+
+static void prv_dump_data_instr(subtilis_arm_data_instr_t *instr)
+{
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	if (instr->status)
+		printf("S");
+	printf(" R%zu, R%zu", instr->dest.num, instr->op1.num);
+	prv_dump_op2(&instr->op2);
+	printf("\n");
+}
+
+static void prv_dump_stran_instr(subtilis_arm_stran_instr_t *instr)
+{
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf(" R%zu", instr->dest.num);
+	if (instr->pre_indexed) {
+		printf(", [R%zu", instr->base.num);
+		prv_dump_op2(&instr->offset);
+		printf("]");
+		if (instr->write_back)
+			printf("!");
+	} else {
+		printf(", [R%zu]", instr->base.num);
+		prv_dump_op2(&instr->offset);
+	}
+	printf("\n");
+}
+
+static void prv_dump_br_instr(subtilis_arm_br_instr_t *instr)
+{
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf(" label_%zu\n", instr->label);
+}
+
+static void prv_dump_swi_instr(subtilis_arm_swi_instr_t *instr)
+{
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf(" &%zx\n", instr->code);
+}
+
+static void prv_dump_ldrc_instr(subtilis_arm_ldrc_instr_t *instr)
+{
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf(" R%zu, label_%zu\n", instr->dest.num, instr->label);
+}
+
+void subtilis_arm_program_dump(subtilis_arm_program_t *p)
+{
+	size_t i;
+	subtilis_arm_op_t *op;
+	subtilis_arm_instr_t *instr;
+
+	for (i = 0; i < p->len; i++) {
+		op = &p->ops[i];
+		if (op->type == SUBTILIS_OP_LABEL) {
+			printf("label_%zu:\n", op->op.label);
+		} else if (op->type == SUBTILIS_OP_INSTR) {
+			instr = &op->op.instr;
+			printf("\t%s", instr_desc[instr->type]);
+			switch (instr->type) {
+			case SUBTILIS_ARM_INSTR_LDR:
+			case SUBTILIS_ARM_INSTR_STR:
+				prv_dump_stran_instr(&instr->operands.stran);
+				break;
+			case SUBTILIS_ARM_INSTR_LDM:
+			case SUBTILIS_ARM_INSTR_STM:
+				break;
+			case SUBTILIS_ARM_INSTR_B:
+			case SUBTILIS_ARM_INSTR_BL:
+				prv_dump_br_instr(&instr->operands.br);
+				break;
+			case SUBTILIS_ARM_INSTR_SWI:
+				prv_dump_swi_instr(&instr->operands.swi);
+				break;
+			case SUBTILIS_ARM_INSTR_LDRC:
+				prv_dump_ldrc_instr(&instr->operands.ldrc);
+				break;
+			case SUBTILIS_ARM_INSTR_MOV:
+			case SUBTILIS_ARM_INSTR_MVN:
+				prv_dump_mov_instr(&instr->operands.data);
+				break;
+			default:
+				prv_dump_data_instr(&instr->operands.data);
+				break;
+			}
+		} else {
+			continue;
+		}
+	}
+}
