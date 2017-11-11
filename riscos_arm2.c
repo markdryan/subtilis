@@ -14,23 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_RISCOS_ARM_H
-#define __SUBTILIS_RISCOS_ARM_H
-
+#include "riscos_arm2.h"
 #include "arm_core.h"
+#include "riscos_arm.h"
 
 /* clang-format off */
-subtilis_arm_program_t *
-subtilis_riscos_generate(
-	subtilis_ir_program_t *p, const subtilis_ir_rule_raw_t *rules_raw,
-	size_t rule_count, size_t globals, subtilis_error_t *err);
+const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
+	{"movii32 *, *", subtilis_arm_core_movii32},
+	{"addii32 *, *, *", subtilis_arm_core_addii32},
+	{"storeoi32 *, *, *", subtilis_arm_core_storeoi32},
+	{"loadoi32 *, *, *", subtilis_arm_core_loadoi32},
+	{"label_1", subtilis_arm_core_label},
+	{"ltii32 r_1, *, *\n"
+	 "jmpc r_1, label_1, *\n"
+	 "label_1",
+	     subtilis_arm_core_if_lt},
+	{"printi32 *\n", subtilis_riscos_arm_printi},
+	{"jmp *\n", subtilis_arm_core_jump},
+};
+
+const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /
+	sizeof(subtilis_ir_rule_raw_t);
 /* clang-format on */
-
-#define SUBTILIS_RISCOS_PRINT_BUFFER 0
-#define SUBTILIS_RISCOS_PRINT_BUFFER_SIZE 32
-#define SUBTILIS_RISCOS_RUNTIME_SIZE SUBTILIS_RISCOS_PRINT_BUFFER_SIZE
-
-void subtilis_riscos_arm_printi(subtilis_ir_program_t *p, size_t start,
-				void *user_data, subtilis_error_t *err);
-
-#endif
