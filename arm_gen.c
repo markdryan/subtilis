@@ -131,3 +131,29 @@ void subtilis_arm_gen_jump(subtilis_ir_program_t *p, size_t start,
 	br->link = false;
 	br->label = jmp->operands[0].label;
 }
+
+void subtilis_arm_gen_jmpc(subtilis_ir_program_t *p, size_t start,
+			   void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_br_instr_t *br;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_program_t *arm_p = user_data;
+	subtilis_ir_inst_t *jmp = &p->ops[start]->op.instr;
+
+	op1 = subtilis_arm_ir_to_arm_reg(jmp->operands[0].reg);
+
+	subtilis_arm_cmp_imm(arm_p, SUBTILIS_ARM_CCODE_AL, op1, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_program_add_instr(arm_p, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_EQ;
+	br->link = false;
+	br->label = jmp->operands[2].label;
+}

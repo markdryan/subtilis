@@ -33,5 +33,6 @@ void subtilis_arm_gen_if_lt(subtilis_ir_program_t *p, size_t start,
 			    void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_jump(subtilis_ir_program_t *p, size_t start,
 			   void *user_data, subtilis_error_t *err);
-
+void subtilis_arm_gen_jmpc(subtilis_ir_program_t *p, size_t start,
+			   void *user_data, subtilis_error_t *err);
 #endif

@@ -21,15 +21,18 @@
 
 /* clang-format off */
 const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
+	{"ltii32 r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_arm_gen_if_lt},
+	{"jmpc *, label_1, *\n"
+	"label_1\n",
+		 subtilis_arm_gen_jmpc},
 	{"movii32 *, *", subtilis_arm_gen_movii32},
 	{"addii32 *, *, *", subtilis_arm_gen_addii32},
 	{"storeoi32 *, *, *", subtilis_arm_gen_storeoi32},
 	{"loadoi32 *, *, *", subtilis_arm_gen_loadoi32},
 	{"label_1", subtilis_arm_gen_label},
-	{"ltii32 r_1, *, *\n"
-	 "jmpc r_1, label_1, *\n"
-	 "label_1",
-	     subtilis_arm_gen_if_lt},
 	{"printi32 *\n", subtilis_riscos_arm_printi},
 	{"jmp *\n", subtilis_arm_gen_jump},
 };
