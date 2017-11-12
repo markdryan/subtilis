@@ -270,18 +270,4 @@ void subtilis_arm_cmp_imm(subtilis_arm_program_t *p,
 
 void subtilis_arm_program_dump(subtilis_arm_program_t *p);
 
-void subtilis_arm_core_movii32(subtilis_ir_program_t *p, size_t start,
-			       void *user_data, subtilis_error_t *err);
-void subtilis_arm_core_addii32(subtilis_ir_program_t *p, size_t start,
-			       void *user_data, subtilis_error_t *err);
-void subtilis_arm_core_storeoi32(subtilis_ir_program_t *p, size_t start,
-				 void *user_data, subtilis_error_t *err);
-void subtilis_arm_core_loadoi32(subtilis_ir_program_t *p, size_t start,
-				void *user_data, subtilis_error_t *err);
-void subtilis_arm_core_label(subtilis_ir_program_t *p, size_t start,
-			     void *user_data, subtilis_error_t *err);
-void subtilis_arm_core_if_lt(subtilis_ir_program_t *p, size_t start,
-			     void *user_data, subtilis_error_t *err);
-void subtilis_arm_core_jump(subtilis_ir_program_t *p, size_t start,
-			    void *user_data, subtilis_error_t *err);
 #endif
