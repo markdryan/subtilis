@@ -234,13 +234,30 @@ subtilis_arm_instr_t *subtilis_arm_program_dup_instr(subtilis_arm_program_t *p,
 bool subtilis_arm_encode_imm(int32_t num, uint32_t *encoded);
 bool subtilis_arm_encode_lvl2_imm(int32_t num, uint32_t *encoded1,
 				  uint32_t *encoded2);
-
+subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg);
 void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
 			       subtilis_arm_instr_type_t itype,
 			       subtilis_arm_instr_type_t alt_type,
 			       subtilis_arm_ccode_type_t ccode, bool status,
 			       subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
 			       int32_t op2, subtilis_error_t *err);
+void subtilis_arm_mov_reg(subtilis_arm_program_t *p,
+			  subtilis_arm_ccode_type_t ccode, bool status,
+			  subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			  subtilis_error_t *err);
+void subtilis_arm_mov_imm(subtilis_arm_program_t *p,
+			  subtilis_arm_ccode_type_t ccode, bool status,
+			  subtilis_arm_reg_t dest, int32_t op2,
+			  subtilis_error_t *err);
+void subtilis_arm_stran_imm(subtilis_arm_program_t *p,
+			    subtilis_arm_instr_type_t itype,
+			    subtilis_arm_ccode_type_t ccode,
+			    subtilis_arm_reg_t dest, subtilis_arm_reg_t base,
+			    int32_t offset, subtilis_error_t *err);
+void subtilis_arm_cmp_imm(subtilis_arm_program_t *p,
+			  subtilis_arm_ccode_type_t ccode,
+			  subtilis_arm_reg_t op1, int32_t op2,
+			  subtilis_error_t *err);
 
 #define subtilis_arm_add_add_imm(p, cc, s, dst, op1, op2, err)                 \
 	subtilis_arm_add_data_imm(p, SUBTILIS_ARM_INSTR_ADD,                   \
@@ -252,4 +269,19 @@ void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
 				  op2, err)
 
 void subtilis_arm_program_dump(subtilis_arm_program_t *p);
+
+void subtilis_arm_core_movii32(subtilis_ir_program_t *p, size_t start,
+			       void *user_data, subtilis_error_t *err);
+void subtilis_arm_core_addii32(subtilis_ir_program_t *p, size_t start,
+			       void *user_data, subtilis_error_t *err);
+void subtilis_arm_core_storeoi32(subtilis_ir_program_t *p, size_t start,
+				 void *user_data, subtilis_error_t *err);
+void subtilis_arm_core_loadoi32(subtilis_ir_program_t *p, size_t start,
+				void *user_data, subtilis_error_t *err);
+void subtilis_arm_core_label(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_core_if_lt(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_core_jump(subtilis_ir_program_t *p, size_t start,
+			    void *user_data, subtilis_error_t *err);
 #endif

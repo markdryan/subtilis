@@ -21,6 +21,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "riscos_arm.h"
+#include "riscos_arm2.h"
 
 int main(int argc, char *argv[])
 {
@@ -54,10 +55,15 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_p = subtilis_riscos_generate(p->p, NULL, 0, p->st->allocated, &err);
+	subtilis_ir_program_dump(p->p);
+
+	arm_p = subtilis_riscos_generate(p->p, riscos_arm2_rules,
+					 riscos_arm2_rules_count,
+					 p->st->allocated, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	printf("\n\n");
 	subtilis_arm_program_dump(arm_p);
 
 	subtilis_arm_program_delete(arm_p);

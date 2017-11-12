@@ -14,23 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_RISCOS_ARM_H
-#define __SUBTILIS_RISCOS_ARM_H
+#ifndef __SUBTILIS_RISCOS_ARM2_H
+#define __SUBTILIS_RISCOS_ARM2_H
 
-#include "arm_core.h"
+#include "ir.h"
 
-/* clang-format off */
-subtilis_arm_program_t *
-subtilis_riscos_generate(
-	subtilis_ir_program_t *p, const subtilis_ir_rule_raw_t *rules_raw,
-	size_t rule_count, size_t globals, subtilis_error_t *err);
-/* clang-format on */
-
-#define SUBTILIS_RISCOS_PRINT_BUFFER 0
-#define SUBTILIS_RISCOS_PRINT_BUFFER_SIZE 32
-#define SUBTILIS_RISCOS_RUNTIME_SIZE SUBTILIS_RISCOS_PRINT_BUFFER_SIZE
-
-void subtilis_riscos_arm_printi(subtilis_ir_program_t *p, size_t start,
-				void *user_data, subtilis_error_t *err);
-
+extern const subtilis_ir_rule_raw_t riscos_arm2_rules[];
+extern const size_t riscos_arm2_rules_count;
 #endif
