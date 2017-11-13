@@ -24,7 +24,35 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"ltii32 r_1, *, *\n"
 	"jmpc r_1, label_1, *\n"
 	"label_1",
+		 subtilis_arm_gen_if_lt_imm},
+	{"gtii32 r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_arm_gen_if_gt_imm},
+	{"lteii32 r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_arm_gen_if_lte_imm},
+	{"gteii32 r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_arm_gen_if_gte},
+	{"lti32 r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
 		 subtilis_arm_gen_if_lt},
+	{"gti32 r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_arm_gen_if_gt},
+	{"ltei32 r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_arm_gen_if_lte},
+	{"gtei32 r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_arm_gen_if_gte},
 	{"jmpc *, label_1, *\n"
 	"label_1\n",
 		 subtilis_arm_gen_jmpc},
