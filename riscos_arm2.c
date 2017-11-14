@@ -56,6 +56,14 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"jmpc *, label_1, *\n"
 	"label_1\n",
 		 subtilis_arm_gen_jmpc},
+	{"gtii32 *, *, *\n", subtilis_arm_gen_gtii32},
+	{"ltii32 *, *, *\n", subtilis_arm_gen_ltii32},
+	{"gteii32 *, *, *\n", subtilis_arm_gen_gteii32},
+	{"lteii32 *, *, *\n", subtilis_arm_gen_lteii32},
+	{"gti32 *, *, *\n", subtilis_arm_gen_gti32},
+	{"lti32 *, *, *\n", subtilis_arm_gen_lti32},
+	{"gtei32 *, *, *\n", subtilis_arm_gen_gtei32},
+	{"ltei32 *, *, *\n", subtilis_arm_gen_ltei32},
 	{"movii32 *, *", subtilis_arm_gen_movii32},
 	{"addii32 *, *, *", subtilis_arm_gen_addii32},
 	{"storeoi32 *, *, *", subtilis_arm_gen_storeoi32},
@@ -63,6 +71,9 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"label_1", subtilis_arm_gen_label},
 	{"printi32 *\n", subtilis_riscos_arm_printi},
 	{"jmp *\n", subtilis_arm_gen_jump},
+	{"andi32 *, *, *\n", subtilis_arm_gen_and},
+	{"ori32 *, *, *\n", subtilis_arm_gen_or},
+	{"eori32 *, *, *\n", subtilis_arm_gen_eor},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /
