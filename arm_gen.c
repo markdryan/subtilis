@@ -18,6 +18,28 @@
 
 #include "arm_core.h"
 
+static void prv_data_simple(subtilis_ir_program_t *p, size_t start,
+			    void *user_data, subtilis_arm_instr_type_t itype,
+			    subtilis_arm_ccode_type_t ccode,
+			    subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_data_instr_t *datai;
+	subtilis_arm_program_t *arm_p = user_data;
+	subtilis_ir_inst_t *ir_op = &p->ops[start]->op.instr;
+
+	instr = subtilis_arm_program_add_instr(arm_p, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai = &instr->operands.data;
+	datai->ccode = ccode;
+	datai->dest = subtilis_arm_ir_to_arm_reg(ir_op->operands[0].reg);
+	datai->op1 = subtilis_arm_ir_to_arm_reg(ir_op->operands[1].reg);
+	datai->op2.type = SUBTILIS_ARM_OP2_REG;
+	datai->op2.op.reg = subtilis_arm_ir_to_arm_reg(ir_op->operands[2].reg);
+}
+
 void subtilis_arm_gen_movii32(subtilis_ir_program_t *p, size_t start,
 			      void *user_data, subtilis_error_t *err)
 {
@@ -46,6 +68,69 @@ void subtilis_arm_gen_addii32(subtilis_ir_program_t *p, size_t start,
 
 	subtilis_arm_add_add_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
 				 op2, err);
+}
+
+void subtilis_arm_gen_subii32(subtilis_ir_program_t *p, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_program_t *arm_p = user_data;
+	subtilis_ir_inst_t *instr = &p->ops[start]->op.instr;
+	int32_t op2 = instr->operands[2].integer;
+
+	dest = subtilis_arm_ir_to_arm_reg(instr->operands[0].reg);
+	op1 = subtilis_arm_ir_to_arm_reg(instr->operands[1].reg);
+
+	subtilis_arm_add_sub_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
+				 op2, err);
+}
+
+void subtilis_arm_gen_mulii32(subtilis_ir_program_t *p, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_program_t *arm_p = user_data;
+	subtilis_ir_inst_t *instr = &p->ops[start]->op.instr;
+	int32_t op2 = instr->operands[2].integer;
+
+	dest = subtilis_arm_ir_to_arm_reg(instr->operands[0].reg);
+	op1 = subtilis_arm_ir_to_arm_reg(instr->operands[1].reg);
+
+	subtilis_arm_add_mul_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
+				 op2, err);
+}
+
+void subtilis_arm_gen_muli32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_reg_t op2;
+	subtilis_arm_program_t *arm_p = user_data;
+	subtilis_ir_inst_t *instr = &p->ops[start]->op.instr;
+
+	dest = subtilis_arm_ir_to_arm_reg(instr->operands[0].reg);
+	op1 = subtilis_arm_ir_to_arm_reg(instr->operands[1].reg);
+	op2 = subtilis_arm_ir_to_arm_reg(instr->operands[2].reg);
+
+	subtilis_arm_add_mul(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
+			     op2, err);
+}
+
+void subtilis_arm_gen_addi32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	prv_data_simple(p, start, user_data, SUBTILIS_ARM_INSTR_ADD,
+			SUBTILIS_ARM_CCODE_AL, err);
+}
+
+void subtilis_arm_gen_subi32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	prv_data_simple(p, start, user_data, SUBTILIS_ARM_INSTR_SUB,
+			SUBTILIS_ARM_CCODE_AL, err);
 }
 
 static void prv_stran_instr(subtilis_arm_instr_type_t itype,
@@ -138,26 +223,21 @@ void subtilis_arm_gen_if_gte_imm(subtilis_ir_program_t *p, size_t start,
 	prv_cmp_jmp_imm(p, start, user_data, SUBTILIS_ARM_CCODE_LT, err);
 }
 
-static void prv_data_simple(subtilis_ir_program_t *p, size_t start,
-			    void *user_data, subtilis_arm_instr_type_t itype,
-			    subtilis_arm_ccode_type_t ccode,
-			    subtilis_error_t *err)
+static void prv_data_imm(subtilis_ir_program_t *p, size_t start,
+			 void *user_data, subtilis_arm_instr_type_t itype,
+			 subtilis_arm_ccode_type_t ccode, bool status,
+			 subtilis_error_t *err)
 {
-	subtilis_arm_instr_t *instr;
-	subtilis_arm_data_instr_t *datai;
 	subtilis_arm_program_t *arm_p = user_data;
 	subtilis_ir_inst_t *ir_op = &p->ops[start]->op.instr;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
 
-	instr = subtilis_arm_program_add_instr(arm_p, itype, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+	dest = subtilis_arm_ir_to_arm_reg(ir_op->operands[0].reg);
+	op1 = subtilis_arm_ir_to_arm_reg(ir_op->operands[1].reg);
 
-	datai = &instr->operands.data;
-	datai->ccode = ccode;
-	datai->dest = subtilis_arm_ir_to_arm_reg(ir_op->operands[0].reg);
-	datai->op1 = subtilis_arm_ir_to_arm_reg(ir_op->operands[1].reg);
-	datai->op2.type = SUBTILIS_ARM_OP2_REG;
-	datai->op2.op.reg = subtilis_arm_ir_to_arm_reg(ir_op->operands[2].reg);
+	subtilis_arm_add_data_imm(arm_p, itype, ccode, status, dest, op1,
+				  ir_op->operands[2].integer, err);
 }
 
 static void prv_cmp_jmp(subtilis_ir_program_t *p, size_t start, void *user_data,
@@ -351,22 +431,43 @@ void subtilis_arm_gen_jmpc(subtilis_ir_program_t *p, size_t start,
 	br->label = jmp->operands[2].label;
 }
 
-void subtilis_arm_gen_eor(subtilis_ir_program_t *p, size_t start,
-			  void *user_data, subtilis_error_t *err)
+void subtilis_arm_gen_eorii32(subtilis_ir_program_t *p, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	prv_data_imm(p, start, user_data, SUBTILIS_ARM_INSTR_EOR,
+		     SUBTILIS_ARM_CCODE_AL, false, err);
+}
+
+void subtilis_arm_gen_orii32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	prv_data_imm(p, start, user_data, SUBTILIS_ARM_INSTR_ORR,
+		     SUBTILIS_ARM_CCODE_AL, false, err);
+}
+
+void subtilis_arm_gen_andii32(subtilis_ir_program_t *p, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	prv_data_imm(p, start, user_data, SUBTILIS_ARM_INSTR_AND,
+		     SUBTILIS_ARM_CCODE_AL, false, err);
+}
+
+void subtilis_arm_gen_eori32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err)
 {
 	prv_data_simple(p, start, user_data, SUBTILIS_ARM_INSTR_EOR,
 			SUBTILIS_ARM_CCODE_AL, err);
 }
 
-void subtilis_arm_gen_or(subtilis_ir_program_t *p, size_t start,
-			 void *user_data, subtilis_error_t *err)
+void subtilis_arm_gen_ori32(subtilis_ir_program_t *p, size_t start,
+			    void *user_data, subtilis_error_t *err)
 {
 	prv_data_simple(p, start, user_data, SUBTILIS_ARM_INSTR_ORR,
 			SUBTILIS_ARM_CCODE_AL, err);
 }
 
-void subtilis_arm_gen_and(subtilis_ir_program_t *p, size_t start,
-			  void *user_data, subtilis_error_t *err)
+void subtilis_arm_gen_andi32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err)
 {
 	prv_data_simple(p, start, user_data, SUBTILIS_ARM_INSTR_AND,
 			SUBTILIS_ARM_CCODE_AL, err);

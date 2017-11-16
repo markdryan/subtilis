@@ -23,6 +23,16 @@ void subtilis_arm_gen_movii32(subtilis_ir_program_t *p, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_addii32(subtilis_ir_program_t *p, size_t start,
 			      void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_subii32(subtilis_ir_program_t *p, size_t start,
+			      void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_mulii32(subtilis_ir_program_t *p, size_t start,
+			      void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_addi32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_subi32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_muli32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_storeoi32(subtilis_ir_program_t *p, size_t start,
 				void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_loadoi32(subtilis_ir_program_t *p, size_t start,
@@ -49,12 +59,18 @@ void subtilis_arm_gen_jump(subtilis_ir_program_t *p, size_t start,
 			   void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_jmpc(subtilis_ir_program_t *p, size_t start,
 			   void *user_data, subtilis_error_t *err);
-void subtilis_arm_gen_eor(subtilis_ir_program_t *p, size_t start,
-			  void *user_data, subtilis_error_t *err);
-void subtilis_arm_gen_or(subtilis_ir_program_t *p, size_t start,
-			 void *user_data, subtilis_error_t *err);
-void subtilis_arm_gen_and(subtilis_ir_program_t *p, size_t start,
-			  void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_eori32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_ori32(subtilis_ir_program_t *p, size_t start,
+			    void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_andi32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_eorii32(subtilis_ir_program_t *p, size_t start,
+			      void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_orii32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_andii32(subtilis_ir_program_t *p, size_t start,
+			      void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_gtii32(subtilis_ir_program_t *p, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_ltii32(subtilis_ir_program_t *p, size_t start,

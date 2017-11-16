@@ -129,8 +129,8 @@ static subtilis_arm_program_t *prv_add_imm(int32_t num,
 	op1.type = SUBTILIS_ARM_REG_FIXED;
 	op1.num = 1;
 
-	subtilis_arm_add_data_imm(p, itype, alt_type, SUBTILIS_ARM_CCODE_AL,
-				  false, dest, op1, num, err);
+	subtilis_arm_add_addsub_imm(p, itype, alt_type, SUBTILIS_ARM_CCODE_AL,
+				    false, dest, op1, num, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		subtilis_arm_program_delete(p);
 		return NULL;

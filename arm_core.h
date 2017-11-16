@@ -235,9 +235,23 @@ bool subtilis_arm_encode_imm(int32_t num, uint32_t *encoded);
 bool subtilis_arm_encode_lvl2_imm(int32_t num, uint32_t *encoded1,
 				  uint32_t *encoded2);
 subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg);
+void subtilis_arm_add_addsub_imm(subtilis_arm_program_t *p,
+				 subtilis_arm_instr_type_t itype,
+				 subtilis_arm_instr_type_t alt_type,
+				 subtilis_arm_ccode_type_t ccode, bool status,
+				 subtilis_arm_reg_t dest,
+				 subtilis_arm_reg_t op1, int32_t op2,
+				 subtilis_error_t *err);
+void subtilis_arm_add_mul_imm(subtilis_arm_program_t *p,
+			      subtilis_arm_ccode_type_t ccode, bool status,
+			      subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			      int32_t op2, subtilis_error_t *err);
+void subtilis_arm_add_mul(subtilis_arm_program_t *p,
+			  subtilis_arm_ccode_type_t ccode, bool status,
+			  subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			  subtilis_arm_reg_t op2, subtilis_error_t *err);
 void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
 			       subtilis_arm_instr_type_t itype,
-			       subtilis_arm_instr_type_t alt_type,
 			       subtilis_arm_ccode_type_t ccode, bool status,
 			       subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
 			       int32_t op2, subtilis_error_t *err);
@@ -260,13 +274,13 @@ void subtilis_arm_cmp_imm(subtilis_arm_program_t *p,
 			  subtilis_error_t *err);
 
 #define subtilis_arm_add_add_imm(p, cc, s, dst, op1, op2, err)                 \
-	subtilis_arm_add_data_imm(p, SUBTILIS_ARM_INSTR_ADD,                   \
-				  SUBTILIS_ARM_INSTR_SUB, cc, s, dst, op1,     \
-				  op2, err)
+	subtilis_arm_add_addsub_imm(p, SUBTILIS_ARM_INSTR_ADD,                 \
+				    SUBTILIS_ARM_INSTR_SUB, cc, s, dst, op1,   \
+				    op2, err)
 #define subtilis_arm_add_sub_imm(p, cc, s, dst, op1, op2, err)                 \
-	subtilis_arm_add_data_imm(p, SUBTILIS_ARM_INSTR_SUB,                   \
-				  SUBTILIS_ARM_INSTR_ADD, cc, s, dst, op1,     \
-				  op2, err)
+	subtilis_arm_add_addsub_imm(p, SUBTILIS_ARM_INSTR_SUB,                 \
+				    SUBTILIS_ARM_INSTR_ADD, cc, s, dst, op1,   \
+				    op2, err)
 
 void subtilis_arm_program_dump(subtilis_arm_program_t *p);
 
