@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "arm_core.h"
+#include "arm_walker.h"
 
 /* clang-format off */
 static const uint32_t subitlis_arm_imm_mask[] = {
@@ -683,8 +684,11 @@ static void prv_dump_op2(subtilis_arm_op2_t *op2)
 	}
 }
 
-static void prv_dump_mov_instr(subtilis_arm_data_instr_t *instr)
+static void prv_dump_mov_instr(void *user_data, subtilis_arm_instr_type_t type,
+			       subtilis_arm_data_instr_t *instr,
+			       subtilis_error_t *err)
 {
+	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
 	if (instr->status)
@@ -694,8 +698,11 @@ static void prv_dump_mov_instr(subtilis_arm_data_instr_t *instr)
 	printf("\n");
 }
 
-static void prv_dump_data_instr(subtilis_arm_data_instr_t *instr)
+static void prv_dump_data_instr(void *user_data, subtilis_arm_instr_type_t type,
+				subtilis_arm_data_instr_t *instr,
+				subtilis_error_t *err)
 {
+	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
 	if (instr->status)
@@ -705,8 +712,12 @@ static void prv_dump_data_instr(subtilis_arm_data_instr_t *instr)
 	printf("\n");
 }
 
-static void prv_dump_stran_instr(subtilis_arm_stran_instr_t *instr)
+static void prv_dump_stran_instr(void *user_data,
+				 subtilis_arm_instr_type_t type,
+				 subtilis_arm_stran_instr_t *instr,
+				 subtilis_error_t *err)
 {
+	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
 	printf(" R%zu", instr->dest.num);
@@ -723,29 +734,49 @@ static void prv_dump_stran_instr(subtilis_arm_stran_instr_t *instr)
 	printf("\n");
 }
 
-static void prv_dump_br_instr(subtilis_arm_br_instr_t *instr)
+static void prv_dump_mtran_instr(void *user_data,
+				 subtilis_arm_instr_type_t type,
+				 subtilis_arm_mtran_instr_t *instr,
+				 subtilis_error_t *err)
 {
+	subtilis_error_set_asssertion_failed(err);
+}
+
+static void prv_dump_br_instr(void *user_data, subtilis_arm_instr_type_t type,
+			      subtilis_arm_br_instr_t *instr,
+			      subtilis_error_t *err)
+{
+	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
 	printf(" label_%zu\n", instr->label);
 }
 
-static void prv_dump_swi_instr(subtilis_arm_swi_instr_t *instr)
+static void prv_dump_swi_instr(void *user_data, subtilis_arm_instr_type_t type,
+			       subtilis_arm_swi_instr_t *instr,
+			       subtilis_error_t *err)
 {
+	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
 	printf(" &%zx\n", instr->code);
 }
 
-static void prv_dump_ldrc_instr(subtilis_arm_ldrc_instr_t *instr)
+static void prv_dump_ldrc_instr(void *user_data, subtilis_arm_instr_type_t type,
+				subtilis_arm_ldrc_instr_t *instr,
+				subtilis_error_t *err)
 {
+	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
 	printf(" R%zu, label_%zu\n", instr->dest.num, instr->label);
 }
 
-static void prv_dump_cmp_instr(subtilis_arm_data_instr_t *instr)
+static void prv_dump_cmp_instr(void *user_data, subtilis_arm_instr_type_t type,
+			       subtilis_arm_data_instr_t *instr,
+			       subtilis_error_t *err)
 {
+	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
 	printf(" R%zu", instr->op1.num);
@@ -753,53 +784,31 @@ static void prv_dump_cmp_instr(subtilis_arm_data_instr_t *instr)
 	printf("\n");
 }
 
+static void prv_dump_label(void *user_data, size_t label, subtilis_error_t *err)
+{
+	printf(".label_%zu\n", label);
+}
+
 void subtilis_arm_program_dump(subtilis_arm_program_t *p)
 {
+	subtlis_arm_walker_t walker;
+	subtilis_error_t err;
 	size_t i;
-	subtilis_arm_op_t *op;
-	subtilis_arm_instr_t *instr;
 
-	for (i = 0; i < p->len; i++) {
-		op = &p->ops[i];
-		if (op->type == SUBTILIS_OP_LABEL) {
-			printf(".label_%zu\n", op->op.label);
-		} else if (op->type == SUBTILIS_OP_INSTR) {
-			instr = &op->op.instr;
-			printf("\t%s", instr_desc[instr->type]);
-			switch (instr->type) {
-			case SUBTILIS_ARM_INSTR_LDR:
-			case SUBTILIS_ARM_INSTR_STR:
-				prv_dump_stran_instr(&instr->operands.stran);
-				break;
-			case SUBTILIS_ARM_INSTR_LDM:
-			case SUBTILIS_ARM_INSTR_STM:
-				break;
-			case SUBTILIS_ARM_INSTR_B:
-			case SUBTILIS_ARM_INSTR_BL:
-				prv_dump_br_instr(&instr->operands.br);
-				break;
-			case SUBTILIS_ARM_INSTR_SWI:
-				prv_dump_swi_instr(&instr->operands.swi);
-				break;
-			case SUBTILIS_ARM_INSTR_LDRC:
-				prv_dump_ldrc_instr(&instr->operands.ldrc);
-				break;
-			case SUBTILIS_ARM_INSTR_MOV:
-			case SUBTILIS_ARM_INSTR_MVN:
-				prv_dump_mov_instr(&instr->operands.data);
-				break;
-			case SUBTILIS_ARM_INSTR_CMP:
-			case SUBTILIS_ARM_INSTR_CMN:
-				prv_dump_cmp_instr(&instr->operands.data);
-				break;
-			default:
-				prv_dump_data_instr(&instr->operands.data);
-				break;
-			}
-		} else {
-			continue;
-		}
-	}
+	subtilis_error_init(&err);
+
+	walker.user_data = NULL;
+	walker.label_fn = prv_dump_label;
+	walker.data_fn = prv_dump_data_instr;
+	walker.cmp_fn = prv_dump_cmp_instr;
+	walker.mov_fn = prv_dump_mov_instr;
+	walker.stran_fn = prv_dump_stran_instr;
+	walker.mtran_fn = prv_dump_mtran_instr;
+	walker.br_fn = prv_dump_br_instr;
+	walker.swi_fn = prv_dump_swi_instr;
+	walker.ldrc_fn = prv_dump_ldrc_instr;
+
+	subtilis_arm_walk(p, &walker, &err);
 
 	for (i = 0; i < p->constant_count; i++) {
 		printf(".label_%zu\n", p->constants[i].label);

@@ -17,5 +17,5 @@ install:
 
 script:
  - CFLAGS="-g -fsanitize=address -fno-omit-frame-pointer -Wall -Werror" make check
- - perl checkpatch.pl --no-tree -f --strict --show-types --ignore NEW_TYPEDEFS --ignore PREFER_KERNEL_TYPES --ignore SPLIT_STRING --ignore UNNECESSARY_PARENTHESES *.c *.h
+ - perl checkpatch.pl --no-tree -f --strict --show-types --ignore NEW_TYPEDEFS --ignore PREFER_KERNEL_TYPES --ignore SPLIT_STRING --ignore UNNECESSARY_PARENTHESES --ignore OPEN_ENDED_LINE *.c *.h
  - ./check-format.sh
