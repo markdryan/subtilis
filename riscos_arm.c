@@ -18,17 +18,18 @@
 
 #include "riscos_arm.h"
 
-void prv_add_preamble(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
+size_t prv_add_preamble(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
 {
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_reg_t dest;
 	subtilis_arm_reg_t op1;
 	subtilis_arm_reg_t op2;
+	size_t label;
 
 	instr =
 	    subtilis_arm_program_add_instr(arm_p, SUBTILIS_ARM_INSTR_SWI, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		return 0;
 
 	instr->operands.swi.ccode = SUBTILIS_ARM_CCODE_AL;
 	instr->operands.swi.code = 0x10;
@@ -41,16 +42,18 @@ void prv_add_preamble(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
 	op1.type = SUBTILIS_ARM_REG_FIXED;
 	op1.num = 1;
 
-	subtilis_arm_add_sub_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
-				 arm_p->globals, err);
+	label = subtilis_add_data_imm_ldr_datai(arm_p, SUBTILIS_ARM_INSTR_SUB,
+						SUBTILIS_ARM_CCODE_AL, false,
+						dest, op1, arm_p->globals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		return 0;
 
 	dest.num = 13;
 	op2.type = SUBTILIS_ARM_REG_FIXED;
 	op2.num = 12;
 	subtilis_arm_mov_reg(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
 			     err);
+	return label;
 }
 
 void prv_add_coda(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
@@ -92,6 +95,7 @@ subtilis_riscos_generate(
 {
 	subtilis_ir_rule_t *parsed;
 	subtilis_arm_program_t *arm_p = NULL;
+	//	size_t stack_frame_label;
 
 	parsed = malloc(sizeof(*parsed) * rule_count);
 	if (!parsed) {
@@ -108,7 +112,8 @@ subtilis_riscos_generate(
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	prv_add_preamble(arm_p, err);
+	//	stack_frame_label = prv_add_preamble(arm_p, err);
+	(void)prv_add_preamble(arm_p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
