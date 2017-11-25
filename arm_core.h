@@ -210,6 +210,7 @@ struct subtilis_arm_program_t_ {
 	size_t max_len;
 	subtilis_arm_op_t *ops;
 	size_t globals;
+	size_t *op_order;
 	subtilis_arm_constant_t *constants;
 	size_t constant_count;
 	size_t max_constants;
