@@ -58,7 +58,6 @@ subtilis_arm_program_t *subtilis_arm_program_new(size_t reg_counter,
 	p->label_counter = label_counter;
 	p->len = 0;
 	p->ops = NULL;
-	p->op_order = NULL;
 	p->globals = globals;
 	p->constants = NULL;
 	p->constant_count = 0;
@@ -73,7 +72,6 @@ void subtilis_arm_program_delete(subtilis_arm_program_t *p)
 		return;
 
 	free(p->constants);
-	free(p->op_order);
 	free(p->ops);
 	free(p);
 }
@@ -115,7 +113,6 @@ static subtilis_arm_reg_t prv_acquire_new_reg(subtilis_arm_program_t *p)
 static void prv_ensure_buffer(subtilis_arm_program_t *p, subtilis_error_t *err)
 {
 	subtilis_arm_op_t *new_ops;
-	size_t *new_op_order;
 	size_t new_max;
 
 	if (p->len < p->max_len)
@@ -127,15 +124,8 @@ static void prv_ensure_buffer(subtilis_arm_program_t *p, subtilis_error_t *err)
 		subtilis_error_set_oom(err);
 		return;
 	}
-	new_op_order = realloc(p->op_order, new_max * sizeof(size_t));
-	if (!new_op_order) {
-		free(new_ops);
-		subtilis_error_set_oom(err);
-		return;
-	}
 	p->max_len = new_max;
 	p->ops = new_ops;
-	p->op_order = new_op_order;
 }
 
 void subtilis_arm_program_add_label(subtilis_arm_program_t *p, size_t label,
@@ -146,7 +136,6 @@ void subtilis_arm_program_add_label(subtilis_arm_program_t *p, size_t label,
 	prv_ensure_buffer(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	p->op_order[p->len] = p->len;
 	op = &p->ops[p->len++];
 	op->type = SUBTILIS_OP_LABEL;
 	op->op.label = label;
@@ -185,7 +174,6 @@ subtilis_arm_program_add_instr(subtilis_arm_program_t *p,
 	prv_ensure_buffer(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	p->op_order[p->len] = p->len;
 	op = &p->ops[p->len++];
 	memset(op, 0, sizeof(*op));
 	op->type = SUBTILIS_OP_INSTR;
@@ -207,7 +195,6 @@ subtilis_arm_instr_t *subtilis_arm_program_dup_instr(subtilis_arm_program_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 	p->ops[p->len] = p->ops[p->len - 1];
-	p->op_order[p->len] = p->len;
 	op = &p->ops[p->len++];
 	return &op->op.instr;
 }

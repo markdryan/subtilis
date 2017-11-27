@@ -82,7 +82,7 @@ void subtilis_arm_walk(subtilis_arm_program_t *arm_p,
 	size_t i;
 
 	for (i = 0; i < arm_p->len; i++) {
-		op = &arm_p->ops[arm_p->op_order[i]];
+		op = &arm_p->ops[i];
 		switch (op->type) {
 		case SUBTILIS_OP_LABEL:
 			walker->label_fn(walker, op->op.label, err);
