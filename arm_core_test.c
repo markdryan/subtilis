@@ -110,7 +110,8 @@ fail:
 	return 1;
 }
 
-static subtilis_arm_program_t *prv_add_imm(int32_t num,
+static subtilis_arm_program_t *prv_add_imm(subtilis_arm_op_pool_t *pool,
+					   int32_t num,
 					   subtilis_arm_instr_type_t itype,
 					   subtilis_arm_instr_type_t alt_type,
 					   subtilis_error_t *err)
@@ -119,7 +120,7 @@ static subtilis_arm_program_t *prv_add_imm(int32_t num,
 	subtilis_arm_reg_t dest;
 	subtilis_arm_reg_t op1;
 
-	p = subtilis_arm_program_new(0, 0, 0, err);
+	p = subtilis_arm_program_new(pool, 0, 0, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -160,7 +161,7 @@ static int prv_check_imm(subtilis_arm_program_t *p,
 	}
 
 	for (i = 0; i < count; i++) {
-		op = &p->ops[i];
+		op = &p->pool->ops[i];
 		if (op->type != SUBTILIS_OP_INSTR) {
 			fprintf(stderr, "Expected instruction %d, found %d\n",
 				SUBTILIS_OP_INSTR, op->type);
@@ -189,13 +190,18 @@ static int prv_test_arm_add_data_1_imm(void)
 	subtilis_arm_program_t *p = NULL;
 	subtilis_error_t err;
 	uint32_t nums[] = {127};
-
-	printf("arm_add_data_imm");
+	subtilis_arm_op_pool_t *pool;
 
 	subtilis_error_init(&err);
 
-	p = prv_add_imm(127, SUBTILIS_ARM_INSTR_ADD, SUBTILIS_ARM_INSTR_SUB,
-			&err);
+	printf("arm_add_data_imm");
+
+	pool = subtilis_arm_op_pool_new(&err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	p = prv_add_imm(pool, 127, SUBTILIS_ARM_INSTR_ADD,
+			SUBTILIS_ARM_INSTR_SUB, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
@@ -203,12 +209,14 @@ static int prv_test_arm_add_data_1_imm(void)
 		goto fail;
 
 	subtilis_arm_program_delete(p);
+	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [OK]\n");
 	return 0;
 
 fail:
 	subtilis_arm_program_delete(p);
+	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [FAIL]\n");
 	return 1;
@@ -219,13 +227,18 @@ static int prv_test_arm_add_data_2_imm(void)
 	subtilis_arm_program_t *p = NULL;
 	subtilis_error_t err;
 	uint32_t nums[] = {0xc01, 1};
+	subtilis_arm_op_pool_t *pool;
 
 	printf("arm_add_data_2_imm");
 
 	subtilis_error_init(&err);
 
-	p = prv_add_imm(257, SUBTILIS_ARM_INSTR_ADD, SUBTILIS_ARM_INSTR_SUB,
-			&err);
+	pool = subtilis_arm_op_pool_new(&err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	p = prv_add_imm(pool, 257, SUBTILIS_ARM_INSTR_ADD,
+			SUBTILIS_ARM_INSTR_SUB, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
@@ -233,12 +246,14 @@ static int prv_test_arm_add_data_2_imm(void)
 		goto fail;
 
 	subtilis_arm_program_delete(p);
+	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [OK]\n");
 	return 0;
 
 fail:
 	subtilis_arm_program_delete(p);
+	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [FAIL]\n");
 	return 1;
@@ -249,12 +264,17 @@ static int prv_test_arm_add_data_neg_imm(void)
 	subtilis_arm_program_t *p = NULL;
 	subtilis_error_t err;
 	uint32_t nums[] = {0xc01};
+	subtilis_arm_op_pool_t *pool;
 
 	printf("arm_add_data_neg_imm");
 
 	subtilis_error_init(&err);
 
-	p = prv_add_imm(0xffffff00, SUBTILIS_ARM_INSTR_ADD,
+	pool = subtilis_arm_op_pool_new(&err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	p = prv_add_imm(pool, 0xffffff00, SUBTILIS_ARM_INSTR_ADD,
 			SUBTILIS_ARM_INSTR_SUB, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
@@ -263,12 +283,14 @@ static int prv_test_arm_add_data_neg_imm(void)
 		goto fail;
 
 	subtilis_arm_program_delete(p);
+	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [OK]\n");
 	return 0;
 
 fail:
 	subtilis_arm_program_delete(p);
+	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [FAIL]\n");
 	return 1;
@@ -279,12 +301,17 @@ static int prv_test_arm_add_data_neg_2_imm(void)
 	subtilis_arm_program_t *p = NULL;
 	subtilis_error_t err;
 	uint32_t nums[] = {0x8ff, 0x10};
+	subtilis_arm_op_pool_t *pool;
 
 	printf("arm_add_data_neg_2_imm");
 
 	subtilis_error_init(&err);
 
-	p = prv_add_imm(0xff00fff0, SUBTILIS_ARM_INSTR_ADD,
+	pool = subtilis_arm_op_pool_new(&err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	p = prv_add_imm(pool, 0xff00fff0, SUBTILIS_ARM_INSTR_ADD,
 			SUBTILIS_ARM_INSTR_SUB, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
@@ -293,12 +320,14 @@ static int prv_test_arm_add_data_neg_2_imm(void)
 		goto fail;
 
 	subtilis_arm_program_delete(p);
+	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [OK]\n");
 	return 0;
 
 fail:
 	subtilis_arm_program_delete(p);
+	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [FAIL]\n");
 	return 1;
@@ -310,12 +339,17 @@ static int prv_test_arm_add_data_ldr_imm(void)
 	subtilis_error_t err;
 	subtilis_arm_op_t *op;
 	subtilis_arm_instr_t *instr;
+	subtilis_arm_op_pool_t *pool;
 
 	printf("arm_add_data_ldr_imm");
 
 	subtilis_error_init(&err);
 
-	p = prv_add_imm(0xf0f0f0f0, SUBTILIS_ARM_INSTR_ADD,
+	pool = subtilis_arm_op_pool_new(&err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	p = prv_add_imm(pool, 0xf0f0f0f0, SUBTILIS_ARM_INSTR_ADD,
 			SUBTILIS_ARM_INSTR_SUB, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
@@ -331,7 +365,7 @@ static int prv_test_arm_add_data_ldr_imm(void)
 		return 1;
 	}
 
-	op = &p->ops[0];
+	op = &p->pool->ops[0];
 	if (op->type != SUBTILIS_OP_INSTR) {
 		fprintf(stderr, "Expected instruction %d, found %d\n",
 			SUBTILIS_OP_INSTR, op->type);
@@ -345,7 +379,7 @@ static int prv_test_arm_add_data_ldr_imm(void)
 		return 1;
 	}
 
-	op = &p->ops[1];
+	op = &p->pool->ops[1];
 	if (op->type != SUBTILIS_OP_INSTR) {
 		fprintf(stderr, "Expected instruction %d, found %d\n",
 			SUBTILIS_OP_INSTR, op->type);
@@ -366,12 +400,14 @@ static int prv_test_arm_add_data_ldr_imm(void)
 	}
 
 	subtilis_arm_program_delete(p);
+	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [OK]\n");
 	return 0;
 
 fail:
 	subtilis_arm_program_delete(p);
+	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [FAIL]\n");
 	return 1;

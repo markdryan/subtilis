@@ -160,6 +160,7 @@ typedef struct subtilis_arm_br_instr_t_ subtilis_arm_br_instr_t;
 struct subtilis_arm_swi_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	size_t code;
+	uint32_t reg_mask;
 };
 
 typedef struct subtilis_arm_swi_instr_t_ subtilis_arm_swi_instr_t;
@@ -192,9 +193,19 @@ struct subtilis_arm_op_t_ {
 		subtilis_arm_instr_t instr;
 		size_t label;
 	} op;
+	size_t next;
+	size_t prev;
 };
 
 typedef struct subtilis_arm_op_t_ subtilis_arm_op_t;
+
+struct subtilis_arm_op_pool_t_ {
+	subtilis_arm_op_t *ops;
+	size_t len;
+	size_t max_len;
+};
+
+typedef struct subtilis_arm_op_pool_t_ subtilis_arm_op_pool_t;
 
 struct subtilis_arm_constant_t_ {
 	uint32_t integer;
@@ -207,17 +218,25 @@ struct subtilis_arm_program_t_ {
 	size_t reg_counter;
 	size_t label_counter;
 	size_t len;
-	size_t max_len;
-	subtilis_arm_op_t *ops;
+	size_t first_op;
+	size_t last_op;
 	size_t globals;
 	subtilis_arm_constant_t *constants;
 	size_t constant_count;
 	size_t max_constants;
+	subtilis_arm_op_pool_t *pool;
 };
 
 typedef struct subtilis_arm_program_t_ subtilis_arm_program_t;
 
-subtilis_arm_program_t *subtilis_arm_program_new(size_t reg_counter,
+subtilis_arm_op_pool_t *subtilis_arm_op_pool_new(subtilis_error_t *err);
+size_t subtilis_arm_op_pool_alloc(subtilis_arm_op_pool_t *pool,
+				  subtilis_error_t *err);
+void subtilis_arm_op_pool_reset(subtilis_arm_op_pool_t *pool);
+void subtilis_arm_op_pool_delete(subtilis_arm_op_pool_t *pool);
+
+subtilis_arm_program_t *subtilis_arm_program_new(subtilis_arm_op_pool_t *pool,
+						 size_t reg_counter,
 						 size_t label_counter,
 						 size_t globals,
 						 subtilis_error_t *err);
@@ -229,6 +248,13 @@ subtilis_arm_instr_t *
 subtilis_arm_program_add_instr(subtilis_arm_program_t *p,
 			       subtilis_arm_instr_type_t type,
 			       subtilis_error_t *err);
+/* clang-format off */
+subtilis_arm_instr_t *
+subtilis_arm_program_insert_instr(subtilis_arm_program_t *p,
+				  subtilis_arm_op_t *op,
+				  subtilis_arm_instr_type_t type,
+				  subtilis_error_t *err);
+/* clang-format on */
 subtilis_arm_instr_t *subtilis_arm_program_dup_instr(subtilis_arm_program_t *p,
 						     subtilis_error_t *err);
 bool subtilis_arm_encode_imm(int32_t num, uint32_t *encoded);
@@ -274,6 +300,31 @@ void subtilis_arm_stran_imm(subtilis_arm_program_t *p,
 			    subtilis_arm_ccode_type_t ccode,
 			    subtilis_arm_reg_t dest, subtilis_arm_reg_t base,
 			    int32_t offset, subtilis_error_t *err);
+void subtilis_arm_insert_push(subtilis_arm_program_t *arm_p,
+			      subtilis_arm_op_t *current,
+			      subtilis_arm_ccode_type_t ccode, size_t reg_num,
+			      subtilis_error_t *err);
+void subtilis_arm_insert_pop(subtilis_arm_program_t *arm_p,
+			     subtilis_arm_op_t *current,
+			     subtilis_arm_ccode_type_t ccode, size_t reg_num,
+			     subtilis_error_t *err);
+/* clang-format off */
+void subtilis_arm_insert_stran_spill_imm(subtilis_arm_program_t *p,
+					 subtilis_arm_op_t *current,
+					 subtilis_arm_instr_type_t itype,
+					 subtilis_arm_ccode_type_t ccode,
+					 subtilis_arm_reg_t dest,
+					 subtilis_arm_reg_t base,
+					 subtilis_arm_reg_t spill_reg,
+					 int32_t offset, subtilis_error_t *err);
+/* clang-format on */
+void subtilis_arm_insert_stran_imm(subtilis_arm_program_t *p,
+				   subtilis_arm_op_t *current,
+				   subtilis_arm_instr_type_t itype,
+				   subtilis_arm_ccode_type_t ccode,
+				   subtilis_arm_reg_t dest,
+				   subtilis_arm_reg_t base, int32_t offset,
+				   subtilis_error_t *err);
 void subtilis_arm_cmp_imm(subtilis_arm_program_t *p,
 			  subtilis_arm_ccode_type_t ccode,
 			  subtilis_arm_reg_t op1, int32_t op2,
