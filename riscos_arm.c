@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 
+#include "arm_reg_alloc.h"
 #include "riscos_arm.h"
 
 size_t prv_add_preamble(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
@@ -33,6 +34,7 @@ size_t prv_add_preamble(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
 
 	instr->operands.swi.ccode = SUBTILIS_ARM_CCODE_AL;
 	instr->operands.swi.code = 0x10;
+	instr->operands.swi.reg_mask = 0x7; // R0, R1, R2
 
 	// TODO we need to check that the globals are not too big
 	// for the amount of memory we have been allocated by the OS
@@ -84,18 +86,22 @@ void prv_add_coda(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
 
 	instr->operands.swi.ccode = SUBTILIS_ARM_CCODE_AL;
 	instr->operands.swi.code = 0x11;
+	instr->operands.swi.reg_mask = 0;
 }
 
 /* clang-format off */
 subtilis_arm_program_t *
 subtilis_riscos_generate(
-	subtilis_ir_program_t *p, const subtilis_ir_rule_raw_t *rules_raw,
+	subtilis_arm_op_pool_t *pool, subtilis_ir_program_t *p,
+	const subtilis_ir_rule_raw_t *rules_raw,
 	size_t rule_count, size_t globals, subtilis_error_t *err)
 /* clang-format on */
 {
 	subtilis_ir_rule_t *parsed;
 	subtilis_arm_program_t *arm_p = NULL;
-	//	size_t stack_frame_label;
+	size_t stack_frame_label;
+	size_t spill_regs;
+	size_t i;
 
 	parsed = malloc(sizeof(*parsed) * rule_count);
 	if (!parsed) {
@@ -107,13 +113,12 @@ subtilis_riscos_generate(
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_p = subtilis_arm_program_new(p->reg_counter, p->label_counter,
+	arm_p = subtilis_arm_program_new(pool, p->reg_counter, p->label_counter,
 					 globals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	//	stack_frame_label = prv_add_preamble(arm_p, err);
-	(void)prv_add_preamble(arm_p, err);
+	stack_frame_label = prv_add_preamble(arm_p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -124,6 +129,24 @@ subtilis_riscos_generate(
 	prv_add_coda(arm_p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
+
+	printf("\n\n");
+	subtilis_arm_program_dump(arm_p);
+
+	spill_regs = subtilis_arm_reg_alloc(arm_p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	for (i = 0; i < arm_p->constant_count; i++)
+		if (arm_p->constants[i].label == stack_frame_label)
+			break;
+
+	if (i == arm_p->constant_count) {
+		subtilis_error_set_asssertion_failed(err);
+		goto cleanup;
+	}
+
+	arm_p->constants[i].integer += ((uint32_t)spill_regs * sizeof(int32_t));
 
 	return arm_p;
 
@@ -179,14 +202,17 @@ void subtilis_riscos_arm_printi(subtilis_ir_program_t *p, size_t start,
 
 	instr->operands.swi.ccode = SUBTILIS_ARM_CCODE_AL;
 	instr->operands.swi.code = 0xdc;
+	instr->operands.swi.reg_mask = 0x7; // r0, r1, r2
 
 	instr = subtilis_arm_program_dup_instr(arm_p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	instr->operands.swi.code = 0x2;
+	instr->operands.swi.reg_mask = 0;
 
 	instr = subtilis_arm_program_dup_instr(arm_p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	instr->operands.swi.code = 0x3;
+	instr->operands.swi.reg_mask = 0;
 }

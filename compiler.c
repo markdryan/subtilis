@@ -30,6 +30,7 @@ int main(int argc, char *argv[])
 	subtilis_lexer_t *l = NULL;
 	subtilis_parser_t *p = NULL;
 	subtilis_arm_program_t *arm_p = NULL;
+	subtilis_arm_op_pool_t *pool = NULL;
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: basicc file\n");
@@ -57,7 +58,11 @@ int main(int argc, char *argv[])
 
 	subtilis_ir_program_dump(p->p);
 
-	arm_p = subtilis_riscos_generate(p->p, riscos_arm2_rules,
+	pool = subtilis_arm_op_pool_new(&err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	arm_p = subtilis_riscos_generate(pool, p->p, riscos_arm2_rules,
 					 riscos_arm2_rules_count,
 					 p->st->allocated, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
@@ -67,6 +72,7 @@ int main(int argc, char *argv[])
 	subtilis_arm_program_dump(arm_p);
 
 	subtilis_arm_program_delete(arm_p);
+	subtilis_arm_op_pool_delete(pool);
 	subtilis_parser_delete(p);
 	subtilis_lexer_delete(l, &err);
 
@@ -74,6 +80,7 @@ int main(int argc, char *argv[])
 
 cleanup:
 	subtilis_arm_program_delete(arm_p);
+	subtilis_arm_op_pool_delete(pool);
 	subtilis_parser_delete(p);
 	if (l)
 		subtilis_lexer_delete(l, &err);
