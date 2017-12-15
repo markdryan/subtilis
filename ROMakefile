@@ -2,7 +2,7 @@
 
 COMPONENT = basicc
 
-OBJS = stream lexer error compiler utils keywords buffer parser expression ir hash_table symbol_table arm_core riscos_arm riscos_arm2 arm_gen arm_walker
+OBJS = stream lexer error compiler utils keywords buffer parser expression ir hash_table symbol_table arm_core riscos_arm riscos_arm2 arm_gen arm_walker arm_reg_alloc arm_encode
 
 CFLAGS ?= -Wxla
 
@@ -30,18 +30,21 @@ o.error:	c.error
 o.error:	h.error
 o.error:	h.config
 o.compiler:	c.compiler
-o.compiler:	h.error
-o.compiler:	h.config
-o.compiler:	h.lexer
+o.compiler:	h.arm_encode
+o.compiler:	h.arm_core
+o.compiler:	h.ir
 o.compiler:	h.buffer
 o.compiler:	h.error
+o.compiler:	h.config
+o.compiler:	h.error
+o.compiler:	h.error
+o.compiler:	h.lexer
+o.compiler:	h.buffer
 o.compiler:	h.keywords
 o.compiler:	h.stream
 o.compiler:	h.error
 o.compiler:	h.parser
 o.compiler:	h.ir
-o.compiler:	h.buffer
-o.compiler:	h.error
 o.compiler:	h.lexer
 o.compiler:	h.symbol_table
 o.compiler:	h.hash_table
@@ -49,7 +52,6 @@ o.compiler:	h.error
 o.compiler:	h.lexer
 o.compiler:	h.riscos_arm
 o.compiler:	h.arm_core
-o.compiler:	h.ir
 o.compiler:	h.riscos_arm2
 o.compiler:	h.ir
 o.utils:	c.utils
@@ -133,22 +135,69 @@ o.arm_core:	h.buffer
 o.arm_core:	h.error
 o.arm_core:	h.config
 o.arm_core:	h.error
+o.arm_core:	h.arm_walker
+o.arm_core:	h.arm_core
+o.arm_core:	h.error
+o.riscos_arm2:	c.riscos_arm2
+o.riscos_arm2:	h.riscos_arm2
+o.riscos_arm2:	h.ir
+o.riscos_arm2:	h.buffer
+o.riscos_arm2:	h.error
+o.riscos_arm2:	h.config
+o.riscos_arm2:	h.error
+o.riscos_arm2:	h.arm_core
+o.riscos_arm2:	h.ir
+o.riscos_arm2:	h.arm_gen
+o.riscos_arm2:	h.ir
+o.riscos_arm2:	h.riscos_arm
+o.riscos_arm2:	h.arm_core
+o.arm_gen:	c.arm_gen
+o.arm_gen:	h.arm_gen
+o.arm_gen:	h.ir
+o.arm_gen:	h.buffer
+o.arm_gen:	h.error
+o.arm_gen:	h.config
+o.arm_gen:	h.error
+o.arm_gen:	h.arm_core
+o.arm_gen:	h.ir
+o.arm_walker:	c.arm_walker
+o.arm_walker:	h.arm_walker
+o.arm_walker:	h.arm_core
+o.arm_walker:	h.ir
+o.arm_walker:	h.buffer
+o.arm_walker:	h.error
+o.arm_walker:	h.config
+o.arm_walker:	h.error
+o.arm_walker:	h.error
 o.riscos_arm:	c.riscos_arm
-o.riscos_arm:	h.riscos_arm
+o.riscos_arm:	h.arm_reg_alloc
 o.riscos_arm:	h.arm_core
 o.riscos_arm:	h.ir
 o.riscos_arm:	h.buffer
 o.riscos_arm:	h.error
 o.riscos_arm:	h.config
 o.riscos_arm:	h.error
-o.riscos_arm2:	c.riscos_arm2
-o.riscos_arm2:	h.riscos_arm
-o.riscos_arm2:	h.arm_core
-o.riscos_arm2:	h.ir
-o.riscos_arm2:	h.buffer
-o.riscos_arm2:	h.error
-o.riscos_arm2:	h.config
-o.riscos_arm2:	h.error
-o.riscos_arm2:	h.riscos_arm2
-o.riscos_arm2:	h.ir
-o.riscos_arm2:	h.arm_core
+o.riscos_arm:	h.riscos_arm
+o.riscos_arm:	h.arm_core
+o.arm_encode:	c.arm_encode
+o.arm_encode:	h.arm_encode
+o.arm_encode:	h.arm_core
+o.arm_encode:	h.ir
+o.arm_encode:	h.buffer
+o.arm_encode:	h.error
+o.arm_encode:	h.config
+o.arm_encode:	h.error
+o.arm_encode:	h.arm_walker
+o.arm_encode:	h.arm_core
+o.arm_encode:	h.error
+o.arm_reg_alloc:	c.arm_reg_alloc
+o.arm_reg_alloc:	h.arm_reg_alloc
+o.arm_reg_alloc:	h.arm_core
+o.arm_reg_alloc:	h.ir
+o.arm_reg_alloc:	h.buffer
+o.arm_reg_alloc:	h.error
+o.arm_reg_alloc:	h.config
+o.arm_reg_alloc:	h.error
+o.arm_reg_alloc:	h.arm_walker
+o.arm_reg_alloc:	h.arm_core
+o.arm_reg_alloc:	h.error

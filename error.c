@@ -41,6 +41,9 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_READ */
 	{"Failed to read from file, err: %s.\n", 1},
 
+	/* SUBTILIS_ERROR_WRITE */
+	{"Failed to write to file, err: %s.\n", 1},
+
 	/* SUBTILIS_ERROR_CLOSE */
 	{"Failed to close file, err: %s.\n", 1},
 

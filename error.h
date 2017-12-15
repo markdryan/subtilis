@@ -27,6 +27,7 @@ typedef enum {
 	SUBTILIS_ERROR_OOM,
 	SUBTILIS_ERROR_OPEN,
 	SUBTILIS_ERROR_READ,
+	SUBTILIS_ERROR_WRITE,
 	SUBTILIS_ERROR_CLOSE,
 	SUBTILIS_ERROR_UNTERMINATED_STRING,
 	SUBTILIS_ERROR_STRING_TOO_LONG,
@@ -81,6 +82,9 @@ void subtilis_error_init(subtilis_error_t *e);
 				 __LINE__)
 #define subtilis_error_set_file_read(e)                                        \
 	subtilis_error_set_errno(e, SUBTILIS_ERROR_READ, "", __FILE__, __LINE__)
+#define subtilis_error_set_file_write(e)                                       \
+	subtilis_error_set_errno(e, SUBTILIS_ERROR_WRITE, "", __FILE__,        \
+				 __LINE__)
 #define subtilis_error_set_file_close(e)                                       \
 	subtilis_error_set_errno(e, SUBTILIS_ERROR_CLOSE, "", __FILE__,        \
 				 __LINE__)
