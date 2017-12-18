@@ -106,7 +106,7 @@ static void prv_arm_walk(subtilis_arm_program_t *arm_p, size_t ptr,
 void subtilis_arm_walk(subtilis_arm_program_t *arm_p,
 		       subtlis_arm_walker_t *walker, subtilis_error_t *err)
 {
-	return prv_arm_walk(arm_p, arm_p->first_op, walker, err);
+	prv_arm_walk(arm_p, arm_p->first_op, walker, err);
 }
 
 void subtilis_arm_walk_from(subtilis_arm_program_t *arm_p,
@@ -119,5 +119,5 @@ void subtilis_arm_walk_from(subtilis_arm_program_t *arm_p,
 		ptr = arm_p->last_op;
 	else
 		ptr = arm_p->pool->ops[op->next].prev;
-	return prv_arm_walk(arm_p, ptr, walker, err);
+	prv_arm_walk(arm_p, ptr, walker, err);
 }
