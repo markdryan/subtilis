@@ -17,6 +17,7 @@
 #include <locale.h>
 #include <stdio.h>
 
+#include "arm_encode.h"
 #include "error.h"
 #include "lexer.h"
 #include "parser.h"
@@ -70,6 +71,10 @@ int main(int argc, char *argv[])
 
 	printf("\n\n");
 	subtilis_arm_program_dump(arm_p);
+
+	subtilis_arm_encode(arm_p, "RunImage", &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
 	subtilis_arm_program_delete(arm_p);
 	subtilis_arm_op_pool_delete(pool);

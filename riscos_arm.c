@@ -19,7 +19,8 @@
 #include "arm_reg_alloc.h"
 #include "riscos_arm.h"
 
-size_t prv_add_preamble(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
+static size_t prv_add_preamble(subtilis_arm_program_t *arm_p,
+			       subtilis_error_t *err)
 {
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_reg_t dest;
@@ -58,7 +59,7 @@ size_t prv_add_preamble(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
 	return label;
 }
 
-void prv_add_coda(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
+static void prv_add_coda(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
 {
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_reg_t dest;

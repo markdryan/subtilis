@@ -874,6 +874,27 @@ void subtilis_arm_cmp_imm(subtilis_arm_program_t *p,
 	datai->op1 = op1;
 	datai->op2.type = SUBTILIS_ARM_OP2_I32;
 	datai->op2.op.integer = encoded;
+	datai->status = true;
+}
+
+void subtilis_arm_cmp(subtilis_arm_program_t *p,
+		      subtilis_arm_instr_type_t itype,
+		      subtilis_arm_ccode_type_t ccode, subtilis_arm_reg_t op1,
+		      subtilis_arm_reg_t op2, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_data_instr_t *datai;
+
+	instr = subtilis_arm_program_add_instr(p, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai = &instr->operands.data;
+	datai->ccode = ccode;
+	datai->op1 = op1;
+	datai->op2.type = SUBTILIS_ARM_OP2_REG;
+	datai->op2.op.reg = op2;
+	datai->status = true;
 }
 
 /* clang-format off */

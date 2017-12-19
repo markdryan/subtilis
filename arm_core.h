@@ -329,6 +329,10 @@ void subtilis_arm_cmp_imm(subtilis_arm_program_t *p,
 			  subtilis_arm_ccode_type_t ccode,
 			  subtilis_arm_reg_t op1, int32_t op2,
 			  subtilis_error_t *err);
+void subtilis_arm_cmp(subtilis_arm_program_t *p,
+		      subtilis_arm_instr_type_t itype,
+		      subtilis_arm_ccode_type_t ccode, subtilis_arm_reg_t op1,
+		      subtilis_arm_reg_t op2, subtilis_error_t *err);
 
 #define subtilis_arm_add_add_imm(p, cc, s, dst, op1, op2, err)                 \
 	subtilis_arm_add_addsub_imm(p, SUBTILIS_ARM_INSTR_ADD,                 \
