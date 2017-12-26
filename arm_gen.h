@@ -25,6 +25,8 @@ void subtilis_arm_gen_addii32(subtilis_ir_program_t *p, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_subii32(subtilis_ir_program_t *p, size_t start,
 			      void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_rsubii32(subtilis_ir_program_t *p, size_t start,
+			       void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_mulii32(subtilis_ir_program_t *p, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_addi32(subtilis_ir_program_t *p, size_t start,

@@ -69,6 +69,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"mulii32 *, *, *", subtilis_arm_gen_mulii32},
 	{"muli32 *, *, *", subtilis_arm_gen_muli32},
 	{"subii32 *, *, *", subtilis_arm_gen_subii32},
+	{"rsubii32 *, *, *", subtilis_arm_gen_rsubii32},
 	{"addi32 *, *, *", subtilis_arm_gen_addi32},
 	{"subi32 *, *, *", subtilis_arm_gen_subi32},
 	{"storeoi32 *, *, *", subtilis_arm_gen_storeoi32},

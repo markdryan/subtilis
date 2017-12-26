@@ -102,6 +102,22 @@ void subtilis_arm_gen_subii32(subtilis_ir_program_t *p, size_t start,
 				 op2, err);
 }
 
+void subtilis_arm_gen_rsubii32(subtilis_ir_program_t *p, size_t start,
+			       void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_program_t *arm_p = user_data;
+	subtilis_ir_inst_t *instr = &p->ops[start]->op.instr;
+	int32_t op2 = instr->operands[2].integer;
+
+	dest = subtilis_arm_ir_to_arm_reg(instr->operands[0].reg);
+	op1 = subtilis_arm_ir_to_arm_reg(instr->operands[1].reg);
+
+	subtilis_arm_add_rsub_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest,
+				  op1, op2, err);
+}
+
 void subtilis_arm_gen_mulii32(subtilis_ir_program_t *p, size_t start,
 			      void *user_data, subtilis_error_t *err)
 {

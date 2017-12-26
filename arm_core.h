@@ -274,6 +274,10 @@ void subtilis_arm_add_addsub_imm(subtilis_arm_program_t *p,
 				 subtilis_arm_reg_t dest,
 				 subtilis_arm_reg_t op1, int32_t op2,
 				 subtilis_error_t *err);
+void subtilis_arm_add_rsub_imm(subtilis_arm_program_t *p,
+			       subtilis_arm_ccode_type_t ccode, bool status,
+			       subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			       int32_t op2, subtilis_error_t *err);
 void subtilis_arm_add_mul_imm(subtilis_arm_program_t *p,
 			      subtilis_arm_ccode_type_t ccode, bool status,
 			      subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
