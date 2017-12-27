@@ -370,6 +370,20 @@ void subtilis_arm_gen_lteii32(subtilis_ir_program_t *p, size_t start,
 		    SUBTILIS_ARM_CCODE_GT, err);
 }
 
+void subtilis_arm_gen_eqii32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_imm(p, start, user_data, SUBTILIS_ARM_CCODE_EQ,
+		    SUBTILIS_ARM_CCODE_NE, err);
+}
+
+void subtilis_arm_gen_neqii32(subtilis_ir_program_t *p, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_imm(p, start, user_data, SUBTILIS_ARM_CCODE_NE,
+		    SUBTILIS_ARM_CCODE_EQ, err);
+}
+
 static void prv_cmp(subtilis_ir_program_t *p, size_t start, void *user_data,
 		    subtilis_arm_ccode_type_t ok, subtilis_arm_ccode_type_t nok,
 		    subtilis_error_t *err)
@@ -416,6 +430,20 @@ void subtilis_arm_gen_ltei32(subtilis_ir_program_t *p, size_t start,
 {
 	prv_cmp(p, start, user_data, SUBTILIS_ARM_CCODE_LE,
 		SUBTILIS_ARM_CCODE_GT, err);
+}
+
+void subtilis_arm_gen_eqi32(subtilis_ir_program_t *p, size_t start,
+			    void *user_data, subtilis_error_t *err)
+{
+	prv_cmp(p, start, user_data, SUBTILIS_ARM_CCODE_EQ,
+		SUBTILIS_ARM_CCODE_NE, err);
+}
+
+void subtilis_arm_gen_neqi32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	prv_cmp(p, start, user_data, SUBTILIS_ARM_CCODE_NE,
+		SUBTILIS_ARM_CCODE_EQ, err);
 }
 
 void subtilis_arm_gen_jump(subtilis_ir_program_t *p, size_t start,

@@ -79,6 +79,10 @@ void subtilis_arm_gen_gtii32(subtilis_ir_program_t *p, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_ltii32(subtilis_ir_program_t *p, size_t start,
 			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_eqii32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_neqii32(subtilis_ir_program_t *p, size_t start,
+			      void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_gteii32(subtilis_ir_program_t *p, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_lteii32(subtilis_ir_program_t *p, size_t start,
@@ -91,4 +95,9 @@ void subtilis_arm_gen_gtei32(subtilis_ir_program_t *p, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_ltei32(subtilis_ir_program_t *p, size_t start,
 			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_eqi32(subtilis_ir_program_t *p, size_t start,
+			    void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_neqi32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err);
+
 #endif
