@@ -80,6 +80,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"andii32 *, *, *\n", subtilis_arm_gen_andii32},
 	{"orii32 *, *, *\n", subtilis_arm_gen_orii32},
 	{"eorii32 *, *, *\n", subtilis_arm_gen_eorii32},
+	{"noti32 *, *\n", subtilis_arm_gen_mvni32},
 	{"andi32 *, *, *\n", subtilis_arm_gen_andi32},
 	{"ori32 *, *, *\n", subtilis_arm_gen_ori32},
 	{"eori32 *, *, *\n", subtilis_arm_gen_eori32},

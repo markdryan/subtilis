@@ -65,6 +65,8 @@ void subtilis_arm_gen_eori32(subtilis_ir_program_t *p, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_ori32(subtilis_ir_program_t *p, size_t start,
 			    void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_mvni32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_andi32(subtilis_ir_program_t *p, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_eorii32(subtilis_ir_program_t *p, size_t start,

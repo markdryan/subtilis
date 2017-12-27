@@ -498,6 +498,21 @@ void subtilis_arm_gen_ori32(subtilis_ir_program_t *p, size_t start,
 			SUBTILIS_ARM_CCODE_AL, err);
 }
 
+void subtilis_arm_gen_mvni32(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_program_t *arm_p = user_data;
+	subtilis_ir_inst_t *instr = &p->ops[start]->op.instr;
+	subtilis_arm_reg_t op2;
+
+	dest = subtilis_arm_ir_to_arm_reg(instr->operands[0].reg);
+	op2 = subtilis_arm_ir_to_arm_reg(instr->operands[1].reg);
+
+	subtilis_arm_mvn_reg(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
+			     err);
+}
+
 void subtilis_arm_gen_andi32(subtilis_ir_program_t *p, size_t start,
 			     void *user_data, subtilis_error_t *err)
 {

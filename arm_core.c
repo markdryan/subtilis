@@ -676,15 +676,16 @@ void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
 	datai->op2 = data_opt2;
 }
 
-void subtilis_arm_mov_reg(subtilis_arm_program_t *p,
-			  subtilis_arm_ccode_type_t ccode, bool status,
-			  subtilis_arm_reg_t dest, subtilis_arm_reg_t op2,
-			  subtilis_error_t *err)
+void subtilis_arm_movmvn_reg(subtilis_arm_program_t *p,
+			     subtilis_arm_instr_type_t itype,
+			     subtilis_arm_ccode_type_t ccode, bool status,
+			     subtilis_arm_reg_t dest, subtilis_arm_reg_t op2,
+			     subtilis_error_t *err)
 {
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_data_instr_t *datai;
 
-	instr = subtilis_arm_program_add_instr(p, SUBTILIS_ARM_INSTR_MOV, err);
+	instr = subtilis_arm_program_add_instr(p, itype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -696,21 +697,20 @@ void subtilis_arm_mov_reg(subtilis_arm_program_t *p,
 	datai->op2.op.reg = op2;
 }
 
-void subtilis_arm_mov_imm(subtilis_arm_program_t *p,
-			  subtilis_arm_ccode_type_t ccode, bool status,
-			  subtilis_arm_reg_t dest, int32_t op2,
-			  subtilis_error_t *err)
+void subtilis_arm_movmvn_imm(subtilis_arm_program_t *p,
+			     subtilis_arm_instr_type_t itype,
+			     subtilis_arm_instr_type_t alt_type,
+			     subtilis_arm_ccode_type_t ccode, bool status,
+			     subtilis_arm_reg_t dest, int32_t op2,
+			     subtilis_error_t *err)
 {
 	subtilis_arm_instr_t *instr;
-	subtilis_arm_instr_type_t itype;
 	subtilis_arm_data_instr_t *datai;
 	uint32_t encoded = 0;
 
-	itype = SUBTILIS_ARM_INSTR_MOV;
-
 	if (!subtilis_arm_encode_imm(op2, &encoded)) {
 		if (subtilis_arm_encode_imm(~op2, &encoded)) {
-			itype = SUBTILIS_ARM_INSTR_MVN;
+			itype = alt_type;
 		} else {
 			(void)prv_add_data_imm_ldr(p, ccode, dest, op2, err);
 			return;
