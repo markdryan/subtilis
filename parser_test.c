@@ -20,6 +20,7 @@
 
 #include "lexer.h"
 #include "parser.h"
+#include "test_cases.h"
 #include "vm.h"
 
 int parser_test_wrapper(const char *text,
@@ -162,194 +163,16 @@ static int prv_test_let(void)
 	return parser_test_wrapper(let_test, prv_check_eval_res, "119\n");
 }
 
-struct expression_test_t_ {
-	const char *name;
-	const char *source;
-	const char *result;
-};
-
-typedef struct expression_test_t_ expression_test_t;
-
-/* clang-format off */
-static const expression_test_t expression_tests[] = {
-	{ "parser_subtraction",
-	  "LET b% = 100 - 5\n"
-	  "LET c% = 10 - b% -10\n"
-	  "LET d% = c% - b% - 1\n"
-	  "PRINT d%\n",
-	  "-191\n"},
-	{ "parser_division",
-	  "LET b% = 100 / 5\n"
-	  "LET c% = 1000 / b% / 10\n"
-	  "LET d% = b% / c% / 2\n"
-	  "PRINT d%\n",
-	  "2\n"},
-	{ "parser_multiplication",
-	  "LET b% = 1 * 10\n"
-	  "LET c% = 10 * b% * 5\n"
-	  "LET d% = c% * 2 * b%\n"
-	  "PRINT d%\n",
-	  "10000\n"},
-	{ "parser_addition",
-	  "LET b% = &ff + 10\n"
-	  "LET c% = &10 + b% + 5\n"
-	  "LET d% = c% + 2 + b%\n"
-	  "PRINT d%\n",
-	  "553\n"},
-	{ "nested_expression",
-	  "LET a% = (1 + 1)\n"
-	  "LET b% = ((((10 - a%) -5) * 10))\n"
-	  "PRINT b%",
-	  "30\n"},
-	{ "parser_unary_minus",
-	  "LET b% = -110\n"
-	  "LET c% = -b%\n"
-	  "LET d% = 10 - -(c% - 0)\n"
-	  "PRINT d%\n"
-	  "PRINT -&ffffffff\n",
-	  "120\n1\n"},
-	{ "parser_and",
-	  "LET b% = -1\n"
-	  "PRINT b% AND -1 AND TRUE AND b%"
-	  "LET c% = b% AND FALSE\n"
-	  "PRINT c%\n"
-	  "PRINT 255 AND 128\n",
-	  "-1\n0\n128\n"},
-	{ "parser_or",
-	  "LET b% = -1\n"
-	  "PRINT b% OR -1 OR TRUE OR b%\n"
-	  "LET c% = b% OR FALSE\n"
-	  "PRINT c%\n"
-	  "PRINT FALSE OR FALSE\n"
-	  "LET d% = FALSE\n"
-	  "PRINT d% OR FALSE\n"
-	  "PRINT 64 OR 128\n",
-	  "-1\n-1\n0\n0\n192\n"},
-	{ "parser_eor",
-	  "LET b% = -1\n"
-	  "PRINT b% EOR -1 EOR TRUE EOR b%\n"
-	  "LET c% = b% EOR FALSE\n"
-	  "PRINT c%\n"
-	  "PRINT FALSE EOR FALSE\n"
-	  "PRINT TRUE EOR TRUE\n"
-	  "LET d% = FALSE\n"
-	  "PRINT d% EOR FALSE\n"
-	  "PRINT 192 EOR 128\n",
-	  "0\n-1\n0\n0\n0\n64\n"},
-	{ "parser_not",
-	  "LET b% = -1\n"
-	  "PRINT NOT b%\n"
-	  "PRINT NOT NOT b%\n"
-	  "PRINT NOT TRUE\n"
-	  "PRINT NOT &fffffff0\n",
-	  "0\n-1\n0\n15\n"},
-	{ "parser_eq",
-	  "LET b% = &ff\n"
-	  "PRINT 10 = 5 + 5\n"
-	  "PRINT b% = 255\n"
-	  "PRINT b% = 254\n"
-	  "LET c% = 255\n"
-	  "PRINT c% = b%\n"
-	  "LET c% = b% = 254\n"
-	  "PRINT c%\n",
-	  "-1\n-1\n0\n-1\n0\n"},
-	{ "parser_neq",
-	  "LET b% = &ff\n"
-	  "PRINT 10 <> 5 + 5\n"
-	  "PRINT b% <> 255\n"
-	  "PRINT b% <> 254\n"
-	  "LET c% = 255\n"
-	  "PRINT c% <> b%\n"
-	  "LET c% = b% <> 254\n"
-	  "PRINT c%\n",
-	  "0\n0\n-1\n0\n-1\n"},
-	{ "parser_gt",
-	  "LET b% = &ff\n"
-	  "PRINT 10 > 5 + 5\n"
-	  "PRINT b% > 255\n"
-	  "PRINT 256 > b%\n"
-	  "LET c% = 255\n"
-	  "PRINT c% > b%\n"
-	  "LET c% = b% > 254\n"
-	  "PRINT c%\n",
-	  "0\n0\n-1\n0\n-1\n"},
-	{ "parser_lte",
-	  "LET b% = &ff\n"
-	  "PRINT 10 <= 5 + 5\n"
-	  "PRINT b% <= 255\n"
-	  "PRINT 256 <= b%\n"
-	  "LET c% = 255\n"
-	  "PRINT c% <= b% +1\n"
-	  "LET c% = b% <= 254\n"
-	  "PRINT c%\n",
-	  "-1\n-1\n0\n-1\n0\n"},
-	{ "parser_lt",
-	  "LET b% = &ff\n"
-	  "PRINT 10 < 5 + 5\n"
-	  "PRINT b% < 255\n"
-	  "PRINT 256 < b%\n"
-	  "LET c% = 255\n"
-	  "PRINT c% < b%\n"
-	  "LET c% = 254 < b%\n"
-	  "PRINT c%\n",
-	  "0\n0\n0\n0\n-1\n"},
-	{ "parser_gte",
-	  "LET b% = &ff\n"
-	  "PRINT 10 >= 5 + 5\n"
-	  "PRINT b% >= 255\n"
-	  "PRINT 256 >= b%\n"
-	  "LET c% = 255\n"
-	  "PRINT c% >= b%\n"
-	  "LET c% = 254 >= b%\n"
-	  "PRINT c%\n",
-	  "-1\n-1\n-1\n-1\n0\n"},
-	{ "parser_if",
-	  "IF 10 >= 5 + 5 THEN\n"
-	  "  PRINT TRUE\n"
-	  "ELSE\n"
-	  "  PRINT FALSE\n"
-	  "ENDIF\n"
-	  "PRINT 32\n"
-	  "LET b% = &ff\n"
-	  "IF b% > 255 THEN PRINT 100 ENDIF\n"
-	  "IF b% <= 255 THEN\n"
-	  "  PRINT 200\n"
-	  "  PRINT 300\n"
-	  "ENDIF\n",
-	  "-1\n32\n200\n300\n"},
-	{ "parser_while",
-	  "LET i% = 0\n"
-	  "WHILE i% < 5\n"
-	  "  PRINT i%\n"
-	  "  LET i%=i%+1\n"
-	  "ENDWHILE\n",
-	  "0\n1\n2\n3\n4\n"},
-	{ "parser_if_and_while",
-	  "LET i% = 0\n"
-	  "WHILE i% < 6\n"
-	  "  IF i% AND 1 THEN\n"
-	  "    PRINT FALSE\n"
-	  "  ELSE\n"
-	  "    PRINT TRUE\n"
-	  "  ENDIF\n"
-	  "  LET i%=i%+1\n"
-	  "ENDWHILE\n",
-	  "-1\n0\n-1\n0\n-1\n0\n"},
-};
-
-/* clang-format on */
-
 static int prv_test_expressions(void)
 {
 	size_t i;
 	int retval = 0;
 
-	for (i = 0; i < sizeof(expression_tests) / sizeof(expression_test_t);
-	     i++) {
-		printf("%s", expression_tests[i].name);
-		retval |= parser_test_wrapper(expression_tests[i].source,
+	for (i = 0; i < SUBTILIS_TEST_CASE_ID_MAX; i++) {
+		printf("parser_%s", test_cases[i].name);
+		retval |= parser_test_wrapper(test_cases[i].source,
 					      prv_check_eval_res,
-					      expression_tests[i].result);
+					      test_cases[i].result);
 	}
 
 	return retval;

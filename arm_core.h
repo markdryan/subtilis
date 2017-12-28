@@ -274,6 +274,10 @@ void subtilis_arm_add_addsub_imm(subtilis_arm_program_t *p,
 				 subtilis_arm_reg_t dest,
 				 subtilis_arm_reg_t op1, int32_t op2,
 				 subtilis_error_t *err);
+void subtilis_arm_add_rsub_imm(subtilis_arm_program_t *p,
+			       subtilis_arm_ccode_type_t ccode, bool status,
+			       subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			       int32_t op2, subtilis_error_t *err);
 void subtilis_arm_add_mul_imm(subtilis_arm_program_t *p,
 			      subtilis_arm_ccode_type_t ccode, bool status,
 			      subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
@@ -287,14 +291,17 @@ void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
 			       subtilis_arm_ccode_type_t ccode, bool status,
 			       subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
 			       int32_t op2, subtilis_error_t *err);
-void subtilis_arm_mov_reg(subtilis_arm_program_t *p,
-			  subtilis_arm_ccode_type_t ccode, bool status,
-			  subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
-			  subtilis_error_t *err);
-void subtilis_arm_mov_imm(subtilis_arm_program_t *p,
-			  subtilis_arm_ccode_type_t ccode, bool status,
-			  subtilis_arm_reg_t dest, int32_t op2,
-			  subtilis_error_t *err);
+void subtilis_arm_movmvn_reg(subtilis_arm_program_t *p,
+			     subtilis_arm_instr_type_t itype,
+			     subtilis_arm_ccode_type_t ccode, bool status,
+			     subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			     subtilis_error_t *err);
+void subtilis_arm_movmvn_imm(subtilis_arm_program_t *p,
+			     subtilis_arm_instr_type_t itype,
+			     subtilis_arm_instr_type_t alt_type,
+			     subtilis_arm_ccode_type_t ccode, bool status,
+			     subtilis_arm_reg_t dest, int32_t op2,
+			     subtilis_error_t *err);
 void subtilis_arm_stran_imm(subtilis_arm_program_t *p,
 			    subtilis_arm_instr_type_t itype,
 			    subtilis_arm_ccode_type_t ccode,
@@ -342,7 +349,16 @@ void subtilis_arm_cmp(subtilis_arm_program_t *p,
 	subtilis_arm_add_addsub_imm(p, SUBTILIS_ARM_INSTR_SUB,                 \
 				    SUBTILIS_ARM_INSTR_ADD, cc, s, dst, op1,   \
 				    op2, err)
-
+#define subtilis_arm_mov_imm(p, cc, s, dst, op2, err)                          \
+	subtilis_arm_movmvn_imm(p, SUBTILIS_ARM_INSTR_MOV,                     \
+				SUBTILIS_ARM_INSTR_MVN, cc, s, dst, op2, err)
+#define subtilis_arm_mvn_imm(p, cc, s, dst, op2, err)                          \
+	subtilis_arm_movmvn_imm(p, SUBTILIS_ARM_INSTR_MVN,                     \
+				SUBTILIS_ARM_INSTR_MOV, cc, s, dst, op2, err)
+#define subtilis_arm_mov_reg(p, cc, s, dst, op2, err)                          \
+	subtilis_arm_movmvn_reg(p, SUBTILIS_ARM_INSTR_MOV, cc, s, dst, op2, err)
+#define subtilis_arm_mvn_reg(p, cc, s, dst, op2, err)                          \
+	subtilis_arm_movmvn_reg(p, SUBTILIS_ARM_INSTR_MVN, cc, s, dst, op2, err)
 void subtilis_arm_program_dump(subtilis_arm_program_t *p);
 
 #endif

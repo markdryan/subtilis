@@ -842,6 +842,8 @@ size_t subtilis_arm_reg_alloc(subtilis_arm_program_t *arm_p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	arm_p->reg_counter = 16;
+
 	retval = ud.int_regs.spill_max;
 
 	prv_free_arm_reg_ud(&ud);

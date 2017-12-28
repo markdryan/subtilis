@@ -127,12 +127,15 @@ subtilis_riscos_generate(
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	free(parsed);
+	parsed = NULL;
+
 	prv_add_coda(arm_p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	printf("\n\n");
-	subtilis_arm_program_dump(arm_p);
+	//	printf("\n\n");
+	//	subtilis_arm_program_dump(arm_p);
 
 	spill_regs = subtilis_arm_reg_alloc(arm_p, err);
 	if (err->type != SUBTILIS_ERROR_OK)

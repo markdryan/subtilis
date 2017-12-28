@@ -2,7 +2,7 @@
 
 COMPONENT = unit_tests
 
-OBJS = stream lexer error utils keywords buffer parser expression ir hash_table symbol_table arm_core riscos_arm unit_tests lexer_test parser_test symbol_table_test vm ir_test arm_core_test
+OBJS = stream lexer error utils keywords buffer parser expression ir hash_table symbol_table arm_core riscos_arm unit_tests lexer_test parser_test symbol_table_test vm ir_test arm_core_test test_cases
 
 INSTDIR ?= <Obey$Dir>
 
