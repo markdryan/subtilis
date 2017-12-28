@@ -181,6 +181,31 @@ const subtilis_test_case_t test_cases[] = {
 	  "  LET i%=i%+1\n"
 	  "ENDWHILE\n",
 	  "-1\n0\n-1\n0\n-1\n0\n"},
+	{ "eq_and_neq_br_imm",
+	  "LET i% = 0\n"
+	  "WHILE i% <> 6\n"
+	  "  LET i%=i%+1\n"
+	  "ENDWHILE\n"
+	  "PRINT i%\n"
+	  "IF i% = 6 THEN\n"
+	  "  PRINT TRUE\n"
+	  "ELSE\n"
+	  "  PRINT FALSE\n"
+	  "ENDIF\n",
+	  "6\n-1\n"},
+	{ "eq_and_neq_br",
+	  "LET i% = 0\n"
+	  "LET j% = 6\n"
+	  "WHILE i% <> j%\n"
+	  "  LET i%=i%+1\n"
+	  "ENDWHILE\n"
+	  "PRINT i%\n"
+	  "IF i% = j% THEN\n"
+	  "  PRINT TRUE\n"
+	  "ELSE\n"
+	  "  PRINT FALSE\n"
+	  "ENDIF\n",
+	  "6\n-1\n"},
 };
 
 /* clang-format on */

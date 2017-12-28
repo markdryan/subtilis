@@ -243,6 +243,18 @@ void subtilis_arm_gen_if_lte_imm(subtilis_ir_program_t *p, size_t start,
 	prv_cmp_jmp_imm(p, start, user_data, SUBTILIS_ARM_CCODE_GT, err);
 }
 
+void subtilis_arm_gen_if_neq_imm(subtilis_ir_program_t *p, size_t start,
+				 void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp_imm(p, start, user_data, SUBTILIS_ARM_CCODE_EQ, err);
+}
+
+void subtilis_arm_gen_if_eq_imm(subtilis_ir_program_t *p, size_t start,
+				void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp_imm(p, start, user_data, SUBTILIS_ARM_CCODE_NE, err);
+}
+
 void subtilis_arm_gen_if_gt_imm(subtilis_ir_program_t *p, size_t start,
 				void *user_data, subtilis_error_t *err)
 {
@@ -306,6 +318,18 @@ void subtilis_arm_gen_if_lte(subtilis_ir_program_t *p, size_t start,
 			     void *user_data, subtilis_error_t *err)
 {
 	prv_cmp_jmp(p, start, user_data, SUBTILIS_ARM_CCODE_GT, err);
+}
+
+void subtilis_arm_gen_if_eq(subtilis_ir_program_t *p, size_t start,
+			    void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp(p, start, user_data, SUBTILIS_ARM_CCODE_NE, err);
+}
+
+void subtilis_arm_gen_if_neq(subtilis_ir_program_t *p, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp(p, start, user_data, SUBTILIS_ARM_CCODE_EQ, err);
 }
 
 void subtilis_arm_gen_if_gt(subtilis_ir_program_t *p, size_t start,
