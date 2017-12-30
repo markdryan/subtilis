@@ -170,13 +170,9 @@ static void prv_add_ops(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
 		return;
 
 	/* SWINV &DC */
-	instr =
-	    subtilis_arm_program_add_instr(arm_p, SUBTILIS_ARM_INSTR_SWI, err);
+	subtilis_arm_add_swi(arm_p, SUBTILIS_ARM_CCODE_CC, 0xdc, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-
-	instr->operands.swi.ccode = SUBTILIS_ARM_CCODE_CC;
-	instr->operands.swi.code = 0xdc;
 
 	subtilis_arm_program_add_label(arm_p, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)

@@ -676,6 +676,23 @@ void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
 	datai->op2 = data_opt2;
 }
 
+void subtilis_arm_add_swi(subtilis_arm_program_t *p,
+			  subtilis_arm_ccode_type_t ccode, size_t code,
+			  uint32_t reg_mask, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_swi_instr_t *swi;
+
+	instr = subtilis_arm_program_add_instr(p, SUBTILIS_ARM_INSTR_SWI, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	swi = &instr->operands.swi;
+	swi->ccode = ccode;
+	swi->code = code;
+	swi->reg_mask = reg_mask;
+}
+
 void subtilis_arm_movmvn_reg(subtilis_arm_program_t *p,
 			     subtilis_arm_instr_type_t itype,
 			     subtilis_arm_ccode_type_t ccode, bool status,

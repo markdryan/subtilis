@@ -22,20 +22,15 @@
 static size_t prv_add_preamble(subtilis_arm_program_t *arm_p,
 			       subtilis_error_t *err)
 {
-	subtilis_arm_instr_t *instr;
 	subtilis_arm_reg_t dest;
 	subtilis_arm_reg_t op1;
 	subtilis_arm_reg_t op2;
 	size_t label;
 
-	instr =
-	    subtilis_arm_program_add_instr(arm_p, SUBTILIS_ARM_INSTR_SWI, err);
+	/* 0x7 = R0, R1, R2 */
+	subtilis_arm_add_swi(arm_p, SUBTILIS_ARM_CCODE_AL, 0x10, 0x7, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
-
-	instr->operands.swi.ccode = SUBTILIS_ARM_CCODE_AL;
-	instr->operands.swi.code = 0x10;
-	instr->operands.swi.reg_mask = 0x7; // R0, R1, R2
 
 	// TODO we need to check that the globals are not too big
 	// for the amount of memory we have been allocated by the OS
@@ -61,7 +56,6 @@ static size_t prv_add_preamble(subtilis_arm_program_t *arm_p,
 
 static void prv_add_coda(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
 {
-	subtilis_arm_instr_t *instr;
 	subtilis_arm_reg_t dest;
 
 	dest.type = SUBTILIS_ARM_REG_FIXED;
@@ -80,14 +74,10 @@ static void prv_add_coda(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
 	subtilis_arm_mov_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	instr =
-	    subtilis_arm_program_add_instr(arm_p, SUBTILIS_ARM_INSTR_SWI, err);
+
+	subtilis_arm_add_swi(arm_p, SUBTILIS_ARM_CCODE_AL, 0x11, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-
-	instr->operands.swi.ccode = SUBTILIS_ARM_CCODE_AL;
-	instr->operands.swi.code = 0x11;
-	instr->operands.swi.reg_mask = 0;
 }
 
 /* clang-format off */
@@ -168,7 +158,6 @@ cleanup:
 void subtilis_riscos_arm_printi(subtilis_ir_program_t *p, size_t start,
 				void *user_data, subtilis_error_t *err)
 {
-	subtilis_arm_instr_t *instr;
 	subtilis_arm_reg_t dest;
 	subtilis_arm_reg_t op1;
 	subtilis_arm_reg_t op2;
@@ -199,24 +188,16 @@ void subtilis_riscos_arm_printi(subtilis_ir_program_t *p, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	instr =
-	    subtilis_arm_program_add_instr(arm_p, SUBTILIS_ARM_INSTR_SWI, err);
+	// 0x7 = r0, r1, r2
+	subtilis_arm_add_swi(arm_p, SUBTILIS_ARM_CCODE_AL, 0xdc, 0x7, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	instr->operands.swi.ccode = SUBTILIS_ARM_CCODE_AL;
-	instr->operands.swi.code = 0xdc;
-	instr->operands.swi.reg_mask = 0x7; // r0, r1, r2
-
-	instr = subtilis_arm_program_dup_instr(arm_p, err);
+	subtilis_arm_add_swi(arm_p, SUBTILIS_ARM_CCODE_AL, 0x2, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	instr->operands.swi.code = 0x2;
-	instr->operands.swi.reg_mask = 0;
 
-	instr = subtilis_arm_program_dup_instr(arm_p, err);
+	subtilis_arm_add_swi(arm_p, SUBTILIS_ARM_CCODE_AL, 0x3, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	instr->operands.swi.code = 0x3;
-	instr->operands.swi.reg_mask = 0;
 }

@@ -291,6 +291,9 @@ void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
 			       subtilis_arm_ccode_type_t ccode, bool status,
 			       subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
 			       int32_t op2, subtilis_error_t *err);
+void subtilis_arm_add_swi(subtilis_arm_program_t *p,
+			  subtilis_arm_ccode_type_t ccode, size_t code,
+			  uint32_t reg_mask, subtilis_error_t *err);
 void subtilis_arm_movmvn_reg(subtilis_arm_program_t *p,
 			     subtilis_arm_instr_type_t itype,
 			     subtilis_arm_ccode_type_t ccode, bool status,
