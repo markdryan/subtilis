@@ -21,5 +21,7 @@
 
 void subtilis_arm_encode(subtilis_arm_program_t *arm_p, const char *fname,
 			 subtilis_error_t *err);
+uint32_t *subtilis_arm_encode_buf(subtilis_arm_program_t *arm_p,
+				  subtilis_error_t *err);
 
 #endif
