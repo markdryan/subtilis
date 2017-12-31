@@ -560,7 +560,7 @@ static void prv_print(subtilis_parser_t *p, subtilis_token_t *t,
 		    p->p, SUBTILIS_OP_INSTR_PRINT_I32, e->exp.ir_op, err);
 		break;
 	default:
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		goto cleanup;
 	}
 

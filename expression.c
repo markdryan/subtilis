@@ -169,7 +169,7 @@ prv_exp_non_commutative(subtilis_parser_t *p, subtilis_exp_t *a1,
 			no->op_int_real(a1, a2);
 			break;
 		default:
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			break;
 		}
 		break;
@@ -182,7 +182,7 @@ prv_exp_non_commutative(subtilis_parser_t *p, subtilis_exp_t *a1,
 			no->op_real_real(a1, a2);
 			break;
 		default:
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			break;
 		}
 		break;
@@ -205,14 +205,14 @@ prv_exp_non_commutative(subtilis_parser_t *p, subtilis_exp_t *a1,
 			    err, p->l->stream->name, p->l->line);
 			break;
 		default:
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			break;
 		}
 		break;
 	case SUBTILIS_EXP_REAL:
 	case SUBTILIS_EXP_STRING:
 	default:
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		break;
 	}
 
@@ -320,11 +320,11 @@ static subtilis_exp_t *prv_subtilis_exp_add_str(subtilis_parser_t *p,
 			return NULL;
 		return a1;
 	} else if (a2->type == SUBTILIS_EXP_CONST_STRING) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
 
-	subtilis_error_set_asssertion_failed(err);
+	subtilis_error_set_assertion_failed(err);
 	return NULL;
 }
 
@@ -761,7 +761,7 @@ subtilis_exp_t *subtilis_exp_eq(subtilis_parser_t *p, subtilis_exp_t *a1,
 	     a1->type == SUBTILIS_EXP_STRING) &&
 	    (a2->type == SUBTILIS_EXP_CONST_STRING ||
 	     a2->type == SUBTILIS_EXP_STRING)) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
 
@@ -803,7 +803,7 @@ subtilis_exp_t *subtilis_exp_neq(subtilis_parser_t *p, subtilis_exp_t *a1,
 	     a1->type == SUBTILIS_EXP_STRING) &&
 	    (a2->type == SUBTILIS_EXP_CONST_STRING ||
 	     a2->type == SUBTILIS_EXP_STRING)) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
 
@@ -881,7 +881,7 @@ subtilis_exp_t *subtilis_exp_gt(subtilis_parser_t *p, subtilis_exp_t *a1,
 	     a1->type == SUBTILIS_EXP_STRING) &&
 	    (a2->type == SUBTILIS_EXP_CONST_STRING ||
 	     a2->type == SUBTILIS_EXP_STRING)) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
 
@@ -959,7 +959,7 @@ subtilis_exp_t *subtilis_exp_lte(subtilis_parser_t *p, subtilis_exp_t *a1,
 	     a1->type == SUBTILIS_EXP_STRING) &&
 	    (a2->type == SUBTILIS_EXP_CONST_STRING ||
 	     a2->type == SUBTILIS_EXP_STRING)) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
 
@@ -1037,7 +1037,7 @@ subtilis_exp_t *subtilis_exp_lt(subtilis_parser_t *p, subtilis_exp_t *a1,
 	     a1->type == SUBTILIS_EXP_STRING) &&
 	    (a2->type == SUBTILIS_EXP_CONST_STRING ||
 	     a2->type == SUBTILIS_EXP_STRING)) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
 
@@ -1115,7 +1115,7 @@ subtilis_exp_t *subtilis_exp_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 	     a1->type == SUBTILIS_EXP_STRING) &&
 	    (a2->type == SUBTILIS_EXP_CONST_STRING ||
 	     a2->type == SUBTILIS_EXP_STRING)) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
 

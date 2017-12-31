@@ -134,20 +134,20 @@ static void prv_encode_data_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 {
 	if (op2->type == SUBTILIS_ARM_OP2_REG) {
 		if (op2->op.reg.num > 15) {
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 		*word |= op2->op.reg.num;
 	} else if (op2->type == SUBTILIS_ARM_OP2_I32) {
 		if (op2->op.integer & 0xfffff000) {
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 		*word |= op2->op.integer;
 		*word |= 1 << 25;
 	} else if (op2->type == SUBTILIS_ARM_OP2_SHIFTED) {
 		if (op2->op.shift.reg.num > 15) {
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 
@@ -155,7 +155,7 @@ static void prv_encode_data_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 
 		*word |= op2->op.shift.shift << 8;
 
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 	}
 }
 
@@ -167,7 +167,7 @@ static void prv_encode_mul(subtilis_arm_encode_ud_t *ud,
 	uint32_t word = 0x90;
 
 	if (instr->op2.op.reg.num > 15) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
@@ -190,13 +190,13 @@ static void prv_encode_data_instr(void *user_data, subtilis_arm_op_t *op,
 	uint32_t word = 0;
 
 	if ((instr->dest.num > 15) || (instr->op1.num > 15)) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
 	if (type == SUBTILIS_ARM_INSTR_MLA) {
 		/* TODO: mul and mla need their own structure.  */
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
@@ -231,20 +231,20 @@ static void prv_encode_stran_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 {
 	if (op2->type == SUBTILIS_ARM_OP2_REG) {
 		if (op2->op.reg.num > 15) {
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 		*word |= 1 << 25;
 		*word |= op2->op.reg.num;
 	} else if (op2->type == SUBTILIS_ARM_OP2_I32) {
 		if (op2->op.integer > 4095) {
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 		*word |= op2->op.integer;
 	} else if (op2->type == SUBTILIS_ARM_OP2_SHIFTED) {
 		if (op2->op.shift.reg.num > 15) {
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 
@@ -253,7 +253,7 @@ static void prv_encode_stran_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 		*word |= 1 << 25;
 		*word |= op2->op.shift.shift << 8;
 
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 	}
 }
 
@@ -266,7 +266,7 @@ static void prv_encode_stran_instr(void *user_data, subtilis_arm_op_t *op,
 	uint32_t word = 0;
 
 	if ((instr->base.num > 15) || (instr->dest.num > 15)) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
@@ -295,7 +295,7 @@ static void prv_encode_mtran_instr(void *user_data, subtilis_arm_op_t *op,
 				   subtilis_arm_mtran_instr_t *instr,
 				   subtilis_error_t *err)
 {
-	subtilis_error_set_asssertion_failed(err);
+	subtilis_error_set_assertion_failed(err);
 }
 
 static void prv_encode_br_instr(void *user_data, subtilis_arm_op_t *op,
@@ -372,7 +372,7 @@ static void prv_encode_label(void *user_data, subtilis_arm_op_t *op,
 	subtilis_arm_encode_ud_t *ud = user_data;
 
 	if (label >= ud->max_labels) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
@@ -392,7 +392,7 @@ static void prv_apply_back_patches(subtilis_arm_encode_ud_t *ud,
 		switch (bp->type) {
 		case SUBTILIS_ARM_ENCODE_BP_BR:
 			if ((dist < -(1 << 23)) || (dist > ((1 << 23) - 1))) {
-				subtilis_error_set_asssertion_failed(err);
+				subtilis_error_set_assertion_failed(err);
 				return;
 			}
 			dist &= 0xffffff;
@@ -402,7 +402,7 @@ static void prv_apply_back_patches(subtilis_arm_encode_ud_t *ud,
 				dist = -dist;
 			dist *= 4;
 			if (dist > 4096) {
-				subtilis_error_set_asssertion_failed(err);
+				subtilis_error_set_assertion_failed(err);
 				return;
 			}
 			break;

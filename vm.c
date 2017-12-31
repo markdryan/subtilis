@@ -339,12 +339,12 @@ static void prv_jmpc(subitlis_vm_t *vm, subtilis_buffer_t *b,
 
 	label = (vm->regs[ops[0].reg]) ? ops[1].label : ops[2].label;
 	if (label > vm->max_labels) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 	vm->pc = vm->labels[label];
 	if (vm->pc >= vm->p->len) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 }
@@ -356,12 +356,12 @@ static void prv_jmp(subitlis_vm_t *vm, subtilis_buffer_t *b,
 
 	label = ops[0].label;
 	if (label > vm->max_labels) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 	vm->pc = vm->labels[label];
 	if (vm->pc >= vm->p->len) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 }
@@ -442,7 +442,7 @@ void subitlis_vm_run(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		ops = vm->p->ops[vm->pc]->op.instr.operands;
 		fn = op_execute_fns[itype];
 		if (!fn) {
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 		fn(vm, b, ops, err);

@@ -104,7 +104,7 @@ void subtilis_error_init(subtilis_error_t *e);
 	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_PROC_NAME, str, file, line)
 #define subtilis_error_set_bad_fn_name(e, str, file, line)                     \
 	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_FN_NAME, str, file, line)
-#define subtilis_error_set_asssertion_failed(e)                                \
+#define subtilis_error_set_assertion_failed(e)                                 \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_ASSERTION_FAILED, __FILE__, \
 				 __LINE__)
 #define subtilis_error_set_keyword_expected(e, str, file, line)                \

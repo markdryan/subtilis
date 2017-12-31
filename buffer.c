@@ -119,7 +119,7 @@ void subtilis_buffer_insert(subtilis_buffer_t *buffer, size_t pos,
 	size_t size = subtilis_buffer_get_size(buffer);
 
 	if (pos > size) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
@@ -149,14 +149,14 @@ void subtilis_buffer_delete(subtilis_buffer_t *buffer, size_t pos,
 	size_t size;
 
 	if (!b) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
 	size = b->end - b->start;
 
 	if (last_pos > size) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
