@@ -299,7 +299,7 @@ subtilis_arm_instr_t *subtilis_arm_program_dup_instr(subtilis_arm_program_t *p,
 	subtilis_arm_op_t *op;
 
 	if (p->len == 0) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
 
@@ -620,7 +620,7 @@ void subtilis_arm_add_mul(subtilis_arm_program_t *p,
 
 	if (dest.num == op1.num) {
 		if (dest.num == op2.num) {
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 		tmp_reg = op2;
@@ -888,7 +888,7 @@ void subtilis_arm_insert_stran_imm(subtilis_arm_program_t *p,
 	subtilis_arm_stran_instr_t *stran;
 
 	if (offset > 4095 || offset < -4095) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
@@ -1099,7 +1099,7 @@ static void prv_dump_mtran_instr(void *user_data, subtilis_arm_op_t *op,
 				 subtilis_arm_mtran_instr_t *instr,
 				 subtilis_error_t *err)
 {
-	subtilis_error_set_asssertion_failed(err);
+	subtilis_error_set_assertion_failed(err);
 }
 
 static void prv_dump_br_instr(void *user_data, subtilis_arm_op_t *op,

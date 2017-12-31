@@ -142,7 +142,7 @@ static uint8_t *prv_get_vm_address(subtilis_arm_vm_t *arm_vm, int32_t addr,
 {
 	addr -= 0x8000;
 	if (addr < 0 || addr + buf_size > arm_vm->mem_size) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
 
@@ -175,14 +175,14 @@ static int32_t prv_eval_op2(subtilis_arm_vm_t *arm_vm, bool status,
 		case SUBTILIS_ARM_SHIFT_LSL:
 		case SUBTILIS_ARM_SHIFT_ASL:
 			if (shift < 0 || shift > 31) {
-				subtilis_error_set_asssertion_failed(err);
+				subtilis_error_set_assertion_failed(err);
 				return 0;
 			}
 			reg = reg << shift;
 			break;
 		case SUBTILIS_ARM_SHIFT_LSR:
 			if (shift < 1 || shift > 32) {
-				subtilis_error_set_asssertion_failed(err);
+				subtilis_error_set_assertion_failed(err);
 				return 0;
 			}
 			neg = reg < 0;
@@ -192,7 +192,7 @@ static int32_t prv_eval_op2(subtilis_arm_vm_t *arm_vm, bool status,
 			break;
 		case SUBTILIS_ARM_SHIFT_ASR:
 			if (shift < 1 || shift > 32) {
-				subtilis_error_set_asssertion_failed(err);
+				subtilis_error_set_assertion_failed(err);
 				return 0;
 			}
 			neg = reg < 0;
@@ -202,7 +202,7 @@ static int32_t prv_eval_op2(subtilis_arm_vm_t *arm_vm, bool status,
 			break;
 		case SUBTILIS_ARM_SHIFT_ROR:
 			if (shift < 1 || shift > 31) {
-				subtilis_error_set_asssertion_failed(err);
+				subtilis_error_set_assertion_failed(err);
 				return 0;
 			}
 			reg = reg >> shift | reg << (32 - shift);
@@ -345,7 +345,7 @@ static void prv_process_cmp(subtilis_arm_vm_t *arm_vm,
 	int32_t op1;
 
 	if (!op->status) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
@@ -371,7 +371,7 @@ static void prv_process_cmn(subtilis_arm_vm_t *arm_vm,
 	int32_t op1;
 
 	if (!op->status) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
@@ -429,7 +429,7 @@ static size_t prv_compute_stran_addr(subtilis_arm_vm_t *arm_vm,
 	}
 	addr -= 0x8000;
 	if (addr + 4 > arm_vm->mem_size) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return 0;
 	}
 
@@ -533,7 +533,7 @@ static void prv_process_br(subtilis_arm_vm_t *arm_vm,
 			   subtilis_arm_br_instr_t *op, subtilis_error_t *err)
 {
 	if (op->link) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
@@ -543,7 +543,7 @@ static void prv_process_br(subtilis_arm_vm_t *arm_vm,
 	}
 
 	if (op->label >= arm_vm->label_len) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
@@ -573,7 +573,7 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		/* OS_ConvertInteger4  */
 		buf_len = sprintf(buf, "%d", arm_vm->regs[0]) + 1;
 		if (buf_len > arm_vm->regs[2]) {
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 		addr =
@@ -626,7 +626,7 @@ static void prv_process_ldrc(subtilis_arm_vm_t *arm_vm,
 	}
 
 	if (i == arm_vm->p->constant_count) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
@@ -713,7 +713,7 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 					 err);
 			break;
 		default:
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 		}
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;

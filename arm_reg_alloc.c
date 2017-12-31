@@ -177,7 +177,7 @@ static void prv_dist_mtran_instr(void *user_data, subtilis_arm_op_t *op,
 				 subtilis_arm_mtran_instr_t *instr,
 				 subtilis_error_t *err)
 {
-	subtilis_error_set_asssertion_failed(err);
+	subtilis_error_set_assertion_failed(err);
 }
 
 static void prv_dist_br_instr(void *user_data, subtilis_arm_op_t *op,
@@ -320,12 +320,12 @@ static void prv_load_spilled_reg(subtilis_arm_program_t *arm_p,
 	int32_t offset = regs->spilt_regs[virt.num];
 
 	if (offset == INT_MAX) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
 	if (regs->spill_top == 0) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
@@ -365,7 +365,7 @@ static void prv_spill_reg(subtilis_arm_program_t *arm_p,
 	subtilis_arm_reg_t base;
 
 	if (regs->spill_top == regs->vr_reg_count) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
@@ -458,7 +458,7 @@ static void prv_allocate_floating(subtilis_arm_program_t *arm_p,
 				next = i;
 			}
 		if (next == SUBTILIS_ARM_REG_MAX_REGS) {
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 		target_reg.num = next;
@@ -729,7 +729,7 @@ static void prv_alloc_mtran_instr(void *user_data, subtilis_arm_op_t *op,
 				  subtilis_arm_mtran_instr_t *instr,
 				  subtilis_error_t *err)
 {
-	subtilis_error_set_asssertion_failed(err);
+	subtilis_error_set_assertion_failed(err);
 }
 
 static void prv_alloc_br_instr(void *user_data, subtilis_arm_op_t *op,

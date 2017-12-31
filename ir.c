@@ -361,7 +361,7 @@ static void prv_parse_label(const char *text, subtilis_ir_label_match_t *label,
 	errno = 0;
 	num = strtoul(text, &end_ptr, 10);
 	if (*end_ptr != 0 || errno != 0 || num > INT_MAX) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
@@ -402,7 +402,7 @@ static const char *prv_parse_operands(const char *rule,
 			match->op.instr.op_match[j] = SUBTILIS_OP_MATCH_ANY;
 		} else if (!strncmp(operand, "label_", LABEL_STR_SIZE)) {
 			if (details->classes[j] != SUBTILIS_IR_OPERAND_LABEL) {
-				subtilis_error_set_asssertion_failed(err);
+				subtilis_error_set_assertion_failed(err);
 				return NULL;
 			}
 			prv_parse_label(operand + LABEL_STR_SIZE, &label, err);
@@ -412,13 +412,13 @@ static const char *prv_parse_operands(const char *rule,
 			match->op.instr.op_match[j] = label.op_match;
 		} else if (operand[0] == '#') {
 			if (details->classes[j] != SUBTILIS_IR_OPERAND_I32) {
-				subtilis_error_set_asssertion_failed(err);
+				subtilis_error_set_assertion_failed(err);
 				return NULL;
 			}
 			errno = 0;
 			num = strtoul(operand + 1, &end_ptr, 10);
 			if (*end_ptr != 0 || errno != 0 || num > INT_MAX) {
-				subtilis_error_set_asssertion_failed(err);
+				subtilis_error_set_assertion_failed(err);
 				return NULL;
 			}
 			match->op.instr.operands[j].integer = (int32_t)num;
@@ -426,12 +426,12 @@ static const char *prv_parse_operands(const char *rule,
 		} else if (operand[0] == 'r') {
 			if (details->classes[j] !=
 			    SUBTILIS_IR_OPERAND_REGISTER) {
-				subtilis_error_set_asssertion_failed(err);
+				subtilis_error_set_assertion_failed(err);
 				return NULL;
 			}
 			num_ptr = operand + 1;
 			if (operand[1] == 0) {
-				subtilis_error_set_asssertion_failed(err);
+				subtilis_error_set_assertion_failed(err);
 				return NULL;
 			} else if (operand[1] == '_') {
 				match->op.instr.op_match[j] =
@@ -444,7 +444,7 @@ static const char *prv_parse_operands(const char *rule,
 			errno = 0;
 			num = strtoul(num_ptr, &end_ptr, 10);
 			if (*end_ptr != 0 || errno != 0 || num > INT_MAX) {
-				subtilis_error_set_asssertion_failed(err);
+				subtilis_error_set_assertion_failed(err);
 				return NULL;
 			}
 			match->op.instr.operands[j].reg = (int32_t)num;
@@ -482,7 +482,7 @@ static const char *prv_parse_match(const char *rule,
 			break;
 
 	if (i == sizeof(op_desc) / sizeof(subtilis_ir_op_desc_t)) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
 
@@ -509,7 +509,7 @@ void subtilis_ir_parse_rules(const subtilis_ir_rule_raw_t *raw,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		if (j == 0) {
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 		parsed[i].action = raw[i].action;
@@ -548,7 +548,7 @@ static bool prv_process_floating_label(subtilis_ir_match_state_t *state,
 		;
 	if (i == state->labels_count) {
 		if (i == MAX_MATCH_WILDCARDS) {
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			return false;
 		}
 		pair = &state->labels[i];
@@ -573,7 +573,7 @@ static bool prv_process_floating_reg(subtilis_ir_match_state_t *state,
 		;
 	if (i == state->regs_count) {
 		if (i == MAX_MATCH_WILDCARDS) {
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			return false;
 		}
 		pair = &state->regs[i];
@@ -629,7 +629,7 @@ static bool prv_match_op(subtilis_ir_op_t *op, subtilis_ir_op_match_t *match,
 					continue;
 				break;
 			default:
-				subtilis_error_set_asssertion_failed(err);
+				subtilis_error_set_assertion_failed(err);
 				return false;
 			}
 			return false;
@@ -648,7 +648,7 @@ static bool prv_match_op(subtilis_ir_op_t *op, subtilis_ir_op_match_t *match,
 				continue;
 			break;
 		default:
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			return false;
 		}
 		return false;
@@ -688,7 +688,7 @@ void subtilis_ir_match(subtilis_ir_program_t *p, subtilis_ir_rule_t *rules,
 			}
 		}
 		if (i == rule_count) {
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 	}

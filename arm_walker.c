@@ -94,7 +94,7 @@ static void prv_arm_walk(subtilis_arm_program_t *arm_p, size_t ptr,
 			prv_walk_instr(walker, op, err);
 			break;
 		default:
-			subtilis_error_set_asssertion_failed(err);
+			subtilis_error_set_assertion_failed(err);
 			break;
 		}
 		if (err->type != SUBTILIS_ERROR_OK)

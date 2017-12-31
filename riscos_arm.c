@@ -138,7 +138,7 @@ subtilis_riscos_generate(
 			break;
 
 	if (i == arm_p->constant_count) {
-		subtilis_error_set_asssertion_failed(err);
+		subtilis_error_set_assertion_failed(err);
 		goto cleanup;
 	}
 
