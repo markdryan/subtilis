@@ -140,20 +140,20 @@ static void prv_add_ops(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
 	dest.num = 0;
 	op1.num = 2;
 	op2.num = 1;
-	subtilis_arm_mov_reg(arm_p, SUBTILIS_ARM_CCODE_EQ, false, dest, op2,
-			     err);
+	subtilis_arm_add_mov_reg(arm_p, SUBTILIS_ARM_CCODE_EQ, false, dest, op2,
+				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	/* MVNSNE R0, r1 */
-	subtilis_arm_mov_reg(arm_p, SUBTILIS_ARM_CCODE_NE, true, dest, op2,
-			     err);
+	subtilis_arm_add_mov_reg(arm_p, SUBTILIS_ARM_CCODE_NE, true, dest, op2,
+				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	/* CMPGT R0, R1 */
-	subtilis_arm_cmp(arm_p, SUBTILIS_ARM_INSTR_CMP, SUBTILIS_ARM_CCODE_GT,
-			 dest, op2, err);
+	subtilis_arm_add_cmp(arm_p, SUBTILIS_ARM_INSTR_CMP,
+			     SUBTILIS_ARM_CCODE_GT, dest, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -164,8 +164,8 @@ static void prv_add_ops(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
 		return;
 
 	/* LDRCS R0, [R2, #16] */
-	subtilis_arm_stran_imm(arm_p, SUBTILIS_ARM_INSTR_LDR,
-			       SUBTILIS_ARM_CCODE_CS, dest, op1, 16, err);
+	subtilis_arm_add_stran_imm(arm_p, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_CS, dest, op1, 16, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

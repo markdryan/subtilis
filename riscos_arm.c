@@ -49,8 +49,8 @@ static size_t prv_add_preamble(subtilis_arm_program_t *arm_p,
 	dest.num = 13;
 	op2.type = SUBTILIS_ARM_REG_FIXED;
 	op2.num = 12;
-	subtilis_arm_mov_reg(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
-			     err);
+	subtilis_arm_add_mov_reg(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
+				 err);
 	return label;
 }
 
@@ -60,18 +60,20 @@ static void prv_add_coda(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
 
 	dest.type = SUBTILIS_ARM_REG_FIXED;
 	dest.num = 0;
-	subtilis_arm_mov_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, 0, err);
+	subtilis_arm_add_mov_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
+				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	dest.num = 1;
-	subtilis_arm_mov_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest,
-			     0x58454241, err);
+	subtilis_arm_add_mov_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest,
+				 0x58454241, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	dest.num = 2;
-	subtilis_arm_mov_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, 0, err);
+	subtilis_arm_add_mov_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
+				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -168,8 +170,8 @@ void subtilis_riscos_arm_printi(subtilis_ir_program_t *p, size_t start,
 	dest.num = 0;
 	op2 = subtilis_arm_ir_to_arm_reg(printi->operands[0].reg);
 
-	subtilis_arm_mov_reg(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
-			     err);
+	subtilis_arm_add_mov_reg(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
+				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -183,8 +185,8 @@ void subtilis_riscos_arm_printi(subtilis_ir_program_t *p, size_t start,
 		return;
 
 	dest.num = 2;
-	subtilis_arm_mov_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest,
-			     SUBTILIS_RISCOS_PRINT_BUFFER_SIZE, err);
+	subtilis_arm_add_mov_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest,
+				 SUBTILIS_RISCOS_PRINT_BUFFER_SIZE, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
