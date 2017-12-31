@@ -1,21 +1,53 @@
-DEPS = stream.h lexer.h config.h error.h utils.h keywords.h buffer.h expression.h ir.h hash_table.h symbol_table.h vm.h arm_core.h riscos_arm.h riscos_arm2.h arm_gen.h arm_walker.h
-OBJ = stream.o lexer.o error.o utils.o keywords.o buffer.o parser.o expression.o ir.o hash_table.o symbol_table.o arm_core.o riscos_arm.o riscos_arm2.o arm_gen.o arm_walker.o arm_reg_alloc.o arm_encode.o
-UNIT_OBJS = unit_tests.o lexer_test.o parser_test.o symbol_table_test.o vm.o ir_test.o arm_core_test.o test_cases.o arm_vm.o arm_test.o
+COMMON =\
+	stream.c \
+	lexer.c \
+	error.c \
+	utils.c \
+	keywords.c \
+	buffer.c \
+	parser.c \
+	expression.c \
+	ir.c \
+	hash_table.c \
+	symbol_table.c \
+	arm_core.c \
+	riscos_arm.c \
+	riscos_arm2.c \
+	arm_gen.c \
+	arm_walker.c \
+	arm_reg_alloc.c \
+	arm_encode.c
+
+COMPILER =\
+	 compiler.c
+
+TESTS =\
+	unit_tests.c \
+	lexer_test.c \
+	parser_test.c \
+	symbol_table_test.c \
+	vm.c \
+	ir_test.c \
+	arm_core_test.c \
+	test_cases.c \
+	arm_vm.c \
+	arm_test.c
 
 CFLAGS ?= -O3
-CFLAGS += -Wall -Werror
+CFLAGS += -Wall -Werror -MMD
 
-%.o: %.c $(DEPS)
-	$(CC) -c $(CFLAGS) -o $@ $< 
-
-basicc: compiler.o $(OBJ)
+basicc: $(COMPILER:%.c=%.o) $(COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^
 
-unit_tests: $(UNIT_OBJS) $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS)
+unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o)
+	$(CC) $(CFLAGS) -o $@ $^
 
 clean:
-	rm basicc *.o unit_tests
+	rm basicc *.o *.d unit_tests
 
 check: unit_tests
 	./unit_tests
+
+-include $(COMPILER:%.c=%.d)
+-include $(COMMON:%.c=%.d)
+-include $(TESTS:%.c=%.d)
