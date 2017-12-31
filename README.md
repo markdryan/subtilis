@@ -3,8 +3,8 @@
 [![Build Status](https://travis-ci.org/markdryan/subtilis.svg?branch=master)](https://travis-ci.org/markdryan/subtilis)
 
 
-A BASIC (BBC) compiler for retro computers.  (At least that's the plan.  Right now
-there's nothing but a half complete front end.)
+A BASIC compiler for retro computers.  (At least that's the plan.  Right now
+all that's supported is integer expressions and a few keywords.)
 
 BASIC is over 50 years old and may not be the most respected of computer
 languages, but it, at least the BBC variant of BASIC, is not that bad really.
