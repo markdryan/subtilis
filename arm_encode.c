@@ -38,6 +38,7 @@ typedef struct subtilis_arm_encode_bp_t_ subtilis_arm_encode_bp_t;
 
 struct subtilis_arm_encode_ud_t_ {
 	size_t *label_offsets;
+	size_t max_labels;
 	uint32_t *code;
 	size_t words_written;
 	subtilis_arm_encode_bp_t *back_patches;
@@ -53,7 +54,8 @@ static void prv_init_encode_ud(subtilis_arm_encode_ud_t *ud,
 {
 	memset(ud, 0, sizeof(*ud));
 
-	ud->label_offsets = malloc(sizeof(size_t) * arm_p->label_counter);
+	ud->max_labels = arm_p->label_counter;
+	ud->label_offsets = malloc(sizeof(size_t) * ud->max_labels);
 	if (!ud->label_offsets) {
 		subtilis_error_set_oom(err);
 		return;
@@ -157,6 +159,28 @@ static void prv_encode_data_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 	}
 }
 
+static void prv_encode_mul(subtilis_arm_encode_ud_t *ud,
+			   subtilis_arm_instr_type_t type,
+			   subtilis_arm_data_instr_t *instr,
+			   subtilis_error_t *err)
+{
+	uint32_t word = 0x90;
+
+	if (instr->op2.op.reg.num > 15) {
+		subtilis_error_set_asssertion_failed(err);
+		return;
+	}
+
+	word |= instr->ccode << 28;
+	if (instr->status)
+		word |= 1 << 20;
+	word |= instr->dest.num << 16;
+	word |= instr->op2.op.reg.num << 8;
+	word |= instr->op1.num;
+
+	ud->code[ud->words_written++] = word;
+}
+
 static void prv_encode_data_instr(void *user_data, subtilis_arm_op_t *op,
 				  subtilis_arm_instr_type_t type,
 				  subtilis_arm_data_instr_t *instr,
@@ -165,8 +189,19 @@ static void prv_encode_data_instr(void *user_data, subtilis_arm_op_t *op,
 	subtilis_arm_encode_ud_t *ud = user_data;
 	uint32_t word = 0;
 
-	if (instr->dest.num > 15) {
+	if ((instr->dest.num > 15) || (instr->op1.num > 15)) {
 		subtilis_error_set_asssertion_failed(err);
+		return;
+	}
+
+	if (type == SUBTILIS_ARM_INSTR_MLA) {
+		/* TODO: mul and mla need their own structure.  */
+		subtilis_error_set_asssertion_failed(err);
+		return;
+	}
+
+	if (type == SUBTILIS_ARM_INSTR_MUL) {
+		prv_encode_mul(ud, type, instr, err);
 		return;
 	}
 
@@ -336,6 +371,11 @@ static void prv_encode_label(void *user_data, subtilis_arm_op_t *op,
 {
 	subtilis_arm_encode_ud_t *ud = user_data;
 
+	if (label >= ud->max_labels) {
+		subtilis_error_set_asssertion_failed(err);
+		return;
+	}
+
 	ud->label_offsets[label] = ud->words_written;
 }
 
@@ -371,16 +411,13 @@ static void prv_apply_back_patches(subtilis_arm_encode_ud_t *ud,
 	}
 }
 
-void subtilis_arm_encode(subtilis_arm_program_t *arm_p, const char *fname,
-			 subtilis_error_t *err)
+static void prv_arm_encode(subtilis_arm_program_t *arm_p,
+			   subtilis_arm_encode_ud_t *ud, subtilis_error_t *err)
 {
 	subtlis_arm_walker_t walker;
-	subtilis_arm_encode_ud_t ud;
 	size_t i;
 
-	prv_init_encode_ud(&ud, arm_p, err);
-
-	walker.user_data = &ud;
+	walker.user_data = ud;
 	walker.label_fn = prv_encode_label;
 	walker.data_fn = prv_encode_data_instr;
 	walker.cmp_fn = prv_encode_cmp_instr;
@@ -393,16 +430,29 @@ void subtilis_arm_encode(subtilis_arm_program_t *arm_p, const char *fname,
 
 	subtilis_arm_walk(arm_p, &walker, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		return;
 
 	for (i = 0; i < arm_p->constant_count; i++) {
-		ud.label_offsets[arm_p->constants[i].label] = ud.words_written;
-		ud.code[ud.words_written++] = arm_p->constants[i].integer;
+		ud->label_offsets[arm_p->constants[i].label] =
+		    ud->words_written;
+		ud->code[ud->words_written++] = arm_p->constants[i].integer;
 		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
+			return;
 	}
 
-	prv_apply_back_patches(&ud, err);
+	prv_apply_back_patches(ud, err);
+}
+
+void subtilis_arm_encode(subtilis_arm_program_t *arm_p, const char *fname,
+			 subtilis_error_t *err)
+{
+	subtilis_arm_encode_ud_t ud;
+
+	prv_init_encode_ud(&ud, arm_p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_arm_encode(arm_p, &ud, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -411,4 +461,28 @@ void subtilis_arm_encode(subtilis_arm_program_t *arm_p, const char *fname,
 cleanup:
 
 	prv_free_encode_ud(&ud);
+}
+
+uint32_t *subtilis_arm_encode_buf(subtilis_arm_program_t *arm_p,
+				  subtilis_error_t *err)
+{
+	subtilis_arm_encode_ud_t ud;
+	uint32_t *retval = NULL;
+
+	prv_init_encode_ud(&ud, arm_p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_arm_encode(arm_p, &ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	retval = ud.code;
+	ud.code = NULL;
+
+cleanup:
+
+	prv_free_encode_ud(&ud);
+
+	return retval;
 }

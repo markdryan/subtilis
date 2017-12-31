@@ -53,7 +53,7 @@ static void prv_cmp_simple(subtilis_ir_program_t *p, size_t start,
 	op1 = subtilis_arm_ir_to_arm_reg(ir_op->operands[1].reg);
 	op2 = subtilis_arm_ir_to_arm_reg(ir_op->operands[2].reg);
 
-	subtilis_arm_cmp(arm_p, itype, ccode, op1, op2, err);
+	subtilis_arm_add_cmp(arm_p, itype, ccode, op1, op2, err);
 }
 
 void subtilis_arm_gen_movii32(subtilis_ir_program_t *p, size_t start,
@@ -66,8 +66,8 @@ void subtilis_arm_gen_movii32(subtilis_ir_program_t *p, size_t start,
 
 	dest = subtilis_arm_ir_to_arm_reg(instr->operands[0].reg);
 
-	subtilis_arm_mov_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
-			     err);
+	subtilis_arm_add_mov_imm(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
+				 err);
 }
 
 void subtilis_arm_gen_addii32(subtilis_ir_program_t *p, size_t start,
@@ -177,8 +177,8 @@ static void prv_stran_instr(subtilis_arm_instr_type_t itype,
 
 	dest = subtilis_arm_ir_to_arm_reg(instr->operands[0].reg);
 	base = subtilis_arm_ir_to_arm_reg(instr->operands[1].reg);
-	subtilis_arm_stran_imm(arm_p, itype, SUBTILIS_ARM_CCODE_AL, dest, base,
-			       offset, err);
+	subtilis_arm_add_stran_imm(arm_p, itype, SUBTILIS_ARM_CCODE_AL, dest,
+				   base, offset, err);
 }
 
 void subtilis_arm_gen_storeoi32(subtilis_ir_program_t *p, size_t start,
@@ -215,8 +215,8 @@ static void prv_cmp_jmp_imm(subtilis_ir_program_t *p, size_t start,
 
 	op1 = subtilis_arm_ir_to_arm_reg(cmp->operands[1].reg);
 
-	subtilis_arm_cmp_imm(arm_p, SUBTILIS_ARM_CCODE_AL, op1,
-			     cmp->operands[2].integer, err);
+	subtilis_arm_add_cmp_imm(arm_p, SUBTILIS_ARM_CCODE_AL, op1,
+				 cmp->operands[2].integer, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -354,16 +354,16 @@ static void prv_cmp_imm(subtilis_ir_program_t *p, size_t start, void *user_data,
 	subtilis_ir_inst_t *cmp = &p->ops[start]->op.instr;
 
 	op1 = subtilis_arm_ir_to_arm_reg(cmp->operands[1].reg);
-	subtilis_arm_cmp_imm(arm_p, SUBTILIS_ARM_CCODE_AL, op1,
-			     cmp->operands[2].integer, err);
+	subtilis_arm_add_cmp_imm(arm_p, SUBTILIS_ARM_CCODE_AL, op1,
+				 cmp->operands[2].integer, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	dest = subtilis_arm_ir_to_arm_reg(cmp->operands[0].reg);
-	subtilis_arm_mov_imm(arm_p, ok, false, dest, -1, err);
+	subtilis_arm_add_mov_imm(arm_p, ok, false, dest, -1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	subtilis_arm_mov_imm(arm_p, nok, false, dest, 0, err);
+	subtilis_arm_add_mov_imm(arm_p, nok, false, dest, 0, err);
 }
 
 void subtilis_arm_gen_gtii32(subtilis_ir_program_t *p, size_t start,
@@ -422,10 +422,10 @@ static void prv_cmp(subtilis_ir_program_t *p, size_t start, void *user_data,
 		return;
 
 	dest = subtilis_arm_ir_to_arm_reg(cmp->operands[0].reg);
-	subtilis_arm_mov_imm(arm_p, ok, false, dest, -1, err);
+	subtilis_arm_add_mov_imm(arm_p, ok, false, dest, -1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	subtilis_arm_mov_imm(arm_p, nok, false, dest, 0, err);
+	subtilis_arm_add_mov_imm(arm_p, nok, false, dest, 0, err);
 }
 
 void subtilis_arm_gen_gti32(subtilis_ir_program_t *p, size_t start,
@@ -500,7 +500,7 @@ void subtilis_arm_gen_jmpc(subtilis_ir_program_t *p, size_t start,
 
 	op1 = subtilis_arm_ir_to_arm_reg(jmp->operands[0].reg);
 
-	subtilis_arm_cmp_imm(arm_p, SUBTILIS_ARM_CCODE_AL, op1, 0, err);
+	subtilis_arm_add_cmp_imm(arm_p, SUBTILIS_ARM_CCODE_AL, op1, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -561,8 +561,8 @@ void subtilis_arm_gen_mvni32(subtilis_ir_program_t *p, size_t start,
 	dest = subtilis_arm_ir_to_arm_reg(instr->operands[0].reg);
 	op2 = subtilis_arm_ir_to_arm_reg(instr->operands[1].reg);
 
-	subtilis_arm_mvn_reg(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
-			     err);
+	subtilis_arm_add_mvn_reg(arm_p, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
+				 err);
 }
 
 void subtilis_arm_gen_andi32(subtilis_ir_program_t *p, size_t start,
