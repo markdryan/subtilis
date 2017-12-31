@@ -3,6 +3,8 @@ basicc
 basicc,ff8
 unit_tests,ff8
 *.o
+*.d
+RunImage
 default.profdata
 default.profraw
 unit_tests
