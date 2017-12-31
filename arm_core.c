@@ -231,6 +231,7 @@ void subtilis_arm_program_add_label(subtilis_arm_program_t *p, size_t label,
 		return;
 	op->type = SUBTILIS_OP_LABEL;
 	op->op.label = label;
+	p->label_counter++;
 }
 
 static void prv_add_constant(subtilis_arm_program_t *p, size_t label,

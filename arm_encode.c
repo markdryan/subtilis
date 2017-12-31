@@ -38,6 +38,7 @@ typedef struct subtilis_arm_encode_bp_t_ subtilis_arm_encode_bp_t;
 
 struct subtilis_arm_encode_ud_t_ {
 	size_t *label_offsets;
+	size_t max_labels;
 	uint32_t *code;
 	size_t words_written;
 	subtilis_arm_encode_bp_t *back_patches;
@@ -53,7 +54,8 @@ static void prv_init_encode_ud(subtilis_arm_encode_ud_t *ud,
 {
 	memset(ud, 0, sizeof(*ud));
 
-	ud->label_offsets = malloc(sizeof(size_t) * arm_p->label_counter);
+	ud->max_labels = arm_p->label_counter;
+	ud->label_offsets = malloc(sizeof(size_t) * ud->max_labels);
 	if (!ud->label_offsets) {
 		subtilis_error_set_oom(err);
 		return;
@@ -368,6 +370,11 @@ static void prv_encode_label(void *user_data, subtilis_arm_op_t *op,
 			     size_t label, subtilis_error_t *err)
 {
 	subtilis_arm_encode_ud_t *ud = user_data;
+
+	if (label >= ud->max_labels) {
+		subtilis_error_set_asssertion_failed(err);
+		return;
+	}
 
 	ud->label_offsets[label] = ud->words_written;
 }
