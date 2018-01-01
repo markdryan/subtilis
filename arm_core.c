@@ -582,15 +582,20 @@ void subtilis_arm_add_rsub_imm(subtilis_arm_program_t *p,
 
 void subtilis_arm_add_mul_imm(subtilis_arm_program_t *p,
 			      subtilis_arm_ccode_type_t ccode, bool status,
-			      subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
-			      int32_t op2, subtilis_error_t *err)
+			      subtilis_arm_reg_t dest, subtilis_arm_reg_t rm,
+			      int32_t rs, subtilis_error_t *err)
 {
 	subtilis_arm_reg_t mov_dest;
 	subtilis_arm_instr_t *instr;
-	subtilis_arm_data_instr_t *datai;
+	subtilis_arm_mul_instr_t *mul;
+
+	if (rm.num == dest.num) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
 
 	mov_dest = prv_acquire_new_reg(p);
-	subtilis_arm_add_mov_imm(p, ccode, false, mov_dest, op2, err);
+	subtilis_arm_add_mov_imm(p, ccode, false, mov_dest, rs, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -600,45 +605,43 @@ void subtilis_arm_add_mul_imm(subtilis_arm_program_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	datai = &instr->operands.data;
-	datai->status = status;
-	datai->ccode = ccode;
-	datai->dest = dest;
-	datai->op1 = op1;
-	datai->op2.type = SUBTILIS_ARM_OP2_REG;
-	datai->op2.op.reg = mov_dest;
+	mul = &instr->operands.mul;
+	mul->status = status;
+	mul->ccode = ccode;
+	mul->dest = dest;
+	mul->rm = rm;
+	mul->rs = mov_dest;
 }
 
 void subtilis_arm_add_mul(subtilis_arm_program_t *p,
 			  subtilis_arm_ccode_type_t ccode, bool status,
-			  subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
-			  subtilis_arm_reg_t op2, subtilis_error_t *err)
+			  subtilis_arm_reg_t dest, subtilis_arm_reg_t rm,
+			  subtilis_arm_reg_t rs, subtilis_error_t *err)
 {
 	subtilis_arm_instr_t *instr;
-	subtilis_arm_data_instr_t *datai;
 	subtilis_arm_reg_t tmp_reg;
+	subtilis_arm_mul_instr_t *mul;
 
-	if (dest.num == op1.num) {
-		if (dest.num == op2.num) {
+	if (dest.num == rm.num) {
+		if (dest.num == rs.num) {
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
-		tmp_reg = op2;
-		op2 = op1;
-		op1 = tmp_reg;
+		tmp_reg = rs;
+		rs = rm;
+		rm = tmp_reg;
 	}
 
 	instr = subtilis_arm_program_add_instr(p, SUBTILIS_ARM_INSTR_MUL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	datai = &instr->operands.data;
-	datai->status = status;
-	datai->ccode = ccode;
-	datai->dest = dest;
-	datai->op1 = op1;
-	datai->op2.type = SUBTILIS_ARM_OP2_REG;
-	datai->op2.op.reg = op2;
+	mul = &instr->operands.mul;
+	mul->status = status;
+	mul->ccode = ccode;
+	mul->dest = dest;
+	mul->rm = rm;
+	mul->rs = rs;
 }
 
 void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
@@ -1072,6 +1075,20 @@ static void prv_dump_data_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("\n");
 }
 
+static void prv_dump_mul_instr(void *user_data, subtilis_arm_op_t *op,
+			       subtilis_arm_instr_type_t type,
+			       subtilis_arm_mul_instr_t *instr,
+			       subtilis_error_t *err)
+{
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	if (instr->status)
+		printf("S");
+	printf(" R%zu, R%zu R%zu\n", instr->dest.num, instr->rm.num,
+	       instr->rs.num);
+}
+
 static void prv_dump_stran_instr(void *user_data, subtilis_arm_op_t *op,
 				 subtilis_arm_instr_type_t type,
 				 subtilis_arm_stran_instr_t *instr,
@@ -1165,6 +1182,7 @@ void subtilis_arm_program_dump(subtilis_arm_program_t *p)
 	walker.user_data = NULL;
 	walker.label_fn = prv_dump_label;
 	walker.data_fn = prv_dump_data_instr;
+	walker.mul_fn = prv_dump_mul_instr;
 	walker.cmp_fn = prv_dump_cmp_instr;
 	walker.mov_fn = prv_dump_mov_instr;
 	walker.stran_fn = prv_dump_stran_instr;

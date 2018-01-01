@@ -159,28 +159,6 @@ static void prv_encode_data_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 	}
 }
 
-static void prv_encode_mul(subtilis_arm_encode_ud_t *ud,
-			   subtilis_arm_instr_type_t type,
-			   subtilis_arm_data_instr_t *instr,
-			   subtilis_error_t *err)
-{
-	uint32_t word = 0x90;
-
-	if (instr->op2.op.reg.num > 15) {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
-	word |= instr->ccode << 28;
-	if (instr->status)
-		word |= 1 << 20;
-	word |= instr->dest.num << 16;
-	word |= instr->op2.op.reg.num << 8;
-	word |= instr->op1.num;
-
-	ud->code[ud->words_written++] = word;
-}
-
 static void prv_encode_data_instr(void *user_data, subtilis_arm_op_t *op,
 				  subtilis_arm_instr_type_t type,
 				  subtilis_arm_data_instr_t *instr,
@@ -194,17 +172,6 @@ static void prv_encode_data_instr(void *user_data, subtilis_arm_op_t *op,
 		return;
 	}
 
-	if (type == SUBTILIS_ARM_INSTR_MLA) {
-		/* TODO: mul and mla need their own structure.  */
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
-	if (type == SUBTILIS_ARM_INSTR_MUL) {
-		prv_encode_mul(ud, type, instr, err);
-		return;
-	}
-
 	word |= instr->ccode << 28;
 	word |= type << 21;
 	if (instr->status)
@@ -214,6 +181,35 @@ static void prv_encode_data_instr(void *user_data, subtilis_arm_op_t *op,
 	prv_encode_data_op2(&instr->op2, &word, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	ud->code[ud->words_written++] = word;
+}
+
+static void prv_encode_mul_instr(void *user_data, subtilis_arm_op_t *op,
+				 subtilis_arm_instr_type_t type,
+				 subtilis_arm_mul_instr_t *instr,
+				 subtilis_error_t *err)
+{
+	subtilis_arm_encode_ud_t *ud = user_data;
+	uint32_t word = 0x90;
+
+	if ((instr->dest.num > 15) || (instr->rm.num > 15) ||
+	    (instr->rs.num > 15)) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (type == SUBTILIS_ARM_INSTR_MLA) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	word |= instr->ccode << 28;
+	if (instr->status)
+		word |= 1 << 20;
+	word |= instr->dest.num << 16;
+	word |= instr->rs.num << 8;
+	word |= instr->rm.num;
 
 	ud->code[ud->words_written++] = word;
 }
@@ -420,6 +416,7 @@ static void prv_arm_encode(subtilis_arm_program_t *arm_p,
 	walker.user_data = ud;
 	walker.label_fn = prv_encode_label;
 	walker.data_fn = prv_encode_data_instr;
+	walker.mul_fn = prv_encode_mul_instr;
 	walker.cmp_fn = prv_encode_cmp_instr;
 	walker.mov_fn = prv_encode_mov_instr;
 	walker.stran_fn = prv_encode_stran_instr;
