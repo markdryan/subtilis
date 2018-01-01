@@ -127,6 +127,17 @@ struct subtilis_arm_data_instr_t_ {
 
 typedef struct subtilis_arm_data_instr_t_ subtilis_arm_data_instr_t;
 
+struct subtilis_arm_mul_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	bool status;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t rm;
+	subtilis_arm_reg_t rs;
+	subtilis_arm_reg_t rn;
+};
+
+typedef struct subtilis_arm_mul_instr_t_ subtilis_arm_mul_instr_t;
+
 struct subtilis_arm_stran_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	subtilis_arm_reg_t dest;
@@ -177,6 +188,7 @@ struct subtilis_arm_instr_t_ {
 	subtilis_arm_instr_type_t type;
 	union {
 		subtilis_arm_data_instr_t data;
+		subtilis_arm_mul_instr_t mul;
 		subtilis_arm_stran_instr_t stran;
 		subtilis_arm_mtran_instr_t mtran;
 		subtilis_arm_br_instr_t br;
@@ -280,12 +292,12 @@ void subtilis_arm_add_rsub_imm(subtilis_arm_program_t *p,
 			       int32_t op2, subtilis_error_t *err);
 void subtilis_arm_add_mul_imm(subtilis_arm_program_t *p,
 			      subtilis_arm_ccode_type_t ccode, bool status,
-			      subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
-			      int32_t op2, subtilis_error_t *err);
+			      subtilis_arm_reg_t dest, subtilis_arm_reg_t rm,
+			      int32_t rs, subtilis_error_t *err);
 void subtilis_arm_add_mul(subtilis_arm_program_t *p,
 			  subtilis_arm_ccode_type_t ccode, bool status,
-			  subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
-			  subtilis_arm_reg_t op2, subtilis_error_t *err);
+			  subtilis_arm_reg_t dest, subtilis_arm_reg_t rm,
+			  subtilis_arm_reg_t rs, subtilis_error_t *err);
 void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
 			       subtilis_arm_instr_type_t itype,
 			       subtilis_arm_ccode_type_t ccode, bool status,

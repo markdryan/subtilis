@@ -36,10 +36,13 @@ static void prv_walk_instr(subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 	case SUBTILIS_ARM_INSTR_TEQ:
 	case SUBTILIS_ARM_INSTR_ORR:
 	case SUBTILIS_ARM_INSTR_BIC:
-	case SUBTILIS_ARM_INSTR_MUL:
-	case SUBTILIS_ARM_INSTR_MLA:
 		walker->data_fn(walker->user_data, op, instr->type,
 				&instr->operands.data, err);
+		break;
+	case SUBTILIS_ARM_INSTR_MUL:
+	case SUBTILIS_ARM_INSTR_MLA:
+		walker->mul_fn(walker->user_data, op, instr->type,
+			       &instr->operands.mul, err);
 		break;
 	case SUBTILIS_ARM_INSTR_CMP:
 	case SUBTILIS_ARM_INSTR_CMN:
