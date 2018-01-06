@@ -32,7 +32,7 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	subtilis_buffer_t b;
 	int retval = 1;
 	subtilis_arm_op_pool_t *pool = NULL;
-	subtilis_arm_program_t *arm_p = NULL;
+	subtilis_arm_section_t *arm_s = NULL;
 	subtilis_arm_vm_t *vm = NULL;
 
 	subtilis_error_init(&err);
@@ -44,21 +44,21 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 		return 1;
 	}
 
-	//	subtilis_ir_program_dump(p->p);
+	//	subtilis_ir_section_dump(p->p);
 
 	pool = subtilis_arm_op_pool_new(&err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_p = subtilis_riscos_generate(pool, p->p, riscos_arm2_rules,
+	arm_s = subtilis_riscos_generate(pool, p->main, riscos_arm2_rules,
 					 riscos_arm2_rules_count,
 					 p->st->allocated, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	//	subtilis_arm_program_dump(arm_p);
+	//	subtilis_arm_section_dump(arm_s);
 
-	vm = subtilis_arm_vm_new(arm_p, 16 * 1024, &err);
+	vm = subtilis_arm_vm_new(arm_s, 16 * 1024, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -84,7 +84,7 @@ cleanup:
 	if (err.type != SUBTILIS_ERROR_OK)
 		subtilis_error_fprintf(stdout, &err, true);
 	subtilis_arm_vm_delete(vm);
-	subtilis_arm_program_delete(arm_p);
+	subtilis_arm_section_delete(arm_s);
 	subtilis_arm_op_pool_delete(pool);
 	subtilis_buffer_free(&b);
 
@@ -125,7 +125,7 @@ static const uint32_t prv_expected_code[] = {
 
 /* clang-format on */
 
-static void prv_add_ops(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
+static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 {
 	subtilis_arm_reg_t dest;
 	subtilis_arm_reg_t op1;
@@ -140,47 +140,47 @@ static void prv_add_ops(subtilis_arm_program_t *arm_p, subtilis_error_t *err)
 	dest.num = 0;
 	op1.num = 2;
 	op2.num = 1;
-	subtilis_arm_add_mov_reg(arm_p, SUBTILIS_ARM_CCODE_EQ, false, dest, op2,
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_EQ, false, dest, op2,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	/* MVNSNE R0, r1 */
-	subtilis_arm_add_mov_reg(arm_p, SUBTILIS_ARM_CCODE_NE, true, dest, op2,
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_NE, true, dest, op2,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	/* CMPGT R0, R1 */
-	subtilis_arm_add_cmp(arm_p, SUBTILIS_ARM_INSTR_CMP,
+	subtilis_arm_add_cmp(arm_s, SUBTILIS_ARM_INSTR_CMP,
 			     SUBTILIS_ARM_CCODE_GT, dest, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	/* MULLT R0, R2, R1 */
-	subtilis_arm_add_mul(arm_p, SUBTILIS_ARM_CCODE_LT, false, dest, op1,
+	subtilis_arm_add_mul(arm_s, SUBTILIS_ARM_CCODE_LT, false, dest, op1,
 			     op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	/* LDRCS R0, [R2, #16] */
-	subtilis_arm_add_stran_imm(arm_p, SUBTILIS_ARM_INSTR_LDR,
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
 				   SUBTILIS_ARM_CCODE_CS, dest, op1, 16, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	/* SWINV &DC */
-	subtilis_arm_add_swi(arm_p, SUBTILIS_ARM_CCODE_CC, 0xdc, 0, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_CC, 0xdc, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_program_add_label(arm_p, 0, err);
+	subtilis_arm_section_add_label(arm_s, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	/* BMI label_0 */
 	instr =
-	    subtilis_arm_program_add_instr(arm_p, SUBTILIS_ARM_INSTR_B, err);
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	instr->operands.br.ccode = SUBTILIS_ARM_CCODE_MI;
@@ -192,7 +192,7 @@ static int prv_test_encode(void)
 	subtilis_error_t err;
 	int retval = 1;
 	subtilis_arm_op_pool_t *pool = NULL;
-	subtilis_arm_program_t *arm_p = NULL;
+	subtilis_arm_section_t *arm_s = NULL;
 	uint32_t *code = NULL;
 	size_t i;
 
@@ -203,15 +203,15 @@ static int prv_test_encode(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_p = subtilis_arm_program_new(pool, 16, 0, 0, &err);
+	arm_s = subtilis_arm_section_new(pool, 16, 0, 0, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	prv_add_ops(arm_p, &err);
+	prv_add_ops(arm_s, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	code = subtilis_arm_encode_buf(arm_p, &err);
+	code = subtilis_arm_encode_buf(arm_s, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -233,7 +233,7 @@ cleanup:
 	}
 
 	free(code);
-	subtilis_arm_program_delete(arm_p);
+	subtilis_arm_section_delete(arm_s);
 	subtilis_arm_op_pool_delete(pool);
 
 	return retval;

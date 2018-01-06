@@ -19,7 +19,7 @@
 
 #include "arm_vm.h"
 
-subtilis_arm_vm_t *subtilis_arm_vm_new(subtilis_arm_program_t *arm_p,
+subtilis_arm_vm_t *subtilis_arm_vm_new(subtilis_arm_section_t *arm_s,
 				       size_t mem_size, subtilis_error_t *err)
 {
 	subtilis_arm_op_t *op;
@@ -31,13 +31,13 @@ subtilis_arm_vm_t *subtilis_arm_vm_new(subtilis_arm_program_t *arm_p,
 		return NULL;
 	}
 
-	arm_vm->regs = malloc(arm_p->reg_counter * sizeof(*arm_vm->regs));
+	arm_vm->regs = malloc(arm_s->reg_counter * sizeof(*arm_vm->regs));
 	if (!arm_vm->regs) {
 		subtilis_error_set_oom(err);
 		goto fail;
 	}
 
-	arm_vm->labels = malloc(arm_p->label_counter * sizeof(*arm_vm->labels));
+	arm_vm->labels = malloc(arm_s->label_counter * sizeof(*arm_vm->labels));
 	if (!arm_vm->labels) {
 		subtilis_error_set_oom(err);
 		goto fail;
@@ -49,20 +49,20 @@ subtilis_arm_vm_t *subtilis_arm_vm_new(subtilis_arm_program_t *arm_p,
 		goto fail;
 	}
 
-	arm_vm->ops = malloc(arm_p->len * sizeof(*arm_vm->ops));
+	arm_vm->ops = malloc(arm_s->len * sizeof(*arm_vm->ops));
 	if (!arm_vm->ops) {
 		subtilis_error_set_oom(err);
 		goto fail;
 	}
 
 	arm_vm->mem_size = mem_size;
-	arm_vm->p = arm_p;
-	arm_vm->label_len = arm_p->label_counter;
+	arm_vm->s = arm_s;
+	arm_vm->label_len = arm_s->label_counter;
 	arm_vm->op_len = 0;
 
-	ptr = arm_vm->p->first_op;
+	ptr = arm_vm->s->first_op;
 	while (ptr != SIZE_MAX) {
-		op = &arm_vm->p->pool->ops[ptr];
+		op = &arm_vm->s->pool->ops[ptr];
 		if (op->type == SUBTILIS_OP_LABEL)
 			arm_vm->labels[op->op.label] = arm_vm->op_len;
 		else
@@ -611,15 +611,15 @@ static void prv_process_ldrc(subtilis_arm_vm_t *arm_vm,
 		return;
 	}
 
-	for (i = 0; i < arm_vm->p->constant_count; i++) {
-		if (arm_vm->p->constants[i].label == op->label) {
+	for (i = 0; i < arm_vm->s->constant_count; i++) {
+		if (arm_vm->s->constants[i].label == op->label) {
 			arm_vm->regs[op->dest.num] =
-			    arm_vm->p->constants[i].integer;
+			    arm_vm->s->constants[i].integer;
 			break;
 		}
 	}
 
-	if (i == arm_vm->p->constant_count) {
+	if (i == arm_vm->s->constant_count) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}

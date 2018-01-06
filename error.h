@@ -51,6 +51,7 @@ typedef enum {
 	SUBTILIS_ERROR_EXPECTED,
 	SUBTILIS_ERROR_COMPOUND_NOT_TERM,
 	SUBTILIS_ERROR_WALKER_FAILED,
+	SUBTILIS_ERROR_ALREADY_DEFINED,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -139,6 +140,9 @@ void subtilis_error_init(subtilis_error_t *e);
 				 line)
 #define subtilis_error_set_walker_failed(e)                                    \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_WALKER_FAILED, __FILE__,    \
+				 __LINE__)
+#define subtilis_error_set_already_defined(e)                                  \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_ALREADY_DEFINED, __FILE__,  \
 				 __LINE__)
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,

@@ -10,6 +10,7 @@ COMMON =\
 	ir.c \
 	hash_table.c \
 	symbol_table.c \
+	string_pool.c \
 	arm_core.c \
 	riscos_arm.c \
 	riscos_arm2.c \
@@ -28,8 +29,8 @@ TESTS =\
 	symbol_table_test.c \
 	vm.c \
 	ir_test.c \
-	arm_core_test.c \
 	test_cases.c \
+	arm_core_test.c \
 	arm_vm.c \
 	arm_test.c
 

@@ -49,12 +49,12 @@ struct subtilis_arm_encode_ud_t_ {
 typedef struct subtilis_arm_encode_ud_t_ subtilis_arm_encode_ud_t;
 
 static void prv_init_encode_ud(subtilis_arm_encode_ud_t *ud,
-			       subtilis_arm_program_t *arm_p,
+			       subtilis_arm_section_t *arm_s,
 			       subtilis_error_t *err)
 {
 	memset(ud, 0, sizeof(*ud));
 
-	ud->max_labels = arm_p->label_counter;
+	ud->max_labels = arm_s->label_counter;
 	ud->label_offsets = malloc(sizeof(size_t) * ud->max_labels);
 	if (!ud->label_offsets) {
 		subtilis_error_set_oom(err);
@@ -62,7 +62,7 @@ static void prv_init_encode_ud(subtilis_arm_encode_ud_t *ud,
 	}
 
 	ud->code = malloc(sizeof(uint32_t) *
-			  (arm_p->pool->len + arm_p->constant_count));
+			  (arm_s->pool->len + arm_s->constant_count));
 	if (!ud->code) {
 		free(ud->label_offsets);
 		subtilis_error_set_oom(err);
@@ -407,7 +407,7 @@ static void prv_apply_back_patches(subtilis_arm_encode_ud_t *ud,
 	}
 }
 
-static void prv_arm_encode(subtilis_arm_program_t *arm_p,
+static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 			   subtilis_arm_encode_ud_t *ud, subtilis_error_t *err)
 {
 	subtlis_arm_walker_t walker;
@@ -425,14 +425,14 @@ static void prv_arm_encode(subtilis_arm_program_t *arm_p,
 	walker.swi_fn = prv_encode_swi_instr;
 	walker.ldrc_fn = prv_encode_ldrc_instr;
 
-	subtilis_arm_walk(arm_p, &walker, err);
+	subtilis_arm_walk(arm_s, &walker, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	for (i = 0; i < arm_p->constant_count; i++) {
-		ud->label_offsets[arm_p->constants[i].label] =
+	for (i = 0; i < arm_s->constant_count; i++) {
+		ud->label_offsets[arm_s->constants[i].label] =
 		    ud->words_written;
-		ud->code[ud->words_written++] = arm_p->constants[i].integer;
+		ud->code[ud->words_written++] = arm_s->constants[i].integer;
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
@@ -440,16 +440,16 @@ static void prv_arm_encode(subtilis_arm_program_t *arm_p,
 	prv_apply_back_patches(ud, err);
 }
 
-void subtilis_arm_encode(subtilis_arm_program_t *arm_p, const char *fname,
+void subtilis_arm_encode(subtilis_arm_section_t *arm_s, const char *fname,
 			 subtilis_error_t *err)
 {
 	subtilis_arm_encode_ud_t ud;
 
-	prv_init_encode_ud(&ud, arm_p, err);
+	prv_init_encode_ud(&ud, arm_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	prv_arm_encode(arm_p, &ud, err);
+	prv_arm_encode(arm_s, &ud, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -460,17 +460,17 @@ cleanup:
 	prv_free_encode_ud(&ud);
 }
 
-uint32_t *subtilis_arm_encode_buf(subtilis_arm_program_t *arm_p,
+uint32_t *subtilis_arm_encode_buf(subtilis_arm_section_t *arm_s,
 				  subtilis_error_t *err)
 {
 	subtilis_arm_encode_ud_t ud;
 	uint32_t *retval = NULL;
 
-	prv_init_encode_ud(&ud, arm_p, err);
+	prv_init_encode_ud(&ud, arm_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	prv_arm_encode(arm_p, &ud, err);
+	prv_arm_encode(arm_s, &ud, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

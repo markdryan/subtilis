@@ -23,7 +23,9 @@
 
 struct subtilis_parser_t_ {
 	subtilis_lexer_t *l;
-	subtilis_ir_program_t *p;
+	subtilis_ir_section_t *current;
+	subtilis_ir_section_t *main;
+	subtilis_ir_prog_t *prog;
 	subtilis_symbol_table_t *st;
 };
 

@@ -61,9 +61,9 @@ struct subtlis_arm_walker_t_ {
 			subtilis_error_t *err);
 };
 
-void subtilis_arm_walk(subtilis_arm_program_t *arm_p,
+void subtilis_arm_walk(subtilis_arm_section_t *arm_s,
 		       subtlis_arm_walker_t *walker, subtilis_error_t *err);
-void subtilis_arm_walk_from(subtilis_arm_program_t *arm_p,
+void subtilis_arm_walk_from(subtilis_arm_section_t *arm_s,
 			    subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 			    subtilis_error_t *err);
 #endif

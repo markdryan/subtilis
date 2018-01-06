@@ -27,7 +27,7 @@ struct subitlis_vm_t_ {
 	/* TODO: This type should be configurable to allow for 64 bit regs */
 	int32_t *regs;
 	uint8_t *globals;
-	subtilis_ir_program_t *p;
+	subtilis_ir_section_t *s;
 	subtilis_symbol_table_t *st;
 	size_t pc;
 	size_t *labels;
@@ -37,7 +37,7 @@ struct subitlis_vm_t_ {
 
 typedef struct subitlis_vm_t_ subitlis_vm_t;
 
-subitlis_vm_t *subitlis_vm_new(subtilis_ir_program_t *p,
+subitlis_vm_t *subitlis_vm_new(subtilis_ir_section_t *s,
 			       subtilis_symbol_table_t *st,
 			       subtilis_error_t *err);
 void subitlis_vm_run(subitlis_vm_t *vm, subtilis_buffer_t *b,

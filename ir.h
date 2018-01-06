@@ -21,6 +21,7 @@
 
 #include "buffer.h"
 #include "error.h"
+#include "string_pool.h"
 
 /* clang-format off */
 enum {
@@ -681,6 +682,27 @@ struct subtilis_ir_op_t_ {
 
 typedef struct subtilis_ir_op_t_ subtilis_ir_op_t;
 
+struct subtilis_ir_section_t_ {
+	size_t reg_counter;
+	size_t label_counter;
+	size_t len;
+	size_t max_len;
+	subtilis_ir_op_t **ops;
+};
+
+typedef struct subtilis_ir_section_t_ subtilis_ir_section_t;
+
+struct subtilis_ir_prog_t_ {
+	subtilis_ir_section_t **sections;
+	size_t num_sections;
+	size_t max_sections;
+	subtilis_string_pool_t *string_pool;
+};
+
+typedef struct subtilis_ir_prog_t_ subtilis_ir_prog_t;
+
+/* TODO: Matcher needs to move to its own file */
+
 typedef enum {
 	SUBTILIS_OP_MATCH_ANY,
 	SUBTILIS_OP_MATCH_FIXED,
@@ -712,17 +734,7 @@ struct subtilis_ir_op_match_t_ {
 
 typedef struct subtilis_ir_op_match_t_ subtilis_ir_op_match_t;
 
-struct subtilis_ir_program_t_ {
-	size_t reg_counter;
-	size_t label_counter;
-	size_t len;
-	size_t max_len;
-	subtilis_ir_op_t **ops;
-};
-
-typedef struct subtilis_ir_program_t_ subtilis_ir_program_t;
-
-typedef void (*subtilis_ir_action_t)(subtilis_ir_program_t *p, size_t start,
+typedef void (*subtilis_ir_action_t)(subtilis_ir_section_t *s, size_t start,
 				     void *user_data, subtilis_error_t *err);
 
 #define SUBTILIS_IR_MAX_MATCHES 5
@@ -742,35 +754,40 @@ struct subtilis_ir_rule_raw_t_ {
 
 typedef struct subtilis_ir_rule_raw_t_ subtilis_ir_rule_raw_t;
 
-subtilis_ir_program_t *subtilis_ir_program_new(subtilis_error_t *err);
-void subtilis_ir_program_delete(subtilis_ir_program_t *p);
-size_t subtilis_ir_program_add_instr(subtilis_ir_program_t *p,
+subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err);
+subtilis_ir_section_t *subtilis_ir_prog_section_new(subtilis_ir_prog_t *p,
+						    const char *name,
+						    subtilis_error_t *err);
+void subtilis_ir_prog_dump(subtilis_ir_prog_t *p);
+void subtilis_ir_prog_delete(subtilis_ir_prog_t *p);
+size_t subtilis_ir_section_add_instr(subtilis_ir_section_t *s,
 				     subtilis_op_instr_type_t type,
 				     subtilis_ir_operand_t op1,
 				     subtilis_ir_operand_t op2,
 				     subtilis_error_t *err);
-size_t subtilis_ir_program_add_instr2(subtilis_ir_program_t *p,
+size_t subtilis_ir_section_add_instr2(subtilis_ir_section_t *s,
 				      subtilis_op_instr_type_t type,
 				      subtilis_ir_operand_t op1,
 				      subtilis_error_t *err);
-void subtilis_ir_program_add_instr_no_reg(subtilis_ir_program_t *p,
+void subtilis_ir_section_add_instr_no_reg(subtilis_ir_section_t *s,
 					  subtilis_op_instr_type_t type,
 					  subtilis_ir_operand_t op1,
 					  subtilis_error_t *err);
-void subtilis_ir_program_add_instr_reg(subtilis_ir_program_t *p,
+void subtilis_ir_section_add_instr_reg(subtilis_ir_section_t *s,
 				       subtilis_op_instr_type_t type,
 				       subtilis_ir_operand_t op0,
 				       subtilis_ir_operand_t op1,
 				       subtilis_ir_operand_t op2,
 				       subtilis_error_t *err);
-void subtilis_ir_program_dump(subtilis_ir_program_t *p);
-size_t subtilis_ir_program_new_label(subtilis_ir_program_t *p);
-void subtilis_ir_program_add_label(subtilis_ir_program_t *p, size_t l,
+void subtilis_ir_section_dump(subtilis_ir_section_t *s);
+size_t subtilis_ir_section_new_label(subtilis_ir_section_t *s);
+void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 				   subtilis_error_t *err);
 void subtilis_ir_parse_rules(const subtilis_ir_rule_raw_t *raw,
 			     subtilis_ir_rule_t *parsed, size_t count,
 			     subtilis_error_t *err);
-void subtilis_ir_match(subtilis_ir_program_t *p, subtilis_ir_rule_t *rules,
+void subtilis_ir_match(subtilis_ir_section_t *s, subtilis_ir_rule_t *rules,
 		       size_t rule_count, void *user_data,
 		       subtilis_error_t *err);
+
 #endif

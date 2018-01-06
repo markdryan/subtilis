@@ -112,6 +112,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_WALKER_FAILED */
 	{"Walker failed.\n", 0},
+
+	/* SUBTILIS_ERROR_ALREADY_DEFINED */
+	{"Already defined.\n", 0},
 };
 
 /* clang-format on */
