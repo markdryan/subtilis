@@ -270,6 +270,7 @@ subtilis_arm_section_insert_instr(subtilis_arm_section_t *s,
 subtilis_arm_instr_t *subtilis_arm_section_dup_instr(subtilis_arm_section_t *s,
 						     subtilis_error_t *err);
 bool subtilis_arm_encode_imm(int32_t num, uint32_t *encoded);
+uint32_t subtilis_arm_encode_nearest(int32_t num, subtilis_error_t *err);
 bool subtilis_arm_encode_lvl2_imm(int32_t num, uint32_t *encoded1,
 				  uint32_t *encoded2);
 subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg);

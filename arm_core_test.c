@@ -65,6 +65,57 @@ fail:
 	return 1;
 }
 
+static int prv_test_encode_nearest(void)
+{
+	subtilis_error_t err;
+	struct test {
+		int32_t num;
+		uint32_t encoded;
+		bool ok;
+	};
+
+	size_t i;
+	struct test tests[] = {
+	    /* clang-format off */
+		{ 173, 173, true },
+		{ 257, 0xf41, true }, /* 260 */
+		{ 0xFE010000, 0x4ff, true},
+		{ 0xfffffff0, 0, false},
+	};
+
+	/* clang-format on */
+	uint32_t encoded;
+
+	printf("arm_core_encode_nearest");
+
+	subtilis_error_init(&err);
+	for (i = 0; i < sizeof(tests) / sizeof(struct test); i++) {
+		encoded = subtilis_arm_encode_nearest(tests[i].num, &err);
+		if (err.type != SUBTILIS_ERROR_OK) {
+			if (tests[i].ok) {
+				fprintf(stderr, "Expected success with 0x%x\n",
+					tests[i].num);
+				goto fail;
+			}
+		} else if (!tests[i].ok) {
+			fprintf(stderr, "Expected failure with 0x%x\n",
+				tests[i].num);
+			goto fail;
+		} else if (encoded != tests[i].encoded) {
+			fprintf(stderr, "Expected %u got %u\n",
+				tests[i].encoded, encoded);
+			goto fail;
+		}
+	}
+
+	printf(": [OK]\n");
+	return 0;
+
+fail:
+	printf(": [FAIL]\n");
+	return 1;
+}
+
 static int prv_test_encode_lvl2_imm(void)
 {
 	struct test {
@@ -418,6 +469,7 @@ int arm_core_test(void)
 	int retval;
 
 	retval = prv_test_encode_imm();
+	retval |= prv_test_encode_nearest();
 	retval |= prv_test_encode_lvl2_imm();
 	retval |= prv_test_arm_add_data_1_imm();
 	retval |= prv_test_arm_add_data_2_imm();

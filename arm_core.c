@@ -337,6 +337,59 @@ static void prv_encode_imm(uint32_t imm, size_t mask_index, uint32_t *encoded)
 	*encoded |= mask_index << 8;
 }
 
+/*
+ * Sometimes if we cannot encode  the exact immediate, the next encodable
+ * number is acceptable.  We can use this for our stack frame.  If for
+ * example the size of the local variables and spill registers was
+ * 516, we could reserve 520 bytes instead.  The stack frame can then
+ * be set up with a single instruction.  Otherwise, we'd need a ldr
+ * followed by a sub.
+ */
+
+uint32_t subtilis_arm_encode_nearest(int32_t num, subtilis_error_t *err)
+{
+	bool can_encode;
+	uint32_t encoded;
+	size_t i;
+	size_t new_num;
+	size_t mask;
+	size_t shift;
+
+	can_encode = subtilis_arm_encode_imm(num, &encoded);
+	if (can_encode)
+		return encoded;
+
+	if (((uint32_t)num) >= ((uint32_t)0xff000000)) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+
+	/* First first bit that's set */
+
+	for (i = 31; i > 7; i--)
+		if (num & (1 << i))
+			break;
+
+	if (i == 7) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+
+	shift = i - 7;
+
+	if (shift & 1)
+		shift++;
+	mask = 0xff << shift;
+	new_num = (((uint32_t)num) & mask) + (1 << shift);
+	can_encode = subtilis_arm_encode_imm(new_num, &encoded);
+	if (!can_encode) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+
+	return encoded;
+}
+
 bool subtilis_arm_encode_imm(int32_t num, uint32_t *encoded)
 {
 	size_t i;
