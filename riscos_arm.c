@@ -19,7 +19,7 @@
 #include "arm_reg_alloc.h"
 #include "riscos_arm.h"
 
-static size_t prv_add_preamble(subtilis_arm_section_t *arm_s,
+static size_t prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 			       subtilis_error_t *err)
 {
 	subtilis_arm_reg_t dest;
@@ -42,7 +42,7 @@ static size_t prv_add_preamble(subtilis_arm_section_t *arm_s,
 
 	label = subtilis_add_data_imm_ldr_datai(arm_s, SUBTILIS_ARM_INSTR_SUB,
 						SUBTILIS_ARM_CCODE_AL, false,
-						dest, op1, arm_s->globals, err);
+						dest, op1, globals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
@@ -82,19 +82,66 @@ static void prv_add_coda(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 		return;
 }
 
+static void prv_add_section(subtilis_ir_section_t *s,
+			    subtilis_arm_section_t *arm_s,
+			    subtilis_ir_rule_t *parsed, size_t rule_count,
+			    subtilis_error_t *err)
+{
+	size_t spill_regs;
+	subtilis_arm_instr_t *stack_sub;
+	subtilis_arm_data_instr_t *datai;
+	uint32_t encoded;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op2;
+
+	stack_sub =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_SUB, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai = &stack_sub->operands.data;
+	datai->status = false;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->dest.type = SUBTILIS_ARM_REG_FIXED;
+	datai->dest.num = 13;
+	datai->op1 = datai->dest;
+	datai->op2.type = SUBTILIS_ARM_OP2_I32;
+	datai->op2.op.integer = 0;
+
+	dest.num = 11;
+	dest.type = SUBTILIS_ARM_REG_FIXED;
+	op2.type = SUBTILIS_ARM_REG_FIXED;
+	op2.num = 13;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
+				 err);
+
+	subtilis_ir_match(s, parsed, rule_count, arm_s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	spill_regs = subtilis_arm_reg_alloc(arm_s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	encoded =
+	    subtilis_arm_encode_nearest(spill_regs * sizeof(int32_t), err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai->op2.op.integer = encoded;
+}
+
 /* clang-format off */
 subtilis_arm_section_t *
 subtilis_riscos_generate(
-	subtilis_arm_op_pool_t *pool, subtilis_ir_section_t *s,
+	subtilis_arm_op_pool_t *pool, subtilis_ir_prog_t *p,
 	const subtilis_ir_rule_raw_t *rules_raw,
 	size_t rule_count, size_t globals, subtilis_error_t *err)
 /* clang-format on */
 {
 	subtilis_ir_rule_t *parsed;
 	subtilis_arm_section_t *arm_s = NULL;
-	size_t stack_frame_label;
-	size_t spill_regs;
-	size_t i;
 
 	parsed = malloc(sizeof(*parsed) * rule_count);
 	if (!parsed) {
@@ -106,16 +153,16 @@ subtilis_riscos_generate(
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_s = subtilis_arm_section_new(pool, s->reg_counter, s->label_counter,
-					 globals, err);
+	arm_s = subtilis_arm_section_new(pool, p->sections[0]->reg_counter,
+					 p->sections[0]->label_counter, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	stack_frame_label = prv_add_preamble(arm_s, err);
+	(void)prv_add_preamble(arm_s, globals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_ir_match(s, parsed, rule_count, arm_s, err);
+	prv_add_section(p->sections[0], arm_s, parsed, rule_count, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -128,21 +175,6 @@ subtilis_riscos_generate(
 
 	//	printf("\n\n");
 	//	subtilis_arm_section_dump(arm_s);
-
-	spill_regs = subtilis_arm_reg_alloc(arm_s, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	for (i = 0; i < arm_s->constant_count; i++)
-		if (arm_s->constants[i].label == stack_frame_label)
-			break;
-
-	if (i == arm_s->constant_count) {
-		subtilis_error_set_assertion_failed(err);
-		goto cleanup;
-	}
-
-	arm_s->constants[i].integer += ((uint32_t)spill_regs * sizeof(int32_t));
 
 	return arm_s;
 

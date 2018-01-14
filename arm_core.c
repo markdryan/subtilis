@@ -100,7 +100,7 @@ size_t subtilis_arm_op_pool_alloc(subtilis_arm_op_pool_t *pool,
 subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 						 size_t reg_counter,
 						 size_t label_counter,
-						 size_t globals,
+						 size_t locals,
 						 subtilis_error_t *err)
 {
 	subtilis_arm_section_t *s = malloc(sizeof(*s));
@@ -114,7 +114,7 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 	s->len = 0;
 	s->first_op = SIZE_MAX;
 	s->last_op = SIZE_MAX;
-	s->globals = globals;
+	s->locals = locals;
 	s->constants = NULL;
 	s->constant_count = 0;
 	s->max_constants = 0;

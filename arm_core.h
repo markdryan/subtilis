@@ -232,7 +232,7 @@ struct subtilis_arm_section_t_ {
 	size_t len;
 	size_t first_op;
 	size_t last_op;
-	size_t globals;
+	size_t locals;
 	subtilis_arm_constant_t *constants;
 	size_t constant_count;
 	size_t max_constants;
@@ -250,7 +250,7 @@ void subtilis_arm_op_pool_delete(subtilis_arm_op_pool_t *pool);
 subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 						 size_t reg_counter,
 						 size_t label_counter,
-						 size_t globals,
+						 size_t locals,
 						 subtilis_error_t *err);
 void subtilis_arm_section_delete(subtilis_arm_section_t *s);
 

@@ -350,10 +350,10 @@ static void prv_load_spilled_reg(subtilis_arm_section_t *arm_s,
 		return;
 	}
 
-	offset += arm_s->globals;
+	offset += arm_s->locals;
 
 	base.type = SUBTILIS_ARM_REG_FIXED;
-	base.num = 12;
+	base.num = 11;
 	if (offset > 4095 || offset < -4095) {
 		subtilis_arm_insert_stran_spill_imm(
 		    arm_s, current, SUBTILIS_ARM_INSTR_LDR,
@@ -390,14 +390,14 @@ static void prv_spill_reg(subtilis_arm_section_t *arm_s,
 		return;
 	}
 
-	offset = (int32_t)regs->spill_stack[regs->spill_top++] + arm_s->globals;
+	offset = (int32_t)regs->spill_stack[regs->spill_top++] + arm_s->locals;
 	if (regs->spill_max < regs->spill_top)
 		regs->spill_max = regs->spill_top;
 
 	regs->spilt_regs[assigned] = offset;
 
 	base.type = SUBTILIS_ARM_REG_FIXED;
-	base.num = 12;
+	base.num = 11;
 	if (offset > 4095 || offset < -4095) {
 		for (i = 0; i < SUBTILIS_ARM_REG_MAX_REGS; i++)
 			if ((regs->phys_to_virt[i] == INT_MAX) &&

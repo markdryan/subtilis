@@ -63,9 +63,9 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_s = subtilis_riscos_generate(
-	    pool, p->prog->sections[0], riscos_arm2_rules,
-	    riscos_arm2_rules_count, p->st->allocated, &err);
+	arm_s = subtilis_riscos_generate(pool, p->prog, riscos_arm2_rules,
+					 riscos_arm2_rules_count,
+					 p->st->allocated, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

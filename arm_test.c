@@ -50,7 +50,7 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_s = subtilis_riscos_generate(pool, p->main, riscos_arm2_rules,
+	arm_s = subtilis_riscos_generate(pool, p->prog, riscos_arm2_rules,
 					 riscos_arm2_rules_count,
 					 p->st->allocated, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
