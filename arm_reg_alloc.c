@@ -299,7 +299,7 @@ static int prv_calculate_dist(subtilis_arm_reg_ud_t *ud, size_t reg_num,
 	if (op->next == SIZE_MAX)
 		return -1;
 
-	op = &ud->arm_s->pool->ops[op->next];
+	op = &ud->arm_s->op_pool->ops[op->next];
 
 	ud->dist_data.reg_num = reg_num;
 	ud->dist_data.last_used = ud->instr_count + 1;

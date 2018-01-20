@@ -118,7 +118,7 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 	s->constants = NULL;
 	s->constant_count = 0;
 	s->max_constants = 0;
-	s->pool = pool;
+	s->op_pool = pool;
 
 	return s;
 }
@@ -130,6 +130,74 @@ void subtilis_arm_section_delete(subtilis_arm_section_t *s)
 
 	free(s->constants);
 	free(s);
+}
+
+subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
+					   subtilis_arm_op_pool_t *op_pool,
+					   subtilis_string_pool_t *string_pool,
+					   subtilis_error_t *err)
+{
+	subtilis_arm_prog_t *arm_p = malloc(sizeof(*arm_p));
+
+	if (!arm_p) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+
+	arm_p->sections = malloc(sizeof(*arm_p->sections) * max_sections);
+	if (!arm_p->sections) {
+		subtilis_error_set_oom(err);
+		goto cleanup;
+	}
+
+	arm_p->num_sections = 0;
+	arm_p->max_sections = max_sections;
+	arm_p->op_pool = op_pool;
+	arm_p->string_pool = subtilis_string_pool_clone(string_pool);
+
+	return arm_p;
+
+cleanup:
+	subtilis_arm_prog_delete(arm_p);
+	return NULL;
+}
+
+subtilis_arm_section_t *subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
+						      size_t reg_counter,
+						      size_t label_counter,
+						      size_t locals,
+						      subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s;
+
+	if (prog->num_sections == prog->max_sections) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+
+	arm_s = subtilis_arm_section_new(prog->op_pool, reg_counter,
+					 label_counter, locals, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	prog->sections[prog->num_sections++] = arm_s;
+	return arm_s;
+}
+
+void subtilis_arm_prog_delete(subtilis_arm_prog_t *prog)
+{
+	size_t i;
+
+	if (!prog)
+		return;
+
+	if (prog->sections) {
+		for (i = 0; i < prog->num_sections; i++)
+			subtilis_arm_section_delete(prog->sections[i]);
+		free(prog->sections);
+	}
+	subtilis_string_pool_delete(prog->string_pool);
+	free(prog);
 }
 
 subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg)
@@ -173,17 +241,17 @@ static subtilis_arm_op_t *prv_append_op(subtilis_arm_section_t *s,
 	subtilis_arm_op_t *op;
 	size_t prev = s->last_op;
 
-	ptr = subtilis_arm_op_pool_alloc(s->pool, err);
+	ptr = subtilis_arm_op_pool_alloc(s->op_pool, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	op = &s->pool->ops[ptr];
+	op = &s->op_pool->ops[ptr];
 	memset(op, 0, sizeof(*op));
 	op->next = SIZE_MAX;
 	op->prev = prev;
 	if (s->first_op == SIZE_MAX)
 		s->first_op = ptr;
 	else
-		s->pool->ops[s->last_op].next = ptr;
+		s->op_pool->ops[s->last_op].next = ptr;
 	s->last_op = ptr;
 	s->len++;
 
@@ -198,20 +266,20 @@ static subtilis_arm_op_t *prv_insert_op(subtilis_arm_section_t *s,
 	size_t old_ptr;
 	subtilis_arm_op_t *op;
 
-	ptr = subtilis_arm_op_pool_alloc(s->pool, err);
+	ptr = subtilis_arm_op_pool_alloc(s->op_pool, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
 	if (pos->prev == SIZE_MAX)
 		old_ptr = s->first_op;
 	else
-		old_ptr = s->pool->ops[pos->prev].next;
+		old_ptr = s->op_pool->ops[pos->prev].next;
 
-	op = &s->pool->ops[ptr];
+	op = &s->op_pool->ops[ptr];
 	memset(op, 0, sizeof(*op));
 	op->next = old_ptr;
 	op->prev = pos->prev;
-	s->pool->ops[pos->prev].next = ptr;
+	s->op_pool->ops[pos->prev].next = ptr;
 	pos->prev = ptr;
 
 	if (old_ptr == s->first_op)
@@ -303,7 +371,7 @@ subtilis_arm_instr_t *subtilis_arm_section_dup_instr(subtilis_arm_section_t *s,
 		return NULL;
 	}
 
-	src = &s->pool->ops[s->last_op];
+	src = &s->op_pool->ops[s->last_op];
 	op = prv_append_op(s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
@@ -1250,4 +1318,12 @@ void subtilis_arm_section_dump(subtilis_arm_section_t *s)
 		printf(".label_%zu\n", s->constants[i].label);
 		printf("\tEQUD &%x\n", s->constants[i].integer);
 	}
+}
+
+void subtilis_arm_prog_dump(subtilis_arm_prog_t *p)
+{
+	size_t i;
+
+	for (i = 0; i < p->num_sections; i++)
+		subtilis_arm_section_dump(p->sections[i]);
 }

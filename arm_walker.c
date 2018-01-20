@@ -86,7 +86,7 @@ static void prv_arm_walk(subtilis_arm_section_t *arm_s, size_t ptr,
 	subtilis_arm_op_t *op;
 
 	while (ptr != SIZE_MAX) {
-		op = &arm_s->pool->ops[ptr];
+		op = &arm_s->op_pool->ops[ptr];
 
 		switch (op->type) {
 		case SUBTILIS_OP_LABEL:
@@ -121,6 +121,6 @@ void subtilis_arm_walk_from(subtilis_arm_section_t *arm_s,
 	if (op->next == SIZE_MAX)
 		ptr = arm_s->last_op;
 	else
-		ptr = arm_s->pool->ops[op->next].prev;
+		ptr = arm_s->op_pool->ops[op->next].prev;
 	prv_arm_walk(arm_s, ptr, walker, err);
 }

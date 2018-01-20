@@ -32,7 +32,7 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	subtilis_buffer_t b;
 	int retval = 1;
 	subtilis_arm_op_pool_t *pool = NULL;
-	subtilis_arm_section_t *arm_s = NULL;
+	subtilis_arm_prog_t *arm_p = NULL;
 	subtilis_arm_vm_t *vm = NULL;
 
 	subtilis_error_init(&err);
@@ -50,7 +50,7 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_s = subtilis_riscos_generate(pool, p->prog, riscos_arm2_rules,
+	arm_p = subtilis_riscos_generate(pool, p->prog, riscos_arm2_rules,
 					 riscos_arm2_rules_count,
 					 p->st->allocated, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
@@ -58,7 +58,7 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 
 	//	subtilis_arm_section_dump(arm_s);
 
-	vm = subtilis_arm_vm_new(arm_s, 16 * 1024, &err);
+	vm = subtilis_arm_vm_new(arm_p, 16 * 1024, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -84,7 +84,7 @@ cleanup:
 	if (err.type != SUBTILIS_ERROR_OK)
 		subtilis_error_fprintf(stdout, &err, true);
 	subtilis_arm_vm_delete(vm);
-	subtilis_arm_section_delete(arm_s);
+	subtilis_arm_prog_delete(arm_p);
 	subtilis_arm_op_pool_delete(pool);
 	subtilis_buffer_free(&b);
 
@@ -191,19 +191,29 @@ static int prv_test_encode(void)
 {
 	subtilis_error_t err;
 	int retval = 1;
-	subtilis_arm_op_pool_t *pool = NULL;
+	subtilis_arm_op_pool_t *op_pool = NULL;
+	subtilis_string_pool_t *string_pool = NULL;
 	subtilis_arm_section_t *arm_s = NULL;
+	subtilis_arm_prog_t *arm_p = NULL;
 	uint32_t *code = NULL;
 	size_t i;
 
 	printf("arm_test_encode");
 
 	subtilis_error_init(&err);
-	pool = subtilis_arm_op_pool_new(&err);
+	op_pool = subtilis_arm_op_pool_new(&err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_s = subtilis_arm_section_new(pool, 16, 0, 0, &err);
+	string_pool = subtilis_string_pool_new(&err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	arm_p = subtilis_arm_prog_new(1, op_pool, string_pool, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	arm_s = subtilis_arm_prog_section_new(arm_p, 16, 0, 0, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -211,7 +221,7 @@ static int prv_test_encode(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	code = subtilis_arm_encode_buf(arm_s, &err);
+	code = subtilis_arm_encode_buf(arm_p, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -233,8 +243,9 @@ cleanup:
 	}
 
 	free(code);
-	subtilis_arm_section_delete(arm_s);
-	subtilis_arm_op_pool_delete(pool);
+	subtilis_arm_prog_delete(arm_p);
+	subtilis_string_pool_delete(string_pool);
+	subtilis_arm_op_pool_delete(op_pool);
 
 	return retval;
 }

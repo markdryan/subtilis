@@ -236,10 +236,20 @@ struct subtilis_arm_section_t_ {
 	subtilis_arm_constant_t *constants;
 	size_t constant_count;
 	size_t max_constants;
-	subtilis_arm_op_pool_t *pool;
+	subtilis_arm_op_pool_t *op_pool;
 };
 
 typedef struct subtilis_arm_section_t_ subtilis_arm_section_t;
+
+struct subtilis_arm_prog_t_ {
+	subtilis_arm_section_t **sections;
+	size_t num_sections;
+	size_t max_sections;
+	subtilis_string_pool_t *string_pool;
+	subtilis_arm_op_pool_t *op_pool;
+};
+
+typedef struct subtilis_arm_prog_t_ subtilis_arm_prog_t;
 
 subtilis_arm_op_pool_t *subtilis_arm_op_pool_new(subtilis_error_t *err);
 size_t subtilis_arm_op_pool_alloc(subtilis_arm_op_pool_t *pool,
@@ -253,6 +263,17 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 						 size_t locals,
 						 subtilis_error_t *err);
 void subtilis_arm_section_delete(subtilis_arm_section_t *s);
+
+subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
+					   subtilis_arm_op_pool_t *op_pool,
+					   subtilis_string_pool_t *string_pool,
+					   subtilis_error_t *err);
+subtilis_arm_section_t *subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
+						      size_t reg_counter,
+						      size_t label_counter,
+						      size_t locals,
+						      subtilis_error_t *err);
+void subtilis_arm_prog_delete(subtilis_arm_prog_t *prog);
 
 void subtilis_arm_section_add_label(subtilis_arm_section_t *s, size_t label,
 				    subtilis_error_t *err);
@@ -382,5 +403,6 @@ void subtilis_arm_add_cmp(subtilis_arm_section_t *s,
 	subtilis_arm_add_movmvn_reg(p, SUBTILIS_ARM_INSTR_MVN, cc, s, dst,     \
 				    op2, err)
 void subtilis_arm_section_dump(subtilis_arm_section_t *s);
+void subtilis_arm_prog_dump(subtilis_arm_prog_t *p);
 
 #endif

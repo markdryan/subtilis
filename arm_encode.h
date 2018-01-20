@@ -19,9 +19,9 @@
 
 #include "arm_core.h"
 
-void subtilis_arm_encode(subtilis_arm_section_t *arm_s, const char *fname,
+void subtilis_arm_encode(subtilis_arm_prog_t *arm_s, const char *fname,
 			 subtilis_error_t *err);
-uint32_t *subtilis_arm_encode_buf(subtilis_arm_section_t *arm_s,
+uint32_t *subtilis_arm_encode_buf(subtilis_arm_prog_t *arm_p,
 				  subtilis_error_t *err);
 
 #endif

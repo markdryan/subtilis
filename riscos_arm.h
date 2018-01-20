@@ -20,7 +20,7 @@
 #include "arm_core.h"
 
 /* clang-format off */
-subtilis_arm_section_t *
+subtilis_arm_prog_t *
 subtilis_riscos_generate(
 	subtilis_arm_op_pool_t *pool, subtilis_ir_prog_t *p,
 	const subtilis_ir_rule_raw_t *rules_raw,

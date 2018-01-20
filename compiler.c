@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 	subtilis_stream_t s;
 	subtilis_lexer_t *l = NULL;
 	subtilis_parser_t *p = NULL;
-	subtilis_arm_section_t *arm_s = NULL;
+	subtilis_arm_prog_t *arm_p = NULL;
 	subtilis_arm_op_pool_t *pool = NULL;
 
 	if (argc != 2) {
@@ -63,20 +63,20 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_s = subtilis_riscos_generate(pool, p->prog, riscos_arm2_rules,
+	arm_p = subtilis_riscos_generate(pool, p->prog, riscos_arm2_rules,
 					 riscos_arm2_rules_count,
 					 p->st->allocated, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
 	printf("\n\n");
-	subtilis_arm_section_dump(arm_s);
+	subtilis_arm_prog_dump(arm_p);
 
-	subtilis_arm_encode(arm_s, "RunImage", &err);
+	subtilis_arm_encode(arm_p, "RunImage", &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_arm_section_delete(arm_s);
+	subtilis_arm_prog_delete(arm_p);
 	subtilis_arm_op_pool_delete(pool);
 	subtilis_parser_delete(p);
 	subtilis_lexer_delete(l, &err);
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 	return 0;
 
 cleanup:
-	subtilis_arm_section_delete(arm_s);
+	subtilis_arm_prog_delete(arm_p);
 	subtilis_arm_op_pool_delete(pool);
 	subtilis_parser_delete(p);
 	if (l)

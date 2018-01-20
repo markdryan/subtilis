@@ -19,18 +19,17 @@
 #include "arm_reg_alloc.h"
 #include "riscos_arm.h"
 
-static size_t prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
-			       subtilis_error_t *err)
+static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
+			     subtilis_error_t *err)
 {
 	subtilis_arm_reg_t dest;
 	subtilis_arm_reg_t op1;
 	subtilis_arm_reg_t op2;
-	size_t label;
 
 	/* 0x7 = R0, R1, R2 */
 	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x10, 0x7, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return 0;
+		return;
 
 	// TODO we need to check that the globals are not too big
 	// for the amount of memory we have been allocated by the OS
@@ -40,18 +39,22 @@ static size_t prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 	op1.type = SUBTILIS_ARM_REG_FIXED;
 	op1.num = 1;
 
-	label = subtilis_add_data_imm_ldr_datai(arm_s, SUBTILIS_ARM_INSTR_SUB,
-						SUBTILIS_ARM_CCODE_AL, false,
-						dest, op1, globals, err);
+	/*
+	 * TODO:  This can be a simple sub.  Avoid label if possible.  We'd
+	 * only need the label if we allow globals in multiple files.
+	 */
+
+	(void)subtilis_add_data_imm_ldr_datai(arm_s, SUBTILIS_ARM_INSTR_SUB,
+					      SUBTILIS_ARM_CCODE_AL, false,
+					      dest, op1, globals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return 0;
+		return;
 
 	dest.num = 13;
 	op2.type = SUBTILIS_ARM_REG_FIXED;
 	op2.num = 12;
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
 				 err);
-	return label;
 }
 
 static void prv_add_coda(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
@@ -133,15 +136,18 @@ static void prv_add_section(subtilis_ir_section_t *s,
 }
 
 /* clang-format off */
-subtilis_arm_section_t *
+subtilis_arm_prog_t *
 subtilis_riscos_generate(
-	subtilis_arm_op_pool_t *pool, subtilis_ir_prog_t *p,
+	subtilis_arm_op_pool_t *op_pool, subtilis_ir_prog_t *p,
 	const subtilis_ir_rule_raw_t *rules_raw,
 	size_t rule_count, size_t globals, subtilis_error_t *err)
 /* clang-format on */
 {
 	subtilis_ir_rule_t *parsed;
-	subtilis_arm_section_t *arm_s = NULL;
+	subtilis_arm_prog_t *arm_p = NULL;
+	subtilis_arm_section_t *arm_s;
+	subtilis_ir_section_t *s;
+	size_t i;
 
 	parsed = malloc(sizeof(*parsed) * rule_count);
 	if (!parsed) {
@@ -153,37 +159,51 @@ subtilis_riscos_generate(
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_s = subtilis_arm_section_new(pool, p->sections[0]->reg_counter,
-					 p->sections[0]->label_counter, 0, err);
+	arm_p = subtilis_arm_prog_new(p->num_sections + 2, op_pool,
+				      p->string_pool, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	(void)prv_add_preamble(arm_s, globals, err);
+	s = p->sections[0];
+	arm_s = subtilis_arm_prog_section_new(arm_p, s->reg_counter,
+					      s->label_counter, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-
-	prv_add_section(p->sections[0], arm_s, parsed, rule_count, err);
+	prv_add_preamble(arm_s, globals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-
-	free(parsed);
-	parsed = NULL;
-
+	prv_add_section(s, arm_s, parsed, rule_count, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 	prv_add_coda(arm_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	//	printf("\n\n");
-	//	subtilis_arm_section_dump(arm_s);
+	for (i = 1; i < p->num_sections; i++) {
+		s = p->sections[i];
+		arm_s = subtilis_arm_prog_section_new(arm_p, s->reg_counter,
+						      s->label_counter, 0, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		prv_add_section(s, arm_s, parsed, rule_count, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
 
-	return arm_s;
+	free(parsed);
+	parsed = NULL;
+
+	//	printf("\n\n");
+	//	subtilis_arm_program_dump(arm_s);
+
+	return arm_p;
 
 cleanup:
 
 	//	printf("\n\n");
-	///	subtilis_arm_section_dump(arm_s);
+	///	subtilis_arm_program_dump(arm_s);
 
-	subtilis_arm_section_delete(arm_s);
+	subtilis_arm_prog_delete(arm_p);
 	free(parsed);
 
 	return NULL;

@@ -26,6 +26,7 @@ subtilis_string_pool_t *subtilis_string_pool_new(subtilis_error_t *err)
 	pool = calloc(1, sizeof(*pool));
 	if (!pool)
 		subtilis_error_set_oom(err);
+	pool->ref = 1;
 	return pool;
 }
 

@@ -28,7 +28,7 @@ struct subtilis_string_pool_t_ {
 
 typedef struct subtilis_string_pool_t_ subtilis_string_pool_t;
 
-subtilis_string_pool_t *subtilis_string_pool_new();
+subtilis_string_pool_t *subtilis_string_pool_new(subtilis_error_t *err);
 subtilis_string_pool_t *subtilis_string_pool_clone(subtilis_string_pool_t *src);
 size_t subtilis_string_pool_register(subtilis_string_pool_t *pool,
 				     const char *str, subtilis_error_t *err);

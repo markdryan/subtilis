@@ -212,7 +212,7 @@ static int prv_check_imm(subtilis_arm_section_t *s,
 	}
 
 	for (i = 0; i < count; i++) {
-		op = &s->pool->ops[i];
+		op = &s->op_pool->ops[i];
 		if (op->type != SUBTILIS_OP_INSTR) {
 			fprintf(stderr, "Expected instruction %d, found %d\n",
 				SUBTILIS_OP_INSTR, op->type);
@@ -416,7 +416,7 @@ static int prv_test_arm_add_data_ldr_imm(void)
 		return 1;
 	}
 
-	op = &s->pool->ops[0];
+	op = &s->op_pool->ops[0];
 	if (op->type != SUBTILIS_OP_INSTR) {
 		fprintf(stderr, "Expected instruction %d, found %d\n",
 			SUBTILIS_OP_INSTR, op->type);
@@ -430,7 +430,7 @@ static int prv_test_arm_add_data_ldr_imm(void)
 		return 1;
 	}
 
-	op = &s->pool->ops[1];
+	op = &s->op_pool->ops[1];
 	if (op->type != SUBTILIS_OP_INSTR) {
 		fprintf(stderr, "Expected instruction %d, found %d\n",
 			SUBTILIS_OP_INSTR, op->type);

@@ -19,11 +19,12 @@
 
 #include "arm_vm.h"
 
-subtilis_arm_vm_t *subtilis_arm_vm_new(subtilis_arm_section_t *arm_s,
+subtilis_arm_vm_t *subtilis_arm_vm_new(subtilis_arm_prog_t *arm_p,
 				       size_t mem_size, subtilis_error_t *err)
 {
 	subtilis_arm_op_t *op;
 	size_t ptr;
+	subtilis_arm_section_t *arm_s = arm_p->sections[0];
 	subtilis_arm_vm_t *arm_vm = calloc(1, sizeof(*arm_vm));
 
 	if (!arm_vm) {
@@ -62,7 +63,7 @@ subtilis_arm_vm_t *subtilis_arm_vm_new(subtilis_arm_section_t *arm_s,
 
 	ptr = arm_vm->s->first_op;
 	while (ptr != SIZE_MAX) {
-		op = &arm_vm->s->pool->ops[ptr];
+		op = &arm_vm->s->op_pool->ops[ptr];
 		if (op->type == SUBTILIS_OP_LABEL)
 			arm_vm->labels[op->op.label] = arm_vm->op_len;
 		else

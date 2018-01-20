@@ -37,7 +37,7 @@ struct subtilis_arm_vm_t_ {
 
 typedef struct subtilis_arm_vm_t_ subtilis_arm_vm_t;
 
-subtilis_arm_vm_t *subtilis_arm_vm_new(subtilis_arm_section_t *arm_s,
+subtilis_arm_vm_t *subtilis_arm_vm_new(subtilis_arm_prog_t *arm_p,
 				       size_t mem_size, subtilis_error_t *err);
 void subtilis_arm_vm_delete(subtilis_arm_vm_t *vm);
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
