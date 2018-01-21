@@ -52,6 +52,7 @@ typedef enum {
 	SUBTILIS_ERROR_COMPOUND_NOT_TERM,
 	SUBTILIS_ERROR_WALKER_FAILED,
 	SUBTILIS_ERROR_ALREADY_DEFINED,
+	SUBTILIS_ERROR_NESTED_PROCEDURE,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -144,6 +145,8 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_already_defined(e)                                  \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_ALREADY_DEFINED, __FILE__,  \
 				 __LINE__)
+#define subtilis_error_set_nested_procedure(e, file, line)                     \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_NESTED_PROCEDURE, file, line)
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,
 			     const char *file, unsigned int line,

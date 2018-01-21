@@ -115,6 +115,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_ALREADY_DEFINED */
 	{"Already defined.\n", 0},
+
+	/* SUBTILIS_ERROR_NESTED_PROCEDURE */
+	{"Nested procedures or functions are not allowed.\n", 0},
 };
 
 /* clang-format on */

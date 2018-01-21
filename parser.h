@@ -27,6 +27,7 @@ struct subtilis_parser_t_ {
 	subtilis_ir_section_t *main;
 	subtilis_ir_prog_t *prog;
 	subtilis_symbol_table_t *st;
+	size_t level;
 };
 
 typedef struct subtilis_parser_t_ subtilis_parser_t;
