@@ -89,7 +89,7 @@ static int prv_check_id_too_long(subtilis_lexer_t *l, subtilis_token_t *t)
 }
 
 static int prv_test_max_id(subtilis_lexer_t *l, subtilis_token_t *t,
-			   subtilis_identifier_type_t id_type)
+			   subtilis_type_t id_type)
 {
 	subtilis_error_t err;
 	const char *tbuf;
@@ -140,17 +140,17 @@ static int prv_test_max_id(subtilis_lexer_t *l, subtilis_token_t *t,
 
 static int prv_check_max_int_var(subtilis_lexer_t *l, subtilis_token_t *t)
 {
-	return prv_test_max_id(l, t, SUBTILIS_IDENTIFIER_INTEGER);
+	return prv_test_max_id(l, t, SUBTILIS_TYPE_INTEGER);
 }
 
 static int prv_check_max_str_var(subtilis_lexer_t *l, subtilis_token_t *t)
 {
-	return prv_test_max_id(l, t, SUBTILIS_IDENTIFIER_STRING);
+	return prv_test_max_id(l, t, SUBTILIS_TYPE_STRING);
 }
 
 static int prv_check_max_real_var(subtilis_lexer_t *l, subtilis_token_t *t)
 {
-	return prv_test_max_id(l, t, SUBTILIS_IDENTIFIER_REAL);
+	return prv_test_max_id(l, t, SUBTILIS_TYPE_REAL);
 }
 
 static int prv_test_real_var_too_long(void)
@@ -760,7 +760,7 @@ static int prv_test_real(void)
 
 static int prv_check_vars(subtilis_lexer_t *l, subtilis_token_t *t,
 			  const char *const expected[], size_t len,
-			  subtilis_identifier_type_t id_type)
+			  subtilis_type_t id_type)
 {
 	subtilis_error_t err;
 	int i;
@@ -806,7 +806,7 @@ static int prv_check_real_vars(subtilis_lexer_t *l, subtilis_token_t *t)
 	    "dog",   "floating_point", "PROcedure", "index001of2"};
 	return prv_check_vars(l, t, expected,
 			      sizeof(expected) / sizeof(const char *const),
-			      SUBTILIS_IDENTIFIER_REAL);
+			      SUBTILIS_TYPE_REAL);
 }
 
 static int prv_test_real_vars(void)
@@ -833,7 +833,7 @@ static int prv_check_int_vars(subtilis_lexer_t *l, subtilis_token_t *t)
 	    "dog%",   "floating_point%", "PROcedure%", "index001of2%"};
 	return prv_check_vars(l, t, expected,
 			      sizeof(expected) / sizeof(const char *const),
-			      SUBTILIS_IDENTIFIER_INTEGER);
+			      SUBTILIS_TYPE_INTEGER);
 }
 
 static int prv_test_int_vars(void)
@@ -860,7 +860,7 @@ static int prv_check_str_vars(subtilis_lexer_t *l, subtilis_token_t *t)
 	    "dog$",   "floating_point$", "PROcedure$", "index001of2$"};
 	return prv_check_vars(l, t, expected,
 			      sizeof(expected) / sizeof(const char *const),
-			      SUBTILIS_IDENTIFIER_STRING);
+			      SUBTILIS_TYPE_STRING);
 }
 
 static int prv_test_str_vars(void)

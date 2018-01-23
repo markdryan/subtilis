@@ -93,7 +93,7 @@ static subtilis_exp_t *prv_variable(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	/* TODO temporary check */
-	if (t->tok.id_type != SUBTILIS_IDENTIFIER_INTEGER) {
+	if (t->tok.id_type != SUBTILIS_TYPE_INTEGER) {
 		subtilis_error_set_integer_expected(
 		    err, tbuf, p->l->stream->name, p->l->line);
 		return NULL;

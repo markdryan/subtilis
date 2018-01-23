@@ -20,7 +20,7 @@
 #include "symbol_table.h"
 
 static int prv_test_type(subtilis_symbol_table_t *st, subtilis_token_t *t,
-			 subtilis_identifier_type_t id_type, size_t exp,
+			 subtilis_type_t id_type, size_t exp,
 			 subtilis_error_t *err)
 {
 	size_t i;
@@ -111,7 +111,7 @@ static int prv_test(void)
 		goto on_error;
 	}
 
-	retval = prv_test_type(st, t, SUBTILIS_IDENTIFIER_REAL, 8, &err);
+	retval = prv_test_type(st, t, SUBTILIS_TYPE_REAL, 8, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);
 		goto on_error;
