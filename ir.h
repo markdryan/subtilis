@@ -22,6 +22,7 @@
 #include "buffer.h"
 #include "error.h"
 #include "string_pool.h"
+#include "type.h"
 
 /* clang-format off */
 enum {
@@ -683,6 +684,7 @@ struct subtilis_ir_op_t_ {
 typedef struct subtilis_ir_op_t_ subtilis_ir_op_t;
 
 struct subtilis_ir_section_t_ {
+	subtilis_type_section_t *type;
 	size_t reg_counter;
 	size_t label_counter;
 	size_t len;
@@ -757,7 +759,10 @@ typedef struct subtilis_ir_rule_raw_t_ subtilis_ir_rule_raw_t;
 subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err);
 subtilis_ir_section_t *subtilis_ir_prog_section_new(subtilis_ir_prog_t *p,
 						    const char *name,
+						    subtilis_type_section_t *tp,
 						    subtilis_error_t *err);
+subtilis_ir_section_t *subtilis_ir_prog_find_section(subtilis_ir_prog_t *p,
+						     const char *name);
 void subtilis_ir_prog_dump(subtilis_ir_prog_t *p);
 void subtilis_ir_prog_delete(subtilis_ir_prog_t *p);
 size_t subtilis_ir_section_add_instr(subtilis_ir_section_t *s,

@@ -36,6 +36,7 @@ static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 	s->label_counter = 0;
 	s->len = 0;
 	s->ops = NULL;
+	s->type = NULL;
 
 	return s;
 }
@@ -65,6 +66,7 @@ static void prv_ir_section_delete(subtilis_ir_section_t *s)
 	if (!s)
 		return;
 
+	subtilis_type_section_delete(s->type);
 	for (i = 0; i < s->len; i++)
 		free(s->ops[i]);
 	free(s->ops);
@@ -166,6 +168,7 @@ cleanup:
 
 subtilis_ir_section_t *subtilis_ir_prog_section_new(subtilis_ir_prog_t *p,
 						    const char *name,
+						    subtilis_type_section_t *tp,
 						    subtilis_error_t *err)
 {
 	subtilis_ir_section_t *s;
@@ -205,6 +208,7 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(subtilis_ir_prog_t *p,
 		}
 		p->num_sections = name_index + 1;
 	}
+	s->type = tp;
 	p->sections[name_index] = s;
 
 	return s;
@@ -214,6 +218,20 @@ cleanup:
 	prv_ir_section_delete(s);
 
 	return NULL;
+}
+
+subtilis_ir_section_t *subtilis_ir_prog_find_section(subtilis_ir_prog_t *p,
+						     const char *name)
+{
+	size_t index;
+
+	if (!subtilis_string_pool_find(p->string_pool, name, &index))
+		return NULL;
+
+	if (index >= p->num_sections)
+		return NULL;
+
+	return p->sections[index];
 }
 
 void subtilis_ir_prog_dump(subtilis_ir_prog_t *p)

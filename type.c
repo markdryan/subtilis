@@ -14,26 +14,29 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_TYPE_H
-#define __SUBTILIS_TYPE_H
+#include <stdlib.h>
 
-#include "error.h"
-
-typedef enum {
-	SUBTILIS_TYPE_REAL,
-	SUBTILIS_TYPE_INTEGER,
-	SUBTILIS_TYPE_STRING,
-	SUBTILIS_TYPE_VOID,
-} subtilis_type_t;
-
-struct subtilis_type_section_t_ {
-	subtilis_type_t return_type;
-};
-
-typedef struct subtilis_type_section_t_ subtilis_type_section_t;
+#include "type.h"
 
 subtilis_type_section_t *subtilis_type_section_new(subtilis_type_t rtype,
-						   subtilis_error_t *err);
-void subtilis_type_section_delete(subtilis_type_section_t *stype);
+						   subtilis_error_t *err)
+{
+	subtilis_type_section_t *stype = malloc(sizeof(*stype));
 
-#endif
+	if (!stype) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+
+	stype->return_type = rtype;
+
+	return stype;
+}
+
+void subtilis_type_section_delete(subtilis_type_section_t *stype)
+{
+	if (!stype)
+		return;
+
+	free(stype);
+}

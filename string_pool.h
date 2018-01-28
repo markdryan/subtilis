@@ -30,6 +30,8 @@ typedef struct subtilis_string_pool_t_ subtilis_string_pool_t;
 
 subtilis_string_pool_t *subtilis_string_pool_new(subtilis_error_t *err);
 subtilis_string_pool_t *subtilis_string_pool_clone(subtilis_string_pool_t *src);
+bool subtilis_string_pool_find(subtilis_string_pool_t *pool, const char *str,
+			       size_t *index);
 size_t subtilis_string_pool_register(subtilis_string_pool_t *pool,
 				     const char *str, subtilis_error_t *err);
 void subtilis_string_pool_delete(subtilis_string_pool_t *pool);

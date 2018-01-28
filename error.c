@@ -118,6 +118,18 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_NESTED_PROCEDURE */
 	{"Nested procedures or functions are not allowed.\n", 0},
+
+	/* SUBTILIS_ERROR_PROCEDURE_EXPECTED */
+	{"%s is a procedure not a function\n", 1},
+
+	/* SUBTILIS_ERROR_FUNCTION_EXPECTED */
+	{"%s is a function not a procedure\n", 1},
+
+	/* SUBTILIS_ERROR_UNKNOWN_PROCEDURE */
+	{"Unknown procedure %s\n", 1},
+
+	/* SUBTILIS_ERROR_UNKNOWN_FUNCTION */
+	{"Unknown function %s\n", 1},
 };
 
 /* clang-format on */

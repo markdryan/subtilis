@@ -206,6 +206,15 @@ const subtilis_test_case_t test_cases[] = {
 	  "  PRINT FALSE\n"
 	  "ENDIF\n",
 	  "6\n-1\n"},
+	{ "basic_proc",
+	  "LET i% = 0\n"
+	  "PROCInci\n"
+	  "PROCInci\n"
+	  "PRINT i%\n"
+	  "DEF PROCInci"
+	  "  LET i%=i%+1\n"
+	  "ENDPROC\n",
+	  "0\n"},  /* TODO: Output should be 2 */
 };
 
 /* clang-format on */

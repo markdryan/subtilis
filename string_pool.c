@@ -36,6 +36,23 @@ subtilis_string_pool_t *subtilis_string_pool_clone(subtilis_string_pool_t *src)
 	return src;
 }
 
+bool subtilis_string_pool_find(subtilis_string_pool_t *pool, const char *str,
+			       size_t *index)
+{
+	size_t i;
+
+	for (i = 0; i < pool->length; i++) {
+		if (!strcmp(pool->strings[i], str))
+			break;
+	}
+
+	if (i == pool->length)
+		return false;
+
+	*index = i;
+	return true;
+}
+
 size_t subtilis_string_pool_register(subtilis_string_pool_t *pool,
 				     const char *str, subtilis_error_t *err)
 {
@@ -44,13 +61,10 @@ size_t subtilis_string_pool_register(subtilis_string_pool_t *pool,
 	size_t new_max;
 	char *str_dup = NULL;
 
-	for (i = 0; i < pool->length; i++)
-		if (!strcmp(pool->strings[i], str))
-			break;
-
-	if (i < pool->length)
+	if (subtilis_string_pool_find(pool, str, &i))
 		return i;
 
+	i = pool->length;
 	str_dup = malloc(strlen(str) + 1);
 	if (!str_dup) {
 		subtilis_error_set_oom(err);

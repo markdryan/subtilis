@@ -11,6 +11,7 @@ COMMON =\
 	hash_table.c \
 	symbol_table.c \
 	string_pool.c \
+	type.c \
 	arm_core.c \
 	riscos_arm.c \
 	riscos_arm2.c \

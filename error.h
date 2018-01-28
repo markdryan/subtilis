@@ -53,6 +53,10 @@ typedef enum {
 	SUBTILIS_ERROR_WALKER_FAILED,
 	SUBTILIS_ERROR_ALREADY_DEFINED,
 	SUBTILIS_ERROR_NESTED_PROCEDURE,
+	SUBTILIS_ERROR_PROCEDURE_EXPECTED,
+	SUBTILIS_ERROR_FUNCTION_EXPECTED,
+	SUBTILIS_ERROR_UNKNOWN_PROCEDURE,
+	SUBTILIS_ERROR_UNKNOWN_FUNCTION,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -147,6 +151,18 @@ void subtilis_error_init(subtilis_error_t *e);
 				 __LINE__)
 #define subtilis_error_set_nested_procedure(e, file, line)                     \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_NESTED_PROCEDURE, file, line)
+#define subtilis_error_set_procedure_expected(e, str, file, line)              \
+	subtilis_error_set1(e, SUBTILIS_ERROR_PROCEDURE_EXPECTED, str, file,   \
+			    line)
+#define subtilis_error_set_function_expected(e, str, file, line)               \
+	subtilis_error_set1(e, SUBTILIS_ERROR_FUNCTION_EXPECTED, str, file,    \
+			    line)
+#define subtilis_error_set_unknown_procedure(e, str, file, line)               \
+	subtilis_error_set1(e, SUBTILIS_ERROR_UNKNOWN_PROCEDURE, str, file,    \
+			    line)
+#define subtilis_error_set_unknown_function(e, str, file, line)                \
+	subtilis_error_set1(e, SUBTILIS_ERROR_UNKNOWN_FUNCTION, str, file, line)
+
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,
 			     const char *file, unsigned int line,

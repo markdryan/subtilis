@@ -90,6 +90,9 @@ subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 	case SUBTILIS_TYPE_STRING:
 		sym->size = 8;
 		break;
+	case SUBTILIS_TYPE_VOID:
+		subtilis_error_set_assertion_failed(err);
+		goto on_error;
 	}
 
 	sym->t = id_type;
