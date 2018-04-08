@@ -52,8 +52,9 @@ const subtilis_test_case_t test_cases[] = {
 	  "LET c% = -b%\n"
 	  "LET d% = 10 - -(c% - 0)\n"
 	  "PRINT d%\n"
-	  "PRINT -&ffffffff\n",
-	  "120\n1\n"},
+	  "PRINT -&ffffffff\n"
+	  "PRINT -b% + c%\n",
+	  "120\n1\n220\n"},
 	{ "and",
 	  "LET b% = -1\n"
 	  "PRINT b% AND -1 AND TRUE AND b%"
@@ -87,8 +88,10 @@ const subtilis_test_case_t test_cases[] = {
 	  "PRINT NOT b%\n"
 	  "PRINT NOT NOT b%\n"
 	  "PRINT NOT TRUE\n"
-	  "PRINT NOT &fffffff0\n",
-	  "0\n-1\n0\n15\n"},
+	  "PRINT NOT &fffffff0\n"
+	  "LET c% = &fffffff0\n"
+	  "PRINT NOT c% AND &f\n",
+	  "0\n-1\n0\n15\n15\n"},
 	{ "eq",
 	  "LET b% = &ff\n"
 	  "PRINT 10 = 5 + 5\n"
