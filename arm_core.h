@@ -117,6 +117,23 @@ typedef enum {
 	SUBTILIS_ARM_INSTR_LDRC,
 } subtilis_arm_instr_type_t;
 
+/*
+ * TODO: Maybe we should get rid of the stack versions of these
+ * instructions as we'll lose the stack information when we
+ * dissamlble.
+ */
+
+typedef enum {
+	SUBTILIS_ARM_MTRAN_IA,
+	SUBTILIS_ARM_MTRAN_IB,
+	SUBTILIS_ARM_MTRAN_DA,
+	SUBTILIS_ARM_MTRAN_DB,
+	SUBTILIS_ARM_MTRAN_FA,
+	SUBTILIS_ARM_MTRAN_FD,
+	SUBTILIS_ARM_MTRAN_EA,
+	SUBTILIS_ARM_MTRAN_ED
+} subtilis_arm_mtran_type_t;
+
 struct subtilis_arm_data_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	bool status;
@@ -153,17 +170,18 @@ struct subtilis_arm_mtran_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	subtilis_arm_reg_t op0;
 	size_t reg_list; // bitmap
-	bool pre_indexed;
-	bool ascending;
+	subtilis_arm_mtran_type_t type;
 	bool write_back;
 };
 
 typedef struct subtilis_arm_mtran_instr_t_ subtilis_arm_mtran_instr_t;
 
+/* TODO, we don't need link here, and we need a union for the label */
 struct subtilis_arm_br_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	bool link;
 	size_t label;
+	int32_t offset;
 };
 
 typedef struct subtilis_arm_br_instr_t_ subtilis_arm_br_instr_t;
@@ -226,20 +244,33 @@ struct subtilis_arm_constant_t_ {
 
 typedef struct subtilis_arm_constant_t_ subtilis_arm_constant_t;
 
-struct subtilis_arm_program_t_ {
+struct subtilis_arm_section_t_ {
 	size_t reg_counter;
 	size_t label_counter;
 	size_t len;
 	size_t first_op;
 	size_t last_op;
-	size_t globals;
+	size_t locals;
 	subtilis_arm_constant_t *constants;
 	size_t constant_count;
 	size_t max_constants;
-	subtilis_arm_op_pool_t *pool;
+	subtilis_arm_op_pool_t *op_pool;
+	size_t call_site_count;
+	size_t max_call_site_count;
+	size_t *call_sites;
 };
 
-typedef struct subtilis_arm_program_t_ subtilis_arm_program_t;
+typedef struct subtilis_arm_section_t_ subtilis_arm_section_t;
+
+struct subtilis_arm_prog_t_ {
+	subtilis_arm_section_t **sections;
+	size_t num_sections;
+	size_t max_sections;
+	subtilis_string_pool_t *string_pool;
+	subtilis_arm_op_pool_t *op_pool;
+};
+
+typedef struct subtilis_arm_prog_t_ subtilis_arm_prog_t;
 
 subtilis_arm_op_pool_t *subtilis_arm_op_pool_new(subtilis_error_t *err);
 size_t subtilis_arm_op_pool_alloc(subtilis_arm_op_pool_t *pool,
@@ -247,92 +278,106 @@ size_t subtilis_arm_op_pool_alloc(subtilis_arm_op_pool_t *pool,
 void subtilis_arm_op_pool_reset(subtilis_arm_op_pool_t *pool);
 void subtilis_arm_op_pool_delete(subtilis_arm_op_pool_t *pool);
 
-subtilis_arm_program_t *subtilis_arm_program_new(subtilis_arm_op_pool_t *pool,
+subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 						 size_t reg_counter,
 						 size_t label_counter,
-						 size_t globals,
+						 size_t locals,
 						 subtilis_error_t *err);
-void subtilis_arm_program_delete(subtilis_arm_program_t *p);
+void subtilis_arm_section_delete(subtilis_arm_section_t *s);
 
-void subtilis_arm_program_add_label(subtilis_arm_program_t *p, size_t label,
+subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
+					   subtilis_arm_op_pool_t *op_pool,
+					   subtilis_string_pool_t *string_pool,
+					   subtilis_error_t *err);
+subtilis_arm_section_t *subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
+						      size_t reg_counter,
+						      size_t label_counter,
+						      size_t locals,
+						      subtilis_error_t *err);
+void subtilis_arm_prog_delete(subtilis_arm_prog_t *prog);
+void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s, size_t op,
+					subtilis_error_t *err);
+
+void subtilis_arm_section_add_label(subtilis_arm_section_t *s, size_t label,
 				    subtilis_error_t *err);
 subtilis_arm_instr_t *
-subtilis_arm_program_add_instr(subtilis_arm_program_t *p,
+subtilis_arm_section_add_instr(subtilis_arm_section_t *s,
 			       subtilis_arm_instr_type_t type,
 			       subtilis_error_t *err);
 /* clang-format off */
 subtilis_arm_instr_t *
-subtilis_arm_program_insert_instr(subtilis_arm_program_t *p,
+subtilis_arm_section_insert_instr(subtilis_arm_section_t *s,
 				  subtilis_arm_op_t *op,
 				  subtilis_arm_instr_type_t type,
 				  subtilis_error_t *err);
 /* clang-format on */
-subtilis_arm_instr_t *subtilis_arm_program_dup_instr(subtilis_arm_program_t *p,
+subtilis_arm_instr_t *subtilis_arm_section_dup_instr(subtilis_arm_section_t *s,
 						     subtilis_error_t *err);
 bool subtilis_arm_encode_imm(int32_t num, uint32_t *encoded);
+uint32_t subtilis_arm_encode_nearest(int32_t num, subtilis_error_t *err);
 bool subtilis_arm_encode_lvl2_imm(int32_t num, uint32_t *encoded1,
 				  uint32_t *encoded2);
 subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg);
-size_t subtilis_add_data_imm_ldr_datai(subtilis_arm_program_t *p,
+size_t subtilis_add_data_imm_ldr_datai(subtilis_arm_section_t *s,
 				       subtilis_arm_instr_type_t itype,
 				       subtilis_arm_ccode_type_t ccode,
 				       bool status, subtilis_arm_reg_t dest,
 				       subtilis_arm_reg_t op1, int32_t op2,
 				       subtilis_error_t *err);
-void subtilis_arm_add_addsub_imm(subtilis_arm_program_t *p,
+void subtilis_arm_add_addsub_imm(subtilis_arm_section_t *s,
 				 subtilis_arm_instr_type_t itype,
 				 subtilis_arm_instr_type_t alt_type,
 				 subtilis_arm_ccode_type_t ccode, bool status,
 				 subtilis_arm_reg_t dest,
 				 subtilis_arm_reg_t op1, int32_t op2,
 				 subtilis_error_t *err);
-void subtilis_arm_add_rsub_imm(subtilis_arm_program_t *p,
+void subtilis_arm_add_rsub_imm(subtilis_arm_section_t *s,
 			       subtilis_arm_ccode_type_t ccode, bool status,
 			       subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
 			       int32_t op2, subtilis_error_t *err);
-void subtilis_arm_add_mul_imm(subtilis_arm_program_t *p,
+void subtilis_arm_add_mul_imm(subtilis_arm_section_t *s,
 			      subtilis_arm_ccode_type_t ccode, bool status,
 			      subtilis_arm_reg_t dest, subtilis_arm_reg_t rm,
 			      int32_t rs, subtilis_error_t *err);
-void subtilis_arm_add_mul(subtilis_arm_program_t *p,
+void subtilis_arm_add_mul(subtilis_arm_section_t *s,
 			  subtilis_arm_ccode_type_t ccode, bool status,
 			  subtilis_arm_reg_t dest, subtilis_arm_reg_t rm,
 			  subtilis_arm_reg_t rs, subtilis_error_t *err);
-void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
+void subtilis_arm_add_data_imm(subtilis_arm_section_t *s,
 			       subtilis_arm_instr_type_t itype,
 			       subtilis_arm_ccode_type_t ccode, bool status,
 			       subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
 			       int32_t op2, subtilis_error_t *err);
-void subtilis_arm_add_swi(subtilis_arm_program_t *p,
+void subtilis_arm_add_swi(subtilis_arm_section_t *s,
 			  subtilis_arm_ccode_type_t ccode, size_t code,
 			  uint32_t reg_mask, subtilis_error_t *err);
-void subtilis_arm_add_movmvn_reg(subtilis_arm_program_t *p,
+void subtilis_arm_add_movmvn_reg(subtilis_arm_section_t *s,
 				 subtilis_arm_instr_type_t itype,
 				 subtilis_arm_ccode_type_t ccode, bool status,
 				 subtilis_arm_reg_t dest,
 				 subtilis_arm_reg_t op1, subtilis_error_t *err);
-void subtilis_arm_add_movmvn_imm(subtilis_arm_program_t *p,
+void subtilis_arm_add_movmvn_imm(subtilis_arm_section_t *s,
 				 subtilis_arm_instr_type_t itype,
 				 subtilis_arm_instr_type_t alt_type,
 				 subtilis_arm_ccode_type_t ccode, bool status,
 				 subtilis_arm_reg_t dest, int32_t op2,
 				 subtilis_error_t *err);
-void subtilis_arm_add_stran_imm(subtilis_arm_program_t *p,
+void subtilis_arm_add_stran_imm(subtilis_arm_section_t *s,
 				subtilis_arm_instr_type_t itype,
 				subtilis_arm_ccode_type_t ccode,
 				subtilis_arm_reg_t dest,
 				subtilis_arm_reg_t base, int32_t offset,
 				subtilis_error_t *err);
-void subtilis_arm_insert_push(subtilis_arm_program_t *arm_p,
+void subtilis_arm_insert_push(subtilis_arm_section_t *arm_s,
 			      subtilis_arm_op_t *current,
 			      subtilis_arm_ccode_type_t ccode, size_t reg_num,
 			      subtilis_error_t *err);
-void subtilis_arm_insert_pop(subtilis_arm_program_t *arm_p,
+void subtilis_arm_insert_pop(subtilis_arm_section_t *arm_s,
 			     subtilis_arm_op_t *current,
 			     subtilis_arm_ccode_type_t ccode, size_t reg_num,
 			     subtilis_error_t *err);
 /* clang-format off */
-void subtilis_arm_insert_stran_spill_imm(subtilis_arm_program_t *p,
+void subtilis_arm_insert_stran_spill_imm(subtilis_arm_section_t *s,
 					 subtilis_arm_op_t *current,
 					 subtilis_arm_instr_type_t itype,
 					 subtilis_arm_ccode_type_t ccode,
@@ -341,22 +386,29 @@ void subtilis_arm_insert_stran_spill_imm(subtilis_arm_program_t *p,
 					 subtilis_arm_reg_t spill_reg,
 					 int32_t offset, subtilis_error_t *err);
 /* clang-format on */
-void subtilis_arm_insert_stran_imm(subtilis_arm_program_t *p,
+void subtilis_arm_insert_stran_imm(subtilis_arm_section_t *s,
 				   subtilis_arm_op_t *current,
 				   subtilis_arm_instr_type_t itype,
 				   subtilis_arm_ccode_type_t ccode,
 				   subtilis_arm_reg_t dest,
 				   subtilis_arm_reg_t base, int32_t offset,
 				   subtilis_error_t *err);
-void subtilis_arm_add_cmp_imm(subtilis_arm_program_t *p,
+void subtilis_arm_add_cmp_imm(subtilis_arm_section_t *s,
 			      subtilis_arm_ccode_type_t ccode,
 			      subtilis_arm_reg_t op1, int32_t op2,
 			      subtilis_error_t *err);
-void subtilis_arm_add_cmp(subtilis_arm_program_t *p,
+void subtilis_arm_add_cmp(subtilis_arm_section_t *s,
 			  subtilis_arm_instr_type_t itype,
 			  subtilis_arm_ccode_type_t ccode,
 			  subtilis_arm_reg_t op1, subtilis_arm_reg_t op2,
 			  subtilis_error_t *err);
+
+void subtilis_arm_add_mtran(subtilis_arm_section_t *s,
+			    subtilis_arm_instr_type_t itype,
+			    subtilis_arm_ccode_type_t ccode,
+			    subtilis_arm_reg_t op0, size_t reg_list,
+			    subtilis_arm_mtran_type_t type, bool write_back,
+			    subtilis_error_t *err);
 
 #define subtilis_arm_add_add_imm(p, cc, s, dst, op1, op2, err)                 \
 	subtilis_arm_add_addsub_imm(p, SUBTILIS_ARM_INSTR_ADD,                 \
@@ -380,6 +432,8 @@ void subtilis_arm_add_cmp(subtilis_arm_program_t *p,
 #define subtilis_arm_add_mvn_reg(p, cc, s, dst, op2, err)                      \
 	subtilis_arm_add_movmvn_reg(p, SUBTILIS_ARM_INSTR_MVN, cc, s, dst,     \
 				    op2, err)
-void subtilis_arm_program_dump(subtilis_arm_program_t *p);
+void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
+			       subtilis_arm_section_t *s);
+void subtilis_arm_prog_dump(subtilis_arm_prog_t *p);
 
 #endif

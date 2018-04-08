@@ -305,7 +305,7 @@ struct ir_test_matcher_data_t_ {
 
 typedef struct ir_test_matcher_data_t_ ir_test_matcher_data_t;
 
-static void prv_matched_1(subtilis_ir_program_t *p, size_t start,
+static void prv_matched_1(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err)
 {
 	ir_test_matcher_data_t *d = (ir_test_matcher_data_t *)user_data;
@@ -313,7 +313,7 @@ static void prv_matched_1(subtilis_ir_program_t *p, size_t start,
 	d->sequence[d->count++] = 1;
 }
 
-static void prv_matched_2(subtilis_ir_program_t *p, size_t start,
+static void prv_matched_2(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err)
 {
 	ir_test_matcher_data_t *d = (ir_test_matcher_data_t *)user_data;
@@ -321,7 +321,7 @@ static void prv_matched_2(subtilis_ir_program_t *p, size_t start,
 	d->sequence[d->count++] = 2;
 }
 
-static void prv_matched_3(subtilis_ir_program_t *p, size_t start,
+static void prv_matched_3(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err)
 {
 	ir_test_matcher_data_t *d = (ir_test_matcher_data_t *)user_data;
@@ -329,7 +329,7 @@ static void prv_matched_3(subtilis_ir_program_t *p, size_t start,
 	d->sequence[d->count++] = 3;
 }
 
-static void prv_matched_4(subtilis_ir_program_t *p, size_t start,
+static void prv_matched_4(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err)
 {
 	ir_test_matcher_data_t *d = (ir_test_matcher_data_t *)user_data;
@@ -337,7 +337,7 @@ static void prv_matched_4(subtilis_ir_program_t *p, size_t start,
 	d->sequence[d->count++] = 4;
 }
 
-static void prv_matched_5(subtilis_ir_program_t *p, size_t start,
+static void prv_matched_5(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err)
 {
 	ir_test_matcher_data_t *d = (ir_test_matcher_data_t *)user_data;
@@ -345,7 +345,7 @@ static void prv_matched_5(subtilis_ir_program_t *p, size_t start,
 	d->sequence[d->count++] = 5;
 }
 
-static void prv_matched_6(subtilis_ir_program_t *p, size_t start,
+static void prv_matched_6(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err)
 {
 	ir_test_matcher_data_t *d = (ir_test_matcher_data_t *)user_data;
@@ -353,7 +353,7 @@ static void prv_matched_6(subtilis_ir_program_t *p, size_t start,
 	d->sequence[d->count++] = 6;
 }
 
-static void prv_matched_7(subtilis_ir_program_t *p, size_t start,
+static void prv_matched_7(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err)
 {
 	ir_test_matcher_data_t *d = (ir_test_matcher_data_t *)user_data;
@@ -399,7 +399,7 @@ static int prv_check_matcher(subtilis_lexer_t *l, subtilis_parser_t *p,
 		return 1;
 	}
 
-	subtilis_ir_match(p->p, parsed, rule_count, &data, &err);
+	subtilis_ir_match(p->main, parsed, rule_count, &data, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);
 		return 1;

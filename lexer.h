@@ -22,6 +22,7 @@
 #include "buffer.h"
 #include "keywords.h"
 #include "stream.h"
+#include "type.h"
 
 /* Does not apply to strings which are limitless in size */
 
@@ -50,12 +51,6 @@ typedef enum {
 	SUBTILIS_TOKEN_UNKNOWN,
 } subtilis_token_type_t;
 
-typedef enum {
-	SUBTILIS_IDENTIFIER_REAL,
-	SUBTILIS_IDENTIFIER_INTEGER,
-	SUBTILIS_IDENTIFIER_STRING,
-} subtilis_identifier_type_t;
-
 struct _subtilis_token_keyword_t {
 	subtilis_keyword_type_t type;
 	bool supported;
@@ -69,7 +64,7 @@ struct _subtilis_token_t {
 		subtilis_token_keyword_t keyword;
 		int32_t integer;
 		double real;
-		subtilis_identifier_type_t id_type;
+		subtilis_type_t id_type;
 	} tok;
 	subtilis_buffer_t buf;
 };

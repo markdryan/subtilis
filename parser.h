@@ -21,10 +21,26 @@
 #include "lexer.h"
 #include "symbol_table.h"
 
+struct subtilis_parser_call_t_ {
+	subtilis_ir_section_t *s;
+	size_t index;
+	char *name;
+	subtilis_type_section_t *call_type;
+	size_t line;
+};
+
+typedef struct subtilis_parser_call_t_ subtilis_parser_call_t;
+
 struct subtilis_parser_t_ {
 	subtilis_lexer_t *l;
-	subtilis_ir_program_t *p;
+	subtilis_ir_section_t *current;
+	subtilis_ir_section_t *main;
+	subtilis_ir_prog_t *prog;
 	subtilis_symbol_table_t *st;
+	size_t level;
+	size_t num_calls;
+	size_t max_calls;
+	subtilis_parser_call_t **calls;
 };
 
 typedef struct subtilis_parser_t_ subtilis_parser_t;

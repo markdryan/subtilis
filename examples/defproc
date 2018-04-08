@@ -1,0 +1,7 @@
+LET i% = 0
+PROCInci
+PROCInci
+PRINT i%
+DEF PROCInci
+  LET i%=i%+1
+ENDPROC

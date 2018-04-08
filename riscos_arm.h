@@ -20,9 +20,9 @@
 #include "arm_core.h"
 
 /* clang-format off */
-subtilis_arm_program_t *
+subtilis_arm_prog_t *
 subtilis_riscos_generate(
-	subtilis_arm_op_pool_t *pool, subtilis_ir_program_t *p,
+	subtilis_arm_op_pool_t *pool, subtilis_ir_prog_t *p,
 	const subtilis_ir_rule_raw_t *rules_raw,
 	size_t rule_count, size_t globals, subtilis_error_t *err);
 /* clang-format on */
@@ -31,7 +31,7 @@ subtilis_riscos_generate(
 #define SUBTILIS_RISCOS_PRINT_BUFFER_SIZE 32
 #define SUBTILIS_RISCOS_RUNTIME_SIZE SUBTILIS_RISCOS_PRINT_BUFFER_SIZE
 
-void subtilis_riscos_arm_printi(subtilis_ir_program_t *p, size_t start,
+void subtilis_riscos_arm_printi(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err);
 
 #endif

@@ -17,30 +17,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "arm_disass.h"
 #include "arm_vm.h"
 
-subtilis_arm_vm_t *subtilis_arm_vm_new(subtilis_arm_program_t *arm_p,
+subtilis_arm_vm_t *subtilis_arm_vm_new(uint32_t *code, size_t code_size,
 				       size_t mem_size, subtilis_error_t *err)
 {
-	subtilis_arm_op_t *op;
-	size_t ptr;
 	subtilis_arm_vm_t *arm_vm = calloc(1, sizeof(*arm_vm));
 
 	if (!arm_vm) {
 		subtilis_error_set_oom(err);
 		return NULL;
-	}
-
-	arm_vm->regs = malloc(arm_p->reg_counter * sizeof(*arm_vm->regs));
-	if (!arm_vm->regs) {
-		subtilis_error_set_oom(err);
-		goto fail;
-	}
-
-	arm_vm->labels = malloc(arm_p->label_counter * sizeof(*arm_vm->labels));
-	if (!arm_vm->labels) {
-		subtilis_error_set_oom(err);
-		goto fail;
 	}
 
 	arm_vm->memory = malloc(mem_size);
@@ -49,26 +36,9 @@ subtilis_arm_vm_t *subtilis_arm_vm_new(subtilis_arm_program_t *arm_p,
 		goto fail;
 	}
 
-	arm_vm->ops = malloc(arm_p->len * sizeof(*arm_vm->ops));
-	if (!arm_vm->ops) {
-		subtilis_error_set_oom(err);
-		goto fail;
-	}
-
+	memcpy(arm_vm->memory, code, sizeof(*code) * code_size);
+	arm_vm->code_size = code_size;
 	arm_vm->mem_size = mem_size;
-	arm_vm->p = arm_p;
-	arm_vm->label_len = arm_p->label_counter;
-	arm_vm->op_len = 0;
-
-	ptr = arm_vm->p->first_op;
-	while (ptr != SIZE_MAX) {
-		op = &arm_vm->p->pool->ops[ptr];
-		if (op->type == SUBTILIS_OP_LABEL)
-			arm_vm->labels[op->op.label] = arm_vm->op_len;
-		else
-			arm_vm->ops[arm_vm->op_len++] = op;
-		ptr = op->next;
-	}
 
 	return arm_vm;
 
@@ -82,16 +52,13 @@ void subtilis_arm_vm_delete(subtilis_arm_vm_t *vm)
 {
 	if (!vm)
 		return;
-	free(vm->ops);
 	free(vm->memory);
-	free(vm->labels);
-	free(vm->regs);
 	free(vm);
 }
 
 static size_t prv_calc_pc(subtilis_arm_vm_t *vm)
 {
-	return (size_t)(((vm->regs[15] - 0x8000) + 8) / 4);
+	return (size_t)(((vm->regs[15] - 0x8000) - 8) / 4);
 }
 
 static bool prv_match_ccode(subtilis_arm_vm_t *arm_vm,
@@ -298,6 +265,7 @@ static void prv_process_rsb(subtilis_arm_vm_t *arm_vm,
 		return;
 
 	arm_vm->regs[op->dest.num] = op2 - arm_vm->regs[op->op1.num];
+
 	arm_vm->regs[15] += 4;
 }
 
@@ -523,25 +491,30 @@ static void prv_process_str(subtilis_arm_vm_t *arm_vm,
 	arm_vm->regs[15] += 4;
 }
 
-static void prv_process_br(subtilis_arm_vm_t *arm_vm,
-			   subtilis_arm_br_instr_t *op, subtilis_error_t *err)
+static void prv_process_b(subtilis_arm_vm_t *arm_vm,
+			  subtilis_arm_br_instr_t *op, subtilis_error_t *err)
 {
-	if (op->link) {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
 		return;
 	}
 
-	if (op->label >= arm_vm->label_len) {
+	arm_vm->regs[15] += (op->offset * 4) + 8;
+	if (prv_calc_pc(arm_vm) >= arm_vm->code_size)
 		subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_process_bl(subtilis_arm_vm_t *arm_vm,
+			   subtilis_arm_br_instr_t *op, subtilis_error_t *err)
+{
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
 		return;
 	}
-
-	arm_vm->regs[15] = 0x8000 + (arm_vm->labels[op->label] * 4) - 8;
+	arm_vm->regs[14] = arm_vm->regs[15];
+	arm_vm->regs[15] += (op->offset * 4) + 8;
+	if (prv_calc_pc(arm_vm) >= arm_vm->code_size)
+		subtilis_error_set_assertion_failed(err);
 }
 
 static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
@@ -557,6 +530,9 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	}
 
 	switch (op->code) {
+	case 0x11:
+		arm_vm->quit = true;
+		break;
 	case 0x10:
 		/* OS_GetEnv */
 		arm_vm->regs[0] = 0;
@@ -600,111 +576,188 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	arm_vm->regs[15] += 4;
 }
 
-static void prv_process_ldrc(subtilis_arm_vm_t *arm_vm,
-			     subtilis_arm_ldrc_instr_t *op,
-			     subtilis_error_t *err)
+static void prv_process_stm(subtilis_arm_vm_t *arm_vm,
+			    subtilis_arm_mtran_instr_t *op,
+			    subtilis_error_t *err)
 {
+	size_t addr;
 	size_t i;
+	int after = 0;
+	int before = 0;
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
 		return;
 	}
 
-	for (i = 0; i < arm_vm->p->constant_count; i++) {
-		if (arm_vm->p->constants[i].label == op->label) {
-			arm_vm->regs[op->dest.num] =
-			    arm_vm->p->constants[i].integer;
-			break;
-		}
+	addr = arm_vm->regs[op->op0.num] - 0x8000;
+	switch (op->type) {
+	case SUBTILIS_ARM_MTRAN_FA:
+	case SUBTILIS_ARM_MTRAN_IB:
+		before = 4;
+		break;
+	case SUBTILIS_ARM_MTRAN_FD:
+	case SUBTILIS_ARM_MTRAN_DB:
+		before = -4;
+		break;
+	case SUBTILIS_ARM_MTRAN_EA:
+	case SUBTILIS_ARM_MTRAN_IA:
+		after = 4;
+		break;
+	case SUBTILIS_ARM_MTRAN_ED:
+	case SUBTILIS_ARM_MTRAN_DA:
+		after = -4;
+		break;
 	}
 
-	if (i == arm_vm->p->constant_count) {
-		subtilis_error_set_assertion_failed(err);
+	addr += before;
+
+	for (i = 0; i < 15; i++) {
+		if (((1 << i) & op->reg_list) == 0)
+			continue;
+		if (addr + 4 > arm_vm->mem_size) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		*((int32_t *)&arm_vm->memory[addr]) = arm_vm->regs[i];
+		addr += after;
+	}
+
+	if (op->write_back)
+		arm_vm->regs[op->op0.num] = addr + 0x8000;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_ldm(subtilis_arm_vm_t *arm_vm,
+			    subtilis_arm_mtran_instr_t *op,
+			    subtilis_error_t *err)
+{
+	size_t addr;
+	size_t i;
+	int after = 0;
+	int before = 0;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
 		return;
 	}
 
-	arm_vm->regs[15] += 4;
+	addr = arm_vm->regs[op->op0.num] - 0x8000;
+
+	switch (op->type) {
+	case SUBTILIS_ARM_MTRAN_FA:
+	case SUBTILIS_ARM_MTRAN_IB:
+		after = -4;
+		break;
+	case SUBTILIS_ARM_MTRAN_FD:
+	case SUBTILIS_ARM_MTRAN_IA:
+		after = 4;
+		break;
+	case SUBTILIS_ARM_MTRAN_EA:
+	case SUBTILIS_ARM_MTRAN_DB:
+		before = -4;
+		break;
+	case SUBTILIS_ARM_MTRAN_ED:
+	case SUBTILIS_ARM_MTRAN_DA:
+		before = 4;
+		break;
+	}
+
+	addr += before;
+
+	for (i = 0; i < 15; i++) {
+		if (((1 << i) & op->reg_list) == 0)
+			continue;
+		if (addr + 4 > arm_vm->mem_size) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		arm_vm->regs[i] = *((int32_t *)&arm_vm->memory[addr]);
+		addr += after;
+	}
+
+	if (op->write_back)
+		arm_vm->regs[op->op0.num] = addr + 0x8000;
+
+	if (!((1 << 15) & op->reg_list))
+		arm_vm->regs[15] += 4;
 }
 
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			 subtilis_error_t *err)
 {
 	size_t pc;
-	subtilis_arm_op_t *op;
+	subtilis_arm_instr_t instr;
 
+	arm_vm->quit = false;
 	arm_vm->negative_flag = false;
 	arm_vm->zero_flag = false;
 	arm_vm->carry_flag = false;
 	arm_vm->overflow_flag = false;
-	arm_vm->regs[15] = 0x8000 - 8;
+	arm_vm->regs[15] = 0x8000 + 8;
 
 	pc = prv_calc_pc(arm_vm);
-	while (pc < arm_vm->op_len) {
-		op = arm_vm->ops[pc];
-		switch (op->op.instr.type) {
+	while (!arm_vm->quit && pc < arm_vm->code_size) {
+		subtilis_arm_disass(&instr, ((uint32_t *)arm_vm->memory)[pc],
+				    err);
+
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		switch (instr.type) {
 		case SUBTILIS_ARM_INSTR_AND:
-			prv_process_and(arm_vm, &op->op.instr.operands.data,
-					err);
+			prv_process_and(arm_vm, &instr.operands.data, err);
 			break;
 		case SUBTILIS_ARM_INSTR_EOR:
-			prv_process_eor(arm_vm, &op->op.instr.operands.data,
-					err);
+			prv_process_eor(arm_vm, &instr.operands.data, err);
 			break;
 		case SUBTILIS_ARM_INSTR_SUB:
-			prv_process_sub(arm_vm, &op->op.instr.operands.data,
-					err);
+			prv_process_sub(arm_vm, &instr.operands.data, err);
 			break;
 		case SUBTILIS_ARM_INSTR_RSB:
-			prv_process_rsb(arm_vm, &op->op.instr.operands.data,
-					err);
+			prv_process_rsb(arm_vm, &instr.operands.data, err);
 			break;
 		case SUBTILIS_ARM_INSTR_ADD:
-			prv_process_add(arm_vm, &op->op.instr.operands.data,
-					err);
+			prv_process_add(arm_vm, &instr.operands.data, err);
 			break;
 		case SUBTILIS_ARM_INSTR_CMP:
-			prv_process_cmp(arm_vm, &op->op.instr.operands.data,
-					err);
+			prv_process_cmp(arm_vm, &instr.operands.data, err);
 			break;
 		case SUBTILIS_ARM_INSTR_CMN:
-			prv_process_cmn(arm_vm, &op->op.instr.operands.data,
-					err);
+			prv_process_cmn(arm_vm, &instr.operands.data, err);
 			break;
 		case SUBTILIS_ARM_INSTR_ORR:
-			prv_process_orr(arm_vm, &op->op.instr.operands.data,
-					err);
+			prv_process_orr(arm_vm, &instr.operands.data, err);
 			break;
 		case SUBTILIS_ARM_INSTR_MOV:
-			prv_process_mov(arm_vm, &op->op.instr.operands.data,
-					err);
+			prv_process_mov(arm_vm, &instr.operands.data, err);
 			break;
 		case SUBTILIS_ARM_INSTR_MVN:
-			prv_process_mvn(arm_vm, &op->op.instr.operands.data,
-					err);
+			prv_process_mvn(arm_vm, &instr.operands.data, err);
 			break;
 		case SUBTILIS_ARM_INSTR_MUL:
-			prv_process_mul(arm_vm, &op->op.instr.operands.mul,
-					err);
+			prv_process_mul(arm_vm, &instr.operands.mul, err);
 			break;
 		case SUBTILIS_ARM_INSTR_LDR:
-			prv_process_ldr(arm_vm, &op->op.instr.operands.stran,
-					err);
+			prv_process_ldr(arm_vm, &instr.operands.stran, err);
 			break;
 		case SUBTILIS_ARM_INSTR_STR:
-			prv_process_str(arm_vm, &op->op.instr.operands.stran,
-					err);
+			prv_process_str(arm_vm, &instr.operands.stran, err);
 			break;
 		case SUBTILIS_ARM_INSTR_B:
-			prv_process_br(arm_vm, &op->op.instr.operands.br, err);
+			prv_process_b(arm_vm, &instr.operands.br, err);
+			break;
+		case SUBTILIS_ARM_INSTR_BL:
+			prv_process_bl(arm_vm, &instr.operands.br, err);
 			break;
 		case SUBTILIS_ARM_INSTR_SWI:
-			prv_process_swi(arm_vm, b, &op->op.instr.operands.swi,
-					err);
+			prv_process_swi(arm_vm, b, &instr.operands.swi, err);
 			break;
-		case SUBTILIS_ARM_INSTR_LDRC:
-			prv_process_ldrc(arm_vm, &op->op.instr.operands.ldrc,
-					 err);
+		case SUBTILIS_ARM_INSTR_STM:
+			prv_process_stm(arm_vm, &instr.operands.mtran, err);
+			break;
+		case SUBTILIS_ARM_INSTR_LDM:
+			prv_process_ldm(arm_vm, &instr.operands.mtran, err);
 			break;
 		default:
 			subtilis_error_set_assertion_failed(err);

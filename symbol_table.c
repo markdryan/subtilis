@@ -57,8 +57,7 @@ void subtilis_symbol_table_delete(subtilis_symbol_table_t *st)
 
 const subtilis_symbol_t *
 subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
-			     subtilis_identifier_type_t id_type,
-			     subtilis_error_t *err)
+			     subtilis_type_t id_type, subtilis_error_t *err)
 {
 	subtilis_symbol_t *sym;
 	char *key_dup = NULL;
@@ -82,15 +81,18 @@ subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 
 	sym->loc = st->allocated;
 	switch (id_type) {
-	case SUBTILIS_IDENTIFIER_REAL:
+	case SUBTILIS_TYPE_REAL:
 		sym->size = 8;
 		break;
-	case SUBTILIS_IDENTIFIER_INTEGER:
+	case SUBTILIS_TYPE_INTEGER:
 		sym->size = 4;
 		break;
-	case SUBTILIS_IDENTIFIER_STRING:
+	case SUBTILIS_TYPE_STRING:
 		sym->size = 8;
 		break;
+	case SUBTILIS_TYPE_VOID:
+		subtilis_error_set_assertion_failed(err);
+		goto on_error;
 	}
 
 	sym->t = id_type;

@@ -80,13 +80,14 @@ static void prv_walk_instr(subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 	}
 }
 
-static void prv_arm_walk(subtilis_arm_program_t *arm_p, size_t ptr,
-			 subtlis_arm_walker_t *walker, subtilis_error_t *err)
+static void prv_arm_walk(subtilis_arm_section_t *arm_s, size_t ptr,
+			 subtilis_arm_op_t *to, subtlis_arm_walker_t *walker,
+			 subtilis_error_t *err)
 {
 	subtilis_arm_op_t *op;
 
 	while (ptr != SIZE_MAX) {
-		op = &arm_p->pool->ops[ptr];
+		op = &arm_s->op_pool->ops[ptr];
 
 		switch (op->type) {
 		case SUBTILIS_OP_LABEL:
@@ -102,25 +103,37 @@ static void prv_arm_walk(subtilis_arm_program_t *arm_p, size_t ptr,
 		}
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
+
+		if (op == to)
+			break;
+
 		ptr = op->next;
 	}
 }
 
-void subtilis_arm_walk(subtilis_arm_program_t *arm_p,
+void subtilis_arm_walk(subtilis_arm_section_t *arm_s,
 		       subtlis_arm_walker_t *walker, subtilis_error_t *err)
 {
-	prv_arm_walk(arm_p, arm_p->first_op, walker, err);
+	prv_arm_walk(arm_s, arm_s->first_op, NULL, walker, err);
 }
 
-void subtilis_arm_walk_from(subtilis_arm_program_t *arm_p,
+void subtilis_arm_walk_from(subtilis_arm_section_t *arm_s,
 			    subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 			    subtilis_error_t *err)
 {
+	subtilis_arm_walk_from_to(arm_s, walker, op, NULL, err);
+}
+
+void subtilis_arm_walk_from_to(subtilis_arm_section_t *arm_s,
+			       subtlis_arm_walker_t *walker,
+			       subtilis_arm_op_t *from, subtilis_arm_op_t *to,
+			       subtilis_error_t *err)
+{
 	size_t ptr;
 
-	if (op->next == SIZE_MAX)
-		ptr = arm_p->last_op;
+	if (from->next == SIZE_MAX)
+		ptr = arm_s->last_op;
 	else
-		ptr = arm_p->pool->ops[op->next].prev;
-	prv_arm_walk(arm_p, ptr, walker, err);
+		ptr = arm_s->op_pool->ops[from->next].prev;
+	prv_arm_walk(arm_s, ptr, to, walker, err);
 }

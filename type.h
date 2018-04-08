@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Mark Ryan
+ * Copyright (c) 2018 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,26 @@
  * limitations under the License.
  */
 
-#include <locale.h>
+#ifndef __SUBTILIS_TYPE_H
+#define __SUBTILIS_TYPE_H
 
-#include "arm_core_test.h"
-#include "arm_reg_alloc_test.h"
-#include "arm_test.h"
-#include "ir_test.h"
-#include "lexer_test.h"
-#include "parser_test.h"
-#include "symbol_table_test.h"
+#include "error.h"
 
-int main(int argc, char *argv[])
-{
-	int failure = 0;
+typedef enum {
+	SUBTILIS_TYPE_REAL,
+	SUBTILIS_TYPE_INTEGER,
+	SUBTILIS_TYPE_STRING,
+	SUBTILIS_TYPE_VOID,
+} subtilis_type_t;
 
-	setlocale(LC_ALL, "C");
+struct subtilis_type_section_t_ {
+	subtilis_type_t return_type;
+};
 
-	failure |= lexer_test();
-	failure |= symbol_table_test();
-	failure |= parser_test();
-	failure |= ir_test();
-	failure |= arm_core_test();
-	failure |= arm_reg_alloc_test();
-	failure |= arm_test();
+typedef struct subtilis_type_section_t_ subtilis_type_section_t;
 
-	return failure;
-}
+subtilis_type_section_t *subtilis_type_section_new(subtilis_type_t rtype,
+						   subtilis_error_t *err);
+void subtilis_type_section_delete(subtilis_type_section_t *stype);
+
+#endif

@@ -2,7 +2,7 @@
 
 COMPONENT = basicc
 
-OBJS = stream lexer error compiler utils keywords buffer parser expression ir hash_table symbol_table arm_core riscos_arm riscos_arm2 arm_gen arm_walker arm_reg_alloc arm_encode arm_vm arm_test
+OBJS = stream lexer error compiler utils keywords buffer parser expression ir hash_table symbol_table arm_core riscos_arm riscos_arm2 arm_gen arm_walker arm_reg_alloc arm_encode arm_link type string_pool
 
 CFLAGS ?= -Wxla
 
@@ -26,6 +26,8 @@ o.lexer:	h.config
 o.lexer:	h.keywords
 o.lexer:	h.stream
 o.lexer:	h.error
+o.lexer:	h.type
+o.lexer:	h.error
 o.error:	c.error
 o.error:	h.error
 o.error:	h.config
@@ -37,12 +39,17 @@ o.compiler:	h.buffer
 o.compiler:	h.error
 o.compiler:	h.config
 o.compiler:	h.error
+o.compiler:	h.string_pool
+o.compiler:	h.error
+o.compiler:	h.type
+o.compiler:	h.error
 o.compiler:	h.error
 o.compiler:	h.lexer
 o.compiler:	h.buffer
 o.compiler:	h.keywords
 o.compiler:	h.stream
 o.compiler:	h.error
+o.compiler:	h.type
 o.compiler:	h.parser
 o.compiler:	h.ir
 o.compiler:	h.lexer
@@ -73,6 +80,10 @@ o.parser:	h.error
 o.parser:	h.ir
 o.parser:	h.buffer
 o.parser:	h.error
+o.parser:	h.string_pool
+o.parser:	h.error
+o.parser:	h.type
+o.parser:	h.error
 o.parser:	h.parser
 o.parser:	h.ir
 o.parser:	h.lexer
@@ -80,6 +91,7 @@ o.parser:	h.buffer
 o.parser:	h.keywords
 o.parser:	h.stream
 o.parser:	h.error
+o.parser:	h.type
 o.parser:	h.symbol_table
 o.parser:	h.hash_table
 o.parser:	h.error
@@ -94,6 +106,10 @@ o.expression:	h.error
 o.expression:	h.ir
 o.expression:	h.buffer
 o.expression:	h.error
+o.expression:	h.string_pool
+o.expression:	h.error
+o.expression:	h.type
+o.expression:	h.error
 o.expression:	h.parser
 o.expression:	h.ir
 o.expression:	h.lexer
@@ -101,6 +117,7 @@ o.expression:	h.buffer
 o.expression:	h.keywords
 o.expression:	h.stream
 o.expression:	h.error
+o.expression:	h.type
 o.expression:	h.symbol_table
 o.expression:	h.hash_table
 o.expression:	h.error
@@ -111,6 +128,10 @@ o.ir:	h.ir
 o.ir:	h.buffer
 o.ir:	h.error
 o.ir:	h.config
+o.ir:	h.error
+o.ir:	h.string_pool
+o.ir:	h.error
+o.ir:	h.type
 o.ir:	h.error
 o.hash_table:	c.hash_table
 o.hash_table:	h.hash_table
@@ -128,6 +149,8 @@ o.symbol_table:	h.error
 o.symbol_table:	h.keywords
 o.symbol_table:	h.stream
 o.symbol_table:	h.error
+o.symbol_table:	h.type
+o.symbol_table:	h.error
 o.arm_core:	c.arm_core
 o.arm_core:	h.arm_core
 o.arm_core:	h.ir
@@ -135,15 +158,37 @@ o.arm_core:	h.buffer
 o.arm_core:	h.error
 o.arm_core:	h.config
 o.arm_core:	h.error
+o.arm_core:	h.string_pool
+o.arm_core:	h.error
+o.arm_core:	h.type
+o.arm_core:	h.error
 o.arm_core:	h.arm_walker
 o.arm_core:	h.arm_core
 o.arm_core:	h.error
+o.riscos_arm:	c.riscos_arm
+o.riscos_arm:	h.arm_reg_alloc
+o.riscos_arm:	h.arm_core
+o.riscos_arm:	h.ir
+o.riscos_arm:	h.buffer
+o.riscos_arm:	h.error
+o.riscos_arm:	h.config
+o.riscos_arm:	h.error
+o.riscos_arm:	h.string_pool
+o.riscos_arm:	h.error
+o.riscos_arm:	h.type
+o.riscos_arm:	h.error
+o.riscos_arm:	h.riscos_arm
+o.riscos_arm:	h.arm_core
 o.riscos_arm2:	c.riscos_arm2
 o.riscos_arm2:	h.riscos_arm2
 o.riscos_arm2:	h.ir
 o.riscos_arm2:	h.buffer
 o.riscos_arm2:	h.error
 o.riscos_arm2:	h.config
+o.riscos_arm2:	h.error
+o.riscos_arm2:	h.string_pool
+o.riscos_arm2:	h.error
+o.riscos_arm2:	h.type
 o.riscos_arm2:	h.error
 o.riscos_arm2:	h.arm_core
 o.riscos_arm2:	h.ir
@@ -158,6 +203,10 @@ o.arm_gen:	h.buffer
 o.arm_gen:	h.error
 o.arm_gen:	h.config
 o.arm_gen:	h.error
+o.arm_gen:	h.string_pool
+o.arm_gen:	h.error
+o.arm_gen:	h.type
+o.arm_gen:	h.error
 o.arm_gen:	h.arm_core
 o.arm_gen:	h.ir
 o.arm_walker:	c.arm_walker
@@ -168,28 +217,11 @@ o.arm_walker:	h.buffer
 o.arm_walker:	h.error
 o.arm_walker:	h.config
 o.arm_walker:	h.error
+o.arm_walker:	h.string_pool
 o.arm_walker:	h.error
-o.riscos_arm:	c.riscos_arm
-o.riscos_arm:	h.arm_reg_alloc
-o.riscos_arm:	h.arm_core
-o.riscos_arm:	h.ir
-o.riscos_arm:	h.buffer
-o.riscos_arm:	h.error
-o.riscos_arm:	h.config
-o.riscos_arm:	h.error
-o.riscos_arm:	h.riscos_arm
-o.riscos_arm:	h.arm_core
-o.arm_encode:	c.arm_encode
-o.arm_encode:	h.arm_encode
-o.arm_encode:	h.arm_core
-o.arm_encode:	h.ir
-o.arm_encode:	h.buffer
-o.arm_encode:	h.error
-o.arm_encode:	h.config
-o.arm_encode:	h.error
-o.arm_encode:	h.arm_walker
-o.arm_encode:	h.arm_core
-o.arm_encode:	h.error
+o.arm_walker:	h.type
+o.arm_walker:	h.error
+o.arm_walker:	h.error
 o.arm_reg_alloc:	c.arm_reg_alloc
 o.arm_reg_alloc:	h.arm_reg_alloc
 o.arm_reg_alloc:	h.arm_core
@@ -198,6 +230,39 @@ o.arm_reg_alloc:	h.buffer
 o.arm_reg_alloc:	h.error
 o.arm_reg_alloc:	h.config
 o.arm_reg_alloc:	h.error
+o.arm_reg_alloc:	h.string_pool
+o.arm_reg_alloc:	h.error
+o.arm_reg_alloc:	h.type
+o.arm_reg_alloc:	h.error
 o.arm_reg_alloc:	h.arm_walker
 o.arm_reg_alloc:	h.arm_core
 o.arm_reg_alloc:	h.error
+o.arm_encode:	c.arm_encode
+o.arm_encode:	h.arm_encode
+o.arm_encode:	h.arm_core
+o.arm_encode:	h.ir
+o.arm_encode:	h.buffer
+o.arm_encode:	h.error
+o.arm_encode:	h.config
+o.arm_encode:	h.error
+o.arm_encode:	h.string_pool
+o.arm_encode:	h.error
+o.arm_encode:	h.type
+o.arm_encode:	h.error
+o.arm_encode:	h.arm_link
+o.arm_encode:	h.error
+o.arm_encode:	h.arm_walker
+o.arm_encode:	h.arm_core
+o.arm_encode:	h.error
+o.arm_link:	c.arm_link
+o.arm_link:	h.arm_link
+o.arm_link:	h.error
+o.arm_link:	h.config
+o.type:	c.type
+o.type:	h.type
+o.type:	h.error
+o.type:	h.config
+o.string_pool:	c.string_pool
+o.string_pool:	h.string_pool
+o.string_pool:	h.error
+o.string_pool:	h.config

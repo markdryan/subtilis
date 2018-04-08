@@ -68,20 +68,26 @@ fail:
 	return 1;
 }
 
-static int prv_check_not_keyword(subtilis_lexer_t *l, subtilis_parser_t *p,
-				 const char *expected)
+static int prv_check_for_error(subtilis_parser_t *p,
+			       subtilis_error_type_t err_type)
 {
 	subtilis_error_t err;
 
 	subtilis_error_init(&err);
 	subtilis_parse(p, &err);
-	if (err.type != SUBTILIS_ERROR_KEYWORD_EXPECTED) {
-		fprintf(stderr, "Expected err %d, got %d\n",
-			SUBTILIS_ERROR_KEYWORD_EXPECTED, err.type);
+	if (err.type != err_type) {
+		fprintf(stderr, "Expected err %d, got %d\n", err_type,
+			err.type);
 		return 1;
 	}
 
 	return 0;
+}
+
+static int prv_check_not_keyword(subtilis_lexer_t *l, subtilis_parser_t *p,
+				 const char *expected)
+{
+	return prv_check_for_error(p, SUBTILIS_ERROR_KEYWORD_EXPECTED);
 }
 
 /*
@@ -119,7 +125,7 @@ static int prv_check_eval_res(subtilis_lexer_t *l, subtilis_parser_t *p,
 		goto cleanup;
 	}
 
-	vm = subitlis_vm_new(p->p, p->st, &err);
+	vm = subitlis_vm_new(p->prog, p->st, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);
 		goto cleanup;
@@ -191,6 +197,23 @@ static int prv_test_not_keyword(void)
 	return parser_test_wrapper("id", prv_check_not_keyword, NULL);
 }
 
+static int prv_check_unknown_procedure(subtilis_lexer_t *l,
+				       subtilis_parser_t *p,
+				       const char *expected)
+{
+	return prv_check_for_error(p, SUBTILIS_ERROR_UNKNOWN_PROCEDURE);
+}
+
+static int prv_test_unknown_procedure(void)
+{
+	const char *test = "PROCmissing\n\n"
+			   "DEF PROCmiss\n"
+			   "ENDPROC\n";
+
+	printf("parser_unknown_procedure");
+	return parser_test_wrapper(test, prv_check_unknown_procedure, NULL);
+}
+
 int parser_test(void)
 {
 	int failure = 0;
@@ -199,6 +222,7 @@ int parser_test(void)
 	failure |= prv_test_let();
 	failure |= prv_test_print();
 	failure |= prv_test_expressions();
+	failure |= prv_test_unknown_procedure();
 
 	return failure;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Mark Ryan
+ * Copyright (c) 2018 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,29 @@
  * limitations under the License.
  */
 
-#include <locale.h>
+#include <stdlib.h>
 
-#include "arm_core_test.h"
-#include "arm_reg_alloc_test.h"
-#include "arm_test.h"
-#include "ir_test.h"
-#include "lexer_test.h"
-#include "parser_test.h"
-#include "symbol_table_test.h"
+#include "type.h"
 
-int main(int argc, char *argv[])
+subtilis_type_section_t *subtilis_type_section_new(subtilis_type_t rtype,
+						   subtilis_error_t *err)
 {
-	int failure = 0;
+	subtilis_type_section_t *stype = malloc(sizeof(*stype));
 
-	setlocale(LC_ALL, "C");
+	if (!stype) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
 
-	failure |= lexer_test();
-	failure |= symbol_table_test();
-	failure |= parser_test();
-	failure |= ir_test();
-	failure |= arm_core_test();
-	failure |= arm_reg_alloc_test();
-	failure |= arm_test();
+	stype->return_type = rtype;
 
-	return failure;
+	return stype;
+}
+
+void subtilis_type_section_delete(subtilis_type_section_t *stype)
+{
+	if (!stype)
+		return;
+
+	free(stype);
 }

@@ -19,7 +19,7 @@
 #include "expression.h"
 
 typedef void (*subtilis_const_op_t)(subtilis_exp_t *, subtilis_exp_t *);
-typedef void (*subtilis_var_op_t)(subtilis_ir_program_t *, subtilis_exp_t *,
+typedef void (*subtilis_var_op_t)(subtilis_ir_section_t *, subtilis_exp_t *,
 				  subtilis_exp_t *, bool, subtilis_error_t *);
 
 struct subtilis_commutative_exp_t_ {
@@ -112,9 +112,9 @@ static subtilis_exp_t *prv_exp_commutative(subtilis_parser_t *p,
 	case SUBTILIS_EXP_INTEGER:
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
-			reg = subtilis_ir_program_add_instr(
-			    p->p, com->in_var_imm, a1->exp.ir_op, a2->exp.ir_op,
-			    err);
+			reg = subtilis_ir_section_add_instr(
+			    p->current, com->in_var_imm, a1->exp.ir_op,
+			    a2->exp.ir_op, err);
 			a1->exp.ir_op.reg = reg;
 			break;
 		case SUBTILIS_EXP_CONST_REAL:
@@ -123,9 +123,9 @@ static subtilis_exp_t *prv_exp_commutative(subtilis_parser_t *p,
 			    err, p->l->stream->name, p->l->line);
 			break;
 		case SUBTILIS_EXP_INTEGER:
-			reg = subtilis_ir_program_add_instr(
-			    p->p, com->in_var_var, a1->exp.ir_op, a2->exp.ir_op,
-			    err);
+			reg = subtilis_ir_section_add_instr(
+			    p->current, com->in_var_var, a1->exp.ir_op,
+			    a2->exp.ir_op, err);
 			a1->exp.ir_op.reg = reg;
 			break;
 		case SUBTILIS_EXP_REAL:
@@ -189,7 +189,7 @@ prv_exp_non_commutative(subtilis_parser_t *p, subtilis_exp_t *a1,
 	case SUBTILIS_EXP_INTEGER:
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
-			no->op_intvar_int(p->p, a1, a2, swapped, err);
+			no->op_intvar_int(p->current, a1, a2, swapped, err);
 			break;
 		case SUBTILIS_EXP_CONST_REAL:
 		case SUBTILIS_EXP_CONST_STRING:
@@ -197,7 +197,7 @@ prv_exp_non_commutative(subtilis_parser_t *p, subtilis_exp_t *a1,
 			    err, p->l->stream->name, p->l->line);
 			break;
 		case SUBTILIS_EXP_INTEGER:
-			no->op_intvar_intvar(p->p, a1, a2, swapped, err);
+			no->op_intvar_intvar(p->current, a1, a2, swapped, err);
 			break;
 		case SUBTILIS_EXP_REAL:
 		case SUBTILIS_EXP_STRING:
@@ -373,7 +373,7 @@ static void prv_sub_real_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
 	a1->exp.ir_op.real -= a2->exp.ir_op.real;
 }
 
-static void prv_sub_intvar_int(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+static void prv_sub_intvar_int(subtilis_ir_section_t *s, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, bool swapped,
 			       subtilis_error_t *err)
 {
@@ -382,20 +382,20 @@ static void prv_sub_intvar_int(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 
 	instr =
 	    swapped ? SUBTILIS_OP_INSTR_RSUBI_I32 : SUBTILIS_OP_INSTR_SUBI_I32;
-	reg = subtilis_ir_program_add_instr(p, instr, a1->exp.ir_op,
+	reg = subtilis_ir_section_add_instr(s, instr, a1->exp.ir_op,
 					    a2->exp.ir_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	a1->exp.ir_op.reg = reg;
 }
 
-static void prv_sub_intvar_intvar(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+static void prv_sub_intvar_intvar(subtilis_ir_section_t *s, subtilis_exp_t *a1,
 				  subtilis_exp_t *a2, bool swapped,
 				  subtilis_error_t *err)
 {
 	size_t reg;
 
-	reg = subtilis_ir_program_add_instr(p, SUBTILIS_OP_INSTR_SUB_I32,
+	reg = subtilis_ir_section_add_instr(s, SUBTILIS_OP_INSTR_SUB_I32,
 					    a1->exp.ir_op, a2->exp.ir_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -513,8 +513,9 @@ subtilis_exp_t *subtilis_exp_div(subtilis_parser_t *p, subtilis_exp_t *a1,
 				}
 				instr = SUBTILIS_OP_INSTR_DIVI_I32;
 			}
-			reg = subtilis_ir_program_add_instr(
-			    p->p, instr, a1->exp.ir_op, a2->exp.ir_op, err);
+			reg = subtilis_ir_section_add_instr(p->current, instr,
+							    a1->exp.ir_op,
+							    a2->exp.ir_op, err);
 			a1->exp.ir_op.reg = reg;
 			break;
 		case SUBTILIS_EXP_CONST_REAL:
@@ -523,9 +524,9 @@ subtilis_exp_t *subtilis_exp_div(subtilis_parser_t *p, subtilis_exp_t *a1,
 			    err, p->l->stream->name, p->l->line);
 			break;
 		case SUBTILIS_EXP_INTEGER:
-			reg = subtilis_ir_program_add_instr(
-			    p->p, SUBTILIS_OP_INSTR_DIV_I32, a1->exp.ir_op,
-			    a2->exp.ir_op, err);
+			reg = subtilis_ir_section_add_instr(
+			    p->current, SUBTILIS_OP_INSTR_DIV_I32,
+			    a1->exp.ir_op, a2->exp.ir_op, err);
 			a1->exp.ir_op.reg = reg;
 			break;
 		case SUBTILIS_EXP_REAL:
@@ -565,7 +566,7 @@ subtilis_exp_t *subtilis_exp_unary_minus(subtilis_parser_t *p,
 		break;
 	case SUBTILIS_EXP_INTEGER:
 		operand.integer = 0;
-		reg = subtilis_ir_program_add_instr(p->p,
+		reg = subtilis_ir_section_add_instr(p->current,
 						    SUBTILIS_OP_INSTR_RSUBI_I32,
 						    e->exp.ir_op, operand, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -603,8 +604,8 @@ subtilis_exp_t *subtilis_exp_not(subtilis_parser_t *p, subtilis_exp_t *e,
 		e->exp.ir_op.integer = ~e->exp.ir_op.integer;
 		break;
 	case SUBTILIS_EXP_INTEGER:
-		reg = subtilis_ir_program_add_instr2(
-		    p->p, SUBTILIS_OP_INSTR_NOT_I32, e->exp.ir_op, err);
+		reg = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_NOT_I32, e->exp.ir_op, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		e->exp.ir_op.reg = reg;
@@ -836,7 +837,7 @@ static void prv_gt_real_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
 	a1->type = SUBTILIS_EXP_CONST_INTEGER;
 }
 
-static void prv_gt_intvar_int(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+static void prv_gt_intvar_int(subtilis_ir_section_t *s, subtilis_exp_t *a1,
 			      subtilis_exp_t *a2, bool swapped,
 			      subtilis_error_t *err)
 {
@@ -845,20 +846,20 @@ static void prv_gt_intvar_int(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 
 	instr =
 	    swapped ? SUBTILIS_OP_INSTR_LTEI_I32 : SUBTILIS_OP_INSTR_GTI_I32;
-	reg = subtilis_ir_program_add_instr(p, instr, a1->exp.ir_op,
+	reg = subtilis_ir_section_add_instr(s, instr, a1->exp.ir_op,
 					    a2->exp.ir_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	a1->exp.ir_op.reg = reg;
 }
 
-static void prv_gt_intvar_intvar(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+static void prv_gt_intvar_intvar(subtilis_ir_section_t *s, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, bool swapped,
 				 subtilis_error_t *err)
 {
 	size_t reg;
 
-	reg = subtilis_ir_program_add_instr(p, SUBTILIS_OP_INSTR_GT_I32,
+	reg = subtilis_ir_section_add_instr(s, SUBTILIS_OP_INSTR_GT_I32,
 					    a1->exp.ir_op, a2->exp.ir_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -914,7 +915,7 @@ static void prv_lte_real_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
 	a1->type = SUBTILIS_EXP_CONST_INTEGER;
 }
 
-static void prv_lte_intvar_int(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+static void prv_lte_intvar_int(subtilis_ir_section_t *s, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, bool swapped,
 			       subtilis_error_t *err)
 {
@@ -923,20 +924,20 @@ static void prv_lte_intvar_int(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 
 	instr =
 	    swapped ? SUBTILIS_OP_INSTR_GTI_I32 : SUBTILIS_OP_INSTR_LTEI_I32;
-	reg = subtilis_ir_program_add_instr(p, instr, a1->exp.ir_op,
+	reg = subtilis_ir_section_add_instr(s, instr, a1->exp.ir_op,
 					    a2->exp.ir_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	a1->exp.ir_op.reg = reg;
 }
 
-static void prv_lte_intvar_intvar(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+static void prv_lte_intvar_intvar(subtilis_ir_section_t *s, subtilis_exp_t *a1,
 				  subtilis_exp_t *a2, bool swapped,
 				  subtilis_error_t *err)
 {
 	size_t reg;
 
-	reg = subtilis_ir_program_add_instr(p, SUBTILIS_OP_INSTR_LTE_I32,
+	reg = subtilis_ir_section_add_instr(s, SUBTILIS_OP_INSTR_LTE_I32,
 					    a1->exp.ir_op, a2->exp.ir_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -992,7 +993,7 @@ static void prv_lt_real_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
 	a1->type = SUBTILIS_EXP_CONST_INTEGER;
 }
 
-static void prv_lt_intvar_int(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+static void prv_lt_intvar_int(subtilis_ir_section_t *s, subtilis_exp_t *a1,
 			      subtilis_exp_t *a2, bool swapped,
 			      subtilis_error_t *err)
 {
@@ -1001,20 +1002,20 @@ static void prv_lt_intvar_int(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 
 	instr =
 	    swapped ? SUBTILIS_OP_INSTR_GTEI_I32 : SUBTILIS_OP_INSTR_LTI_I32;
-	reg = subtilis_ir_program_add_instr(p, instr, a1->exp.ir_op,
+	reg = subtilis_ir_section_add_instr(s, instr, a1->exp.ir_op,
 					    a2->exp.ir_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	a1->exp.ir_op.reg = reg;
 }
 
-static void prv_lt_intvar_intvar(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+static void prv_lt_intvar_intvar(subtilis_ir_section_t *s, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, bool swapped,
 				 subtilis_error_t *err)
 {
 	size_t reg;
 
-	reg = subtilis_ir_program_add_instr(p, SUBTILIS_OP_INSTR_LT_I32,
+	reg = subtilis_ir_section_add_instr(s, SUBTILIS_OP_INSTR_LT_I32,
 					    a1->exp.ir_op, a2->exp.ir_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -1070,7 +1071,7 @@ static void prv_gte_real_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
 	a1->type = SUBTILIS_EXP_CONST_INTEGER;
 }
 
-static void prv_gte_intvar_int(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+static void prv_gte_intvar_int(subtilis_ir_section_t *s, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, bool swapped,
 			       subtilis_error_t *err)
 {
@@ -1079,20 +1080,20 @@ static void prv_gte_intvar_int(subtilis_ir_program_t *p, subtilis_exp_t *a1,
 
 	instr =
 	    swapped ? SUBTILIS_OP_INSTR_LTI_I32 : SUBTILIS_OP_INSTR_GTEI_I32;
-	reg = subtilis_ir_program_add_instr(p, instr, a1->exp.ir_op,
+	reg = subtilis_ir_section_add_instr(s, instr, a1->exp.ir_op,
 					    a2->exp.ir_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	a1->exp.ir_op.reg = reg;
 }
 
-static void prv_gte_intvar_intvar(subtilis_ir_program_t *p, subtilis_exp_t *a1,
+static void prv_gte_intvar_intvar(subtilis_ir_section_t *s, subtilis_exp_t *a1,
 				  subtilis_exp_t *a2, bool swapped,
 				  subtilis_error_t *err)
 {
 	size_t reg;
 
-	reg = subtilis_ir_program_add_instr(p, SUBTILIS_OP_INSTR_GTE_I32,
+	reg = subtilis_ir_section_add_instr(s, SUBTILIS_OP_INSTR_GTE_I32,
 					    a1->exp.ir_op, a2->exp.ir_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;

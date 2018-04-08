@@ -18,6 +18,7 @@
 #define __SUBTILIS_ERROR_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #include "config.h"
@@ -51,6 +52,13 @@ typedef enum {
 	SUBTILIS_ERROR_EXPECTED,
 	SUBTILIS_ERROR_COMPOUND_NOT_TERM,
 	SUBTILIS_ERROR_WALKER_FAILED,
+	SUBTILIS_ERROR_ALREADY_DEFINED,
+	SUBTILIS_ERROR_NESTED_PROCEDURE,
+	SUBTILIS_ERROR_PROCEDURE_EXPECTED,
+	SUBTILIS_ERROR_FUNCTION_EXPECTED,
+	SUBTILIS_ERROR_UNKNOWN_PROCEDURE,
+	SUBTILIS_ERROR_UNKNOWN_FUNCTION,
+	SUBTILIS_ERROR_BAD_INSTRUCTION,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -140,6 +148,26 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_walker_failed(e)                                    \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_WALKER_FAILED, __FILE__,    \
 				 __LINE__)
+#define subtilis_error_set_already_defined(e)                                  \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_ALREADY_DEFINED, __FILE__,  \
+				 __LINE__)
+#define subtilis_error_set_nested_procedure(e, file, line)                     \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_NESTED_PROCEDURE, file, line)
+#define subtilis_error_set_procedure_expected(e, str, file, line)              \
+	subtilis_error_set1(e, SUBTILIS_ERROR_PROCEDURE_EXPECTED, str, file,   \
+			    line)
+#define subtilis_error_set_function_expected(e, str, file, line)               \
+	subtilis_error_set1(e, SUBTILIS_ERROR_FUNCTION_EXPECTED, str, file,    \
+			    line)
+#define subtilis_error_set_unknown_procedure(e, str, file, line)               \
+	subtilis_error_set1(e, SUBTILIS_ERROR_UNKNOWN_PROCEDURE, str, file,    \
+			    line)
+#define subtilis_error_set_unknown_function(e, str, file, line)                \
+	subtilis_error_set1(e, SUBTILIS_ERROR_UNKNOWN_FUNCTION, str, file, line)
+#define subtilis_error_set_bad_instruction(e, num)                             \
+	subtilis_error_set_hex(e, SUBTILIS_ERROR_BAD_INSTRUCTION, num,         \
+			       __FILE__, __LINE__)
+
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,
 			     const char *file, unsigned int line,
@@ -148,6 +176,9 @@ void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 void subtilis_error_set_basic(subtilis_error_t *e, subtilis_error_type_t type,
 			      const char *subtilis_file,
 			      unsigned int subtilis_line);
+void subtilis_error_set_hex(subtilis_error_t *e, subtilis_error_type_t type,
+			    uint32_t num, const char *subtilis_file,
+			    unsigned int subtilis_line);
 void subtilis_error_set_errno(subtilis_error_t *e, subtilis_error_type_t type,
 			      const char *data1, const char *subtilis_file,
 			      unsigned int subtilis_line);

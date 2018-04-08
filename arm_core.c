@@ -97,39 +97,124 @@ size_t subtilis_arm_op_pool_alloc(subtilis_arm_op_pool_t *pool,
 	return new_op;
 }
 
-subtilis_arm_program_t *subtilis_arm_program_new(subtilis_arm_op_pool_t *pool,
+subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 						 size_t reg_counter,
 						 size_t label_counter,
-						 size_t globals,
+						 size_t locals,
 						 subtilis_error_t *err)
 {
-	subtilis_arm_program_t *p = malloc(sizeof(*p));
+	subtilis_arm_section_t *s = calloc(1, sizeof(*s));
 
-	if (!p) {
+	if (!s) {
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
-	p->reg_counter = reg_counter;
-	p->label_counter = label_counter;
-	p->len = 0;
-	p->first_op = SIZE_MAX;
-	p->last_op = SIZE_MAX;
-	p->globals = globals;
-	p->constants = NULL;
-	p->constant_count = 0;
-	p->max_constants = 0;
-	p->pool = pool;
+	s->reg_counter = reg_counter;
+	s->label_counter = label_counter;
+	s->first_op = SIZE_MAX;
+	s->last_op = SIZE_MAX;
+	s->locals = locals;
+	s->op_pool = pool;
 
-	return p;
+	return s;
 }
 
-void subtilis_arm_program_delete(subtilis_arm_program_t *p)
+void subtilis_arm_section_delete(subtilis_arm_section_t *s)
 {
-	if (!p)
+	if (!s)
 		return;
 
-	free(p->constants);
-	free(p);
+	free(s->call_sites);
+	free(s->constants);
+	free(s);
+}
+
+void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s, size_t op,
+					subtilis_error_t *err)
+{
+	size_t new_max;
+	size_t *new_call_sites;
+
+	if (s->call_site_count == s->max_call_site_count) {
+		new_max = s->call_site_count + SUBTILIS_CONFIG_PROC_GRAN;
+		new_call_sites =
+		    realloc(s->call_sites, new_max * sizeof(*new_call_sites));
+		if (!new_call_sites) {
+			subtilis_error_set_oom(err);
+			return;
+		}
+		s->call_sites = new_call_sites;
+		s->max_call_site_count = new_max;
+	}
+	s->call_sites[s->call_site_count++] = op;
+}
+
+subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
+					   subtilis_arm_op_pool_t *op_pool,
+					   subtilis_string_pool_t *string_pool,
+					   subtilis_error_t *err)
+{
+	subtilis_arm_prog_t *arm_p = malloc(sizeof(*arm_p));
+
+	if (!arm_p) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+
+	arm_p->sections = malloc(sizeof(*arm_p->sections) * max_sections);
+	if (!arm_p->sections) {
+		subtilis_error_set_oom(err);
+		goto cleanup;
+	}
+
+	arm_p->num_sections = 0;
+	arm_p->max_sections = max_sections;
+	arm_p->op_pool = op_pool;
+	arm_p->string_pool = subtilis_string_pool_clone(string_pool);
+
+	return arm_p;
+
+cleanup:
+	subtilis_arm_prog_delete(arm_p);
+	return NULL;
+}
+
+subtilis_arm_section_t *subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
+						      size_t reg_counter,
+						      size_t label_counter,
+						      size_t locals,
+						      subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s;
+
+	if (prog->num_sections == prog->max_sections) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+
+	arm_s = subtilis_arm_section_new(prog->op_pool, reg_counter,
+					 label_counter, locals, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	prog->sections[prog->num_sections++] = arm_s;
+	return arm_s;
+}
+
+void subtilis_arm_prog_delete(subtilis_arm_prog_t *prog)
+{
+	size_t i;
+
+	if (!prog)
+		return;
+
+	if (prog->sections) {
+		for (i = 0; i < prog->num_sections; i++)
+			subtilis_arm_section_delete(prog->sections[i]);
+		free(prog->sections);
+	}
+	subtilis_string_pool_delete(prog->string_pool);
+	free(prog);
 }
 
 subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg)
@@ -161,36 +246,36 @@ subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg)
 	return arm_reg;
 }
 
-static subtilis_arm_reg_t prv_acquire_new_reg(subtilis_arm_program_t *p)
+static subtilis_arm_reg_t prv_acquire_new_reg(subtilis_arm_section_t *s)
 {
-	return subtilis_arm_ir_to_arm_reg(p->reg_counter++);
+	return subtilis_arm_ir_to_arm_reg(s->reg_counter++);
 }
 
-static subtilis_arm_op_t *prv_append_op(subtilis_arm_program_t *p,
+static subtilis_arm_op_t *prv_append_op(subtilis_arm_section_t *s,
 					subtilis_error_t *err)
 {
 	size_t ptr;
 	subtilis_arm_op_t *op;
-	size_t prev = p->last_op;
+	size_t prev = s->last_op;
 
-	ptr = subtilis_arm_op_pool_alloc(p->pool, err);
+	ptr = subtilis_arm_op_pool_alloc(s->op_pool, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	op = &p->pool->ops[ptr];
+	op = &s->op_pool->ops[ptr];
 	memset(op, 0, sizeof(*op));
 	op->next = SIZE_MAX;
 	op->prev = prev;
-	if (p->first_op == SIZE_MAX)
-		p->first_op = ptr;
+	if (s->first_op == SIZE_MAX)
+		s->first_op = ptr;
 	else
-		p->pool->ops[p->last_op].next = ptr;
-	p->last_op = ptr;
-	p->len++;
+		s->op_pool->ops[s->last_op].next = ptr;
+	s->last_op = ptr;
+	s->len++;
 
 	return op;
 }
 
-static subtilis_arm_op_t *prv_insert_op(subtilis_arm_program_t *p,
+static subtilis_arm_op_t *prv_insert_op(subtilis_arm_section_t *s,
 					subtilis_arm_op_t *pos,
 					subtilis_error_t *err)
 {
@@ -198,73 +283,73 @@ static subtilis_arm_op_t *prv_insert_op(subtilis_arm_program_t *p,
 	size_t old_ptr;
 	subtilis_arm_op_t *op;
 
-	ptr = subtilis_arm_op_pool_alloc(p->pool, err);
+	ptr = subtilis_arm_op_pool_alloc(s->op_pool, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
 	if (pos->prev == SIZE_MAX)
-		old_ptr = p->first_op;
+		old_ptr = s->first_op;
 	else
-		old_ptr = p->pool->ops[pos->prev].next;
+		old_ptr = s->op_pool->ops[pos->prev].next;
 
-	op = &p->pool->ops[ptr];
+	op = &s->op_pool->ops[ptr];
 	memset(op, 0, sizeof(*op));
 	op->next = old_ptr;
 	op->prev = pos->prev;
-	p->pool->ops[pos->prev].next = ptr;
+	s->op_pool->ops[pos->prev].next = ptr;
 	pos->prev = ptr;
 
-	if (old_ptr == p->first_op)
-		p->first_op = ptr;
-	p->len++;
+	if (old_ptr == s->first_op)
+		s->first_op = ptr;
+	s->len++;
 
 	return op;
 }
 
-void subtilis_arm_program_add_label(subtilis_arm_program_t *p, size_t label,
+void subtilis_arm_section_add_label(subtilis_arm_section_t *s, size_t label,
 				    subtilis_error_t *err)
 {
 	subtilis_arm_op_t *op;
 
-	op = prv_append_op(p, err);
+	op = prv_append_op(s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	op->type = SUBTILIS_OP_LABEL;
 	op->op.label = label;
-	p->label_counter++;
+	s->label_counter++;
 }
 
-static void prv_add_constant(subtilis_arm_program_t *p, size_t label,
+static void prv_add_constant(subtilis_arm_section_t *s, size_t label,
 			     uint32_t num, subtilis_error_t *err)
 {
 	subtilis_arm_constant_t *c;
 	subtilis_arm_constant_t *new_constants;
 	size_t new_max;
 
-	if (p->constant_count == p->max_constants) {
-		new_max = p->max_constants + 64;
+	if (s->constant_count == s->max_constants) {
+		new_max = s->max_constants + 64;
 		new_constants = realloc(
-		    p->constants, new_max * sizeof(subtilis_arm_constant_t));
+		    s->constants, new_max * sizeof(subtilis_arm_constant_t));
 		if (!new_constants) {
 			subtilis_error_set_oom(err);
 			return;
 		}
-		p->max_constants = new_max;
-		p->constants = new_constants;
+		s->max_constants = new_max;
+		s->constants = new_constants;
 	}
-	c = &p->constants[p->constant_count++];
+	c = &s->constants[s->constant_count++];
 	c->integer = num;
 	c->label = label;
 }
 
 subtilis_arm_instr_t *
-subtilis_arm_program_add_instr(subtilis_arm_program_t *p,
+subtilis_arm_section_add_instr(subtilis_arm_section_t *s,
 			       subtilis_arm_instr_type_t type,
 			       subtilis_error_t *err)
 {
 	subtilis_arm_op_t *op;
 
-	op = prv_append_op(p, err);
+	op = prv_append_op(s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -275,7 +360,7 @@ subtilis_arm_program_add_instr(subtilis_arm_program_t *p,
 
 /* clang-format off */
 subtilis_arm_instr_t *
-subtilis_arm_program_insert_instr(subtilis_arm_program_t *p,
+subtilis_arm_section_insert_instr(subtilis_arm_section_t *s,
 				  subtilis_arm_op_t *pos,
 				  subtilis_arm_instr_type_t type,
 				  subtilis_error_t *err)
@@ -283,7 +368,7 @@ subtilis_arm_program_insert_instr(subtilis_arm_program_t *p,
 {
 	subtilis_arm_op_t *op;
 
-	op = prv_insert_op(p, pos, err);
+	op = prv_insert_op(s, pos, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -292,19 +377,19 @@ subtilis_arm_program_insert_instr(subtilis_arm_program_t *p,
 	return &op->op.instr;
 }
 
-subtilis_arm_instr_t *subtilis_arm_program_dup_instr(subtilis_arm_program_t *p,
+subtilis_arm_instr_t *subtilis_arm_section_dup_instr(subtilis_arm_section_t *s,
 						     subtilis_error_t *err)
 {
 	subtilis_arm_op_t *src;
 	subtilis_arm_op_t *op;
 
-	if (p->len == 0) {
+	if (s->len == 0) {
 		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
 
-	src = &p->pool->ops[p->last_op];
-	op = prv_append_op(p, err);
+	src = &s->op_pool->ops[s->last_op];
+	op = prv_append_op(s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -335,6 +420,59 @@ static void prv_encode_imm(uint32_t imm, size_t mask_index, uint32_t *encoded)
 	}
 
 	*encoded |= mask_index << 8;
+}
+
+/*
+ * Sometimes if we cannot encode  the exact immediate, the next encodable
+ * number is acceptable.  We can use this for our stack frame.  If for
+ * example the size of the local variables and spill registers was
+ * 516, we could reserve 520 bytes instead.  The stack frame can then
+ * be set up with a single instruction.  Otherwise, we'd need a ldr
+ * followed by a sub.
+ */
+
+uint32_t subtilis_arm_encode_nearest(int32_t num, subtilis_error_t *err)
+{
+	bool can_encode;
+	uint32_t encoded;
+	size_t i;
+	size_t new_num;
+	size_t mask;
+	size_t shift;
+
+	can_encode = subtilis_arm_encode_imm(num, &encoded);
+	if (can_encode)
+		return encoded;
+
+	if (((uint32_t)num) >= ((uint32_t)0xff000000)) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+
+	/* First first bit that's set */
+
+	for (i = 31; i > 7; i--)
+		if (num & (1 << i))
+			break;
+
+	if (i == 7) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+
+	shift = i - 7;
+
+	if (shift & 1)
+		shift++;
+	mask = 0xff << shift;
+	new_num = (((uint32_t)num) & mask) + (1 << shift);
+	can_encode = subtilis_arm_encode_imm(new_num, &encoded);
+	if (!can_encode) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+
+	return encoded;
 }
 
 bool subtilis_arm_encode_imm(int32_t num, uint32_t *encoded)
@@ -379,20 +517,20 @@ bool subtilis_arm_encode_lvl2_imm(int32_t num, uint32_t *encoded1,
 	return true;
 }
 
-static size_t prv_add_data_imm_ldr(subtilis_arm_program_t *p,
+static size_t prv_add_data_imm_ldr(subtilis_arm_section_t *s,
 				   subtilis_arm_ccode_type_t ccode,
 				   subtilis_arm_reg_t dest, int32_t op2,
 				   subtilis_error_t *err)
 {
 	subtilis_arm_ldrc_instr_t *ldrc;
 	subtilis_arm_instr_t *instr;
-	size_t label = p->label_counter++;
+	size_t label = s->label_counter++;
 
-	prv_add_constant(p, label, (uint32_t)op2, err);
+	prv_add_constant(s, label, (uint32_t)op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
-	instr = subtilis_arm_program_add_instr(p, SUBTILIS_ARM_INSTR_LDRC, err);
+	instr = subtilis_arm_section_add_instr(s, SUBTILIS_ARM_INSTR_LDRC, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
@@ -403,7 +541,7 @@ static size_t prv_add_data_imm_ldr(subtilis_arm_program_t *p,
 	return label;
 }
 
-static size_t prv_insert_data_imm_ldr(subtilis_arm_program_t *p,
+static size_t prv_insert_data_imm_ldr(subtilis_arm_section_t *s,
 				      subtilis_arm_op_t *current,
 				      subtilis_arm_ccode_type_t ccode,
 				      subtilis_arm_reg_t dest, int32_t op2,
@@ -411,13 +549,13 @@ static size_t prv_insert_data_imm_ldr(subtilis_arm_program_t *p,
 {
 	subtilis_arm_ldrc_instr_t *ldrc;
 	subtilis_arm_instr_t *instr;
-	size_t label = p->label_counter++;
+	size_t label = s->label_counter++;
 
-	prv_add_constant(p, label, (uint32_t)op2, err);
+	prv_add_constant(s, label, (uint32_t)op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
-	instr = subtilis_arm_program_insert_instr(p, current,
+	instr = subtilis_arm_section_insert_instr(s, current,
 						  SUBTILIS_ARM_INSTR_LDRC, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
@@ -429,7 +567,7 @@ static size_t prv_insert_data_imm_ldr(subtilis_arm_program_t *p,
 	return label;
 }
 
-size_t subtilis_add_data_imm_ldr_datai(subtilis_arm_program_t *p,
+size_t subtilis_add_data_imm_ldr_datai(subtilis_arm_section_t *s,
 				       subtilis_arm_instr_type_t itype,
 				       subtilis_arm_ccode_type_t ccode,
 				       bool status, subtilis_arm_reg_t dest,
@@ -441,13 +579,13 @@ size_t subtilis_add_data_imm_ldr_datai(subtilis_arm_program_t *p,
 	subtilis_arm_reg_t ldr_dest;
 	size_t label;
 
-	ldr_dest = prv_acquire_new_reg(p);
+	ldr_dest = prv_acquire_new_reg(s);
 
-	label = prv_add_data_imm_ldr(p, ccode, ldr_dest, op2, err);
+	label = prv_add_data_imm_ldr(s, ccode, ldr_dest, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
-	instr = subtilis_arm_program_add_instr(p, itype, err);
+	instr = subtilis_arm_section_add_instr(s, itype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
@@ -462,7 +600,7 @@ size_t subtilis_add_data_imm_ldr_datai(subtilis_arm_program_t *p,
 	return label;
 }
 
-void subtilis_arm_add_addsub_imm(subtilis_arm_program_t *p,
+void subtilis_arm_add_addsub_imm(subtilis_arm_section_t *s,
 				 subtilis_arm_instr_type_t itype,
 				 subtilis_arm_instr_type_t alt_type,
 				 subtilis_arm_ccode_type_t ccode, bool status,
@@ -489,7 +627,7 @@ void subtilis_arm_add_addsub_imm(subtilis_arm_program_t *p,
 	if (!can_encode) {
 		if (status && (ccode != SUBTILIS_ARM_CCODE_AL)) {
 			(void)subtilis_add_data_imm_ldr_datai(
-			    p, itype, ccode, status, dest, op1, op2, err);
+			    s, itype, ccode, status, dest, op1, op2, err);
 			return;
 		}
 
@@ -507,12 +645,12 @@ void subtilis_arm_add_addsub_imm(subtilis_arm_program_t *p,
 	}
 
 	if (!can_encode) {
-		(void)subtilis_add_data_imm_ldr_datai(p, itype, ccode, status,
+		(void)subtilis_add_data_imm_ldr_datai(s, itype, ccode, status,
 						      dest, op1, op2, err);
 		return;
 	}
 
-	instr = subtilis_arm_program_add_instr(p, itype, err);
+	instr = subtilis_arm_section_add_instr(s, itype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -527,13 +665,13 @@ void subtilis_arm_add_addsub_imm(subtilis_arm_program_t *p,
 	if (encoded2 == 0)
 		return;
 
-	instr = subtilis_arm_program_dup_instr(p, err);
+	instr = subtilis_arm_section_dup_instr(s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	datai->op2.op.integer = encoded2;
 }
 
-void subtilis_arm_add_rsub_imm(subtilis_arm_program_t *p,
+void subtilis_arm_add_rsub_imm(subtilis_arm_section_t *s,
 			       subtilis_arm_ccode_type_t ccode, bool status,
 			       subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
 			       int32_t op2, subtilis_error_t *err)
@@ -550,8 +688,8 @@ void subtilis_arm_add_rsub_imm(subtilis_arm_program_t *p,
 	    !(status && (ccode != SUBTILIS_ARM_CCODE_AL))) {
 		can_encode = subtilis_arm_encode_imm(-op2, &encoded);
 		if (can_encode) {
-			neg_dest = prv_acquire_new_reg(p);
-			subtilis_arm_add_sub_imm(p, ccode, false, neg_dest, op1,
+			neg_dest = prv_acquire_new_reg(s);
+			subtilis_arm_add_sub_imm(s, ccode, false, neg_dest, op1,
 						 0, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
@@ -562,12 +700,12 @@ void subtilis_arm_add_rsub_imm(subtilis_arm_program_t *p,
 	}
 
 	if (!can_encode) {
-		(void)subtilis_add_data_imm_ldr_datai(p, itype, ccode, status,
+		(void)subtilis_add_data_imm_ldr_datai(s, itype, ccode, status,
 						      dest, op1, op2, err);
 		return;
 	}
 
-	instr = subtilis_arm_program_add_instr(p, itype, err);
+	instr = subtilis_arm_section_add_instr(s, itype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -580,7 +718,7 @@ void subtilis_arm_add_rsub_imm(subtilis_arm_program_t *p,
 	datai->op2.op.integer = encoded;
 }
 
-void subtilis_arm_add_mul_imm(subtilis_arm_program_t *p,
+void subtilis_arm_add_mul_imm(subtilis_arm_section_t *s,
 			      subtilis_arm_ccode_type_t ccode, bool status,
 			      subtilis_arm_reg_t dest, subtilis_arm_reg_t rm,
 			      int32_t rs, subtilis_error_t *err)
@@ -594,14 +732,14 @@ void subtilis_arm_add_mul_imm(subtilis_arm_program_t *p,
 		return;
 	}
 
-	mov_dest = prv_acquire_new_reg(p);
-	subtilis_arm_add_mov_imm(p, ccode, false, mov_dest, rs, err);
+	mov_dest = prv_acquire_new_reg(s);
+	subtilis_arm_add_mov_imm(s, ccode, false, mov_dest, rs, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	/* TODO: A whole pile of optimisations here */
 
-	instr = subtilis_arm_program_add_instr(p, SUBTILIS_ARM_INSTR_MUL, err);
+	instr = subtilis_arm_section_add_instr(s, SUBTILIS_ARM_INSTR_MUL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -613,7 +751,7 @@ void subtilis_arm_add_mul_imm(subtilis_arm_program_t *p,
 	mul->rs = mov_dest;
 }
 
-void subtilis_arm_add_mul(subtilis_arm_program_t *p,
+void subtilis_arm_add_mul(subtilis_arm_section_t *s,
 			  subtilis_arm_ccode_type_t ccode, bool status,
 			  subtilis_arm_reg_t dest, subtilis_arm_reg_t rm,
 			  subtilis_arm_reg_t rs, subtilis_error_t *err)
@@ -632,7 +770,7 @@ void subtilis_arm_add_mul(subtilis_arm_program_t *p,
 		rm = tmp_reg;
 	}
 
-	instr = subtilis_arm_program_add_instr(p, SUBTILIS_ARM_INSTR_MUL, err);
+	instr = subtilis_arm_section_add_instr(s, SUBTILIS_ARM_INSTR_MUL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -644,7 +782,7 @@ void subtilis_arm_add_mul(subtilis_arm_program_t *p,
 	mul->rs = rs;
 }
 
-void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
+void subtilis_arm_add_data_imm(subtilis_arm_section_t *s,
 			       subtilis_arm_instr_type_t itype,
 			       subtilis_arm_ccode_type_t ccode, bool status,
 			       subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
@@ -657,8 +795,8 @@ void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
 	subtilis_arm_op2_t data_opt2;
 
 	if (!subtilis_arm_encode_imm(op2, &encoded)) {
-		mov_dest = prv_acquire_new_reg(p);
-		subtilis_arm_add_mov_imm(p, ccode, false, mov_dest, op2, err);
+		mov_dest = prv_acquire_new_reg(s);
+		subtilis_arm_add_mov_imm(s, ccode, false, mov_dest, op2, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		data_opt2.type = SUBTILIS_ARM_OP2_REG;
@@ -668,7 +806,7 @@ void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
 		data_opt2.op.integer = encoded;
 	}
 
-	instr = subtilis_arm_program_add_instr(p, itype, err);
+	instr = subtilis_arm_section_add_instr(s, itype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -680,14 +818,14 @@ void subtilis_arm_add_data_imm(subtilis_arm_program_t *p,
 	datai->op2 = data_opt2;
 }
 
-void subtilis_arm_add_swi(subtilis_arm_program_t *p,
+void subtilis_arm_add_swi(subtilis_arm_section_t *s,
 			  subtilis_arm_ccode_type_t ccode, size_t code,
 			  uint32_t reg_mask, subtilis_error_t *err)
 {
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_swi_instr_t *swi;
 
-	instr = subtilis_arm_program_add_instr(p, SUBTILIS_ARM_INSTR_SWI, err);
+	instr = subtilis_arm_section_add_instr(s, SUBTILIS_ARM_INSTR_SWI, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -697,7 +835,7 @@ void subtilis_arm_add_swi(subtilis_arm_program_t *p,
 	swi->reg_mask = reg_mask;
 }
 
-void subtilis_arm_add_movmvn_reg(subtilis_arm_program_t *p,
+void subtilis_arm_add_movmvn_reg(subtilis_arm_section_t *s,
 				 subtilis_arm_instr_type_t itype,
 				 subtilis_arm_ccode_type_t ccode, bool status,
 				 subtilis_arm_reg_t dest,
@@ -706,7 +844,7 @@ void subtilis_arm_add_movmvn_reg(subtilis_arm_program_t *p,
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_data_instr_t *datai;
 
-	instr = subtilis_arm_program_add_instr(p, itype, err);
+	instr = subtilis_arm_section_add_instr(s, itype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -718,7 +856,7 @@ void subtilis_arm_add_movmvn_reg(subtilis_arm_program_t *p,
 	datai->op2.op.reg = op2;
 }
 
-void subtilis_arm_add_movmvn_imm(subtilis_arm_program_t *p,
+void subtilis_arm_add_movmvn_imm(subtilis_arm_section_t *s,
 				 subtilis_arm_instr_type_t itype,
 				 subtilis_arm_instr_type_t alt_type,
 				 subtilis_arm_ccode_type_t ccode, bool status,
@@ -733,12 +871,12 @@ void subtilis_arm_add_movmvn_imm(subtilis_arm_program_t *p,
 		if (subtilis_arm_encode_imm(~op2, &encoded)) {
 			itype = alt_type;
 		} else {
-			(void)prv_add_data_imm_ldr(p, ccode, dest, op2, err);
+			(void)prv_add_data_imm_ldr(s, ccode, dest, op2, err);
 			return;
 		}
 	}
 
-	instr = subtilis_arm_program_add_instr(p, itype, err);
+	instr = subtilis_arm_section_add_instr(s, itype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -750,7 +888,7 @@ void subtilis_arm_add_movmvn_imm(subtilis_arm_program_t *p,
 	datai->op2.op.integer = encoded;
 }
 
-void subtilis_arm_add_stran_imm(subtilis_arm_program_t *p,
+void subtilis_arm_add_stran_imm(subtilis_arm_section_t *s,
 				subtilis_arm_instr_type_t itype,
 				subtilis_arm_ccode_type_t ccode,
 				subtilis_arm_reg_t dest,
@@ -762,8 +900,8 @@ void subtilis_arm_add_stran_imm(subtilis_arm_program_t *p,
 	subtilis_arm_stran_instr_t *stran;
 
 	if (offset > 4095 || offset < -4095) {
-		op2.op.reg = prv_acquire_new_reg(p);
-		(void)prv_add_data_imm_ldr(p, ccode, op2.op.reg, offset, err);
+		op2.op.reg = prv_acquire_new_reg(s);
+		(void)prv_add_data_imm_ldr(s, ccode, op2.op.reg, offset, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		op2.type = SUBTILIS_ARM_OP2_REG;
@@ -772,7 +910,7 @@ void subtilis_arm_add_stran_imm(subtilis_arm_program_t *p,
 		op2.op.integer = offset;
 	}
 
-	instr = subtilis_arm_program_add_instr(p, itype, err);
+	instr = subtilis_arm_section_add_instr(s, itype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	stran = &instr->operands.stran;
@@ -784,7 +922,7 @@ void subtilis_arm_add_stran_imm(subtilis_arm_program_t *p,
 	stran->write_back = false;
 }
 
-void subtilis_arm_insert_push(subtilis_arm_program_t *p,
+void subtilis_arm_insert_push(subtilis_arm_section_t *s,
 			      subtilis_arm_op_t *current,
 			      subtilis_arm_ccode_type_t ccode, size_t reg_num,
 			      subtilis_error_t *err)
@@ -800,8 +938,8 @@ void subtilis_arm_insert_push(subtilis_arm_program_t *p,
 	base.num = 13;
 	base.type = SUBTILIS_ARM_REG_FIXED;
 
-	instr = subtilis_arm_program_insert_instr(p, current,
-						  SUBTILIS_ARM_INSTR_LDR, err);
+	instr = subtilis_arm_section_insert_instr(s, current,
+						  SUBTILIS_ARM_INSTR_STR, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	stran = &instr->operands.stran;
@@ -814,7 +952,7 @@ void subtilis_arm_insert_push(subtilis_arm_program_t *p,
 	stran->write_back = true;
 }
 
-void subtilis_arm_insert_pop(subtilis_arm_program_t *p,
+void subtilis_arm_insert_pop(subtilis_arm_section_t *s,
 			     subtilis_arm_op_t *current,
 			     subtilis_arm_ccode_type_t ccode, size_t reg_num,
 			     subtilis_error_t *err)
@@ -830,8 +968,8 @@ void subtilis_arm_insert_pop(subtilis_arm_program_t *p,
 	base.num = 13;
 	base.type = SUBTILIS_ARM_REG_FIXED;
 
-	instr = subtilis_arm_program_insert_instr(p, current,
-						  SUBTILIS_ARM_INSTR_STR, err);
+	instr = subtilis_arm_section_insert_instr(s, current,
+						  SUBTILIS_ARM_INSTR_LDR, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	stran = &instr->operands.stran;
@@ -845,7 +983,7 @@ void subtilis_arm_insert_pop(subtilis_arm_program_t *p,
 }
 
 /* clang-format off */
-void subtilis_arm_insert_stran_spill_imm(subtilis_arm_program_t *p,
+void subtilis_arm_insert_stran_spill_imm(subtilis_arm_section_t *s,
 					 subtilis_arm_op_t *current,
 					 subtilis_arm_instr_type_t itype,
 					 subtilis_arm_ccode_type_t ccode,
@@ -860,13 +998,13 @@ void subtilis_arm_insert_stran_spill_imm(subtilis_arm_program_t *p,
 	subtilis_arm_stran_instr_t *stran;
 
 	op2.op.reg = spill_reg;
-	(void)prv_insert_data_imm_ldr(p, current, ccode, op2.op.reg, offset,
+	(void)prv_insert_data_imm_ldr(s, current, ccode, op2.op.reg, offset,
 				      err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	op2.type = SUBTILIS_ARM_OP2_REG;
 
-	instr = subtilis_arm_program_insert_instr(p, current, itype, err);
+	instr = subtilis_arm_section_insert_instr(s, current, itype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	stran = &instr->operands.stran;
@@ -878,7 +1016,7 @@ void subtilis_arm_insert_stran_spill_imm(subtilis_arm_program_t *p,
 	stran->write_back = false;
 }
 
-void subtilis_arm_insert_stran_imm(subtilis_arm_program_t *p,
+void subtilis_arm_insert_stran_imm(subtilis_arm_section_t *s,
 				   subtilis_arm_op_t *current,
 				   subtilis_arm_instr_type_t itype,
 				   subtilis_arm_ccode_type_t ccode,
@@ -898,7 +1036,7 @@ void subtilis_arm_insert_stran_imm(subtilis_arm_program_t *p,
 	op2.type = SUBTILIS_ARM_OP2_I32;
 	op2.op.integer = offset;
 
-	instr = subtilis_arm_program_insert_instr(p, current, itype, err);
+	instr = subtilis_arm_section_insert_instr(s, current, itype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	stran = &instr->operands.stran;
@@ -910,7 +1048,7 @@ void subtilis_arm_insert_stran_imm(subtilis_arm_program_t *p,
 	stran->write_back = false;
 }
 
-void subtilis_arm_add_cmp_imm(subtilis_arm_program_t *p,
+void subtilis_arm_add_cmp_imm(subtilis_arm_section_t *s,
 			      subtilis_arm_ccode_type_t ccode,
 			      subtilis_arm_reg_t op1, int32_t op2,
 			      subtilis_error_t *err)
@@ -930,12 +1068,12 @@ void subtilis_arm_add_cmp_imm(subtilis_arm_program_t *p,
 			dest.type = SUBTILIS_ARM_REG_FIXED;
 			dest.num = 0xffffffff;
 			(void)subtilis_add_data_imm_ldr_datai(
-			    p, itype, ccode, false, dest, op1, op2, err);
+			    s, itype, ccode, false, dest, op1, op2, err);
 			return;
 		}
 	}
 
-	instr = subtilis_arm_program_add_instr(p, itype, err);
+	instr = subtilis_arm_section_add_instr(s, itype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -947,7 +1085,7 @@ void subtilis_arm_add_cmp_imm(subtilis_arm_program_t *p,
 	datai->status = true;
 }
 
-void subtilis_arm_add_cmp(subtilis_arm_program_t *p,
+void subtilis_arm_add_cmp(subtilis_arm_section_t *s,
 			  subtilis_arm_instr_type_t itype,
 			  subtilis_arm_ccode_type_t ccode,
 			  subtilis_arm_reg_t op1, subtilis_arm_reg_t op2,
@@ -956,7 +1094,7 @@ void subtilis_arm_add_cmp(subtilis_arm_program_t *p,
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_data_instr_t *datai;
 
-	instr = subtilis_arm_program_add_instr(p, itype, err);
+	instr = subtilis_arm_section_add_instr(s, itype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -966,6 +1104,27 @@ void subtilis_arm_add_cmp(subtilis_arm_program_t *p,
 	datai->op2.type = SUBTILIS_ARM_OP2_REG;
 	datai->op2.op.reg = op2;
 	datai->status = true;
+}
+
+void subtilis_arm_add_mtran(subtilis_arm_section_t *s,
+			    subtilis_arm_instr_type_t itype,
+			    subtilis_arm_ccode_type_t ccode,
+			    subtilis_arm_reg_t op0, size_t reg_list,
+			    subtilis_arm_mtran_type_t type, bool write_back,
+			    subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_mtran_instr_t *mtran;
+
+	instr = subtilis_arm_section_add_instr(s, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	mtran = &instr->operands.mtran;
+	mtran->ccode = ccode;
+	mtran->op0 = op0;
+	mtran->reg_list = reg_list;
+	mtran->type = type;
+	mtran->write_back = write_back;
 }
 
 /* clang-format off */
@@ -1085,7 +1244,7 @@ static void prv_dump_mul_instr(void *user_data, subtilis_arm_op_t *op,
 		printf("%s", ccode_desc[instr->ccode]);
 	if (instr->status)
 		printf("S");
-	printf(" R%zu, R%zu R%zu\n", instr->dest.num, instr->rm.num,
+	printf(" R%zu, R%zu, R%zu\n", instr->dest.num, instr->rm.num,
 	       instr->rs.num);
 }
 
@@ -1116,7 +1275,32 @@ static void prv_dump_mtran_instr(void *user_data, subtilis_arm_op_t *op,
 				 subtilis_arm_mtran_instr_t *instr,
 				 subtilis_error_t *err)
 {
-	subtilis_error_set_assertion_failed(err);
+	size_t i;
+	const char *const direction[] = {
+	    "IA", "IB", "DA", "DB", "FA", "FD", "EA", "ED",
+	};
+
+	printf("\t%s%s %zu", instr_desc[type], direction[(size_t)instr->type],
+	       instr->op0.num);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	if (instr->write_back)
+		printf("!");
+	printf(", {");
+
+	for (i = 0; i < 15; i++) {
+		if (1 << i & instr->reg_list) {
+			printf("R%zu", i);
+			i++;
+			break;
+		}
+	}
+
+	for (; i < 15; i++) {
+		if ((1 << i) & instr->reg_list)
+			printf(", R%zu", i);
+	}
+	printf("}\n");
 }
 
 static void prv_dump_br_instr(void *user_data, subtilis_arm_op_t *op,
@@ -1124,10 +1308,19 @@ static void prv_dump_br_instr(void *user_data, subtilis_arm_op_t *op,
 			      subtilis_arm_br_instr_t *instr,
 			      subtilis_error_t *err)
 {
-	printf("\t%s", instr_desc[type]);
+	subtilis_arm_prog_t *p = user_data;
+
+	printf("\t%s", (instr->link) ? "BL" : "B");
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
-	printf(" label_%zu\n", instr->label);
+	if (instr->link) {
+		if (p)
+			printf(" %s\n", p->string_pool->strings[instr->label]);
+		else
+			printf("\n");
+	} else {
+		printf(" label_%zu\n", instr->label);
+	}
 }
 
 static void prv_dump_swi_instr(void *user_data, subtilis_arm_op_t *op,
@@ -1171,7 +1364,8 @@ static void prv_dump_label(void *user_data, subtilis_arm_op_t *op, size_t label,
 	printf(".label_%zu\n", label);
 }
 
-void subtilis_arm_program_dump(subtilis_arm_program_t *p)
+void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
+			       subtilis_arm_section_t *s)
 {
 	subtlis_arm_walker_t walker;
 	subtilis_error_t err;
@@ -1179,7 +1373,7 @@ void subtilis_arm_program_dump(subtilis_arm_program_t *p)
 
 	subtilis_error_init(&err);
 
-	walker.user_data = NULL;
+	walker.user_data = p;
 	walker.label_fn = prv_dump_label;
 	walker.data_fn = prv_dump_data_instr;
 	walker.mul_fn = prv_dump_mul_instr;
@@ -1191,10 +1385,18 @@ void subtilis_arm_program_dump(subtilis_arm_program_t *p)
 	walker.swi_fn = prv_dump_swi_instr;
 	walker.ldrc_fn = prv_dump_ldrc_instr;
 
-	subtilis_arm_walk(p, &walker, &err);
+	subtilis_arm_walk(s, &walker, &err);
 
-	for (i = 0; i < p->constant_count; i++) {
-		printf(".label_%zu\n", p->constants[i].label);
-		printf("\tEQUD &%x\n", p->constants[i].integer);
+	for (i = 0; i < s->constant_count; i++) {
+		printf(".label_%zu\n", s->constants[i].label);
+		printf("\tEQUD &%x\n", s->constants[i].integer);
 	}
+}
+
+void subtilis_arm_prog_dump(subtilis_arm_prog_t *p)
+{
+	size_t i;
+
+	for (i = 0; i < p->num_sections; i++)
+		subtilis_arm_section_dump(p, p->sections[i]);
 }

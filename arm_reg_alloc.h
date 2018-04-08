@@ -19,7 +19,17 @@
 
 #include "arm_core.h"
 
-size_t subtilis_arm_reg_alloc(subtilis_arm_program_t *arm_p,
+size_t subtilis_arm_reg_alloc(subtilis_arm_section_t *arm_s,
 			      subtilis_error_t *err);
+
+size_t subtilis_arm_regs_used_before(subtilis_arm_section_t *arm_s,
+				     subtilis_arm_op_t *op,
+				     subtilis_error_t *err);
+size_t subtilis_arm_regs_used_after(subtilis_arm_section_t *arm_s,
+				    subtilis_arm_op_t *op,
+				    subtilis_error_t *err);
+
+void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
+			    subtilis_error_t *err);
 
 #endif

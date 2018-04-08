@@ -23,55 +23,57 @@
 #include "config.h"
 #include "ir.h"
 
-subtilis_ir_program_t *subtilis_ir_program_new(subtilis_error_t *err)
+static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 {
-	subtilis_ir_program_t *p = malloc(sizeof(*p));
+	subtilis_ir_section_t *s = malloc(sizeof(*s));
 
-	if (!p) {
+	if (!s) {
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
-	p->max_len = 0;
-	p->reg_counter = SUBTILIS_IR_REG_TEMP_START;
-	p->label_counter = 0;
-	p->len = 0;
-	p->ops = NULL;
+	s->max_len = 0;
+	s->reg_counter = SUBTILIS_IR_REG_TEMP_START;
+	s->label_counter = 0;
+	s->len = 0;
+	s->ops = NULL;
+	s->type = NULL;
 
-	return p;
+	return s;
 }
 
-static void prv_ensure_buffer(subtilis_ir_program_t *p, subtilis_error_t *err)
+static void prv_ensure_buffer(subtilis_ir_section_t *s, subtilis_error_t *err)
 {
 	subtilis_ir_op_t **new_ops;
 	size_t new_max;
 
-	if (p->len < p->max_len)
+	if (s->len < s->max_len)
 		return;
 
-	new_max = p->max_len + SUBTILIS_CONFIG_PROGRAM_GRAN;
-	new_ops = realloc(p->ops, new_max * sizeof(subtilis_ir_op_t *));
+	new_max = s->max_len + SUBTILIS_CONFIG_PROGRAM_GRAN;
+	new_ops = realloc(s->ops, new_max * sizeof(subtilis_ir_op_t *));
 	if (!new_ops) {
 		subtilis_error_set_oom(err);
 		return;
 	}
-	p->max_len = new_max;
-	p->ops = new_ops;
+	s->max_len = new_max;
+	s->ops = new_ops;
 }
 
-void subtilis_ir_program_delete(subtilis_ir_program_t *p)
+static void prv_ir_section_delete(subtilis_ir_section_t *s)
 {
 	size_t i;
 
-	if (!p)
+	if (!s)
 		return;
 
-	for (i = 0; i < p->len; i++)
-		free(p->ops[i]);
-	free(p->ops);
-	free(p);
+	subtilis_type_section_delete(s->type);
+	for (i = 0; i < s->len; i++)
+		free(s->ops[i]);
+	free(s->ops);
+	free(s);
 }
 
-size_t subtilis_ir_program_add_instr(subtilis_ir_program_t *p,
+size_t subtilis_ir_section_add_instr(subtilis_ir_section_t *s,
 				     subtilis_op_instr_type_t type,
 				     subtilis_ir_operand_t op1,
 				     subtilis_ir_operand_t op2,
@@ -79,15 +81,15 @@ size_t subtilis_ir_program_add_instr(subtilis_ir_program_t *p,
 {
 	subtilis_ir_operand_t op0;
 
-	op0.reg = p->reg_counter;
-	subtilis_ir_program_add_instr_reg(p, type, op0, op1, op2, err);
+	op0.reg = s->reg_counter;
+	subtilis_ir_section_add_instr_reg(s, type, op0, op1, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
-	p->reg_counter++;
+	s->reg_counter++;
 	return op0.reg;
 }
 
-size_t subtilis_ir_program_add_instr2(subtilis_ir_program_t *p,
+size_t subtilis_ir_section_add_instr2(subtilis_ir_section_t *s,
 				      subtilis_op_instr_type_t type,
 				      subtilis_ir_operand_t op1,
 				      subtilis_error_t *err)
@@ -95,10 +97,10 @@ size_t subtilis_ir_program_add_instr2(subtilis_ir_program_t *p,
 	subtilis_ir_operand_t op2;
 
 	memset(&op2, 0, sizeof(op2));
-	return subtilis_ir_program_add_instr(p, type, op1, op2, err);
+	return subtilis_ir_section_add_instr(s, type, op1, op2, err);
 }
 
-void subtilis_ir_program_add_instr_no_reg(subtilis_ir_program_t *p,
+void subtilis_ir_section_add_instr_no_reg(subtilis_ir_section_t *s,
 					  subtilis_op_instr_type_t type,
 					  subtilis_ir_operand_t op0,
 					  subtilis_error_t *err)
@@ -108,10 +110,20 @@ void subtilis_ir_program_add_instr_no_reg(subtilis_ir_program_t *p,
 
 	memset(&op1, 0, sizeof(op1));
 	memset(&op2, 0, sizeof(op2));
-	subtilis_ir_program_add_instr_reg(p, type, op0, op1, op2, err);
+	subtilis_ir_section_add_instr_reg(s, type, op0, op1, op2, err);
 }
 
-void subtilis_ir_program_add_instr_reg(subtilis_ir_program_t *p,
+void subtilis_ir_section_add_instr_no_arg(subtilis_ir_section_t *s,
+					  subtilis_op_instr_type_t type,
+					  subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+
+	memset(&op0, 0, sizeof(op0));
+	subtilis_ir_section_add_instr_no_reg(s, type, op0, err);
+}
+
+void subtilis_ir_section_add_instr_reg(subtilis_ir_section_t *s,
 				       subtilis_op_instr_type_t type,
 				       subtilis_ir_operand_t op0,
 				       subtilis_ir_operand_t op1,
@@ -121,7 +133,7 @@ void subtilis_ir_program_add_instr_reg(subtilis_ir_program_t *p,
 	subtilis_ir_op_t *op;
 	subtilis_ir_inst_t *instr;
 
-	prv_ensure_buffer(p, err);
+	prv_ensure_buffer(s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -138,7 +150,128 @@ void subtilis_ir_program_add_instr_reg(subtilis_ir_program_t *p,
 	instr->operands[1] = op1;
 	instr->operands[2] = op2;
 
-	p->ops[p->len++] = op;
+	s->ops[s->len++] = op;
+}
+
+subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err)
+{
+	subtilis_ir_prog_t *p;
+
+	p = calloc(1, sizeof(*p));
+	if (!p) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+
+	p->string_pool = subtilis_string_pool_new(err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return p;
+
+cleanup:
+
+	subtilis_ir_prog_delete(p);
+
+	return NULL;
+}
+
+subtilis_ir_section_t *subtilis_ir_prog_section_new(subtilis_ir_prog_t *p,
+						    const char *name,
+						    subtilis_type_section_t *tp,
+						    subtilis_error_t *err)
+{
+	subtilis_ir_section_t *s;
+	size_t name_index;
+	size_t new_max;
+	subtilis_ir_section_t **new_pool;
+
+	s = prv_ir_section_new(err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	name_index = subtilis_string_pool_register(p->string_pool, name, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (name_index < p->num_sections) {
+		if (p->sections[name_index]) {
+			subtilis_error_set_already_defined(err);
+			goto cleanup;
+		}
+	} else {
+		if (name_index >= p->max_sections) {
+			new_max = p->max_sections + SUBTILIS_CONFIG_PROC_GRAN;
+			if (new_max < name_index + 1)
+				new_max = name_index + 1;
+			new_pool = realloc(p->sections,
+					   sizeof(*p->sections) * new_max);
+			if (!new_pool) {
+				subtilis_error_set_oom(err);
+				goto cleanup;
+			}
+			memset(&new_pool[p->num_sections], 0,
+			       sizeof(*p->sections) *
+				   (new_max - p->num_sections));
+			p->sections = new_pool;
+			p->max_sections = new_max;
+		}
+		p->num_sections = name_index + 1;
+	}
+	s->type = tp;
+	p->sections[name_index] = s;
+
+	return s;
+
+cleanup:
+
+	prv_ir_section_delete(s);
+
+	return NULL;
+}
+
+subtilis_ir_section_t *subtilis_ir_prog_find_section(subtilis_ir_prog_t *p,
+						     const char *name)
+{
+	size_t index;
+
+	if (!subtilis_string_pool_find(p->string_pool, name, &index))
+		return NULL;
+
+	if (index >= p->num_sections)
+		return NULL;
+
+	return p->sections[index];
+}
+
+void subtilis_ir_prog_dump(subtilis_ir_prog_t *p)
+{
+	size_t i;
+
+	for (i = 0; i < p->num_sections; i++) {
+		printf("PROC %s\n----------------\n\n",
+		       p->string_pool->strings[i]);
+		subtilis_ir_section_dump(p->sections[i]);
+		printf("\n");
+	}
+
+	printf("String Pool\n----------------\n\n");
+	subtilis_string_pool_dump(p->string_pool);
+}
+
+void subtilis_ir_prog_delete(subtilis_ir_prog_t *p)
+{
+	size_t i;
+
+	if (!p)
+		return;
+
+	for (i = 0; i < p->num_sections; i++)
+		prv_ir_section_delete(p->sections[i]);
+	free(p->sections);
+
+	subtilis_string_pool_delete(p->string_pool);
+	free(p);
 }
 
 struct subtilis_ir_op_desc_t_ {
@@ -227,6 +360,8 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "gteii32", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "jmpc", SUBTILIS_OP_CLASS_REG_LABEL_LABEL},
 	{ "jmp", SUBTILIS_OP_CLASS_LABEL},
+	{ "call", SUBTILIS_OP_CLASS_I32},
+	{ "ret", SUBTILIS_OP_CLASS_NONE},
 };
 
 /*
@@ -247,13 +382,20 @@ static const subtilis_ir_class_info_t class_details[] = {
 	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REAL} },
 	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER} },
 	{1, { SUBTILIS_IR_OPERAND_REGISTER} },
-	{1, { SUBTILIS_IR_OPERAND_LABEL} }
+	{1, { SUBTILIS_IR_OPERAND_LABEL} },
+	{1, { SUBTILIS_IR_OPERAND_LABEL} },
+	{0, { 0} },
 };
 
 /* clang-format on */
 
 static void prv_dump_instr(subtilis_ir_inst_t *instr)
 {
+	if (op_desc[instr->type].cls == SUBTILIS_OP_CLASS_NONE) {
+		printf("\t%s", op_desc[instr->type].name);
+		return;
+	}
+
 	printf("\t%s ", op_desc[instr->type].name);
 	switch (op_desc[instr->type].cls) {
 	case SUBTILIS_OP_CLASS_REG_REG_REG:
@@ -287,40 +429,45 @@ static void prv_dump_instr(subtilis_ir_inst_t *instr)
 	case SUBTILIS_OP_CLASS_REG:
 		printf("r%zu", instr->operands[0].reg);
 		break;
+	case SUBTILIS_OP_CLASS_I32:
+		printf("%d", instr->operands[0].integer);
+		break;
 	case SUBTILIS_OP_CLASS_LABEL:
 		printf("r%zu", instr->operands[0].reg);
+		break;
+	case SUBTILIS_OP_CLASS_NONE:
 		break;
 	}
 }
 
-void subtilis_ir_program_dump(subtilis_ir_program_t *p)
+void subtilis_ir_section_dump(subtilis_ir_section_t *s)
 {
 	size_t i;
 
-	for (i = 0; i < p->len; i++) {
-		if (!p->ops[i])
+	for (i = 0; i < s->len; i++) {
+		if (!s->ops[i])
 			continue;
-		if (p->ops[i]->type == SUBTILIS_OP_INSTR)
-			prv_dump_instr(&p->ops[i]->op.instr);
-		else if (p->ops[i]->type == SUBTILIS_OP_LABEL)
-			printf("label_%zu", p->ops[i]->op.label);
+		if (s->ops[i]->type == SUBTILIS_OP_INSTR)
+			prv_dump_instr(&s->ops[i]->op.instr);
+		else if (s->ops[i]->type == SUBTILIS_OP_LABEL)
+			printf("label_%zu", s->ops[i]->op.label);
 		else
 			continue;
 		printf("\n");
 	}
 }
 
-size_t subtilis_ir_program_new_label(subtilis_ir_program_t *p)
+size_t subtilis_ir_section_new_label(subtilis_ir_section_t *s)
 {
-	return p->label_counter++;
+	return s->label_counter++;
 }
 
-void subtilis_ir_program_add_label(subtilis_ir_program_t *p, size_t l,
+void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 				   subtilis_error_t *err)
 {
 	subtilis_ir_op_t *op;
 
-	prv_ensure_buffer(p, err);
+	prv_ensure_buffer(s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -331,7 +478,7 @@ void subtilis_ir_program_add_label(subtilis_ir_program_t *p, size_t l,
 	}
 	op->type = SUBTILIS_OP_LABEL;
 	op->op.label = l;
-	p->ops[p->len++] = op;
+	s->ops[s->len++] = op;
 }
 
 /*
@@ -657,7 +804,7 @@ static bool prv_match_op(subtilis_ir_op_t *op, subtilis_ir_op_match_t *match,
 	return true;
 }
 
-void subtilis_ir_match(subtilis_ir_program_t *p, subtilis_ir_rule_t *rules,
+void subtilis_ir_match(subtilis_ir_section_t *s, subtilis_ir_rule_t *rules,
 		       size_t rule_count, void *user_data,
 		       subtilis_error_t *err)
 {
@@ -667,12 +814,12 @@ void subtilis_ir_match(subtilis_ir_program_t *p, subtilis_ir_rule_t *rules,
 	subtilis_ir_match_state_t state;
 	subtilis_ir_op_t *op;
 
-	for (pc = 0; pc < p->len;) {
+	for (pc = 0; pc < s->len;) {
 		for (i = 0; i < rule_count; i++) {
 			state.regs_count = 0;
 			state.labels_count = 0;
 			for (j = 0; j < rules[i].matches_count; j++) {
-				op = p->ops[pc + j];
+				op = s->ops[pc + j];
 				if (!prv_match_op(op, &rules[i].matches[j],
 						  &state, err))
 					break;
@@ -680,7 +827,7 @@ void subtilis_ir_match(subtilis_ir_program_t *p, subtilis_ir_rule_t *rules,
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 			if (j == rules[i].matches_count) {
-				rules[i].action(p, pc, user_data, err);
+				rules[i].action(s, pc, user_data, err);
 				if (err->type != SUBTILIS_ERROR_OK)
 					return;
 				pc += j;

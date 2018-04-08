@@ -15,6 +15,7 @@
  */
 
 #include "arm_encode.h"
+#include "arm_link.h"
 #include "arm_walker.h"
 
 #include <stdio.h>
@@ -44,37 +45,65 @@ struct subtilis_arm_encode_ud_t_ {
 	subtilis_arm_encode_bp_t *back_patches;
 	size_t back_patch_count;
 	size_t max_patch_count;
+	subtilis_arm_link_t *link;
 };
 
 typedef struct subtilis_arm_encode_ud_t_ subtilis_arm_encode_ud_t;
 
-static void prv_init_encode_ud(subtilis_arm_encode_ud_t *ud,
-			       subtilis_arm_program_t *arm_p,
-			       subtilis_error_t *err)
-{
-	memset(ud, 0, sizeof(*ud));
-
-	ud->max_labels = arm_p->label_counter;
-	ud->label_offsets = malloc(sizeof(size_t) * ud->max_labels);
-	if (!ud->label_offsets) {
-		subtilis_error_set_oom(err);
-		return;
-	}
-
-	ud->code = malloc(sizeof(uint32_t) *
-			  (arm_p->pool->len + arm_p->constant_count));
-	if (!ud->code) {
-		free(ud->label_offsets);
-		subtilis_error_set_oom(err);
-		return;
-	}
-}
-
 static void prv_free_encode_ud(subtilis_arm_encode_ud_t *ud)
 {
+	subtilis_arm_link_delete(ud->link);
 	free(ud->back_patches);
 	free(ud->code);
 	free(ud->label_offsets);
+}
+
+static void prv_init_encode_ud(subtilis_arm_encode_ud_t *ud,
+			       subtilis_arm_prog_t *arm_p,
+			       subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_arm_section_t *arm_s;
+	size_t max_label_offsets = 0;
+	size_t constants = 0;
+
+	memset(ud, 0, sizeof(*ud));
+
+	for (i = 0; i < arm_p->num_sections; i++) {
+		arm_s = arm_p->sections[i];
+		if (arm_s->label_counter > max_label_offsets)
+			max_label_offsets = arm_s->label_counter;
+		constants += arm_s->constant_count;
+	}
+
+	ud->label_offsets = malloc(sizeof(size_t) * max_label_offsets);
+	if (!ud->label_offsets) {
+		subtilis_error_set_oom(err);
+		goto on_error;
+	}
+
+	ud->code = malloc(sizeof(uint32_t) * (arm_p->op_pool->len + constants));
+	if (!ud->code) {
+		subtilis_error_set_oom(err);
+		goto on_error;
+	}
+
+	ud->link = subtilis_arm_link_new(arm_p->num_sections, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	return;
+
+on_error:
+
+	prv_free_encode_ud(ud);
+}
+
+static void prv_reset_encode_ud(subtilis_arm_encode_ud_t *ud,
+				subtilis_arm_section_t *arm_s)
+{
+	ud->max_labels = arm_s->label_counter;
+	ud->back_patch_count = 0;
 }
 
 static void prv_add_back_patch(subtilis_arm_encode_ud_t *ud, size_t label,
@@ -129,9 +158,25 @@ fail:
 	(void)fclose(fp);
 }
 
+static uint32_t prv_convert_shift(subtilis_arm_shift_type_t type,
+				  subtilis_error_t *err)
+{
+	switch (type) {
+	case SUBTILIS_ARM_SHIFT_LSL:
+		return 0;
+	case SUBTILIS_ARM_SHIFT_RRX:
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	default:
+		return ((uint32_t)type) - 1;
+	}
+}
+
 static void prv_encode_data_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 				subtilis_error_t *err)
 {
+	uint32_t shift;
+
 	if (op2->type == SUBTILIS_ARM_OP2_REG) {
 		if (op2->op.reg.num > 15) {
 			subtilis_error_set_assertion_failed(err);
@@ -151,11 +196,12 @@ static void prv_encode_data_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 			return;
 		}
 
-		/* TODO currently i have no idea how to encode the shifts */
-
+		*word |= op2->op.shift.reg.num;
 		*word |= op2->op.shift.shift << 8;
-
-		subtilis_error_set_assertion_failed(err);
+		shift = prv_convert_shift(op2->op.shift.type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		*word |= shift << 5;
 	}
 }
 
@@ -225,6 +271,8 @@ static void prv_encode_mov_instr(void *user_data, subtilis_arm_op_t *op,
 static void prv_encode_stran_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 				 subtilis_error_t *err)
 {
+	uint32_t shift;
+
 	if (op2->type == SUBTILIS_ARM_OP2_REG) {
 		if (op2->op.reg.num > 15) {
 			subtilis_error_set_assertion_failed(err);
@@ -244,12 +292,13 @@ static void prv_encode_stran_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 			return;
 		}
 
-		/* TODO currently i have no idea how to encode the shifts */
-
+		*word |= op2->op.shift.reg.num;
 		*word |= 1 << 25;
-		*word |= op2->op.shift.shift << 8;
-
-		subtilis_error_set_assertion_failed(err);
+		*word |= op2->op.shift.shift << 7;
+		shift = prv_convert_shift(op2->op.shift.type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		*word |= shift << 5;
 	}
 }
 
@@ -291,7 +340,79 @@ static void prv_encode_mtran_instr(void *user_data, subtilis_arm_op_t *op,
 				   subtilis_arm_mtran_instr_t *instr,
 				   subtilis_error_t *err)
 {
-	subtilis_error_set_assertion_failed(err);
+	subtilis_arm_encode_ud_t *ud = user_data;
+	uint32_t word = 0;
+	subtilis_arm_mtran_type_t m_type;
+
+	word |= instr->ccode << 28;
+	word |= 0x4 << 25;
+
+	m_type = instr->type;
+	if (type == SUBTILIS_ARM_INSTR_STM) {
+		switch (m_type) {
+		case SUBTILIS_ARM_MTRAN_FA:
+			m_type = SUBTILIS_ARM_MTRAN_IB;
+			break;
+		case SUBTILIS_ARM_MTRAN_FD:
+			m_type = SUBTILIS_ARM_MTRAN_DB;
+			break;
+		case SUBTILIS_ARM_MTRAN_EA:
+			m_type = SUBTILIS_ARM_MTRAN_IA;
+			break;
+		case SUBTILIS_ARM_MTRAN_ED:
+			m_type = SUBTILIS_ARM_MTRAN_DA;
+			break;
+		default:
+			break;
+		}
+	} else {
+		switch (m_type) {
+		case SUBTILIS_ARM_MTRAN_FA:
+			m_type = SUBTILIS_ARM_MTRAN_DA;
+			break;
+		case SUBTILIS_ARM_MTRAN_FD:
+			m_type = SUBTILIS_ARM_MTRAN_IA;
+			break;
+		case SUBTILIS_ARM_MTRAN_EA:
+			m_type = SUBTILIS_ARM_MTRAN_DB;
+			break;
+		case SUBTILIS_ARM_MTRAN_ED:
+			m_type = SUBTILIS_ARM_MTRAN_IB;
+			break;
+		default:
+			break;
+		}
+	}
+
+	switch (m_type) {
+	case SUBTILIS_ARM_MTRAN_IA:
+		word |= 1 << 23;
+		break;
+	case SUBTILIS_ARM_MTRAN_IB:
+		word |= 1 << 23;
+		word |= 1 << 24;
+		break;
+	case SUBTILIS_ARM_MTRAN_DA:
+		break;
+	case SUBTILIS_ARM_MTRAN_DB:
+		word |= 1 << 24;
+		break;
+	default:
+		break;
+	}
+
+	/* TODO: Do not support writing to status bits. */
+
+	if (instr->write_back)
+		word |= 1 << 21;
+
+	if (type == SUBTILIS_ARM_INSTR_LDM)
+		word |= 1 << 20;
+
+	word |= instr->op0.num << 16;
+	word |= instr->reg_list & 0xffff;
+
+	ud->code[ud->words_written++] = word;
 }
 
 static void prv_encode_br_instr(void *user_data, subtilis_arm_op_t *op,
@@ -304,11 +425,14 @@ static void prv_encode_br_instr(void *user_data, subtilis_arm_op_t *op,
 
 	word |= instr->ccode << 28;
 	word |= 0x5 << 25;
-	if (instr->link)
+	if (instr->link) {
 		word |= 1 << 24;
-
-	prv_add_back_patch(ud, instr->label, ud->words_written,
-			   SUBTILIS_ARM_ENCODE_BP_BR, err);
+		subtilis_arm_link_add(ud->link, ud->words_written, err);
+		word |= instr->label;
+	} else {
+		prv_add_back_patch(ud, instr->label, ud->words_written,
+				   SUBTILIS_ARM_ENCODE_BP_BR, err);
+	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	ud->code[ud->words_written++] = word;
@@ -407,7 +531,7 @@ static void prv_apply_back_patches(subtilis_arm_encode_ud_t *ud,
 	}
 }
 
-static void prv_arm_encode(subtilis_arm_program_t *arm_p,
+static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 			   subtilis_arm_encode_ud_t *ud, subtilis_error_t *err)
 {
 	subtlis_arm_walker_t walker;
@@ -425,14 +549,14 @@ static void prv_arm_encode(subtilis_arm_program_t *arm_p,
 	walker.swi_fn = prv_encode_swi_instr;
 	walker.ldrc_fn = prv_encode_ldrc_instr;
 
-	subtilis_arm_walk(arm_p, &walker, err);
+	subtilis_arm_walk(arm_s, &walker, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	for (i = 0; i < arm_p->constant_count; i++) {
-		ud->label_offsets[arm_p->constants[i].label] =
+	for (i = 0; i < arm_s->constant_count; i++) {
+		ud->label_offsets[arm_s->constants[i].label] =
 		    ud->words_written;
-		ud->code[ud->words_written++] = arm_p->constants[i].integer;
+		ud->code[ud->words_written++] = arm_s->constants[i].integer;
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
@@ -440,7 +564,25 @@ static void prv_arm_encode(subtilis_arm_program_t *arm_p,
 	prv_apply_back_patches(ud, err);
 }
 
-void subtilis_arm_encode(subtilis_arm_program_t *arm_p, const char *fname,
+static void prv_encode_prog(subtilis_arm_prog_t *arm_p,
+			    subtilis_arm_encode_ud_t *ud, subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s;
+	size_t i;
+
+	for (i = 0; i < arm_p->num_sections; i++) {
+		arm_s = arm_p->sections[i];
+		subtilis_arm_link_section(ud->link, i, ud->words_written);
+		prv_reset_encode_ud(ud, arm_s);
+		prv_arm_encode(arm_s, ud, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	subtilis_arm_link_link(ud->link, ud->code, ud->words_written, err);
+}
+
+void subtilis_arm_encode(subtilis_arm_prog_t *arm_p, const char *fname,
 			 subtilis_error_t *err)
 {
 	subtilis_arm_encode_ud_t ud;
@@ -449,7 +591,7 @@ void subtilis_arm_encode(subtilis_arm_program_t *arm_p, const char *fname,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	prv_arm_encode(arm_p, &ud, err);
+	prv_encode_prog(arm_p, &ud, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -460,8 +602,8 @@ cleanup:
 	prv_free_encode_ud(&ud);
 }
 
-uint32_t *subtilis_arm_encode_buf(subtilis_arm_program_t *arm_p,
-				  subtilis_error_t *err)
+uint32_t *subtilis_arm_encode_buf(subtilis_arm_prog_t *arm_p,
+				  size_t *words_written, subtilis_error_t *err)
 {
 	subtilis_arm_encode_ud_t ud;
 	uint32_t *retval = NULL;
@@ -470,10 +612,11 @@ uint32_t *subtilis_arm_encode_buf(subtilis_arm_program_t *arm_p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	prv_arm_encode(arm_p, &ud, err);
+	prv_encode_prog(arm_p, &ud, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	*words_written = ud.words_written;
 	retval = ud.code;
 	ud.code = NULL;
 

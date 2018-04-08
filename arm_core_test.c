@@ -65,6 +65,57 @@ fail:
 	return 1;
 }
 
+static int prv_test_encode_nearest(void)
+{
+	subtilis_error_t err;
+	struct test {
+		int32_t num;
+		uint32_t encoded;
+		bool ok;
+	};
+
+	size_t i;
+	struct test tests[] = {
+	    /* clang-format off */
+		{ 173, 173, true },
+		{ 257, 0xf41, true }, /* 260 */
+		{ 0xFE010000, 0x4ff, true},
+		{ 0xfffffff0, 0, false},
+	};
+
+	/* clang-format on */
+	uint32_t encoded;
+
+	printf("arm_core_encode_nearest");
+
+	subtilis_error_init(&err);
+	for (i = 0; i < sizeof(tests) / sizeof(struct test); i++) {
+		encoded = subtilis_arm_encode_nearest(tests[i].num, &err);
+		if (err.type != SUBTILIS_ERROR_OK) {
+			if (tests[i].ok) {
+				fprintf(stderr, "Expected success with 0x%x\n",
+					tests[i].num);
+				goto fail;
+			}
+		} else if (!tests[i].ok) {
+			fprintf(stderr, "Expected failure with 0x%x\n",
+				tests[i].num);
+			goto fail;
+		} else if (encoded != tests[i].encoded) {
+			fprintf(stderr, "Expected %u got %u\n",
+				tests[i].encoded, encoded);
+			goto fail;
+		}
+	}
+
+	printf(": [OK]\n");
+	return 0;
+
+fail:
+	printf(": [FAIL]\n");
+	return 1;
+}
+
 static int prv_test_encode_lvl2_imm(void)
 {
 	struct test {
@@ -110,17 +161,17 @@ fail:
 	return 1;
 }
 
-static subtilis_arm_program_t *prv_add_imm(subtilis_arm_op_pool_t *pool,
+static subtilis_arm_section_t *prv_add_imm(subtilis_arm_op_pool_t *pool,
 					   int32_t num,
 					   subtilis_arm_instr_type_t itype,
 					   subtilis_arm_instr_type_t alt_type,
 					   subtilis_error_t *err)
 {
-	subtilis_arm_program_t *p;
+	subtilis_arm_section_t *s;
 	subtilis_arm_reg_t dest;
 	subtilis_arm_reg_t op1;
 
-	p = subtilis_arm_program_new(pool, 0, 0, 0, err);
+	s = subtilis_arm_section_new(pool, 0, 0, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -130,17 +181,17 @@ static subtilis_arm_program_t *prv_add_imm(subtilis_arm_op_pool_t *pool,
 	op1.type = SUBTILIS_ARM_REG_FIXED;
 	op1.num = 1;
 
-	subtilis_arm_add_addsub_imm(p, itype, alt_type, SUBTILIS_ARM_CCODE_AL,
+	subtilis_arm_add_addsub_imm(s, itype, alt_type, SUBTILIS_ARM_CCODE_AL,
 				    false, dest, op1, num, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
-		subtilis_arm_program_delete(p);
+		subtilis_arm_section_delete(s);
 		return NULL;
 	}
 
-	return p;
+	return s;
 }
 
-static int prv_check_imm(subtilis_arm_program_t *p,
+static int prv_check_imm(subtilis_arm_section_t *s,
 			 subtilis_arm_instr_type_t itype, size_t count,
 			 uint32_t *nums)
 {
@@ -148,20 +199,20 @@ static int prv_check_imm(subtilis_arm_program_t *p,
 	subtilis_arm_op_t *op;
 	subtilis_arm_instr_t *instr;
 
-	if (p->len != count) {
+	if (s->len != count) {
 		fprintf(stderr, "Expected %zu instruction, found %zu\n", count,
-			p->len);
+			s->len);
 		return 1;
 	}
 
-	if (p->constant_count != 0) {
+	if (s->constant_count != 0) {
 		fprintf(stderr, "Expected 0 constants, found %zu\n",
-			p->constant_count);
+			s->constant_count);
 		return 1;
 	}
 
 	for (i = 0; i < count; i++) {
-		op = &p->pool->ops[i];
+		op = &s->op_pool->ops[i];
 		if (op->type != SUBTILIS_OP_INSTR) {
 			fprintf(stderr, "Expected instruction %d, found %d\n",
 				SUBTILIS_OP_INSTR, op->type);
@@ -187,7 +238,7 @@ static int prv_check_imm(subtilis_arm_program_t *p,
 
 static int prv_test_arm_add_data_1_imm(void)
 {
-	subtilis_arm_program_t *p = NULL;
+	subtilis_arm_section_t *s = NULL;
 	subtilis_error_t err;
 	uint32_t nums[] = {127};
 	subtilis_arm_op_pool_t *pool;
@@ -200,22 +251,22 @@ static int prv_test_arm_add_data_1_imm(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	p = prv_add_imm(pool, 127, SUBTILIS_ARM_INSTR_ADD,
+	s = prv_add_imm(pool, 127, SUBTILIS_ARM_INSTR_ADD,
 			SUBTILIS_ARM_INSTR_SUB, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	if (prv_check_imm(p, SUBTILIS_ARM_INSTR_ADD, 1, nums))
+	if (prv_check_imm(s, SUBTILIS_ARM_INSTR_ADD, 1, nums))
 		goto fail;
 
-	subtilis_arm_program_delete(p);
+	subtilis_arm_section_delete(s);
 	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [OK]\n");
 	return 0;
 
 fail:
-	subtilis_arm_program_delete(p);
+	subtilis_arm_section_delete(s);
 	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [FAIL]\n");
@@ -224,7 +275,7 @@ fail:
 
 static int prv_test_arm_add_data_2_imm(void)
 {
-	subtilis_arm_program_t *p = NULL;
+	subtilis_arm_section_t *s = NULL;
 	subtilis_error_t err;
 	uint32_t nums[] = {0xc01, 1};
 	subtilis_arm_op_pool_t *pool;
@@ -237,22 +288,22 @@ static int prv_test_arm_add_data_2_imm(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	p = prv_add_imm(pool, 257, SUBTILIS_ARM_INSTR_ADD,
+	s = prv_add_imm(pool, 257, SUBTILIS_ARM_INSTR_ADD,
 			SUBTILIS_ARM_INSTR_SUB, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	if (prv_check_imm(p, SUBTILIS_ARM_INSTR_ADD, 2, nums))
+	if (prv_check_imm(s, SUBTILIS_ARM_INSTR_ADD, 2, nums))
 		goto fail;
 
-	subtilis_arm_program_delete(p);
+	subtilis_arm_section_delete(s);
 	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [OK]\n");
 	return 0;
 
 fail:
-	subtilis_arm_program_delete(p);
+	subtilis_arm_section_delete(s);
 	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [FAIL]\n");
@@ -261,7 +312,7 @@ fail:
 
 static int prv_test_arm_add_data_neg_imm(void)
 {
-	subtilis_arm_program_t *p = NULL;
+	subtilis_arm_section_t *s = NULL;
 	subtilis_error_t err;
 	uint32_t nums[] = {0xc01};
 	subtilis_arm_op_pool_t *pool;
@@ -274,22 +325,22 @@ static int prv_test_arm_add_data_neg_imm(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	p = prv_add_imm(pool, 0xffffff00, SUBTILIS_ARM_INSTR_ADD,
+	s = prv_add_imm(pool, 0xffffff00, SUBTILIS_ARM_INSTR_ADD,
 			SUBTILIS_ARM_INSTR_SUB, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	if (prv_check_imm(p, SUBTILIS_ARM_INSTR_SUB, 1, nums))
+	if (prv_check_imm(s, SUBTILIS_ARM_INSTR_SUB, 1, nums))
 		goto fail;
 
-	subtilis_arm_program_delete(p);
+	subtilis_arm_section_delete(s);
 	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [OK]\n");
 	return 0;
 
 fail:
-	subtilis_arm_program_delete(p);
+	subtilis_arm_section_delete(s);
 	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [FAIL]\n");
@@ -298,7 +349,7 @@ fail:
 
 static int prv_test_arm_add_data_neg_2_imm(void)
 {
-	subtilis_arm_program_t *p = NULL;
+	subtilis_arm_section_t *s = NULL;
 	subtilis_error_t err;
 	uint32_t nums[] = {0x8ff, 0x10};
 	subtilis_arm_op_pool_t *pool;
@@ -311,22 +362,22 @@ static int prv_test_arm_add_data_neg_2_imm(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	p = prv_add_imm(pool, 0xff00fff0, SUBTILIS_ARM_INSTR_ADD,
+	s = prv_add_imm(pool, 0xff00fff0, SUBTILIS_ARM_INSTR_ADD,
 			SUBTILIS_ARM_INSTR_SUB, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	if (prv_check_imm(p, SUBTILIS_ARM_INSTR_SUB, 2, nums))
+	if (prv_check_imm(s, SUBTILIS_ARM_INSTR_SUB, 2, nums))
 		goto fail;
 
-	subtilis_arm_program_delete(p);
+	subtilis_arm_section_delete(s);
 	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [OK]\n");
 	return 0;
 
 fail:
-	subtilis_arm_program_delete(p);
+	subtilis_arm_section_delete(s);
 	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [FAIL]\n");
@@ -335,7 +386,7 @@ fail:
 
 static int prv_test_arm_add_data_ldr_imm(void)
 {
-	subtilis_arm_program_t *p = NULL;
+	subtilis_arm_section_t *s = NULL;
 	subtilis_error_t err;
 	subtilis_arm_op_t *op;
 	subtilis_arm_instr_t *instr;
@@ -349,23 +400,23 @@ static int prv_test_arm_add_data_ldr_imm(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	p = prv_add_imm(pool, 0xf0f0f0f0, SUBTILIS_ARM_INSTR_ADD,
+	s = prv_add_imm(pool, 0xf0f0f0f0, SUBTILIS_ARM_INSTR_ADD,
 			SUBTILIS_ARM_INSTR_SUB, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	if (p->len != 2) {
-		fprintf(stderr, "Expected 2 instructions, found %zu\n", p->len);
+	if (s->len != 2) {
+		fprintf(stderr, "Expected 2 instructions, found %zu\n", s->len);
 		return 1;
 	}
 
-	if (p->constant_count != 1) {
+	if (s->constant_count != 1) {
 		fprintf(stderr, "Expected 1 constant, found %zu\n",
-			p->constant_count);
+			s->constant_count);
 		return 1;
 	}
 
-	op = &p->pool->ops[0];
+	op = &s->op_pool->ops[0];
 	if (op->type != SUBTILIS_OP_INSTR) {
 		fprintf(stderr, "Expected instruction %d, found %d\n",
 			SUBTILIS_OP_INSTR, op->type);
@@ -379,7 +430,7 @@ static int prv_test_arm_add_data_ldr_imm(void)
 		return 1;
 	}
 
-	op = &p->pool->ops[1];
+	op = &s->op_pool->ops[1];
 	if (op->type != SUBTILIS_OP_INSTR) {
 		fprintf(stderr, "Expected instruction %d, found %d\n",
 			SUBTILIS_OP_INSTR, op->type);
@@ -393,20 +444,20 @@ static int prv_test_arm_add_data_ldr_imm(void)
 		return 1;
 	}
 
-	if (p->constants[0].integer != 0xf0f0f0f0) {
+	if (s->constants[0].integer != 0xf0f0f0f0) {
 		fprintf(stderr, "Expected constant %d, found %d\n", 0xf0f0f0f0,
-			p->constants[0].integer);
+			s->constants[0].integer);
 		return 1;
 	}
 
-	subtilis_arm_program_delete(p);
+	subtilis_arm_section_delete(s);
 	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [OK]\n");
 	return 0;
 
 fail:
-	subtilis_arm_program_delete(p);
+	subtilis_arm_section_delete(s);
 	subtilis_arm_op_pool_delete(pool);
 
 	printf(": [FAIL]\n");
@@ -418,6 +469,7 @@ int arm_core_test(void)
 	int retval;
 
 	retval = prv_test_encode_imm();
+	retval |= prv_test_encode_nearest();
 	retval |= prv_test_encode_lvl2_imm();
 	retval |= prv_test_arm_add_data_1_imm();
 	retval |= prv_test_arm_add_data_2_imm();
