@@ -65,7 +65,6 @@ static void prv_walk_instr(subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 				 &instr->operands.mtran, err);
 		break;
 	case SUBTILIS_ARM_INSTR_B:
-	case SUBTILIS_ARM_INSTR_BL:
 		walker->br_fn(walker->user_data, op, instr->type,
 			      &instr->operands.br, err);
 		break;

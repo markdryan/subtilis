@@ -112,7 +112,6 @@ typedef enum {
 	SUBTILIS_ARM_INSTR_LDM,
 	SUBTILIS_ARM_INSTR_STM,
 	SUBTILIS_ARM_INSTR_B,
-	SUBTILIS_ARM_INSTR_BL,
 	SUBTILIS_ARM_INSTR_SWI,
 	SUBTILIS_ARM_INSTR_LDRC,
 } subtilis_arm_instr_type_t;
@@ -176,7 +175,7 @@ struct subtilis_arm_mtran_instr_t_ {
 
 typedef struct subtilis_arm_mtran_instr_t_ subtilis_arm_mtran_instr_t;
 
-/* TODO, we don't need link here, and we need a union for the label */
+/* TODO, We need a union for the label */
 struct subtilis_arm_br_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	bool link;
