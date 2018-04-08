@@ -117,6 +117,23 @@ typedef enum {
 	SUBTILIS_ARM_INSTR_LDRC,
 } subtilis_arm_instr_type_t;
 
+/*
+ * TODO: Maybe we should get rid of the stack versions of these
+ * instructions as we'll lose the stack information when we
+ * dissamlble.
+ */
+
+typedef enum {
+	SUBTILIS_ARM_MTRAN_IA,
+	SUBTILIS_ARM_MTRAN_IB,
+	SUBTILIS_ARM_MTRAN_DA,
+	SUBTILIS_ARM_MTRAN_DB,
+	SUBTILIS_ARM_MTRAN_FA,
+	SUBTILIS_ARM_MTRAN_FD,
+	SUBTILIS_ARM_MTRAN_EA,
+	SUBTILIS_ARM_MTRAN_ED
+} subtilis_arm_mtran_type_t;
+
 struct subtilis_arm_data_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	bool status;
@@ -153,17 +170,18 @@ struct subtilis_arm_mtran_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	subtilis_arm_reg_t op0;
 	size_t reg_list; // bitmap
-	bool pre_indexed;
-	bool ascending;
+	subtilis_arm_mtran_type_t type;
 	bool write_back;
 };
 
 typedef struct subtilis_arm_mtran_instr_t_ subtilis_arm_mtran_instr_t;
 
+/* TODO, we don't need link here, and we need a union for the label */
 struct subtilis_arm_br_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	bool link;
 	size_t label;
+	int32_t offset;
 };
 
 typedef struct subtilis_arm_br_instr_t_ subtilis_arm_br_instr_t;
@@ -237,6 +255,9 @@ struct subtilis_arm_section_t_ {
 	size_t constant_count;
 	size_t max_constants;
 	subtilis_arm_op_pool_t *op_pool;
+	size_t call_site_count;
+	size_t max_call_site_count;
+	size_t *call_sites;
 };
 
 typedef struct subtilis_arm_section_t_ subtilis_arm_section_t;
@@ -274,6 +295,8 @@ subtilis_arm_section_t *subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 						      size_t locals,
 						      subtilis_error_t *err);
 void subtilis_arm_prog_delete(subtilis_arm_prog_t *prog);
+void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s, size_t op,
+					subtilis_error_t *err);
 
 void subtilis_arm_section_add_label(subtilis_arm_section_t *s, size_t label,
 				    subtilis_error_t *err);
@@ -380,6 +403,13 @@ void subtilis_arm_add_cmp(subtilis_arm_section_t *s,
 			  subtilis_arm_reg_t op1, subtilis_arm_reg_t op2,
 			  subtilis_error_t *err);
 
+void subtilis_arm_add_mtran(subtilis_arm_section_t *s,
+			    subtilis_arm_instr_type_t itype,
+			    subtilis_arm_ccode_type_t ccode,
+			    subtilis_arm_reg_t op0, size_t reg_list,
+			    subtilis_arm_mtran_type_t type, bool write_back,
+			    subtilis_error_t *err);
+
 #define subtilis_arm_add_add_imm(p, cc, s, dst, op1, op2, err)                 \
 	subtilis_arm_add_addsub_imm(p, SUBTILIS_ARM_INSTR_ADD,                 \
 				    SUBTILIS_ARM_INSTR_SUB, cc, s, dst, op1,   \
@@ -402,7 +432,8 @@ void subtilis_arm_add_cmp(subtilis_arm_section_t *s,
 #define subtilis_arm_add_mvn_reg(p, cc, s, dst, op2, err)                      \
 	subtilis_arm_add_movmvn_reg(p, SUBTILIS_ARM_INSTR_MVN, cc, s, dst,     \
 				    op2, err)
-void subtilis_arm_section_dump(subtilis_arm_section_t *s);
+void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
+			       subtilis_arm_section_t *s);
 void subtilis_arm_prog_dump(subtilis_arm_prog_t *p);
 
 #endif

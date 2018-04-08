@@ -21,23 +21,21 @@
 #include "buffer.h"
 
 struct subtilis_arm_vm_t_ {
-	int32_t *regs;
+	int32_t regs[16];
 	uint8_t *memory;
 	size_t mem_size;
-	subtilis_arm_section_t *s;
-	size_t *labels;
-	size_t label_len;
-	subtilis_arm_op_t **ops;
+	size_t code_size;
 	size_t op_len;
 	bool negative_flag;
 	bool zero_flag;
 	bool carry_flag;
 	bool overflow_flag;
+	bool quit;
 };
 
 typedef struct subtilis_arm_vm_t_ subtilis_arm_vm_t;
 
-subtilis_arm_vm_t *subtilis_arm_vm_new(subtilis_arm_prog_t *arm_p,
+subtilis_arm_vm_t *subtilis_arm_vm_new(uint32_t *code, size_t code_size,
 				       size_t mem_size, subtilis_error_t *err);
 void subtilis_arm_vm_delete(subtilis_arm_vm_t *vm);
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,

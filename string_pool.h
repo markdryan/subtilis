@@ -35,5 +35,6 @@ bool subtilis_string_pool_find(subtilis_string_pool_t *pool, const char *str,
 size_t subtilis_string_pool_register(subtilis_string_pool_t *pool,
 				     const char *str, subtilis_error_t *err);
 void subtilis_string_pool_delete(subtilis_string_pool_t *pool);
+void subtilis_string_pool_dump(subtilis_string_pool_t *pool);
 
 #endif

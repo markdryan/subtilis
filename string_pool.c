@@ -113,3 +113,11 @@ void subtilis_string_pool_delete(subtilis_string_pool_t *pool)
 	free(pool->strings);
 	free(pool);
 }
+
+void subtilis_string_pool_dump(subtilis_string_pool_t *pool)
+{
+	size_t i;
+
+	for (i = 0; i < pool->length; i++)
+		printf("[%zu]\t %s\n", i, pool->strings[i]);
+}

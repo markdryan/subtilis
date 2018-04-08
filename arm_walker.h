@@ -66,4 +66,9 @@ void subtilis_arm_walk(subtilis_arm_section_t *arm_s,
 void subtilis_arm_walk_from(subtilis_arm_section_t *arm_s,
 			    subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 			    subtilis_error_t *err);
+void subtilis_arm_walk_from_to(subtilis_arm_section_t *arm_s,
+			       subtlis_arm_walker_t *walker,
+			       subtilis_arm_op_t *from, subtilis_arm_op_t *to,
+			       subtilis_error_t *err);
+
 #endif

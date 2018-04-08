@@ -54,7 +54,7 @@ static void prv_compute_labels(subitlis_vm_t *vm, subtilis_error_t *err)
 	}
 }
 
-subitlis_vm_t *subitlis_vm_new(subtilis_ir_section_t *s,
+subitlis_vm_t *subitlis_vm_new(subtilis_ir_prog_t *p,
 			       subtilis_symbol_table_t *st,
 			       subtilis_error_t *err)
 {
@@ -63,15 +63,19 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_section_t *s,
 	//	printf("\n");
 	//	subtilis_ir_section_dump(s);
 
-	vm->labels = NULL;
-	vm->max_labels = 0;
-
 	if (!vm) {
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
 
-	vm->regs = calloc(sizeof(int32_t), s->reg_counter);
+	vm->labels = NULL;
+	vm->max_labels = 0;
+	vm->p = p;
+	vm->s = p->sections[0];
+	vm->max_regs = vm->s->reg_counter;
+	vm->st = st;
+
+	vm->regs = calloc(sizeof(int32_t), vm->max_regs);
 	if (!vm->regs) {
 		subtilis_error_set_oom(err);
 		goto fail;
@@ -83,9 +87,6 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_section_t *s,
 		goto fail;
 	}
 
-	vm->s = s;
-	vm->st = st;
-
 	prv_compute_labels(vm, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto fail;
@@ -96,6 +97,29 @@ fail:
 
 	subitlis_vm_delete(vm);
 	return NULL;
+}
+
+static void prv_reserve_stack(subitlis_vm_t *vm, size_t words,
+			      subtilis_error_t *err)
+{
+	size_t needed;
+	size_t new_max;
+	int32_t *new_stack;
+
+	needed = vm->top + words;
+	if (needed <= vm->stack_size)
+		return;
+
+	new_max = vm->stack_size + 1024;
+	if (needed > new_max)
+		new_max = needed;
+	new_stack = realloc(vm->stack, sizeof(*vm->stack) * new_max);
+	if (!new_stack) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	vm->stack = new_stack;
+	vm->stack_size = new_max;
 }
 
 typedef void (*subtilis_vm_op_fn)(subitlis_vm_t *, subtilis_buffer_t *,
@@ -366,6 +390,73 @@ static void prv_jmp(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	}
 }
 
+static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	subtilis_ir_section_t *s;
+	int32_t *new_regs;
+	size_t i;
+	size_t section_index = ops[0].integer;
+
+	if (section_index >= vm->p->num_sections) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	s = vm->p->sections[section_index];
+	if (s->reg_counter > vm->max_regs) {
+		new_regs =
+		    realloc(vm->regs, sizeof(*vm->regs) * s->reg_counter);
+		if (!new_regs) {
+			subtilis_error_set_oom(err);
+			return;
+		}
+		vm->regs = new_regs;
+		vm->max_regs = s->reg_counter;
+	}
+
+	prv_reserve_stack(vm, vm->s->reg_counter + 2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	for (i = 0; i < vm->s->reg_counter; i++)
+		vm->stack[vm->top++] = vm->regs[i];
+	vm->stack[vm->top++] = vm->pc;
+	vm->stack[vm->top++] = vm->current_index;
+
+	vm->s = s;
+	vm->current_index = section_index;
+	vm->pc = -1;
+}
+
+static void prv_ret(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	size_t caller_index;
+	size_t to_pop;
+	subtilis_ir_section_t *cs;
+	size_t i;
+
+	if (vm->top == 0) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	caller_index = vm->stack[--vm->top];
+	cs = vm->p->sections[caller_index];
+	to_pop = cs->reg_counter + 1;
+	if (to_pop > vm->top) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	vm->s = cs;
+	vm->pc = vm->stack[--vm->top];
+	vm->current_index = caller_index;
+	for (i = 0; i < cs->reg_counter; i++)
+		vm->stack[vm->top - cs->reg_counter + i] = vm->regs[i];
+	vm->top -= cs->reg_counter;
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -422,6 +513,8 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_gteii32,                         /* SUBTILIS_OP_INSTR_GTEI_I32 */
 	prv_jmpc,                            /* SUBTILIS_OP_INSTR_JMPC */
 	prv_jmp,                             /* SUBTILIS_OP_INSTR_JMP */
+	prv_call,                            /* SUBTILIS_OP_INSTR_CALL */
+	prv_ret,                             /* SUBTILIS_OP_INSTR_RET */
 };
 
 /* clang-format on */
@@ -455,6 +548,7 @@ void subitlis_vm_delete(subitlis_vm_t *vm)
 {
 	if (!vm)
 		return;
+	free(vm->stack);
 	free(vm->labels);
 	free(vm->regs);
 	free(vm->globals);

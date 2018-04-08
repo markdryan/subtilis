@@ -18,7 +18,8 @@ COMMON =\
 	arm_gen.c \
 	arm_walker.c \
 	arm_reg_alloc.c \
-	arm_encode.c
+	arm_encode.c \
+	arm_link.c
 
 COMPILER =\
 	 compiler.c
@@ -33,7 +34,9 @@ TESTS =\
 	test_cases.c \
 	arm_core_test.c \
 	arm_vm.c \
-	arm_test.c
+	arm_test.c \
+	arm_reg_alloc_test.c \
+	arm_disass.c
 
 CFLAGS ?= -O3
 CFLAGS += -Wall -Werror -MMD

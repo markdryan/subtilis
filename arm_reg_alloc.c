@@ -20,6 +20,7 @@
 #include "arm_reg_alloc.h"
 #include "arm_walker.h"
 
+#define SUBTILIS_ARM_REG_MIN_REGS 4
 #define SUBTILIS_ARM_REG_MAX_REGS 11
 
 struct subtilis_arm_reg_class_t_ {
@@ -197,7 +198,17 @@ static void prv_dist_mtran_instr(void *user_data, subtilis_arm_op_t *op,
 				 subtilis_arm_mtran_instr_t *instr,
 				 subtilis_error_t *err)
 {
-	subtilis_error_set_assertion_failed(err);
+	subtilis_dist_data_t *ud = user_data;
+
+	/*
+	 * TODO: Mtran can not currently be used in distance calculations
+	 * as we can only represent a subset of the virtual registers
+	 * in the instruction.  As we're only currently using it to implement
+	 * a stack this is okay.  But long term we'll need to fix this if
+	 * we want to use the instructions for general purpose use.
+	 */
+
+	ud->last_used++;
 }
 
 static void prv_dist_br_instr(void *user_data, subtilis_arm_op_t *op,
@@ -799,7 +810,15 @@ static void prv_alloc_mtran_instr(void *user_data, subtilis_arm_op_t *op,
 				  subtilis_arm_mtran_instr_t *instr,
 				  subtilis_error_t *err)
 {
-	subtilis_error_set_assertion_failed(err);
+	subtilis_arm_reg_ud_t *ud = user_data;
+
+	/*
+	 * TODO: Again mtran is not currently been used as a general
+	 * instruction.  We're just inserting it into the code after
+	 * register allocation has happened to implement a stack.
+	 */
+
+	ud->instr_count++;
 }
 
 static void prv_alloc_br_instr(void *user_data, subtilis_arm_op_t *op,
@@ -926,4 +945,158 @@ cleanup:
 	prv_free_arm_reg_ud(&ud);
 
 	return 0;
+}
+
+static bool prv_is_reg_used_before(subtilis_arm_reg_ud_t *ud, size_t reg_num,
+				   subtilis_arm_op_t *from,
+				   subtilis_arm_op_t *to)
+{
+	subtilis_error_t err;
+	size_t i;
+
+	ud->dist_data.reg_num = reg_num;
+
+	do {
+		subtilis_error_init(&err);
+		ud->dist_data.last_used = 0;
+		subtilis_arm_walk_from_to(ud->arm_s, &ud->dist_walker, from, to,
+					  &err);
+		if (err.type == SUBTILIS_ERROR_OK)
+			return false;
+		else if (ud->dist_data.last_used == -1)
+			return true;
+
+		/*
+		 * We arrive here if reg_num is read from but not written to
+		 * by one instruction in the region.  We need to keep checking.
+		 * from the subsequent instruction.
+		 */
+
+		for (i = 0; i < ud->dist_data.last_used + 1; i++) {
+			if ((from == to) || (from->next == SIZE_MAX))
+				return false;
+
+			from = &ud->arm_s->op_pool->ops[from->next];
+		}
+	} while (true);
+
+	return false;
+}
+
+size_t subtilis_arm_regs_used_before(subtilis_arm_section_t *arm_s,
+				     subtilis_arm_op_t *op,
+				     subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_arm_reg_ud_t ud;
+	subtilis_arm_op_t *from;
+	size_t reg_list = 0;
+
+	prv_init_arm_reg_ud(&ud, arm_s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	from = &arm_s->op_pool->ops[arm_s->first_op];
+
+	for (i = SUBTILIS_ARM_REG_MIN_REGS; i < SUBTILIS_ARM_REG_MAX_REGS;
+	     i++) {
+		if (prv_is_reg_used_before(&ud, i, from, op))
+			reg_list |= 1 << i;
+	}
+
+	prv_free_arm_reg_ud(&ud);
+
+	return reg_list;
+}
+
+static bool prv_is_reg_used_after(subtilis_arm_reg_ud_t *ud, size_t reg_num,
+				  subtilis_arm_op_t *op)
+{
+	subtilis_error_t err;
+
+	subtilis_error_init(&err);
+
+	ud->dist_data.reg_num = reg_num;
+	ud->dist_data.last_used = ud->instr_count + 1;
+
+	subtilis_arm_walk_from(ud->arm_s, &ud->dist_walker, op, &err);
+
+	/*
+	 * Check that reg_num is used and that the  first usage of
+	 * reg_num is not a write.
+	 */
+
+	return (err.type != SUBTILIS_ERROR_OK) &&
+	       (ud->dist_data.last_used != -1);
+}
+
+size_t subtilis_arm_regs_used_after(subtilis_arm_section_t *arm_s,
+				    subtilis_arm_op_t *op,
+				    subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_arm_reg_ud_t ud;
+	size_t reg_list = 0;
+
+	prv_init_arm_reg_ud(&ud, arm_s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	for (i = SUBTILIS_ARM_REG_MIN_REGS; i < SUBTILIS_ARM_REG_MAX_REGS;
+	     i++) {
+		if (prv_is_reg_used_after(&ud, i, op))
+			reg_list |= 1 << i;
+	}
+
+	prv_free_arm_reg_ud(&ud);
+
+	return reg_list;
+}
+
+void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
+			    subtilis_error_t *err)
+{
+	size_t i;
+	size_t cs;
+	size_t stm;
+	size_t ldm;
+	size_t start;
+	size_t end;
+	size_t regs_used;
+	subtilis_arm_mtran_instr_t *mtran;
+
+	for (i = 0; i < arm_s->call_site_count; i++) {
+		regs_used = 0;
+		cs = arm_s->call_sites[i];
+		stm = arm_s->op_pool->ops[cs].prev;
+		if (stm == SIZE_MAX) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		end = arm_s->op_pool->ops[stm].prev;
+		if (end != SIZE_MAX) {
+			regs_used = subtilis_arm_regs_used_before(
+			    arm_s, &arm_s->op_pool->ops[end], err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		}
+		ldm = arm_s->op_pool->ops[cs].next;
+		if (ldm == SIZE_MAX) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		start = arm_s->op_pool->ops[ldm].next;
+		if (start == SIZE_MAX)
+			continue;
+
+		regs_used &= subtilis_arm_regs_used_after(
+		    arm_s, &arm_s->op_pool->ops[start], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		mtran = &arm_s->op_pool->ops[stm].op.instr.operands.mtran;
+		mtran->reg_list |= regs_used;
+		mtran = &arm_s->op_pool->ops[ldm].op.instr.operands.mtran;
+		mtran->reg_list |= regs_used;
+	}
 }

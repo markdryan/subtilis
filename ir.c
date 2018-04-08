@@ -113,6 +113,16 @@ void subtilis_ir_section_add_instr_no_reg(subtilis_ir_section_t *s,
 	subtilis_ir_section_add_instr_reg(s, type, op0, op1, op2, err);
 }
 
+void subtilis_ir_section_add_instr_no_arg(subtilis_ir_section_t *s,
+					  subtilis_op_instr_type_t type,
+					  subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+
+	memset(&op0, 0, sizeof(op0));
+	subtilis_ir_section_add_instr_no_reg(s, type, op0, err);
+}
+
 void subtilis_ir_section_add_instr_reg(subtilis_ir_section_t *s,
 				       subtilis_op_instr_type_t type,
 				       subtilis_ir_operand_t op0,
@@ -242,7 +252,11 @@ void subtilis_ir_prog_dump(subtilis_ir_prog_t *p)
 		printf("PROC %s\n----------------\n\n",
 		       p->string_pool->strings[i]);
 		subtilis_ir_section_dump(p->sections[i]);
+		printf("\n");
 	}
+
+	printf("String Pool\n----------------\n\n");
+	subtilis_string_pool_dump(p->string_pool);
 }
 
 void subtilis_ir_prog_delete(subtilis_ir_prog_t *p)
@@ -346,6 +360,8 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "gteii32", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "jmpc", SUBTILIS_OP_CLASS_REG_LABEL_LABEL},
 	{ "jmp", SUBTILIS_OP_CLASS_LABEL},
+	{ "call", SUBTILIS_OP_CLASS_I32},
+	{ "ret", SUBTILIS_OP_CLASS_NONE},
 };
 
 /*
@@ -366,13 +382,20 @@ static const subtilis_ir_class_info_t class_details[] = {
 	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REAL} },
 	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER} },
 	{1, { SUBTILIS_IR_OPERAND_REGISTER} },
-	{1, { SUBTILIS_IR_OPERAND_LABEL} }
+	{1, { SUBTILIS_IR_OPERAND_LABEL} },
+	{1, { SUBTILIS_IR_OPERAND_LABEL} },
+	{0, { 0} },
 };
 
 /* clang-format on */
 
 static void prv_dump_instr(subtilis_ir_inst_t *instr)
 {
+	if (op_desc[instr->type].cls == SUBTILIS_OP_CLASS_NONE) {
+		printf("\t%s", op_desc[instr->type].name);
+		return;
+	}
+
 	printf("\t%s ", op_desc[instr->type].name);
 	switch (op_desc[instr->type].cls) {
 	case SUBTILIS_OP_CLASS_REG_REG_REG:
@@ -406,8 +429,13 @@ static void prv_dump_instr(subtilis_ir_inst_t *instr)
 	case SUBTILIS_OP_CLASS_REG:
 		printf("r%zu", instr->operands[0].reg);
 		break;
+	case SUBTILIS_OP_CLASS_I32:
+		printf("%d", instr->operands[0].integer);
+		break;
 	case SUBTILIS_OP_CLASS_LABEL:
 		printf("r%zu", instr->operands[0].reg);
+		break;
+	case SUBTILIS_OP_CLASS_NONE:
 		break;
 	}
 }

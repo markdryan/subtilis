@@ -571,3 +571,58 @@ void subtilis_arm_gen_andi32(subtilis_ir_section_t *s, size_t start,
 	prv_data_simple(s, start, user_data, SUBTILIS_ARM_INSTR_AND,
 			SUBTILIS_ARM_CCODE_AL, err);
 }
+
+void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t op0;
+	subtilis_ir_inst_t *ir_instr = &s->ops[start]->op.instr;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_arm_br_instr_t *br;
+
+	op0.type = SUBTILIS_ARM_REG_FIXED;
+	op0.num = 13;
+
+	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_STM,
+			       SUBTILIS_ARM_CCODE_AL, op0, 1 << 14,
+			       SUBTILIS_ARM_MTRAN_FD, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_AL;
+	br->link = true;
+	br->label = ir_instr->operands[0].label;
+
+	subtilis_arm_section_add_call_site(arm_s, arm_s->last_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_LDM,
+			       SUBTILIS_ARM_CCODE_AL, op0, 1 << 14,
+			       SUBTILIS_ARM_MTRAN_FD, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+}
+
+void subtilis_arm_gen_ret(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op2;
+	subtilis_arm_section_t *arm_s = user_data;
+
+	dest.type = SUBTILIS_ARM_REG_FIXED;
+	dest.num = 15;
+	op2.type = SUBTILIS_ARM_REG_FIXED;
+	op2.num = 14;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
+				 err);
+}

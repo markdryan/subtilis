@@ -125,7 +125,7 @@ static int prv_check_eval_res(subtilis_lexer_t *l, subtilis_parser_t *p,
 		goto cleanup;
 	}
 
-	vm = subitlis_vm_new(p->main, p->st, &err);
+	vm = subitlis_vm_new(p->prog, p->st, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);
 		goto cleanup;

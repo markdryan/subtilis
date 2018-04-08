@@ -640,6 +640,26 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_JMP,
+
+	/*
+	 * CALL label
+	 *
+	 * inovkes a function identified by an integer.  The integer
+	 * is an indexed into the string pool of the program of which
+	 * this code section is a part.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_CALL,
+
+	/*
+	 * RET
+	 *
+	 * returns from a sub-routine call.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_RET,
 } subtilis_op_instr_type_t;
 
 typedef enum {
@@ -651,7 +671,9 @@ typedef enum {
 	SUBTILIS_OP_CLASS_REG_REAL,
 	SUBTILIS_OP_CLASS_REG_REG,
 	SUBTILIS_OP_CLASS_REG,
+	SUBTILIS_OP_CLASS_I32,
 	SUBTILIS_OP_CLASS_LABEL,
+	SUBTILIS_OP_CLASS_NONE,
 } subtilis_op_instr_class_t;
 
 // TODO: Need a type for pointer offsets.  These may not always
@@ -774,6 +796,9 @@ size_t subtilis_ir_section_add_instr2(subtilis_ir_section_t *s,
 				      subtilis_op_instr_type_t type,
 				      subtilis_ir_operand_t op1,
 				      subtilis_error_t *err);
+void subtilis_ir_section_add_instr_no_arg(subtilis_ir_section_t *s,
+					  subtilis_op_instr_type_t type,
+					  subtilis_error_t *err);
 void subtilis_ir_section_add_instr_no_reg(subtilis_ir_section_t *s,
 					  subtilis_op_instr_type_t type,
 					  subtilis_ir_operand_t op1,

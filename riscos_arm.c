@@ -133,6 +133,8 @@ static void prv_add_section(subtilis_ir_section_t *s,
 		return;
 
 	datai->op2.op.integer = encoded;
+
+	subtilis_arm_save_regs(arm_s, err);
 }
 
 /* clang-format off */
