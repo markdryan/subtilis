@@ -499,20 +499,10 @@ static void prv_process_b(subtilis_arm_vm_t *arm_vm,
 		return;
 	}
 
-	arm_vm->regs[15] += (op->offset * 4) + 8;
-	if (prv_calc_pc(arm_vm) >= arm_vm->code_size)
-		subtilis_error_set_assertion_failed(err);
-}
+	if (op->link)
+		arm_vm->regs[14] = arm_vm->regs[15];
 
-static void prv_process_bl(subtilis_arm_vm_t *arm_vm,
-			   subtilis_arm_br_instr_t *op, subtilis_error_t *err)
-{
-	if (!prv_match_ccode(arm_vm, op->ccode)) {
-		arm_vm->regs[15] += 4;
-		return;
-	}
-	arm_vm->regs[14] = arm_vm->regs[15];
-	arm_vm->regs[15] += (op->offset * 4) + 8;
+	arm_vm->regs[15] += (op->target.offset * 4) + 8;
 	if (prv_calc_pc(arm_vm) >= arm_vm->code_size)
 		subtilis_error_set_assertion_failed(err);
 }
@@ -746,9 +736,6 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			break;
 		case SUBTILIS_ARM_INSTR_B:
 			prv_process_b(arm_vm, &instr.operands.br, err);
-			break;
-		case SUBTILIS_ARM_INSTR_BL:
-			prv_process_bl(arm_vm, &instr.operands.br, err);
 			break;
 		case SUBTILIS_ARM_INSTR_SWI:
 			prv_process_swi(arm_vm, b, &instr.operands.swi, err);

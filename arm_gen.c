@@ -228,7 +228,7 @@ static void prv_cmp_jmp_imm(subtilis_ir_section_t *s, size_t start,
 	br = &instr->operands.br;
 	br->ccode = ccode;
 	br->link = false;
-	br->label = jmp->operands[2].label;
+	br->target.label = jmp->operands[2].label;
 }
 
 void subtilis_arm_gen_if_lt_imm(subtilis_ir_section_t *s, size_t start,
@@ -305,7 +305,7 @@ static void prv_cmp_jmp(subtilis_ir_section_t *s, size_t start, void *user_data,
 	br = &instr->operands.br;
 	br->ccode = ccode;
 	br->link = false;
-	br->label = jmp->operands[2].label;
+	br->target.label = jmp->operands[2].label;
 }
 
 void subtilis_arm_gen_if_lt(subtilis_ir_section_t *s, size_t start,
@@ -486,7 +486,7 @@ void subtilis_arm_gen_jump(subtilis_ir_section_t *s, size_t start,
 	br = &instr->operands.br;
 	br->ccode = SUBTILIS_ARM_CCODE_AL;
 	br->link = false;
-	br->label = jmp->operands[0].label;
+	br->target.label = jmp->operands[0].label;
 }
 
 void subtilis_arm_gen_jmpc(subtilis_ir_section_t *s, size_t start,
@@ -512,7 +512,7 @@ void subtilis_arm_gen_jmpc(subtilis_ir_section_t *s, size_t start,
 	br = &instr->operands.br;
 	br->ccode = SUBTILIS_ARM_CCODE_EQ;
 	br->link = false;
-	br->label = jmp->operands[2].label;
+	br->target.label = jmp->operands[2].label;
 }
 
 void subtilis_arm_gen_eorii32(subtilis_ir_section_t *s, size_t start,
@@ -598,7 +598,7 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 	br = &instr->operands.br;
 	br->ccode = SUBTILIS_ARM_CCODE_AL;
 	br->link = true;
-	br->label = ir_instr->operands[0].label;
+	br->target.label = ir_instr->operands[0].label;
 
 	subtilis_arm_section_add_call_site(arm_s, arm_s->last_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)

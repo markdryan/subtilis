@@ -205,7 +205,7 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	instr->operands.br.ccode = SUBTILIS_ARM_CCODE_MI;
-	instr->operands.br.label = 0;
+	instr->operands.br.target.label = 0;
 
 	/* LDMFA R7!, {R0} */
 	dest.num = 7;
@@ -664,9 +664,9 @@ static int prv_test_disass_b(void)
 		return 1;
 	}
 
-	if (br->offset != -2) {
+	if (br->target.offset != -2) {
 		fprintf(stderr, "[6] offset of -2 expected got %d\n",
-			br->offset);
+			br->target.offset);
 		return 1;
 	}
 
