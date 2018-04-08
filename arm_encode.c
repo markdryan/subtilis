@@ -428,9 +428,9 @@ static void prv_encode_br_instr(void *user_data, subtilis_arm_op_t *op,
 	if (instr->link) {
 		word |= 1 << 24;
 		subtilis_arm_link_add(ud->link, ud->words_written, err);
-		word |= instr->label;
+		word |= instr->target.label;
 	} else {
-		prv_add_back_patch(ud, instr->label, ud->words_written,
+		prv_add_back_patch(ud, instr->target.label, ud->words_written,
 				   SUBTILIS_ARM_ENCODE_BP_BR, err);
 	}
 	if (err->type != SUBTILIS_ERROR_OK)

@@ -175,12 +175,13 @@ struct subtilis_arm_mtran_instr_t_ {
 
 typedef struct subtilis_arm_mtran_instr_t_ subtilis_arm_mtran_instr_t;
 
-/* TODO, We need a union for the label */
 struct subtilis_arm_br_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	bool link;
-	size_t label;
-	int32_t offset;
+	union {
+		size_t label;
+		int32_t offset;
+	} target;
 };
 
 typedef struct subtilis_arm_br_instr_t_ subtilis_arm_br_instr_t;

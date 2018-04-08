@@ -1315,11 +1315,12 @@ static void prv_dump_br_instr(void *user_data, subtilis_arm_op_t *op,
 		printf("%s", ccode_desc[instr->ccode]);
 	if (instr->link) {
 		if (p)
-			printf(" %s\n", p->string_pool->strings[instr->label]);
+			printf(" %s\n",
+			       p->string_pool->strings[instr->target.label]);
 		else
 			printf("\n");
 	} else {
-		printf(" label_%zu\n", instr->label);
+		printf(" label_%zu\n", instr->target.label);
 	}
 }
 

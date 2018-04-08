@@ -502,7 +502,7 @@ static void prv_process_b(subtilis_arm_vm_t *arm_vm,
 	if (op->link)
 		arm_vm->regs[14] = arm_vm->regs[15];
 
-	arm_vm->regs[15] += (op->offset * 4) + 8;
+	arm_vm->regs[15] += (op->target.offset * 4) + 8;
 	if (prv_calc_pc(arm_vm) >= arm_vm->code_size)
 		subtilis_error_set_assertion_failed(err);
 }
