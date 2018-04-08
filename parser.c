@@ -21,6 +21,9 @@
 #include "expression.h"
 #include "parser.h"
 
+static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
+				     subtilis_error_t *err);
+
 #define SUBTILIS_MAIN_FN "subtilis_main"
 
 static void prv_parser_call_delete(subtilis_parser_call_t *call)
@@ -209,7 +212,11 @@ static subtilis_exp_t *prv_unary_minus_exp(subtilis_parser_t *p,
 {
 	subtilis_exp_t *e;
 
-	e = prv_expression(p, t, err);
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	e = prv_priority1(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 	return subtilis_exp_unary_minus(p, e, err);
@@ -220,7 +227,11 @@ static subtilis_exp_t *prv_not_exp(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	subtilis_exp_t *e;
 
-	e = prv_expression(p, t, err);
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	e = prv_priority1(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 	return subtilis_exp_not(p, e, err);
@@ -242,23 +253,25 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 	case SUBTILIS_TOKEN_OPERATOR:
 		if (!strcmp(tbuf, "(")) {
 			e = prv_bracketed_exp(p, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
 		} else {
 			if (!strcmp(tbuf, "-")) {
 				e = prv_unary_minus_exp(p, t, err);
 				if (err->type != SUBTILIS_ERROR_OK)
 					goto cleanup;
+
 				/* we don't want to read another token here.It's
 				 * already been read by the recursive call to
-				 * prv_expression.
+				 * prv_priority1.
 				 */
+
 				return e;
 			}
 			subtilis_error_set_exp_expected(
 			    err, "( or - ", p->l->stream->name, p->l->line);
 			goto cleanup;
 		}
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
 		break;
 	case SUBTILIS_TOKEN_IDENTIFIER:
 		e = prv_variable(p, t, tbuf, err);
