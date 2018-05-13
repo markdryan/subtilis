@@ -1435,10 +1435,22 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 
 void subtilis_arm_prog_dump(subtilis_arm_prog_t *p)
 {
+	subtilis_arm_section_t *arm_s;
 	size_t i;
 
-	for (i = 0; i < p->num_sections; i++)
-		subtilis_arm_section_dump(p, p->sections[i]);
+	if (p->num_sections == 0)
+		return;
+
+	arm_s = p->sections[0];
+	printf("%s\n", p->string_pool->strings[0]);
+	subtilis_arm_section_dump(p, arm_s);
+
+	for (i = 1; i < p->num_sections; i++) {
+		printf("\n");
+		arm_s = p->sections[i];
+		printf("%s\n", p->string_pool->strings[i]);
+		subtilis_arm_section_dump(p, arm_s);
+	}
 }
 
 void subtilis_arm_restore_stack(subtilis_arm_section_t *arm_s,
