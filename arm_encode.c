@@ -320,10 +320,10 @@ static void prv_encode_stran_instr(void *user_data, subtilis_arm_op_t *op,
 	if (instr->pre_indexed)
 		word |= 1 << 24;
 
-	/* TODO: STRAN does not implement negative offsets correctly */
-	word |= 1 << 23;
 	if (instr->write_back)
 		word |= 1 << 21;
+	if (!instr->subtract)
+		word |= 1 << 23;
 	if (type == SUBTILIS_ARM_INSTR_LDR)
 		word |= 1 << 20;
 	word |= instr->base.num << 16;
@@ -474,6 +474,7 @@ static void prv_encode_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	stran.offset.op.integer = 0;
 	stran.pre_indexed = true;
 	stran.write_back = false;
+	stran.subtract = false;
 	prv_encode_stran_instr(user_data, op, SUBTILIS_ARM_INSTR_LDR, &stran,
 			       err);
 }

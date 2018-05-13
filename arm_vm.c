@@ -386,6 +386,8 @@ static size_t prv_compute_stran_addr(subtilis_arm_vm_t *arm_vm,
 	offset = prv_eval_op2(arm_vm, false, &op->offset, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
+	if (op->subtract)
+		offset = -offset;
 
 	if (op->pre_indexed) {
 		addr = arm_vm->regs[op->base.num] + offset;
@@ -395,6 +397,7 @@ static size_t prv_compute_stran_addr(subtilis_arm_vm_t *arm_vm,
 		addr = arm_vm->regs[op->base.num];
 		arm_vm->regs[op->base.num] += offset;
 	}
+
 	addr -= 0x8000;
 	if (addr + 4 > arm_vm->mem_size) {
 		subtilis_error_set_assertion_failed(err);
@@ -600,11 +603,10 @@ static void prv_process_stm(subtilis_arm_vm_t *arm_vm,
 		break;
 	}
 
-	addr += before;
-
 	for (i = 0; i < 15; i++) {
 		if (((1 << i) & op->reg_list) == 0)
 			continue;
+		addr += before;
 		if (addr + 4 > arm_vm->mem_size) {
 			subtilis_error_set_assertion_failed(err);
 			return;
@@ -624,7 +626,7 @@ static void prv_process_ldm(subtilis_arm_vm_t *arm_vm,
 			    subtilis_error_t *err)
 {
 	size_t addr;
-	size_t i;
+	int i;
 	int after = 0;
 	int before = 0;
 
@@ -654,11 +656,10 @@ static void prv_process_ldm(subtilis_arm_vm_t *arm_vm,
 		break;
 	}
 
-	addr += before;
-
-	for (i = 0; i < 15; i++) {
+	for (i = 14; i >= 0; i--) {
 		if (((1 << i) & op->reg_list) == 0)
 			continue;
+		addr += before;
 		if (addr + 4 > arm_vm->mem_size) {
 			subtilis_error_set_assertion_failed(err);
 			return;

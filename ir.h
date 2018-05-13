@@ -707,6 +707,7 @@ typedef struct subtilis_ir_op_t_ subtilis_ir_op_t;
 
 struct subtilis_ir_section_t_ {
 	subtilis_type_section_t *type;
+	size_t locals;
 	size_t reg_counter;
 	size_t label_counter;
 	size_t len;
@@ -779,10 +780,11 @@ struct subtilis_ir_rule_raw_t_ {
 typedef struct subtilis_ir_rule_raw_t_ subtilis_ir_rule_raw_t;
 
 subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err);
-subtilis_ir_section_t *subtilis_ir_prog_section_new(subtilis_ir_prog_t *p,
-						    const char *name,
-						    subtilis_type_section_t *tp,
-						    subtilis_error_t *err);
+subtilis_ir_section_t *
+subtilis_ir_prog_section_new(subtilis_ir_prog_t *p, const char *name,
+			     size_t locals, subtilis_type_section_t *tp,
+			     const char *file, size_t line,
+			     subtilis_error_t *err);
 subtilis_ir_section_t *subtilis_ir_prog_find_section(subtilis_ir_prog_t *p,
 						     const char *name);
 void subtilis_ir_prog_dump(subtilis_ir_prog_t *p);

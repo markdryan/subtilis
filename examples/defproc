@@ -3,5 +3,9 @@ PROCInci
 PROCInci
 PRINT i%
 DEF PROCInci
-  LET i%=i%+1
+  LOCAL i%
+  LOCAL j%
+  LOCAL k%
+  LET i%=1
+  PRINT i%
 ENDPROC

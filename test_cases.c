@@ -217,7 +217,19 @@ const subtilis_test_case_t test_cases[] = {
 	  "DEF PROCInci"
 	  "  LET i%=i%+1\n"
 	  "ENDPROC\n",
-	  "2\n"},  /* TODO: Output should be 2 */
+	  "2\n"},
+	{ "local",
+	  "LOCAL i%\n"
+	  "LET i% = 5\n"
+	  "LET i%=i%+1\n"
+	  "PROCInci\n"
+	  "PRINT i%\n"
+	  "DEF PROCInci"
+	  "  LOCAL i%\n"
+	  "  LET i%=i%+1\n"
+	  "  PRINT i%\n"
+	  "ENDPROC\n",
+	  "1\n6\n"},
 };
 
 /* clang-format on */

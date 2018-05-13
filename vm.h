@@ -27,7 +27,8 @@ struct subitlis_vm_t_ {
 	/* TODO: This type should be configurable to allow for 64 bit regs */
 	int32_t *regs;
 	size_t max_regs;
-	uint8_t *globals;
+	uint8_t *memory;
+	size_t memory_size;
 	subtilis_ir_prog_t *p;
 	subtilis_ir_section_t *s; /*I'd like to get rid of this */
 	size_t current_index;
@@ -36,8 +37,6 @@ struct subitlis_vm_t_ {
 	size_t *labels;
 	size_t label_len;
 	size_t max_labels;
-	int32_t *stack;
-	size_t stack_size;
 	size_t top;
 };
 

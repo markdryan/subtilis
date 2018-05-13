@@ -124,6 +124,7 @@ void subtilis_arm_section_delete(subtilis_arm_section_t *s)
 	if (!s)
 		return;
 
+	free(s->ret_sites);
 	free(s->call_sites);
 	free(s->constants);
 	free(s);
@@ -147,6 +148,26 @@ void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s, size_t op,
 		s->max_call_site_count = new_max;
 	}
 	s->call_sites[s->call_site_count++] = op;
+}
+
+void subtilis_arm_section_add_ret_site(subtilis_arm_section_t *s, size_t op,
+				       subtilis_error_t *err)
+{
+	size_t new_max;
+	size_t *new_ret_sites;
+
+	if (s->ret_site_count == s->max_ret_site_count) {
+		new_max = s->ret_site_count + SUBTILIS_CONFIG_PROC_GRAN;
+		new_ret_sites =
+		    realloc(s->ret_sites, new_max * sizeof(*new_ret_sites));
+		if (!new_ret_sites) {
+			subtilis_error_set_oom(err);
+			return;
+		}
+		s->ret_sites = new_ret_sites;
+		s->max_ret_site_count = new_max;
+	}
+	s->ret_sites[s->ret_site_count++] = op;
 }
 
 subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
@@ -898,8 +919,14 @@ void subtilis_arm_add_stran_imm(subtilis_arm_section_t *s,
 	subtilis_arm_op2_t op2;
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_stran_instr_t *stran;
+	bool subtract = false;
 
-	if (offset > 4095 || offset < -4095) {
+	if (offset < 0) {
+		offset -= offset;
+		subtract = true;
+	}
+
+	if (offset > 4095) {
 		op2.op.reg = prv_acquire_new_reg(s);
 		(void)prv_add_data_imm_ldr(s, ccode, op2.op.reg, offset, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -920,6 +947,7 @@ void subtilis_arm_add_stran_imm(subtilis_arm_section_t *s,
 	stran->offset = op2;
 	stran->pre_indexed = true;
 	stran->write_back = false;
+	stran->subtract = subtract;
 }
 
 void subtilis_arm_insert_push(subtilis_arm_section_t *s,
@@ -950,6 +978,7 @@ void subtilis_arm_insert_push(subtilis_arm_section_t *s,
 	stran->offset.op.integer = -4;
 	stran->pre_indexed = false;
 	stran->write_back = true;
+	stran->subtract = false;
 }
 
 void subtilis_arm_insert_pop(subtilis_arm_section_t *s,
@@ -980,6 +1009,7 @@ void subtilis_arm_insert_pop(subtilis_arm_section_t *s,
 	stran->offset.op.integer = 4;
 	stran->pre_indexed = false;
 	stran->write_back = true;
+	stran->subtract = false;
 }
 
 /* clang-format off */
@@ -1014,6 +1044,7 @@ void subtilis_arm_insert_stran_spill_imm(subtilis_arm_section_t *s,
 	stran->offset = op2;
 	stran->pre_indexed = true;
 	stran->write_back = false;
+	stran->subtract = false;
 }
 
 void subtilis_arm_insert_stran_imm(subtilis_arm_section_t *s,
@@ -1027,8 +1058,14 @@ void subtilis_arm_insert_stran_imm(subtilis_arm_section_t *s,
 	subtilis_arm_op2_t op2;
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_stran_instr_t *stran;
+	bool subtract = false;
 
-	if (offset > 4095 || offset < -4095) {
+	if (offset < 0) {
+		offset -= offset;
+		subtract = true;
+	}
+
+	if (offset > 4095) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
@@ -1046,6 +1083,7 @@ void subtilis_arm_insert_stran_imm(subtilis_arm_section_t *s,
 	stran->offset = op2;
 	stran->pre_indexed = true;
 	stran->write_back = false;
+	stran->subtract = subtract;
 }
 
 void subtilis_arm_add_cmp_imm(subtilis_arm_section_t *s,
@@ -1172,7 +1210,6 @@ static const char *const instr_desc[] = {
 	"LDM", // SUBTILIS_ARM_INSTR_LDM
 	"STM", // SUBTILIS_ARM_INSTR_STM
 	"B",   // SUBTILIS_ARM_INSTR_B
-	"BL",  // SUBTILIS_ARM_INSTR_BL
 	"SWI", // SUBTILIS_ARM_INSTR_SWI
 	"LDR", //SUBTILIS_ARM_INSTR_LDRC
 };
@@ -1192,13 +1229,13 @@ static void prv_dump_op2(subtilis_arm_op2_t *op2)
 {
 	switch (op2->type) {
 	case SUBTILIS_ARM_OP2_REG:
-		printf(", R%zu", op2->op.reg.num);
+		printf("R%zu", op2->op.reg.num);
 		break;
 	case SUBTILIS_ARM_OP2_I32:
-		printf(", #%d", op2->op.integer);
+		printf("#%d", op2->op.integer);
 		break;
 	default:
-		printf(", R%zu, %s #%d", op2->op.shift.reg.num,
+		printf("R%zu, %s #%d", op2->op.shift.reg.num,
 		       shift_desc[op2->op.shift.type], op2->op.shift.shift);
 		break;
 	}
@@ -1214,7 +1251,7 @@ static void prv_dump_mov_instr(void *user_data, subtilis_arm_op_t *op,
 		printf("%s", ccode_desc[instr->ccode]);
 	if (instr->status)
 		printf("S");
-	printf(" R%zu", instr->dest.num);
+	printf(" R%zu, ", instr->dest.num);
 	prv_dump_op2(&instr->op2);
 	printf("\n");
 }
@@ -1229,7 +1266,7 @@ static void prv_dump_data_instr(void *user_data, subtilis_arm_op_t *op,
 		printf("%s", ccode_desc[instr->ccode]);
 	if (instr->status)
 		printf("S");
-	printf(" R%zu, R%zu", instr->dest.num, instr->op1.num);
+	printf(" R%zu, R%zu, ", instr->dest.num, instr->op1.num);
 	prv_dump_op2(&instr->op2);
 	printf("\n");
 }
@@ -1253,18 +1290,20 @@ static void prv_dump_stran_instr(void *user_data, subtilis_arm_op_t *op,
 				 subtilis_arm_stran_instr_t *instr,
 				 subtilis_error_t *err)
 {
+	const char *sub = instr->subtract ? "-" : "";
+
 	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
 	printf(" R%zu", instr->dest.num);
 	if (instr->pre_indexed) {
-		printf(", [R%zu", instr->base.num);
+		printf(", [R%zu, %s", instr->base.num, sub);
 		prv_dump_op2(&instr->offset);
 		printf("]");
 		if (instr->write_back)
 			printf("!");
 	} else {
-		printf(", [R%zu]", instr->base.num);
+		printf(", [R%zu], %s", instr->base.num, sub);
 		prv_dump_op2(&instr->offset);
 	}
 	printf("\n");
@@ -1354,7 +1393,7 @@ static void prv_dump_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
-	printf(" R%zu", instr->op1.num);
+	printf(" R%zu, ", instr->op1.num);
 	prv_dump_op2(&instr->op2);
 	printf("\n");
 }
@@ -1400,4 +1439,18 @@ void subtilis_arm_prog_dump(subtilis_arm_prog_t *p)
 
 	for (i = 0; i < p->num_sections; i++)
 		subtilis_arm_section_dump(p, p->sections[i]);
+}
+
+void subtilis_arm_restore_stack(subtilis_arm_section_t *arm_s,
+				size_t stack_space, subtilis_error_t *err)
+{
+	size_t i;
+	size_t rs;
+	subtilis_arm_data_instr_t *datai;
+
+	for (i = 0; i < arm_s->ret_site_count; i++) {
+		rs = arm_s->ret_sites[i];
+		datai = &arm_s->op_pool->ops[rs].op.instr.operands.data;
+		datai->op2.op.integer = stack_space;
+	}
 }

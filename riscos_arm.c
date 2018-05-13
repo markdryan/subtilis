@@ -85,12 +85,86 @@ static void prv_add_coda(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 		return;
 }
 
+static void prv_clear_locals(subtilis_arm_section_t *arm_s,
+			     subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t counter;
+	subtilis_arm_reg_t base;
+	size_t i;
+	size_t label;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_stran_instr_t *stran;
+	subtilis_arm_br_instr_t *br;
+
+	dest = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	base.num = 11;
+	base.type = SUBTILIS_ARM_REG_FIXED;
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (arm_s->locals <= 16) {
+		/* Loop would be overkill */
+
+		for (i = 0; i < arm_s->locals; i += 4) {
+			subtilis_arm_add_stran_imm(
+			    arm_s, SUBTILIS_ARM_INSTR_STR,
+			    SUBTILIS_ARM_CCODE_AL, dest, base, (int32_t)i, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		}
+		return;
+	}
+
+	counter = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	subtilis_arm_add_add_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, counter,
+				 base, arm_s->locals, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	label = arm_s->label_counter++;
+	subtilis_arm_section_add_label(arm_s, label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_STR, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	stran = &instr->operands.stran;
+	stran->ccode = SUBTILIS_ARM_CCODE_AL;
+	stran->dest = dest;
+	stran->base = counter;
+	stran->offset.type = SUBTILIS_ARM_OP2_I32;
+	stran->offset.op.integer = 4;
+	stran->pre_indexed = true;
+	stran->write_back = true;
+	stran->subtract = true;
+
+	subtilis_arm_add_cmp(arm_s, SUBTILIS_ARM_INSTR_CMP,
+			     SUBTILIS_ARM_CCODE_AL, counter, base, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_GT;
+	br->link = false;
+	br->target.label = label;
+}
+
 static void prv_add_section(subtilis_ir_section_t *s,
 			    subtilis_arm_section_t *arm_s,
 			    subtilis_ir_rule_t *parsed, size_t rule_count,
 			    subtilis_error_t *err)
 {
 	size_t spill_regs;
+	size_t stack_space;
 	subtilis_arm_instr_t *stack_sub;
 	subtilis_arm_data_instr_t *datai;
 	uint32_t encoded;
@@ -119,6 +193,12 @@ static void prv_add_section(subtilis_ir_section_t *s,
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
 				 err);
 
+	if (arm_s->locals > 0) {
+		prv_clear_locals(arm_s, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
 	subtilis_ir_match(s, parsed, rule_count, arm_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -127,14 +207,16 @@ static void prv_add_section(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	encoded =
-	    subtilis_arm_encode_nearest(spill_regs * sizeof(int32_t), err);
+	stack_space = (spill_regs * sizeof(int32_t)) + arm_s->locals;
+
+	encoded = subtilis_arm_encode_nearest(stack_space, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	datai->op2.op.integer = encoded;
 
 	subtilis_arm_save_regs(arm_s, err);
+	subtilis_arm_restore_stack(arm_s, encoded, err);
 }
 
 /* clang-format off */
@@ -168,7 +250,7 @@ subtilis_riscos_generate(
 
 	s = p->sections[0];
 	arm_s = subtilis_arm_prog_section_new(arm_p, s->reg_counter,
-					      s->label_counter, 0, err);
+					      s->label_counter, s->locals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 	prv_add_preamble(arm_s, globals, err);
@@ -183,8 +265,8 @@ subtilis_riscos_generate(
 
 	for (i = 1; i < p->num_sections; i++) {
 		s = p->sections[i];
-		arm_s = subtilis_arm_prog_section_new(arm_p, s->reg_counter,
-						      s->label_counter, 0, err);
+		arm_s = subtilis_arm_prog_section_new(
+		    arm_p, s->reg_counter, s->label_counter, s->locals, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		prv_add_section(s, arm_s, parsed, rule_count, err);
@@ -195,15 +277,15 @@ subtilis_riscos_generate(
 	free(parsed);
 	parsed = NULL;
 
-	//	printf("\n\n");
-	//	subtilis_arm_program_dump(arm_s);
+	//		printf("\n\n");
+	//		subtilis_arm_prog_dump(arm_p);
 
 	return arm_p;
 
 cleanup:
 
 	//	printf("\n\n");
-	///	subtilis_arm_program_dump(arm_s);
+	//	subtilis_arm_prog_dump(arm_p);
 
 	subtilis_arm_prog_delete(arm_p);
 	free(parsed);

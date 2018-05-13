@@ -161,6 +161,7 @@ struct subtilis_arm_stran_instr_t_ {
 	subtilis_arm_op2_t offset;
 	bool pre_indexed;
 	bool write_back;
+	bool subtract;
 };
 
 typedef struct subtilis_arm_stran_instr_t_ subtilis_arm_stran_instr_t;
@@ -258,6 +259,9 @@ struct subtilis_arm_section_t_ {
 	size_t call_site_count;
 	size_t max_call_site_count;
 	size_t *call_sites;
+	size_t ret_site_count;
+	size_t max_ret_site_count;
+	size_t *ret_sites;
 };
 
 typedef struct subtilis_arm_section_t_ subtilis_arm_section_t;
@@ -297,7 +301,8 @@ subtilis_arm_section_t *subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 void subtilis_arm_prog_delete(subtilis_arm_prog_t *prog);
 void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s, size_t op,
 					subtilis_error_t *err);
-
+void subtilis_arm_section_add_ret_site(subtilis_arm_section_t *s, size_t op,
+				       subtilis_error_t *err);
 void subtilis_arm_section_add_label(subtilis_arm_section_t *s, size_t label,
 				    subtilis_error_t *err);
 subtilis_arm_instr_t *
@@ -435,5 +440,8 @@ void subtilis_arm_add_mtran(subtilis_arm_section_t *s,
 void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 			       subtilis_arm_section_t *s);
 void subtilis_arm_prog_dump(subtilis_arm_prog_t *p);
+
+void subtilis_arm_restore_stack(subtilis_arm_section_t *arm_s,
+				size_t stack_space, subtilis_error_t *err);
 
 #endif

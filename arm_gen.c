@@ -616,7 +616,27 @@ void subtilis_arm_gen_ret(subtilis_ir_section_t *s, size_t start,
 {
 	subtilis_arm_reg_t dest;
 	subtilis_arm_reg_t op2;
+	subtilis_arm_instr_t *stack_add;
+	subtilis_arm_data_instr_t *datai;
 	subtilis_arm_section_t *arm_s = user_data;
+
+	stack_add =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_ADD, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai = &stack_add->operands.data;
+	datai->status = false;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->dest.type = SUBTILIS_ARM_REG_FIXED;
+	datai->dest.num = 13;
+	datai->op1 = datai->dest;
+	datai->op2.type = SUBTILIS_ARM_OP2_I32;
+	datai->op2.op.integer = 0;
+
+	subtilis_arm_section_add_ret_site(arm_s, arm_s->last_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	dest.type = SUBTILIS_ARM_REG_FIXED;
 	dest.num = 15;
