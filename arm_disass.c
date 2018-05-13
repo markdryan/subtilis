@@ -160,12 +160,6 @@ static void prv_decode_stran(subtilis_arm_instr_t *instr, uint32_t encoded,
 		return;
 	}
 
-	/* Negative offsets not yet supported. */
-	if ((encoded & (1 << 23)) == 0) {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
 	if (encoded & (1 << 20))
 		instr->type = SUBTILIS_ARM_INSTR_LDR;
 	else
@@ -174,6 +168,7 @@ static void prv_decode_stran(subtilis_arm_instr_t *instr, uint32_t encoded,
 	stran->ccode = (encoded >> 28);
 	stran->pre_indexed = (encoded & (1 << 24)) != 0;
 	stran->write_back = (encoded & (1 << 21)) != 0;
+	stran->subtract = (encoded & (1 << 23)) == 0;
 	stran->dest.type = SUBTILIS_ARM_REG_FIXED;
 	stran->dest.num = (encoded >> 12) & 0x0f;
 	stran->base.type = SUBTILIS_ARM_REG_FIXED;

@@ -54,6 +54,29 @@ static void prv_compute_labels(subitlis_vm_t *vm, subtilis_error_t *err)
 	}
 }
 
+static void prv_reserve_stack(subitlis_vm_t *vm, size_t bytes,
+			      subtilis_error_t *err)
+{
+	size_t needed;
+	size_t new_max;
+	uint8_t *new_mem;
+
+	needed = vm->top + bytes;
+	if (needed <= vm->memory_size)
+		return;
+
+	new_max = vm->memory_size + 4096;
+	if (needed > new_max)
+		new_max = needed;
+	new_mem = realloc(vm->memory, sizeof(*vm->memory) * new_max);
+	if (!new_mem) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	vm->memory = new_mem;
+	vm->memory_size = new_max;
+}
+
 subitlis_vm_t *subitlis_vm_new(subtilis_ir_prog_t *p,
 			       subtilis_symbol_table_t *st,
 			       subtilis_error_t *err)
@@ -81,11 +104,19 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_prog_t *p,
 		goto fail;
 	}
 
-	vm->globals = calloc(sizeof(uint8_t), st->allocated);
-	if (!vm->globals) {
+	vm->memory_size = st->allocated + vm->s->locals;
+
+	vm->memory = calloc(sizeof(uint8_t), vm->memory_size);
+	if (!vm->memory) {
 		subtilis_error_set_oom(err);
 		goto fail;
 	}
+
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto fail;
+	vm->regs[SUBTILIS_IR_REG_GLOBAL] = 0;
+	vm->regs[SUBTILIS_IR_REG_LOCAL] = st->allocated;
+	vm->top = vm->memory_size;
 
 	prv_compute_labels(vm, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -97,29 +128,6 @@ fail:
 
 	subitlis_vm_delete(vm);
 	return NULL;
-}
-
-static void prv_reserve_stack(subitlis_vm_t *vm, size_t words,
-			      subtilis_error_t *err)
-{
-	size_t needed;
-	size_t new_max;
-	int32_t *new_stack;
-
-	needed = vm->top + words;
-	if (needed <= vm->stack_size)
-		return;
-
-	new_max = vm->stack_size + 1024;
-	if (needed > new_max)
-		new_max = needed;
-	new_stack = realloc(vm->stack, sizeof(*vm->stack) * new_max);
-	if (!new_stack) {
-		subtilis_error_set_oom(err);
-		return;
-	}
-	vm->stack = new_stack;
-	vm->stack_size = new_max;
 }
 
 typedef void (*subtilis_vm_op_fn)(subitlis_vm_t *, subtilis_buffer_t *,
@@ -156,7 +164,7 @@ static void prv_storeoi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			  subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	int32_t base = vm->regs[ops[1].reg];
-	uint8_t *dst = &vm->globals[base + ops[2].integer];
+	uint8_t *dst = &vm->memory[base + ops[2].integer];
 
 	memcpy(dst, &vm->regs[ops[0].reg], sizeof(int32_t));
 }
@@ -165,7 +173,7 @@ static void prv_loadoi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			 subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	int32_t base = vm->regs[ops[1].reg];
-	uint8_t *src = &vm->globals[base + ops[2].integer];
+	uint8_t *src = &vm->memory[base + ops[2].integer];
 
 	memcpy(&vm->regs[ops[0].reg], src, sizeof(int32_t));
 }
@@ -395,7 +403,6 @@ static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
 {
 	subtilis_ir_section_t *s;
 	int32_t *new_regs;
-	size_t i;
 	size_t section_index = ops[0].integer;
 
 	if (section_index >= vm->p->num_sections) {
@@ -415,14 +422,22 @@ static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		vm->max_regs = s->reg_counter;
 	}
 
-	prv_reserve_stack(vm, vm->s->reg_counter + 2, err);
+	prv_reserve_stack(vm, ((vm->s->reg_counter + 2) * sizeof(*vm->regs)) +
+				  s->locals,
+			  err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	for (i = 0; i < vm->s->reg_counter; i++)
-		vm->stack[vm->top++] = vm->regs[i];
-	vm->stack[vm->top++] = vm->pc;
-	vm->stack[vm->top++] = vm->current_index;
+	memcpy(&vm->memory[vm->top], &vm->regs[0],
+	       vm->s->reg_counter * sizeof(*vm->regs));
+	vm->top += vm->s->reg_counter * sizeof(*vm->regs);
+	*((int32_t *)&vm->memory[vm->top]) = vm->pc;
+	vm->top += 4;
+	*((int32_t *)&vm->memory[vm->top]) = vm->current_index;
+	vm->top += 4;
+	vm->regs[SUBTILIS_IR_REG_LOCAL] = vm->top;
+	memset(&vm->memory[vm->top], 0, s->locals);
+	vm->top += s->locals;
 
 	vm->s = s;
 	vm->current_index = section_index;
@@ -435,14 +450,14 @@ static void prv_ret(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	size_t caller_index;
 	size_t to_pop;
 	subtilis_ir_section_t *cs;
-	size_t i;
 
 	if (vm->top == 0) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
-	caller_index = vm->stack[--vm->top];
+	vm->top -= vm->s->locals + sizeof(*vm->regs);
+	caller_index = *((int32_t *)&vm->memory[vm->top]);
 	cs = vm->p->sections[caller_index];
 	to_pop = cs->reg_counter + 1;
 	if (to_pop > vm->top) {
@@ -450,11 +465,13 @@ static void prv_ret(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		return;
 	}
 	vm->s = cs;
-	vm->pc = vm->stack[--vm->top];
+	vm->top -= sizeof(*vm->regs);
+	vm->pc = *((int32_t *)&vm->memory[vm->top]);
 	vm->current_index = caller_index;
-	for (i = 0; i < cs->reg_counter; i++)
-		vm->stack[vm->top - cs->reg_counter + i] = vm->regs[i];
-	vm->top -= cs->reg_counter;
+	vm->top -= vm->s->reg_counter * sizeof(*vm->regs);
+	memcpy(&vm->regs[0], &vm->memory[vm->top],
+	       vm->s->reg_counter * sizeof(*vm->regs));
+	vm->regs[SUBTILIS_IR_REG_LOCAL] = vm->top - cs->locals;
 }
 
 /* clang-format off */
@@ -548,9 +565,8 @@ void subitlis_vm_delete(subitlis_vm_t *vm)
 {
 	if (!vm)
 		return;
-	free(vm->stack);
 	free(vm->labels);
 	free(vm->regs);
-	free(vm->globals);
+	free(vm->memory);
 	free(vm);
 }

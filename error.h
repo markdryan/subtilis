@@ -148,9 +148,8 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_walker_failed(e)                                    \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_WALKER_FAILED, __FILE__,    \
 				 __LINE__)
-#define subtilis_error_set_already_defined(e)                                  \
-	subtilis_error_set_basic(e, SUBTILIS_ERROR_ALREADY_DEFINED, __FILE__,  \
-				 __LINE__)
+#define subtilis_error_set_already_defined(e, name, file, line)                \
+	subtilis_error_set1(e, SUBTILIS_ERROR_ALREADY_DEFINED, name, file, line)
 #define subtilis_error_set_nested_procedure(e, file, line)                     \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_NESTED_PROCEDURE, file, line)
 #define subtilis_error_set_procedure_expected(e, str, file, line)              \

@@ -176,10 +176,11 @@ cleanup:
 	return NULL;
 }
 
-subtilis_ir_section_t *subtilis_ir_prog_section_new(subtilis_ir_prog_t *p,
-						    const char *name,
-						    subtilis_type_section_t *tp,
-						    subtilis_error_t *err)
+subtilis_ir_section_t *
+subtilis_ir_prog_section_new(subtilis_ir_prog_t *p, const char *name,
+			     size_t locals, subtilis_type_section_t *tp,
+			     const char *file, size_t line,
+			     subtilis_error_t *err)
 {
 	subtilis_ir_section_t *s;
 	size_t name_index;
@@ -196,7 +197,8 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(subtilis_ir_prog_t *p,
 
 	if (name_index < p->num_sections) {
 		if (p->sections[name_index]) {
-			subtilis_error_set_already_defined(err);
+			subtilis_error_set_already_defined(err, name, file,
+							   line);
 			goto cleanup;
 		}
 	} else {
@@ -219,6 +221,7 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(subtilis_ir_prog_t *p,
 		p->num_sections = name_index + 1;
 	}
 	s->type = tp;
+	s->locals = locals;
 	p->sections[name_index] = s;
 
 	return s;

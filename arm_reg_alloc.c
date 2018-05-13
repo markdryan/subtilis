@@ -998,7 +998,7 @@ size_t subtilis_arm_regs_used_before(subtilis_arm_section_t *arm_s,
 
 	from = &arm_s->op_pool->ops[arm_s->first_op];
 
-	for (i = SUBTILIS_ARM_REG_MIN_REGS; i < SUBTILIS_ARM_REG_MAX_REGS;
+	for (i = SUBTILIS_ARM_REG_MIN_REGS; i <= SUBTILIS_ARM_REG_MAX_REGS;
 	     i++) {
 		if (prv_is_reg_used_before(&ud, i, from, op))
 			reg_list |= 1 << i;
@@ -1042,7 +1042,7 @@ size_t subtilis_arm_regs_used_after(subtilis_arm_section_t *arm_s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
-	for (i = SUBTILIS_ARM_REG_MIN_REGS; i < SUBTILIS_ARM_REG_MAX_REGS;
+	for (i = SUBTILIS_ARM_REG_MIN_REGS; i <= SUBTILIS_ARM_REG_MAX_REGS;
 	     i++) {
 		if (prv_is_reg_used_after(&ud, i, op))
 			reg_list |= 1 << i;

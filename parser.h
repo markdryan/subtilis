@@ -37,6 +37,8 @@ struct subtilis_parser_t_ {
 	subtilis_ir_section_t *main;
 	subtilis_ir_prog_t *prog;
 	subtilis_symbol_table_t *st;
+	subtilis_symbol_table_t *local_st;
+	subtilis_symbol_table_t *main_st;
 	size_t level;
 	size_t num_calls;
 	size_t max_calls;

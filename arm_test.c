@@ -286,6 +286,7 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	stran->offset.op.shift.type = SUBTILIS_ARM_SHIFT_LSL;
 	stran->pre_indexed = false;
 	stran->write_back = false;
+	stran->subtract = false;
 }
 
 static int prv_test_encode(void)
@@ -540,6 +541,11 @@ static int prv_test_disass_stran(void)
 		return 1;
 	}
 
+	if (stran->subtract) {
+		fprintf(stderr, "[4] subtract not expected\n");
+		return 1;
+	}
+
 	if ((stran->dest.num != 0) || (stran->base.num != 2)) {
 		fprintf(stderr, "[4] bad register values\n");
 		return 1;
@@ -573,6 +579,11 @@ static int prv_test_disass_stran(void)
 
 	if (stran->pre_indexed) {
 		fprintf(stderr, "[15] pre indexed not expected\n");
+		return 1;
+	}
+
+	if (stran->subtract) {
+		fprintf(stderr, "[15] subtract not expected\n");
 		return 1;
 	}
 
