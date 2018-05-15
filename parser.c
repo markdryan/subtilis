@@ -1057,7 +1057,6 @@ static void prv_proc(subtilis_parser_t *p, subtilis_token_t *t,
 		     subtilis_error_t *err)
 {
 	const char *tbuf;
-	subtilis_ir_operand_t op;
 	subtilis_parser_call_t *call = NULL;
 	subtilis_type_section_t *stype = NULL;
 
@@ -1070,9 +1069,7 @@ static void prv_proc(subtilis_parser_t *p, subtilis_token_t *t,
 	tbuf = subtilis_token_get_text(t);
 	tbuf += 4;
 
-	op.integer = 0;
-	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_CALL,
-					     op, err);
+	subtilis_ir_section_add_call(p->current, 0, 0, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -1163,7 +1160,7 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 		return;
 	}
 
-	call->s->ops[call->index]->op.instr.operands[0].integer = index;
+	call->s->ops[call->index]->op.call.proc_id = index;
 }
 
 static void prv_check_calls(subtilis_parser_t *p, subtilis_error_t *err)

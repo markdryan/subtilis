@@ -72,7 +72,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"jmpc *, label_1, *\n"
 	"label_1\n",
 		 subtilis_arm_gen_jmpc},
-	{"call *\n", subtilis_arm_gen_call},
+	{"call\n", subtilis_arm_gen_call},
 	{"ret\n", subtilis_arm_gen_ret},
 	{"gtii32 *, *, *\n", subtilis_arm_gen_gtii32},
 	{"ltii32 *, *, *\n", subtilis_arm_gen_ltii32},

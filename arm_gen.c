@@ -576,7 +576,7 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err)
 {
 	subtilis_arm_reg_t op0;
-	subtilis_ir_inst_t *ir_instr = &s->ops[start]->op.instr;
+	subtilis_ir_call_t *call = &s->ops[start]->op.call;
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_section_t *arm_s = user_data;
 	subtilis_arm_br_instr_t *br;
@@ -598,7 +598,7 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 	br = &instr->operands.br;
 	br->ccode = SUBTILIS_ARM_CCODE_AL;
 	br->link = true;
-	br->target.label = ir_instr->operands[0].label;
+	br->target.label = call->proc_id;
 
 	subtilis_arm_section_add_call_site(arm_s, arm_s->last_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)

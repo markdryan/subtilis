@@ -38,6 +38,7 @@ enum {
 typedef enum {
 	SUBTILIS_OP_INSTR,
 	SUBTILIS_OP_LABEL,
+	SUBTILIS_OP_CALL,
 	SUBTILIS_OP_PHI,
 	SUBTILIS_OP_MAX,
 } subtilis_op_type_t;
@@ -642,17 +643,6 @@ typedef enum {
 	SUBTILIS_OP_INSTR_JMP,
 
 	/*
-	 * CALL label
-	 *
-	 * inovkes a function identified by an integer.  The integer
-	 * is an indexed into the string pool of the program of which
-	 * this code section is a part.
-	 *
-	 */
-
-	SUBTILIS_OP_INSTR_CALL,
-
-	/*
 	 * RET
 	 *
 	 * returns from a sub-routine call.
@@ -695,11 +685,25 @@ struct subtilis_ir_inst_t_ {
 
 typedef struct subtilis_ir_inst_t_ subtilis_ir_inst_t;
 
+union subtilis_ir_arg_t_ {
+};
+
+typedef union subtilis_ir_arg_t_ subtilis_ir_arg_t;
+
+struct subtilis_ir_call_t_ {
+	size_t proc_id;
+	size_t arg_count;
+	subtilis_ir_arg_t *args;
+};
+
+typedef struct subtilis_ir_call_t_ subtilis_ir_call_t;
+
 struct subtilis_ir_op_t_ {
 	subtilis_op_type_t type;
 	union {
 		subtilis_ir_inst_t instr;
 		size_t label;
+		subtilis_ir_call_t call;
 	} op;
 };
 
@@ -815,6 +819,10 @@ void subtilis_ir_section_dump(subtilis_ir_section_t *s);
 size_t subtilis_ir_section_new_label(subtilis_ir_section_t *s);
 void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 				   subtilis_error_t *err);
+/* Ownership of args passes to this function */
+void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t id,
+				  size_t arg_count, subtilis_ir_arg_t *args,
+				  subtilis_error_t *err);
 void subtilis_ir_parse_rules(const subtilis_ir_rule_raw_t *raw,
 			     subtilis_ir_rule_t *parsed, size_t count,
 			     subtilis_error_t *err);
