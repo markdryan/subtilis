@@ -1,0 +1,8 @@
+LOCAL i%
+
+LET i% = 1
+LET j% = 2
+
+DEF PROCAdd(a%, b%, c%)
+  PRINT a% + b% + c%
+ENDPROC

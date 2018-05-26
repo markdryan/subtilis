@@ -28,11 +28,16 @@ typedef enum {
 
 struct subtilis_type_section_t_ {
 	subtilis_type_t return_type;
+	size_t num_parameters;
+	subtilis_type_t *parameters;
 };
 
 typedef struct subtilis_type_section_t_ subtilis_type_section_t;
 
+/* Takes ownership of parameters */
 subtilis_type_section_t *subtilis_type_section_new(subtilis_type_t rtype,
+						   size_t num_parameters,
+						   subtilis_type_t *parameters,
 						   subtilis_error_t *err);
 void subtilis_type_section_delete(subtilis_type_section_t *stype);
 
