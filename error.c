@@ -74,11 +74,11 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_KEYWORD_EXPECTED */
 	{"Keyword expected, found %s.\n", 1},
 
-	/* SUBTILIS_ERROR_NOT_SUPPORTED */
-	{"Keyword %s not supported.\n", 1},
-
 	/* SUBTILIS_ID_EXPECTED */
 	{"Identifer expected found %s.\n", 1},
+
+	/* SUBTILIS_ERROR_NOT_SUPPORTED */
+	{"%s not supported.\n", 1},
 
 	/* SUBTILIS_ERROR_ASSIGNMENT_OP_EXPECTED */
 	{"Assignment operator (=, +=, -=)  expected found %s.\n", 1},

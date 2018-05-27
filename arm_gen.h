@@ -19,6 +19,8 @@
 
 #include "ir.h"
 
+void subtilis_arm_gen_mov(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_movii32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_addii32(subtilis_ir_section_t *s, size_t start,

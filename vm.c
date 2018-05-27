@@ -160,6 +160,12 @@ static void prv_movii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = ops[1].integer;
 }
 
+static void prv_mov(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->regs[ops[1].reg];
+}
+
 static void prv_storeoi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			  subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -502,7 +508,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	NULL,                                /* SUBTILIS_OP_INSTR_STORE_REAL */
 	prv_movii32,                         /* SUBTILIS_OP_INSTR_MOVI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_MOV_REAL */
-	NULL,                                /* SUBTILIS_OP_INSTR_MOV */
+	prv_mov,                                /* SUBTILIS_OP_INSTR_MOV */
 	NULL,                                /* SUBTILIS_OP_INSTR_MOVFP */
 	prv_printi32,                        /* SUBTILIS_OP_INSTR_PRINT_I32 */
 	prv_rsubii32,                        /* SUBTILIS_OP_INSTR_RSUBI_I32 */

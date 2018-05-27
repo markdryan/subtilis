@@ -56,6 +56,21 @@ static void prv_cmp_simple(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_add_cmp(arm_s, itype, ccode, op1, op2, err);
 }
 
+void subtilis_arm_gen_mov(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+	subtilis_arm_reg_t op2;
+
+	dest = subtilis_arm_ir_to_arm_reg(instr->operands[0].reg);
+	op2 = subtilis_arm_ir_to_arm_reg(instr->operands[1].reg);
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
+				 err);
+}
+
 void subtilis_arm_gen_movii32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err)
 {
