@@ -62,13 +62,18 @@ static void prv_ensure_buffer(subtilis_ir_section_t *s, subtilis_error_t *err)
 static void prv_ir_section_delete(subtilis_ir_section_t *s)
 {
 	size_t i;
+	subtilis_ir_op_t *op;
 
 	if (!s)
 		return;
 
 	subtilis_type_section_delete(s->type);
-	for (i = 0; i < s->len; i++)
-		free(s->ops[i]);
+	for (i = 0; i < s->len; i++) {
+		op = s->ops[i];
+		if (op->type == SUBTILIS_OP_CALL)
+			free(op->op.call.args);
+		free(op);
+	}
 	free(s->ops);
 	free(s);
 }
@@ -363,7 +368,6 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "gteii32", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "jmpc", SUBTILIS_OP_CLASS_REG_LABEL_LABEL},
 	{ "jmp", SUBTILIS_OP_CLASS_LABEL},
-	{ "call", SUBTILIS_OP_CLASS_I32},
 	{ "ret", SUBTILIS_OP_CLASS_NONE},
 };
 
@@ -454,6 +458,8 @@ void subtilis_ir_section_dump(subtilis_ir_section_t *s)
 			prv_dump_instr(&s->ops[i]->op.instr);
 		else if (s->ops[i]->type == SUBTILIS_OP_LABEL)
 			printf("label_%zu", s->ops[i]->op.label);
+		else if (s->ops[i]->type == SUBTILIS_OP_CALL)
+			printf("\tcall %zu", s->ops[i]->op.call.proc_id);
 		else
 			continue;
 		printf("\n");
@@ -481,6 +487,28 @@ void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 	}
 	op->type = SUBTILIS_OP_LABEL;
 	op->op.label = l;
+	s->ops[s->len++] = op;
+}
+
+void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t id,
+				  size_t arg_count, subtilis_ir_arg_t *args,
+				  subtilis_error_t *err)
+{
+	subtilis_ir_op_t *op;
+
+	prv_ensure_buffer(s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op = malloc(sizeof(*op));
+	if (!op) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	op->type = SUBTILIS_OP_CALL;
+	op->op.call.proc_id = id;
+	op->op.call.arg_count = arg_count;
+	op->op.call.args = args;
 	s->ops[s->len++] = op;
 }
 
@@ -627,6 +655,11 @@ static const char *prv_parse_match(const char *rule,
 		return rule;
 	}
 
+	if (!strcmp(instr, "call")) {
+		match->type = SUBTILIS_OP_CALL;
+		return rule;
+	}
+
 	for (i = 0; i < sizeof(op_desc) / sizeof(subtilis_ir_op_desc_t); i++)
 		if (!strcmp(instr, op_desc[i].name))
 			break;
@@ -747,6 +780,8 @@ static bool prv_match_op(subtilis_ir_op_t *op, subtilis_ir_op_match_t *match,
 
 	if (op->type != match->type)
 		return false;
+	if (op->type == SUBTILIS_OP_CALL)
+		return true;
 	if (op->type == SUBTILIS_OP_LABEL)
 		return prv_process_floating_label(state, op->op.label,
 						  match->op.label.label, err);

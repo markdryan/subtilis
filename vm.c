@@ -160,6 +160,12 @@ static void prv_movii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = ops[1].integer;
 }
 
+static void prv_mov(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->regs[ops[1].reg];
+}
+
 static void prv_storeoi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			  subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -399,11 +405,11 @@ static void prv_jmp(subitlis_vm_t *vm, subtilis_buffer_t *b,
 }
 
 static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
-		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
+		     subtilis_ir_call_t *call, subtilis_error_t *err)
 {
 	subtilis_ir_section_t *s;
 	int32_t *new_regs;
-	size_t section_index = ops[0].integer;
+	size_t section_index = call->proc_id;
 
 	if (section_index >= vm->p->num_sections) {
 		subtilis_error_set_assertion_failed(err);
@@ -502,7 +508,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	NULL,                                /* SUBTILIS_OP_INSTR_STORE_REAL */
 	prv_movii32,                         /* SUBTILIS_OP_INSTR_MOVI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_MOV_REAL */
-	NULL,                                /* SUBTILIS_OP_INSTR_MOV */
+	prv_mov,                                /* SUBTILIS_OP_INSTR_MOV */
 	NULL,                                /* SUBTILIS_OP_INSTR_MOVFP */
 	prv_printi32,                        /* SUBTILIS_OP_INSTR_PRINT_I32 */
 	prv_rsubii32,                        /* SUBTILIS_OP_INSTR_RSUBI_I32 */
@@ -530,7 +536,6 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_gteii32,                         /* SUBTILIS_OP_INSTR_GTEI_I32 */
 	prv_jmpc,                            /* SUBTILIS_OP_INSTR_JMPC */
 	prv_jmp,                             /* SUBTILIS_OP_INSTR_JMP */
-	prv_call,                            /* SUBTILIS_OP_INSTR_CALL */
 	prv_ret,                             /* SUBTILIS_OP_INSTR_RET */
 };
 
@@ -546,16 +551,20 @@ void subitlis_vm_run(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	for (vm->pc = 0; vm->pc < vm->s->len; vm->pc++) {
 		if (!vm->s->ops[vm->pc])
 			continue;
-		if (vm->s->ops[vm->pc]->type != SUBTILIS_OP_INSTR)
+		if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_CALL) {
+			prv_call(vm, b, &vm->s->ops[vm->pc]->op.call, err);
+		} else if (vm->s->ops[vm->pc]->type != SUBTILIS_OP_INSTR) {
 			continue;
-		itype = vm->s->ops[vm->pc]->op.instr.type;
-		ops = vm->s->ops[vm->pc]->op.instr.operands;
-		fn = op_execute_fns[itype];
-		if (!fn) {
-			subtilis_error_set_assertion_failed(err);
-			return;
+		} else {
+			itype = vm->s->ops[vm->pc]->op.instr.type;
+			ops = vm->s->ops[vm->pc]->op.instr.operands;
+			fn = op_execute_fns[itype];
+			if (!fn) {
+				subtilis_error_set_assertion_failed(err);
+				return;
+			}
+			fn(vm, b, ops, err);
 		}
-		fn(vm, b, ops, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}

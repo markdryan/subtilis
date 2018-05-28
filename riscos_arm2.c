@@ -72,7 +72,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"jmpc *, label_1, *\n"
 	"label_1\n",
 		 subtilis_arm_gen_jmpc},
-	{"call *\n", subtilis_arm_gen_call},
+	{"call\n", subtilis_arm_gen_call},
 	{"ret\n", subtilis_arm_gen_ret},
 	{"gtii32 *, *, *\n", subtilis_arm_gen_gtii32},
 	{"ltii32 *, *, *\n", subtilis_arm_gen_ltii32},
@@ -86,6 +86,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"neqi32 *, *, *\n", subtilis_arm_gen_neqi32},
 	{"gtei32 *, *, *\n", subtilis_arm_gen_gtei32},
 	{"ltei32 *, *, *\n", subtilis_arm_gen_ltei32},
+	{"mov *, *", subtilis_arm_gen_mov},
 	{"movii32 *, *", subtilis_arm_gen_movii32},
 	{"addii32 *, *, *", subtilis_arm_gen_addii32},
 	{"mulii32 *, *, *", subtilis_arm_gen_mulii32},

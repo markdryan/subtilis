@@ -55,31 +55,21 @@ void subtilis_symbol_table_delete(subtilis_symbol_table_t *st)
 	free(st);
 }
 
-const subtilis_symbol_t *
-subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
-			     subtilis_type_t id_type, subtilis_error_t *err)
+static subtilis_symbol_t *prv_symbol_new(size_t loc, subtilis_type_t id_type,
+					 bool is_reg, subtilis_error_t *err)
 {
 	subtilis_symbol_t *sym;
-	char *key_dup = NULL;
-
-	sym = subtilis_hashtable_find(st->h, key);
-	if (sym)
-		return sym;
-
-	key_dup = malloc(strlen(key) + 1);
-	if (!key_dup)
-		goto on_error;
-	(void)strcpy(key_dup, key);
 
 	sym = malloc(sizeof(*sym));
-	if (!sym)
-		goto on_error;
+	if (!sym) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
 
 	// TODO: There's target specific information here.  We assume
 	// pointers are 32 bit which they may not be.  We also need to
 	// add support for other integer types.
 
-	sym->loc = st->allocated;
 	switch (id_type) {
 	case SUBTILIS_TYPE_REAL:
 		sym->size = 8;
@@ -94,8 +84,39 @@ subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 		subtilis_error_set_assertion_failed(err);
 		goto on_error;
 	}
-
 	sym->t = id_type;
+	sym->loc = loc;
+	sym->is_reg = is_reg;
+
+	return sym;
+
+on_error:
+	free(sym);
+
+	return NULL;
+}
+
+const subtilis_symbol_t *
+subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
+			     subtilis_type_t id_type, subtilis_error_t *err)
+{
+	subtilis_symbol_t *sym;
+	char *key_dup = NULL;
+
+	sym = subtilis_hashtable_find(st->h, key);
+	if (sym)
+		return sym;
+
+	key_dup = malloc(strlen(key) + 1);
+	if (!key_dup) {
+		subtilis_error_set_oom(err);
+		goto on_error;
+	}
+	(void)strcpy(key_dup, key);
+
+	sym = prv_symbol_new(st->allocated, id_type, false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
 
 	(void)subtilis_hashtable_insert(st->h, key_dup, sym, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -106,8 +127,41 @@ subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 	return sym;
 
 on_error:
-	subtilis_error_set_oom(err);
+	free(key_dup);
+	free(sym);
+	return NULL;
+}
 
+const subtilis_symbol_t *
+subtilis_symbol_table_insert_reg(subtilis_symbol_table_t *st, const char *key,
+				 subtilis_type_t id_type, size_t reg_num,
+				 subtilis_error_t *err)
+{
+	subtilis_symbol_t *sym;
+	char *key_dup = NULL;
+
+	sym = subtilis_hashtable_find(st->h, key);
+	if (sym)
+		return sym;
+
+	key_dup = malloc(strlen(key) + 1);
+	if (!key_dup) {
+		subtilis_error_set_oom(err);
+		goto on_error;
+	}
+	(void)strcpy(key_dup, key);
+
+	sym = prv_symbol_new(reg_num, id_type, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	(void)subtilis_hashtable_insert(st->h, key_dup, sym, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	return sym;
+
+on_error:
 	free(key_dup);
 	free(sym);
 	return NULL;

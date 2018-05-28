@@ -188,11 +188,15 @@ static subtilis_exp_t *prv_variable(subtilis_parser_t *p, subtilis_token_t *t,
 		    err, tbuf, p->l->stream->name, p->l->line);
 		return NULL;
 	}
-	op2.integer = s->loc;
-	reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op1, op2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return NULL;
+	if (!s->is_reg) {
+		op2.integer = s->loc;
+		reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op1, op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+	} else {
+		reg = s->loc;
+	}
 	return subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
 }
 
@@ -548,16 +552,99 @@ static subtilis_exp_t *prv_expression(subtilis_parser_t *p, subtilis_token_t *t,
 	return prv_priority7(p, t, err);
 }
 
+static void prv_assign_to_reg(subtilis_parser_t *p, subtilis_token_t *t,
+			      const char *tbuf, size_t loc,
+			      subtilis_error_t *err)
+{
+	subtilis_op_instr_type_t instr;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op2;
+	subtilis_exp_t *e = NULL;
+
+	e = prv_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	switch (e->type) {
+	case SUBTILIS_EXP_CONST_INTEGER:
+		instr = SUBTILIS_OP_INSTR_MOVI_I32;
+		break;
+	case SUBTILIS_EXP_INTEGER:
+		instr = SUBTILIS_OP_INSTR_MOV;
+		break;
+	case SUBTILIS_EXP_REAL:
+	case SUBTILIS_EXP_STRING:
+	default:
+		subtilis_error_set_not_supported(err, tbuf, p->l->stream->name,
+						 p->l->line);
+		goto cleanup;
+	}
+	op0.reg = loc;
+	op2.integer = 0;
+	subtilis_ir_section_add_instr_reg(p->current, instr, op0, e->exp.ir_op,
+					  op2, err);
+
+cleanup:
+	subtilis_exp_delete(e);
+}
+
+static void prv_assign_to_mem(subtilis_parser_t *p, subtilis_token_t *t,
+			      const char *tbuf, subtilis_ir_operand_t op1,
+			      size_t loc, subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_op_instr_type_t instr;
+	subtilis_ir_operand_t op2;
+	subtilis_exp_t *e = NULL;
+
+	e = prv_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	switch (e->type) {
+	case SUBTILIS_EXP_CONST_INTEGER:
+		reg = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, e->exp.ir_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		subtilis_exp_delete(e);
+		e = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		instr = SUBTILIS_OP_INSTR_STOREO_I32;
+		break;
+	case SUBTILIS_EXP_CONST_REAL:
+		instr = SUBTILIS_OP_INSTR_STOREO_REAL;
+		break;
+	case SUBTILIS_EXP_CONST_STRING:
+		subtilis_error_set_not_supported(err, tbuf, p->l->stream->name,
+						 p->l->line);
+		goto cleanup;
+	case SUBTILIS_EXP_INTEGER:
+		instr = SUBTILIS_OP_INSTR_STOREO_I32;
+		break;
+	case SUBTILIS_EXP_REAL:
+		instr = SUBTILIS_OP_INSTR_STOREO_REAL;
+		break;
+	case SUBTILIS_EXP_STRING:
+		subtilis_error_set_not_supported(err, tbuf, p->l->stream->name,
+						 p->l->line);
+		goto cleanup;
+	}
+	op2.integer = loc;
+	subtilis_ir_section_add_instr_reg(p->current, instr, e->exp.ir_op, op1,
+					  op2, err);
+
+cleanup:
+	subtilis_exp_delete(e);
+}
+
 static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err)
 {
 	const char *tbuf;
-	subtilis_exp_t *e = NULL;
 	subtilis_ir_operand_t op1;
-	subtilis_ir_operand_t op2;
-	subtilis_op_instr_type_t instr;
 	const subtilis_symbol_t *s;
-	size_t reg;
 
 	tbuf = subtilis_token_get_text(t);
 
@@ -597,46 +684,11 @@ static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 		    err, tbuf, p->l->stream->name, p->l->line);
 		return;
 	}
-	e = prv_expression(p, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 
-	switch (e->type) {
-	case SUBTILIS_EXP_CONST_INTEGER:
-		reg = subtilis_ir_section_add_instr2(
-		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, e->exp.ir_op, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-		subtilis_exp_delete(e);
-		e = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-		instr = SUBTILIS_OP_INSTR_STOREO_I32;
-		break;
-	case SUBTILIS_EXP_CONST_REAL:
-		instr = SUBTILIS_OP_INSTR_STOREO_REAL;
-		break;
-	case SUBTILIS_EXP_CONST_STRING:
-		subtilis_error_set_not_supported(err, tbuf, p->l->stream->name,
-						 p->l->line);
-		goto cleanup;
-	case SUBTILIS_EXP_INTEGER:
-		instr = SUBTILIS_OP_INSTR_STOREO_I32;
-		break;
-	case SUBTILIS_EXP_REAL:
-		instr = SUBTILIS_OP_INSTR_STOREO_REAL;
-		break;
-	case SUBTILIS_EXP_STRING:
-		subtilis_error_set_not_supported(err, tbuf, p->l->stream->name,
-						 p->l->line);
-		goto cleanup;
-	}
-	op2.integer = s->loc;
-	subtilis_ir_section_add_instr_reg(p->current, instr, e->exp.ir_op, op1,
-					  op2, err);
-
-cleanup:
-	subtilis_exp_delete(e);
+	if (s->is_reg)
+		prv_assign_to_reg(p, t, tbuf, s->loc, err);
+	else
+		prv_assign_to_mem(p, t, tbuf, op1, s->loc, err);
 }
 
 static void prv_let(subtilis_parser_t *p, subtilis_token_t *t,
@@ -661,6 +713,10 @@ static void prv_parse_locals(subtilis_parser_t *p, subtilis_token_t *t,
 			     subtilis_error_t *err)
 {
 	const char *tbuf;
+	size_t reg_num;
+	subtilis_ir_operand_t op1;
+
+	op1.integer = 0;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -684,8 +740,13 @@ static void prv_parse_locals(subtilis_parser_t *p, subtilis_token_t *t,
 			return;
 		}
 
-		(void)subtilis_symbol_table_insert(p->local_st, tbuf,
-						   SUBTILIS_TYPE_INTEGER, err);
+		reg_num = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		(void)subtilis_symbol_table_insert_reg(
+		    p->local_st, tbuf, SUBTILIS_TYPE_INTEGER, reg_num, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
@@ -1016,10 +1077,6 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	prv_parse_locals(p, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto on_error;
-
 	stype = subtilis_type_section_new(SUBTILIS_TYPE_VOID, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
@@ -1031,6 +1088,10 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 		subtilis_type_section_delete(stype);
 		goto on_error;
 	}
+
+	prv_parse_locals(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
 
 	prv_compound(p, t, SUBTILIS_KEYWORD_ENDPROC, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1057,7 +1118,6 @@ static void prv_proc(subtilis_parser_t *p, subtilis_token_t *t,
 		     subtilis_error_t *err)
 {
 	const char *tbuf;
-	subtilis_ir_operand_t op;
 	subtilis_parser_call_t *call = NULL;
 	subtilis_type_section_t *stype = NULL;
 
@@ -1070,9 +1130,7 @@ static void prv_proc(subtilis_parser_t *p, subtilis_token_t *t,
 	tbuf = subtilis_token_get_text(t);
 	tbuf += 4;
 
-	op.integer = 0;
-	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_CALL,
-					     op, err);
+	subtilis_ir_section_add_call(p->current, 0, 0, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -1163,7 +1221,7 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 		return;
 	}
 
-	call->s->ops[call->index]->op.instr.operands[0].integer = index;
+	call->s->ops[call->index]->op.call.proc_id = index;
 }
 
 static void prv_check_calls(subtilis_parser_t *p, subtilis_error_t *err)
