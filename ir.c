@@ -183,9 +183,9 @@ cleanup:
 
 subtilis_ir_section_t *
 subtilis_ir_prog_section_new(subtilis_ir_prog_t *p, const char *name,
-			     size_t locals, subtilis_type_section_t *tp,
-			     const char *file, size_t line,
-			     subtilis_error_t *err)
+			     size_t locals, size_t params,
+			     subtilis_type_section_t *tp, const char *file,
+			     size_t line, subtilis_error_t *err)
 {
 	subtilis_ir_section_t *s;
 	size_t name_index;
@@ -195,6 +195,7 @@ subtilis_ir_prog_section_new(subtilis_ir_prog_t *p, const char *name,
 	s = prv_ir_section_new(err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
+	s->reg_counter += params;
 
 	name_index = subtilis_string_pool_register(p->string_pool, name, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -447,6 +448,26 @@ static void prv_dump_instr(subtilis_ir_inst_t *instr)
 	}
 }
 
+static void prv_dump_call(subtilis_ir_call_t *c)
+{
+	size_t i;
+
+	printf("\tcall %zu", c->proc_id);
+	if (c->arg_count > 0) {
+		printf(" (");
+		printf("%s%zu",
+		       c->args[0].type == SUBTILIS_IR_REG_TYPE_REAL ? "f" : "r",
+		       c->args[0].reg);
+		for (i = 1; i < c->arg_count; i++)
+			printf(", %s%zu",
+			       c->args[i].type == SUBTILIS_IR_REG_TYPE_REAL
+				   ? "f"
+				   : "r",
+			       c->args[i].reg);
+		printf(")");
+	}
+}
+
 void subtilis_ir_section_dump(subtilis_ir_section_t *s)
 {
 	size_t i;
@@ -459,7 +480,7 @@ void subtilis_ir_section_dump(subtilis_ir_section_t *s)
 		else if (s->ops[i]->type == SUBTILIS_OP_LABEL)
 			printf("label_%zu", s->ops[i]->op.label);
 		else if (s->ops[i]->type == SUBTILIS_OP_CALL)
-			printf("\tcall %zu", s->ops[i]->op.call.proc_id);
+			prv_dump_call(&s->ops[i]->op.call);
 		else
 			continue;
 		printf("\n");
@@ -490,8 +511,8 @@ void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 	s->ops[s->len++] = op;
 }
 
-void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t id,
-				  size_t arg_count, subtilis_ir_arg_t *args,
+void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t arg_count,
+				  subtilis_ir_arg_t *args,
 				  subtilis_error_t *err)
 {
 	subtilis_ir_op_t *op;
@@ -506,7 +527,7 @@ void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t id,
 		return;
 	}
 	op->type = SUBTILIS_OP_CALL;
-	op->op.call.proc_id = id;
+	op->op.call.proc_id = 0;
 	op->op.call.arg_count = arg_count;
 	op->op.call.args = args;
 	s->ops[s->len++] = op;

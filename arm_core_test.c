@@ -167,13 +167,18 @@ static subtilis_arm_section_t *prv_add_imm(subtilis_arm_op_pool_t *pool,
 					   subtilis_arm_instr_type_t alt_type,
 					   subtilis_error_t *err)
 {
-	subtilis_arm_section_t *s;
 	subtilis_arm_reg_t dest;
 	subtilis_arm_reg_t op1;
+	subtilis_arm_section_t *s = NULL;
+	subtilis_type_section_t *stype = NULL;
 
-	s = subtilis_arm_section_new(pool, 0, 0, 0, err);
+	stype = subtilis_type_section_new(SUBTILIS_TYPE_VOID, 0, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
+
+	s = subtilis_arm_section_new(pool, stype, 0, 0, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
 
 	dest.type = SUBTILIS_ARM_REG_FIXED;
 	dest.num = 0;
@@ -183,12 +188,18 @@ static subtilis_arm_section_t *prv_add_imm(subtilis_arm_op_pool_t *pool,
 
 	subtilis_arm_add_addsub_imm(s, itype, alt_type, SUBTILIS_ARM_CCODE_AL,
 				    false, dest, op1, num, err);
-	if (err->type != SUBTILIS_ERROR_OK) {
-		subtilis_arm_section_delete(s);
-		return NULL;
-	}
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	subtilis_type_section_delete(stype);
 
 	return s;
+
+on_error:
+	subtilis_arm_section_delete(s);
+	subtilis_type_section_delete(stype);
+
+	return NULL;
 }
 
 static int prv_check_imm(subtilis_arm_section_t *s,

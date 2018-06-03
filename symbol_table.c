@@ -81,6 +81,7 @@ static subtilis_symbol_t *prv_symbol_new(size_t loc, subtilis_type_t id_type,
 		sym->size = 8;
 		break;
 	case SUBTILIS_TYPE_VOID:
+	default:
 		subtilis_error_set_assertion_failed(err);
 		goto on_error;
 	}

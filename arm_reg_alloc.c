@@ -52,8 +52,8 @@ struct subtilis_arm_reg_ud_t_ {
 
 typedef struct subtilis_arm_reg_ud_t_ subtilis_arm_reg_ud_t;
 
-static void prv_init_int_regs(subtilis_arm_reg_class_t *regs, size_t reg_count,
-			      subtilis_error_t *err)
+static void prv_init_int_regs(subtilis_arm_reg_class_t *regs, size_t int_args,
+			      size_t reg_count, subtilis_error_t *err)
 {
 	size_t i;
 
@@ -77,7 +77,12 @@ static void prv_init_int_regs(subtilis_arm_reg_class_t *regs, size_t reg_count,
 	regs->spill_max = 0;
 	regs->vr_reg_count = reg_count;
 
-	for (i = 0; i < SUBTILIS_ARM_REG_MAX_REGS; i++) {
+	for (i = 0; i < int_args; i++) {
+		regs->next[i] = -1;
+		regs->phys_to_virt[i] = i + SUBTILIS_IR_REG_TEMP_START;
+	}
+
+	for (; i < SUBTILIS_ARM_REG_MAX_REGS; i++) {
 		regs->next[i] = -1;
 		regs->phys_to_virt[i] = INT_MAX;
 	}
@@ -280,7 +285,12 @@ static void prv_init_arm_reg_ud(subtilis_arm_reg_ud_t *ud,
 				subtilis_arm_section_t *arm_s,
 				subtilis_error_t *err)
 {
-	prv_init_int_regs(&ud->int_regs, arm_s->reg_counter, err);
+	size_t int_args = 4;
+
+	if (arm_s->stype->int_regs < int_args)
+		int_args = arm_s->stype->int_regs;
+
+	prv_init_int_regs(&ud->int_regs, int_args, arm_s->reg_counter, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

@@ -404,6 +404,41 @@ static void prv_jmp(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	}
 }
 
+static void prv_set_args(subitlis_vm_t *vm, subtilis_ir_call_t *call,
+			 subtilis_error_t *err)
+{
+	size_t i;
+	int32_t *int_values = NULL;
+	size_t int_args = 0;
+	size_t real_args = 0;
+	size_t int_count = 0;
+
+	for (i = 0; i < call->arg_count; i++) {
+		if (call->args[i].type == SUBTILIS_IR_REG_TYPE_INTEGER)
+			int_args++;
+		else
+			real_args++;
+	}
+
+	if (int_args > 0) {
+		int_values = malloc(sizeof(*int_values) * int_args);
+		if (!int_values) {
+			subtilis_error_set_oom(err);
+			return;
+		}
+	}
+
+	for (i = 0; i < call->arg_count; i++) {
+		if (call->args[i].type == SUBTILIS_IR_REG_TYPE_INTEGER)
+			int_values[int_count++] = vm->regs[call->args[i].reg];
+	}
+
+	for (i = 0; i < int_args; i++)
+		vm->regs[SUBTILIS_IR_REG_TEMP_START + i] = int_values[i];
+
+	free(int_values);
+}
+
 static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		     subtilis_ir_call_t *call, subtilis_error_t *err)
 {
@@ -442,8 +477,14 @@ static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	*((int32_t *)&vm->memory[vm->top]) = vm->current_index;
 	vm->top += 4;
 	vm->regs[SUBTILIS_IR_REG_LOCAL] = vm->top;
-	memset(&vm->memory[vm->top], 0, s->locals);
-	vm->top += s->locals;
+	prv_set_args(vm, call, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (s->locals > 0) {
+		memset(&vm->memory[vm->top], 0, s->locals);
+		vm->top += s->locals;
+	}
 
 	vm->s = s;
 	vm->current_index = section_index;

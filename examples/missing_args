@@ -1,0 +1,5 @@
+PROCArgs(10)
+
+DEF PROCArgs(a%, b%)
+  PRINT a% +  b%
+ENDPROC

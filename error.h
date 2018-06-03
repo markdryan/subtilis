@@ -59,6 +59,8 @@ typedef enum {
 	SUBTILIS_ERROR_UNKNOWN_PROCEDURE,
 	SUBTILIS_ERROR_UNKNOWN_FUNCTION,
 	SUBTILIS_ERROR_BAD_INSTRUCTION,
+	SUBTILIS_ERROR_BAD_ARG_COUNT,
+	SUBTILIS_ERROR_BAD_ARG_TYPE,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -166,12 +168,19 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_bad_instruction(e, num)                             \
 	subtilis_error_set_hex(e, SUBTILIS_ERROR_BAD_INSTRUCTION, num,         \
 			       __FILE__, __LINE__)
+#define subtilis_error_set_bad_arg_count(e, num1, num2, file, line)            \
+	subtilis_error_set_int(e, SUBTILIS_ERROR_BAD_ARG_COUNT, num1, num2,    \
+			       file, line, __FILE__, __LINE__)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,
 			     const char *file, unsigned int line,
 			     const char *subtilis_file,
 			     unsigned int subtilis_line);
+void subtilis_error_set_int(subtilis_error_t *e, subtilis_error_type_t type,
+			    int data1, int data2, const char *file,
+			    unsigned int line, const char *subtilis_file,
+			    unsigned int subtilis_line);
 void subtilis_error_set_basic(subtilis_error_t *e, subtilis_error_type_t type,
 			      const char *subtilis_file,
 			      unsigned int subtilis_line);
@@ -182,5 +191,11 @@ void subtilis_error_set_errno(subtilis_error_t *e, subtilis_error_type_t type,
 			      const char *data1, const char *subtilis_file,
 			      unsigned int subtilis_line);
 void subtilis_error_fprintf(FILE *f, subtilis_error_t *e, bool verbose);
+
+void subtilis_error_set_bad_arg_type(subtilis_error_t *e, size_t arg,
+				     const char *expected, const char *got,
+				     const char *file, unsigned int line,
+				     const char *subtilis_file,
+				     unsigned int subtilis_line);
 
 #endif

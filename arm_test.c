@@ -292,14 +292,15 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 static int prv_test_encode(void)
 {
 	subtilis_error_t err;
+	size_t i;
+	size_t code_size;
 	int retval = 1;
 	subtilis_arm_op_pool_t *op_pool = NULL;
 	subtilis_string_pool_t *string_pool = NULL;
 	subtilis_arm_section_t *arm_s = NULL;
 	subtilis_arm_prog_t *arm_p = NULL;
 	uint32_t *code = NULL;
-	size_t i;
-	size_t code_size;
+	subtilis_type_section_t *stype = NULL;
 
 	printf("arm_test_encode");
 
@@ -316,7 +317,11 @@ static int prv_test_encode(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_s = subtilis_arm_prog_section_new(arm_p, 16, 0, 0, &err);
+	stype = subtilis_type_section_new(SUBTILIS_TYPE_VOID, 0, NULL, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	arm_s = subtilis_arm_prog_section_new(arm_p, stype, 16, 0, 0, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -347,6 +352,7 @@ cleanup:
 
 	free(code);
 	subtilis_arm_prog_delete(arm_p);
+	subtilis_type_section_delete(stype);
 	subtilis_string_pool_delete(string_pool);
 	subtilis_arm_op_pool_delete(op_pool);
 

@@ -24,12 +24,16 @@ typedef enum {
 	SUBTILIS_TYPE_INTEGER,
 	SUBTILIS_TYPE_STRING,
 	SUBTILIS_TYPE_VOID,
+	SUBTILIS_TYPE_MAX,
 } subtilis_type_t;
 
 struct subtilis_type_section_t_ {
 	subtilis_type_t return_type;
 	size_t num_parameters;
 	subtilis_type_t *parameters;
+	size_t ref_count;
+	size_t int_regs;
+	size_t fp_regs;
 };
 
 typedef struct subtilis_type_section_t_ subtilis_type_section_t;
@@ -40,5 +44,8 @@ subtilis_type_section_t *subtilis_type_section_new(subtilis_type_t rtype,
 						   subtilis_type_t *parameters,
 						   subtilis_error_t *err);
 void subtilis_type_section_delete(subtilis_type_section_t *stype);
+const char *subtilis_type_name(subtilis_type_t typ);
+subtilis_type_section_t *
+subtilis_type_section_dup(subtilis_type_section_t *stype);
 
 #endif

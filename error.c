@@ -133,6 +133,12 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_BAD_INSTRUCTION */
 	{"Bad instruction %s\n", 1},
+
+	/* SUBTILIS_ERROR_BAD_ARG_COUNT */
+	{"Wrong number of arguments.  Found %s expected %s\n", 2},
+
+	/* SUBTILIS_ERROR_BAD_ARG_TYPE */
+	{"Argument %s of wrong type : %s\n", 2},
 };
 
 /* clang-format on */
@@ -165,6 +171,21 @@ void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 	strncpy(e->subtilis_file, subtilis_file, SUBTILIS_CONFIG_PATH_MAX);
 	e->subtilis_file[SUBTILIS_CONFIG_PATH_MAX - 1] = 0;
 	e->subtilis_line = subtilis_line;
+}
+
+void subtilis_error_set_int(subtilis_error_t *e, subtilis_error_type_t type,
+			    int data1, int data2, const char *file,
+			    unsigned int line, const char *subtilis_file,
+			    unsigned int subtilis_line)
+{
+	char num1[32];
+	char num2[32];
+
+	snprintf(num1, sizeof(num1), "%d", data1);
+	snprintf(num2, sizeof(num2), "%d", data2);
+
+	subtilis_error_set_full(e, type, num1, num2, file, line, subtilis_file,
+				subtilis_line);
 }
 
 void subtilis_error_set_basic(subtilis_error_t *e, subtilis_error_type_t type,
@@ -215,4 +236,20 @@ void subtilis_error_set_hex(subtilis_error_t *e, subtilis_error_type_t type,
 
 	sprintf(buf, "0x%x", num);
 	subtilis_error_set1(e, type, buf, subtilis_file, subtilis_line);
+}
+
+void subtilis_error_set_bad_arg_type(subtilis_error_t *e, size_t arg,
+				     const char *expected, const char *got,
+				     const char *file, unsigned int line,
+				     const char *subtilis_file,
+				     unsigned int subtilis_line)
+{
+	char arg_num[32];
+	char msg[SUBTILIS_CONFIG_ERROR_LEN];
+
+	snprintf(arg_num, sizeof(arg_num), "%zu", arg);
+	snprintf(msg, sizeof(msg), "expected %s got %s", expected, got);
+
+	subtilis_error_set_full(e, SUBTILIS_ERROR_BAD_ARG_TYPE, arg_num, msg,
+				file, line, subtilis_file, subtilis_line);
 }

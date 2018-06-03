@@ -3,6 +3,8 @@ LOCAL i%
 LET i% = 1
 LET j% = 2
 
+PROCAdd(i%, j%, 10)
+
 DEF PROCAdd(a%, b%, c%)
   PRINT a% + b% + c%
 ENDPROC
