@@ -262,6 +262,7 @@ struct subtilis_arm_section_t_ {
 	size_t ret_site_count;
 	size_t max_ret_site_count;
 	size_t *ret_sites;
+	subtilis_type_section_t *stype;
 };
 
 typedef struct subtilis_arm_section_t_ subtilis_arm_section_t;
@@ -283,6 +284,7 @@ void subtilis_arm_op_pool_reset(subtilis_arm_op_pool_t *pool);
 void subtilis_arm_op_pool_delete(subtilis_arm_op_pool_t *pool);
 
 subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
+						 subtilis_type_section_t *stype,
 						 size_t reg_counter,
 						 size_t label_counter,
 						 size_t locals,
@@ -293,11 +295,11 @@ subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 					   subtilis_arm_op_pool_t *op_pool,
 					   subtilis_string_pool_t *string_pool,
 					   subtilis_error_t *err);
-subtilis_arm_section_t *subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
-						      size_t reg_counter,
-						      size_t label_counter,
-						      size_t locals,
-						      subtilis_error_t *err);
+subtilis_arm_section_t *
+subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
+			      subtilis_type_section_t *stype,
+			      size_t reg_counter, size_t label_counter,
+			      size_t locals, subtilis_error_t *err);
 void subtilis_arm_prog_delete(subtilis_arm_prog_t *prog);
 void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s, size_t op,
 					subtilis_error_t *err);

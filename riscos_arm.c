@@ -249,7 +249,7 @@ subtilis_riscos_generate(
 		goto cleanup;
 
 	s = p->sections[0];
-	arm_s = subtilis_arm_prog_section_new(arm_p, s->reg_counter,
+	arm_s = subtilis_arm_prog_section_new(arm_p, s->type, s->reg_counter,
 					      s->label_counter, s->locals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -266,7 +266,8 @@ subtilis_riscos_generate(
 	for (i = 1; i < p->num_sections; i++) {
 		s = p->sections[i];
 		arm_s = subtilis_arm_prog_section_new(
-		    arm_p, s->reg_counter, s->label_counter, s->locals, err);
+		    arm_p, s->type, s->reg_counter, s->label_counter, s->locals,
+		    err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		prv_add_section(s, arm_s, parsed, rule_count, err);
@@ -284,8 +285,8 @@ subtilis_riscos_generate(
 
 cleanup:
 
-	//	printf("\n\n");
-	//	subtilis_arm_prog_dump(arm_p);
+	printf("\n\n");
+	subtilis_arm_prog_dump(arm_p);
 
 	subtilis_arm_prog_delete(arm_p);
 	free(parsed);

@@ -285,6 +285,61 @@ subtilis_exp_t *subtilis_exp_new_str(subtilis_buffer_t *str,
 	return e;
 }
 
+subtilis_exp_t *subtilis_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
+				    subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_exp_t *e2;
+
+	switch (e->type) {
+	case SUBTILIS_EXP_CONST_INTEGER:
+		reg = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, e->exp.ir_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+		e2 = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+		subtilis_exp_delete(e);
+		return e2;
+	case SUBTILIS_EXP_CONST_REAL:
+		subtilis_error_set_assertion_failed(err);
+		goto on_error;
+	case SUBTILIS_EXP_CONST_STRING:
+	case SUBTILIS_EXP_INTEGER:
+	case SUBTILIS_EXP_REAL:
+	case SUBTILIS_EXP_STRING:
+		return e;
+	}
+
+on_error:
+
+	subtilis_exp_delete(e);
+	return NULL;
+}
+
+subtilis_type_t subtilis_exp_type(subtilis_exp_t *e)
+{
+	subtilis_type_t typ;
+
+	switch (e->type) {
+	case SUBTILIS_EXP_CONST_INTEGER:
+	case SUBTILIS_EXP_INTEGER:
+		typ = SUBTILIS_TYPE_INTEGER;
+		break;
+	case SUBTILIS_EXP_CONST_REAL:
+	case SUBTILIS_EXP_REAL:
+		typ = SUBTILIS_TYPE_REAL;
+		break;
+	case SUBTILIS_EXP_CONST_STRING:
+	case SUBTILIS_EXP_STRING:
+		typ = SUBTILIS_TYPE_STRING;
+		break;
+	}
+
+	return typ;
+}
+
 static void prv_add_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
 {
 	a1->exp.ir_op.integer += a2->exp.ir_op.integer;

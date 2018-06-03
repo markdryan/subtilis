@@ -685,10 +685,17 @@ struct subtilis_ir_inst_t_ {
 
 typedef struct subtilis_ir_inst_t_ subtilis_ir_inst_t;
 
-union subtilis_ir_arg_t_ {
+typedef enum {
+	SUBTILIS_IR_REG_TYPE_INTEGER,
+	SUBTILIS_IR_REG_TYPE_REAL,
+} subtilis_ir_reg_type_t;
+
+struct subtilis_ir_arg_t_ {
+	subtilis_ir_reg_type_t type;
+	size_t reg;
 };
 
-typedef union subtilis_ir_arg_t_ subtilis_ir_arg_t;
+typedef struct subtilis_ir_arg_t_ subtilis_ir_arg_t;
 
 struct subtilis_ir_call_t_ {
 	size_t proc_id;
@@ -786,9 +793,9 @@ typedef struct subtilis_ir_rule_raw_t_ subtilis_ir_rule_raw_t;
 subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err);
 subtilis_ir_section_t *
 subtilis_ir_prog_section_new(subtilis_ir_prog_t *p, const char *name,
-			     size_t locals, subtilis_type_section_t *tp,
-			     const char *file, size_t line,
-			     subtilis_error_t *err);
+			     size_t locals, size_t params,
+			     subtilis_type_section_t *tp, const char *file,
+			     size_t line, subtilis_error_t *err);
 subtilis_ir_section_t *subtilis_ir_prog_find_section(subtilis_ir_prog_t *p,
 						     const char *name);
 void subtilis_ir_prog_dump(subtilis_ir_prog_t *p);
@@ -820,8 +827,8 @@ size_t subtilis_ir_section_new_label(subtilis_ir_section_t *s);
 void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 				   subtilis_error_t *err);
 /* Ownership of args passes to this function */
-void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t id,
-				  size_t arg_count, subtilis_ir_arg_t *args,
+void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t arg_count,
+				  subtilis_ir_arg_t *args,
 				  subtilis_error_t *err);
 void subtilis_ir_parse_rules(const subtilis_ir_rule_raw_t *raw,
 			     subtilis_ir_rule_t *parsed, size_t count,

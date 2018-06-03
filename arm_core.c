@@ -98,6 +98,7 @@ size_t subtilis_arm_op_pool_alloc(subtilis_arm_op_pool_t *pool,
 }
 
 subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
+						 subtilis_type_section_t *stype,
 						 size_t reg_counter,
 						 size_t label_counter,
 						 size_t locals,
@@ -109,6 +110,7 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
+	s->stype = subtilis_type_section_dup(stype);
 	s->reg_counter = reg_counter;
 	s->label_counter = label_counter;
 	s->first_op = SIZE_MAX;
@@ -124,6 +126,7 @@ void subtilis_arm_section_delete(subtilis_arm_section_t *s)
 	if (!s)
 		return;
 
+	subtilis_type_section_delete(s->stype);
 	free(s->ret_sites);
 	free(s->call_sites);
 	free(s->constants);
@@ -200,11 +203,11 @@ cleanup:
 	return NULL;
 }
 
-subtilis_arm_section_t *subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
-						      size_t reg_counter,
-						      size_t label_counter,
-						      size_t locals,
-						      subtilis_error_t *err)
+subtilis_arm_section_t *
+subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
+			      subtilis_type_section_t *stype,
+			      size_t reg_counter, size_t label_counter,
+			      size_t locals, subtilis_error_t *err)
 {
 	subtilis_arm_section_t *arm_s;
 
@@ -213,7 +216,7 @@ subtilis_arm_section_t *subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 		return NULL;
 	}
 
-	arm_s = subtilis_arm_section_new(prog->op_pool, reg_counter,
+	arm_s = subtilis_arm_section_new(prog->op_pool, stype, reg_counter,
 					 label_counter, locals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
