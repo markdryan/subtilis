@@ -592,16 +592,19 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 {
 	subtilis_arm_reg_t op0;
 	subtilis_arm_instr_t *instr;
+	subtilis_arm_stran_instr_t *stran;
 	subtilis_arm_br_instr_t *br;
 	size_t i;
+	size_t offset;
 	subtilis_arm_reg_t arg_dest;
 	subtilis_arm_reg_t arg_src;
+	size_t reg_num;
 	subtilis_ir_call_t *call = &s->ops[start]->op.call;
 	subtilis_arm_section_t *arm_s = user_data;
+	size_t args_left = call->arg_count;
 
 	op0.type = SUBTILIS_ARM_REG_FIXED;
 	op0.num = 13;
-	arg_src.type = SUBTILIS_ARM_REG_FLOATING;
 
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_STM,
 			       SUBTILIS_ARM_CCODE_AL, op0, 1 << 14,
@@ -609,15 +612,37 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	if (call->arg_count > 4) {
-		subtilis_error_set_assertion_failed(err);
-		return;
+	/* TODO: There should be an argument limit here. */
+
+	/*
+	 * We shove the remaining arguments on the stack.  Then we just need
+	 * to prime the register allocator to think it has previously spilled
+	 * these values to the stack.
+	 */
+
+	offset = 0;
+	for (; args_left > 4; args_left--) {
+		offset += 4;
+		reg_num = call->args[args_left - 1].reg;
+		instr = subtilis_arm_section_add_instr(
+		    arm_s, SUBTILIS_ARM_INSTR_STR, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		stran = &instr->operands.stran;
+		stran->ccode = SUBTILIS_ARM_CCODE_AL;
+		stran->dest = subtilis_arm_ir_to_arm_reg(reg_num);
+		stran->base = op0;
+		stran->offset.type = SUBTILIS_ARM_OP2_I32;
+		stran->offset.op.integer = offset;
+		stran->pre_indexed = true;
+		stran->write_back = false;
+		stran->subtract = true;
 	}
 
-	for (i = 0; i < call->arg_count; i++) {
+	for (i = 0; i < args_left; i++) {
 		arg_dest.type = SUBTILIS_ARM_REG_FIXED;
 		arg_dest.num = i;
-		arg_src.num = call->args[i].reg;
+		arg_src = subtilis_arm_ir_to_arm_reg(call->args[i].reg);
 		subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false,
 					 arg_dest, arg_src, err);
 		if (err->type != SUBTILIS_ERROR_OK)
