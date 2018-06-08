@@ -234,11 +234,11 @@ const subtilis_test_case_t test_cases[] = {
 	  "LOCAL i%\n"
 	  "LET i% = 1\n"
 	  "LET j% = 2\n"
-	  "PROCAdd(i%, j%, 10)\n"
-	  "DEF PROCAdd(a%, b%, c%)\n"
-	  "PRINT a% + b% + c%\n"
+	  "PROCAdd(i%, j%, 10, 11, 12)\n"
+	  "DEF PROCAdd(a%, b%, c%, d%, e%)\n"
+	  "PRINT a% + b% + c% +d% + e%\n"
 	  "ENDPROC\n",
-	  "13\n"},
+	  "36\n"},
 };
 
 /* clang-format on */
