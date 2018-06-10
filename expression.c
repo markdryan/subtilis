@@ -340,6 +340,28 @@ subtilis_type_t subtilis_exp_type(subtilis_exp_t *e)
 	return typ;
 }
 
+subtilis_exp_type_t subtilis_type_to_exp_type(subtilis_type_t type)
+{
+	subtilis_exp_type_t typ;
+
+	switch (type) {
+	case SUBTILIS_TYPE_INTEGER:
+		typ = SUBTILIS_EXP_INTEGER;
+		break;
+	case SUBTILIS_TYPE_REAL:
+		typ = SUBTILIS_EXP_REAL;
+		break;
+	case SUBTILIS_TYPE_STRING:
+		typ = SUBTILIS_EXP_STRING;
+		break;
+	default:
+		typ = SUBTILIS_EXP_INTEGER;
+		break;
+	}
+
+	return typ;
+}
+
 static void prv_add_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
 {
 	a1->exp.ir_op.integer += a2->exp.ir_op.integer;

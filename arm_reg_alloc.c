@@ -1093,12 +1093,8 @@ void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
 
 	for (i = 0; i < arm_s->call_site_count; i++) {
 		regs_used = 0;
-		cs = arm_s->call_sites[i];
-		stm = arm_s->op_pool->ops[cs].prev;
-		if (stm == SIZE_MAX) {
-			subtilis_error_set_assertion_failed(err);
-			return;
-		}
+		cs = arm_s->call_sites[i].call_site;
+		stm = arm_s->call_sites[i].stm_site;
 		end = arm_s->op_pool->ops[stm].prev;
 		if (end != SIZE_MAX) {
 			regs_used = subtilis_arm_regs_used_before(

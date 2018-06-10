@@ -133,11 +133,13 @@ void subtilis_arm_section_delete(subtilis_arm_section_t *s)
 	free(s);
 }
 
-void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s, size_t op,
+void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s,
+					size_t stm_site, size_t op,
 					subtilis_error_t *err)
 {
 	size_t new_max;
-	size_t *new_call_sites;
+	subtilis_arm_call_site_t *site;
+	subtilis_arm_call_site_t *new_call_sites;
 
 	if (s->call_site_count == s->max_call_site_count) {
 		new_max = s->call_site_count + SUBTILIS_CONFIG_PROC_GRAN;
@@ -150,7 +152,9 @@ void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s, size_t op,
 		s->call_sites = new_call_sites;
 		s->max_call_site_count = new_max;
 	}
-	s->call_sites[s->call_site_count++] = op;
+	site = &s->call_sites[s->call_site_count++];
+	site->stm_site = stm_site;
+	site->call_site = op;
 }
 
 void subtilis_arm_section_add_ret_site(subtilis_arm_section_t *s, size_t op,
