@@ -442,6 +442,7 @@ void subtilis_arm_add_mtran(subtilis_arm_section_t *s,
 void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 			       subtilis_arm_section_t *s);
 void subtilis_arm_prog_dump(subtilis_arm_prog_t *p);
+void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr);
 
 void subtilis_arm_restore_stack(subtilis_arm_section_t *arm_s,
 				size_t stack_space, subtilis_error_t *err);

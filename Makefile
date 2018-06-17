@@ -30,6 +30,13 @@ INTER =\
 	inter.c \
 	vm.c
 
+RUNARM =\
+	runarm.c \
+	arm_vm.c \
+	arm_disass.c \
+	arm_core.c \
+	arm_walker.c
+
 TESTS =\
 	unit_tests.c \
 	lexer_test.c \
@@ -51,6 +58,9 @@ basicc: $(COMPILER:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^
 
 inter: $(INTER:%.c=%.o) $(COMMON:%.c=%.o)
+	$(CC) $(CFLAGS) -o $@ $^
+
+runarm: $(RUNARM:%.c=%.o) $(COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^
 
 unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o)
