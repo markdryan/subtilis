@@ -11,7 +11,9 @@ COMMON =\
 	hash_table.c \
 	symbol_table.c \
 	string_pool.c \
-	type.c \
+	type.c
+
+ARM =\
 	arm_core.c \
 	riscos_arm.c \
 	riscos_arm2.c \
@@ -22,7 +24,11 @@ COMMON =\
 	arm_link.c
 
 COMPILER =\
-	 compiler.c
+	compiler.c
+
+INTER =\
+	inter.c \
+	vm.c
 
 TESTS =\
 	unit_tests.c \
@@ -41,10 +47,13 @@ TESTS =\
 CFLAGS ?= -O3
 CFLAGS += -Wall -Werror -MMD
 
-basicc: $(COMPILER:%.c=%.o) $(COMMON:%.c=%.o)
+basicc: $(COMPILER:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^
 
-unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o)
+inter: $(INTER:%.c=%.o) $(COMMON:%.c=%.o)
+	$(CC) $(CFLAGS) -o $@ $^
+
+unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^
 
 clean:
