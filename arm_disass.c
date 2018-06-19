@@ -234,3 +234,23 @@ void subtilis_arm_disass(subtilis_arm_instr_t *instr, uint32_t encoded,
 
 	subtilis_error_set_bad_instruction(err, encoded);
 }
+
+void subtilis_arm_disass_dump(uint8_t *code, size_t len)
+{
+	size_t i;
+	subtilis_error_t err;
+	subtilis_arm_instr_t instr;
+	size_t words = len / 4;
+
+	for (i = 0; i < words; i++) {
+		subtilis_error_init(&err);
+		subtilis_arm_disass(&instr, ((uint32_t *)code)[i], &err);
+		if (err.type == SUBTILIS_ERROR_OK)
+			subtilis_arm_instr_dump(&instr);
+		else
+			printf("DCW &%x\n", ((uint32_t *)code)[i]);
+	}
+
+	for (i = words * 4; i < len; i++)
+		printf("DCB &%x\n", code[i]);
+}

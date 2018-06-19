@@ -30,6 +30,8 @@ typedef struct subtilis_parser_param_t_ subtilis_parser_param_t;
 
 static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err);
+static subtilis_exp_t *prv_call(subtilis_parser_t *p, subtilis_token_t *t,
+				subtilis_error_t *err);
 
 #define SUBTILIS_MAIN_FN "subtilis_main"
 
@@ -307,9 +309,11 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
 			return e;
+		case SUBTILIS_KEYWORD_FN:
+			return prv_call(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
-			    err, "TRUE or FALSE or NOTexpected",
+			    err, "FN, TRUE FALSE or NOT expected",
 			    p->l->stream->name, p->l->line);
 			goto cleanup;
 		}
@@ -831,39 +835,71 @@ prv_if_compund(subtilis_parser_t *p, subtilis_token_t *t, subtilis_error_t *err)
 	return key_type;
 }
 
+static void prv_statement(subtilis_parser_t *p, subtilis_token_t *t,
+			  subtilis_error_t *err)
+{
+	subtilis_keyword_fn fn;
+	const char *tbuf;
+	subtilis_keyword_type_t key_type;
+
+	if (t->type != SUBTILIS_TOKEN_KEYWORD) {
+		tbuf = subtilis_token_get_text(t);
+		subtilis_error_set_keyword_expected(
+		    err, tbuf, p->l->stream->name, p->l->line);
+		return;
+	}
+
+	key_type = t->tok.keyword.type;
+	fn = keyword_fns[key_type];
+	if (!fn) {
+		tbuf = subtilis_token_get_text(t);
+		subtilis_error_set_not_supported(err, tbuf, p->l->stream->name,
+						 p->l->line);
+		return;
+	}
+	fn(p, t, err);
+}
+
 static void prv_compound(subtilis_parser_t *p, subtilis_token_t *t,
 			 subtilis_keyword_type_t end_key, subtilis_error_t *err)
 {
-	const char *tbuf;
-	subtilis_keyword_fn fn;
 	unsigned int start;
-	subtilis_keyword_type_t key_type;
 
 	p->level++;
 	start = p->l->line;
 	while (t->type != SUBTILIS_TOKEN_EOF) {
-		if (t->type != SUBTILIS_TOKEN_KEYWORD) {
-			tbuf = subtilis_token_get_text(t);
-			subtilis_error_set_keyword_expected(
-			    err, tbuf, p->l->stream->name, p->l->line);
-			return;
-		}
-
-		key_type = t->tok.keyword.type;
-		if (key_type == end_key) {
+		if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
+		    (t->tok.keyword.type == end_key)) {
 			if ((end_key != SUBTILIS_KEYWORD_ENDPROC) ||
 			    (p->level == 1))
 				break;
 		}
-
-		fn = keyword_fns[key_type];
-		if (!fn) {
-			tbuf = subtilis_token_get_text(t);
-			subtilis_error_set_not_supported(
-			    err, tbuf, p->l->stream->name, p->l->line);
+		prv_statement(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		}
-		fn(p, t, err);
+	}
+
+	if (t->type == SUBTILIS_TOKEN_EOF)
+		subtilis_error_set_compund_not_term(err, p->l->stream->name,
+						    start);
+	p->level--;
+}
+
+static void prv_fn_compound(subtilis_parser_t *p, subtilis_token_t *t,
+			    subtilis_error_t *err)
+{
+	unsigned int start;
+	const char *tbuf;
+
+	p->level++;
+	start = p->l->line;
+	while (t->type != SUBTILIS_TOKEN_EOF) {
+		tbuf = subtilis_token_get_text(t);
+		if ((t->type == SUBTILIS_TOKEN_OPERATOR) &&
+		    !strcmp(tbuf, "=") && (p->level == 1))
+			break;
+
+		prv_statement(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
@@ -1125,8 +1161,63 @@ read_next:
 	return params;
 
 on_error:
+
 	free(params);
 	return NULL;
+}
+
+static char *prv_proc_name_and_type(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_type_t *type,
+				    subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_type_t id_type;
+	char *name = NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	if (t->type != SUBTILIS_TOKEN_KEYWORD) {
+		subtilis_error_set_expected(err, "PROC or FN", tbuf,
+					    p->l->stream->name, p->l->line);
+		return NULL;
+	}
+
+	if (t->tok.keyword.type == SUBTILIS_KEYWORD_PROC)
+		tbuf += 4;
+	else if (t->tok.keyword.type == SUBTILIS_KEYWORD_FN)
+		tbuf += 2;
+
+	id_type = t->tok.keyword.id_type;
+	name = malloc(strlen(tbuf) + 1);
+	if (!name) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+
+	*type = id_type;
+	strcpy(name, tbuf);
+
+	return name;
+}
+
+static void prv_add_fn_ret(subtilis_parser_t *p, subtilis_exp_t *e,
+			   subtilis_error_t *err)
+{
+	subtilis_op_instr_type_t type;
+
+	switch (e->type) {
+	case SUBTILIS_EXP_CONST_INTEGER:
+		type = SUBTILIS_OP_INSTR_RETI_I32;
+		break;
+	case SUBTILIS_EXP_INTEGER:
+		type = SUBTILIS_OP_INSTR_RET_I32;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	subtilis_ir_section_add_instr_no_reg(p->current, type, e->exp.ir_op,
+					     err);
 }
 
 static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
@@ -1134,6 +1225,8 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	const char *tbuf;
 	subtilis_type_section_t *stype;
+	subtilis_type_t fn_type;
+	subtilis_exp_t *e;
 	size_t num_params = 0;
 	subtilis_type_t *params = NULL;
 	subtilis_symbol_table_t *local_st = NULL;
@@ -1149,22 +1242,9 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	tbuf = subtilis_token_get_text(t);
-	if ((t->type != SUBTILIS_TOKEN_KEYWORD) ||
-	    (t->tok.keyword.type != SUBTILIS_KEYWORD_PROC)) {
-		subtilis_error_set_expected(err, "PROC", tbuf,
-					    p->l->stream->name, p->l->line);
+	name = prv_proc_name_and_type(p, t, &fn_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	}
-
-	tbuf += 4;
-
-	name = malloc(strlen(tbuf) + 1);
-	if (!name) {
-		subtilis_error_set_oom(err);
-		return;
-	}
-	strcpy(name, tbuf);
 
 	local_st = subtilis_symbol_table_new(err);
 	p->local_st = local_st;
@@ -1182,8 +1262,7 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 			goto on_error;
 	}
 
-	stype = subtilis_type_section_new(SUBTILIS_TYPE_VOID, num_params,
-					  params, err);
+	stype = subtilis_type_section_new(fn_type, num_params, params, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 	params = NULL;
@@ -1200,12 +1279,20 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	prv_compound(p, t, SUBTILIS_KEYWORD_ENDPROC, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto on_error;
-
-	subtilis_ir_section_add_instr_no_arg(p->current, SUBTILIS_OP_INSTR_RET,
-					     err);
+	if (fn_type != SUBTILIS_TYPE_VOID) {
+		prv_fn_compound(p, t, err);
+		e = prv_expression(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+		prv_add_fn_ret(p, e, err);
+		subtilis_exp_delete(e);
+	} else {
+		prv_compound(p, t, SUBTILIS_KEYWORD_ENDPROC, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+		subtilis_ir_section_add_instr_no_arg(
+		    p->current, SUBTILIS_OP_INSTR_RET, err);
+	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -1341,10 +1428,12 @@ static subtilis_type_t *prv_parser_to_ptypes(subtilis_parser_param_t *params,
 	return ptypes;
 }
 
-static void prv_proc(subtilis_parser_t *p, subtilis_token_t *t,
-		     subtilis_error_t *err)
+static subtilis_exp_t *prv_call(subtilis_parser_t *p, subtilis_token_t *t,
+				subtilis_error_t *err)
 {
 	const char *tbuf;
+	subtilis_type_t fn_type;
+	size_t reg;
 	subtilis_parser_call_t *call = NULL;
 	subtilis_type_section_t *stype = NULL;
 	subtilis_type_t *ptypes = NULL;
@@ -1352,16 +1441,11 @@ static void prv_proc(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_parser_param_t *params = NULL;
 	size_t num_params = 0;
 	subtilis_ir_arg_t *args = NULL;
+	subtilis_exp_t *e = NULL;
 
-	tbuf = subtilis_token_get_text(t);
-	tbuf += 4;
-
-	name = malloc(strlen(tbuf) + 1);
-	if (!name) {
-		subtilis_error_set_oom(err);
-		goto on_error;
-	}
-	strcpy(name, tbuf);
+	name = prv_proc_name_and_type(p, t, &fn_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1380,13 +1464,24 @@ static void prv_proc(subtilis_parser_t *p, subtilis_token_t *t,
 			goto on_error;
 	}
 
-	subtilis_ir_section_add_call(p->current, num_params, args, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto on_error;
-	args = NULL;
+	if (fn_type != SUBTILIS_TYPE_VOID) {
+		reg = subtilis_ir_section_add_fn_call(p->current, num_params,
+						      args, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+		args = NULL;
+		e = subtilis_exp_new_var(subtilis_type_to_exp_type(fn_type),
+					 reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+	} else {
+		subtilis_ir_section_add_call(p->current, num_params, args, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+		args = NULL;
+	}
 
-	stype = subtilis_type_section_new(SUBTILIS_TYPE_VOID, num_params,
-					  ptypes, err);
+	stype = subtilis_type_section_new(fn_type, num_params, ptypes, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		subtilis_error_set_oom(err);
 		goto on_error;
@@ -1408,23 +1503,29 @@ static void prv_proc(subtilis_parser_t *p, subtilis_token_t *t,
 
 	free(params);
 
-	return;
+	return e;
 
 on_error:
 
+	subtilis_exp_delete(e);
 	free(params);
 	free(ptypes);
 	free(args);
 	prv_parser_call_delete(call);
 	subtilis_type_section_delete(stype);
 	free(name);
+
+	return NULL;
+}
+
+static void prv_proc(subtilis_parser_t *p, subtilis_token_t *t,
+		     subtilis_error_t *err)
+{
+	(void)prv_call(p, t, err);
 }
 
 void prv_root(subtilis_parser_t *p, subtilis_token_t *t, subtilis_error_t *err)
 {
-	const char *tbuf;
-	subtilis_keyword_fn fn;
-
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -1434,21 +1535,7 @@ void prv_root(subtilis_parser_t *p, subtilis_token_t *t, subtilis_error_t *err)
 		return;
 	p->main->locals = p->main_st->allocated;
 	while (t->type != SUBTILIS_TOKEN_EOF) {
-		if (t->type != SUBTILIS_TOKEN_KEYWORD) {
-			tbuf = subtilis_token_get_text(t);
-			subtilis_error_set_keyword_expected(
-			    err, tbuf, p->l->stream->name, p->l->line);
-			return;
-		}
-
-		fn = keyword_fns[t->tok.keyword.type];
-		if (!fn) {
-			tbuf = subtilis_token_get_text(t);
-			subtilis_error_set_not_supported(
-			    err, tbuf, p->l->stream->name, p->l->line);
-			return;
-		}
-		fn(p, t, err);
+		prv_statement(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}

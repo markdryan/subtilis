@@ -70,7 +70,8 @@ static void prv_ir_section_delete(subtilis_ir_section_t *s)
 	subtilis_type_section_delete(s->type);
 	for (i = 0; i < s->len; i++) {
 		op = s->ops[i];
-		if (op->type == SUBTILIS_OP_CALL)
+		if ((op->type == SUBTILIS_OP_CALL) ||
+		    (op->type == SUBTILIS_OP_CALLI32))
 			free(op->op.call.args);
 		free(op);
 	}
@@ -370,6 +371,8 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "jmpc", SUBTILIS_OP_CLASS_REG_LABEL_LABEL},
 	{ "jmp", SUBTILIS_OP_CLASS_LABEL},
 	{ "ret", SUBTILIS_OP_CLASS_NONE},
+	{ "reti32", SUBTILIS_OP_CLASS_REG},
+	{ "retii32", SUBTILIS_OP_CLASS_I32},
 };
 
 /*
@@ -448,11 +451,14 @@ static void prv_dump_instr(subtilis_ir_inst_t *instr)
 	}
 }
 
-static void prv_dump_call(subtilis_ir_call_t *c)
+static void prv_dump_call(subtilis_op_type_t type, subtilis_ir_call_t *c)
 {
 	size_t i;
 
-	printf("\tcall %zu", c->proc_id);
+	printf("\t");
+	if (type == SUBTILIS_OP_CALLI32)
+		printf("r%zu = ", c->reg);
+	printf("call %zu", c->proc_id);
 	if (c->arg_count > 0) {
 		printf(" (");
 		printf("%s%zu",
@@ -479,8 +485,9 @@ void subtilis_ir_section_dump(subtilis_ir_section_t *s)
 			prv_dump_instr(&s->ops[i]->op.instr);
 		else if (s->ops[i]->type == SUBTILIS_OP_LABEL)
 			printf("label_%zu", s->ops[i]->op.label);
-		else if (s->ops[i]->type == SUBTILIS_OP_CALL)
-			prv_dump_call(&s->ops[i]->op.call);
+		else if ((s->ops[i]->type == SUBTILIS_OP_CALL) ||
+			 (s->ops[i]->type == SUBTILIS_OP_CALLI32))
+			prv_dump_call(s->ops[i]->type, &s->ops[i]->op.call);
 		else
 			continue;
 		printf("\n");
@@ -511,9 +518,9 @@ void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 	s->ops[s->len++] = op;
 }
 
-void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t arg_count,
-				  subtilis_ir_arg_t *args,
-				  subtilis_error_t *err)
+static void prv_add_call(subtilis_ir_section_t *s, subtilis_op_type_t type,
+			 size_t arg_count, subtilis_ir_arg_t *args,
+			 subtilis_error_t *err)
 {
 	subtilis_ir_op_t *op;
 
@@ -526,11 +533,33 @@ void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t arg_count,
 		subtilis_error_set_oom(err);
 		return;
 	}
-	op->type = SUBTILIS_OP_CALL;
+	op->type = type;
 	op->op.call.proc_id = 0;
 	op->op.call.arg_count = arg_count;
 	op->op.call.args = args;
 	s->ops[s->len++] = op;
+}
+
+void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t arg_count,
+				  subtilis_ir_arg_t *args,
+				  subtilis_error_t *err)
+{
+	prv_add_call(s, SUBTILIS_OP_CALL, arg_count, args, err);
+}
+
+size_t subtilis_ir_section_add_fn_call(subtilis_ir_section_t *s,
+				       size_t arg_count,
+				       subtilis_ir_arg_t *args,
+				       subtilis_error_t *err)
+{
+	subtilis_ir_op_t *op;
+
+	prv_add_call(s, SUBTILIS_OP_CALLI32, arg_count, args, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+	op = s->ops[s->len - 1];
+	op->op.call.reg = s->reg_counter++;
+	return op->op.call.reg;
 }
 
 /*
@@ -681,6 +710,11 @@ static const char *prv_parse_match(const char *rule,
 		return rule;
 	}
 
+	if (!strcmp(instr, "calli32")) {
+		match->type = SUBTILIS_OP_CALLI32;
+		return rule;
+	}
+
 	for (i = 0; i < sizeof(op_desc) / sizeof(subtilis_ir_op_desc_t); i++)
 		if (!strcmp(instr, op_desc[i].name))
 			break;
@@ -802,6 +836,8 @@ static bool prv_match_op(subtilis_ir_op_t *op, subtilis_ir_op_match_t *match,
 	if (op->type != match->type)
 		return false;
 	if (op->type == SUBTILIS_OP_CALL)
+		return true;
+	if (op->type == SUBTILIS_OP_CALLI32)
 		return true;
 	if (op->type == SUBTILIS_OP_LABEL)
 		return prv_process_floating_label(state, op->op.label,

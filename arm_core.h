@@ -245,6 +245,13 @@ struct subtilis_arm_constant_t_ {
 
 typedef struct subtilis_arm_constant_t_ subtilis_arm_constant_t;
 
+struct subtilis_arm_call_site_t_ {
+	size_t stm_site;
+	size_t call_site;
+};
+
+typedef struct subtilis_arm_call_site_t_ subtilis_arm_call_site_t;
+
 struct subtilis_arm_section_t_ {
 	size_t reg_counter;
 	size_t label_counter;
@@ -258,7 +265,7 @@ struct subtilis_arm_section_t_ {
 	subtilis_arm_op_pool_t *op_pool;
 	size_t call_site_count;
 	size_t max_call_site_count;
-	size_t *call_sites;
+	subtilis_arm_call_site_t *call_sites;
 	size_t ret_site_count;
 	size_t max_ret_site_count;
 	size_t *ret_sites;
@@ -301,7 +308,8 @@ subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 			      size_t reg_counter, size_t label_counter,
 			      size_t locals, subtilis_error_t *err);
 void subtilis_arm_prog_delete(subtilis_arm_prog_t *prog);
-void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s, size_t op,
+void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s,
+					size_t stm_site, size_t op,
 					subtilis_error_t *err);
 void subtilis_arm_section_add_ret_site(subtilis_arm_section_t *s, size_t op,
 				       subtilis_error_t *err);
@@ -442,6 +450,7 @@ void subtilis_arm_add_mtran(subtilis_arm_section_t *s,
 void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 			       subtilis_arm_section_t *s);
 void subtilis_arm_prog_dump(subtilis_arm_prog_t *p);
+void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr);
 
 void subtilis_arm_restore_stack(subtilis_arm_section_t *arm_s,
 				size_t stack_space, subtilis_error_t *err);

@@ -1,0 +1,6 @@
+LOCAL i%
+LET i% = 1
+LET j% = 2
+PRINT FNAdd%(i%, j%, 10, 11, 12)
+DEF FNAdd%(a%, b%, c%, d%, e%)
+= a% + b% + c% +d% + e%

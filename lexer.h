@@ -54,6 +54,7 @@ typedef enum {
 struct _subtilis_token_keyword_t {
 	subtilis_keyword_type_t type;
 	bool supported;
+	subtilis_type_t id_type;
 };
 
 typedef struct _subtilis_token_keyword_t subtilis_token_keyword_t;

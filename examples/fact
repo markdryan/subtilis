@@ -1,0 +1,12 @@
+LOCAL x%
+LET x% = FNFac%(4)
+PRINT x%
+
+DEF FNFac%(a%)
+    LOCAL res%
+    IF a% <= 1 THEN
+       LET res% = 1
+    ELSE
+       LET res% = a% * FNFac%(a%-1)
+    ENDIF
+=res%

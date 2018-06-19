@@ -239,6 +239,19 @@ const subtilis_test_case_t test_cases[] = {
 	  "PRINT a% + b% + c% +d% + e%\n"
 	  "ENDPROC\n",
 	  "36\n"},
+	{ "fn_fact",
+	  "LOCAL x%\n"
+	  "LET x% = FNFac%(4)\n"
+	  "PRINT x%\n"
+	  "DEF FNFac%(a%)\n"
+	  "  LOCAL res%\n"
+	  "  IF a% <= 1 THEN\n"
+	  "    LET res% = 1\n"
+	  "  ELSE\n"
+	  "    LET res% = a% * FNFac%(a%-1)\n"
+	  "  ENDIF\n"
+	  "=res%\n",
+	  "24\n"},
 };
 
 /* clang-format on */

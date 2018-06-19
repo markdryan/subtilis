@@ -572,14 +572,42 @@ static int prv_test_proc_typed(void)
 
 static int prv_check_fn_typed(subtilis_lexer_t *l, subtilis_token_t *t)
 {
-	return prv_check_bad_proc_name(l, t, SUBTILIS_ERROR_BAD_FN_NAME);
+	subtilis_error_t err;
+	subtilis_type_t expected_types[] = {
+	    SUBTILIS_TYPE_REAL, SUBTILIS_TYPE_INTEGER, SUBTILIS_TYPE_STRING,
+	};
+	size_t i;
+
+	subtilis_error_init(&err);
+	for (i = 0; i < sizeof(expected_types) / sizeof(subtilis_type_t); i++) {
+		subtilis_lexer_get(l, t, &err);
+		if (err.type != SUBTILIS_ERROR_OK) {
+			fprintf(stderr, "Unxpected error %d\n", err.type);
+			return 1;
+		}
+
+		if (t->tok.keyword.type != SUBTILIS_KEYWORD_FN) {
+			fprintf(stderr, "Unxpected keyword found %d\n",
+				t->tok.keyword.type);
+			return 1;
+		}
+
+		if (t->tok.keyword.id_type != expected_types[i]) {
+			fprintf(stderr, "Unxpected function type. Found  %d "
+					"wanted %d\n",
+				t->tok.keyword.id_type, expected_types[i]);
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 static int prv_test_fn_typed(void)
 {
 	size_t i;
 	int res = 0;
-	const char *str = "FNcalculate% FNcalculate$";
+	const char *str = "FNcalculate FNcalculate% FNcalculate$";
 
 	printf("lexer_fn_typed");
 	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)

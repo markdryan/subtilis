@@ -39,6 +39,7 @@ typedef enum {
 	SUBTILIS_OP_INSTR,
 	SUBTILIS_OP_LABEL,
 	SUBTILIS_OP_CALL,
+	SUBTILIS_OP_CALLI32,
 	SUBTILIS_OP_PHI,
 	SUBTILIS_OP_MAX,
 } subtilis_op_type_t;
@@ -650,6 +651,25 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_RET,
+
+	/*
+	 * RET_I32
+	 *
+	 * returns from the value stored in a 32 bit register
+	 * from a sub-routine call.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_RET_I32,
+
+	/*
+	 * RETI_I32
+	 *
+	 * returns a 32 bit value from a sub-routine call.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_RETI_I32,
 } subtilis_op_instr_type_t;
 
 typedef enum {
@@ -700,6 +720,7 @@ typedef struct subtilis_ir_arg_t_ subtilis_ir_arg_t;
 struct subtilis_ir_call_t_ {
 	size_t proc_id;
 	size_t arg_count;
+	size_t reg;
 	subtilis_ir_arg_t *args;
 };
 
@@ -830,6 +851,10 @@ void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t arg_count,
 				  subtilis_ir_arg_t *args,
 				  subtilis_error_t *err);
+size_t subtilis_ir_section_add_fn_call(subtilis_ir_section_t *s,
+				       size_t arg_count,
+				       subtilis_ir_arg_t *args,
+				       subtilis_error_t *err);
 void subtilis_ir_parse_rules(const subtilis_ir_rule_raw_t *raw,
 			     subtilis_ir_rule_t *parsed, size_t count,
 			     subtilis_error_t *err);

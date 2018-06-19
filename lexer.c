@@ -489,13 +489,9 @@ static void prv_process_call(subtilis_lexer_t *l, subtilis_token_t *t,
 		}
 		t->tok.keyword.type = SUBTILIS_KEYWORD_PROC;
 		t->tok.keyword.supported = true;
+		t->tok.keyword.id_type = SUBTILIS_TYPE_VOID;
 	} else {
-		if (t->tok.id_type != SUBTILIS_TYPE_REAL) {
-			tbuf = subtilis_token_get_text(t);
-			subtilis_error_set_bad_fn_name(
-			    err, tbuf, l->stream->name, l->line);
-			return;
-		}
+		t->tok.keyword.id_type = t->tok.id_type;
 		t->tok.keyword.type = SUBTILIS_KEYWORD_FN;
 		t->tok.keyword.supported = true;
 	}

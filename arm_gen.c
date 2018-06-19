@@ -599,6 +599,7 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_reg_t arg_dest;
 	subtilis_arm_reg_t arg_src;
 	size_t reg_num;
+	size_t stm_site;
 	subtilis_ir_call_t *call = &s->ops[start]->op.call;
 	subtilis_arm_section_t *arm_s = user_data;
 	size_t args_left = call->arg_count;
@@ -611,6 +612,8 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 			       SUBTILIS_ARM_MTRAN_FD, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	stm_site = arm_s->last_op;
 
 	/* TODO: There should be an argument limit here. */
 
@@ -659,7 +662,8 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 	br->link = true;
 	br->target.label = call->proc_id;
 
-	subtilis_arm_section_add_call_site(arm_s, arm_s->last_op, err);
+	subtilis_arm_section_add_call_site(arm_s, stm_site, arm_s->last_op,
+					   err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -668,6 +672,26 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 			       SUBTILIS_ARM_MTRAN_FD, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+}
+
+void subtilis_arm_gen_calli32(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_call_t *call = &s->ops[start]->op.call;
+
+	subtilis_arm_gen_call(s, start, user_data, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	dest = subtilis_arm_ir_to_arm_reg(call->reg);
+	op1.num = 0;
+	op1.type = SUBTILIS_ARM_REG_FIXED;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
+				 err);
 }
 
 void subtilis_arm_gen_ret(subtilis_ir_section_t *s, size_t start,
@@ -704,4 +728,41 @@ void subtilis_arm_gen_ret(subtilis_ir_section_t *s, size_t start,
 
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
 				 err);
+}
+
+void subtilis_arm_gen_reti32(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+	subtilis_arm_reg_t op2;
+
+	dest.num = 0;
+	dest.type = SUBTILIS_ARM_REG_FIXED;
+	op2 = subtilis_arm_ir_to_arm_reg(instr->operands[0].reg);
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_arm_gen_ret(s, start, user_data, err);
+}
+
+void subtilis_arm_gen_retii32(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+	int32_t op2 = instr->operands[0].integer;
+
+	dest.num = 0;
+	dest.type = SUBTILIS_ARM_REG_FIXED;
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_arm_gen_ret(s, start, user_data, err);
 }

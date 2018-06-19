@@ -133,11 +133,13 @@ void subtilis_arm_section_delete(subtilis_arm_section_t *s)
 	free(s);
 }
 
-void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s, size_t op,
+void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s,
+					size_t stm_site, size_t op,
 					subtilis_error_t *err)
 {
 	size_t new_max;
-	size_t *new_call_sites;
+	subtilis_arm_call_site_t *site;
+	subtilis_arm_call_site_t *new_call_sites;
 
 	if (s->call_site_count == s->max_call_site_count) {
 		new_max = s->call_site_count + SUBTILIS_CONFIG_PROC_GRAN;
@@ -150,7 +152,9 @@ void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s, size_t op,
 		s->call_sites = new_call_sites;
 		s->max_call_site_count = new_max;
 	}
-	s->call_sites[s->call_site_count++] = op;
+	site = &s->call_sites[s->call_site_count++];
+	site->stm_site = stm_site;
+	site->call_site = op;
 }
 
 void subtilis_arm_section_add_ret_site(subtilis_arm_section_t *s, size_t op,
@@ -1360,9 +1364,11 @@ static void prv_dump_br_instr(void *user_data, subtilis_arm_op_t *op,
 			printf(" %s\n",
 			       p->string_pool->strings[instr->target.label]);
 		else
-			printf("\n");
-	} else {
+			printf(" %d\n", (int32_t)instr->target.label + 2);
+	} else if (p) {
 		printf(" label_%zu\n", instr->target.label);
+	} else {
+		printf(" %d\n", (int32_t)instr->target.label + 2);
 	}
 }
 
@@ -1453,6 +1459,63 @@ void subtilis_arm_prog_dump(subtilis_arm_prog_t *p)
 		arm_s = p->sections[i];
 		printf("%s\n", p->string_pool->strings[i]);
 		subtilis_arm_section_dump(p, arm_s);
+	}
+}
+
+void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
+{
+	switch (instr->type) {
+	case SUBTILIS_ARM_INSTR_AND:
+	case SUBTILIS_ARM_INSTR_EOR:
+	case SUBTILIS_ARM_INSTR_SUB:
+	case SUBTILIS_ARM_INSTR_RSB:
+	case SUBTILIS_ARM_INSTR_ADD:
+	case SUBTILIS_ARM_INSTR_ADC:
+	case SUBTILIS_ARM_INSTR_SBC:
+	case SUBTILIS_ARM_INSTR_RSC:
+	case SUBTILIS_ARM_INSTR_TST:
+	case SUBTILIS_ARM_INSTR_TEQ:
+	case SUBTILIS_ARM_INSTR_ORR:
+	case SUBTILIS_ARM_INSTR_BIC:
+		prv_dump_data_instr(NULL, NULL, instr->type,
+				    &instr->operands.data, NULL);
+		break;
+	case SUBTILIS_ARM_INSTR_MUL:
+	case SUBTILIS_ARM_INSTR_MLA:
+		prv_dump_mul_instr(NULL, NULL, instr->type,
+				   &instr->operands.mul, NULL);
+		break;
+	case SUBTILIS_ARM_INSTR_CMP:
+	case SUBTILIS_ARM_INSTR_CMN:
+		prv_dump_cmp_instr(NULL, NULL, instr->type,
+				   &instr->operands.data, NULL);
+		break;
+	case SUBTILIS_ARM_INSTR_MOV:
+	case SUBTILIS_ARM_INSTR_MVN:
+		prv_dump_mov_instr(NULL, NULL, instr->type,
+				   &instr->operands.data, NULL);
+		break;
+	case SUBTILIS_ARM_INSTR_LDR:
+	case SUBTILIS_ARM_INSTR_STR:
+		prv_dump_stran_instr(NULL, NULL, instr->type,
+				     &instr->operands.stran, NULL);
+		break;
+	case SUBTILIS_ARM_INSTR_LDM:
+	case SUBTILIS_ARM_INSTR_STM:
+		prv_dump_mtran_instr(NULL, NULL, instr->type,
+				     &instr->operands.mtran, NULL);
+		break;
+	case SUBTILIS_ARM_INSTR_B:
+		prv_dump_br_instr(NULL, NULL, instr->type, &instr->operands.br,
+				  NULL);
+		break;
+	case SUBTILIS_ARM_INSTR_SWI:
+		prv_dump_swi_instr(NULL, NULL, instr->type,
+				   &instr->operands.swi, NULL);
+		break;
+	default:
+		printf("\tUNKNOWN INSTRUCTION\n");
+		break;
 	}
 }
 
