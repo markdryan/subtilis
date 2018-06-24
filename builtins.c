@@ -1,0 +1,46 @@
+/*
+ * Copyright (c) 2018 Mark Ryan
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <stdlib.h>
+
+#include "builtins.h"
+
+/* clang-format off */
+const subtilis_builtin_t subtilis_builtin_list[] = {
+	{"ABS", SUBTILIS_BUILTINS_ABS, false, SUBTILIS_TYPE_INTEGER, 1,
+	 { SUBTILIS_TYPE_INTEGER } },
+};
+
+/* clang-format on */
+
+subtilis_type_section_t *subtilis_builtin_ts(subtilis_builtin_type_t type,
+					     subtilis_error_t *err)
+{
+	const subtilis_builtin_t *f;
+	subtilis_type_t *params;
+	size_t i;
+
+	f = &subtilis_builtin_list[type];
+	params = malloc(sizeof(subtilis_type_t) * f->num_parameters);
+	if (!params) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+	for (i = 0; i < f->num_parameters; i++)
+		params[i] = f->arg_types[i];
+	return subtilis_type_section_new(f->ret_type, f->num_parameters, params,
+					 err);
+}

@@ -26,6 +26,7 @@ struct subtilis_parser_call_t_ {
 	size_t index;
 	char *name;
 	subtilis_type_section_t *call_type;
+	subtilis_builtin_type_t ftype;
 	size_t line;
 };
 

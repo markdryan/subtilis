@@ -252,6 +252,11 @@ const subtilis_test_case_t test_cases[] = {
 	  "  ENDIF\n"
 	  "=res%\n",
 	  "24\n"},
+	{ "abs",
+	  "LET x%=-10\n"
+	  "PRINT ABS(x%)\n"
+	  "PRINT ABS(10)\n",
+	  "10\n10\n"},
 };
 
 /* clang-format on */

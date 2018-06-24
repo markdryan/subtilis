@@ -37,6 +37,7 @@ static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 	s->len = 0;
 	s->ops = NULL;
 	s->type = NULL;
+	s->ftype = SUBTILIS_BUILTINS_MAX;
 
 	return s;
 }
@@ -182,11 +183,13 @@ cleanup:
 	return NULL;
 }
 
-subtilis_ir_section_t *
-subtilis_ir_prog_section_new(subtilis_ir_prog_t *p, const char *name,
-			     size_t locals, size_t params,
-			     subtilis_type_section_t *tp, const char *file,
-			     size_t line, subtilis_error_t *err)
+/* clang-format off */
+subtilis_ir_section_t *subtilis_ir_prog_section_new(
+	subtilis_ir_prog_t *p, const char *name, size_t locals, size_t params,
+	subtilis_type_section_t *tp, subtilis_builtin_type_t ftype,
+	const char *file, size_t line, subtilis_error_t *err)
+
+/* clang-format on */
 {
 	subtilis_ir_section_t *s;
 	size_t name_index;
@@ -197,6 +200,7 @@ subtilis_ir_prog_section_new(subtilis_ir_prog_t *p, const char *name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 	s->reg_counter += params;
+	s->ftype = ftype;
 
 	name_index = subtilis_string_pool_register(p->string_pool, name, err);
 	if (err->type != SUBTILIS_ERROR_OK)

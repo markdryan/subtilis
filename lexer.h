@@ -20,6 +20,7 @@
 #include <stdint.h>
 
 #include "buffer.h"
+#include "builtins.h"
 #include "keywords.h"
 #include "stream.h"
 #include "type.h"
@@ -53,6 +54,7 @@ typedef enum {
 
 struct _subtilis_token_keyword_t {
 	subtilis_keyword_type_t type;
+	subtilis_builtin_type_t ftype;
 	bool supported;
 	subtilis_type_t id_type;
 };
