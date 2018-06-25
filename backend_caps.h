@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Mark Ryan
+ * Copyright (c) 2018 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_PARSER_TEST_H
-#define __SUBTILIS_PARSER_TEST_H
+#ifndef __SUBTILIS_BACKEND_CAPS_H
+#define __SUBTILIS_BACKEND_CAPS_H
 
-#include "parser.h"
+#include <stdint.h>
 
-int parser_test(void);
-int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
-			int (*fn)(subtilis_lexer_t *, subtilis_parser_t *,
-				  const char *expected),
-			const char *expected);
+#define SUBTILIS_BACKEND_HAVE_DIV 1
+
+#define SUBTILIS_BACKEND_HAVE_ALL SUBTILIS_BACKEND_HAVE_DIV
+
+typedef uint32_t subtilis_backend_caps_t;
 
 #endif

@@ -71,6 +71,7 @@ on_error:
 }
 
 subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
+				       subtilis_backend_caps_t caps,
 				       subtilis_error_t *err)
 {
 	subtilis_parser_t *p = calloc(1, sizeof(*p));
@@ -106,6 +107,7 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 	p->main = p->current;
 
 	p->l = l;
+	p->caps = caps;
 	p->level = 0;
 
 	return p;

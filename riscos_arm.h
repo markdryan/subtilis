@@ -18,6 +18,7 @@
 #define __SUBTILIS_RISCOS_ARM_H
 
 #include "arm_core.h"
+#include "backend_caps.h"
 
 /* clang-format off */
 subtilis_arm_prog_t *
@@ -33,5 +34,7 @@ subtilis_riscos_generate(
 
 void subtilis_riscos_arm_printi(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err);
+
+#define SUBTILIS_RISCOS_ARM_CAPS 0
 
 #endif
