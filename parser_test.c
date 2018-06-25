@@ -23,7 +23,7 @@
 #include "test_cases.h"
 #include "vm.h"
 
-int parser_test_wrapper(const char *text,
+int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 			int (*fn)(subtilis_lexer_t *, subtilis_parser_t *,
 				  const char *expected),
 			const char *expected)
@@ -45,7 +45,7 @@ int parser_test_wrapper(const char *text,
 		goto fail;
 	}
 
-	p = subtilis_parser_new(l, &err);
+	p = subtilis_parser_new(l, caps, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
@@ -166,7 +166,8 @@ static int prv_test_let(void)
 			       "PRINT 10 + 10 + b%\n";
 
 	printf("parser_let");
-	return parser_test_wrapper(let_test, prv_check_eval_res, "119\n");
+	return parser_test_wrapper(let_test, SUBTILIS_BACKEND_HAVE_ALL,
+				   prv_check_eval_res, "119\n");
 }
 
 static int prv_test_expressions(void)
@@ -176,9 +177,9 @@ static int prv_test_expressions(void)
 
 	for (i = 0; i < SUBTILIS_TEST_CASE_ID_MAX; i++) {
 		printf("parser_%s", test_cases[i].name);
-		retval |= parser_test_wrapper(test_cases[i].source,
-					      prv_check_eval_res,
-					      test_cases[i].result);
+		retval |= parser_test_wrapper(
+		    test_cases[i].source, SUBTILIS_BACKEND_HAVE_ALL,
+		    prv_check_eval_res, test_cases[i].result);
 	}
 
 	return retval;
@@ -188,13 +189,15 @@ static int prv_test_print(void)
 {
 	printf("parser_print");
 	return parser_test_wrapper("PRINT (10 * 3 * 3 + 1) / 2",
+				   SUBTILIS_BACKEND_HAVE_ALL,
 				   prv_check_eval_res, "45\n");
 }
 
 static int prv_test_not_keyword(void)
 {
 	printf("parser_not_keyword");
-	return parser_test_wrapper("id", prv_check_not_keyword, NULL);
+	return parser_test_wrapper("id", SUBTILIS_BACKEND_HAVE_ALL,
+				   prv_check_not_keyword, NULL);
 }
 
 static int prv_check_unknown_procedure(subtilis_lexer_t *l,
@@ -211,7 +214,8 @@ static int prv_test_unknown_procedure(void)
 			   "ENDPROC\n";
 
 	printf("parser_unknown_procedure");
-	return parser_test_wrapper(test, prv_check_unknown_procedure, NULL);
+	return parser_test_wrapper(test, SUBTILIS_BACKEND_HAVE_ALL,
+				   prv_check_unknown_procedure, NULL);
 }
 
 int parser_test(void)

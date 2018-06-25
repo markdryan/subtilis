@@ -1,0 +1,3 @@
+LET x%=-10
+PRINT ABS(x%)
+PRINT ABS(10)

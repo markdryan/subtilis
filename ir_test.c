@@ -430,7 +430,8 @@ static int prv_test_matcher(void)
 			     "ENDIF\n";
 
 	printf("ir_test_matcher");
-	return parser_test_wrapper(source, prv_check_matcher, NULL);
+	return parser_test_wrapper(source, SUBTILIS_BACKEND_HAVE_ALL,
+				   prv_check_matcher, NULL);
 }
 
 int ir_test(void)

@@ -17,6 +17,7 @@
 #ifndef __SUBTILIS_PARSER_H
 #define __SUBTILIS_PARSER_H
 
+#include "backend_caps.h"
 #include "ir.h"
 #include "lexer.h"
 #include "symbol_table.h"
@@ -26,6 +27,7 @@ struct subtilis_parser_call_t_ {
 	size_t index;
 	char *name;
 	subtilis_type_section_t *call_type;
+	subtilis_builtin_type_t ftype;
 	size_t line;
 };
 
@@ -33,6 +35,7 @@ typedef struct subtilis_parser_call_t_ subtilis_parser_call_t;
 
 struct subtilis_parser_t_ {
 	subtilis_lexer_t *l;
+	subtilis_backend_caps_t caps;
 	subtilis_ir_section_t *current;
 	subtilis_ir_section_t *main;
 	subtilis_ir_prog_t *prog;
@@ -48,6 +51,7 @@ struct subtilis_parser_t_ {
 typedef struct subtilis_parser_t_ subtilis_parser_t;
 
 subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
+				       subtilis_backend_caps_t caps,
 				       subtilis_error_t *err);
 void subtilis_parse(subtilis_parser_t *p, subtilis_error_t *err);
 void subtilis_parser_delete(subtilis_parser_t *p);

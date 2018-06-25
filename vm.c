@@ -439,6 +439,35 @@ static void prv_set_args(subitlis_vm_t *vm, subtilis_ir_call_t *call,
 	free(int_values);
 }
 
+static void prv_abs(subitlis_vm_t *vm, subtilis_ir_call_t *call,
+		    subtilis_error_t *err)
+{
+	int32_t val;
+
+	if (call->arg_count != 1) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	val = vm->regs[call->args[0].reg];
+	if (val < 0)
+		vm->regs[call->reg] = -val;
+	else
+		vm->regs[call->reg] = val;
+}
+
+static void prv_handle_builtin(subitlis_vm_t *vm, subtilis_builtin_type_t ftype,
+			       subtilis_ir_call_t *call, subtilis_error_t *err)
+{
+	switch (ftype) {
+	case SUBTILIS_BUILTINS_ABS:
+		prv_abs(vm, call, err);
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+	}
+}
+
 static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		     subtilis_type_t call_type, subtilis_ir_call_t *call,
 		     subtilis_error_t *err)
@@ -454,6 +483,9 @@ static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	}
 
 	s = vm->p->sections[section_index];
+	if (s->ftype != SUBTILIS_BUILTINS_MAX)
+		return prv_handle_builtin(vm, s->ftype, call, err);
+
 	if (s->reg_counter > vm->max_regs) {
 		new_regs =
 		    realloc(vm->regs, sizeof(*vm->regs) * s->reg_counter);

@@ -158,6 +158,50 @@ static void prv_clear_locals(subtilis_arm_section_t *arm_s,
 	br->target.label = label;
 }
 
+static void prv_add_builtin(subtilis_ir_section_t *s,
+			    subtilis_arm_section_t *arm_s,
+			    subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op2;
+
+	/*
+	 * TODO:  Just a place holder for now to test builtin functions.  ABS
+	 * will be inlined soon.
+	 */
+
+	switch (s->ftype) {
+	case SUBTILIS_BUILTINS_ABS:
+		dest.type = SUBTILIS_ARM_REG_FIXED;
+		op2.type = SUBTILIS_ARM_REG_FIXED;
+		dest.num = 0;
+
+		subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_AL, dest, 0,
+					 err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		op2.num = 0;
+
+		subtilis_arm_add_mvn_reg(arm_s, SUBTILIS_ARM_CCODE_LT, false,
+					 dest, op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_arm_add_add_imm(arm_s, SUBTILIS_ARM_CCODE_LT, false,
+					 dest, dest, 1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		dest.num = 15;
+		op2.num = 14;
+		subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false,
+					 dest, op2, err);
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+	}
+}
+
 static void prv_add_section(subtilis_ir_section_t *s,
 			    subtilis_arm_section_t *arm_s,
 			    subtilis_ir_rule_t *parsed, size_t rule_count,
@@ -270,7 +314,10 @@ subtilis_riscos_generate(
 		    err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		prv_add_section(s, arm_s, parsed, rule_count, err);
+		if (s->ftype != SUBTILIS_BUILTINS_MAX)
+			prv_add_builtin(s, arm_s, err);
+		else
+			prv_add_section(s, arm_s, parsed, rule_count, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 	}

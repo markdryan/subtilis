@@ -115,8 +115,9 @@ static int prv_test_examples(void)
 			continue;
 		test = &test_cases[i];
 		printf("arm_%s", test->name);
-		pass = parser_test_wrapper(test->source, prv_test_example,
-					   test->result);
+		pass =
+		    parser_test_wrapper(test->source, SUBTILIS_RISCOS_ARM_CAPS,
+					prv_test_example, test->result);
 		ret |= pass;
 	}
 
