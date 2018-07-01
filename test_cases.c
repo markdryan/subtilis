@@ -25,9 +25,9 @@ const subtilis_test_case_t test_cases[] = {
 	  "PRINT d%\n",
 	  "-191\n"},
 	{ "division",
-	  "LET b% = 100 / 5\n"
-	  "LET c% = 1000 / b% / 10\n"
-	  "LET d% = b% / c% / 2\n"
+	  "LET b% = 100 DIV 5\n"
+	  "LET c% = 1000 DIV b% DIV 10\n"
+	  "LET d% = b% DIV c% DIV 2\n"
 	  "PRINT d%\n",
 	  "2\n"},
 	{ "multiplication",

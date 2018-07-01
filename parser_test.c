@@ -188,7 +188,7 @@ static int prv_test_expressions(void)
 static int prv_test_print(void)
 {
 	printf("parser_print");
-	return parser_test_wrapper("PRINT (10 * 3 * 3 + 1) / 2",
+	return parser_test_wrapper("PRINT (10 * 3 * 3 + 1) DIV 2",
 				   SUBTILIS_BACKEND_HAVE_ALL,
 				   prv_check_eval_res, "45\n");
 }

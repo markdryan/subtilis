@@ -355,14 +355,19 @@ static subtilis_exp_t *prv_priority3(subtilis_parser_t *p, subtilis_token_t *t,
 	e1 = prv_priority2(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	while (t->type == SUBTILIS_TOKEN_OPERATOR) {
+	while ((t->type == SUBTILIS_TOKEN_OPERATOR) ||
+	       (t->type == SUBTILIS_TOKEN_KEYWORD)) {
 		tbuf = subtilis_token_get_text(t);
-		if (!strcmp(tbuf, "*"))
+		if (t->type == SUBTILIS_TOKEN_KEYWORD) {
+			if (!strcmp(tbuf, "DIV"))
+				exp_fn = subtilis_exp_div;
+			else
+				break;
+		} else if (!strcmp(tbuf, "*")) {
 			exp_fn = subtilis_exp_mul;
-		else if (!strcmp(tbuf, "/"))
-			exp_fn = subtilis_exp_div;
-		else
+		} else {
 			break;
+		}
 		subtilis_lexer_get(p->l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
