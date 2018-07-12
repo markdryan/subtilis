@@ -78,6 +78,7 @@ static int prv_check_for_error(subtilis_parser_t *p,
 	if (err.type != err_type) {
 		fprintf(stderr, "Expected err %d, got %d\n", err_type,
 			err.type);
+		subtilis_error_fprintf(stderr, &err, true);
 		return 1;
 	}
 

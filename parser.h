@@ -18,20 +18,12 @@
 #define __SUBTILIS_PARSER_H
 
 #include "backend_caps.h"
+#include "call.h"
 #include "ir.h"
 #include "lexer.h"
 #include "symbol_table.h"
 
-struct subtilis_parser_call_t_ {
-	subtilis_ir_section_t *s;
-	size_t index;
-	char *name;
-	subtilis_type_section_t *call_type;
-	subtilis_builtin_type_t ftype;
-	size_t line;
-};
-
-typedef struct subtilis_parser_call_t_ subtilis_parser_call_t;
+typedef struct subtilis_exp_t_ subtilis_exp_t;
 
 struct subtilis_parser_t_ {
 	subtilis_lexer_t *l;

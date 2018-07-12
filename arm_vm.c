@@ -320,7 +320,7 @@ static void prv_set_sub_flags(subtilis_arm_vm_t *arm_vm, int32_t op1,
 	arm_vm->zero_flag = res == 0;
 	arm_vm->negative_flag = res < 0;
 	arm_vm->carry_flag = (op1 < 0 && op2 >= 0) || (op1 < 0 && res >= 0) ||
-		(op2 >= 0 && res >= 0);
+			     (op2 >= 0 && res >= 0);
 	if (((op1 < 0 && op2 >= 0) || (op1 >= 0 && op2 < 0)) &&
 	    ((op1 >= 0 && res < 0) || (op1 < 0 && res >= 0)))
 		arm_vm->overflow_flag = true;
@@ -380,7 +380,7 @@ static void prv_set_add_flags(subtilis_arm_vm_t *arm_vm, int32_t op1,
 	arm_vm->zero_flag = res == 0;
 	arm_vm->negative_flag = res < 0;
 	arm_vm->carry_flag = (op1 < 0 && op2 < 0) || (op1 < 0 && res >= 0) ||
-		(op2 < 0 && res >= 0);
+			     (op2 < 0 && res >= 0);
 	if (((op1 < 0 && op2 < 0) || (op1 >= 0 && op2 >= 0)) &&
 	    ((op1 >= 0 && res < 0) || (op1 < 0 && res >= 0)))
 		arm_vm->overflow_flag = true;

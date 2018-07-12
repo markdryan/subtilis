@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 
+#include "arm2_div.h"
 #include "arm_reg_alloc.h"
 #include "riscos_arm.h"
 
@@ -196,6 +197,9 @@ static void prv_add_builtin(subtilis_ir_section_t *s,
 		op2.num = 14;
 		subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false,
 					 dest, op2, err);
+		break;
+	case SUBTILIS_BUILTINS_IDIV:
+		subtilis_arm2_idiv_add(s, arm_s, err);
 		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
