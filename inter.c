@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	p = subtilis_parser_new(l, &err);
+	p = subtilis_parser_new(l, SUBTILIS_BACKEND_HAVE_ALL, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

@@ -1,4 +1,4 @@
 LET b% = 99
 LET a% = 10 + 10 + b%
-PRINT (100 * 3 * 3 + 1) / b%
+PRINT (100 * 3 * 3 + 1) DIV -b%
 

@@ -74,9 +74,9 @@ static bool prv_match_ccode(subtilis_arm_vm_t *arm_vm,
 	case SUBTILIS_ARM_CCODE_CC:
 		return !arm_vm->carry_flag;
 	case SUBTILIS_ARM_CCODE_MI:
-		return !arm_vm->negative_flag;
-	case SUBTILIS_ARM_CCODE_PL:
 		return arm_vm->negative_flag;
+	case SUBTILIS_ARM_CCODE_PL:
+		return !arm_vm->negative_flag;
 	case SUBTILIS_ARM_CCODE_VS:
 		return arm_vm->overflow_flag;
 	case SUBTILIS_ARM_CCODE_VC:
@@ -158,7 +158,9 @@ static int32_t prv_eval_op2(subtilis_arm_vm_t *arm_vm, bool status,
 				reg &= ((uint32_t)0xffffffff) >> shift;
 			break;
 		case SUBTILIS_ARM_SHIFT_ASR:
-			if (shift < 1 || shift > 32) {
+			if (shift == 0) {
+				shift = 32;
+			} else if (shift < 1 || shift > 32) {
 				subtilis_error_set_assertion_failed(err);
 				return 0;
 			}
@@ -192,11 +194,62 @@ static int32_t prv_eval_op2(subtilis_arm_vm_t *arm_vm, bool status,
 	return 0;
 }
 
+static void prv_set_and_flags(subtilis_arm_vm_t *arm_vm, int32_t res)
+{
+	arm_vm->negative_flag = res < 0;
+	arm_vm->zero_flag = res == 0;
+}
+
+static void prv_set_shift_flags(subtilis_arm_vm_t *arm_vm, int32_t shifted,
+				int32_t res, subtilis_arm_shift_t shift)
+{
+	switch (shift.type) {
+	case SUBTILIS_ARM_SHIFT_LSL:
+	case SUBTILIS_ARM_SHIFT_ASL:
+		if (shift.shift > 0 && shift.shift <= 31)
+			arm_vm->carry_flag =
+			    (shifted & (1 << (32 - shift.shift))) != 0;
+		else if (shift.shift == 32)
+			arm_vm->carry_flag = (shifted & 1) != 0;
+		else if (shift.shift > 32)
+			arm_vm->carry_flag = false;
+		break;
+	case SUBTILIS_ARM_SHIFT_LSR:
+		if (shift.shift > 0 && shift.shift <= 31)
+			arm_vm->carry_flag =
+			    (shifted & (1 << (shift.shift - 1))) != 0;
+		else if (shift.shift == 32)
+			arm_vm->carry_flag = (shifted & (1 << 31)) != 0;
+		else if (shift.shift > 32)
+			arm_vm->carry_flag = false;
+		break;
+	case SUBTILIS_ARM_SHIFT_ASR:
+		if (shift.shift > 0 && shift.shift <= 31)
+			arm_vm->carry_flag =
+			    (shifted & (1 << (shift.shift - 1))) != 0;
+		else if (shift.shift >= 32)
+			arm_vm->carry_flag = (shifted & (1 << 31)) != 0;
+		break;
+	case SUBTILIS_ARM_SHIFT_ROR:
+		if (shift.shift > 0 && shift.shift <= 31)
+			arm_vm->carry_flag =
+			    (shifted & (1 << (shift.shift - 1))) != 0;
+		else if (shift.shift >= 32)
+			arm_vm->carry_flag =
+			    (shifted & (1 << ((shift.shift - 1) & 31))) != 0;
+		break;
+	case SUBTILIS_ARM_SHIFT_RRX:
+		arm_vm->carry_flag = (shifted & 1) != 0;
+	}
+}
+
 static void prv_process_and(subtilis_arm_vm_t *arm_vm,
 			    subtilis_arm_data_instr_t *op,
 			    subtilis_error_t *err)
 {
 	int32_t op2;
+	int32_t res;
+	int32_t op2_old;
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
@@ -207,7 +260,17 @@ static void prv_process_and(subtilis_arm_vm_t *arm_vm,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	arm_vm->regs[op->dest.num] = arm_vm->regs[op->op1.num] & op2;
+	res = arm_vm->regs[op->op1.num] & op2;
+	if (op->status) {
+		prv_set_and_flags(arm_vm, res);
+		if (op->op2.type == SUBTILIS_ARM_OP2_SHIFTED) {
+			op2_old = arm_vm->regs[op->op2.op.shift.reg.num];
+			prv_set_shift_flags(arm_vm, op2_old, res,
+					    op->op2.op.shift);
+		}
+	}
+
+	arm_vm->regs[op->dest.num] = res;
 	arm_vm->regs[15] += 4;
 }
 
@@ -216,6 +279,8 @@ static void prv_process_eor(subtilis_arm_vm_t *arm_vm,
 			    subtilis_error_t *err)
 {
 	int32_t op2;
+	int32_t res;
+	int32_t op2_old;
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
@@ -226,15 +291,47 @@ static void prv_process_eor(subtilis_arm_vm_t *arm_vm,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	arm_vm->regs[op->dest.num] = arm_vm->regs[op->op1.num] ^ op2;
+	res = arm_vm->regs[op->op1.num] ^ op2;
+	if (op->status) {
+		prv_set_and_flags(arm_vm, res);
+		if (op->op2.type == SUBTILIS_ARM_OP2_SHIFTED) {
+			op2_old = arm_vm->regs[op->op2.op.shift.reg.num];
+			prv_set_shift_flags(arm_vm, op2_old, res,
+					    op->op2.op.shift);
+		}
+	}
+
+	arm_vm->regs[op->dest.num] = res;
 	arm_vm->regs[15] += 4;
+}
+
+static void prv_reset_flags(subtilis_arm_vm_t *arm_vm)
+{
+	arm_vm->negative_flag = false;
+	arm_vm->zero_flag = false;
+	arm_vm->carry_flag = false;
+	arm_vm->overflow_flag = false;
+}
+
+static void prv_set_sub_flags(subtilis_arm_vm_t *arm_vm, int32_t op1,
+			      int32_t op2, int32_t res)
+{
+	prv_reset_flags(arm_vm);
+	arm_vm->zero_flag = res == 0;
+	arm_vm->negative_flag = res < 0;
+	arm_vm->carry_flag = (op1 < 0 && op2 >= 0) || (op1 < 0 && res >= 0) ||
+			     (op2 >= 0 && res >= 0);
+	if (((op1 < 0 && op2 >= 0) || (op1 >= 0 && op2 < 0)) &&
+	    ((op1 >= 0 && res < 0) || (op1 < 0 && res >= 0)))
+		arm_vm->overflow_flag = true;
 }
 
 static void prv_process_sub(subtilis_arm_vm_t *arm_vm,
 			    subtilis_arm_data_instr_t *op,
 			    subtilis_error_t *err)
 {
-	int32_t op2 = 0;
+	int32_t res;
+	int32_t op2;
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
@@ -245,7 +342,10 @@ static void prv_process_sub(subtilis_arm_vm_t *arm_vm,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	arm_vm->regs[op->dest.num] = arm_vm->regs[op->op1.num] - op2;
+	res = arm_vm->regs[op->op1.num] - op2;
+	if (op->status)
+		prv_set_sub_flags(arm_vm, arm_vm->regs[op->op1.num], op2, res);
+	arm_vm->regs[op->dest.num] = res;
 	arm_vm->regs[15] += 4;
 }
 
@@ -254,6 +354,7 @@ static void prv_process_rsb(subtilis_arm_vm_t *arm_vm,
 			    subtilis_error_t *err)
 {
 	int32_t op2;
+	int32_t res;
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
@@ -264,8 +365,50 @@ static void prv_process_rsb(subtilis_arm_vm_t *arm_vm,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	arm_vm->regs[op->dest.num] = op2 - arm_vm->regs[op->op1.num];
+	res = op2 - arm_vm->regs[op->op1.num];
+	if (op->status)
+		prv_set_sub_flags(arm_vm, op2, arm_vm->regs[op->op1.num], res);
 
+	arm_vm->regs[15] += 4;
+	arm_vm->regs[op->dest.num] = res;
+}
+
+static void prv_set_add_flags(subtilis_arm_vm_t *arm_vm, int32_t op1,
+			      int32_t op2, int32_t res)
+{
+	prv_reset_flags(arm_vm);
+	arm_vm->zero_flag = res == 0;
+	arm_vm->negative_flag = res < 0;
+	arm_vm->carry_flag = (op1 < 0 && op2 < 0) || (op1 < 0 && res >= 0) ||
+			     (op2 < 0 && res >= 0);
+	if (((op1 < 0 && op2 < 0) || (op1 >= 0 && op2 >= 0)) &&
+	    ((op1 >= 0 && res < 0) || (op1 < 0 && res >= 0)))
+		arm_vm->overflow_flag = true;
+}
+
+static void prv_process_adc(subtilis_arm_vm_t *arm_vm,
+			    subtilis_arm_data_instr_t *op,
+			    subtilis_error_t *err)
+{
+	int32_t op2;
+	int32_t carry;
+	int32_t res;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	op2 = prv_eval_op2(arm_vm, op->status, &op->op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	carry = arm_vm->carry_flag ? 1 : 0;
+	res = arm_vm->regs[op->op1.num] + op2 + carry;
+	if (op->status)
+		prv_set_add_flags(arm_vm, arm_vm->regs[op->op1.num],
+				  op2 + carry, res);
+	arm_vm->regs[op->dest.num] = res;
 	arm_vm->regs[15] += 4;
 }
 
@@ -274,6 +417,7 @@ static void prv_process_add(subtilis_arm_vm_t *arm_vm,
 			    subtilis_error_t *err)
 {
 	int32_t op2;
+	int32_t res;
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
@@ -284,25 +428,17 @@ static void prv_process_add(subtilis_arm_vm_t *arm_vm,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	arm_vm->regs[op->dest.num] = arm_vm->regs[op->op1.num] + op2;
+	res = arm_vm->regs[op->op1.num] + op2;
+	if (op->status)
+		prv_set_add_flags(arm_vm, arm_vm->regs[op->op1.num], op2, res);
 	arm_vm->regs[15] += 4;
+	arm_vm->regs[op->dest.num] = res;
 }
 
 static void prv_set_status_flags(subtilis_arm_vm_t *arm_vm, int32_t op1,
 				 int32_t op2)
 {
-	int32_t res;
-
-	arm_vm->negative_flag = false;
-	arm_vm->zero_flag = false;
-	arm_vm->carry_flag = false;
-	arm_vm->overflow_flag = false;
-
-	res = op1 - op2;
-	if (res == 0)
-		arm_vm->zero_flag = true;
-	else if (res < 0)
-		arm_vm->negative_flag = true;
+	prv_set_sub_flags(arm_vm, op1, op2, op1 - op2);
 }
 
 static void prv_process_cmp(subtilis_arm_vm_t *arm_vm,
@@ -362,6 +498,8 @@ static void prv_process_orr(subtilis_arm_vm_t *arm_vm,
 			    subtilis_error_t *err)
 {
 	int32_t op2;
+	int32_t op2_old;
+	int32_t res;
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
@@ -372,7 +510,17 @@ static void prv_process_orr(subtilis_arm_vm_t *arm_vm,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	arm_vm->regs[op->dest.num] = arm_vm->regs[op->op1.num] | op2;
+	res = arm_vm->regs[op->op1.num] | op2;
+	if (op->status) {
+		prv_set_and_flags(arm_vm, res);
+		if (op->op2.type == SUBTILIS_ARM_OP2_SHIFTED) {
+			op2_old = arm_vm->regs[op->op2.op.shift.reg.num];
+			prv_set_shift_flags(arm_vm, op2_old, res,
+					    op->op2.op.shift);
+		}
+	}
+
+	arm_vm->regs[op->dest.num] = res;
 	arm_vm->regs[15] += 4;
 }
 
@@ -412,6 +560,7 @@ static void prv_process_mov(subtilis_arm_vm_t *arm_vm,
 			    subtilis_error_t *err)
 {
 	int32_t op2;
+	int32_t op2_old;
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
@@ -421,6 +570,15 @@ static void prv_process_mov(subtilis_arm_vm_t *arm_vm,
 	op2 = prv_eval_op2(arm_vm, op->status, &op->op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	if (op->status) {
+		prv_set_and_flags(arm_vm, op2);
+		if (op->op2.type == SUBTILIS_ARM_OP2_SHIFTED) {
+			op2_old = arm_vm->regs[op->op2.op.shift.reg.num];
+			prv_set_shift_flags(arm_vm, op2_old, op2,
+					    op->op2.op.shift);
+		}
+	}
 
 	arm_vm->regs[op->dest.num] = op2;
 	arm_vm->regs[15] += 4;
@@ -431,6 +589,7 @@ static void prv_process_mvn(subtilis_arm_vm_t *arm_vm,
 			    subtilis_error_t *err)
 {
 	int32_t op2;
+	int32_t op2_old;
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
@@ -440,6 +599,15 @@ static void prv_process_mvn(subtilis_arm_vm_t *arm_vm,
 	op2 = prv_eval_op2(arm_vm, op->status, &op->op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	if (op->status) {
+		prv_set_and_flags(arm_vm, op2);
+		if (op->op2.type == SUBTILIS_ARM_OP2_SHIFTED) {
+			op2_old = arm_vm->regs[op->op2.op.shift.reg.num];
+			prv_set_shift_flags(arm_vm, op2_old, -op2,
+					    op->op2.op.shift);
+		}
+	}
 
 	arm_vm->regs[op->dest.num] = ~op2;
 	arm_vm->regs[15] += 4;
@@ -692,7 +860,6 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	while (!arm_vm->quit && pc < arm_vm->code_size) {
 		subtilis_arm_disass(&instr, ((uint32_t *)arm_vm->memory)[pc],
 				    err);
-
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		switch (instr.type) {
@@ -710,6 +877,9 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			break;
 		case SUBTILIS_ARM_INSTR_ADD:
 			prv_process_add(arm_vm, &instr.operands.data, err);
+			break;
+		case SUBTILIS_ARM_INSTR_ADC:
+			prv_process_adc(arm_vm, &instr.operands.data, err);
 			break;
 		case SUBTILIS_ARM_INSTR_CMP:
 			prv_process_cmp(arm_vm, &instr.operands.data, err);
@@ -748,10 +918,26 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			prv_process_ldm(arm_vm, &instr.operands.mtran, err);
 			break;
 		default:
+			printf("instr type %d\n", instr.type);
 			subtilis_error_set_assertion_failed(err);
 		}
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
+		/*
+		 *		subtilis_arm_disass_dump(
+		 *		    (uint8_t *)&((uint32_t)arm_vm->memory)[pc],
+		 *4);
+		 *		printf("r=%d d=%d t=%d q=%d s=%d\n",
+		 *arm_vm->regs[0],
+		 *		       arm_vm->regs[1], arm_vm->regs[2],
+		 *arm_vm->regs[3],
+		 *		       arm_vm->regs[4]);
+		 *		printf("zf=%d cf=%d n=%d ov=%d\n",
+		 *arm_vm->zero_flag,
+		 *		       arm_vm->carry_flag,
+		 *arm_vm->negative_flag,
+		 *		       arm_vm->overflow_flag);
+		 */
 		pc = prv_calc_pc(arm_vm);
 	}
 }

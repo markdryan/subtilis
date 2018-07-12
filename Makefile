@@ -12,7 +12,8 @@ COMMON =\
 	symbol_table.c \
 	string_pool.c \
 	type.c \
-	builtins.c
+	builtins.c \
+	call.c
 
 ARM =\
 	arm_core.c \
@@ -22,7 +23,8 @@ ARM =\
 	arm_walker.c \
 	arm_reg_alloc.c \
 	arm_encode.c \
-	arm_link.c
+	arm_link.c \
+	arm2_div.c
 
 COMPILER =\
 	compiler.c

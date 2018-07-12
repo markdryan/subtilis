@@ -1,0 +1,4 @@
+LET b% = 100 DIV 5
+LET c% = 1000 DIV b% DIV 10
+LET d% = b% DIV c% DIV 2
+PRINT d%

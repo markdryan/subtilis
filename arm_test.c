@@ -110,9 +110,6 @@ static int prv_test_examples(void)
 	int ret = 0;
 
 	for (i = 0; i < SUBTILIS_TEST_CASE_ID_MAX; i++) {
-		/* Division is not implemented yet */
-		if (i == SUBTILIS_TEST_CASE_ID_DIVISION)
-			continue;
 		test = &test_cases[i];
 		printf("arm_%s", test->name);
 		pass =

@@ -78,6 +78,7 @@ static int prv_check_for_error(subtilis_parser_t *p,
 	if (err.type != err_type) {
 		fprintf(stderr, "Expected err %d, got %d\n", err_type,
 			err.type);
+		subtilis_error_fprintf(stderr, &err, true);
 		return 1;
 	}
 
@@ -188,7 +189,7 @@ static int prv_test_expressions(void)
 static int prv_test_print(void)
 {
 	printf("parser_print");
-	return parser_test_wrapper("PRINT (10 * 3 * 3 + 1) / 2",
+	return parser_test_wrapper("PRINT (10 * 3 * 3 + 1) DIV 2",
 				   SUBTILIS_BACKEND_HAVE_ALL,
 				   prv_check_eval_res, "45\n");
 }

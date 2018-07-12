@@ -45,6 +45,12 @@ struct subtilis_exp_t_ {
 
 typedef struct subtilis_exp_t_ subtilis_exp_t;
 
+subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
+				      subtilis_builtin_type_t ftype,
+				      subtilis_type_section_t *stype,
+				      subtilis_ir_arg_t *args,
+				      subtilis_type_t fn_type,
+				      size_t num_params, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_var(subtilis_exp_type_t type, unsigned int reg,
 				     subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_int32(int32_t integer, subtilis_error_t *err);
