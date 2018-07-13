@@ -531,7 +531,15 @@ static size_t prv_compute_stran_addr(subtilis_arm_vm_t *arm_vm,
 	int32_t offset;
 	size_t addr;
 
-	offset = prv_eval_op2(arm_vm, false, &op->offset, err);
+	if (op->offset.type == SUBTILIS_ARM_OP2_I32) {
+		offset = op->offset.op.integer;
+		if (offset > 4096) {
+			subtilis_error_set_assertion_failed(err);
+			return 0;
+		}
+	} else {
+		offset = prv_eval_op2(arm_vm, false, &op->offset, err);
+	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 	if (op->subtract)
