@@ -235,18 +235,6 @@ static void prv_rsubii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = ops[2].integer - vm->regs[ops[1].reg];
 }
 
-static void prv_rdivii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
-			 subtilis_ir_operand_t *ops, subtilis_error_t *err)
-{
-	int32_t divisor = vm->regs[ops[1].reg];
-
-	if (divisor == 0) {
-		subtilis_error_set_divide_by_zero(err, "", 0);
-		return;
-	}
-	vm->regs[ops[0].reg] = ops[2].integer / divisor;
-}
-
 static void prv_andi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -639,7 +627,6 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_printi32,                        /* SUBTILIS_OP_INSTR_PRINT_I32 */
 	prv_rsubii32,                        /* SUBTILIS_OP_INSTR_RSUBI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_RSUBI_REAL */
-	prv_rdivii32,                        /* SUBTILIS_OP_INSTR_RDIVI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_RDIVI_REAL */
 	prv_andi32,                          /* SUBTILIS_OP_INSTR_AND_I32 */
 	prv_andii32,                         /* SUBTILIS_OP_INSTR_ANDI_I32 */

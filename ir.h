@@ -394,17 +394,6 @@ typedef enum {
 	SUBTILIS_OP_INSTR_RSUBI_REAL,
 
 	/*
-	 * rdivii32 r0, r1, #i32
-	 *
-	 * Divides a 32 bit integer immediate constant by a 32 bit integer
-	 * stored in a register.  The result is stored in a second register.
-	 *
-	 * r0 = #i32 / r1
-	 */
-
-	SUBTILIS_OP_INSTR_RDIVI_I32,
-
-	/*
 	 * rdivir fp0, fp1, #r
 	 *
 	 * Divides a 64 bit double immediate constant by a 64 bit double

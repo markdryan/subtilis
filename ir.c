@@ -351,7 +351,6 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "printi32", SUBTILIS_OP_CLASS_REG},
 	{ "rsubii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
 	{ "rsubir", SUBTILIS_OP_CLASS_REG_REG_REAL },
-	{ "rdivii32", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "rdivir", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "andi32", SUBTILIS_OP_CLASS_REG_REG_REG},
 	{ "andii32", SUBTILIS_OP_CLASS_REG_REG_I32},

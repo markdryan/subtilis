@@ -608,9 +608,9 @@ static void prv_mul_real_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
 	a1->exp.ir_op.real *= a2->exp.ir_op.real;
 }
 
-static bool prv_optimise_div(subtilis_parser_t *p, bool swapped,
-			     subtilis_ir_operand_t a, subtilis_ir_operand_t b,
-			     size_t *result, subtilis_error_t *err)
+static bool prv_optimise_div(subtilis_parser_t *p, subtilis_ir_operand_t a,
+			     subtilis_ir_operand_t b, size_t *result,
+			     subtilis_error_t *err)
 {
 	return false;
 }
@@ -655,8 +655,7 @@ static size_t prv_div_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	return res;
 }
 
-static size_t prv_div_by_constant(subtilis_parser_t *p, bool swapped,
-				  subtilis_ir_operand_t a,
+static size_t prv_div_by_constant(subtilis_parser_t *p, subtilis_ir_operand_t a,
 				  subtilis_ir_operand_t b,
 				  subtilis_error_t *err)
 {
@@ -665,21 +664,17 @@ static size_t prv_div_by_constant(subtilis_parser_t *p, bool swapped,
 	size_t reg;
 	size_t res = 0;
 
-	can_optimise = prv_optimise_div(p, swapped, a, b, &res, err);
+	can_optimise = prv_optimise_div(p, a, b, &res, err);
 	if ((err->type != SUBTILIS_ERROR_OK) || can_optimise)
 		return res;
 
 	if (p->caps & SUBTILIS_BACKEND_HAVE_DIV) {
-		if (swapped) {
-			instr = SUBTILIS_OP_INSTR_RDIVI_I32;
-		} else {
-			if (b.integer == 0) {
-				subtilis_error_set_divide_by_zero(
-				    err, p->l->stream->name, p->l->line);
-				return 0;
-			}
-			instr = SUBTILIS_OP_INSTR_DIVI_I32;
+		if (b.integer == 0) {
+			subtilis_error_set_divide_by_zero(
+			    err, p->l->stream->name, p->l->line);
+			return 0;
 		}
+		instr = SUBTILIS_OP_INSTR_DIVI_I32;
 		return subtilis_ir_section_add_instr(p->current, instr, a, b,
 						     err);
 	}
@@ -689,12 +684,7 @@ static size_t prv_div_by_constant(subtilis_parser_t *p, bool swapped,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
-	if (swapped) {
-		b.reg = a.reg;
-		a.reg = reg;
-	} else {
-		b.reg = reg;
-	}
+	b.reg = reg;
 
 	return prv_div_vars(p, a, b, err);
 }
@@ -716,8 +706,6 @@ subtilis_exp_t *subtilis_exp_mul(subtilis_parser_t *p, subtilis_exp_t *a1,
 subtilis_exp_t *subtilis_exp_div(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	bool swapped = prv_order_expressions(&a1, &a2);
-
 	switch (a1->type) {
 	case SUBTILIS_EXP_CONST_INTEGER:
 		switch (a2->type) {
@@ -734,6 +722,16 @@ subtilis_exp_t *subtilis_exp_div(subtilis_parser_t *p, subtilis_exp_t *a1,
 			a1->exp.ir_op.real = ((double)a1->exp.ir_op.integer) /
 					     a2->exp.ir_op.real;
 			a1->type = SUBTILIS_EXP_CONST_REAL;
+			break;
+		case SUBTILIS_EXP_INTEGER:
+			a1->type = SUBTILIS_EXP_INTEGER;
+			a1->exp.ir_op.reg = subtilis_ir_section_add_instr2(
+			    p->current, SUBTILIS_OP_INSTR_MOVI_I32,
+			    a1->exp.ir_op, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return NULL;
+			a1->exp.ir_op.reg =
+			    prv_div_vars(p, a1->exp.ir_op, a2->exp.ir_op, err);
 			break;
 		default:
 			subtilis_error_set_bad_expression(
@@ -765,7 +763,7 @@ subtilis_exp_t *subtilis_exp_div(subtilis_parser_t *p, subtilis_exp_t *a1,
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
 			a1->exp.ir_op.reg = prv_div_by_constant(
-			    p, swapped, a1->exp.ir_op, a2->exp.ir_op, err);
+			    p, a1->exp.ir_op, a2->exp.ir_op, err);
 			break;
 		case SUBTILIS_EXP_CONST_REAL:
 		case SUBTILIS_EXP_CONST_STRING:
