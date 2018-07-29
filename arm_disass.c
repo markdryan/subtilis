@@ -115,9 +115,15 @@ static void prv_decode_op2(uint32_t encoded, subtilis_arm_op2_t *op2)
 		op2->type = SUBTILIS_ARM_OP2_SHIFTED;
 		op2->op.shift.reg.num = encoded & 0xf;
 		op2->op.shift.reg.type = SUBTILIS_ARM_REG_FIXED;
-		op2->op.shift.shift = (encoded >> 7) & 0x1f;
-		if (op2->op.shift.shift == 0)
-			op2->op.shift.shift = 32;
+		op2->op.shift.shift_reg = (encoded & (1 << 4)) != 0;
+		if (op2->op.shift.shift_reg) {
+			op2->op.shift.shift.reg.num = (encoded >> 8) & 0xf;
+			op2->op.shift.shift.reg.type = SUBTILIS_ARM_REG_FIXED;
+		} else {
+			op2->op.shift.shift.integer = (encoded >> 7) & 0x1f;
+			if (op2->op.shift.shift.integer == 0)
+				op2->op.shift.shift.integer = 32;
+		}
 		op2->op.shift.type = shtype[((encoded >> 5) & 3)];
 	} else {
 		op2->type = SUBTILIS_ARM_OP2_REG;
@@ -138,9 +144,9 @@ static void prv_decode_stran_op2(uint32_t encoded, subtilis_arm_op2_t *op2)
 			op2->type = SUBTILIS_ARM_OP2_SHIFTED;
 			op2->op.shift.reg.num = encoded & 0xf;
 			op2->op.shift.reg.type = SUBTILIS_ARM_REG_FIXED;
-			op2->op.shift.shift = (encoded >> 7) & 0x1f;
-			if (op2->op.shift.shift == 0)
-				op2->op.shift.shift = 32;
+			op2->op.shift.shift.integer = (encoded >> 7) & 0x1f;
+			if (op2->op.shift.shift.integer == 0)
+				op2->op.shift.shift.integer = 32;
 			op2->op.shift.type = shtype[((encoded >> 5) & 3)];
 		} else {
 			op2->type = SUBTILIS_ARM_OP2_REG;

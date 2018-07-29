@@ -376,6 +376,12 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "ret", SUBTILIS_OP_CLASS_NONE},
 	{ "reti32", SUBTILIS_OP_CLASS_REG},
 	{ "retii32", SUBTILIS_OP_CLASS_I32},
+	{ "lsli32", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "lslii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
+	{ "lsri32", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "lsrii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
+	{ "asri32", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "asrii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
 };
 
 /*

@@ -110,6 +110,12 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"andi32 *, *, *\n", subtilis_arm_gen_andi32},
 	{"ori32 *, *, *\n", subtilis_arm_gen_ori32},
 	{"eori32 *, *, *\n", subtilis_arm_gen_eori32},
+	{ "lsli32 *, *, *\n", subtilis_arm_gen_lsli32},
+	{ "lslii32 *, *, *\n", subtilis_arm_gen_lslii32},
+	{ "lsri32 *, *, *\n", subtilis_arm_gen_lsri32},
+	{ "lsrii32 *, *, *\n", subtilis_arm_gen_lsrii32},
+	{ "asri32 *, *, *\n", subtilis_arm_gen_asri32},
+	{ "asrii32 *, *, *\n", subtilis_arm_gen_asrii32},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

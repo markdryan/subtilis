@@ -139,6 +139,7 @@ static const uint32_t prv_expected_code[] = {
 	0xE91D000F, /* LDMEA R13, {r0-r3} */
 	0xE88D000F, /* STMEA R13, {r0-r3} */
 	0x26820101, /* STRCS R0, [R2], R1, LSL #2 */
+	0xE1A00251, /* MOV R0, R1, ASR R2 */
 };
 
 /* clang-format on */
@@ -149,6 +150,7 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	subtilis_arm_reg_t op1;
 	subtilis_arm_reg_t op2;
 	subtilis_arm_instr_t *instr;
+	subtilis_arm_data_instr_t *datai;
 	subtilis_arm_stran_instr_t *stran;
 
 	dest.type = SUBTILIS_ARM_REG_FIXED;
@@ -278,13 +280,32 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	stran->base.num = 2;
 	stran->base.type = SUBTILIS_ARM_REG_FIXED;
 	stran->offset.type = SUBTILIS_ARM_OP2_SHIFTED;
-	stran->offset.op.shift.shift = 2;
+	stran->offset.op.shift.shift.integer = 2;
 	stran->offset.op.shift.reg.num = 1;
 	stran->offset.op.shift.reg.type = SUBTILIS_ARM_REG_FIXED;
 	stran->offset.op.shift.type = SUBTILIS_ARM_SHIFT_LSL;
 	stran->pre_indexed = false;
 	stran->write_back = false;
 	stran->subtract = false;
+
+	/* MOV R0, R1, ASR R2 */
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_MOV, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	dest.num = 0;
+	op1.num = 1;
+	datai = &instr->operands.data;
+	datai->status = false;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->dest = dest;
+	datai->op2.type = SUBTILIS_ARM_OP2_SHIFTED;
+	datai->op2.op.shift.reg = op1;
+	datai->op2.op.shift.type = SUBTILIS_ARM_SHIFT_ASR;
+	datai->op2.op.shift.shift.reg.num = 2;
+	datai->op2.op.shift.shift.reg.type = SUBTILIS_ARM_REG_FIXED;
+	datai->op2.op.shift.shift_reg = true;
 }
 
 static int prv_test_encode(void)
@@ -598,7 +619,7 @@ static int prv_test_disass_stran(void)
 
 	if ((stran->offset.type != SUBTILIS_ARM_OP2_SHIFTED) ||
 	    (stran->offset.op.shift.reg.num != 1) ||
-	    (stran->offset.op.shift.shift != 2) ||
+	    (stran->offset.op.shift.shift.integer != 2) ||
 	    (stran->offset.op.shift.type != SUBTILIS_ARM_SHIFT_LSL)) {
 		fprintf(stderr, "[15] bad  values\n");
 		return 1;

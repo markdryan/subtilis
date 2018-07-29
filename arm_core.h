@@ -53,7 +53,11 @@ typedef enum {
 struct subtilis_arm_shift_t_ {
 	subtilis_arm_reg_t reg;
 	subtilis_arm_shift_type_t type;
-	int32_t shift;
+	union {
+		int32_t integer;
+		subtilis_arm_reg_t reg;
+	} shift;
+	bool shift_reg;
 };
 
 typedef struct subtilis_arm_shift_t_ subtilis_arm_shift_t;

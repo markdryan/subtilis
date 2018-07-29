@@ -19,6 +19,8 @@
 
 #include "expression.h"
 
+typedef int32_t (*subtilis_const_shift_t)(int32_t a, int32_t b);
+
 typedef void (*subtilis_const_op_t)(subtilis_exp_t *, subtilis_exp_t *);
 typedef void (*subtilis_var_op_t)(subtilis_ir_section_t *, subtilis_exp_t *,
 				  subtilis_exp_t *, bool, subtilis_error_t *);
@@ -1366,6 +1368,140 @@ subtilis_exp_t *subtilis_exp_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 	}
 
 	return prv_exp_non_commutative(p, a1, a2, &no, err);
+}
+
+static subtilis_exp_t *
+prv_exp_shift(subtilis_parser_t *p, subtilis_exp_t *a1, subtilis_exp_t *a2,
+	      subtilis_const_shift_t cfn, subtilis_op_instr_type_t op_type,
+	      subtilis_op_instr_type_t opi_type, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op;
+	size_t reg;
+
+	switch (a1->type) {
+	case SUBTILIS_EXP_CONST_INTEGER:
+		switch (a2->type) {
+		case SUBTILIS_EXP_CONST_INTEGER:
+			a1->exp.ir_op.integer =
+			    cfn(a1->exp.ir_op.integer, a2->exp.ir_op.integer);
+			break;
+		case SUBTILIS_EXP_CONST_REAL:
+			a1->exp.ir_op.integer = cfn(
+			    a1->exp.ir_op.integer, (int32_t)a2->exp.ir_op.real);
+			break;
+		case SUBTILIS_EXP_INTEGER:
+			op.reg = subtilis_ir_section_add_instr2(
+			    p->current, SUBTILIS_OP_INSTR_MOVI_I32,
+			    a1->exp.ir_op, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto on_error;
+			reg = subtilis_ir_section_add_instr(
+			    p->current, op_type, op, a2->exp.ir_op, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto on_error;
+			a1->exp.ir_op.reg = reg;
+			a1->type = SUBTILIS_EXP_INTEGER;
+			break;
+		default:
+			subtilis_error_set_bad_expression(
+			    err, p->l->stream->name, p->l->line);
+			goto on_error;
+		}
+		break;
+	case SUBTILIS_EXP_CONST_REAL:
+		switch (a2->type) {
+		case SUBTILIS_EXP_CONST_INTEGER:
+			a1->type = SUBTILIS_EXP_CONST_INTEGER;
+			a1->exp.ir_op.integer = cfn((int32_t)a1->exp.ir_op.real,
+						    a2->exp.ir_op.integer);
+			break;
+		case SUBTILIS_EXP_CONST_REAL:
+			a1->type = SUBTILIS_EXP_CONST_INTEGER;
+			a1->exp.ir_op.integer =
+			    cfn((int32_t)a1->exp.ir_op.real,
+				(int32_t)a2->exp.ir_op.integer);
+			break;
+		default:
+			subtilis_error_set_bad_expression(
+			    err, p->l->stream->name, p->l->line);
+			goto on_error;
+		}
+		break;
+	case SUBTILIS_EXP_INTEGER:
+		switch (a2->type) {
+		case SUBTILIS_EXP_CONST_REAL:
+			a2->exp.ir_op.integer = (int32_t)a2->exp.ir_op.real;
+		case SUBTILIS_EXP_CONST_INTEGER:
+			reg = subtilis_ir_section_add_instr(
+			    p->current, opi_type, a1->exp.ir_op, a2->exp.ir_op,
+			    err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto on_error;
+			a1->exp.ir_op.reg = reg;
+			break;
+		case SUBTILIS_EXP_INTEGER:
+			reg = subtilis_ir_section_add_instr(p->current, op_type,
+							    a1->exp.ir_op,
+							    a2->exp.ir_op, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto on_error;
+			a1->exp.ir_op.reg = reg;
+			break;
+		case SUBTILIS_EXP_REAL:
+		default:
+			subtilis_error_set_bad_expression(
+			    err, p->l->stream->name, p->l->line);
+			goto on_error;
+		}
+		break;
+	default:
+		subtilis_error_set_bad_expression(err, p->l->stream->name,
+						  p->l->line);
+		goto on_error;
+	}
+
+	subtilis_exp_delete(a2);
+	return a1;
+
+on_error:
+
+	subtilis_exp_delete(a2);
+	subtilis_exp_delete(a1);
+
+	return NULL;
+}
+
+static int32_t prv_lsl_const(int32_t a, int32_t b) { return a << (b & 63); }
+
+subtilis_exp_t *subtilis_exp_lsl(subtilis_parser_t *p, subtilis_exp_t *a1,
+				 subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	return prv_exp_shift(p, a1, a2, prv_lsl_const,
+			     SUBTILIS_OP_INSTR_LSL_I32,
+			     SUBTILIS_OP_INSTR_LSLI_I32, err);
+}
+
+static int32_t prv_lsr_const(int32_t a, int32_t b)
+{
+	return (int32_t)((uint32_t)a >> ((uint32_t)b & 63));
+}
+
+subtilis_exp_t *subtilis_exp_lsr(subtilis_parser_t *p, subtilis_exp_t *a1,
+				 subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	return prv_exp_shift(p, a1, a2, prv_lsr_const,
+			     SUBTILIS_OP_INSTR_LSR_I32,
+			     SUBTILIS_OP_INSTR_LSRI_I32, err);
+}
+
+static int32_t prv_asr_const(int32_t a, int32_t b) { return a >> (b & 63); }
+
+subtilis_exp_t *subtilis_exp_asr(subtilis_parser_t *p, subtilis_exp_t *a1,
+				 subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	return prv_exp_shift(p, a1, a2, prv_asr_const,
+			     SUBTILIS_OP_INSTR_ASR_I32,
+			     SUBTILIS_OP_INSTR_ASRI_I32, err);
 }
 
 void subtilis_exp_delete(subtilis_exp_t *e)

@@ -1,0 +1,12 @@
+LET a%=10
+LET b%=2
+PRINT a% << b%
+PRINT a% << 2
+PRINT 10 << 1
+PRINT a% >> b%
+PRINT a% >> 2
+PRINT 10 >> 1
+PRINT -10 >> 1
+PRINT -10 >>> 1
+PRINT 10 >> 32
+
