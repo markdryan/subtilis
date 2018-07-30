@@ -119,5 +119,17 @@ void subtilis_arm_gen_reti32(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_retii32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_lsli32(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_lslii32(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_lsri32(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_lsrii32(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_asri32(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_asrii32(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err);
 
 #endif

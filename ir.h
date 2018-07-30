@@ -394,17 +394,6 @@ typedef enum {
 	SUBTILIS_OP_INSTR_RSUBI_REAL,
 
 	/*
-	 * rdivii32 r0, r1, #i32
-	 *
-	 * Divides a 32 bit integer immediate constant by a 32 bit integer
-	 * stored in a register.  The result is stored in a second register.
-	 *
-	 * r0 = #i32 / r1
-	 */
-
-	SUBTILIS_OP_INSTR_RDIVI_I32,
-
-	/*
 	 * rdivir fp0, fp1, #r
 	 *
 	 * Divides a 64 bit double immediate constant by a 64 bit double
@@ -671,6 +660,72 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_RETI_I32,
+
+	/*
+	 * lsli32 r0, r1, r2
+	 *
+	 * Shifts r1 left by the contents of r2 and stores the resulting value
+	 * in r0.
+	 *
+	 * r0 = r1 << r2
+	 */
+	SUBTILIS_OP_INSTR_LSL_I32,
+
+	/*
+	 * lslii32 r0, r1, #i32
+	 *
+	 * Shifts r1 left by the constant i32 and stored the resulting value
+	 * in r0.
+	 *
+	 * r0 = r1 << #i32
+	 */
+
+	SUBTILIS_OP_INSTR_LSLI_I32,
+
+	/*
+	 * lsri32 r0, r1, r2
+	 *
+	 * Performs a logical right shift of r1 by the contents of r2 and stores
+	 * the resulting value in r0.
+	 *
+	 * r0 = r1 >> r2
+	 */
+
+	SUBTILIS_OP_INSTR_LSR_I32,
+
+	/*
+	 * lsrii32 r0, r1, #i32
+	 *
+	 * Performs a logical right shift of r1 by #i32 and stores the resulting
+	 * value in r0.
+	 *
+	 * r0 = r1 >> #i32
+	 */
+
+	SUBTILIS_OP_INSTR_LSRI_I32,
+
+	/*
+	 * asri32 r0, r1, r2
+	 *
+	 * Performs an arthimetic right shift of r1 by the contents of r2 andi32
+	 * stores the resulting value in r0.
+	 *
+	 * r0 = r1 >>> r2
+	 */
+
+	SUBTILIS_OP_INSTR_ASR_I32,
+
+	/*
+	 * asrii32 r0, r1, #i32
+	 *
+	 * Performs an arthimetic right shift of r1 by #i32 and stores These
+	 * resulting value in r0.
+	 *
+	 * r0 = r1 >>> #i32
+	 */
+
+	SUBTILIS_OP_INSTR_ASRI_I32,
+
 } subtilis_op_instr_type_t;
 
 typedef enum {

@@ -235,18 +235,6 @@ static void prv_rsubii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = ops[2].integer - vm->regs[ops[1].reg];
 }
 
-static void prv_rdivii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
-			 subtilis_ir_operand_t *ops, subtilis_error_t *err)
-{
-	int32_t divisor = vm->regs[ops[1].reg];
-
-	if (divisor == 0) {
-		subtilis_error_set_divide_by_zero(err, "", 0);
-		return;
-	}
-	vm->regs[ops[0].reg] = ops[2].integer / divisor;
-}
-
 static void prv_andi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -606,6 +594,48 @@ static void prv_retii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	;
 }
 
+static void prv_lsli32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->regs[ops[1].reg]
+			       << (vm->regs[ops[2].reg] & 63);
+}
+
+static void prv_lslii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] << (ops[2].integer & 63);
+}
+
+static void prv_lsri32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	uint32_t r1 = (uint32_t)vm->regs[ops[1].reg];
+
+	vm->regs[ops[0].reg] = (int32_t)(r1 >> (vm->regs[ops[2].reg] & 63));
+}
+
+static void prv_lsrii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	uint32_t r1 = (uint32_t)vm->regs[ops[1].reg];
+
+	vm->regs[ops[0].reg] = r1 >> (ops[2].integer & 63);
+}
+
+static void prv_asri32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] =
+	    vm->regs[ops[1].reg] >> (vm->regs[ops[2].reg] & 63);
+}
+
+static void prv_asrii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] >> (ops[2].integer & 63);
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -634,12 +664,11 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	NULL,                                /* SUBTILIS_OP_INSTR_STORE_REAL */
 	prv_movii32,                         /* SUBTILIS_OP_INSTR_MOVI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_MOV_REAL */
-	prv_mov,                                /* SUBTILIS_OP_INSTR_MOV */
+	prv_mov,                             /* SUBTILIS_OP_INSTR_MOV */
 	NULL,                                /* SUBTILIS_OP_INSTR_MOVFP */
 	prv_printi32,                        /* SUBTILIS_OP_INSTR_PRINT_I32 */
 	prv_rsubii32,                        /* SUBTILIS_OP_INSTR_RSUBI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_RSUBI_REAL */
-	prv_rdivii32,                        /* SUBTILIS_OP_INSTR_RDIVI_I32 */
 	NULL,                                /* SUBTILIS_OP_INSTR_RDIVI_REAL */
 	prv_andi32,                          /* SUBTILIS_OP_INSTR_AND_I32 */
 	prv_andii32,                         /* SUBTILIS_OP_INSTR_ANDI_I32 */
@@ -663,8 +692,14 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_jmpc,                            /* SUBTILIS_OP_INSTR_JMPC */
 	prv_jmp,                             /* SUBTILIS_OP_INSTR_JMP */
 	prv_ret,                             /* SUBTILIS_OP_INSTR_RET */
-	prv_reti32,                         /* SUBTILIS_OP_INSTR_RET_I32 */
-	prv_retii32,                        /* SUBTILIS_OP_INSTR_RETI_I32 */
+	prv_reti32,                          /* SUBTILIS_OP_INSTR_RET_I32 */
+	prv_retii32,                         /* SUBTILIS_OP_INSTR_RETI_I32 */
+	prv_lsli32,                          /* SUBTILIS_OP_INSTR_LSL_I32 */
+	prv_lslii32,                         /* SUBTILIS_OP_INSTR_LSLI_I32 */
+	prv_lsri32,                          /* SUBTILIS_OP_INSTR_LSR_I32 */
+	prv_lsrii32,                         /* SUBTILIS_OP_INSTR_LSRI_I32 */
+	prv_asri32,                          /* SUBTILIS_OP_INSTR_ASR_I32 */
+	prv_asrii32,                         /* SUBTILIS_OP_INSTR_ASRI_I32 */
 };
 
 /* clang-format on */

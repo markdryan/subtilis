@@ -136,12 +136,19 @@ static int32_t prv_eval_op2(subtilis_arm_vm_t *arm_vm, bool status,
 		val &= 0xff;
 		return val >> shift | val << (32 - shift);
 	case SUBTILIS_ARM_OP2_SHIFTED:
-		shift = op2->op.shift.shift;
+		if (op2->op.shift.shift_reg) {
+			shift = arm_vm->regs[op2->op.shift.shift.reg.num];
+			if (shift > 32)
+				shift = 32;
+		} else {
+			shift = op2->op.shift.shift.integer;
+		}
 		reg = arm_vm->regs[op2->op.shift.reg.num];
 		switch (op2->op.shift.type) {
 		case SUBTILIS_ARM_SHIFT_LSL:
 		case SUBTILIS_ARM_SHIFT_ASL:
 			if (shift < 0 || shift > 31) {
+				printf("SHIFT %d\n", shift);
 				subtilis_error_set_assertion_failed(err);
 				return 0;
 			}
@@ -203,40 +210,50 @@ static void prv_set_and_flags(subtilis_arm_vm_t *arm_vm, int32_t res)
 static void prv_set_shift_flags(subtilis_arm_vm_t *arm_vm, int32_t shifted,
 				int32_t res, subtilis_arm_shift_t shift)
 {
+	int32_t shift_val;
+
+	if (shift.shift_reg) {
+		shift_val = arm_vm->regs[shift.shift.reg.num];
+		if (shift_val > 32)
+			shift_val = 32;
+	} else {
+		shift_val = shift.shift.integer;
+	}
+
 	switch (shift.type) {
 	case SUBTILIS_ARM_SHIFT_LSL:
 	case SUBTILIS_ARM_SHIFT_ASL:
-		if (shift.shift > 0 && shift.shift <= 31)
+		if (shift_val > 0 && shift_val <= 31)
 			arm_vm->carry_flag =
-			    (shifted & (1 << (32 - shift.shift))) != 0;
-		else if (shift.shift == 32)
+			    (shifted & (1 << (32 - shift_val))) != 0;
+		else if (shift_val == 32)
 			arm_vm->carry_flag = (shifted & 1) != 0;
-		else if (shift.shift > 32)
+		else if (shift_val > 32)
 			arm_vm->carry_flag = false;
 		break;
 	case SUBTILIS_ARM_SHIFT_LSR:
-		if (shift.shift > 0 && shift.shift <= 31)
+		if (shift_val > 0 && shift_val <= 31)
 			arm_vm->carry_flag =
-			    (shifted & (1 << (shift.shift - 1))) != 0;
-		else if (shift.shift == 32)
+			    (shifted & (1 << (shift_val - 1))) != 0;
+		else if (shift_val == 32)
 			arm_vm->carry_flag = (shifted & (1 << 31)) != 0;
-		else if (shift.shift > 32)
+		else if (shift_val > 32)
 			arm_vm->carry_flag = false;
 		break;
 	case SUBTILIS_ARM_SHIFT_ASR:
-		if (shift.shift > 0 && shift.shift <= 31)
+		if (shift_val > 0 && shift_val <= 31)
 			arm_vm->carry_flag =
-			    (shifted & (1 << (shift.shift - 1))) != 0;
-		else if (shift.shift >= 32)
+			    (shifted & (1 << (shift_val - 1))) != 0;
+		else if (shift_val >= 32)
 			arm_vm->carry_flag = (shifted & (1 << 31)) != 0;
 		break;
 	case SUBTILIS_ARM_SHIFT_ROR:
-		if (shift.shift > 0 && shift.shift <= 31)
+		if (shift_val > 0 && shift_val <= 31)
 			arm_vm->carry_flag =
-			    (shifted & (1 << (shift.shift - 1))) != 0;
-		else if (shift.shift >= 32)
+			    (shifted & (1 << (shift_val - 1))) != 0;
+		else if (shift_val >= 32)
 			arm_vm->carry_flag =
-			    (shifted & (1 << ((shift.shift - 1) & 31))) != 0;
+			    (shifted & (1 << ((shift_val - 1) & 31))) != 0;
 		break;
 	case SUBTILIS_ARM_SHIFT_RRX:
 		arm_vm->carry_flag = (shifted & 1) != 0;
@@ -531,7 +548,15 @@ static size_t prv_compute_stran_addr(subtilis_arm_vm_t *arm_vm,
 	int32_t offset;
 	size_t addr;
 
-	offset = prv_eval_op2(arm_vm, false, &op->offset, err);
+	if (op->offset.type == SUBTILIS_ARM_OP2_I32) {
+		offset = op->offset.op.integer;
+		if (offset > 4096) {
+			subtilis_error_set_assertion_failed(err);
+			return 0;
+		}
+	} else {
+		offset = prv_eval_op2(arm_vm, false, &op->offset, err);
+	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 	if (op->subtract)
@@ -925,7 +950,7 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			return;
 		/*
 		 *		subtilis_arm_disass_dump(
-		 *		    (uint8_t *)&((uint32_t)arm_vm->memory)[pc],
+		 *		   (uint8_t *)&((uint32_t *)arm_vm->memory)[pc],
 		 *4);
 		 *		printf("r=%d d=%d t=%d q=%d s=%d\n",
 		 *arm_vm->regs[0],

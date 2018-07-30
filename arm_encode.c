@@ -196,8 +196,19 @@ static void prv_encode_data_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 			return;
 		}
 
+		if (op2->op.shift.shift_reg &&
+		    op2->op.shift.shift.reg.num > 15) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+
 		*word |= op2->op.shift.reg.num;
-		*word |= (op2->op.shift.shift & 31) << 7;
+		if (op2->op.shift.shift_reg) {
+			*word |= 1 << 4;
+			*word |= (op2->op.shift.shift.reg.num & 15) << 8;
+		} else {
+			*word |= (op2->op.shift.shift.integer & 31) << 7;
+		}
 		shift = prv_convert_shift(op2->op.shift.type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
@@ -294,7 +305,7 @@ static void prv_encode_stran_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 
 		*word |= op2->op.shift.reg.num;
 		*word |= 1 << 25;
-		*word |= (op2->op.shift.shift & 31) << 7;
+		*word |= (op2->op.shift.shift.integer & 31) << 7;
 		shift = prv_convert_shift(op2->op.shift.type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;

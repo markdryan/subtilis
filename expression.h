@@ -99,6 +99,12 @@ subtilis_exp_t *subtilis_exp_lt(subtilis_parser_t *p, subtilis_exp_t *a1,
 				subtilis_exp_t *a2, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err);
+subtilis_exp_t *subtilis_exp_lsl(subtilis_parser_t *p, subtilis_exp_t *a1,
+				 subtilis_exp_t *a2, subtilis_error_t *err);
+subtilis_exp_t *subtilis_exp_lsr(subtilis_parser_t *p, subtilis_exp_t *a1,
+				 subtilis_exp_t *a2, subtilis_error_t *err);
+subtilis_exp_t *subtilis_exp_asr(subtilis_parser_t *p, subtilis_exp_t *a1,
+				 subtilis_exp_t *a2, subtilis_error_t *err);
 void subtilis_exp_delete(subtilis_exp_t *e);
 
 #endif

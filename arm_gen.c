@@ -766,3 +766,101 @@ void subtilis_arm_gen_retii32(subtilis_ir_section_t *s, size_t start,
 		return;
 	subtilis_arm_gen_ret(s, start, user_data, err);
 }
+
+static void prv_gen_shift(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_arm_shift_type_t type,
+			  subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_data_instr_t *mov;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_reg_t op2;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *ir_op = &s->ops[start]->op.instr;
+
+	dest = subtilis_arm_ir_to_arm_reg(ir_op->operands[0].reg);
+	op1 = subtilis_arm_ir_to_arm_reg(ir_op->operands[1].reg);
+	op2 = subtilis_arm_ir_to_arm_reg(ir_op->operands[2].reg);
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_MOV, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	mov = &instr->operands.data;
+
+	mov->status = false;
+	mov->ccode = SUBTILIS_ARM_CCODE_AL;
+	mov->dest = dest;
+	mov->op2.type = SUBTILIS_ARM_OP2_SHIFTED;
+	mov->op2.op.shift.type = type;
+	mov->op2.op.shift.reg = op1;
+	mov->op2.op.shift.shift_reg = true;
+	mov->op2.op.shift.shift.reg = op2;
+}
+
+static void prv_gen_shift_i32(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_arm_shift_type_t type,
+			      subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_data_instr_t *mov;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *ir_op = &s->ops[start]->op.instr;
+
+	dest = subtilis_arm_ir_to_arm_reg(ir_op->operands[0].reg);
+	op1 = subtilis_arm_ir_to_arm_reg(ir_op->operands[1].reg);
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_MOV, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	mov = &instr->operands.data;
+
+	mov->status = false;
+	mov->ccode = SUBTILIS_ARM_CCODE_AL;
+	mov->dest = dest;
+	mov->op2.type = SUBTILIS_ARM_OP2_SHIFTED;
+	mov->op2.op.shift.type = type;
+	mov->op2.op.shift.reg = op1;
+	mov->op2.op.shift.shift_reg = false;
+	mov->op2.op.shift.shift.integer = ir_op->operands[2].integer;
+}
+
+void subtilis_arm_gen_lsli32(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	prv_gen_shift(s, start, user_data, SUBTILIS_ARM_SHIFT_LSL, err);
+}
+
+void subtilis_arm_gen_lslii32(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	prv_gen_shift_i32(s, start, user_data, SUBTILIS_ARM_SHIFT_LSL, err);
+}
+
+void subtilis_arm_gen_lsri32(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	prv_gen_shift(s, start, user_data, SUBTILIS_ARM_SHIFT_LSR, err);
+}
+
+void subtilis_arm_gen_lsrii32(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	prv_gen_shift_i32(s, start, user_data, SUBTILIS_ARM_SHIFT_LSR, err);
+}
+
+void subtilis_arm_gen_asri32(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	prv_gen_shift(s, start, user_data, SUBTILIS_ARM_SHIFT_ASR, err);
+}
+
+void subtilis_arm_gen_asrii32(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	prv_gen_shift_i32(s, start, user_data, SUBTILIS_ARM_SHIFT_ASR, err);
+}

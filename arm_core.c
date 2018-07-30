@@ -1242,8 +1242,15 @@ static void prv_dump_op2(subtilis_arm_op2_t *op2)
 		printf("#%d", op2->op.integer);
 		break;
 	default:
-		printf("R%zu, %s #%d", op2->op.shift.reg.num,
-		       shift_desc[op2->op.shift.type], op2->op.shift.shift);
+		if (op2->op.shift.shift_reg)
+			printf("R%zu, %s R%zu", op2->op.shift.reg.num,
+			       shift_desc[op2->op.shift.type],
+			       op2->op.shift.shift.reg.num);
+		else
+			printf("R%zu, %s #%d", op2->op.shift.reg.num,
+			       shift_desc[op2->op.shift.type],
+			       op2->op.shift.shift.integer);
+
 		break;
 	}
 }
