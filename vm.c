@@ -618,19 +618,22 @@ static void prv_lsri32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 static void prv_lsrii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] >> (ops[2].integer & 63);
+	uint32_t r1 = (uint32_t)vm->regs[ops[1].reg];
+
+	vm->regs[ops[0].reg] = r1 >> (ops[2].integer & 63);
 }
 
 static void prv_asri32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] >> vm->regs[ops[2].reg];
+	vm->regs[ops[0].reg] =
+	    vm->regs[ops[1].reg] >> (vm->regs[ops[2].reg] & 63);
 }
 
 static void prv_asrii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] >> vm->regs[ops[2].reg];
+	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] >> (ops[2].integer & 63);
 }
 
 /* clang-format off */

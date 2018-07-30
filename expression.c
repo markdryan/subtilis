@@ -614,7 +614,51 @@ static bool prv_optimise_div(subtilis_parser_t *p, subtilis_ir_operand_t a,
 			     subtilis_ir_operand_t b, size_t *result,
 			     subtilis_error_t *err)
 {
-	return false;
+	int32_t s;
+	uint32_t abs_b = (uint32_t)(b.integer > 0) ? b.integer : -b.integer;
+	subtilis_ir_operand_t c;
+	subtilis_ir_operand_t tmp;
+
+	for (s = 0; abs_b / 2 >= (1u << s); s++)
+		;
+
+	if (abs_b != 1u << s)
+		return false;
+
+	c.integer = 31;
+	tmp.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ASRI_I32, a, c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return false;
+
+	c.integer = 32 - s;
+	tmp.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LSRI_I32, tmp, c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return false;
+
+	tmp.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, a, tmp, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return false;
+
+	c.integer = s;
+	tmp.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ASRI_I32, tmp, c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return false;
+
+	if (b.integer < 0) {
+		c.integer = 0;
+		tmp.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_RSUBI_I32, tmp, c, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return false;
+	}
+
+	*result = tmp.reg;
+
+	return true;
 }
 
 static size_t prv_div_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
@@ -666,16 +710,17 @@ static size_t prv_div_by_constant(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	size_t reg;
 	size_t res = 0;
 
+	if (b.integer == 0) {
+		subtilis_error_set_divide_by_zero(err, p->l->stream->name,
+						  p->l->line);
+		return 0;
+	}
+
 	can_optimise = prv_optimise_div(p, a, b, &res, err);
 	if ((err->type != SUBTILIS_ERROR_OK) || can_optimise)
 		return res;
 
 	if (p->caps & SUBTILIS_BACKEND_HAVE_DIV) {
-		if (b.integer == 0) {
-			subtilis_error_set_divide_by_zero(
-			    err, p->l->stream->name, p->l->line);
-			return 0;
-		}
 		instr = SUBTILIS_OP_INSTR_DIVI_I32;
 		return subtilis_ir_section_add_instr(p->current, instr, a, b,
 						     err);
