@@ -1,0 +1,8 @@
+LET b% = 100 MOD 6
+LET c% = 6 MOD b%
+LET d% = b% MOD c%
+LET e% = -(c% * 10) MOD 3
+PRINT b%
+PRINT c%
+PRINT d%
+PRINT e%

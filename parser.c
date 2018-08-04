@@ -307,6 +307,8 @@ static subtilis_exp_t *prv_priority3(subtilis_parser_t *p, subtilis_token_t *t,
 		if (t->type == SUBTILIS_TOKEN_KEYWORD) {
 			if (!strcmp(tbuf, "DIV"))
 				exp_fn = subtilis_exp_div;
+			else if (!strcmp(tbuf, "MOD"))
+				exp_fn = subtilis_exp_mod;
 			else
 				break;
 		} else if (!strcmp(tbuf, "*")) {

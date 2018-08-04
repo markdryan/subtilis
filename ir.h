@@ -126,6 +126,17 @@ typedef enum {
 	SUBTILIS_OP_INSTR_DIV_I32,
 
 	/*
+	 * modi32 r0, r1, r2
+	 *
+	 * Divides two 32 bit signed integers stored in registers storing the
+	 * remainder in a third register.
+	 *
+	 * r0 = r1 % r2
+	 */
+
+	SUBTILIS_OP_INSTR_MOD_I32,
+
+	/*
 	 * divr fp0, fp1, fp2
 	 *
 	 * Divides two 64 bit doubles stored in floating point registers.

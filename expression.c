@@ -661,18 +661,22 @@ static bool prv_optimise_div(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	return true;
 }
 
-static size_t prv_div_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
-			   subtilis_ir_operand_t b, subtilis_error_t *err)
+static size_t prv_div_mod_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
+			       subtilis_ir_operand_t b,
+			       subtilis_op_instr_type_t type,
+			       subtilis_error_t *err)
 {
 	subtilis_exp_t *e;
 	subtilis_ir_arg_t *args;
 	size_t res;
+	size_t div_flag;
+	subtilis_ir_operand_t div_mod;
 	const char idiv[] = "_idiv";
 	char *name = NULL;
 
 	if (p->caps & SUBTILIS_BACKEND_HAVE_DIV)
-		return subtilis_ir_section_add_instr(
-		    p->current, SUBTILIS_OP_INSTR_DIV_I32, a, b, err);
+		return subtilis_ir_section_add_instr(p->current, type, a, b,
+						     err);
 
 	name = malloc(sizeof(idiv));
 	if (!name) {
@@ -681,24 +685,39 @@ static size_t prv_div_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	}
 	strcpy(name, idiv);
 
-	args = malloc(sizeof(*args) * 2);
+	args = malloc(sizeof(*args) * 3);
 	if (!args) {
 		free(name);
 		subtilis_error_set_oom(err);
 		return 0;
 	}
+
+	div_mod.integer = type == SUBTILIS_OP_INSTR_DIV_I32 ? 0 : 1;
+	div_flag = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, div_mod, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
 	args[0].type = SUBTILIS_IR_REG_TYPE_INTEGER;
 	args[0].reg = a.reg;
 	args[1].type = SUBTILIS_IR_REG_TYPE_INTEGER;
 	args[1].reg = b.reg;
+	args[2].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[2].reg = div_flag;
 	e = subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_IDIV, NULL, args,
-				  SUBTILIS_TYPE_INTEGER, 2, err);
+				  SUBTILIS_TYPE_INTEGER, 3, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 	res = e->exp.ir_op.reg;
 	subtilis_exp_delete(e);
 
 	return res;
+}
+
+static size_t prv_div_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
+			   subtilis_ir_operand_t b, subtilis_error_t *err)
+{
+	return prv_div_mod_vars(p, a, b, SUBTILIS_OP_INSTR_DIV_I32, err);
 }
 
 static size_t prv_div_by_constant(subtilis_parser_t *p, subtilis_ir_operand_t a,
@@ -734,6 +753,47 @@ static size_t prv_div_by_constant(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	b.reg = reg;
 
 	return prv_div_vars(p, a, b, err);
+}
+
+static bool prv_optimise_mod(subtilis_parser_t *p, subtilis_ir_operand_t a,
+			     subtilis_ir_operand_t b, size_t *result,
+			     subtilis_error_t *err)
+{
+	return false;
+}
+
+static size_t prv_mod_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
+			   subtilis_ir_operand_t b, subtilis_error_t *err)
+{
+	return prv_div_mod_vars(p, a, b, SUBTILIS_OP_INSTR_MOD_I32, err);
+}
+
+static size_t prv_mod_by_constant(subtilis_parser_t *p, subtilis_ir_operand_t a,
+				  subtilis_ir_operand_t b,
+				  subtilis_error_t *err)
+{
+	bool can_optimise;
+	size_t reg;
+	size_t res = 0;
+
+	if (b.integer == 0) {
+		subtilis_error_set_divide_by_zero(err, p->l->stream->name,
+						  p->l->line);
+		return 0;
+	}
+
+	can_optimise = prv_optimise_mod(p, a, b, &res, err);
+	if ((err->type != SUBTILIS_ERROR_OK) || can_optimise)
+		return res;
+
+	reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, b, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	b.reg = reg;
+
+	return prv_mod_vars(p, a, b, err);
 }
 
 subtilis_exp_t *subtilis_exp_mul(subtilis_parser_t *p, subtilis_exp_t *a1,
@@ -820,6 +880,119 @@ subtilis_exp_t *subtilis_exp_div(subtilis_parser_t *p, subtilis_exp_t *a1,
 		case SUBTILIS_EXP_INTEGER:
 			a1->exp.ir_op.reg =
 			    prv_div_vars(p, a1->exp.ir_op, a2->exp.ir_op, err);
+			break;
+		case SUBTILIS_EXP_REAL:
+		default:
+			subtilis_error_set_bad_expression(
+			    err, p->l->stream->name, p->l->line);
+			break;
+		}
+		break;
+	case SUBTILIS_EXP_REAL:
+	case SUBTILIS_EXP_STRING:
+	default:
+		subtilis_error_set_bad_expression(err, p->l->stream->name,
+						  p->l->line);
+		break;
+	}
+
+	subtilis_exp_delete(a2);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(a1);
+		a1 = NULL;
+	}
+
+	return a1;
+}
+
+subtilis_exp_t *subtilis_exp_mod(subtilis_parser_t *p, subtilis_exp_t *a1,
+				 subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	int32_t opb;
+
+	switch (a1->type) {
+	case SUBTILIS_EXP_CONST_INTEGER:
+		switch (a2->type) {
+		case SUBTILIS_EXP_CONST_INTEGER:
+			if (a2->exp.ir_op.integer == 0) {
+				subtilis_error_set_divide_by_zero(
+				    err, p->l->stream->name, p->l->line);
+				break;
+			}
+			a1->exp.ir_op.integer %= a2->exp.ir_op.integer;
+			break;
+		case SUBTILIS_EXP_CONST_REAL:
+			opb = (int32_t)a2->exp.ir_op.integer;
+			if (opb == 0) {
+				subtilis_error_set_divide_by_zero(
+				    err, p->l->stream->name, p->l->line);
+				break;
+			}
+			a1->exp.ir_op.integer = a1->exp.ir_op.integer % opb;
+			break;
+		case SUBTILIS_EXP_INTEGER:
+			a1->type = SUBTILIS_EXP_INTEGER;
+			a1->exp.ir_op.reg = subtilis_ir_section_add_instr2(
+			    p->current, SUBTILIS_OP_INSTR_MOVI_I32,
+			    a1->exp.ir_op, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return NULL;
+			a1->exp.ir_op.reg =
+			    prv_mod_vars(p, a1->exp.ir_op, a2->exp.ir_op, err);
+			break;
+		default:
+			subtilis_error_set_bad_expression(
+			    err, p->l->stream->name, p->l->line);
+			break;
+		}
+		break;
+	case SUBTILIS_EXP_CONST_REAL:
+		switch (a2->type) {
+		case SUBTILIS_EXP_CONST_INTEGER:
+			if (a2->exp.ir_op.integer == 0) {
+				subtilis_error_set_divide_by_zero(
+				    err, p->l->stream->name, p->l->line);
+				break;
+			}
+			a1->exp.ir_op.integer = (int32_t)a1->exp.ir_op.real;
+			a1->exp.ir_op.integer %= a2->exp.ir_op.integer;
+			a1->type = SUBTILIS_EXP_CONST_INTEGER;
+			break;
+		case SUBTILIS_EXP_CONST_REAL:
+			opb = (int32_t)a2->exp.ir_op.integer;
+			if (opb == 0) {
+				subtilis_error_set_divide_by_zero(
+				    err, p->l->stream->name, p->l->line);
+				break;
+			}
+			a1->exp.ir_op.integer = (int32_t)a1->exp.ir_op.real;
+			a1->exp.ir_op.integer %= opb;
+			a1->type = SUBTILIS_EXP_CONST_INTEGER;
+			break;
+		default:
+			subtilis_error_set_bad_expression(
+			    err, p->l->stream->name, p->l->line);
+			break;
+		}
+		break;
+	case SUBTILIS_EXP_CONST_STRING:
+		subtilis_error_set_bad_expression(err, p->l->stream->name,
+						  p->l->line);
+		break;
+	case SUBTILIS_EXP_INTEGER:
+		switch (a2->type) {
+		case SUBTILIS_EXP_CONST_INTEGER:
+			a1->exp.ir_op.reg = prv_mod_by_constant(
+			    p, a1->exp.ir_op, a2->exp.ir_op, err);
+			break;
+		case SUBTILIS_EXP_CONST_REAL:
+		case SUBTILIS_EXP_CONST_STRING:
+			subtilis_error_set_bad_expression(
+			    err, p->l->stream->name, p->l->line);
+			break;
+		case SUBTILIS_EXP_INTEGER:
+			a1->exp.ir_op.reg =
+			    prv_mod_vars(p, a1->exp.ir_op, a2->exp.ir_op, err);
 			break;
 		case SUBTILIS_EXP_REAL:
 		default:

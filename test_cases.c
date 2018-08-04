@@ -37,6 +37,17 @@ const subtilis_test_case_t test_cases[] = {
 	  "PRINT f%\n"
 	  "PRINT g% DIV 2\n",
 	  "2\n-2\n4\n0\n"},
+	{ "mod",
+	  "LOCAL b%\n"
+	  "LET b% = 100 MOD 6\n"
+	  "LET c% = 6 MOD b%\n"
+	  "LET d% = b% MOD c%\n"
+	  "LET e% = -(c% * 10) MOD 3\n"
+	  "PRINT b%\n"
+	  "PRINT c%\n"
+	  "PRINT d%\n"
+	  "PRINT e%\n",
+	  "4\n2\n0\n-2\n"},
 	{ "multiplication",
 	  "LET b% = 1 * 10\n"
 	  "LET c% = 10 * b% * 5\n"
