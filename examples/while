@@ -1,6 +1,6 @@
 LET i% = 0
 LET c%=10
-WHILE i% > c%
+WHILE i% < c%
   PRINT i%
   LET i%=i%+1
 ENDWHILE

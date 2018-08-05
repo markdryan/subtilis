@@ -761,7 +761,49 @@ static bool prv_optimise_mod(subtilis_parser_t *p, subtilis_ir_operand_t a,
 			     subtilis_ir_operand_t b, size_t *result,
 			     subtilis_error_t *err)
 {
-	return false;
+	int32_t s;
+	uint32_t abs_b = (uint32_t)(b.integer > 0) ? b.integer : -b.integer;
+	subtilis_ir_operand_t c;
+	subtilis_ir_operand_t shifted;
+	subtilis_ir_operand_t tmp;
+
+	for (s = 0; abs_b / 2 >= (1u << s); s++)
+		;
+
+	if (abs_b != 1u << s)
+		return false;
+
+	c.integer = 31;
+	tmp.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ASRI_I32, a, c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return false;
+
+	c.integer = 32 - s;
+	shifted.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LSRI_I32, tmp, c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return false;
+
+	tmp.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, a, shifted, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return false;
+
+	c.integer = abs_b - 1;
+	tmp.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ANDI_I32, tmp, c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return false;
+
+	tmp.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_SUB_I32, tmp, shifted, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return false;
+
+	*result = tmp.reg;
+
+	return true;
 }
 
 static size_t prv_mod_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
