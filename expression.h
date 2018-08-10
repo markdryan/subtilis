@@ -76,6 +76,8 @@ subtilis_exp_t *subtilis_exp_mul(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_div(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err);
+subtilis_exp_t *subtilis_exp_mod(subtilis_parser_t *p, subtilis_exp_t *a1,
+				 subtilis_exp_t *a2, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_and(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_or(subtilis_parser_t *p, subtilis_exp_t *a1,

@@ -327,6 +327,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "muli32", SUBTILIS_OP_CLASS_REG_REG_REG },
 	{ "mulr", SUBTILIS_OP_CLASS_REG_REG_REG },
 	{ "divi32", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "modi32", SUBTILIS_OP_CLASS_REG_REG_REG },
 	{ "divr", SUBTILIS_OP_CLASS_REG_REG_REG },
 	{ "addii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
 	{ "addir", SUBTILIS_OP_CLASS_REG_REG_REAL },

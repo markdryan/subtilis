@@ -18,9 +18,10 @@
 
 static const size_t r;	/* R0 */
 static const size_t d = 1;    /* R1 */
-static const size_t t = 2;    /* R2 */
-static const size_t q = 3;    /* R3 */
-static const size_t sign = 4; /* R4 */
+static const size_t mod = 2;  /* R2 */
+static const size_t t = 3;    /* R3 */
+static const size_t q = 4;    /* R4 */
+static const size_t sign = 5; /* R5 */
 
 static void prv_add_rsa_group(subtilis_ir_section_t *s,
 			      subtilis_arm_section_t *arm_s, size_t i,
@@ -415,12 +416,19 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	br->link = false;
 	br->target.label = 0;
 
-	dest.num = 1;
-	op1.num = r;
-	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
-				 err);
+	op1.num = mod;
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_AL, op1, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_NE;
+	br->link = false;
+	br->target.label = 6;
 
 	dest.num = 0;
 	op1.num = q;
@@ -452,7 +460,32 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	op1.num = d;
+	dest.num = 15;
+	op1.num = 14;
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
+				 err);
+
+	subtilis_arm_section_add_label(arm_s, 6, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_MOV, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	dest.num = sign;
+	op2_reg_shift.op.shift.reg.num = sign;
+	op2_reg_shift.op.shift.type = SUBTILIS_ARM_SHIFT_LSL;
+	op2_reg_shift.op.shift.shift.integer = 1;
+
+	mov = &instr->operands.data;
+	mov->status = true;
+	mov->ccode = SUBTILIS_ARM_CCODE_AL;
+	mov->dest = dest;
+	mov->op2 = op2_reg_shift;
+
+	op1.num = r;
 	subtilis_arm_add_data_imm(arm_s, SUBTILIS_ARM_INSTR_RSB,
 				  SUBTILIS_ARM_CCODE_MI, false, op1, op1, 0,
 				  err);
@@ -469,12 +502,6 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 		return;
 
 	dest.num = 0;
-	subtilis_arm_add_mvn_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
-				 err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	dest.num = 1;
 	subtilis_arm_add_mvn_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
