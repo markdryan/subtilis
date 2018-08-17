@@ -41,6 +41,7 @@ typedef enum {
 	SUBTILIS_OP_LABEL,
 	SUBTILIS_OP_CALL,
 	SUBTILIS_OP_CALLI32,
+	SUBTILIS_OP_CALLREAL,
 	SUBTILIS_OP_PHI,
 	SUBTILIS_OP_MAX,
 } subtilis_op_type_t;
@@ -351,7 +352,7 @@ typedef enum {
 	 * fp0 = r
 	 */
 
-	SUBTILIS_OP_INSTR_MOV_REAL,
+	SUBTILIS_OP_INSTR_MOVI_REAL,
 
 	/*
 	 * mov r0, r1
@@ -380,6 +381,14 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_PRINT_I32,
+
+	/*
+	 * printfp r0
+	 *
+	 * Prints the floating point number stored in r0 to the output stream.
+	 */
+
+	SUBTILIS_OP_INSTR_PRINT_FP,
 
 	/*
 	 * rsubii32 r0, r1, #i32
@@ -673,6 +682,25 @@ typedef enum {
 	SUBTILIS_OP_INSTR_RETI_I32,
 
 	/*
+	 * RET_REAL
+	 *
+	 * returns from the value stored in a 64 bit floating point register
+	 * from a sub-routine call.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_RET_REAL,
+
+	/*
+	 * RETI_REAL
+	 *
+	 * returns a 64 bit floating point value from a sub-routine call.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_RETI_REAL,
+
+	/*
 	 * lsli32 r0, r1, r2
 	 *
 	 * Shifts r1 left by the contents of r2 and stores the resulting value
@@ -737,18 +765,57 @@ typedef enum {
 
 	SUBTILIS_OP_INSTR_ASRI_I32,
 
+	/*
+	 * movi32fp f0, r0
+	 *
+	 * Copies the contents of a 32 bit integer register into a floating
+	 * point register.
+	 *
+	 * f0 = r0
+	 */
+
+	SUBTILIS_OP_INSTR_MOV_I32_FP,
+
+	/*
+	 * movfpi32 r0, f0
+	 *
+	 * Copies the contents of a floating point register into a 32
+	 * bit integer register.  The number is truncated by the copy.
+	 *
+	 * f0 = r0
+	 */
+
+	SUBTILIS_OP_INSTR_MOV_FP_I32,
+
+	/*
+	 * nop
+	 *
+	 * Does nothing.  This is used a placeholder for type promotion
+	 * of parameters.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_NOP,
+
 } subtilis_op_instr_type_t;
 
 typedef enum {
 	SUBTILIS_OP_CLASS_REG_REG_REG,
+	SUBTILIS_OP_CLASS_FREG_FREG_FREG,
 	SUBTILIS_OP_CLASS_REG_REG_I32,
-	SUBTILIS_OP_CLASS_REG_REG_REAL,
+	SUBTILIS_OP_CLASS_FREG_REG_I32,
+	SUBTILIS_OP_CLASS_FREG_FREG_REAL,
 	SUBTILIS_OP_CLASS_REG_LABEL_LABEL,
 	SUBTILIS_OP_CLASS_REG_I32,
-	SUBTILIS_OP_CLASS_REG_REAL,
+	SUBTILIS_OP_CLASS_FREG_REAL,
 	SUBTILIS_OP_CLASS_REG_REG,
+	SUBTILIS_OP_CLASS_FREG_FREG,
+	SUBTILIS_OP_CLASS_REG_FREG,
+	SUBTILIS_OP_CLASS_FREG_REG,
 	SUBTILIS_OP_CLASS_REG,
+	SUBTILIS_OP_CLASS_FREG,
 	SUBTILIS_OP_CLASS_I32,
+	SUBTILIS_OP_CLASS_REAL,
 	SUBTILIS_OP_CLASS_LABEL,
 	SUBTILIS_OP_CLASS_NONE,
 } subtilis_op_instr_class_t;
@@ -780,6 +847,7 @@ typedef enum {
 struct subtilis_ir_arg_t_ {
 	subtilis_ir_reg_type_t type;
 	size_t reg;
+	size_t nop;
 };
 
 typedef struct subtilis_ir_arg_t_ subtilis_ir_arg_t;
@@ -808,6 +876,7 @@ struct subtilis_ir_section_t_ {
 	subtilis_type_section_t *type;
 	size_t locals;
 	size_t reg_counter;
+	size_t freg_counter;
 	size_t label_counter;
 	size_t len;
 	size_t max_len;
@@ -882,7 +951,7 @@ typedef struct subtilis_ir_rule_raw_t_ subtilis_ir_rule_raw_t;
 subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err);
 /* clang-format off */
 subtilis_ir_section_t *subtilis_ir_prog_section_new(
-	subtilis_ir_prog_t *p, const char *name, size_t locals, size_t params,
+	subtilis_ir_prog_t *p, const char *name, size_t locals,
 	subtilis_type_section_t *tp, subtilis_builtin_type_t ftype,
 	const char *file, size_t line, subtilis_error_t *err);
 
@@ -891,6 +960,12 @@ subtilis_ir_section_t *subtilis_ir_prog_find_section(subtilis_ir_prog_t *p,
 						     const char *name);
 void subtilis_ir_prog_dump(subtilis_ir_prog_t *p);
 void subtilis_ir_prog_delete(subtilis_ir_prog_t *p);
+/* Returns a private handle to the NOP */
+size_t subtilis_ir_section_add_nop(subtilis_ir_section_t *s,
+				   subtilis_error_t *err);
+size_t subtilis_ir_section_promote_nop(subtilis_ir_section_t *s, size_t nop,
+				       subtilis_op_instr_type_t type,
+				       size_t op1, subtilis_error_t *err);
 size_t subtilis_ir_section_add_instr(subtilis_ir_section_t *s,
 				     subtilis_op_instr_type_t type,
 				     subtilis_ir_operand_t op1,
@@ -921,10 +996,14 @@ void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t arg_count,
 				  subtilis_ir_arg_t *args,
 				  subtilis_error_t *err);
-size_t subtilis_ir_section_add_fn_call(subtilis_ir_section_t *s,
-				       size_t arg_count,
-				       subtilis_ir_arg_t *args,
-				       subtilis_error_t *err);
+size_t subtilis_ir_section_add_i32_call(subtilis_ir_section_t *s,
+					size_t arg_count,
+					subtilis_ir_arg_t *args,
+					subtilis_error_t *err);
+size_t subtilis_ir_section_add_real_call(subtilis_ir_section_t *s,
+					 size_t arg_count,
+					 subtilis_ir_arg_t *args,
+					 subtilis_error_t *err);
 void subtilis_ir_parse_rules(const subtilis_ir_rule_raw_t *raw,
 			     subtilis_ir_rule_t *parsed, size_t count,
 			     subtilis_error_t *err);

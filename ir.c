@@ -23,6 +23,144 @@
 #include "config.h"
 #include "ir.h"
 
+struct subtilis_ir_op_desc_t_ {
+	const char *const name;
+	subtilis_op_instr_class_t cls;
+};
+
+typedef struct subtilis_ir_op_desc_t_ subtilis_ir_op_desc_t;
+
+typedef enum {
+	SUBTILIS_IR_OPERAND_REGISTER,
+	SUBTILIS_IR_OPERAND_FREGISTER,
+	SUBTILIS_IR_OPERAND_I32,
+	SUBTILIS_IR_OPERAND_REAL,
+	SUBTILIS_IR_OPERAND_LABEL,
+} subtilis_ir_operand_class_t;
+
+struct subtilis_ir_class_info_t_ {
+	size_t op_count;
+	subtilis_ir_operand_class_t classes[3];
+};
+
+typedef struct subtilis_ir_class_info_t_ subtilis_ir_class_info_t;
+
+/* The ordering of this table is very important.  The entries in
+ * it must correspond to the enumerated types in
+ * subtilis_op_instr_type_t
+ */
+
+/* TODO We should probably order this by alpabetical ordering
+ * of instructions so we can do a bsearch
+ */
+
+/* clang-format off */
+static const subtilis_ir_op_desc_t op_desc[] = {
+	{ "addi32", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "addr", SUBTILIS_OP_CLASS_FREG_FREG_FREG },
+	{ "subi32", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "subr", SUBTILIS_OP_CLASS_FREG_FREG_FREG },
+	{ "muli32", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "mulr", SUBTILIS_OP_CLASS_FREG_FREG_FREG },
+	{ "divi32", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "modi32", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "divr", SUBTILIS_OP_CLASS_FREG_FREG_FREG },
+	{ "addii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
+	{ "addir", SUBTILIS_OP_CLASS_FREG_FREG_REAL },
+	{ "subii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
+	{ "subir", SUBTILIS_OP_CLASS_FREG_FREG_REAL },
+	{ "mulii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "mulir", SUBTILIS_OP_CLASS_FREG_FREG_REAL},
+	{ "divii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "divir", SUBTILIS_OP_CLASS_FREG_FREG_REAL},
+	{ "loadoi32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "loador", SUBTILIS_OP_CLASS_FREG_REG_I32},
+	{ "loadi32", SUBTILIS_OP_CLASS_REG_REG},
+	{ "loadr", SUBTILIS_OP_CLASS_REG_REG},
+	{ "storeoi32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "storeor", SUBTILIS_OP_CLASS_FREG_REG_I32},
+	{ "storei32", SUBTILIS_OP_CLASS_REG_REG},
+	{ "storer", SUBTILIS_OP_CLASS_REG_REG},
+	{ "movii32", SUBTILIS_OP_CLASS_REG_I32},
+	{ "movir", SUBTILIS_OP_CLASS_FREG_REAL},
+	{ "mov", SUBTILIS_OP_CLASS_REG_REG},
+	{ "movfp", SUBTILIS_OP_CLASS_FREG_FREG},
+	{ "printi32", SUBTILIS_OP_CLASS_REG},
+	{ "printfp", SUBTILIS_OP_CLASS_FREG},
+	{ "rsubii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
+	{ "rsubir", SUBTILIS_OP_CLASS_FREG_FREG_REAL },
+	{ "rdivir", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "andi32", SUBTILIS_OP_CLASS_REG_REG_REG},
+	{ "andii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "ori32", SUBTILIS_OP_CLASS_REG_REG_REG},
+	{ "orii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "eori32", SUBTILIS_OP_CLASS_REG_REG_REG},
+	{ "eorii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "noti32", SUBTILIS_OP_CLASS_REG_REG},
+	{ "eqi32", SUBTILIS_OP_CLASS_REG_REG_REG},
+	{ "eqii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "neqi32", SUBTILIS_OP_CLASS_REG_REG_REG},
+	{ "neqii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "gti32", SUBTILIS_OP_CLASS_REG_REG_REG},
+	{ "gtii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "ltei32", SUBTILIS_OP_CLASS_REG_REG_REG},
+	{ "lteii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "lti32", SUBTILIS_OP_CLASS_REG_REG_REG},
+	{ "ltii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "gtei32", SUBTILIS_OP_CLASS_REG_REG_REG},
+	{ "gteii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "jmpc", SUBTILIS_OP_CLASS_REG_LABEL_LABEL},
+	{ "jmp", SUBTILIS_OP_CLASS_LABEL},
+	{ "ret", SUBTILIS_OP_CLASS_NONE},
+	{ "reti32", SUBTILIS_OP_CLASS_REG},
+	{ "retii32", SUBTILIS_OP_CLASS_I32},
+	{ "retr", SUBTILIS_OP_CLASS_FREG},
+	{ "retir", SUBTILIS_OP_CLASS_REAL},
+	{ "lsli32", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "lslii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
+	{ "lsri32", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "lsrii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
+	{ "asri32", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "asrii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
+	{ "movi32fp", SUBTILIS_OP_CLASS_FREG_REG },
+	{ "movfpi32", SUBTILIS_OP_CLASS_REG_FREG },
+	{ "nop", SUBTILIS_OP_CLASS_NONE },
+};
+
+/*
+ * Must match the order of the enumerated types declared in
+ * subtilis_op_instr_class_t.
+ */
+
+static const subtilis_ir_class_info_t class_details[] = {
+	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER,
+	      SUBTILIS_IR_OPERAND_REGISTER} },
+	{3, { SUBTILIS_IR_OPERAND_FREGISTER, SUBTILIS_IR_OPERAND_FREGISTER,
+	      SUBTILIS_IR_OPERAND_FREGISTER} },
+	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER,
+	      SUBTILIS_IR_OPERAND_I32} },
+	{3, { SUBTILIS_IR_OPERAND_FREGISTER, SUBTILIS_IR_OPERAND_REGISTER,
+	      SUBTILIS_IR_OPERAND_I32} },
+	{3, { SUBTILIS_IR_OPERAND_FREGISTER, SUBTILIS_IR_OPERAND_FREGISTER,
+	      SUBTILIS_IR_OPERAND_REAL} },
+	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_LABEL,
+	      SUBTILIS_IR_OPERAND_LABEL} },
+	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_I32} },
+	{2, { SUBTILIS_IR_OPERAND_FREGISTER, SUBTILIS_IR_OPERAND_REAL} },
+	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER} },
+	{2, { SUBTILIS_IR_OPERAND_FREGISTER, SUBTILIS_IR_OPERAND_FREGISTER} },
+	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_FREGISTER} },
+	{2, { SUBTILIS_IR_OPERAND_FREGISTER, SUBTILIS_IR_OPERAND_REGISTER} },
+	{1, { SUBTILIS_IR_OPERAND_REGISTER} },
+	{1, { SUBTILIS_IR_OPERAND_FREGISTER} },
+	{1, { SUBTILIS_IR_OPERAND_I32} },
+	{1, { SUBTILIS_IR_OPERAND_REAL} },
+	{1, { SUBTILIS_IR_OPERAND_LABEL} },
+	{0, { 0} },
+};
+
+/* clang-format on */
+
 static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 {
 	subtilis_ir_section_t *s = malloc(sizeof(*s));
@@ -33,6 +171,7 @@ static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 	}
 	s->max_len = 0;
 	s->reg_counter = SUBTILIS_IR_REG_TEMP_START;
+	s->freg_counter = 0;
 	s->label_counter = 0;
 	s->len = 0;
 	s->ops = NULL;
@@ -72,7 +211,8 @@ static void prv_ir_section_delete(subtilis_ir_section_t *s)
 	for (i = 0; i < s->len; i++) {
 		op = s->ops[i];
 		if ((op->type == SUBTILIS_OP_CALL) ||
-		    (op->type == SUBTILIS_OP_CALLI32))
+		    (op->type == SUBTILIS_OP_CALLI32) ||
+		    (op->type == SUBTILIS_OP_CALLREAL))
 			free(op->op.call.args);
 		free(op);
 	}
@@ -87,12 +227,28 @@ size_t subtilis_ir_section_add_instr(subtilis_ir_section_t *s,
 				     subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op0;
+	const subtilis_ir_class_info_t *details;
+	size_t *counter;
 
-	op0.reg = s->reg_counter;
+	details = &class_details[op_desc[type].cls];
+	if (details->op_count == 0) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+	if (details->classes[0] == SUBTILIS_IR_OPERAND_REGISTER) {
+		counter = &s->reg_counter;
+	} else if (details->classes[0] == SUBTILIS_IR_OPERAND_FREGISTER) {
+		counter = &s->freg_counter;
+	} else {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+
+	op0.reg = *counter;
 	subtilis_ir_section_add_instr_reg(s, type, op0, op1, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
-	s->reg_counter++;
+	(*counter)++;
 	return op0.reg;
 }
 
@@ -160,6 +316,66 @@ void subtilis_ir_section_add_instr_reg(subtilis_ir_section_t *s,
 	s->ops[s->len++] = op;
 }
 
+size_t subtilis_ir_section_add_nop(subtilis_ir_section_t *s,
+				   subtilis_error_t *err)
+{
+	size_t ret;
+	subtilis_ir_op_t *op;
+
+	prv_ensure_buffer(s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	op = malloc(sizeof(*op));
+	if (!op) {
+		subtilis_error_set_oom(err);
+		return 0;
+	}
+
+	op->type = SUBTILIS_OP_INSTR;
+	op->op.instr.type = SUBTILIS_OP_INSTR_NOP;
+
+	ret = s->len;
+	s->ops[s->len++] = op;
+
+	return ret;
+}
+
+size_t subtilis_ir_section_promote_nop(subtilis_ir_section_t *s, size_t nop,
+				       subtilis_op_instr_type_t type,
+				       size_t op1, subtilis_error_t *err)
+{
+	subtilis_ir_inst_t *instr;
+	subtilis_ir_op_t *op;
+
+	if ((type != SUBTILIS_OP_INSTR_MOV_I32_FP) &&
+	    (type != SUBTILIS_OP_INSTR_MOV_FP_I32)) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+
+	if (nop >= s->len) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+
+	op = s->ops[nop];
+	if ((op->type != SUBTILIS_OP_INSTR) ||
+	    (op->op.instr.type != SUBTILIS_OP_INSTR_NOP)) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+
+	instr = &op->op.instr;
+	instr->type = type;
+	instr->operands[0].reg = type == SUBTILIS_OP_INSTR_MOV_I32_FP
+				     ? s->freg_counter++
+				     : s->reg_counter++;
+	instr->operands[1].reg = op1;
+
+	return instr->operands[0].reg;
+}
+
 subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err)
 {
 	subtilis_ir_prog_t *p;
@@ -185,7 +401,7 @@ cleanup:
 
 /* clang-format off */
 subtilis_ir_section_t *subtilis_ir_prog_section_new(
-	subtilis_ir_prog_t *p, const char *name, size_t locals, size_t params,
+	subtilis_ir_prog_t *p, const char *name, size_t locals,
 	subtilis_type_section_t *tp, subtilis_builtin_type_t ftype,
 	const char *file, size_t line, subtilis_error_t *err)
 
@@ -199,7 +415,9 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	s = prv_ir_section_new(err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	s->reg_counter += params;
+
+	s->reg_counter += tp->int_regs;
+	s->freg_counter += tp->fp_regs;
 	s->ftype = ftype;
 
 	name_index = subtilis_string_pool_register(p->string_pool, name, err);
@@ -288,128 +506,6 @@ void subtilis_ir_prog_delete(subtilis_ir_prog_t *p)
 	free(p);
 }
 
-struct subtilis_ir_op_desc_t_ {
-	const char *const name;
-	subtilis_op_instr_class_t cls;
-};
-
-typedef struct subtilis_ir_op_desc_t_ subtilis_ir_op_desc_t;
-
-typedef enum {
-	SUBTILIS_IR_OPERAND_REGISTER,
-	SUBTILIS_IR_OPERAND_I32,
-	SUBTILIS_IR_OPERAND_REAL,
-	SUBTILIS_IR_OPERAND_LABEL,
-} subtilis_ir_operand_class_t;
-
-struct subtilis_ir_class_info_t_ {
-	size_t op_count;
-	subtilis_ir_operand_class_t classes[3];
-};
-
-typedef struct subtilis_ir_class_info_t_ subtilis_ir_class_info_t;
-
-/* The ordering of this table is very important.  The entries in
- * it must correspond to the enumerated types in
- * subtilis_op_instr_type_t
- */
-
-/* TODO We should probably order this by alpabetical ordering
- * of instructions so we can do a bsearch
- */
-
-/* clang-format off */
-static const subtilis_ir_op_desc_t op_desc[] = {
-	{ "addi32", SUBTILIS_OP_CLASS_REG_REG_REG },
-	{ "addr", SUBTILIS_OP_CLASS_REG_REG_REG },
-	{ "subi32", SUBTILIS_OP_CLASS_REG_REG_REG },
-	{ "subr", SUBTILIS_OP_CLASS_REG_REG_REG },
-	{ "muli32", SUBTILIS_OP_CLASS_REG_REG_REG },
-	{ "mulr", SUBTILIS_OP_CLASS_REG_REG_REG },
-	{ "divi32", SUBTILIS_OP_CLASS_REG_REG_REG },
-	{ "modi32", SUBTILIS_OP_CLASS_REG_REG_REG },
-	{ "divr", SUBTILIS_OP_CLASS_REG_REG_REG },
-	{ "addii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
-	{ "addir", SUBTILIS_OP_CLASS_REG_REG_REAL },
-	{ "subii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
-	{ "subir", SUBTILIS_OP_CLASS_REG_REG_REAL },
-	{ "mulii32", SUBTILIS_OP_CLASS_REG_REG_I32},
-	{ "mulir", SUBTILIS_OP_CLASS_REG_REG_REAL},
-	{ "divii32", SUBTILIS_OP_CLASS_REG_REG_I32},
-	{ "divir", SUBTILIS_OP_CLASS_REG_REG_I32},
-	{ "loadoi32", SUBTILIS_OP_CLASS_REG_REG_I32},
-	{ "loador", SUBTILIS_OP_CLASS_REG_REG_REAL},
-	{ "loadi32", SUBTILIS_OP_CLASS_REG_REG},
-	{ "loadr", SUBTILIS_OP_CLASS_REG_REG},
-	{ "storeoi32", SUBTILIS_OP_CLASS_REG_REG_I32},
-	{ "storeor", SUBTILIS_OP_CLASS_REG_REAL},
-	{ "storei32", SUBTILIS_OP_CLASS_REG_REG},
-	{ "storer", SUBTILIS_OP_CLASS_REG_REG},
-	{ "movii32", SUBTILIS_OP_CLASS_REG_I32},
-	{ "movir", SUBTILIS_OP_CLASS_REG_REAL},
-	{ "mov", SUBTILIS_OP_CLASS_REG_REG},
-	{ "movfp", SUBTILIS_OP_CLASS_REG_REG},
-	{ "printi32", SUBTILIS_OP_CLASS_REG},
-	{ "rsubii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
-	{ "rsubir", SUBTILIS_OP_CLASS_REG_REG_REAL },
-	{ "rdivir", SUBTILIS_OP_CLASS_REG_REG_I32},
-	{ "andi32", SUBTILIS_OP_CLASS_REG_REG_REG},
-	{ "andii32", SUBTILIS_OP_CLASS_REG_REG_I32},
-	{ "ori32", SUBTILIS_OP_CLASS_REG_REG_REG},
-	{ "orii32", SUBTILIS_OP_CLASS_REG_REG_I32},
-	{ "eori32", SUBTILIS_OP_CLASS_REG_REG_REG},
-	{ "eorii32", SUBTILIS_OP_CLASS_REG_REG_I32},
-	{ "noti32", SUBTILIS_OP_CLASS_REG_REG},
-	{ "eqi32", SUBTILIS_OP_CLASS_REG_REG_REG},
-	{ "eqii32", SUBTILIS_OP_CLASS_REG_REG_I32},
-	{ "neqi32", SUBTILIS_OP_CLASS_REG_REG_REG},
-	{ "neqii32", SUBTILIS_OP_CLASS_REG_REG_I32},
-	{ "gti32", SUBTILIS_OP_CLASS_REG_REG_REG},
-	{ "gtii32", SUBTILIS_OP_CLASS_REG_REG_I32},
-	{ "ltei32", SUBTILIS_OP_CLASS_REG_REG_REG},
-	{ "lteii32", SUBTILIS_OP_CLASS_REG_REG_I32},
-	{ "lti32", SUBTILIS_OP_CLASS_REG_REG_REG},
-	{ "ltii32", SUBTILIS_OP_CLASS_REG_REG_I32},
-	{ "gtei32", SUBTILIS_OP_CLASS_REG_REG_REG},
-	{ "gteii32", SUBTILIS_OP_CLASS_REG_REG_I32},
-	{ "jmpc", SUBTILIS_OP_CLASS_REG_LABEL_LABEL},
-	{ "jmp", SUBTILIS_OP_CLASS_LABEL},
-	{ "ret", SUBTILIS_OP_CLASS_NONE},
-	{ "reti32", SUBTILIS_OP_CLASS_REG},
-	{ "retii32", SUBTILIS_OP_CLASS_I32},
-	{ "lsli32", SUBTILIS_OP_CLASS_REG_REG_REG },
-	{ "lslii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
-	{ "lsri32", SUBTILIS_OP_CLASS_REG_REG_REG },
-	{ "lsrii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
-	{ "asri32", SUBTILIS_OP_CLASS_REG_REG_REG },
-	{ "asrii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
-};
-
-/*
- * Must match the order of the enumerated types declared in
- * subtilis_op_instr_class_t.
- */
-
-static const subtilis_ir_class_info_t class_details[] = {
-	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER,
-	      SUBTILIS_IR_OPERAND_REGISTER} },
-	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER,
-	      SUBTILIS_IR_OPERAND_I32} },
-	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER,
-	      SUBTILIS_IR_OPERAND_REAL} },
-	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_LABEL,
-	      SUBTILIS_IR_OPERAND_LABEL} },
-	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_I32} },
-	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REAL} },
-	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER} },
-	{1, { SUBTILIS_IR_OPERAND_REGISTER} },
-	{1, { SUBTILIS_IR_OPERAND_LABEL} },
-	{1, { SUBTILIS_IR_OPERAND_LABEL} },
-	{0, { 0} },
-};
-
-/* clang-format on */
-
 static void prv_dump_instr(subtilis_ir_inst_t *instr)
 {
 	if (op_desc[instr->type].cls == SUBTILIS_OP_CLASS_NONE) {
@@ -423,12 +519,20 @@ static void prv_dump_instr(subtilis_ir_inst_t *instr)
 		printf("r%zu, r%zu, r%zu", instr->operands[0].reg,
 		       instr->operands[1].reg, instr->operands[2].reg);
 		break;
+	case SUBTILIS_OP_CLASS_FREG_FREG_FREG:
+		printf("f%zu, f%zu, f%zu", instr->operands[0].reg,
+		       instr->operands[1].reg, instr->operands[2].reg);
+		break;
 	case SUBTILIS_OP_CLASS_REG_REG_I32:
 		printf("r%zu, r%zu, #%d", instr->operands[0].reg,
 		       instr->operands[1].reg, instr->operands[2].integer);
 		break;
-	case SUBTILIS_OP_CLASS_REG_REG_REAL:
-		printf("r%zu, r%zu, #%lf", instr->operands[0].reg,
+	case SUBTILIS_OP_CLASS_FREG_REG_I32:
+		printf("f%zu, r%zu, #%d", instr->operands[0].reg,
+		       instr->operands[1].reg, instr->operands[2].integer);
+		break;
+	case SUBTILIS_OP_CLASS_FREG_FREG_REAL:
+		printf("f%zu, f%zu, #%lf", instr->operands[0].reg,
 		       instr->operands[1].reg, instr->operands[2].real);
 		break;
 	case SUBTILIS_OP_CLASS_REG_LABEL_LABEL:
@@ -439,19 +543,37 @@ static void prv_dump_instr(subtilis_ir_inst_t *instr)
 		printf("r%zu, #%d", instr->operands[0].reg,
 		       instr->operands[1].integer);
 		break;
-	case SUBTILIS_OP_CLASS_REG_REAL:
-		printf("r%zu, #%lf", instr->operands[0].reg,
+	case SUBTILIS_OP_CLASS_FREG_REAL:
+		printf("f%zu, #%lf", instr->operands[0].reg,
 		       instr->operands[1].real);
 		break;
 	case SUBTILIS_OP_CLASS_REG_REG:
 		printf("r%zu, r%zu", instr->operands[0].reg,
 		       instr->operands[1].reg);
 		break;
+	case SUBTILIS_OP_CLASS_FREG_FREG:
+		printf("f%zu, f%zu", instr->operands[0].reg,
+		       instr->operands[1].reg);
+		break;
+	case SUBTILIS_OP_CLASS_REG_FREG:
+		printf("r%zu, f%zu", instr->operands[0].reg,
+		       instr->operands[1].reg);
+		break;
+	case SUBTILIS_OP_CLASS_FREG_REG:
+		printf("f%zu, r%zu", instr->operands[0].reg,
+		       instr->operands[1].reg);
+		break;
 	case SUBTILIS_OP_CLASS_REG:
 		printf("r%zu", instr->operands[0].reg);
 		break;
+	case SUBTILIS_OP_CLASS_FREG:
+		printf("f%zu", instr->operands[0].reg);
+		break;
 	case SUBTILIS_OP_CLASS_I32:
 		printf("%d", instr->operands[0].integer);
+		break;
+	case SUBTILIS_OP_CLASS_REAL:
+		printf("%lf", instr->operands[0].real);
 		break;
 	case SUBTILIS_OP_CLASS_LABEL:
 		printf("r%zu", instr->operands[0].reg);
@@ -468,6 +590,8 @@ static void prv_dump_call(subtilis_op_type_t type, subtilis_ir_call_t *c)
 	printf("\t");
 	if (type == SUBTILIS_OP_CALLI32)
 		printf("r%zu = ", c->reg);
+	else if (type == SUBTILIS_OP_CALLREAL)
+		printf("f%zu = ", c->reg);
 	printf("call %zu", c->proc_id);
 	if (c->arg_count > 0) {
 		printf(" (");
@@ -496,7 +620,8 @@ void subtilis_ir_section_dump(subtilis_ir_section_t *s)
 		else if (s->ops[i]->type == SUBTILIS_OP_LABEL)
 			printf("label_%zu", s->ops[i]->op.label);
 		else if ((s->ops[i]->type == SUBTILIS_OP_CALL) ||
-			 (s->ops[i]->type == SUBTILIS_OP_CALLI32))
+			 (s->ops[i]->type == SUBTILIS_OP_CALLI32) ||
+			 (s->ops[i]->type == SUBTILIS_OP_CALLREAL))
 			prv_dump_call(s->ops[i]->type, &s->ops[i]->op.call);
 		else
 			continue;
@@ -557,10 +682,10 @@ void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t arg_count,
 	prv_add_call(s, SUBTILIS_OP_CALL, arg_count, args, err);
 }
 
-size_t subtilis_ir_section_add_fn_call(subtilis_ir_section_t *s,
-				       size_t arg_count,
-				       subtilis_ir_arg_t *args,
-				       subtilis_error_t *err)
+size_t subtilis_ir_section_add_i32_call(subtilis_ir_section_t *s,
+					size_t arg_count,
+					subtilis_ir_arg_t *args,
+					subtilis_error_t *err)
 {
 	subtilis_ir_op_t *op;
 
@@ -569,6 +694,21 @@ size_t subtilis_ir_section_add_fn_call(subtilis_ir_section_t *s,
 		return 0;
 	op = s->ops[s->len - 1];
 	op->op.call.reg = s->reg_counter++;
+	return op->op.call.reg;
+}
+
+size_t subtilis_ir_section_add_real_call(subtilis_ir_section_t *s,
+					 size_t arg_count,
+					 subtilis_ir_arg_t *args,
+					 subtilis_error_t *err)
+{
+	subtilis_ir_op_t *op;
+
+	prv_add_call(s, SUBTILIS_OP_CALLREAL, arg_count, args, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+	op = s->ops[s->len - 1];
+	op->op.call.reg = s->freg_counter++;
 	return op->op.call.reg;
 }
 
@@ -661,9 +801,16 @@ static const char *prv_parse_operands(const char *rule,
 			}
 			match->op.instr.operands[j].integer = (int32_t)num;
 			match->op.instr.op_match[j] = SUBTILIS_OP_MATCH_FIXED;
-		} else if (operand[0] == 'r') {
-			if (details->classes[j] !=
-			    SUBTILIS_IR_OPERAND_REGISTER) {
+		} else if ((operand[0] == 'r') || (operand[0] == 'f')) {
+			if ((operand[0] == 'r') &&
+			    details->classes[j] !=
+				SUBTILIS_IR_OPERAND_REGISTER) {
+				subtilis_error_set_assertion_failed(err);
+				return NULL;
+			}
+			if ((operand[0] == 'f') &&
+			    details->classes[j] !=
+				SUBTILIS_IR_OPERAND_FREGISTER) {
 				subtilis_error_set_assertion_failed(err);
 				return NULL;
 			}
@@ -725,6 +872,11 @@ static const char *prv_parse_match(const char *rule,
 		return rule;
 	}
 
+	if (!strcmp(instr, "callr")) {
+		match->type = SUBTILIS_OP_CALLREAL;
+		return rule;
+	}
+
 	for (i = 0; i < sizeof(op_desc) / sizeof(subtilis_ir_op_desc_t); i++)
 		if (!strcmp(instr, op_desc[i].name))
 			break;
@@ -776,8 +928,10 @@ typedef struct subtilis_ir_match_pair_t_ subtilis_ir_match_pair_t;
 
 struct subtilis_ir_match_state_t_ {
 	subtilis_ir_match_pair_t regs[MAX_MATCH_WILDCARDS];
+	subtilis_ir_match_pair_t fregs[MAX_MATCH_WILDCARDS];
 	subtilis_ir_match_pair_t labels[MAX_MATCH_WILDCARDS];
 	size_t regs_count;
+	size_t fregs_count;
 	size_t labels_count;
 };
 
@@ -834,6 +988,31 @@ static bool prv_process_floating_reg(subtilis_ir_match_state_t *state,
 	return state->regs[i].value == instr_reg;
 }
 
+static bool prv_process_floating_freg(subtilis_ir_match_state_t *state,
+				      size_t instr_reg, size_t match_reg,
+				      subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_ir_match_pair_t *pair;
+
+	for (i = 0; i < state->fregs_count && state->fregs[i].key != match_reg;
+	     i++)
+		;
+	if (i == state->fregs_count) {
+		if (i == MAX_MATCH_WILDCARDS) {
+			subtilis_error_set_assertion_failed(err);
+			return false;
+		}
+		pair = &state->fregs[i];
+		pair->key = match_reg;
+		pair->value = instr_reg;
+		state->fregs_count++;
+		return true;
+	}
+
+	return state->fregs[i].value == instr_reg;
+}
+
 static bool prv_match_op(subtilis_ir_op_t *op, subtilis_ir_op_match_t *match,
 			 subtilis_ir_match_state_t *state,
 			 subtilis_error_t *err)
@@ -865,6 +1044,7 @@ static bool prv_match_op(subtilis_ir_op_t *op, subtilis_ir_op_match_t *match,
 			continue;
 		if (match_instr->op_match[j] == SUBTILIS_OP_MATCH_FIXED) {
 			switch (details->classes[j]) {
+			case SUBTILIS_IR_OPERAND_FREGISTER:
 			case SUBTILIS_IR_OPERAND_REGISTER:
 				if (match_instr->operands[j].reg ==
 				    instr->operands[j].reg)
@@ -889,6 +1069,12 @@ static bool prv_match_op(subtilis_ir_op_t *op, subtilis_ir_op_match_t *match,
 		switch (details->classes[j]) {
 		case SUBTILIS_IR_OPERAND_REGISTER:
 			if (prv_process_floating_reg(
+				state, instr->operands[j].reg,
+				match_instr->operands[j].reg, err))
+				continue;
+			break;
+		case SUBTILIS_IR_OPERAND_FREGISTER:
+			if (prv_process_floating_freg(
 				state, instr->operands[j].reg,
 				match_instr->operands[j].reg, err))
 				continue;
@@ -920,6 +1106,12 @@ void subtilis_ir_match(subtilis_ir_section_t *s, subtilis_ir_rule_t *rules,
 	subtilis_ir_op_t *op;
 
 	for (pc = 0; pc < s->len;) {
+		op = s->ops[pc];
+		if ((op->type == SUBTILIS_OP_INSTR) &&
+		    (op->op.instr.type == SUBTILIS_OP_INSTR_NOP)) {
+			pc++;
+			continue;
+		}
 		for (i = 0; i < rule_count; i++) {
 			state.regs_count = 0;
 			state.labels_count = 0;

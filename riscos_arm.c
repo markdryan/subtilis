@@ -337,7 +337,8 @@ subtilis_riscos_generate(
 cleanup:
 
 	printf("\n\n");
-	subtilis_arm_prog_dump(arm_p);
+	if (arm_p)
+		subtilis_arm_prog_dump(arm_p);
 
 	subtilis_arm_prog_delete(arm_p);
 	free(parsed);
