@@ -574,8 +574,10 @@ static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	}
 
 	s = vm->p->sections[section_index];
-	if (s->ftype != SUBTILIS_BUILTINS_MAX)
-		return prv_handle_builtin(vm, s->ftype, call, err);
+	if (s->ftype != SUBTILIS_BUILTINS_MAX) {
+		prv_handle_builtin(vm, s->ftype, call, err);
+		return;
+	}
 
 	if (s->reg_counter > vm->max_regs) {
 		new_regs =
