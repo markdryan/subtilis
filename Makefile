@@ -75,6 +75,9 @@ clean:
 check: unit_tests
 	./unit_tests
 
+-include $(ARM:%.c=%.d)
 -include $(COMPILER:%.c=%.d)
 -include $(COMMON:%.c=%.d)
+-include $(INTER:%.c=%.d)
+-include $(RUNARM:%.c=%.d)
 -include $(TESTS:%.c=%.d)
