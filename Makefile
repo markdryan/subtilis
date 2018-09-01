@@ -24,7 +24,8 @@ ARM =\
 	arm_reg_alloc.c \
 	arm_encode.c \
 	arm_link.c \
-	arm2_div.c
+	arm2_div.c \
+	arm_dump.c
 
 COMPILER =\
 	compiler.c
@@ -38,7 +39,8 @@ RUNARM =\
 	arm_vm.c \
 	arm_disass.c \
 	arm_core.c \
-	arm_walker.c
+	arm_walker.c \
+	arm_dump.c
 
 TESTS =\
 	unit_tests.c \
