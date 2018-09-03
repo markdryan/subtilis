@@ -1028,6 +1028,8 @@ static bool prv_match_op(subtilis_ir_op_t *op, subtilis_ir_op_match_t *match,
 		return true;
 	if (op->type == SUBTILIS_OP_CALLI32)
 		return true;
+	if (op->type == SUBTILIS_OP_CALLREAL)
+		return true;
 	if (op->type == SUBTILIS_OP_LABEL)
 		return prv_process_floating_label(state, op->op.label,
 						  match->op.label.label, err);

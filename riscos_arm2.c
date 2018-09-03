@@ -17,6 +17,7 @@
 #include "riscos_arm2.h"
 #include "arm_core.h"
 #include "arm_gen.h"
+#include "fpa_gen.h"
 #include "riscos_arm.h"
 
 /* clang-format off */
@@ -74,6 +75,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 		 subtilis_arm_gen_jmpc},
 	{"call\n", subtilis_arm_gen_call},
 	{"calli32\n", subtilis_arm_gen_calli32},
+	{"callr\n", subtilis_fpa_gen_callr},
 	{"ret\n", subtilis_arm_gen_ret},
 	{"reti32\n", subtilis_arm_gen_reti32},
 	{"retii32\n", subtilis_arm_gen_retii32},
@@ -110,12 +112,29 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"andi32 *, *, *\n", subtilis_arm_gen_andi32},
 	{"ori32 *, *, *\n", subtilis_arm_gen_ori32},
 	{"eori32 *, *, *\n", subtilis_arm_gen_eori32},
-	{ "lsli32 *, *, *\n", subtilis_arm_gen_lsli32},
-	{ "lslii32 *, *, *\n", subtilis_arm_gen_lslii32},
-	{ "lsri32 *, *, *\n", subtilis_arm_gen_lsri32},
-	{ "lsrii32 *, *, *\n", subtilis_arm_gen_lsrii32},
-	{ "asri32 *, *, *\n", subtilis_arm_gen_asri32},
-	{ "asrii32 *, *, *\n", subtilis_arm_gen_asrii32},
+	{"lsli32 *, *, *\n", subtilis_arm_gen_lsli32},
+	{"lslii32 *, *, *\n", subtilis_arm_gen_lslii32},
+	{"lsri32 *, *, *\n", subtilis_arm_gen_lsri32},
+	{"lsrii32 *, *, *\n", subtilis_arm_gen_lsrii32},
+	{"asri32 *, *, *\n", subtilis_arm_gen_asri32},
+	{"asrii32 *, *, *\n", subtilis_arm_gen_asrii32},
+	{"movfp *, *\n", subtilis_fpa_gen_movr},
+	{"movir *, *\n", subtilis_fpa_gen_movir},
+	{"movfpi32 *, *\n", subtilis_fpa_gen_movri32},
+	{"movi32fp *, *\n", subtilis_fpa_gen_movi32r},
+	{"addr *, *, *\n", subtilis_fpa_gen_addr},
+	{"addir *, *, *\n", subtilis_fpa_gen_addir},
+	{"subr *, *, *\n", subtilis_fpa_gen_subr},
+	{"subir *, *, *\n", subtilis_fpa_gen_subir},
+	{"rsubir *, *, *\n", subtilis_fpa_gen_rsubir},
+	{"mulr *, *, *\n", subtilis_fpa_gen_mulr},
+	{"mulir *, *, *\n", subtilis_fpa_gen_mulir},
+	{"divr *, *, *\n", subtilis_fpa_gen_divr},
+	{"divir *, *, *\n", subtilis_fpa_gen_divir},
+	{"rdivir *, *, *\n", subtilis_fpa_gen_rdivir},
+	{"storeor *, *, *", subtilis_fpa_gen_storeor},
+	{"loador *, *, *", subtilis_fpa_gen_loador},
+
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

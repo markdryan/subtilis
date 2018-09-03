@@ -298,7 +298,8 @@ subtilis_riscos_generate(
 
 	s = p->sections[0];
 	arm_s = subtilis_arm_prog_section_new(arm_p, s->type, s->reg_counter,
-					      s->label_counter, s->locals, err);
+					      s->freg_counter, s->label_counter,
+					      s->locals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 	prv_add_preamble(arm_s, globals, err);
@@ -314,8 +315,8 @@ subtilis_riscos_generate(
 	for (i = 1; i < p->num_sections; i++) {
 		s = p->sections[i];
 		arm_s = subtilis_arm_prog_section_new(
-		    arm_p, s->type, s->reg_counter, s->label_counter, s->locals,
-		    err);
+		    arm_p, s->type, s->reg_counter, s->freg_counter,
+		    s->label_counter, s->locals, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		if (s->ftype != SUBTILIS_BUILTINS_MAX)

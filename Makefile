@@ -25,7 +25,9 @@ ARM =\
 	arm_encode.c \
 	arm_link.c \
 	arm2_div.c \
-	arm_dump.c
+	arm_dump.c \
+	fpa.c \
+	fpa_gen.c
 
 COMPILER =\
 	compiler.c
@@ -54,7 +56,8 @@ TESTS =\
 	arm_vm.c \
 	arm_test.c \
 	arm_reg_alloc_test.c \
-	arm_disass.c
+	arm_disass.c \
+	fpa_test.c
 
 CFLAGS ?= -O3
 CFLAGS += -Wall -Werror -MMD

@@ -73,7 +73,7 @@ static void prv_init_encode_ud(subtilis_arm_encode_ud_t *ud,
 		arm_s = arm_p->sections[i];
 		if (arm_s->label_counter > max_label_offsets)
 			max_label_offsets = arm_s->label_counter;
-		constants += arm_s->constant_count;
+		constants += arm_s->constants.ui32_count;
 	}
 
 	ud->label_offsets = malloc(sizeof(size_t) * max_label_offsets);
@@ -565,10 +565,11 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	for (i = 0; i < arm_s->constant_count; i++) {
-		ud->label_offsets[arm_s->constants[i].label] =
+	for (i = 0; i < arm_s->constants.ui32_count; i++) {
+		ud->label_offsets[arm_s->constants.ui32[i].label] =
 		    ud->words_written;
-		ud->code[ud->words_written++] = arm_s->constants[i].integer;
+		ud->code[ud->words_written++] =
+		    arm_s->constants.ui32[i].integer;
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}

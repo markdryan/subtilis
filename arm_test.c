@@ -340,7 +340,8 @@ static int prv_test_encode(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_s = subtilis_arm_prog_section_new(arm_p, stype, 16, 0, 0, &err);
+	/* TODO: Figure out why 16 is being passed here for reg_counter */
+	arm_s = subtilis_arm_prog_section_new(arm_p, stype, 16, 0, 0, 0, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

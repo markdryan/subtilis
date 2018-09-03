@@ -59,6 +59,30 @@ struct subtlis_arm_walker_t_ {
 			subtilis_arm_instr_type_t type,
 			subtilis_arm_ldrc_instr_t *instr,
 			subtilis_error_t *err);
+	void (*fpa_data_monadic_fn)(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_fpa_data_instr_t *instr,
+				    subtilis_error_t *err);
+	void (*fpa_data_dyadic_fn)(void *user_data, subtilis_arm_op_t *op,
+				   subtilis_arm_instr_type_t type,
+				   subtilis_fpa_data_instr_t *instr,
+				   subtilis_error_t *err);
+	void (*fpa_stran_fn)(void *user_data, subtilis_arm_op_t *op,
+			     subtilis_arm_instr_type_t type,
+			     subtilis_fpa_stran_instr_t *instr,
+			     subtilis_error_t *err);
+	void (*fpa_tran_fn)(void *user_data, subtilis_arm_op_t *op,
+			    subtilis_arm_instr_type_t type,
+			    subtilis_fpa_tran_instr_t *instr,
+			    subtilis_error_t *err);
+	void (*fpa_cmp_fn)(void *user_data, subtilis_arm_op_t *op,
+			   subtilis_arm_instr_type_t type,
+			   subtilis_fpa_cmp_instr_t *instr,
+			   subtilis_error_t *err);
+	void (*fpa_ldrc_fn)(void *user_data, subtilis_arm_op_t *op,
+			    subtilis_arm_instr_type_t type,
+			    subtilis_fpa_ldrc_instr_t *instr,
+			    subtilis_error_t *err);
 };
 
 void subtilis_arm_walk(subtilis_arm_section_t *arm_s,

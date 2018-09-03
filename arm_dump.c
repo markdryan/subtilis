@@ -39,31 +39,69 @@ static const char *const ccode_desc[] = {
 };
 
 static const char *const instr_desc[] = {
-	"AND", // SUBTILIS_ARM_INSTR_AND
-	"EOR", // SUBTILIS_ARM_INSTR_EOR
-	"SUB", // SUBTILIS_ARM_INSTR_SUB
-	"RSB", // SUBTILIS_ARM_INSTR_RSB
-	"ADD", // SUBTILIS_ARM_INSTR_ADD
-	"ADC", // SUBTILIS_ARM_INSTR_ADC
-	"SBC", // SUBTILIS_ARM_INSTR_SBC
-	"RSC", // SUBTILIS_ARM_INSTR_RSC
-	"TST", // SUBTILIS_ARM_INSTR_TST
-	"TEQ", // SUBTILIS_ARM_INSTR_TEQ
-	"CMP", // SUBTILIS_ARM_INSTR_CMP
-	"CMN", // SUBTILIS_ARM_INSTR_CMN
-	"ORR", // SUBTILIS_ARM_INSTR_ORR
-	"MOV", // SUBTILIS_ARM_INSTR_MOV
-	"BIC", // SUBTILIS_ARM_INSTR_BIC
-	"MVN", // SUBTILIS_ARM_INSTR_MVN
-	"MUL", // SUBTILIS_ARM_INSTR_MUL
-	"MLA", // SUBTILIS_ARM_INSTR_MLA
-	"LDR", // SUBTILIS_ARM_INSTR_LDR
-	"STR", // SUBTILIS_ARM_INSTR_STR
-	"LDM", // SUBTILIS_ARM_INSTR_LDM
-	"STM", // SUBTILIS_ARM_INSTR_STM
-	"B",   // SUBTILIS_ARM_INSTR_B
-	"SWI", // SUBTILIS_ARM_INSTR_SWI
-	"LDR", //SUBTILIS_ARM_INSTR_LDRC
+	"AND",  // SUBTILIS_ARM_INSTR_AND
+	"EOR",  // SUBTILIS_ARM_INSTR_EOR
+	"SUB",  // SUBTILIS_ARM_INSTR_SUB
+	"RSB",  // SUBTILIS_ARM_INSTR_RSB
+	"ADD",  // SUBTILIS_ARM_INSTR_ADD
+	"ADC",  // SUBTILIS_ARM_INSTR_ADC
+	"SBC",  // SUBTILIS_ARM_INSTR_SBC
+	"RSC",  // SUBTILIS_ARM_INSTR_RSC
+	"TST",  // SUBTILIS_ARM_INSTR_TST
+	"TEQ",  // SUBTILIS_ARM_INSTR_TEQ
+	"CMP",  // SUBTILIS_ARM_INSTR_CMP
+	"CMN",  // SUBTILIS_ARM_INSTR_CMN
+	"ORR",  // SUBTILIS_ARM_INSTR_ORR
+	"MOV",  // SUBTILIS_ARM_INSTR_MOV
+	"BIC",  // SUBTILIS_ARM_INSTR_BIC
+	"MVN",  // SUBTILIS_ARM_INSTR_MVN
+	"MUL",  // SUBTILIS_ARM_INSTR_MUL
+	"MLA",  // SUBTILIS_ARM_INSTR_MLA
+	"LDR",  // SUBTILIS_ARM_INSTR_LDR
+	"STR",  // SUBTILIS_ARM_INSTR_STR
+	"LDM",  // SUBTILIS_ARM_INSTR_LDM
+	"STM",  // SUBTILIS_ARM_INSTR_STM
+	"B",    // SUBTILIS_ARM_INSTR_B
+	"SWI",  // SUBTILIS_ARM_INSTR_SWI
+	"LDR",  // SUBTILIS_ARM_INSTR_LDRC
+	"LDF",  // SUBTILIS_FPA_INSTR_LDF
+	"STF",  // SUBTILIS_FPA_INSTR_STF
+	"LDR",  // SUBTILIS_FPA_INSTR_LDRC
+	"MVF",  // SUBTILIS_FPA_INSTR_MVF
+	"MNF",  // SUBTILIS_FPA_INSTR_MVF
+	"ADF",  // SUBTILIS_FPA_INSTR_ADF
+	"MUF",  // SUBTILIS_FPA_INSTR_MUF
+	"SUF",  // SUBTILIS_FPA_INSTR_SUF
+	"RSF",  // SUBTILIS_FPA_INSTR_RSF
+	"DVF",  // SUBTILIS_FPA_INSTR_DVF
+	"RDF",  // SUBTILIS_FPA_INSTR_RDF
+	"POW",  // SUBTILIS_FPA_INSTR_POW
+	"RPW",  // SUBTILIS_FPA_INSTR_RPW
+	"RMF",  // SUBTILIS_FPA_INSTR_RMF
+	"FML",  // SUBTILIS_FPA_INSTR_FML
+	"FDV",  // SUBTILIS_FPA_INSTR_FDV
+	"FRD",  // SUBTILIS_FPA_INSTR_FRD
+	"POL",  // SUBTILIS_FPA_INSTR_POL
+	"ABS",  // SUBTILIS_FPA_INSTR_ABS
+	"RND",  // SUBTILIS_FPA_INSTR_RND
+	"SQT",  // SUBTILIS_FPA_INSTR_SQT
+	"LOG",  // SUBTILIS_FPA_INSTR_LOG
+	"LGN",  // SUBTILIS_FPA_INSTR_LGN
+	"EXP",  // SUBTILIS_FPA_INSTR_EXP
+	"SIN",  // SUBTILIS_FPA_INSTR_SIN
+	"COS",  // SUBTILIS_FPA_INSTR_COS
+	"TAN",  // SUBTILIS_FPA_INSTR_TAN
+	"ASN",  // SUBTILIS_FPA_INSTR_ASN
+	"ACS",  // SUBTILIS_FPA_INSTR_ACS
+	"ATN",  // SUBTILIS_FPA_INSTR_ATN
+	"URD",  // SUBTILIS_FPA_INSTR_URD
+	"NRM",  // SUBTILIS_FPA_INSTR_NRM
+	"FLT",  // SUBTILIS_FPA_INSTR_FLT
+	"FIX",  // SUBTILIS_FPA_INSTR_FIX
+	"CMF",  // SUBTILIS_FPA_INSTR_CMF
+	"CNF",  // SUBTILIS_FPA_INSTR_CNF
+	"CMFE", // SUBTILIS_FPA_INSTR_CMFE
+	"CNFE", // SUBTILIS_FPA_INSTR_CNFE
 };
 
 static const char *const shift_desc[] = {
@@ -259,6 +297,177 @@ static void prv_dump_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("\n");
 }
 
+static const char *prv_fpa_size(size_t size)
+{
+	switch (size) {
+	case 4:
+		return "s";
+	case 10:
+		return "e";
+	}
+
+	return "d";
+}
+
+static double prv_extract_imm(subtilis_fpa_op2_t op2)
+{
+	double imm = 0.0;
+
+	switch (op2.imm) {
+	case 0x8:
+		imm = 0.0;
+		break;
+	case 0x9:
+		imm = 1.0;
+		break;
+	case 0xA:
+		imm = 2.0;
+		break;
+	case 0xB:
+		imm = 3.0;
+		break;
+	case 0xC:
+		imm = 4.0;
+		break;
+	case 0xD:
+		imm = 5.0;
+		break;
+	case 0xE:
+		imm = 0.5;
+		break;
+	case 0xF:
+		imm = 10.0;
+		break;
+	default:
+		break;
+	}
+
+	return imm;
+}
+
+static void prv_dump_fpa_data(void *user_data, bool dyadic,
+			      subtilis_arm_op_t *op,
+			      subtilis_arm_instr_type_t type,
+			      subtilis_fpa_data_instr_t *instr,
+			      subtilis_error_t *err)
+{
+	const char *rounding = "";
+
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf("%s", prv_fpa_size(instr->size));
+	switch (instr->rounding) {
+	case SUBTILIS_FPA_ROUNDING_NEAREST:
+		break;
+	case SUBTILIS_FPA_ROUNDING_PLUS_INFINITY:
+		rounding = "P";
+		break;
+	case SUBTILIS_FPA_ROUNDING_MINUS_INFINITY:
+		rounding = "M";
+		break;
+	case SUBTILIS_FPA_ROUNDING_ZERO:
+		rounding = "Z";
+		break;
+	}
+	printf("%s F%zu, ", rounding, instr->dest.num);
+	if (dyadic)
+		printf("F%zu, ", instr->op1.num);
+	if (!instr->immediate)
+		printf("F%zu", instr->op2.reg.num);
+	else
+		printf("#%f", prv_extract_imm(instr->op2));
+	printf("\n");
+}
+
+static void prv_dump_fpa_data_dyadic_instr(void *user_data,
+					   subtilis_arm_op_t *op,
+					   subtilis_arm_instr_type_t type,
+					   subtilis_fpa_data_instr_t *instr,
+					   subtilis_error_t *err)
+{
+	prv_dump_fpa_data(user_data, true, op, type, instr, err);
+}
+
+static void prv_dump_fpa_data_monadic_instr(void *user_data,
+					    subtilis_arm_op_t *op,
+					    subtilis_arm_instr_type_t type,
+					    subtilis_fpa_data_instr_t *instr,
+					    subtilis_error_t *err)
+{
+	prv_dump_fpa_data(user_data, false, op, type, instr, err);
+}
+
+static void prv_dump_fpa_stran_instr(void *user_data, subtilis_arm_op_t *op,
+				     subtilis_arm_instr_type_t type,
+				     subtilis_fpa_stran_instr_t *instr,
+				     subtilis_error_t *err)
+{
+	const char *sub = instr->subtract ? "-" : "";
+
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf("%s", prv_fpa_size(instr->size));
+	printf(" F%zu", instr->dest.num);
+	if (instr->pre_indexed) {
+		printf(", [R%zu, %s%d]", instr->base.num, sub, instr->offset);
+		if (instr->write_back)
+			printf("!");
+	} else {
+		printf(", [R%zu], %s%d", instr->base.num, sub, instr->offset);
+	}
+	printf("\n");
+}
+
+static void prv_dump_fpa_tran_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_fpa_tran_instr_t *instr,
+				    subtilis_error_t *err)
+{
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf("%s", prv_fpa_size(instr->size));
+	if (type == SUBTILIS_FPA_INSTR_FLT) {
+		printf(" F%zu, ", instr->dest.num);
+		if (instr->immediate)
+			printf("#%f", prv_extract_imm(instr->op2));
+		else
+			printf("R%zu", instr->op2.reg.num);
+	} else {
+		printf(" R%zu, F%zu", instr->dest.num, instr->op2.reg.num);
+	}
+	printf("\n");
+}
+
+static void prv_dump_fpa_cmp_instr(void *user_data, subtilis_arm_op_t *op,
+				   subtilis_arm_instr_type_t type,
+				   subtilis_fpa_cmp_instr_t *instr,
+				   subtilis_error_t *err)
+{
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf(" F%zu", instr->dest.num);
+	if (instr->immediate)
+		printf("#%f", prv_extract_imm(instr->op2));
+	else
+		printf(" F%zu", instr->op2.reg.num);
+	printf("\n");
+}
+
+static void prv_dump_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_fpa_ldrc_instr_t *instr,
+				    subtilis_error_t *err)
+{
+	printf("\t%s%s", instr_desc[type], prv_fpa_size(instr->size));
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf(" F%zu, label_%zu\n", instr->dest.num, instr->label);
+}
+
 static void prv_dump_label(void *user_data, subtilis_arm_op_t *op, size_t label,
 			   subtilis_error_t *err)
 {
@@ -285,12 +494,22 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 	walker.br_fn = prv_dump_br_instr;
 	walker.swi_fn = prv_dump_swi_instr;
 	walker.ldrc_fn = prv_dump_ldrc_instr;
+	walker.fpa_data_monadic_fn = prv_dump_fpa_data_monadic_instr;
+	walker.fpa_data_dyadic_fn = prv_dump_fpa_data_dyadic_instr;
+	walker.fpa_stran_fn = prv_dump_fpa_stran_instr;
+	walker.fpa_tran_fn = prv_dump_fpa_tran_instr;
+	walker.fpa_cmp_fn = prv_dump_fpa_cmp_instr;
+	walker.fpa_ldrc_fn = prv_dump_fpa_ldrc_instr;
 
 	subtilis_arm_walk(s, &walker, &err);
 
-	for (i = 0; i < s->constant_count; i++) {
-		printf(".label_%zu\n", s->constants[i].label);
-		printf("\tEQUD &%x\n", s->constants[i].integer);
+	for (i = 0; i < s->constants.real_count; i++) {
+		printf(".label_%zu\n", s->constants.real[i].label);
+		printf("\tEQUFD %f\n", s->constants.real[i].real);
+	}
+	for (i = 0; i < s->constants.ui32_count; i++) {
+		printf(".label_%zu\n", s->constants.ui32[i].label);
+		printf("\tEQUD &%x\n", s->constants.ui32[i].integer);
 	}
 }
 

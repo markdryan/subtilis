@@ -96,12 +96,26 @@ size_t subtilis_arm_op_pool_alloc(subtilis_arm_op_pool_t *pool,
 	return new_op;
 }
 
-subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
-						 subtilis_type_section_t *stype,
-						 size_t reg_counter,
-						 size_t label_counter,
-						 size_t locals,
-						 subtilis_error_t *err)
+subtilis_arm_reg_t subtilis_arm_acquire_new_reg(subtilis_arm_section_t *s)
+{
+	return subtilis_arm_ir_to_arm_reg(s->reg_counter++);
+}
+
+subtilis_arm_reg_t subtilis_arm_acquire_new_freg(subtilis_arm_section_t *s)
+{
+	subtilis_arm_reg_t reg;
+
+	reg.num = s->freg_counter++;
+	reg.type = SUBTILIS_ARM_REG_FLOATING;
+
+	return reg;
+}
+
+subtilis_arm_section_t *
+subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
+			 subtilis_type_section_t *stype, size_t reg_counter,
+			 size_t freg_counter, size_t label_counter,
+			 size_t locals, subtilis_error_t *err)
 {
 	subtilis_arm_section_t *s = calloc(1, sizeof(*s));
 
@@ -111,6 +125,7 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 	}
 	s->stype = subtilis_type_section_dup(stype);
 	s->reg_counter = reg_counter;
+	s->freg_counter = freg_counter;
 	s->label_counter = label_counter;
 	s->first_op = SIZE_MAX;
 	s->last_op = SIZE_MAX;
@@ -118,6 +133,12 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 	s->op_pool = pool;
 
 	return s;
+}
+
+static void prv_free_constants(subtilis_arm_constants_t *constants)
+{
+	free(constants->ui32);
+	free(constants->real);
 }
 
 void subtilis_arm_section_delete(subtilis_arm_section_t *s)
@@ -128,7 +149,7 @@ void subtilis_arm_section_delete(subtilis_arm_section_t *s)
 	subtilis_type_section_delete(s->stype);
 	free(s->ret_sites);
 	free(s->call_sites);
-	free(s->constants);
+	prv_free_constants(&s->constants);
 	free(s);
 }
 
@@ -181,6 +202,8 @@ subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 					   subtilis_string_pool_t *string_pool,
 					   subtilis_error_t *err)
 {
+	double dummy_float = 1.0;
+	uint32_t *lower_word = (uint32_t *)((void *)&dummy_float);
 	subtilis_arm_prog_t *arm_p = malloc(sizeof(*arm_p));
 
 	if (!arm_p) {
@@ -199,6 +222,9 @@ subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 	arm_p->op_pool = op_pool;
 	arm_p->string_pool = subtilis_string_pool_clone(string_pool);
 
+	/* Slightly weird but on ARM FPA the words of a double are big endian */
+	arm_p->reverse_fpa_consts = (*lower_word) == 0;
+
 	return arm_p;
 
 cleanup:
@@ -206,11 +232,14 @@ cleanup:
 	return NULL;
 }
 
+/* clang-format off */
 subtilis_arm_section_t *
 subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 			      subtilis_type_section_t *stype,
-			      size_t reg_counter, size_t label_counter,
-			      size_t locals, subtilis_error_t *err)
+			      size_t reg_counter, size_t freg_counter,
+			      size_t label_counter, size_t locals,
+			      subtilis_error_t *err)
+/* clang-format on */
 {
 	subtilis_arm_section_t *arm_s;
 
@@ -219,8 +248,9 @@ subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 		return NULL;
 	}
 
-	arm_s = subtilis_arm_section_new(prog->op_pool, stype, reg_counter,
-					 label_counter, locals, err);
+	arm_s =
+	    subtilis_arm_section_new(prog->op_pool, stype, reg_counter,
+				     freg_counter, label_counter, locals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -271,11 +301,6 @@ subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg)
 	}
 
 	return arm_reg;
-}
-
-static subtilis_arm_reg_t prv_acquire_new_reg(subtilis_arm_section_t *s)
-{
-	return subtilis_arm_ir_to_arm_reg(s->reg_counter++);
 }
 
 static subtilis_arm_op_t *prv_append_op(subtilis_arm_section_t *s,
@@ -346,25 +371,26 @@ void subtilis_arm_section_add_label(subtilis_arm_section_t *s, size_t label,
 	s->label_counter++;
 }
 
-static void prv_add_constant(subtilis_arm_section_t *s, size_t label,
-			     uint32_t num, subtilis_error_t *err)
+static void prv_add_ui32_constant(subtilis_arm_section_t *s, size_t label,
+				  uint32_t num, subtilis_error_t *err)
 {
-	subtilis_arm_constant_t *c;
-	subtilis_arm_constant_t *new_constants;
+	subtilis_arm_ui32_constant_t *c;
+	subtilis_arm_ui32_constant_t *new_constants;
 	size_t new_max;
 
-	if (s->constant_count == s->max_constants) {
-		new_max = s->max_constants + 64;
-		new_constants = realloc(
-		    s->constants, new_max * sizeof(subtilis_arm_constant_t));
+	if (s->constants.ui32_count == s->constants.max_ui32) {
+		new_max = s->constants.max_ui32 + 64;
+		new_constants =
+		    realloc(s->constants.ui32,
+			    new_max * sizeof(subtilis_arm_ui32_constant_t));
 		if (!new_constants) {
 			subtilis_error_set_oom(err);
 			return;
 		}
-		s->max_constants = new_max;
-		s->constants = new_constants;
+		s->constants.max_ui32 = new_max;
+		s->constants.ui32 = new_constants;
 	}
-	c = &s->constants[s->constant_count++];
+	c = &s->constants.ui32[s->constants.ui32_count++];
 	c->integer = num;
 	c->label = label;
 }
@@ -553,7 +579,7 @@ static size_t prv_add_data_imm_ldr(subtilis_arm_section_t *s,
 	subtilis_arm_instr_t *instr;
 	size_t label = s->label_counter++;
 
-	prv_add_constant(s, label, (uint32_t)op2, err);
+	prv_add_ui32_constant(s, label, (uint32_t)op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
@@ -578,7 +604,7 @@ static size_t prv_insert_data_imm_ldr(subtilis_arm_section_t *s,
 	subtilis_arm_instr_t *instr;
 	size_t label = s->label_counter++;
 
-	prv_add_constant(s, label, (uint32_t)op2, err);
+	prv_add_ui32_constant(s, label, (uint32_t)op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
@@ -606,7 +632,7 @@ size_t subtilis_add_data_imm_ldr_datai(subtilis_arm_section_t *s,
 	subtilis_arm_reg_t ldr_dest;
 	size_t label;
 
-	ldr_dest = prv_acquire_new_reg(s);
+	ldr_dest = subtilis_arm_acquire_new_reg(s);
 
 	label = prv_add_data_imm_ldr(s, ccode, ldr_dest, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -715,7 +741,7 @@ void subtilis_arm_add_rsub_imm(subtilis_arm_section_t *s,
 	    !(status && (ccode != SUBTILIS_ARM_CCODE_AL))) {
 		can_encode = subtilis_arm_encode_imm(-op2, &encoded);
 		if (can_encode) {
-			neg_dest = prv_acquire_new_reg(s);
+			neg_dest = subtilis_arm_acquire_new_reg(s);
 			subtilis_arm_add_sub_imm(s, ccode, false, neg_dest, op1,
 						 0, err);
 			if (err->type != SUBTILIS_ERROR_OK)
@@ -759,7 +785,7 @@ void subtilis_arm_add_mul_imm(subtilis_arm_section_t *s,
 		return;
 	}
 
-	mov_dest = prv_acquire_new_reg(s);
+	mov_dest = subtilis_arm_acquire_new_reg(s);
 	subtilis_arm_add_mov_imm(s, ccode, false, mov_dest, rs, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -822,7 +848,7 @@ void subtilis_arm_add_data_imm(subtilis_arm_section_t *s,
 	subtilis_arm_op2_t data_opt2;
 
 	if (!subtilis_arm_encode_imm(op2, &encoded)) {
-		mov_dest = prv_acquire_new_reg(s);
+		mov_dest = subtilis_arm_acquire_new_reg(s);
 		subtilis_arm_add_mov_imm(s, ccode, false, mov_dest, op2, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
@@ -933,7 +959,7 @@ void subtilis_arm_add_stran_imm(subtilis_arm_section_t *s,
 	}
 
 	if (offset > 4095) {
-		op2.op.reg = prv_acquire_new_reg(s);
+		op2.op.reg = subtilis_arm_acquire_new_reg(s);
 		(void)prv_add_data_imm_ldr(s, ccode, op2.op.reg, offset, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;

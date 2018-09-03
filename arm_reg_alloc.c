@@ -308,6 +308,50 @@ static void prv_dist_label(void *user_data, subtilis_arm_op_t *op, size_t label,
 	ud->last_used++;
 }
 
+static void prv_dist_fpa_data_dyadic_instr(void *user_data,
+					   subtilis_arm_op_t *op,
+					   subtilis_arm_instr_type_t type,
+					   subtilis_fpa_data_instr_t *instr,
+					   subtilis_error_t *err)
+{
+}
+
+static void prv_dist_fpa_data_monadic_instr(void *user_data,
+					    subtilis_arm_op_t *op,
+					    subtilis_arm_instr_type_t type,
+					    subtilis_fpa_data_instr_t *instr,
+					    subtilis_error_t *err)
+{
+}
+
+static void prv_dist_fpa_stran_instr(void *user_data, subtilis_arm_op_t *op,
+				     subtilis_arm_instr_type_t type,
+				     subtilis_fpa_stran_instr_t *instr,
+				     subtilis_error_t *err)
+{
+}
+
+static void prv_dist_fpa_tran_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_fpa_tran_instr_t *instr,
+				    subtilis_error_t *err)
+{
+}
+
+static void prv_dist_fpa_cmp_instr(void *user_data, subtilis_arm_op_t *op,
+				   subtilis_arm_instr_type_t type,
+				   subtilis_fpa_cmp_instr_t *instr,
+				   subtilis_error_t *err)
+{
+}
+
+static void prv_dist_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_fpa_ldrc_instr_t *instr,
+				    subtilis_error_t *err)
+{
+}
+
 static void prv_init_arm_reg_ud(subtilis_arm_reg_ud_t *ud,
 				subtilis_arm_section_t *arm_s,
 				subtilis_error_t *err)
@@ -330,6 +374,12 @@ static void prv_init_arm_reg_ud(subtilis_arm_reg_ud_t *ud,
 	ud->dist_walker.br_fn = prv_dist_br_instr;
 	ud->dist_walker.swi_fn = prv_dist_swi_instr;
 	ud->dist_walker.ldrc_fn = prv_dist_ldrc_instr;
+	ud->dist_walker.fpa_data_monadic_fn = prv_dist_fpa_data_monadic_instr;
+	ud->dist_walker.fpa_data_dyadic_fn = prv_dist_fpa_data_dyadic_instr;
+	ud->dist_walker.fpa_stran_fn = prv_dist_fpa_stran_instr;
+	ud->dist_walker.fpa_tran_fn = prv_dist_fpa_tran_instr;
+	ud->dist_walker.fpa_cmp_fn = prv_dist_fpa_cmp_instr;
+	ud->dist_walker.fpa_ldrc_fn = prv_dist_fpa_ldrc_instr;
 }
 
 static int prv_calculate_dist(subtilis_arm_reg_ud_t *ud, size_t reg_num,
@@ -986,6 +1036,50 @@ static void prv_alloc_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	ud->instr_count++;
 }
 
+static void prv_alloc_fpa_data_dyadic_instr(void *user_data,
+					    subtilis_arm_op_t *op,
+					    subtilis_arm_instr_type_t type,
+					    subtilis_fpa_data_instr_t *instr,
+					    subtilis_error_t *err)
+{
+}
+
+static void prv_alloc_fpa_data_monadic_instr(void *user_data,
+					     subtilis_arm_op_t *op,
+					     subtilis_arm_instr_type_t type,
+					     subtilis_fpa_data_instr_t *instr,
+					     subtilis_error_t *err)
+{
+}
+
+static void prv_alloc_fpa_stran_instr(void *user_data, subtilis_arm_op_t *op,
+				      subtilis_arm_instr_type_t type,
+				      subtilis_fpa_stran_instr_t *instr,
+				      subtilis_error_t *err)
+{
+}
+
+static void prv_alloc_fpa_tran_instr(void *user_data, subtilis_arm_op_t *op,
+				     subtilis_arm_instr_type_t type,
+				     subtilis_fpa_tran_instr_t *instr,
+				     subtilis_error_t *err)
+{
+}
+
+static void prv_alloc_fpa_cmp_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_fpa_cmp_instr_t *instr,
+				    subtilis_error_t *err)
+{
+}
+
+static void prv_alloc_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
+				     subtilis_arm_instr_type_t type,
+				     subtilis_fpa_ldrc_instr_t *instr,
+				     subtilis_error_t *err)
+{
+}
+
 size_t subtilis_arm_reg_alloc(subtilis_arm_section_t *arm_s,
 			      subtilis_error_t *err)
 {
@@ -1008,6 +1102,12 @@ size_t subtilis_arm_reg_alloc(subtilis_arm_section_t *arm_s,
 	walker.br_fn = prv_alloc_br_instr;
 	walker.swi_fn = prv_alloc_swi_instr;
 	walker.ldrc_fn = prv_alloc_ldrc_instr;
+	walker.fpa_data_monadic_fn = prv_alloc_fpa_data_monadic_instr;
+	walker.fpa_data_dyadic_fn = prv_alloc_fpa_data_dyadic_instr;
+	walker.fpa_stran_fn = prv_alloc_fpa_stran_instr;
+	walker.fpa_tran_fn = prv_alloc_fpa_tran_instr;
+	walker.fpa_cmp_fn = prv_alloc_fpa_cmp_instr;
+	walker.fpa_ldrc_fn = prv_alloc_fpa_ldrc_instr;
 
 	subtilis_arm_walk(arm_s, &walker, err);
 
