@@ -79,6 +79,8 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"ret\n", subtilis_arm_gen_ret},
 	{"reti32\n", subtilis_arm_gen_reti32},
 	{"retii32\n", subtilis_arm_gen_retii32},
+	{"retr\n", subtilis_arm_gen_retr},
+	{"retir\n", subtilis_arm_gen_retir},
 	{"gtii32 *, *, *\n", subtilis_arm_gen_gtii32},
 	{"ltii32 *, *, *\n", subtilis_arm_gen_ltii32},
 	{"gteii32 *, *, *\n", subtilis_arm_gen_gteii32},

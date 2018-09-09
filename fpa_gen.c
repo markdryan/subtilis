@@ -253,3 +253,41 @@ void subtilis_fpa_gen_loador(subtilis_ir_section_t *s, size_t start,
 {
 	prv_stran_instr(SUBTILIS_FPA_INSTR_LDF, s, start, user_data, err);
 }
+
+void subtilis_arm_gen_retr(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+	subtilis_arm_reg_t op2;
+
+	dest.num = 0;
+	dest.type = SUBTILIS_ARM_REG_FIXED;
+	op2.num = instr->operands[0].reg;
+	op2.type = SUBTILIS_ARM_REG_FLOATING;
+
+	subtilis_fpa_add_mov(arm_s, SUBTILIS_ARM_CCODE_AL,
+			     SUBTILIS_FPA_ROUNDING_NEAREST, dest, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_arm_gen_ret(s, start, user_data, err);
+}
+
+void subtilis_arm_gen_retir(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+	double op2 = instr->operands[0].real;
+
+	dest.num = 0;
+	dest.type = SUBTILIS_ARM_REG_FIXED;
+
+	subtilis_fpa_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL,
+				 SUBTILIS_FPA_ROUNDING_NEAREST, dest, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_arm_gen_ret(s, start, user_data, err);
+}

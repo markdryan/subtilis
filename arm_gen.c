@@ -587,33 +587,30 @@ void subtilis_arm_gen_andi32(subtilis_ir_section_t *s, size_t start,
 			SUBTILIS_ARM_CCODE_AL, err);
 }
 
-void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
-			   void *user_data, subtilis_error_t *err)
+static void prv_stack_args(subtilis_arm_section_t *arm_s,
+			   subtilis_ir_call_t *call, subtilis_error_t *err)
 {
-	subtilis_arm_reg_t op0;
-	subtilis_arm_instr_t *instr;
-	subtilis_arm_stran_instr_t *stran;
-	subtilis_arm_br_instr_t *br;
-	size_t i;
 	size_t offset;
+	subtilis_arm_reg_t op0;
 	subtilis_arm_reg_t arg_dest;
 	subtilis_arm_reg_t arg_src;
+	size_t i;
 	size_t reg_num;
-	size_t stm_site;
-	subtilis_ir_call_t *call = &s->ops[start]->op.call;
-	subtilis_arm_section_t *arm_s = user_data;
-	size_t args_left = call->arg_count;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_stran_instr_t *stran;
+	subtilis_fpa_stran_instr_t *fstran;
+	size_t int_args_left = 0;
+	size_t real_args_left = 0;
 
 	op0.type = SUBTILIS_ARM_REG_FIXED;
 	op0.num = 13;
 
-	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_STM,
-			       SUBTILIS_ARM_CCODE_AL, op0, 1 << 14,
-			       SUBTILIS_ARM_MTRAN_FD, true, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	stm_site = arm_s->last_op;
+	for (i = 0; i < call->arg_count; i++) {
+		if (call->args[i].type == SUBTILIS_IR_REG_TYPE_REAL)
+			real_args_left++;
+		else
+			int_args_left++;
+	}
 
 	/* TODO: There should be an argument limit here. */
 
@@ -624,9 +621,11 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 	 */
 
 	offset = 0;
-	for (; args_left > 4; args_left--) {
+	for (i = call->arg_count; i > 0 && int_args_left > 4; i--) {
+		if (call->args[i - 1].type == SUBTILIS_IR_REG_TYPE_REAL)
+			continue;
 		offset += 4;
-		reg_num = call->args[args_left - 1].reg;
+		reg_num = call->args[i - 1].reg;
 		instr = subtilis_arm_section_add_instr(
 		    arm_s, SUBTILIS_ARM_INSTR_STR, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -640,9 +639,33 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 		stran->pre_indexed = true;
 		stran->write_back = false;
 		stran->subtract = true;
+		int_args_left--;
 	}
 
-	for (i = 0; i < args_left; i++) {
+	/* TODO.  Would be better not to have FPA specific code in here */
+
+	for (i = call->arg_count; i > 0 && real_args_left > 4; i--) {
+		if (call->args[i - 1].type != SUBTILIS_IR_REG_TYPE_REAL)
+			continue;
+		offset += 8;
+		reg_num = call->args[i - 1].reg;
+		instr = subtilis_arm_section_add_instr(
+		    arm_s, SUBTILIS_FPA_INSTR_STF, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		fstran = &instr->operands.fpa_stran;
+		fstran->ccode = SUBTILIS_ARM_CCODE_AL;
+		fstran->dest.type = SUBTILIS_ARM_REG_FLOATING;
+		fstran->dest.num = reg_num;
+		fstran->base = op0;
+		fstran->offset = offset;
+		fstran->pre_indexed = true;
+		fstran->write_back = false;
+		fstran->subtract = true;
+		real_args_left--;
+	}
+
+	for (i = 0; i < int_args_left; i++) {
 		arg_dest.type = SUBTILIS_ARM_REG_FIXED;
 		arg_dest.num = i;
 		arg_src = subtilis_arm_ir_to_arm_reg(call->args[i].reg);
@@ -651,6 +674,44 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
+
+	for (i = 0; i < real_args_left; i++) {
+		arg_dest.type = SUBTILIS_ARM_REG_FIXED;
+		arg_dest.num = i;
+		arg_src.num = call->args[i].reg;
+		arg_src.type = SUBTILIS_ARM_REG_FLOATING;
+		subtilis_fpa_add_mov(arm_s, SUBTILIS_ARM_CCODE_AL,
+				     SUBTILIS_FPA_ROUNDING_NEAREST, arg_dest,
+				     arg_src, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+}
+
+void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t op0;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_br_instr_t *br;
+	size_t stm_site;
+	subtilis_ir_call_t *call = &s->ops[start]->op.call;
+	subtilis_arm_section_t *arm_s = user_data;
+
+	op0.type = SUBTILIS_ARM_REG_FIXED;
+	op0.num = 13;
+
+	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_STM,
+			       SUBTILIS_ARM_CCODE_AL, op0, 1 << 14,
+			       SUBTILIS_ARM_MTRAN_FD, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	stm_site = arm_s->last_op;
+
+	prv_stack_args(arm_s, call, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	instr =
 	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);

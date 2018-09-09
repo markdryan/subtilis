@@ -53,5 +53,9 @@ void subtilis_fpa_gen_storeor(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_fpa_gen_loador(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_retr(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_retir(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err);
 
 #endif
