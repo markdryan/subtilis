@@ -16,7 +16,7 @@ typedef struct subtilis_fixed_buffer_t_ subtilis_fixed_buffer_t;
 Patches should pass [checkpath.pl](https://raw.githubusercontent.com/torvalds/linux/master/scripts/checkpatch.pl)  before being submitted, which should be run as follows:
 
 `
-perl checkpatch.pl --no-tree -f --strict --show-types --ignore NEW_TYPEDEFS --ignore PREFER_KERNEL_TYPES --ignore SPLIT_STRING --ignore UNNECESSARY_PARENTHESES --ignore SPDX_LICENSE_TAG --ignore OPEN_ENDED_LINE *.c *.h
+perl checkpatch.pl --no-tree -f --strict --show-types --ignore NEW_TYPEDEFS --ignore PREFER_KERNEL_TYPES --ignore SPLIT_STRING --ignore UNNECESSARY_PARENTHESES --ignore SPDX_LICENSE_TAG --ignore OPEN_ENDED_LINE --ignore BOOL_MEMBER *.c *.h
 `
 
 Code should be formatted using clang-format 3.9.  A .clang-format file is provided in
