@@ -214,6 +214,9 @@ static void prv_dist_fpa_data_dyadic_instr(void *user_data,
 					   subtilis_fpa_data_instr_t *instr,
 					   subtilis_error_t *err)
 {
+	subtilis_dist_data_t *ud = user_data;
+
+	ud->last_used++;
 }
 
 static void prv_dist_fpa_data_monadic_instr(void *user_data,
@@ -222,6 +225,9 @@ static void prv_dist_fpa_data_monadic_instr(void *user_data,
 					    subtilis_fpa_data_instr_t *instr,
 					    subtilis_error_t *err)
 {
+	subtilis_dist_data_t *ud = user_data;
+
+	ud->last_used++;
 }
 
 static void prv_dist_fpa_stran_instr(void *user_data, subtilis_arm_op_t *op,
@@ -229,6 +235,14 @@ static void prv_dist_fpa_stran_instr(void *user_data, subtilis_arm_op_t *op,
 				     subtilis_fpa_stran_instr_t *instr,
 				     subtilis_error_t *err)
 {
+	subtilis_dist_data_t *ud = user_data;
+
+	if (instr->base.num == ud->reg_num) {
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
+	ud->last_used++;
 }
 
 static void prv_dist_fpa_tran_instr(void *user_data, subtilis_arm_op_t *op,
@@ -236,6 +250,21 @@ static void prv_dist_fpa_tran_instr(void *user_data, subtilis_arm_op_t *op,
 				    subtilis_fpa_tran_instr_t *instr,
 				    subtilis_error_t *err)
 {
+	subtilis_dist_data_t *ud = user_data;
+
+	if (type == SUBTILIS_FPA_INSTR_FLT) {
+		if (!instr->immediate && instr->op2.reg.num == ud->reg_num) {
+			subtilis_error_set_walker_failed(err);
+			return;
+		}
+	} else {
+		if (instr->dest.num == ud->reg_num) {
+			subtilis_error_set_walker_failed(err);
+			return;
+		}
+	}
+
+	ud->last_used++;
 }
 
 static void prv_dist_fpa_cmp_instr(void *user_data, subtilis_arm_op_t *op,
@@ -243,6 +272,9 @@ static void prv_dist_fpa_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 				   subtilis_fpa_cmp_instr_t *instr,
 				   subtilis_error_t *err)
 {
+	subtilis_dist_data_t *ud = user_data;
+
+	ud->last_used++;
 }
 
 static void prv_dist_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
@@ -250,6 +282,9 @@ static void prv_dist_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 				    subtilis_fpa_ldrc_instr_t *instr,
 				    subtilis_error_t *err)
 {
+	subtilis_dist_data_t *ud = user_data;
+
+	ud->last_used++;
 }
 
 void subtilis_init_int_dist_walker(subtlis_arm_walker_t *walker,
