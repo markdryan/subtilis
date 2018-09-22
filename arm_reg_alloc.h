@@ -19,6 +19,13 @@
 
 #include "arm_core.h"
 
+struct subtilis_dist_data_t_ {
+	size_t reg_num;
+	int last_used;
+};
+
+typedef struct subtilis_dist_data_t_ subtilis_dist_data_t;
+
 size_t subtilis_arm_reg_alloc(subtilis_arm_section_t *arm_s,
 			      subtilis_error_t *err);
 
