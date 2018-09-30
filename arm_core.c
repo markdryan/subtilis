@@ -594,11 +594,11 @@ static size_t prv_add_data_imm_ldr(subtilis_arm_section_t *s,
 	return label;
 }
 
-static size_t prv_insert_data_imm_ldr(subtilis_arm_section_t *s,
-				      subtilis_arm_op_t *current,
-				      subtilis_arm_ccode_type_t ccode,
-				      subtilis_arm_reg_t dest, int32_t op2,
-				      subtilis_error_t *err)
+size_t subtilis_arm_insert_data_imm_ldr(subtilis_arm_section_t *s,
+					subtilis_arm_op_t *current,
+					subtilis_arm_ccode_type_t ccode,
+					subtilis_arm_reg_t dest, int32_t op2,
+					subtilis_error_t *err)
 {
 	subtilis_arm_ldrc_instr_t *ldrc;
 	subtilis_arm_instr_t *instr;
@@ -954,7 +954,7 @@ void subtilis_arm_add_stran_imm(subtilis_arm_section_t *s,
 	bool subtract = false;
 
 	if (offset < 0) {
-		offset -= offset;
+		offset = -offset;
 		subtract = true;
 	}
 
@@ -1060,8 +1060,8 @@ void subtilis_arm_insert_stran_spill_imm(subtilis_arm_section_t *s,
 	subtilis_arm_stran_instr_t *stran;
 
 	op2.op.reg = spill_reg;
-	(void)prv_insert_data_imm_ldr(s, current, ccode, op2.op.reg, offset,
-				      err);
+	(void)subtilis_arm_insert_data_imm_ldr(s, current, ccode, op2.op.reg,
+					       offset, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	op2.type = SUBTILIS_ARM_OP2_REG;
@@ -1093,7 +1093,7 @@ void subtilis_arm_insert_stran_imm(subtilis_arm_section_t *s,
 	bool subtract = false;
 
 	if (offset < 0) {
-		offset -= offset;
+		offset = -offset;
 		subtract = true;
 	}
 

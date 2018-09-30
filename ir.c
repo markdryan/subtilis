@@ -89,7 +89,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "printfp", SUBTILIS_OP_CLASS_FREG},
 	{ "rsubii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
 	{ "rsubir", SUBTILIS_OP_CLASS_FREG_FREG_REAL },
-	{ "rdivir", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "rdivir", SUBTILIS_OP_CLASS_FREG_FREG_REAL},
 	{ "andi32", SUBTILIS_OP_CLASS_REG_REG_REG},
 	{ "andii32", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "ori32", SUBTILIS_OP_CLASS_REG_REG_REG},

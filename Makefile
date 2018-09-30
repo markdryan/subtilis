@@ -23,6 +23,7 @@ ARM =\
 	arm_walker.c \
 	arm_reg_alloc.c \
 	arm_int_dist.c \
+	arm_fpa_dist.c \
 	arm_encode.c \
 	arm_link.c \
 	arm2_div.c \

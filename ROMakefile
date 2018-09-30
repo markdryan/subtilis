@@ -2,7 +2,7 @@
 
 COMPONENT = basicc
 
-OBJS = stream lexer error compiler utils keywords buffer parser expression ir hash_table symbol_table arm_core riscos_arm riscos_arm2 arm_gen arm_walker arm_reg_alloc arm_int_dist arm_encode arm_link type string_pool builtins call arm2_div fpa fpa_gen
+OBJS = stream lexer error compiler utils keywords buffer parser expression ir hash_table symbol_table arm_core riscos_arm riscos_arm2 arm_gen arm_walker arm_reg_alloc arm_int_dist arm_fpa_dist arm_encode arm_link type string_pool builtins call arm2_div fpa fpa_gen
 
 CFLAGS ?= -Wxla
 

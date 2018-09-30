@@ -255,7 +255,7 @@ static void prv_add_section(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	stack_space = (spill_regs * sizeof(int32_t)) + arm_s->locals;
+	stack_space = spill_regs + arm_s->locals;
 
 	encoded = subtilis_arm_encode_nearest(stack_space, err);
 	if (err->type != SUBTILIS_ERROR_OK)

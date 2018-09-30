@@ -356,3 +356,85 @@ void subtilis_fpa_add_cmp(subtilis_arm_section_t *s,
 	tran->op2.reg = op2;
 	tran->immediate = false;
 }
+
+/* clang-format off */
+void subtilis_fpa_insert_stran_spill_imm(subtilis_arm_section_t *s,
+					 subtilis_arm_op_t *current,
+					 subtilis_arm_instr_type_t itype,
+					 subtilis_arm_ccode_type_t ccode,
+					 subtilis_arm_reg_t dest,
+					 subtilis_arm_reg_t base,
+					 subtilis_arm_reg_t spill_reg,
+					 int32_t offset, subtilis_error_t *err)
+/* clang-format on */
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_fpa_stran_instr_t *stran;
+	subtilis_arm_data_instr_t *datai;
+
+	(void)subtilis_arm_insert_data_imm_ldr(s, current, ccode, spill_reg,
+					       offset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr = subtilis_arm_section_insert_instr(s, current,
+						  SUBTILIS_ARM_INSTR_ADD, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	datai = &instr->operands.data;
+	datai->ccode = ccode;
+	datai->status = false;
+	datai->dest = spill_reg;
+	datai->op1 = spill_reg;
+	datai->op2.type = SUBTILIS_ARM_OP2_REG;
+	datai->op2.op.reg = base;
+
+	instr = subtilis_arm_section_insert_instr(s, current, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	stran = &instr->operands.fpa_stran;
+	stran->ccode = ccode;
+	stran->size = 8;
+	stran->dest = dest;
+	stran->base = spill_reg;
+	stran->offset = 0;
+	stran->pre_indexed = false;
+	stran->write_back = false;
+	stran->subtract = false;
+}
+
+void subtilis_fpa_insert_stran_imm(subtilis_arm_section_t *s,
+				   subtilis_arm_op_t *current,
+				   subtilis_arm_instr_type_t itype,
+				   subtilis_arm_ccode_type_t ccode,
+				   subtilis_arm_reg_t dest,
+				   subtilis_arm_reg_t base, int32_t offset,
+				   subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_fpa_stran_instr_t *stran;
+	bool subtract = false;
+
+	if (offset < 0) {
+		offset = -offset;
+		subtract = true;
+	}
+
+	if (offset > 1023) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	instr = subtilis_arm_section_insert_instr(s, current, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	stran = &instr->operands.fpa_stran;
+	stran->ccode = ccode;
+	stran->size = 8;
+	stran->dest = dest;
+	stran->base = base;
+	stran->offset = (uint8_t)offset;
+	stran->pre_indexed = true;
+	stran->write_back = false;
+	stran->subtract = subtract;
+}

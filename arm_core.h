@@ -459,6 +459,11 @@ subtilis_arm_instr_t *
 subtilis_arm_section_add_instr(subtilis_arm_section_t *s,
 			       subtilis_arm_instr_type_t type,
 			       subtilis_error_t *err);
+size_t subtilis_arm_insert_data_imm_ldr(subtilis_arm_section_t *s,
+					subtilis_arm_op_t *current,
+					subtilis_arm_ccode_type_t ccode,
+					subtilis_arm_reg_t dest, int32_t op2,
+					subtilis_error_t *err);
 /* clang-format off */
 subtilis_arm_instr_t *
 subtilis_arm_section_insert_instr(subtilis_arm_section_t *s,
@@ -641,6 +646,23 @@ void subtilis_fpa_add_cmp(subtilis_arm_section_t *s,
 			  subtilis_arm_ccode_type_t ccode,
 			  subtilis_arm_reg_t dest, subtilis_arm_reg_t op2,
 			  subtilis_error_t *err);
+/* clang-format off */
+void subtilis_fpa_insert_stran_spill_imm(subtilis_arm_section_t *s,
+					 subtilis_arm_op_t *current,
+					 subtilis_arm_instr_type_t itype,
+					 subtilis_arm_ccode_type_t ccode,
+					 subtilis_arm_reg_t dest,
+					 subtilis_arm_reg_t base,
+					 subtilis_arm_reg_t spill_reg,
+					 int32_t offset, subtilis_error_t *err);
+/* clang-format on */
+void subtilis_fpa_insert_stran_imm(subtilis_arm_section_t *s,
+				   subtilis_arm_op_t *current,
+				   subtilis_arm_instr_type_t itype,
+				   subtilis_arm_ccode_type_t ccode,
+				   subtilis_arm_reg_t dest,
+				   subtilis_arm_reg_t base, int32_t offset,
+				   subtilis_error_t *err);
 
 #define subtilis_fpa_add_mov_imm(s, cc, round, dst, op2, err)                  \
 	subtilis_fpa_add_mvfmnf_imm(s, cc, SUBTILIS_FPA_INSTR_MVF,             \
