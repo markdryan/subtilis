@@ -103,12 +103,7 @@ subtilis_arm_reg_t subtilis_arm_acquire_new_reg(subtilis_arm_section_t *s)
 
 subtilis_arm_reg_t subtilis_arm_acquire_new_freg(subtilis_arm_section_t *s)
 {
-	subtilis_arm_reg_t reg;
-
-	reg.num = s->freg_counter++;
-	reg.type = SUBTILIS_ARM_REG_FLOATING;
-
-	return reg;
+	return subtilis_arm_ir_to_freg(s->freg_counter++);
 }
 
 subtilis_arm_section_t *
@@ -299,6 +294,16 @@ subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg)
 		arm_reg.num = ir_reg;
 		break;
 	}
+
+	return arm_reg;
+}
+
+subtilis_arm_reg_t subtilis_arm_ir_to_freg(size_t ir_reg)
+{
+	subtilis_arm_reg_t arm_reg;
+
+	arm_reg.num = ir_reg + 4;
+	arm_reg.type = SUBTILIS_ARM_REG_FLOATING;
 
 	return arm_reg;
 }

@@ -26,10 +26,8 @@ void subtilis_fpa_gen_movr(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_section_t *arm_s = user_data;
 	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
 
-	dest.num = instr->operands[0].reg;
-	dest.type = SUBTILIS_ARM_REG_FLOATING;
-	op2.num = instr->operands[1].reg;
-	op2.type = SUBTILIS_ARM_REG_FLOATING;
+	dest = subtilis_arm_ir_to_freg(instr->operands[0].reg);
+	op2 = subtilis_arm_ir_to_freg(instr->operands[1].reg);
 
 	subtilis_fpa_add_mov(arm_s, SUBTILIS_ARM_CCODE_AL,
 			     SUBTILIS_FPA_ROUNDING_NEAREST, dest, op2, err);
@@ -43,8 +41,7 @@ void subtilis_fpa_gen_movir(subtilis_ir_section_t *s, size_t start,
 	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
 	double op2 = instr->operands[1].real;
 
-	dest.num = instr->operands[0].reg;
-	dest.type = SUBTILIS_ARM_REG_FLOATING;
+	dest = subtilis_arm_ir_to_freg(instr->operands[0].reg);
 
 	subtilis_fpa_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL,
 				 SUBTILIS_FPA_ROUNDING_NEAREST, dest, op2, err);
@@ -59,8 +56,7 @@ void subtilis_fpa_gen_movri32(subtilis_ir_section_t *s, size_t start,
 	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
 
 	dest = subtilis_arm_ir_to_arm_reg(instr->operands[0].reg);
-	op2.num = instr->operands[1].reg;
-	op2.type = SUBTILIS_ARM_REG_FLOATING;
+	op2 = subtilis_arm_ir_to_freg(instr->operands[1].reg);
 
 	subtilis_fpa_add_tran(arm_s, SUBTILIS_FPA_INSTR_FIX,
 			      SUBTILIS_ARM_CCODE_AL,
@@ -75,8 +71,7 @@ void subtilis_fpa_gen_movi32r(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_section_t *arm_s = user_data;
 	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
 
-	dest.num = instr->operands[0].reg;
-	dest.type = SUBTILIS_ARM_REG_FLOATING;
+	dest = subtilis_arm_ir_to_freg(instr->operands[0].reg);
 	op2 = subtilis_arm_ir_to_arm_reg(instr->operands[1].reg);
 
 	subtilis_fpa_add_tran(arm_s, SUBTILIS_FPA_INSTR_FLT,
@@ -96,8 +91,7 @@ void subtilis_fpa_gen_callr(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.num = call->reg;
-	dest.type = SUBTILIS_ARM_REG_FLOATING;
+	dest = subtilis_arm_ir_to_freg(call->reg);
 	op1.num = 0;
 	op1.type = SUBTILIS_ARM_REG_FIXED;
 
@@ -123,13 +117,10 @@ static void prv_data_simple(subtilis_ir_section_t *s, size_t start,
 	datai->ccode = ccode;
 	datai->size = 8;
 	datai->rounding = SUBTILIS_FPA_ROUNDING_NEAREST;
-	datai->dest.num = ir_op->operands[0].reg;
-	datai->dest.type = SUBTILIS_ARM_REG_FLOATING;
-	datai->op1.num = ir_op->operands[1].reg;
-	datai->op1.type = SUBTILIS_ARM_REG_FLOATING;
+	datai->dest = subtilis_arm_ir_to_freg(ir_op->operands[0].reg);
+	datai->op1 = subtilis_arm_ir_to_freg(ir_op->operands[1].reg);
 	datai->immediate = false;
-	datai->op2.reg.num = ir_op->operands[2].reg;
-	datai->op2.reg.type = SUBTILIS_ARM_REG_FLOATING;
+	datai->op2.reg = subtilis_arm_ir_to_freg(ir_op->operands[2].reg);
 }
 
 static void prv_data_simple_imm(subtilis_ir_section_t *s, size_t start,
@@ -144,10 +135,8 @@ static void prv_data_simple_imm(subtilis_ir_section_t *s, size_t start,
 	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
 	double op2 = instr->operands[2].real;
 
-	dest.num = instr->operands[0].reg;
-	dest.type = SUBTILIS_ARM_REG_FLOATING;
-	op1.num = instr->operands[1].reg;
-	op1.type = SUBTILIS_ARM_REG_FLOATING;
+	dest = subtilis_arm_ir_to_freg(instr->operands[0].reg);
+	op1 = subtilis_arm_ir_to_freg(instr->operands[1].reg);
 
 	subtilis_fpa_add_data_imm(arm_s, itype, ccode,
 				  SUBTILIS_FPA_ROUNDING_NEAREST, dest, op1, op2,
@@ -234,8 +223,7 @@ static void prv_stran_instr(subtilis_arm_instr_type_t itype,
 	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
 	int32_t offset = instr->operands[2].integer;
 
-	dest.num = instr->operands[0].reg;
-	dest.type = SUBTILIS_ARM_REG_FLOATING;
+	dest = subtilis_arm_ir_to_freg(instr->operands[0].reg);
 	base = subtilis_arm_ir_to_arm_reg(instr->operands[1].reg);
 
 	subtilis_fpa_add_stran(arm_s, itype, SUBTILIS_ARM_CCODE_AL, dest, base,
@@ -264,8 +252,7 @@ void subtilis_arm_gen_retr(subtilis_ir_section_t *s, size_t start,
 
 	dest.num = 0;
 	dest.type = SUBTILIS_ARM_REG_FIXED;
-	op2.num = instr->operands[0].reg;
-	op2.type = SUBTILIS_ARM_REG_FLOATING;
+	op2 = subtilis_arm_ir_to_freg(instr->operands[0].reg);
 
 	subtilis_fpa_add_mov(arm_s, SUBTILIS_ARM_CCODE_AL,
 			     SUBTILIS_FPA_ROUNDING_NEAREST, dest, op2, err);

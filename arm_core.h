@@ -478,6 +478,7 @@ uint32_t subtilis_arm_encode_nearest(int32_t num, subtilis_error_t *err);
 bool subtilis_arm_encode_lvl2_imm(int32_t num, uint32_t *encoded1,
 				  uint32_t *encoded2);
 subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg);
+subtilis_arm_reg_t subtilis_arm_ir_to_freg(size_t ir_reg);
 size_t subtilis_add_data_imm_ldr_datai(subtilis_arm_section_t *s,
 				       subtilis_arm_instr_type_t itype,
 				       subtilis_arm_ccode_type_t ccode,
