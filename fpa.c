@@ -438,3 +438,49 @@ void subtilis_fpa_insert_stran_imm(subtilis_arm_section_t *s,
 	stran->write_back = false;
 	stran->subtract = subtract;
 }
+
+void subtilis_fpa_push_reg(subtilis_arm_section_t *s,
+			   subtilis_arm_ccode_type_t ccode,
+			   subtilis_arm_reg_t dest, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_fpa_stran_instr_t *stran;
+
+	instr = subtilis_arm_section_add_instr(s, SUBTILIS_FPA_INSTR_STF, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	stran = &instr->operands.fpa_stran;
+	stran->ccode = ccode;
+	stran->size = 8;
+	stran->dest = dest;
+	stran->base.type = SUBTILIS_ARM_REG_FIXED;
+	stran->base.num = 13;
+	stran->offset = 8;
+	stran->pre_indexed = true;
+	stran->write_back = true;
+	stran->subtract = true;
+}
+
+void subtilis_fpa_pop_reg(subtilis_arm_section_t *s,
+			  subtilis_arm_ccode_type_t ccode,
+			  subtilis_arm_reg_t dest, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_fpa_stran_instr_t *stran;
+
+	instr = subtilis_arm_section_add_instr(s, SUBTILIS_FPA_INSTR_LDF, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	stran = &instr->operands.fpa_stran;
+	stran->ccode = ccode;
+	stran->size = 8;
+	stran->dest = dest;
+	stran->base.type = SUBTILIS_ARM_REG_FIXED;
+	stran->base.num = 13;
+	stran->offset = 8;
+	stran->pre_indexed = false;
+	stran->write_back = true;
+	stran->subtract = false;
+}

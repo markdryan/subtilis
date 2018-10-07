@@ -369,6 +369,7 @@ struct subtilis_arm_real_constant_t_ {
 typedef struct subtilis_arm_real_constant_t_ subtilis_arm_real_constant_t;
 
 struct subtilis_arm_call_site_t_ {
+	size_t ldm_site;
 	size_t stm_site;
 	size_t call_site;
 };
@@ -449,8 +450,8 @@ subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 
 void subtilis_arm_prog_delete(subtilis_arm_prog_t *prog);
 void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s,
-					size_t stm_site, size_t op,
-					subtilis_error_t *err);
+					size_t stm_site, size_t ldm_site,
+					size_t op, subtilis_error_t *err);
 void subtilis_arm_section_add_ret_site(subtilis_arm_section_t *s, size_t op,
 				       subtilis_error_t *err);
 void subtilis_arm_section_add_label(subtilis_arm_section_t *s, size_t label,
@@ -664,6 +665,13 @@ void subtilis_fpa_insert_stran_imm(subtilis_arm_section_t *s,
 				   subtilis_arm_reg_t dest,
 				   subtilis_arm_reg_t base, int32_t offset,
 				   subtilis_error_t *err);
+
+void subtilis_fpa_push_reg(subtilis_arm_section_t *s,
+			   subtilis_arm_ccode_type_t ccode,
+			   subtilis_arm_reg_t dest, subtilis_error_t *err);
+void subtilis_fpa_pop_reg(subtilis_arm_section_t *s,
+			  subtilis_arm_ccode_type_t ccode,
+			  subtilis_arm_reg_t dest, subtilis_error_t *err);
 
 #define subtilis_fpa_add_mov_imm(s, cc, round, dst, op2, err)                  \
 	subtilis_fpa_add_mvfmnf_imm(s, cc, SUBTILIS_FPA_INSTR_MVF,             \

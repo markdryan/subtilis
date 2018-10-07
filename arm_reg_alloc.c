@@ -124,6 +124,7 @@
 #define SUBTILIS_ARM_REG_MIN_INT_REGS 4
 #define SUBTILIS_ARM_REG_MAX_INT_REGS 11
 
+#define SUBTILIS_ARM_REG_MIN_FPA_REGS 4
 #define SUBTILIS_ARM_REG_MAX_FPA_REGS 6
 
 /* clang-format off */
@@ -160,6 +161,8 @@ struct subtilis_arm_reg_class_t_ {
 	int32_t max_offset;
 	subtilis_arm_reg_spill_imm_t spill_imm;
 	subtilis_arm_reg_stran_imm_t stran_imm;
+	subtilis_arm_instr_type_t store_type;
+	subtilis_arm_instr_type_t load_type;
 };
 
 typedef struct subtilis_arm_reg_class_t_ subtilis_arm_reg_class_t;
@@ -180,7 +183,9 @@ static subtilis_arm_reg_class_t *
 prv_new_regs(subtilis_arm_section_t *arm_s, size_t max_regs, size_t reg_start,
 	     size_t reg_size, size_t args, int32_t max_offset,
 	     subtilis_arm_reg_spill_imm_t spill_imm,
-	     subtilis_arm_reg_stran_imm_t stran_imm, subtilis_error_t *err)
+	     subtilis_arm_reg_stran_imm_t stran_imm,
+	     subtilis_arm_instr_type_t store_type,
+	     subtilis_arm_instr_type_t load_type, subtilis_error_t *err)
 {
 	size_t i;
 	size_t index;
@@ -228,6 +233,8 @@ prv_new_regs(subtilis_arm_section_t *arm_s, size_t max_regs, size_t reg_start,
 	regs->reg_size = reg_size;
 	regs->spill_imm = spill_imm;
 	regs->stran_imm = stran_imm;
+	regs->store_type = store_type;
+	regs->load_type = load_type;
 	regs->max_offset = max_offset;
 
 	for (i = 0; i < reg_count; i++) {
@@ -278,18 +285,19 @@ static void prv_init_arm_reg_ud(subtilis_arm_reg_ud_t *ud,
 				subtilis_arm_section_t *arm_s,
 				subtilis_error_t *err)
 {
-	ud->int_regs = prv_new_regs(arm_s, SUBTILIS_ARM_REG_MAX_INT_REGS,
-				    SUBTILIS_IR_REG_TEMP_START, sizeof(int32_t),
-				    arm_s->stype->int_regs, 4095,
-				    subtilis_arm_insert_stran_spill_imm,
-				    subtilis_arm_insert_stran_imm, err);
+	ud->int_regs = prv_new_regs(
+	    arm_s, SUBTILIS_ARM_REG_MAX_INT_REGS, SUBTILIS_IR_REG_TEMP_START,
+	    sizeof(int32_t), arm_s->stype->int_regs, 4095,
+	    subtilis_arm_insert_stran_spill_imm, subtilis_arm_insert_stran_imm,
+	    SUBTILIS_ARM_INSTR_STR, SUBTILIS_ARM_INSTR_LDR, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	ud->fpa_regs = prv_new_regs(arm_s, SUBTILIS_ARM_REG_MAX_FPA_REGS, 0,
-				    sizeof(double), arm_s->stype->fp_regs, 1023,
-				    subtilis_fpa_insert_stran_spill_imm,
-				    subtilis_fpa_insert_stran_imm, err);
+	ud->fpa_regs = prv_new_regs(
+	    arm_s, SUBTILIS_ARM_REG_MAX_FPA_REGS, 0, sizeof(double),
+	    arm_s->stype->fp_regs, 1023, subtilis_fpa_insert_stran_spill_imm,
+	    subtilis_fpa_insert_stran_imm, SUBTILIS_FPA_INSTR_STF,
+	    SUBTILIS_FPA_INSTR_LDF, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		prv_free_regs(ud->int_regs);
 		return;
@@ -372,13 +380,13 @@ static void prv_load_spilled_reg(subtilis_arm_section_t *arm_s,
 	base.type = SUBTILIS_ARM_REG_FIXED;
 	base.num = 11;
 	if (offset > regs->max_offset || offset < -regs->max_offset) {
-		regs->spill_imm(arm_s, current, SUBTILIS_ARM_INSTR_LDR,
+		regs->spill_imm(arm_s, current, regs->load_type,
 				SUBTILIS_ARM_CCODE_AL, phys, base, phys, offset,
 				err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	} else {
-		regs->stran_imm(arm_s, current, SUBTILIS_ARM_INSTR_LDR,
+		regs->stran_imm(arm_s, current, regs->load_type,
 				SUBTILIS_ARM_CCODE_AL, phys, base, offset, err);
 	}
 
@@ -439,7 +447,7 @@ static void prv_spill_reg(subtilis_arm_section_t *arm_s,
 		} else {
 			spill_reg.num = i;
 		}
-		regs->spill_imm(arm_s, current, SUBTILIS_ARM_INSTR_STR,
+		regs->spill_imm(arm_s, current, regs->store_type,
 				SUBTILIS_ARM_CCODE_AL, reg, base, spill_reg,
 				offset, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -452,7 +460,7 @@ static void prv_spill_reg(subtilis_arm_section_t *arm_s,
 				return;
 		}
 	} else {
-		regs->stran_imm(arm_s, current, SUBTILIS_ARM_INSTR_STR,
+		regs->stran_imm(arm_s, current, regs->store_type,
 				SUBTILIS_ARM_CCODE_AL, reg, base, offset, err);
 	}
 
@@ -1090,6 +1098,17 @@ static void prv_alloc_fpa_stran_instr(void *user_data, subtilis_arm_op_t *op,
 	bool fixed_reg_base;
 	subtilis_arm_reg_ud_t *ud = user_data;
 
+	/*
+	 * The function calling code can generate LDFNV and STFNV when
+	 * preserving fpa registers.  These instructions should be
+	 * ignored for the purposes of register allocation.
+	 */
+
+	if (instr->ccode == SUBTILIS_ARM_CCODE_NV) {
+		ud->instr_count++;
+		return;
+	}
+
 	if (type == SUBTILIS_FPA_INSTR_STF) {
 		vreg_dest = instr->dest.num;
 		(void)prv_ensure(ud->arm_s, op, ud->int_regs, ud->fpa_regs,
@@ -1286,6 +1305,7 @@ cleanup:
 }
 
 static bool prv_is_reg_used_before(subtilis_arm_reg_ud_t *ud, size_t reg_num,
+				   subtlis_arm_walker_t *dist_walker,
 				   subtilis_arm_op_t *from,
 				   subtilis_arm_op_t *to)
 {
@@ -1297,8 +1317,8 @@ static bool prv_is_reg_used_before(subtilis_arm_reg_ud_t *ud, size_t reg_num,
 	do {
 		subtilis_error_init(&err);
 		ud->dist_data.last_used = 0;
-		subtilis_arm_walk_from_to(ud->arm_s, &ud->int_dist_walker, from,
-					  to, &err);
+		subtilis_arm_walk_from_to(ud->arm_s, dist_walker, from, to,
+					  &err);
 		if (err.type == SUBTILIS_ERROR_OK)
 			return false;
 		else if (ud->dist_data.last_used == -1)
@@ -1321,33 +1341,52 @@ static bool prv_is_reg_used_before(subtilis_arm_reg_ud_t *ud, size_t reg_num,
 	return false;
 }
 
-size_t subtilis_arm_regs_used_before(subtilis_arm_section_t *arm_s,
-				     subtilis_arm_op_t *op,
-				     subtilis_error_t *err)
+void subtilis_arm_regs_used_before(subtilis_arm_section_t *arm_s,
+				   subtilis_arm_op_t *op,
+				   subtilis_regs_used_t *regs_used,
+				   subtilis_error_t *err)
 {
 	size_t i;
 	subtilis_arm_reg_ud_t ud;
 	subtilis_arm_op_t *from;
-	size_t reg_list = 0;
+	size_t int_reg_list = 0;
+	size_t fpa_reg_list = 0;
 
 	prv_init_arm_reg_ud(&ud, arm_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return 0;
+		return;
 
 	from = &arm_s->op_pool->ops[arm_s->first_op];
 
+	/*
+	 * TODO: This is wrong.  The register allocator for a procedure that
+	 * takes no parameters but which uses lots of registers may modify
+	 * r0-r3 as may the calling function.  This is more relevant for FPA
+	 *  as there are only 6 registers available.
+	 */
+
 	for (i = SUBTILIS_ARM_REG_MIN_INT_REGS;
 	     i <= SUBTILIS_ARM_REG_MAX_INT_REGS; i++) {
-		if (prv_is_reg_used_before(&ud, i, from, op))
-			reg_list |= 1 << i;
+		if (prv_is_reg_used_before(&ud, i, &ud.int_dist_walker, from,
+					   op))
+			int_reg_list |= 1 << i;
 	}
 
-	prv_free_arm_reg_ud(&ud);
+	for (i = SUBTILIS_ARM_REG_MIN_FPA_REGS;
+	     i <= SUBTILIS_ARM_REG_MAX_FPA_REGS; i++) {
+		if (prv_is_reg_used_before(&ud, i, &ud.fpa_dist_walker, from,
+					   op))
+			fpa_reg_list |= 1 << i;
+	}
 
-	return reg_list;
+	regs_used->int_regs = int_reg_list;
+	regs_used->fpa_regs = fpa_reg_list;
+
+	prv_free_arm_reg_ud(&ud);
 }
 
 static bool prv_is_reg_used_after(subtilis_arm_reg_ud_t *ud, size_t reg_num,
+				  subtlis_arm_walker_t *dist_walker,
 				  subtilis_arm_op_t *op)
 {
 	subtilis_error_t err;
@@ -1357,7 +1396,7 @@ static bool prv_is_reg_used_after(subtilis_arm_reg_ud_t *ud, size_t reg_num,
 	ud->dist_data.reg_num = reg_num;
 	ud->dist_data.last_used = ud->instr_count + 1;
 
-	subtilis_arm_walk_from(ud->arm_s, &ud->int_dist_walker, op, &err);
+	subtilis_arm_walk_from(ud->arm_s, dist_walker, op, &err);
 
 	/*
 	 * Check that reg_num is used and that the  first usage of
@@ -1368,27 +1407,36 @@ static bool prv_is_reg_used_after(subtilis_arm_reg_ud_t *ud, size_t reg_num,
 	       (ud->dist_data.last_used != -1);
 }
 
-size_t subtilis_arm_regs_used_after(subtilis_arm_section_t *arm_s,
-				    subtilis_arm_op_t *op,
-				    subtilis_error_t *err)
+void subtilis_arm_regs_used_after(subtilis_arm_section_t *arm_s,
+				  subtilis_arm_op_t *op,
+				  subtilis_regs_used_t *regs_used,
+				  subtilis_error_t *err)
 {
 	size_t i;
 	subtilis_arm_reg_ud_t ud;
-	size_t reg_list = 0;
+	size_t int_reg_list = 0;
+	size_t fpa_reg_list = 0;
 
 	prv_init_arm_reg_ud(&ud, arm_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return 0;
+		return;
 
 	for (i = SUBTILIS_ARM_REG_MIN_INT_REGS;
 	     i <= SUBTILIS_ARM_REG_MAX_INT_REGS; i++) {
-		if (prv_is_reg_used_after(&ud, i, op))
-			reg_list |= 1 << i;
+		if (prv_is_reg_used_after(&ud, i, &ud.int_dist_walker, op))
+			int_reg_list |= 1 << i;
 	}
 
-	prv_free_arm_reg_ud(&ud);
+	for (i = SUBTILIS_ARM_REG_MIN_FPA_REGS;
+	     i <= SUBTILIS_ARM_REG_MAX_FPA_REGS; i++) {
+		if (prv_is_reg_used_after(&ud, i, &ud.fpa_dist_walker, op))
+			fpa_reg_list |= 1 << i;
+	}
 
-	return reg_list;
+	regs_used->int_regs = int_reg_list;
+	regs_used->fpa_regs = fpa_reg_list;
+
+	prv_free_arm_reg_ud(&ud);
 }
 
 void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
@@ -1400,37 +1448,72 @@ void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
 	size_t ldm;
 	size_t start;
 	size_t end;
-	size_t regs_used;
+	size_t int_regs_used;
+	size_t real_regs_used;
+	subtilis_regs_used_t regs_used_before;
+	subtilis_regs_used_t regs_used_after;
 	subtilis_arm_mtran_instr_t *mtran;
+	subtilis_arm_op_t *op;
+	size_t fpa_reg_count;
 
 	for (i = 0; i < arm_s->call_site_count; i++) {
-		regs_used = 0;
 		cs = arm_s->call_sites[i].call_site;
 		stm = arm_s->call_sites[i].stm_site;
+		ldm = arm_s->call_sites[i].ldm_site;
 		end = arm_s->op_pool->ops[stm].prev;
 		if (end != SIZE_MAX) {
-			regs_used = subtilis_arm_regs_used_before(
-			    arm_s, &arm_s->op_pool->ops[end], err);
+			subtilis_arm_regs_used_before(arm_s,
+						      &arm_s->op_pool->ops[end],
+						      &regs_used_before, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 		}
-		ldm = arm_s->op_pool->ops[cs].next;
-		if (ldm == SIZE_MAX) {
-			subtilis_error_set_assertion_failed(err);
-			return;
-		}
+
 		start = arm_s->op_pool->ops[ldm].next;
 		if (start == SIZE_MAX)
 			continue;
 
-		regs_used &= subtilis_arm_regs_used_after(
-		    arm_s, &arm_s->op_pool->ops[start], err);
+		subtilis_arm_regs_used_after(arm_s, &arm_s->op_pool->ops[start],
+					     &regs_used_after, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
+		int_regs_used =
+		    regs_used_before.int_regs & regs_used_after.int_regs;
+		real_regs_used =
+		    regs_used_before.fpa_regs & regs_used_after.fpa_regs;
+
 		mtran = &arm_s->op_pool->ops[stm].op.instr.operands.mtran;
-		mtran->reg_list |= regs_used;
+		mtran->reg_list |= int_regs_used;
 		mtran = &arm_s->op_pool->ops[ldm].op.instr.operands.mtran;
-		mtran->reg_list |= regs_used;
+		mtran->reg_list |= int_regs_used;
+
+		fpa_reg_count = SUBTILIS_ARM_REG_MAX_FPA_REGS;
+		stm = arm_s->op_pool->ops[cs].prev;
+		op = &arm_s->op_pool->ops[stm];
+		while (fpa_reg_count > 0 && op->type == SUBTILIS_OP_INSTR &&
+		       op->op.instr.type == SUBTILIS_FPA_INSTR_STF) {
+			--fpa_reg_count;
+			printf("real_regs_used 0x%zx reg test %zu\n",
+			       real_regs_used, fpa_reg_count);
+			if (real_regs_used & (1 << fpa_reg_count))
+				op->op.instr.operands.fpa_stran.ccode =
+				    SUBTILIS_ARM_CCODE_AL;
+			op = &arm_s->op_pool->ops[op->prev];
+		}
+
+		fpa_reg_count = SUBTILIS_ARM_REG_MAX_FPA_REGS;
+		ldm = arm_s->op_pool->ops[cs].next;
+		op = &arm_s->op_pool->ops[ldm];
+		while (fpa_reg_count > 0 && op->type == SUBTILIS_OP_INSTR &&
+		       op->op.instr.type == SUBTILIS_FPA_INSTR_LDF) {
+			--fpa_reg_count;
+			printf("real_regs_used 0x%zx reg test %zu\n",
+			       real_regs_used, fpa_reg_count);
+			if (real_regs_used & (1 << fpa_reg_count))
+				op->op.instr.operands.fpa_stran.ccode =
+				    SUBTILIS_ARM_CCODE_AL;
+			op = &arm_s->op_pool->ops[op->next];
+		}
 	}
 }

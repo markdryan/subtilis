@@ -149,8 +149,8 @@ void subtilis_arm_section_delete(subtilis_arm_section_t *s)
 }
 
 void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s,
-					size_t stm_site, size_t op,
-					subtilis_error_t *err)
+					size_t stm_site, size_t ldm_site,
+					size_t op, subtilis_error_t *err)
 {
 	size_t new_max;
 	subtilis_arm_call_site_t *site;
@@ -169,6 +169,7 @@ void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s,
 	}
 	site = &s->call_sites[s->call_site_count++];
 	site->stm_site = stm_site;
+	site->ldm_site = ldm_site;
 	site->call_site = op;
 }
 

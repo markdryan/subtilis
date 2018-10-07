@@ -259,6 +259,7 @@ static void prv_dist_fpa_tran_instr(void *user_data, subtilis_arm_op_t *op,
 		}
 	} else {
 		if (instr->dest.num == ud->reg_num) {
+			ud->last_used = -1;
 			subtilis_error_set_walker_failed(err);
 			return;
 		}

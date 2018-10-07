@@ -171,16 +171,24 @@ static void prv_dist_fpa_stran_instr(void *user_data, subtilis_arm_op_t *op,
 {
 	subtilis_dist_data_t *ud = user_data;
 
-	if (type == SUBTILIS_FPA_INSTR_STF) {
-		if (instr->dest.num == ud->reg_num) {
-			subtilis_error_set_walker_failed(err);
-			return;
-		}
-	} else {
-		if (instr->dest.num == ud->reg_num) {
-			ud->last_used = -1;
-			subtilis_error_set_walker_failed(err);
-			return;
+	/*
+	 * The function calling code can generate LDFNV and STFNV when
+	 * preserving fpa registers.  These instructions should be
+	 * ignored for the purposes of register allocation.
+	 */
+
+	if (instr->ccode != SUBTILIS_ARM_CCODE_NV) {
+		if (type == SUBTILIS_FPA_INSTR_STF) {
+			if (instr->dest.num == ud->reg_num) {
+				subtilis_error_set_walker_failed(err);
+				return;
+			}
+		} else {
+			if (instr->dest.num == ud->reg_num) {
+				ud->last_used = -1;
+				subtilis_error_set_walker_failed(err);
+				return;
+			}
 		}
 	}
 
