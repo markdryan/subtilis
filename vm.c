@@ -519,14 +519,38 @@ static void prv_set_args(subitlis_vm_t *vm, subtilis_ir_call_t *call,
 	size_t i;
 	size_t int_args = 0;
 	size_t real_args = 0;
+	double *real_args_copy = NULL;
+	int32_t *int_args_copy = NULL;
+
+	real_args_copy = malloc(sizeof(double) * call->arg_count);
+	if (!real_args_copy) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+
+	int_args_copy = malloc(sizeof(int32_t) * call->arg_count);
+	if (!real_args_copy) {
+		free(real_args_copy);
+		subtilis_error_set_oom(err);
+		return;
+	}
 
 	for (i = 0; i < call->arg_count; i++) {
 		if (call->args[i].type == SUBTILIS_IR_REG_TYPE_REAL)
-			vm->fregs[real_args++] = vm->fregs[call->args[i].reg];
+			real_args_copy[real_args++] =
+			    vm->fregs[call->args[i].reg];
 		else
-			vm->regs[SUBTILIS_IR_REG_TEMP_START + int_args++] =
-			    vm->regs[call->args[i].reg];
+			int_args_copy[int_args++] = vm->regs[call->args[i].reg];
 	}
+
+	for (i = 0; i < int_args; i++)
+		vm->regs[SUBTILIS_IR_REG_TEMP_START + i] = int_args_copy[i];
+
+	for (i = 0; i < real_args; i++)
+		vm->fregs[i] = real_args_copy[i];
+
+	free(int_args_copy);
+	free(real_args_copy);
 }
 
 static void prv_abs(subitlis_vm_t *vm, subtilis_ir_call_t *call,
