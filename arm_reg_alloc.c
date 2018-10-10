@@ -294,10 +294,10 @@ static void prv_init_arm_reg_ud(subtilis_arm_reg_ud_t *ud,
 		return;
 
 	ud->fpa_regs = prv_new_regs(
-	    arm_s, SUBTILIS_ARM_REG_MAX_FPA_REGS, 0, sizeof(double),
-	    arm_s->stype->fp_regs, 1023, subtilis_fpa_insert_stran_spill_imm,
-	    subtilis_fpa_insert_stran_imm, SUBTILIS_FPA_INSTR_STF,
-	    SUBTILIS_FPA_INSTR_LDF, err);
+	    arm_s, SUBTILIS_ARM_REG_MAX_FPA_REGS, SUBTILIS_ARM_REG_MIN_FPA_REGS,
+	    sizeof(double), arm_s->stype->fp_regs, 1023,
+	    subtilis_fpa_insert_stran_spill_imm, subtilis_fpa_insert_stran_imm,
+	    SUBTILIS_FPA_INSTR_STF, SUBTILIS_FPA_INSTR_LDF, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		prv_free_regs(ud->int_regs);
 		return;

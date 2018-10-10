@@ -677,7 +677,7 @@ static void prv_stack_args(subtilis_arm_section_t *arm_s,
 	for (i = 0; i < real_args_left; i++) {
 		arg_dest.type = SUBTILIS_ARM_REG_FIXED;
 		arg_dest.num = i;
-		arg_src = subtilis_arm_ir_to_freg(reg_num);
+		arg_src = subtilis_arm_ir_to_freg(call->args[i].reg);
 		subtilis_fpa_add_mov(arm_s, SUBTILIS_ARM_CCODE_AL,
 				     SUBTILIS_FPA_ROUNDING_NEAREST, arg_dest,
 				     arg_src, err);
