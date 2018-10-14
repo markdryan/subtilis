@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -828,7 +829,7 @@ static void prv_movi32fp(subitlis_vm_t *vm, subtilis_buffer_t *b,
 static void prv_movfpi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			 subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	vm->regs[ops[0].reg] = (int32_t)vm->fregs[ops[1].reg];
+	vm->regs[ops[0].reg] = (int32_t)round(vm->fregs[ops[1].reg]);
 }
 
 static void prv_nop(subitlis_vm_t *vm, subtilis_buffer_t *b,
