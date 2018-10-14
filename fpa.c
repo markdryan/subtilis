@@ -244,9 +244,12 @@ void subtilis_fpa_add_stran(subtilis_arm_section_t *s,
 			return;
 		offset = 0;
 		base = mov_dest;
-	} else if (offset < 0) {
-		offset -= offset;
-		subtract = true;
+	} else {
+		if (offset < 0) {
+			offset -= offset;
+			subtract = true;
+		}
+		offset /= 4;
 	}
 
 	instr = subtilis_arm_section_add_instr(s, itype, err);
@@ -258,7 +261,7 @@ void subtilis_fpa_add_stran(subtilis_arm_section_t *s,
 	stran->size = 8;
 	stran->dest = dest;
 	stran->base = base;
-	stran->offset = offset;
+	stran->offset = (uint8_t)offset;
 	stran->pre_indexed = false;
 	stran->write_back = false;
 	stran->subtract = subtract;
@@ -433,7 +436,7 @@ void subtilis_fpa_insert_stran_imm(subtilis_arm_section_t *s,
 	stran->size = 8;
 	stran->dest = dest;
 	stran->base = base;
-	stran->offset = (uint8_t)offset;
+	stran->offset = (uint8_t)((uint32_t)offset / 4);
 	stran->pre_indexed = true;
 	stran->write_back = false;
 	stran->subtract = subtract;
@@ -456,7 +459,7 @@ void subtilis_fpa_push_reg(subtilis_arm_section_t *s,
 	stran->dest = dest;
 	stran->base.type = SUBTILIS_ARM_REG_FIXED;
 	stran->base.num = 13;
-	stran->offset = 8;
+	stran->offset = 2;
 	stran->pre_indexed = true;
 	stran->write_back = true;
 	stran->subtract = true;
@@ -479,7 +482,7 @@ void subtilis_fpa_pop_reg(subtilis_arm_section_t *s,
 	stran->dest = dest;
 	stran->base.type = SUBTILIS_ARM_REG_FIXED;
 	stran->base.num = 13;
-	stran->offset = 8;
+	stran->offset = 2;
 	stran->pre_indexed = false;
 	stran->write_back = true;
 	stran->subtract = false;

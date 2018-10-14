@@ -157,6 +157,7 @@ typedef enum {
 	SUBTILIS_FPA_INSTR_CNF,
 	SUBTILIS_FPA_INSTR_CMFE,
 	SUBTILIS_FPA_INSTR_CNFE,
+	SUBTILIS_ARM_INSTR_MAX,
 } subtilis_arm_instr_type_t;
 
 /*

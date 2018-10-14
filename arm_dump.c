@@ -411,12 +411,14 @@ static void prv_dump_fpa_stran_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("%s", prv_fpa_size(instr->size));
 	printf(" F%zu", instr->dest.num);
 	if (instr->pre_indexed) {
-		printf(", [R%zu, %s%d]", instr->base.num, sub, instr->offset);
-		if (instr->write_back)
-			printf("!");
+		printf(", [R%zu, %s#%d]", instr->base.num, sub,
+		       instr->offset * 4);
 	} else {
-		printf(", [R%zu], %s%d", instr->base.num, sub, instr->offset);
+		printf(", [R%zu], %s#%d", instr->base.num, sub,
+		       instr->offset * 4);
 	}
+	if (instr->write_back)
+		printf("!");
 	printf("\n");
 }
 
@@ -583,6 +585,62 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 	case SUBTILIS_ARM_INSTR_SWI:
 		prv_dump_swi_instr(NULL, NULL, instr->type,
 				   &instr->operands.swi, NULL);
+		break;
+	case SUBTILIS_FPA_INSTR_LDF:
+	case SUBTILIS_FPA_INSTR_STF:
+		prv_dump_fpa_stran_instr(NULL, NULL, instr->type,
+					 &instr->operands.fpa_stran, NULL);
+		break;
+	case SUBTILIS_FPA_INSTR_LDRC:
+		prv_dump_fpa_ldrc_instr(NULL, NULL, instr->type,
+					&instr->operands.fpa_ldrc, NULL);
+		break;
+	case SUBTILIS_FPA_INSTR_ADF:
+	case SUBTILIS_FPA_INSTR_MUF:
+	case SUBTILIS_FPA_INSTR_SUF:
+	case SUBTILIS_FPA_INSTR_RSF:
+	case SUBTILIS_FPA_INSTR_DVF:
+	case SUBTILIS_FPA_INSTR_RDF:
+	case SUBTILIS_FPA_INSTR_RMF:
+	case SUBTILIS_FPA_INSTR_FML:
+	case SUBTILIS_FPA_INSTR_FDV:
+	case SUBTILIS_FPA_INSTR_FRD:
+		prv_dump_fpa_data_dyadic_instr(NULL, NULL, instr->type,
+					       &instr->operands.fpa_data, NULL);
+		break;
+	case SUBTILIS_FPA_INSTR_MVF:
+	case SUBTILIS_FPA_INSTR_MNF:
+	case SUBTILIS_FPA_INSTR_RPW:
+	case SUBTILIS_FPA_INSTR_POW:
+	case SUBTILIS_FPA_INSTR_POL:
+	case SUBTILIS_FPA_INSTR_ABS:
+	case SUBTILIS_FPA_INSTR_RND:
+	case SUBTILIS_FPA_INSTR_LOG:
+	case SUBTILIS_FPA_INSTR_LGN:
+	case SUBTILIS_FPA_INSTR_EXP:
+	case SUBTILIS_FPA_INSTR_SIN:
+	case SUBTILIS_FPA_INSTR_COS:
+	case SUBTILIS_FPA_INSTR_TAN:
+	case SUBTILIS_FPA_INSTR_ASN:
+	case SUBTILIS_FPA_INSTR_ACS:
+	case SUBTILIS_FPA_INSTR_ATN:
+	case SUBTILIS_FPA_INSTR_SQT:
+	case SUBTILIS_FPA_INSTR_URD:
+	case SUBTILIS_FPA_INSTR_NRM:
+		prv_dump_fpa_data_monadic_instr(
+		    NULL, NULL, instr->type, &instr->operands.fpa_data, NULL);
+		break;
+	case SUBTILIS_FPA_INSTR_FLT:
+	case SUBTILIS_FPA_INSTR_FIX:
+		prv_dump_fpa_tran_instr(NULL, NULL, instr->type,
+					&instr->operands.fpa_tran, NULL);
+		break;
+	case SUBTILIS_FPA_INSTR_CMF:
+	case SUBTILIS_FPA_INSTR_CNF:
+	case SUBTILIS_FPA_INSTR_CMFE:
+	case SUBTILIS_FPA_INSTR_CNFE:
+		prv_dump_fpa_cmp_instr(NULL, NULL, instr->type,
+				       &instr->operands.fpa_cmp, NULL);
 		break;
 	default:
 		printf("\tUNKNOWN INSTRUCTION\n");
