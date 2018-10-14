@@ -588,6 +588,14 @@ static void prv_assign_to_mem(subtilis_parser_t *p, subtilis_token_t *t,
 		instr = SUBTILIS_OP_INSTR_STOREO_I32;
 		break;
 	case SUBTILIS_EXP_CONST_REAL:
+		reg = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_MOVI_REAL, e->exp.ir_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		subtilis_exp_delete(e);
+		e = subtilis_exp_new_var(SUBTILIS_EXP_REAL, reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
 		instr = SUBTILIS_OP_INSTR_STOREO_REAL;
 		break;
 	case SUBTILIS_EXP_CONST_STRING:
