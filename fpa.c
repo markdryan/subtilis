@@ -262,7 +262,7 @@ void subtilis_fpa_add_stran(subtilis_arm_section_t *s,
 	stran->dest = dest;
 	stran->base = base;
 	stran->offset = (uint8_t)offset;
-	stran->pre_indexed = false;
+	stran->pre_indexed = true;
 	stran->write_back = false;
 	stran->subtract = subtract;
 }
