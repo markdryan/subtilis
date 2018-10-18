@@ -1445,6 +1445,7 @@ void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
 	size_t i;
 	size_t cs;
 	size_t stm;
+	size_t stf;
 	size_t ldm;
 	size_t start;
 	size_t end;
@@ -1454,6 +1455,7 @@ void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
 	subtilis_regs_used_t regs_used_after;
 	subtilis_arm_mtran_instr_t *mtran;
 	subtilis_arm_op_t *op;
+	subtilis_arm_op_t *old_op;
 	size_t fpa_reg_count;
 
 	for (i = 0; i < arm_s->call_site_count; i++) {
@@ -1489,12 +1491,17 @@ void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
 		mtran->reg_list |= int_regs_used;
 
 		fpa_reg_count = SUBTILIS_ARM_REG_MAX_FPA_REGS;
-		stm = arm_s->op_pool->ops[cs].prev;
-		op = &arm_s->op_pool->ops[stm];
+		stf = arm_s->op_pool->ops[stm].next;
+		op = &arm_s->op_pool->ops[stf];
+		old_op = op;
+		while (op->op.instr.type == SUBTILIS_FPA_INSTR_STF)
+			op = &arm_s->op_pool->ops[op->next];
+		if (op != old_op)
+			op = &arm_s->op_pool->ops[op->prev];
 		while (fpa_reg_count > 0 && op->type == SUBTILIS_OP_INSTR &&
 		       op->op.instr.type == SUBTILIS_FPA_INSTR_STF) {
 			--fpa_reg_count;
-			printf("real_regs_used 0x%zx reg test %zu\n",
+			printf("stf real_regs_used 0x%zx reg test %zu\n",
 			       real_regs_used, fpa_reg_count);
 			if (real_regs_used & (1 << fpa_reg_count))
 				op->op.instr.operands.fpa_stran.ccode =
@@ -1508,7 +1515,7 @@ void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
 		while (fpa_reg_count > 0 && op->type == SUBTILIS_OP_INSTR &&
 		       op->op.instr.type == SUBTILIS_FPA_INSTR_LDF) {
 			--fpa_reg_count;
-			printf("real_regs_used 0x%zx reg test %zu\n",
+			printf("ldf real_regs_used 0x%zx reg test %zu\n",
 			       real_regs_used, fpa_reg_count);
 			if (real_regs_used & (1 << fpa_reg_count))
 				op->op.instr.operands.fpa_stran.ccode =
