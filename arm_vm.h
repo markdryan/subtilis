@@ -20,8 +20,16 @@
 #include "arm_core.h"
 #include "buffer.h"
 
+union subtilis_arm_vm_freg_t_ {
+	double real64;
+	float real32;
+};
+
+typedef union subtilis_arm_vm_freg_t_ subtilis_arm_vm_freg_t;
+
 struct subtilis_arm_vm_t_ {
 	int32_t regs[16];
+	subtilis_arm_vm_freg_t fregs[6];
 	uint8_t *memory;
 	size_t mem_size;
 	size_t code_size;

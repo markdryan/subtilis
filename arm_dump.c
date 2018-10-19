@@ -311,38 +311,10 @@ static const char *prv_fpa_size(size_t size)
 
 static double prv_extract_imm(subtilis_fpa_op2_t op2)
 {
-	double imm = 0.0;
+	subtilis_error_t err;
 
-	switch (op2.imm) {
-	case 0x8:
-		imm = 0.0;
-		break;
-	case 0x9:
-		imm = 1.0;
-		break;
-	case 0xA:
-		imm = 2.0;
-		break;
-	case 0xB:
-		imm = 3.0;
-		break;
-	case 0xC:
-		imm = 4.0;
-		break;
-	case 0xD:
-		imm = 5.0;
-		break;
-	case 0xE:
-		imm = 0.5;
-		break;
-	case 0xF:
-		imm = 10.0;
-		break;
-	default:
-		break;
-	}
-
-	return imm;
+	subtilis_error_init(&err);
+	return subtilis_fpa_extract_imm(op2, &err);
 }
 
 static void prv_dump_fpa_data(void *user_data, bool dyadic,

@@ -487,3 +487,40 @@ void subtilis_fpa_pop_reg(subtilis_arm_section_t *s,
 	stran->write_back = true;
 	stran->subtract = false;
 }
+
+double subtilis_fpa_extract_imm(subtilis_fpa_op2_t op2, subtilis_error_t *err)
+{
+	double imm = 0.0;
+
+	switch (op2.imm) {
+	case 0x8:
+		imm = 0.0;
+		break;
+	case 0x9:
+		imm = 1.0;
+		break;
+	case 0xA:
+		imm = 2.0;
+		break;
+	case 0xB:
+		imm = 3.0;
+		break;
+	case 0xC:
+		imm = 4.0;
+		break;
+	case 0xD:
+		imm = 5.0;
+		break;
+	case 0xE:
+		imm = 0.5;
+		break;
+	case 0xF:
+		imm = 10.0;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		break;
+	}
+
+	return imm;
+}

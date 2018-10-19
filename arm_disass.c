@@ -206,12 +206,20 @@ static void prv_decode_datai(subtilis_arm_instr_t *instr, uint32_t encoded,
 static void prv_decode_fpa_stran(subtilis_arm_instr_t *instr, uint32_t encoded,
 				 subtilis_error_t *err)
 {
+	uint32_t scratch;
 	subtilis_fpa_stran_instr_t *stran = &instr->operands.fpa_stran;
 
 	if (encoded & (1 << 20))
 		instr->type = SUBTILIS_FPA_INSTR_LDF;
 	else
 		instr->type = SUBTILIS_FPA_INSTR_STF;
+
+	scratch = ((encoded >> 21) & 2) | ((encoded >> 15) & 1);
+	if (scratch == 3) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	stran->size = 4 << scratch;
 
 	stran->ccode = (encoded >> 28);
 	stran->pre_indexed = (encoded & (1 << 24)) != 0;
