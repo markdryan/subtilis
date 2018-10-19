@@ -900,7 +900,8 @@ static void prv_process_ldm(subtilis_arm_vm_t *arm_vm,
 	if (op->write_back)
 		arm_vm->regs[op->op0.num] = addr + 0x8000;
 
-	/* TODO: Is this correct?  We don't do this for any other loads */
+	// TODO: Is this correct? We dont do this for other loads
+
 	if (!((1 << 15) & op->reg_list))
 		arm_vm->regs[15] += 4;
 }
@@ -1028,9 +1029,11 @@ static void prv_process_fpa_mnf(subtilis_arm_vm_t *arm_vm,
 		arm_vm->fregs[dest].real64 = -arm_vm->fregs[dest].real64;
 }
 
-static void prv_process_fpa_adf(subtilis_arm_vm_t *arm_vm,
-				subtilis_fpa_data_instr_t *op,
-				subtilis_error_t *err)
+static void prv_process_fpa_dyadic(subtilis_arm_vm_t *arm_vm,
+				   subtilis_fpa_data_instr_t *op,
+				   float (*f32_op)(float, float),
+				   double (*f64_op)(double, double),
+				   subtilis_error_t *err)
 {
 	size_t dest;
 	size_t op1;
@@ -1052,9 +1055,10 @@ static void prv_process_fpa_adf(subtilis_arm_vm_t *arm_vm,
 			imm = subtilis_fpa_extract_imm(op->op2, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-			res32 += (float)imm;
+			res32 = f32_op(res32, (float)imm);
 		} else {
-			res32 += arm_vm->fregs[op->op2.reg.num].real32;
+			res32 = f32_op(res32,
+				       arm_vm->fregs[op->op2.reg.num].real32);
 		}
 		arm_vm->fregs[dest].real32 = res32;
 	} else if (op->size == 8) {
@@ -1063,9 +1067,10 @@ static void prv_process_fpa_adf(subtilis_arm_vm_t *arm_vm,
 			imm = subtilis_fpa_extract_imm(op->op2, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-			res64 += imm;
+			res64 = f64_op(res64, imm);
 		} else {
-			res64 += arm_vm->fregs[op->op2.reg.num].real64;
+			res64 = f64_op(res64,
+				       arm_vm->fregs[op->op2.reg.num].real64);
 		}
 		arm_vm->fregs[dest].real64 = res64;
 	} else {
@@ -1075,245 +1080,77 @@ static void prv_process_fpa_adf(subtilis_arm_vm_t *arm_vm,
 
 	arm_vm->regs[15] += 4;
 }
+
+static float prv_process_fpa_add_real32(float a, float b) { return a + b; }
+
+static double prv_process_fpa_add_real64(double a, double b) { return a + b; }
+
+static void prv_process_fpa_adf(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_dyadic(arm_vm, op, prv_process_fpa_add_real32,
+			       prv_process_fpa_add_real64, err);
+}
+
+static float prv_process_fpa_mul_real32(float a, float b) { return a * b; }
+
+static double prv_process_fpa_mul_real64(double a, double b) { return a * b; }
 
 static void prv_process_fpa_muf(subtilis_arm_vm_t *arm_vm,
 				subtilis_fpa_data_instr_t *op,
 				subtilis_error_t *err)
 {
-	size_t dest;
-	size_t op1;
-	double imm;
-	float res32;
-	double res64;
-
-	if (!prv_match_ccode(arm_vm, op->ccode)) {
-		arm_vm->regs[15] += 4;
-		return;
-	}
-
-	dest = op->dest.num;
-	op1 = op->op1.num;
-
-	if (op->size == 4) {
-		res32 = arm_vm->fregs[op1].real32;
-		if (op->immediate) {
-			imm = subtilis_fpa_extract_imm(op->op2, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			res32 *= (float)imm;
-		} else {
-			res32 *= arm_vm->fregs[op->op2.reg.num].real32;
-		}
-		arm_vm->fregs[dest].real32 = res32;
-	} else if (op->size == 8) {
-		res64 = arm_vm->fregs[op1].real64;
-		if (op->immediate) {
-			imm = subtilis_fpa_extract_imm(op->op2, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			res64 *= imm;
-		} else {
-			res64 *= arm_vm->fregs[op->op2.reg.num].real64;
-		}
-		arm_vm->fregs[dest].real64 = res64;
-	} else {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
-	arm_vm->regs[15] += 4;
+	prv_process_fpa_dyadic(arm_vm, op, prv_process_fpa_mul_real32,
+			       prv_process_fpa_mul_real64, err);
 }
+
+static float prv_process_fpa_sub_real32(float a, float b) { return a - b; }
+
+static double prv_process_fpa_sub_real64(double a, double b) { return a - b; }
 
 static void prv_process_fpa_suf(subtilis_arm_vm_t *arm_vm,
 				subtilis_fpa_data_instr_t *op,
 				subtilis_error_t *err)
 {
-	size_t dest;
-	size_t op1;
-	double imm;
-	float res32;
-	double res64;
-
-	if (!prv_match_ccode(arm_vm, op->ccode)) {
-		arm_vm->regs[15] += 4;
-		return;
-	}
-
-	dest = op->dest.num;
-	op1 = op->op1.num;
-
-	if (op->size == 4) {
-		res32 = arm_vm->fregs[op1].real32;
-		if (op->immediate) {
-			imm = subtilis_fpa_extract_imm(op->op2, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			res32 -= (float)imm;
-		} else {
-			res32 -= arm_vm->fregs[op->op2.reg.num].real32;
-		}
-		arm_vm->fregs[dest].real32 = res32;
-	} else if (op->size == 8) {
-		res64 = arm_vm->fregs[op1].real64;
-		if (op->immediate) {
-			imm = subtilis_fpa_extract_imm(op->op2, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			res64 -= imm;
-		} else {
-			res64 -= arm_vm->fregs[op->op2.reg.num].real64;
-		}
-		arm_vm->fregs[dest].real64 = res64;
-	} else {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
-	arm_vm->regs[15] += 4;
+	prv_process_fpa_dyadic(arm_vm, op, prv_process_fpa_sub_real32,
+			       prv_process_fpa_sub_real64, err);
 }
+
+static float prv_process_fpa_rsub_real32(float a, float b) { return b - a; }
+
+static double prv_process_fpa_rsub_real64(double a, double b) { return b - a; }
 
 static void prv_process_fpa_rsf(subtilis_arm_vm_t *arm_vm,
 				subtilis_fpa_data_instr_t *op,
 				subtilis_error_t *err)
 {
-	size_t dest;
-	size_t op1;
-	double imm;
-	float res32;
-	double res64;
-
-	if (!prv_match_ccode(arm_vm, op->ccode)) {
-		arm_vm->regs[15] += 4;
-		return;
-	}
-
-	dest = op->dest.num;
-	op1 = op->op1.num;
-
-	if (op->size == 4) {
-		if (op->immediate) {
-			imm = subtilis_fpa_extract_imm(op->op2, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			res32 = (float)imm;
-		} else {
-			res32 = arm_vm->fregs[op->op2.reg.num].real32;
-		}
-		res32 -= arm_vm->fregs[op1].real32;
-		arm_vm->fregs[dest].real32 = res32;
-	} else if (op->size == 8) {
-		if (op->immediate) {
-			imm = subtilis_fpa_extract_imm(op->op2, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			res64 = imm;
-		} else {
-			res64 = arm_vm->fregs[op->op2.reg.num].real64;
-		}
-		res64 -= arm_vm->fregs[op1].real64;
-		arm_vm->fregs[dest].real64 = res64;
-	} else {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
-	arm_vm->regs[15] += 4;
+	prv_process_fpa_dyadic(arm_vm, op, prv_process_fpa_rsub_real32,
+			       prv_process_fpa_rsub_real64, err);
 }
+
+static float prv_process_fpa_div_real32(float a, float b) { return a / b; }
+
+static double prv_process_fpa_div_real64(double a, double b) { return a / b; }
 
 static void prv_process_fpa_dvf(subtilis_arm_vm_t *arm_vm,
 				subtilis_fpa_data_instr_t *op,
 				subtilis_error_t *err)
 {
-	size_t dest;
-	size_t op1;
-	double imm;
-	float res32;
-	double res64;
-
-	if (!prv_match_ccode(arm_vm, op->ccode)) {
-		arm_vm->regs[15] += 4;
-		return;
-	}
-
-	dest = op->dest.num;
-	op1 = op->op1.num;
-
-	if (op->size == 4) {
-		res32 = arm_vm->fregs[op1].real32;
-		if (op->immediate) {
-			imm = subtilis_fpa_extract_imm(op->op2, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			res32 /= (float)imm;
-		} else {
-			res32 /= arm_vm->fregs[op->op2.reg.num].real32;
-		}
-		arm_vm->fregs[dest].real32 = res32;
-	} else if (op->size == 8) {
-		res64 = arm_vm->fregs[op1].real64;
-		if (op->immediate) {
-			imm = subtilis_fpa_extract_imm(op->op2, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			res64 /= imm;
-		} else {
-			res64 /= arm_vm->fregs[op->op2.reg.num].real64;
-		}
-		arm_vm->fregs[dest].real64 = res64;
-	} else {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
-	arm_vm->regs[15] += 4;
+	prv_process_fpa_dyadic(arm_vm, op, prv_process_fpa_div_real32,
+			       prv_process_fpa_div_real64, err);
 }
+
+static float prv_process_fpa_rdiv_real32(float a, float b) { return b / a; }
+
+static double prv_process_fpa_rdiv_real64(double a, double b) { return b / a; }
 
 static void prv_process_fpa_rdf(subtilis_arm_vm_t *arm_vm,
 				subtilis_fpa_data_instr_t *op,
 				subtilis_error_t *err)
 {
-	size_t dest;
-	size_t op1;
-	double imm;
-	float res32;
-	double res64;
-
-	if (!prv_match_ccode(arm_vm, op->ccode)) {
-		arm_vm->regs[15] += 4;
-		return;
-	}
-
-	dest = op->dest.num;
-	op1 = op->op1.num;
-
-	if (op->size == 4) {
-		if (op->immediate) {
-			imm = subtilis_fpa_extract_imm(op->op2, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			res32 = (float)imm;
-		} else {
-			res32 = arm_vm->fregs[op->op2.reg.num].real32;
-		}
-		res32 /= arm_vm->fregs[op1].real32;
-		arm_vm->fregs[dest].real32 = res32;
-	} else if (op->size == 8) {
-		if (op->immediate) {
-			imm = subtilis_fpa_extract_imm(op->op2, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			res64 = imm;
-		} else {
-			res64 = arm_vm->fregs[op->op2.reg.num].real64;
-		}
-		res64 /= arm_vm->fregs[op1].real64;
-		arm_vm->fregs[dest].real64 = res64;
-	} else {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
-	arm_vm->regs[15] += 4;
+	prv_process_fpa_dyadic(arm_vm, op, prv_process_fpa_rdiv_real32,
+			       prv_process_fpa_rdiv_real64, err);
 }
 
 static void prv_process_fpa_fix(subtilis_arm_vm_t *arm_vm,
