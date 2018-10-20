@@ -280,6 +280,36 @@ const subtilis_test_case_t test_cases[] = {
 	  "PRINT ABS(x%)\n"
 	  "PRINT ABS(10)\n",
 	  "10\n10\n"},
+	{ "fpa_small",
+	  "LOCAL x\n"
+	  "LOCAL y\n"
+	  "LOCAL a\n"
+	  "LOCAL b\n"
+	  "LOCAL c\n"
+	  "LOCAL d\n"
+	  "\n"
+	  "LET x = 2.0\n"
+	  "LET y = 3.14\n"
+	  "LET z = (x+x) / 2\n"
+	  "LET a = z - x -10.0\n"
+	  "LET b = a * 10\n"
+	  "\n"
+	  "PROCa(a,b,x,y,z)\n"
+	  "\n"
+	  "LET c = b * a\n"
+	  "LET d = 2 / c\n"
+	  "LET e% = d\n"
+	  "LET f = e%\n"
+	  "LET h = -y\n"
+	  "LET e% = z\n"
+	  "PRINT e%\n"
+	  "\n"
+	  "DEF PROCa(a,b,c,d,e)\n"
+	  "LOCAL a%\n"
+	  "LET a% = a + b + c + d + e\n"
+	  "PRINT a%\n"
+	  "ENDPROC\n",
+	  "-103\n2\n"}
 };
 
 /* clang-format on */
