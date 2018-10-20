@@ -42,6 +42,7 @@ struct subtilis_arm_vm_t_ {
 	bool carry_flag;
 	bool overflow_flag;
 	bool quit;
+	bool reverse_fpa_consts;
 };
 
 typedef struct subtilis_arm_vm_t_ subtilis_arm_vm_t;

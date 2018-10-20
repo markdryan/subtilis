@@ -24,6 +24,8 @@
 subtilis_arm_vm_t *subtilis_arm_vm_new(uint32_t *code, size_t code_size,
 				       size_t mem_size, subtilis_error_t *err)
 {
+	double dummy_float = 1.0;
+	uint32_t *lower_word = (uint32_t *)((void *)&dummy_float);
 	subtilis_arm_vm_t *arm_vm = calloc(1, sizeof(*arm_vm));
 
 	if (!arm_vm) {
@@ -40,6 +42,8 @@ subtilis_arm_vm_t *subtilis_arm_vm_new(uint32_t *code, size_t code_size,
 	memcpy(arm_vm->memory, code, sizeof(*code) * code_size);
 	arm_vm->code_size = code_size;
 	arm_vm->mem_size = mem_size;
+
+	arm_vm->reverse_fpa_consts = (*lower_word) == 0;
 
 	return arm_vm;
 
@@ -939,10 +943,16 @@ static void prv_process_fpa_ldf(subtilis_arm_vm_t *arm_vm,
 		prv_set_fpa_f32(arm_vm, op->dest.num,
 				*((float *)&arm_vm->memory[addr]));
 	} else if (op->size == 8) {
-		ptr = (uint32_t *)&arm_vm->memory[addr];
-		dbl = ptr[0];
-		dbl = (dbl << 32) | ptr[1];
-		prv_set_fpa_f64(arm_vm, op->dest.num, *((double *)&dbl));
+		if (arm_vm->reverse_fpa_consts) {
+			ptr = (uint32_t *)&arm_vm->memory[addr];
+			dbl = ptr[0];
+			dbl = (dbl << 32) | ptr[1];
+			prv_set_fpa_f64(arm_vm, op->dest.num,
+					*((double *)&dbl));
+		} else {
+			prv_set_fpa_f64(arm_vm, op->dest.num,
+					*((double *)&arm_vm->memory[addr]));
+		}
 	} else {
 		subtilis_error_set_assertion_failed(err);
 		return;
@@ -970,9 +980,15 @@ static void prv_process_fpa_stf(subtilis_arm_vm_t *arm_vm,
 		*((float *)&arm_vm->memory[addr]) =
 		    arm_vm->fregs[op->dest.num].val.real32;
 	} else if (op->size == 8) {
-		ptr = (uint32_t *)&arm_vm->fregs[op->dest.num].val.real64;
-		*((uint32_t *)&arm_vm->memory[addr]) = ptr[1];
-		*((uint32_t *)&arm_vm->memory[addr + 4]) = ptr[0];
+		if (arm_vm->reverse_fpa_consts) {
+			ptr =
+			    (uint32_t *)&arm_vm->fregs[op->dest.num].val.real64;
+			*((uint32_t *)&arm_vm->memory[addr]) = ptr[1];
+			*((uint32_t *)&arm_vm->memory[addr + 4]) = ptr[0];
+		} else {
+			*((double *)&arm_vm->memory[addr]) =
+			    arm_vm->fregs[op->dest.num].val.real64;
+		}
 	} else {
 		subtilis_error_set_assertion_failed(err);
 		return;
