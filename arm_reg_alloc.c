@@ -180,7 +180,7 @@ struct subtilis_arm_reg_ud_t_ {
 typedef struct subtilis_arm_reg_ud_t_ subtilis_arm_reg_ud_t;
 
 static subtilis_arm_reg_class_t *
-prv_new_regs(subtilis_arm_section_t *arm_s, size_t max_regs, size_t reg_start,
+prv_new_regs(size_t reg_count, size_t max_regs, size_t reg_start,
 	     size_t reg_size, size_t args, int32_t max_offset,
 	     subtilis_arm_reg_spill_imm_t spill_imm,
 	     subtilis_arm_reg_stran_imm_t stran_imm,
@@ -190,7 +190,6 @@ prv_new_regs(subtilis_arm_section_t *arm_s, size_t max_regs, size_t reg_start,
 	size_t i;
 	size_t index;
 	subtilis_arm_reg_class_t *regs;
-	size_t reg_count = arm_s->reg_counter;
 	size_t reg_args = 4;
 
 	regs = calloc(sizeof(*regs), 1);
@@ -286,18 +285,20 @@ static void prv_init_arm_reg_ud(subtilis_arm_reg_ud_t *ud,
 				subtilis_error_t *err)
 {
 	ud->int_regs = prv_new_regs(
-	    arm_s, SUBTILIS_ARM_REG_MAX_INT_REGS, SUBTILIS_IR_REG_TEMP_START,
-	    sizeof(int32_t), arm_s->stype->int_regs, 4095,
-	    subtilis_arm_insert_stran_spill_imm, subtilis_arm_insert_stran_imm,
-	    SUBTILIS_ARM_INSTR_STR, SUBTILIS_ARM_INSTR_LDR, err);
+	    arm_s->reg_counter, SUBTILIS_ARM_REG_MAX_INT_REGS,
+	    SUBTILIS_IR_REG_TEMP_START, sizeof(int32_t), arm_s->stype->int_regs,
+	    4095, subtilis_arm_insert_stran_spill_imm,
+	    subtilis_arm_insert_stran_imm, SUBTILIS_ARM_INSTR_STR,
+	    SUBTILIS_ARM_INSTR_LDR, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	ud->fpa_regs = prv_new_regs(
-	    arm_s, SUBTILIS_ARM_REG_MAX_FPA_REGS, SUBTILIS_ARM_REG_MIN_FPA_REGS,
-	    sizeof(double), arm_s->stype->fp_regs, 1023,
-	    subtilis_fpa_insert_stran_spill_imm, subtilis_fpa_insert_stran_imm,
-	    SUBTILIS_FPA_INSTR_STF, SUBTILIS_FPA_INSTR_LDF, err);
+	    arm_s->freg_counter, SUBTILIS_ARM_REG_MAX_FPA_REGS,
+	    SUBTILIS_ARM_REG_MIN_FPA_REGS, sizeof(double),
+	    arm_s->stype->fp_regs, 1023, subtilis_fpa_insert_stran_spill_imm,
+	    subtilis_fpa_insert_stran_imm, SUBTILIS_FPA_INSTR_STF,
+	    SUBTILIS_FPA_INSTR_LDF, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		prv_free_regs(ud->int_regs);
 		return;
@@ -1494,7 +1495,15 @@ void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
 		stf = arm_s->op_pool->ops[stm].next;
 		op = &arm_s->op_pool->ops[stf];
 		old_op = op;
-		while (op->op.instr.type == SUBTILIS_FPA_INSTR_STF)
+
+		/*
+		 * TODO: This isn't great.  We need to find a better way
+		 * of identifying location and number of these instructions.
+		 */
+
+		while ((op->op.instr.type == SUBTILIS_FPA_INSTR_STF) &&
+		       (op->op.instr.operands.fpa_stran.ccode ==
+			SUBTILIS_ARM_CCODE_NV))
 			op = &arm_s->op_pool->ops[op->next];
 		if (op != old_op)
 			op = &arm_s->op_pool->ops[op->prev];
