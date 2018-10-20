@@ -580,6 +580,18 @@ static size_t prv_compute_stran_addr(subtilis_arm_vm_t *arm_vm,
 	return addr;
 }
 
+static void prv_set_fpa_f32(subtilis_arm_vm_t *arm_vm, size_t reg, float val)
+{
+	arm_vm->fregs[reg].val.real32 = val;
+	arm_vm->fregs[reg].size = 4;
+}
+
+static void prv_set_fpa_f64(subtilis_arm_vm_t *arm_vm, size_t reg, double val)
+{
+	arm_vm->fregs[reg].val.real64 = val;
+	arm_vm->fregs[reg].size = 8;
+}
+
 static size_t prv_compute_fpa_stran_addr(subtilis_arm_vm_t *arm_vm,
 					 subtilis_fpa_stran_instr_t *op,
 					 subtilis_error_t *err)
@@ -924,13 +936,13 @@ static void prv_process_fpa_ldf(subtilis_arm_vm_t *arm_vm,
 		return;
 
 	if (op->size == 4) {
-		arm_vm->fregs[op->dest.num].real32 =
-		    *((float *)&arm_vm->memory[addr]);
+		prv_set_fpa_f32(arm_vm, op->dest.num,
+				*((float *)&arm_vm->memory[addr]));
 	} else if (op->size == 8) {
 		ptr = (uint32_t *)&arm_vm->memory[addr];
 		dbl = ptr[0];
 		dbl = (dbl << 32) | ptr[1];
-		arm_vm->fregs[op->dest.num].real64 = *((double *)&dbl);
+		prv_set_fpa_f64(arm_vm, op->dest.num, *((double *)&dbl));
 	} else {
 		subtilis_error_set_assertion_failed(err);
 		return;
@@ -956,9 +968,9 @@ static void prv_process_fpa_stf(subtilis_arm_vm_t *arm_vm,
 		return;
 	if (op->size == 4) {
 		*((float *)&arm_vm->memory[addr]) =
-		    arm_vm->fregs[op->dest.num].real32;
+		    arm_vm->fregs[op->dest.num].val.real32;
 	} else if (op->size == 8) {
-		ptr = (uint32_t *)&arm_vm->fregs[op->dest.num].real64;
+		ptr = (uint32_t *)&arm_vm->fregs[op->dest.num].val.real64;
 		*((uint32_t *)&arm_vm->memory[addr]) = ptr[1];
 		*((uint32_t *)&arm_vm->memory[addr + 4]) = ptr[0];
 	} else {
@@ -988,20 +1000,22 @@ static void prv_process_fpa_mvf(subtilis_arm_vm_t *arm_vm,
 			imm = subtilis_fpa_extract_imm(op->op2, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-			arm_vm->fregs[dest].real32 = (float)imm;
+			prv_set_fpa_f32(arm_vm, dest, (float)imm);
 		} else {
-			arm_vm->fregs[dest].real32 =
-			    arm_vm->fregs[op->op2.reg.num].real32;
+			prv_set_fpa_f32(
+			    arm_vm, dest,
+			    arm_vm->fregs[op->op2.reg.num].val.real32);
 		}
 	} else if (op->size == 8) {
 		if (op->immediate) {
 			imm = subtilis_fpa_extract_imm(op->op2, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-			arm_vm->fregs[dest].real64 = imm;
+			prv_set_fpa_f64(arm_vm, dest, imm);
 		} else {
-			arm_vm->fregs[dest].real64 =
-			    arm_vm->fregs[op->op2.reg.num].real64;
+			prv_set_fpa_f64(
+			    arm_vm, dest,
+			    arm_vm->fregs[op->op2.reg.num].val.real64);
 		}
 	} else {
 		subtilis_error_set_assertion_failed(err);
@@ -1024,9 +1038,9 @@ static void prv_process_fpa_mnf(subtilis_arm_vm_t *arm_vm,
 	dest = op->dest.num;
 
 	if (op->size == 4)
-		arm_vm->fregs[dest].real32 = -arm_vm->fregs[dest].real32;
+		prv_set_fpa_f32(arm_vm, dest, -arm_vm->fregs[dest].val.real32);
 	else if (op->size == 8)
-		arm_vm->fregs[dest].real64 = -arm_vm->fregs[dest].real64;
+		prv_set_fpa_f64(arm_vm, dest, -arm_vm->fregs[dest].val.real64);
 }
 
 static void prv_process_fpa_dyadic(subtilis_arm_vm_t *arm_vm,
@@ -1050,29 +1064,29 @@ static void prv_process_fpa_dyadic(subtilis_arm_vm_t *arm_vm,
 	op1 = op->op1.num;
 
 	if (op->size == 4) {
-		res32 = arm_vm->fregs[op1].real32;
+		res32 = arm_vm->fregs[op1].val.real32;
 		if (op->immediate) {
 			imm = subtilis_fpa_extract_imm(op->op2, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 			res32 = f32_op(res32, (float)imm);
 		} else {
-			res32 = f32_op(res32,
-				       arm_vm->fregs[op->op2.reg.num].real32);
+			res32 = f32_op(
+			    res32, arm_vm->fregs[op->op2.reg.num].val.real32);
 		}
-		arm_vm->fregs[dest].real32 = res32;
+		prv_set_fpa_f32(arm_vm, dest, res32);
 	} else if (op->size == 8) {
-		res64 = arm_vm->fregs[op1].real64;
+		res64 = arm_vm->fregs[op1].val.real64;
 		if (op->immediate) {
 			imm = subtilis_fpa_extract_imm(op->op2, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 			res64 = f64_op(res64, imm);
 		} else {
-			res64 = f64_op(res64,
-				       arm_vm->fregs[op->op2.reg.num].real64);
+			res64 = f64_op(
+			    res64, arm_vm->fregs[op->op2.reg.num].val.real64);
 		}
-		arm_vm->fregs[dest].real64 = res64;
+		prv_set_fpa_f64(arm_vm, dest, res64);
 	} else {
 		subtilis_error_set_assertion_failed(err);
 		return;
@@ -1157,15 +1171,18 @@ static void prv_process_fpa_fix(subtilis_arm_vm_t *arm_vm,
 				subtilis_fpa_tran_instr_t *op,
 				subtilis_error_t *err)
 {
+	double val;
+
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
 		return;
 	}
 
-	/* TODO: Unable to cope with floats */
-
-	arm_vm->regs[op->dest.num] =
-	    (int32_t)round(arm_vm->fregs[op->op2.reg.num].real64);
+	if (arm_vm->fregs[op->op2.reg.num].size == 4)
+		val = (double)arm_vm->fregs[op->op2.reg.num].val.real32;
+	else
+		val = arm_vm->fregs[op->op2.reg.num].val.real64;
+	arm_vm->regs[op->dest.num] = (int32_t)round(val);
 
 	arm_vm->regs[15] += 4;
 }
@@ -1180,11 +1197,11 @@ static void prv_process_fpa_flt(subtilis_arm_vm_t *arm_vm,
 	}
 
 	if (op->size == 4) {
-		arm_vm->fregs[op->dest.num].real32 =
-		    (float)arm_vm->regs[op->op2.reg.num];
+		prv_set_fpa_f32(arm_vm, op->dest.num,
+				(float)arm_vm->regs[op->op2.reg.num]);
 	} else if (op->size == 8) {
-		arm_vm->fregs[op->dest.num].real64 =
-		    (double)arm_vm->regs[op->op2.reg.num];
+		prv_set_fpa_f64(arm_vm, op->dest.num,
+				(double)arm_vm->regs[op->op2.reg.num]);
 	} else {
 		subtilis_error_set_assertion_failed(err);
 		return;

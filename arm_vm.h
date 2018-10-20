@@ -20,12 +20,15 @@
 #include "arm_core.h"
 #include "buffer.h"
 
-union subtilis_arm_vm_freg_t_ {
-	double real64;
-	float real32;
+struct subtilis_arm_vm_freg_t_ {
+	union {
+		double real64;
+		float real32;
+	} val;
+	size_t size;
 };
 
-typedef union subtilis_arm_vm_freg_t_ subtilis_arm_vm_freg_t;
+typedef struct subtilis_arm_vm_freg_t_ subtilis_arm_vm_freg_t;
 
 struct subtilis_arm_vm_t_ {
 	int32_t regs[16];
