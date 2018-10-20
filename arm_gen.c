@@ -657,7 +657,8 @@ static void prv_stack_args(subtilis_arm_section_t *arm_s,
 		fstran->ccode = SUBTILIS_ARM_CCODE_AL;
 		fstran->dest = subtilis_arm_ir_to_freg(reg_num);
 		fstran->base = op0;
-		fstran->offset = offset;
+		fstran->offset = offset / 4;
+		fstran->size = 8;
 		fstran->pre_indexed = true;
 		fstran->write_back = false;
 		fstran->subtract = true;
