@@ -758,6 +758,7 @@ static void prv_encode_fpa_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	word |= instr->dest.num << 16;
 	word |= 15 << 12;
 	word |= 1 << 8;
+	word |= 1 << 4;
 
 	if (instr->immediate) {
 		word |= 1 << 3;
