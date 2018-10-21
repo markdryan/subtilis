@@ -309,7 +309,47 @@ const subtilis_test_case_t test_cases[] = {
 	  "LET a% = a + b + c + d + e\n"
 	  "PRINT a%\n"
 	  "ENDPROC\n",
-	  "-103\n2\n"}
+	  "-102\n2\n"},
+	{ "fpa_logical",
+	  "LOCAL a\n"
+	  "LET a = 3.14\n"
+	  "LET b = 17.6666\n"
+	  "LET c = 3.14\n"
+	  "PRINT a < b\n"
+	  "PRINT a > b\n"
+	  "PRINT a = b\n"
+	  "PRINT a = c\n"
+	  "PRINT a <> b\n"
+	  "PRINT a <> c\n"
+	  "PRINT a < 17.6666\n"
+	  "PRINT a > 17.6666\n"
+	  "PRINT a = 17.6666\n"
+	  "PRINT a = 3.14\n"
+	  "PRINT a <> 17.6666\n"
+	  "PRINT a <> 3.14\n"
+	  "PRINT 3.14 < b\n"
+	  "PRINT 3.14 > b\n"
+	  "PRINT 3.14 = b\n"
+	  "PRINT 3.14 = c\n"
+	  "PRINT 3.14 <> b\n"
+	  "PRINT 3.14 <> c\n"
+	  "PRINT a <> 2.0\n"
+	  "PROCLogical\n"
+	  "\n"
+	  "DEF PROCLogical\n"
+	  "LOCAL a\n"
+	  "LET a = 3.14\n"
+	  "PRINT a OR b\n"
+	  "PRINT a AND b\n"
+	  "PRINT a EOR b\n"
+	  "PRINT NOT a\n"
+	  "PRINT a OR 17.6666\n"
+	  "PRINT a AND 17.6666\n"
+	  "PRINT a EOR 17.6666\n"
+	  "PRINT NOT 3.14\n"
+	  "ENDPROC\n",
+	  "-1\n0\n0\n-1\n-1\n0\n-1\n0\n0\n-1\n-1\n0\n-1\n0\n0\n"
+	  "-1\n-1\n0\n-1\n19\n1\n18\n-4\n19\n1\n18\n-4\n"}
 };
 
 /* clang-format on */

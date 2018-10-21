@@ -317,19 +317,11 @@ static double prv_extract_imm(subtilis_fpa_op2_t op2)
 	return subtilis_fpa_extract_imm(op2, &err);
 }
 
-static void prv_dump_fpa_data(void *user_data, bool dyadic,
-			      subtilis_arm_op_t *op,
-			      subtilis_arm_instr_type_t type,
-			      subtilis_fpa_data_instr_t *instr,
-			      subtilis_error_t *err)
+static const char* prv_extract_rounding(subtilis_fpa_rounding_t rnd)
 {
 	const char *rounding = "";
 
-	printf("\t%s", instr_desc[type]);
-	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
-		printf("%s", ccode_desc[instr->ccode]);
-	printf("%s", prv_fpa_size(instr->size));
-	switch (instr->rounding) {
+	switch (rnd) {
 	case SUBTILIS_FPA_ROUNDING_NEAREST:
 		break;
 	case SUBTILIS_FPA_ROUNDING_PLUS_INFINITY:
@@ -342,7 +334,22 @@ static void prv_dump_fpa_data(void *user_data, bool dyadic,
 		rounding = "Z";
 		break;
 	}
-	printf("%s F%zu, ", rounding, instr->dest.num);
+
+	return rounding;
+}
+
+static void prv_dump_fpa_data(void *user_data, bool dyadic,
+			      subtilis_arm_op_t *op,
+			      subtilis_arm_instr_type_t type,
+			      subtilis_fpa_data_instr_t *instr,
+			      subtilis_error_t *err)
+{
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf("%s", prv_fpa_size(instr->size));
+	printf("%s F%zu, ", prv_extract_rounding(instr->rounding),
+	       instr->dest.num);
 	if (dyadic)
 		printf("F%zu, ", instr->op1.num);
 	if (!instr->immediate)
@@ -402,7 +409,8 @@ static void prv_dump_fpa_tran_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
-	printf("%s", prv_fpa_size(instr->size));
+	printf("%s%s", prv_fpa_size(instr->size),
+	       prv_extract_rounding(instr->rounding));
 	if (type == SUBTILIS_FPA_INSTR_FLT) {
 		printf(" F%zu, ", instr->dest.num);
 		if (instr->immediate)

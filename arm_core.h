@@ -641,8 +641,7 @@ void subtilis_fpa_add_cmfcnf_imm(subtilis_arm_section_t *s,
 				 subtilis_arm_instr_type_t type,
 				 subtilis_arm_instr_type_t alttype,
 				 subtilis_arm_ccode_type_t ccode,
-				 subtilis_arm_reg_t dest,
-				 subtilis_arm_reg_t op1, double op2,
+				 subtilis_arm_reg_t dest, double op2,
 				 subtilis_error_t *err);
 void subtilis_fpa_add_cmp(subtilis_arm_section_t *s,
 			  subtilis_arm_instr_type_t itype,
@@ -692,15 +691,13 @@ double subtilis_fpa_extract_imm(subtilis_fpa_op2_t op2, subtilis_error_t *err);
 	subtilis_fpa_add_mvfmnf(s, cc, SUBTILIS_FPA_INSTR_MNF, round, dst,     \
 				op2, err)
 
-#define subtilis_fpa_add_cmf_imm(s, cc, round, dst, op2, err)                  \
-	subtilis_fpa_add_cmfcnf_imm(s, cc, SUBTILIS_FPA_INSTR_CMF,             \
-				    SUBTILIS_FPA_INSTR_CNF, round, dst, op2,   \
-				    err)
+#define subtilis_fpa_add_cmf_imm(s, cc, dst, op2, err)                         \
+	subtilis_fpa_add_cmfcnf_imm(s, SUBTILIS_FPA_INSTR_CMF,                 \
+				    SUBTILIS_FPA_INSTR_CNF, cc, dst, op2, err)
 
-#define subtilis_fpa_add_cnf_imm(s, cc, round, dst, op2, err)                  \
-	subtilis_fpa_add_cmfcnf_imm(s, cc, SUBTILIS_FPA_INSTR_CNF,             \
-				    SUBTILIS_FPA_INSTR_CMF, round, dst, op2,   \
-				    err)
+#define subtilis_fpa_add_cnf_imm(s, cc, dst, op2, err)                         \
+	subtilis_fpa_add_cmfcnf_imm(s, SUBTILIS_FPA_INSTR_CNF,                 \
+				    SUBTILIS_FPA_INSTR_CMF, cc, dst, op2, err)
 
 #define subtilis_fpa_add_cmfe_imm(s, cc, round, dst, op2, err)                 \
 	subtilis_fpa_add_cmfcnf_imm(s, cc, SUBTILIS_FPA_INSTR_CMFE,            \

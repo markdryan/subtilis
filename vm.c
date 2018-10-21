@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -409,10 +408,23 @@ static void prv_eqi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	    vm->regs[ops[1].integer] == vm->regs[ops[2].integer] ? -1 : 0;
 }
 
+static void prv_eqr(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] =
+	    vm->fregs[ops[1].reg] == vm->fregs[ops[2].reg] ? -1 : 0;
+}
+
 static void prv_eqii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] == ops[2].integer ? -1 : 0;
+}
+
+static void prv_eqir(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->fregs[ops[1].reg] == ops[2].real ? -1 : 0;
 }
 
 static void prv_neqi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
@@ -422,10 +434,23 @@ static void prv_neqi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	    vm->regs[ops[1].integer] == vm->regs[ops[2].integer] ? 0 : -1;
 }
 
+static void prv_neqr(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] =
+	    vm->fregs[ops[1].reg] == vm->fregs[ops[2].reg] ? 0 : -1;
+}
+
 static void prv_neqii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] == ops[2].integer ? 0 : -1;
+}
+
+static void prv_neqir(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		      subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->fregs[ops[1].reg] == ops[2].real ? 0 : -1;
 }
 
 static void prv_gti32(subitlis_vm_t *vm, subtilis_buffer_t *b,
@@ -435,10 +460,23 @@ static void prv_gti32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	    vm->regs[ops[1].integer] > vm->regs[ops[2].integer] ? -1 : 0;
 }
 
+static void prv_gtr(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] =
+	    vm->fregs[ops[1].reg] > vm->fregs[ops[2].reg] ? -1 : 0;
+}
+
 static void prv_gtii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] > ops[2].integer ? -1 : 0;
+}
+
+static void prv_gtir(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->fregs[ops[1].reg] > ops[2].real ? -1 : 0;
 }
 
 static void prv_ltei32(subitlis_vm_t *vm, subtilis_buffer_t *b,
@@ -448,10 +486,23 @@ static void prv_ltei32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	    vm->regs[ops[1].integer] <= vm->regs[ops[2].integer] ? -1 : 0;
 }
 
+static void prv_lter(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] =
+	    vm->fregs[ops[1].reg] <= vm->fregs[ops[2].reg] ? -1 : 0;
+}
+
 static void prv_lteii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] <= ops[2].integer ? -1 : 0;
+}
+
+static void prv_lteir(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		      subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->fregs[ops[1].reg] <= ops[2].real ? -1 : 0;
 }
 
 static void prv_lti32(subitlis_vm_t *vm, subtilis_buffer_t *b,
@@ -461,10 +512,23 @@ static void prv_lti32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	    vm->regs[ops[1].integer] < vm->regs[ops[2].integer] ? -1 : 0;
 }
 
+static void prv_ltr(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] =
+	    vm->fregs[ops[1].reg] < vm->fregs[ops[2].reg] ? -1 : 0;
+}
+
 static void prv_ltii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] < ops[2].integer ? -1 : 0;
+}
+
+static void prv_ltir(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->fregs[ops[1].reg] < ops[2].real ? -1 : 0;
 }
 
 static void prv_gtei32(subitlis_vm_t *vm, subtilis_buffer_t *b,
@@ -474,10 +538,23 @@ static void prv_gtei32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	    vm->regs[ops[1].integer] >= vm->regs[ops[2].integer] ? -1 : 0;
 }
 
+static void prv_gter(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] =
+	    vm->fregs[ops[1].reg] >= vm->fregs[ops[2].reg] ? -1 : 0;
+}
+
 static void prv_gteii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] >= ops[2].integer ? -1 : 0;
+}
+
+static void prv_gteir(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		      subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->fregs[ops[1].reg] >= ops[2].real ? -1 : 0;
 }
 
 static void prv_jmpc(subitlis_vm_t *vm, subtilis_buffer_t *b,
@@ -829,7 +906,7 @@ static void prv_movi32fp(subitlis_vm_t *vm, subtilis_buffer_t *b,
 static void prv_movfpi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			 subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	vm->regs[ops[0].reg] = (int32_t)round(vm->fregs[ops[1].reg]);
+	vm->regs[ops[0].reg] = (int32_t)vm->fregs[ops[1].reg];
 }
 
 static void prv_nop(subitlis_vm_t *vm, subtilis_buffer_t *b,
@@ -881,17 +958,29 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_eorii32,                         /* SUBTILIS_OP_INSTR_EORI_I32 */
 	prv_noti32,                          /* SUBTILIS_OP_INSTR_NOT_I32 */
 	prv_eqi32,                           /* SUBTILIS_OP_INSTR_EQ_I32 */
+	prv_eqr,                             /* SUBTILIS_OP_INSTR_EQ_REAL */
 	prv_eqii32,                          /* SUBTILIS_OP_INSTR_EQI_I32 */
+	prv_eqir,                            /* SUBTILIS_OP_INSTR_EQI_REAL */
 	prv_neqi32,                          /* SUBTILIS_OP_INSTR_NEQ_I32 */
+	prv_neqr,                            /* SUBTILIS_OP_INSTR_NEQ_REAL */
 	prv_neqii32,                         /* SUBTILIS_OP_INSTR_NEQI_I32 */
+	prv_neqir,                           /* SUBTILIS_OP_INSTR_NEQI_REAL */
 	prv_gti32,                           /* SUBTILIS_OP_INSTR_GT_I32 */
+	prv_gtr,                             /* SUBTILIS_OP_INSTR_GT_REAL */
 	prv_gtii32,                          /* SUBTILIS_OP_INSTR_GTI_I32 */
+	prv_gtir,                            /* SUBTILIS_OP_INSTR_GTI_REAL */
 	prv_ltei32,                          /* SUBTILIS_OP_INSTR_LTE_I32 */
+	prv_lter,                            /* SUBTILIS_OP_INSTR_LTE_REAL */
 	prv_lteii32,                         /* SUBTILIS_OP_INSTR_LTEI_I32 */
+	prv_lteir,                           /* SUBTILIS_OP_INSTR_LTEI_REAL */
 	prv_lti32,                           /* SUBTILIS_OP_INSTR_LT_I32 */
+	prv_ltr,                             /* SUBTILIS_OP_INSTR_LT_REAL */
 	prv_ltii32,                          /* SUBTILIS_OP_INSTR_LTI_I32 */
+	prv_ltir,                            /* SUBTILIS_OP_INSTR_LTI_REAL */
 	prv_gtei32,                          /* SUBTILIS_OP_INSTR_GTE_I32 */
+	prv_gter,                            /* SUBTILIS_OP_INSTR_GTE_REAL */
 	prv_gteii32,                         /* SUBTILIS_OP_INSTR_GTEI_I32 */
+	prv_gteir,                           /* SUBTILIS_OP_INSTR_GTEI_REAL */
 	prv_jmpc,                            /* SUBTILIS_OP_INSTR_JMPC */
 	prv_jmp,                             /* SUBTILIS_OP_INSTR_JMP */
 	prv_ret,                             /* SUBTILIS_OP_INSTR_RET */

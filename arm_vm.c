@@ -1198,7 +1198,10 @@ static void prv_process_fpa_fix(subtilis_arm_vm_t *arm_vm,
 		val = (double)arm_vm->fregs[op->op2.reg.num].val.real32;
 	else
 		val = arm_vm->fregs[op->op2.reg.num].val.real64;
-	arm_vm->regs[op->dest.num] = (int32_t)round(val);
+	if (op->rounding == SUBTILIS_FPA_ROUNDING_ZERO)
+		arm_vm->regs[op->dest.num] = (int32_t)val;
+	else
+		arm_vm->regs[op->dest.num] = (int32_t)round(val);
 
 	arm_vm->regs[15] += 4;
 }
@@ -1224,6 +1227,82 @@ static void prv_process_fpa_flt(subtilis_arm_vm_t *arm_vm,
 	}
 
 	arm_vm->regs[15] += 4;
+}
+
+static void prv_set_double_sub_flags(subtilis_arm_vm_t *arm_vm, double op1,
+				     double op2, double res)
+{
+	prv_reset_flags(arm_vm);
+	arm_vm->zero_flag = res == 0;
+	arm_vm->negative_flag = res < 0;
+	arm_vm->carry_flag = (op1 < 0 && op2 >= 0) || (op1 < 0 && res >= 0) ||
+			     (op2 >= 0 && res >= 0);
+	if (((op1 < 0 && op2 >= 0) || (op1 >= 0 && op2 < 0)) &&
+	    ((op1 >= 0 && res < 0) || (op1 < 0 && res >= 0)))
+		arm_vm->overflow_flag = true;
+}
+
+static void prv_process_fpa_cmf_gen(subtilis_arm_vm_t *arm_vm,
+				    subtilis_fpa_cmp_instr_t *op,
+				    bool negate_op2, subtilis_error_t *err)
+{
+	double op1;
+	double op2;
+	double res;
+	size_t size;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	size = arm_vm->fregs[op->dest.num].size;
+	if (size == 4) {
+		op1 = (double)arm_vm->fregs[op->dest.num].val.real32;
+	} else if (size == 8) {
+		op1 = arm_vm->fregs[op->dest.num].val.real64;
+	} else {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (op->immediate) {
+		op2 = subtilis_fpa_extract_imm(op->op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		size = arm_vm->fregs[op->op2.reg.num].size;
+		if (size == 4) {
+			op2 = (double)arm_vm->fregs[op->op2.reg.num].val.real32;
+		} else if (size == 8) {
+			op2 = arm_vm->fregs[op->op2.reg.num].val.real64;
+		} else {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+	}
+
+	if (negate_op2)
+		op2 = -op2;
+
+	res = op1 - op2;
+	prv_set_double_sub_flags(arm_vm, op1, op2, res);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_fpa_cmf(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_cmp_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_cmf_gen(arm_vm, op, false, err);
+}
+
+static void prv_process_fpa_cnf(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_cmp_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_cmf_gen(arm_vm, op, true, err);
 }
 
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
@@ -1346,6 +1425,14 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			break;
 		case SUBTILIS_FPA_INSTR_FIX:
 			prv_process_fpa_fix(arm_vm, &instr.operands.fpa_tran,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_CMF:
+			prv_process_fpa_cmf(arm_vm, &instr.operands.fpa_cmp,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_CNF:
+			prv_process_fpa_cnf(arm_vm, &instr.operands.fpa_cmp,
 					    err);
 			break;
 		default:

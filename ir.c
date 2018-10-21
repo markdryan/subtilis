@@ -98,17 +98,29 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "eorii32", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "noti32", SUBTILIS_OP_CLASS_REG_REG},
 	{ "eqi32", SUBTILIS_OP_CLASS_REG_REG_REG},
+	{ "eqr", SUBTILIS_OP_CLASS_REG_FREG_FREG},
 	{ "eqii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "eqir", SUBTILIS_OP_CLASS_REG_FREG_REAL},
 	{ "neqi32", SUBTILIS_OP_CLASS_REG_REG_REG},
+	{ "neqr", SUBTILIS_OP_CLASS_REG_FREG_FREG},
 	{ "neqii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "neqir", SUBTILIS_OP_CLASS_REG_FREG_REAL},
 	{ "gti32", SUBTILIS_OP_CLASS_REG_REG_REG},
+	{ "gtr", SUBTILIS_OP_CLASS_REG_FREG_FREG},
 	{ "gtii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "gtir", SUBTILIS_OP_CLASS_REG_FREG_REAL},
 	{ "ltei32", SUBTILIS_OP_CLASS_REG_REG_REG},
+	{ "lter", SUBTILIS_OP_CLASS_REG_FREG_FREG},
 	{ "lteii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "lteir", SUBTILIS_OP_CLASS_REG_FREG_REAL},
 	{ "lti32", SUBTILIS_OP_CLASS_REG_REG_REG},
+	{ "ltr", SUBTILIS_OP_CLASS_REG_FREG_FREG},
 	{ "ltii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "ltir", SUBTILIS_OP_CLASS_REG_FREG_REAL},
 	{ "gtei32", SUBTILIS_OP_CLASS_REG_REG_REG},
+	{ "gter", SUBTILIS_OP_CLASS_REG_FREG_FREG},
 	{ "gteii32", SUBTILIS_OP_CLASS_REG_REG_I32},
+	{ "gteir", SUBTILIS_OP_CLASS_REG_FREG_REAL},
 	{ "jmpc", SUBTILIS_OP_CLASS_REG_LABEL_LABEL},
 	{ "jmp", SUBTILIS_OP_CLASS_LABEL},
 	{ "ret", SUBTILIS_OP_CLASS_NONE},
@@ -145,6 +157,10 @@ static const subtilis_ir_class_info_t class_details[] = {
 	      SUBTILIS_IR_OPERAND_REAL} },
 	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_LABEL,
 	      SUBTILIS_IR_OPERAND_LABEL} },
+	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_FREGISTER,
+	      SUBTILIS_IR_OPERAND_FREGISTER} },
+	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_FREGISTER,
+	      SUBTILIS_IR_OPERAND_REAL} },
 	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_I32} },
 	{2, { SUBTILIS_IR_OPERAND_FREGISTER, SUBTILIS_IR_OPERAND_REAL} },
 	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER} },
@@ -538,6 +554,14 @@ static void prv_dump_instr(subtilis_ir_inst_t *instr)
 	case SUBTILIS_OP_CLASS_REG_LABEL_LABEL:
 		printf("r%zu, label_%zu, label_%zu", instr->operands[0].reg,
 		       instr->operands[1].label, instr->operands[2].label);
+		break;
+	case SUBTILIS_OP_CLASS_REG_FREG_FREG:
+		printf("r%zu, f%zu, f%zu", instr->operands[0].reg,
+		       instr->operands[1].reg, instr->operands[2].reg);
+		break;
+	case SUBTILIS_OP_CLASS_REG_FREG_REAL:
+		printf("r%zu, f%zu, #%lf", instr->operands[0].reg,
+		       instr->operands[1].reg, instr->operands[2].real);
 		break;
 	case SUBTILIS_OP_CLASS_REG_I32:
 		printf("r%zu, #%d", instr->operands[0].reg,

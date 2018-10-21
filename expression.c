@@ -398,6 +398,28 @@ static subtilis_exp_t *prv_exp_commutative(subtilis_parser_t *p,
 }
 
 static subtilis_exp_t *
+prv_exp_commutative_logical(subtilis_parser_t *p, subtilis_exp_t *a1,
+			    subtilis_exp_t *a2, subtilis_commutative_exp_t *com,
+			    subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+
+	e = prv_exp_commutative(p, a1, a2, com, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (e->type == SUBTILIS_EXP_REAL) {
+		e->type = SUBTILIS_EXP_INTEGER;
+	} else if ((e->type != SUBTILIS_EXP_INTEGER) &&
+		   (e->type != SUBTILIS_EXP_CONST_INTEGER)) {
+		subtilis_error_set_assertion_failed(err);
+		subtilis_exp_delete(e);
+		e = NULL;
+	}
+	return e;
+}
+
+static subtilis_exp_t *
 prv_exp_non_commutative(subtilis_parser_t *p, subtilis_exp_t *a1,
 			subtilis_exp_t *a2, subtilis_non_commutative_exp_t *no,
 			subtilis_error_t *err)
@@ -533,6 +555,32 @@ prv_exp_non_commutative(subtilis_parser_t *p, subtilis_exp_t *a1,
 	}
 
 	return a1;
+}
+
+/* clang-format off */
+static subtilis_exp_t *
+prv_exp_non_commutative_logical(subtilis_parser_t *p, subtilis_exp_t *a1,
+				subtilis_exp_t *a2,
+				subtilis_non_commutative_exp_t *no,
+				subtilis_error_t *err)
+/* clang-format on */
+
+{
+	subtilis_exp_t *e;
+
+	e = prv_exp_non_commutative(p, a1, a2, no, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (e->type == SUBTILIS_EXP_REAL) {
+		e->type = SUBTILIS_EXP_INTEGER;
+	} else if ((e->type != SUBTILIS_EXP_INTEGER) &&
+		   (e->type != SUBTILIS_EXP_CONST_INTEGER)) {
+		subtilis_error_set_assertion_failed(err);
+		subtilis_exp_delete(e);
+		e = NULL;
+	}
+	return e;
 }
 
 subtilis_exp_t *subtilis_exp_new_var(subtilis_exp_type_t type, unsigned int reg,
@@ -1274,6 +1322,10 @@ subtilis_exp_t *subtilis_exp_not(subtilis_parser_t *p, subtilis_exp_t *e,
 {
 	size_t reg;
 
+	e = subtilis_exp_to_int(p, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
 	switch (e->type) {
 	case SUBTILIS_EXP_CONST_INTEGER:
 		e->exp.ir_op.integer = ~e->exp.ir_op.integer;
@@ -1285,12 +1337,6 @@ subtilis_exp_t *subtilis_exp_not(subtilis_parser_t *p, subtilis_exp_t *e,
 			goto cleanup;
 		e->exp.ir_op.reg = reg;
 		break;
-	case SUBTILIS_EXP_CONST_REAL:
-		e->exp.ir_op.real = (double)~((int32_t)e->exp.ir_op.real);
-		break;
-	case SUBTILIS_EXP_CONST_STRING:
-	case SUBTILIS_EXP_REAL:
-	case SUBTILIS_EXP_STRING:
 	default:
 		subtilis_error_set_bad_expression(err, p->l->stream->name,
 						  p->l->line);
@@ -1311,29 +1357,27 @@ static void prv_and_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
 	a1->exp.ir_op.integer &= a2->exp.ir_op.integer;
 }
 
-static void prv_and_int_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
-{
-	a1->exp.ir_op.real =
-	    (double)(a1->exp.ir_op.integer & ((int32_t)a2->exp.ir_op.real));
-	a1->type = SUBTILIS_EXP_CONST_REAL;
-}
-
-static void prv_and_real_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
-{
-	a1->exp.ir_op.real =
-	    (double)((int32_t)a1->exp.ir_op.real & (int32_t)a2->exp.ir_op.real);
-}
-
 subtilis_exp_t *subtilis_exp_and(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	subtilis_commutative_exp_t com = {
-	    .op_int_int = prv_and_int_int,
-	    .op_int_real = prv_and_int_real,
-	    .op_real_real = prv_and_real_real,
-	    .in_var_imm = SUBTILIS_OP_INSTR_ANDI_I32,
-	    .in_var_var = SUBTILIS_OP_INSTR_AND_I32,
-	};
+	subtilis_commutative_exp_t com;
+
+	memset(&com, 0, sizeof(com));
+	com.op_int_int = prv_and_int_int;
+	com.in_var_imm = SUBTILIS_OP_INSTR_ANDI_I32;
+	com.in_var_var = SUBTILIS_OP_INSTR_AND_I32;
+
+	a1 = subtilis_exp_to_int(p, a1, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(a2);
+		return NULL;
+	}
+
+	a2 = subtilis_exp_to_int(p, a2, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(a1);
+		return NULL;
+	}
 
 	return prv_exp_commutative(p, a1, a2, &com, err);
 }
@@ -1343,29 +1387,27 @@ static void prv_or_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
 	a1->exp.ir_op.integer |= a2->exp.ir_op.integer;
 }
 
-static void prv_or_int_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
-{
-	a1->exp.ir_op.real =
-	    (double)(a1->exp.ir_op.integer | ((int32_t)a2->exp.ir_op.real));
-	a1->type = SUBTILIS_EXP_CONST_REAL;
-}
-
-static void prv_or_real_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
-{
-	a1->exp.ir_op.real =
-	    (double)((int32_t)a1->exp.ir_op.real | (int32_t)a2->exp.ir_op.real);
-}
-
 subtilis_exp_t *subtilis_exp_or(subtilis_parser_t *p, subtilis_exp_t *a1,
 				subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	subtilis_commutative_exp_t com = {
-	    .op_int_int = prv_or_int_int,
-	    .op_int_real = prv_or_int_real,
-	    .op_real_real = prv_or_real_real,
-	    .in_var_imm = SUBTILIS_OP_INSTR_ORI_I32,
-	    .in_var_var = SUBTILIS_OP_INSTR_OR_I32,
-	};
+	subtilis_commutative_exp_t com;
+
+	memset(&com, 0, sizeof(com));
+	com.op_int_int = prv_or_int_int;
+	com.in_var_imm = SUBTILIS_OP_INSTR_ORI_I32;
+	com.in_var_var = SUBTILIS_OP_INSTR_OR_I32;
+
+	a1 = subtilis_exp_to_int(p, a1, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(a2);
+		return NULL;
+	}
+
+	a2 = subtilis_exp_to_int(p, a2, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(a1);
+		return NULL;
+	}
 
 	return prv_exp_commutative(p, a1, a2, &com, err);
 }
@@ -1375,29 +1417,27 @@ static void prv_eor_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
 	a1->exp.ir_op.integer ^= a2->exp.ir_op.integer;
 }
 
-static void prv_eor_int_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
-{
-	a1->exp.ir_op.real =
-	    (double)(a1->exp.ir_op.integer ^ ((int32_t)a2->exp.ir_op.real));
-	a1->type = SUBTILIS_EXP_CONST_REAL;
-}
-
-static void prv_eor_real_real(subtilis_exp_t *a1, subtilis_exp_t *a2)
-{
-	a1->exp.ir_op.real =
-	    (double)((int32_t)a1->exp.ir_op.real ^ (int32_t)a2->exp.ir_op.real);
-}
-
 subtilis_exp_t *subtilis_exp_eor(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	subtilis_commutative_exp_t com = {
-	    .op_int_int = prv_eor_int_int,
-	    .op_int_real = prv_eor_int_real,
-	    .op_real_real = prv_eor_real_real,
-	    .in_var_imm = SUBTILIS_OP_INSTR_EORI_I32,
-	    .in_var_var = SUBTILIS_OP_INSTR_EOR_I32,
-	};
+	subtilis_commutative_exp_t com;
+
+	memset(&com, 0, sizeof(com));
+	com.op_int_int = prv_eor_int_int;
+	com.in_var_imm = SUBTILIS_OP_INSTR_EORI_I32;
+	com.in_var_var = SUBTILIS_OP_INSTR_EOR_I32;
+
+	a1 = subtilis_exp_to_int(p, a1, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(a2);
+		return NULL;
+	}
+
+	a2 = subtilis_exp_to_int(p, a2, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(a1);
+		return NULL;
+	}
 
 	return prv_exp_commutative(p, a1, a2, &com, err);
 }
@@ -1431,6 +1471,8 @@ subtilis_exp_t *subtilis_exp_eq(subtilis_parser_t *p, subtilis_exp_t *a1,
 	    .op_real_real = prv_eq_real_real,
 	    .in_var_imm = SUBTILIS_OP_INSTR_EQI_I32,
 	    .in_var_var = SUBTILIS_OP_INSTR_EQ_I32,
+	    .real_var_imm = SUBTILIS_OP_INSTR_EQI_REAL,
+	    .real_var_var = SUBTILIS_OP_INSTR_EQ_REAL,
 	};
 
 	if ((a1->type == SUBTILIS_EXP_CONST_STRING ||
@@ -1441,7 +1483,7 @@ subtilis_exp_t *subtilis_exp_eq(subtilis_parser_t *p, subtilis_exp_t *a1,
 		return NULL;
 	}
 
-	return prv_exp_commutative(p, a1, a2, &com, err);
+	return prv_exp_commutative_logical(p, a1, a2, &com, err);
 }
 
 static void prv_neq_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
@@ -1473,6 +1515,8 @@ subtilis_exp_t *subtilis_exp_neq(subtilis_parser_t *p, subtilis_exp_t *a1,
 	    .op_real_real = prv_neq_real_real,
 	    .in_var_imm = SUBTILIS_OP_INSTR_NEQI_I32,
 	    .in_var_var = SUBTILIS_OP_INSTR_NEQ_I32,
+	    .real_var_imm = SUBTILIS_OP_INSTR_NEQI_REAL,
+	    .real_var_var = SUBTILIS_OP_INSTR_NEQ_REAL,
 	};
 
 	if ((a1->type == SUBTILIS_EXP_CONST_STRING ||
@@ -1483,7 +1527,7 @@ subtilis_exp_t *subtilis_exp_neq(subtilis_parser_t *p, subtilis_exp_t *a1,
 		return NULL;
 	}
 
-	return prv_exp_commutative(p, a1, a2, &com, err);
+	return prv_exp_commutative_logical(p, a1, a2, &com, err);
 }
 
 static void prv_gt_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
@@ -1523,6 +1567,9 @@ subtilis_exp_t *subtilis_exp_gt(subtilis_parser_t *p, subtilis_exp_t *a1,
 	    .int_var_imm = SUBTILIS_OP_INSTR_GTI_I32,
 	    .int_var_imm_swapped = SUBTILIS_OP_INSTR_LTEI_I32,
 	    .int_var_var = SUBTILIS_OP_INSTR_GT_I32,
+	    .real_var_imm = SUBTILIS_OP_INSTR_GTI_REAL,
+	    .real_var_imm_swapped = SUBTILIS_OP_INSTR_LTEI_REAL,
+	    .real_var_var = SUBTILIS_OP_INSTR_GT_REAL,
 	};
 
 	if ((a1->type == SUBTILIS_EXP_CONST_STRING ||
@@ -1533,7 +1580,7 @@ subtilis_exp_t *subtilis_exp_gt(subtilis_parser_t *p, subtilis_exp_t *a1,
 		return NULL;
 	}
 
-	return prv_exp_non_commutative(p, a1, a2, &no, err);
+	return prv_exp_non_commutative_logical(p, a1, a2, &no, err);
 }
 
 static void prv_lte_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
@@ -1573,6 +1620,9 @@ subtilis_exp_t *subtilis_exp_lte(subtilis_parser_t *p, subtilis_exp_t *a1,
 	    .int_var_imm = SUBTILIS_OP_INSTR_LTEI_I32,
 	    .int_var_imm_swapped = SUBTILIS_OP_INSTR_GTI_I32,
 	    .int_var_var = SUBTILIS_OP_INSTR_LTE_I32,
+	    .real_var_imm = SUBTILIS_OP_INSTR_LTEI_REAL,
+	    .real_var_imm_swapped = SUBTILIS_OP_INSTR_GTI_REAL,
+	    .real_var_var = SUBTILIS_OP_INSTR_LTE_REAL,
 	};
 
 	if ((a1->type == SUBTILIS_EXP_CONST_STRING ||
@@ -1583,7 +1633,7 @@ subtilis_exp_t *subtilis_exp_lte(subtilis_parser_t *p, subtilis_exp_t *a1,
 		return NULL;
 	}
 
-	return prv_exp_non_commutative(p, a1, a2, &no, err);
+	return prv_exp_non_commutative_logical(p, a1, a2, &no, err);
 }
 
 static void prv_lt_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
@@ -1623,6 +1673,9 @@ subtilis_exp_t *subtilis_exp_lt(subtilis_parser_t *p, subtilis_exp_t *a1,
 	    .int_var_imm = SUBTILIS_OP_INSTR_LTI_I32,
 	    .int_var_imm_swapped = SUBTILIS_OP_INSTR_GTEI_I32,
 	    .int_var_var = SUBTILIS_OP_INSTR_LT_I32,
+	    .real_var_imm = SUBTILIS_OP_INSTR_LTI_REAL,
+	    .real_var_imm_swapped = SUBTILIS_OP_INSTR_GTEI_REAL,
+	    .real_var_var = SUBTILIS_OP_INSTR_LT_REAL,
 	};
 
 	if ((a1->type == SUBTILIS_EXP_CONST_STRING ||
@@ -1633,7 +1686,7 @@ subtilis_exp_t *subtilis_exp_lt(subtilis_parser_t *p, subtilis_exp_t *a1,
 		return NULL;
 	}
 
-	return prv_exp_non_commutative(p, a1, a2, &no, err);
+	return prv_exp_non_commutative_logical(p, a1, a2, &no, err);
 }
 
 static void prv_gte_int_int(subtilis_exp_t *a1, subtilis_exp_t *a2)
@@ -1673,6 +1726,9 @@ subtilis_exp_t *subtilis_exp_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 	    .int_var_imm = SUBTILIS_OP_INSTR_GTEI_I32,
 	    .int_var_imm_swapped = SUBTILIS_OP_INSTR_LTI_I32,
 	    .int_var_var = SUBTILIS_OP_INSTR_GTE_I32,
+	    .real_var_imm = SUBTILIS_OP_INSTR_GTEI_REAL,
+	    .real_var_imm_swapped = SUBTILIS_OP_INSTR_LTI_REAL,
+	    .real_var_var = SUBTILIS_OP_INSTR_GTE_REAL,
 	};
 
 	if ((a1->type == SUBTILIS_EXP_CONST_STRING ||
@@ -1683,7 +1739,7 @@ subtilis_exp_t *subtilis_exp_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 		return NULL;
 	}
 
-	return prv_exp_non_commutative(p, a1, a2, &no, err);
+	return prv_exp_non_commutative_logical(p, a1, a2, &no, err);
 }
 
 static subtilis_exp_t *
@@ -1694,16 +1750,24 @@ prv_exp_shift(subtilis_parser_t *p, subtilis_exp_t *a1, subtilis_exp_t *a2,
 	subtilis_ir_operand_t op;
 	size_t reg;
 
+	a1 = subtilis_exp_to_int(p, a1, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(a2);
+		return NULL;
+	}
+
+	a2 = subtilis_exp_to_int(p, a2, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(a1);
+		return NULL;
+	}
+
 	switch (a1->type) {
 	case SUBTILIS_EXP_CONST_INTEGER:
 		switch (a2->type) {
 		case SUBTILIS_EXP_CONST_INTEGER:
 			a1->exp.ir_op.integer =
 			    cfn(a1->exp.ir_op.integer, a2->exp.ir_op.integer);
-			break;
-		case SUBTILIS_EXP_CONST_REAL:
-			a1->exp.ir_op.integer = cfn(
-			    a1->exp.ir_op.integer, (int32_t)a2->exp.ir_op.real);
 			break;
 		case SUBTILIS_EXP_INTEGER:
 			op.reg = subtilis_ir_section_add_instr2(
@@ -1719,34 +1783,12 @@ prv_exp_shift(subtilis_parser_t *p, subtilis_exp_t *a1, subtilis_exp_t *a2,
 			a1->type = SUBTILIS_EXP_INTEGER;
 			break;
 		default:
-			subtilis_error_set_bad_expression(
-			    err, p->l->stream->name, p->l->line);
-			goto on_error;
-		}
-		break;
-	case SUBTILIS_EXP_CONST_REAL:
-		switch (a2->type) {
-		case SUBTILIS_EXP_CONST_INTEGER:
-			a1->type = SUBTILIS_EXP_CONST_INTEGER;
-			a1->exp.ir_op.integer = cfn((int32_t)a1->exp.ir_op.real,
-						    a2->exp.ir_op.integer);
-			break;
-		case SUBTILIS_EXP_CONST_REAL:
-			a1->type = SUBTILIS_EXP_CONST_INTEGER;
-			a1->exp.ir_op.integer =
-			    cfn((int32_t)a1->exp.ir_op.real,
-				(int32_t)a2->exp.ir_op.integer);
-			break;
-		default:
-			subtilis_error_set_bad_expression(
-			    err, p->l->stream->name, p->l->line);
+			subtilis_error_set_assertion_failed(err);
 			goto on_error;
 		}
 		break;
 	case SUBTILIS_EXP_INTEGER:
 		switch (a2->type) {
-		case SUBTILIS_EXP_CONST_REAL:
-			a2->exp.ir_op.integer = (int32_t)a2->exp.ir_op.real;
 		case SUBTILIS_EXP_CONST_INTEGER:
 			reg = subtilis_ir_section_add_instr(
 			    p->current, opi_type, a1->exp.ir_op, a2->exp.ir_op,
@@ -1763,16 +1805,13 @@ prv_exp_shift(subtilis_parser_t *p, subtilis_exp_t *a1, subtilis_exp_t *a2,
 				goto on_error;
 			a1->exp.ir_op.reg = reg;
 			break;
-		case SUBTILIS_EXP_REAL:
 		default:
-			subtilis_error_set_bad_expression(
-			    err, p->l->stream->name, p->l->line);
+			subtilis_error_set_assertion_failed(err);
 			goto on_error;
 		}
 		break;
 	default:
-		subtilis_error_set_bad_expression(err, p->l->stream->name,
-						  p->l->line);
+		subtilis_error_set_assertion_failed(err);
 		goto on_error;
 	}
 

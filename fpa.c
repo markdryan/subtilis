@@ -304,8 +304,7 @@ void subtilis_fpa_add_cmfcnf_imm(subtilis_arm_section_t *s,
 				 subtilis_arm_instr_type_t type,
 				 subtilis_arm_instr_type_t alt_type,
 				 subtilis_arm_ccode_type_t ccode,
-				 subtilis_arm_reg_t dest,
-				 subtilis_arm_reg_t op1, double op2,
+				 subtilis_arm_reg_t dest, double op2,
 				 subtilis_error_t *err)
 {
 	subtilis_arm_instr_t *instr;
