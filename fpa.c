@@ -49,11 +49,21 @@ static size_t prv_add_real_ldr(subtilis_arm_section_t *s,
 {
 	subtilis_fpa_ldrc_instr_t *ldrc;
 	subtilis_arm_instr_t *instr;
-	size_t label = s->label_counter++;
+	size_t label;
+	size_t i;
 
-	prv_add_real_constant(s, label, op2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return 0;
+	for (i = 0; i < s->constants.real_count; i++)
+		if (s->constants.real[i].real == op2)
+			break;
+
+	if (i < s->constants.real_count) {
+		label = s->constants.real[i].label;
+	} else {
+		label = s->label_counter++;
+		prv_add_real_constant(s, label, op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return 0;
+	}
 
 	instr = subtilis_arm_section_add_instr(s, SUBTILIS_FPA_INSTR_LDRC, err);
 	if (err->type != SUBTILIS_ERROR_OK)

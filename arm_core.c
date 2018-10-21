@@ -583,11 +583,21 @@ static size_t prv_add_data_imm_ldr(subtilis_arm_section_t *s,
 {
 	subtilis_arm_ldrc_instr_t *ldrc;
 	subtilis_arm_instr_t *instr;
-	size_t label = s->label_counter++;
+	size_t label;
+	size_t i;
 
-	prv_add_ui32_constant(s, label, (uint32_t)op2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return 0;
+	for (i = 0; i < s->constants.ui32_count; i++)
+		if (s->constants.ui32[i].integer == op2)
+			break;
+
+	if (i < s->constants.ui32_count) {
+		label = s->constants.ui32[i].label;
+	} else {
+		label = s->label_counter++;
+		prv_add_ui32_constant(s, label, (uint32_t)op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return 0;
+	}
 
 	instr = subtilis_arm_section_add_instr(s, SUBTILIS_ARM_INSTR_LDRC, err);
 	if (err->type != SUBTILIS_ERROR_OK)
