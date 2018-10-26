@@ -279,6 +279,147 @@ void subtilis_fpa_gen_retir(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_gen_ret(s, start, user_data, err);
 }
 
+static void prv_cmp_jmp_imm(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_arm_ccode_type_t ccode,
+			    subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_br_instr_t *br;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *cmp = &s->ops[start]->op.instr;
+	subtilis_ir_inst_t *jmp = &s->ops[start + 1]->op.instr;
+
+	op1 = subtilis_arm_ir_to_freg(cmp->operands[1].reg);
+
+	subtilis_fpa_add_cmf_imm(arm_s, SUBTILIS_ARM_CCODE_AL, op1,
+				 cmp->operands[2].real, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = ccode;
+	br->link = false;
+	br->target.label = jmp->operands[2].label;
+}
+
+void subtilis_fpa_gen_if_lt_imm(subtilis_ir_section_t *s, size_t start,
+				void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp_imm(s, start, user_data, SUBTILIS_ARM_CCODE_GE, err);
+}
+
+void subtilis_fpa_gen_if_lte_imm(subtilis_ir_section_t *s, size_t start,
+				 void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp_imm(s, start, user_data, SUBTILIS_ARM_CCODE_GT, err);
+}
+
+void subtilis_fpa_gen_if_neq_imm(subtilis_ir_section_t *s, size_t start,
+				 void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp_imm(s, start, user_data, SUBTILIS_ARM_CCODE_EQ, err);
+}
+
+void subtilis_fpa_gen_if_eq_imm(subtilis_ir_section_t *s, size_t start,
+				void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp_imm(s, start, user_data, SUBTILIS_ARM_CCODE_NE, err);
+}
+
+void subtilis_fpa_gen_if_gt_imm(subtilis_ir_section_t *s, size_t start,
+				void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp_imm(s, start, user_data, SUBTILIS_ARM_CCODE_LE, err);
+}
+
+void subtilis_fpa_gen_if_gte_imm(subtilis_ir_section_t *s, size_t start,
+				 void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp_imm(s, start, user_data, SUBTILIS_ARM_CCODE_LT, err);
+}
+
+static void prv_cmp_simple(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_arm_instr_type_t itype,
+			   subtilis_arm_ccode_type_t ccode,
+			   subtilis_error_t *err)
+{
+	subtilis_arm_reg_t op1;
+	subtilis_arm_reg_t op2;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *ir_op = &s->ops[start]->op.instr;
+
+	op1 = subtilis_arm_ir_to_freg(ir_op->operands[1].reg);
+	op2 = subtilis_arm_ir_to_freg(ir_op->operands[2].reg);
+
+	subtilis_fpa_add_cmp(arm_s, itype, ccode, op1, op2, err);
+}
+
+static void prv_cmp_jmp(subtilis_ir_section_t *s, size_t start, void *user_data,
+			subtilis_arm_ccode_type_t ccode, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_br_instr_t *br;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *jmp = &s->ops[start + 1]->op.instr;
+
+	prv_cmp_simple(s, start, user_data, SUBTILIS_FPA_INSTR_CMF,
+		       SUBTILIS_ARM_CCODE_AL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = ccode;
+	br->link = false;
+	br->target.label = jmp->operands[2].label;
+}
+
+void subtilis_fpa_gen_if_lt(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp(s, start, user_data, SUBTILIS_ARM_CCODE_GE, err);
+}
+
+void subtilis_fpa_gen_if_lte(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp(s, start, user_data, SUBTILIS_ARM_CCODE_GT, err);
+}
+
+void subtilis_fpa_gen_if_eq(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp(s, start, user_data, SUBTILIS_ARM_CCODE_NE, err);
+}
+
+void subtilis_fpa_gen_if_neq(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp(s, start, user_data, SUBTILIS_ARM_CCODE_EQ, err);
+}
+
+void subtilis_fpa_gen_if_gt(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp(s, start, user_data, SUBTILIS_ARM_CCODE_LE, err);
+}
+
+void subtilis_fpa_gen_if_gte(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	prv_cmp_jmp(s, start, user_data, SUBTILIS_ARM_CCODE_LT, err);
+}
+
 static void prv_cmp_imm(subtilis_ir_section_t *s, size_t start, void *user_data,
 			subtilis_arm_ccode_type_t ok,
 			subtilis_arm_ccode_type_t nok, subtilis_error_t *err)
@@ -341,22 +482,6 @@ void subtilis_fpa_gen_lteir(subtilis_ir_section_t *s, size_t start,
 {
 	prv_cmp_imm(s, start, user_data, SUBTILIS_ARM_CCODE_LE,
 		    SUBTILIS_ARM_CCODE_GT, err);
-}
-
-static void prv_cmp_simple(subtilis_ir_section_t *s, size_t start,
-			   void *user_data, subtilis_arm_instr_type_t itype,
-			   subtilis_arm_ccode_type_t ccode,
-			   subtilis_error_t *err)
-{
-	subtilis_arm_reg_t op1;
-	subtilis_arm_reg_t op2;
-	subtilis_arm_section_t *arm_s = user_data;
-	subtilis_ir_inst_t *ir_op = &s->ops[start]->op.instr;
-
-	op1 = subtilis_arm_ir_to_freg(ir_op->operands[1].reg);
-	op2 = subtilis_arm_ir_to_freg(ir_op->operands[2].reg);
-
-	subtilis_fpa_add_cmp(arm_s, itype, ccode, op1, op2, err);
 }
 
 static void prv_cmp(subtilis_ir_section_t *s, size_t start, void *user_data,

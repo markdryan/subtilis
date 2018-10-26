@@ -317,7 +317,7 @@ static double prv_extract_imm(subtilis_fpa_op2_t op2)
 	return subtilis_fpa_extract_imm(op2, &err);
 }
 
-static const char* prv_extract_rounding(subtilis_fpa_rounding_t rnd)
+static const char *prv_extract_rounding(subtilis_fpa_rounding_t rnd)
 {
 	const char *rounding = "";
 
@@ -431,9 +431,9 @@ static void prv_dump_fpa_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
-	printf(" F%zu", instr->dest.num);
+	printf(" F%zu,", instr->dest.num);
 	if (instr->immediate)
-		printf("#%f", prv_extract_imm(instr->op2));
+		printf(" #%f", prv_extract_imm(instr->op2));
 	else
 		printf(" F%zu", instr->op2.reg.num);
 	printf("\n");

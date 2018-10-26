@@ -527,6 +527,7 @@ prv_exp_non_commutative(subtilis_parser_t *p, subtilis_exp_t *a1,
 			if (err->type != SUBTILIS_ERROR_OK)
 				break;
 			a2->type = SUBTILIS_EXP_REAL;
+			a2->exp.ir_op.reg = reg;
 		case SUBTILIS_EXP_REAL:
 			reg = subtilis_ir_section_add_instr(
 			    p->current, no->real_var_var, a1->exp.ir_op,
@@ -1618,10 +1619,10 @@ subtilis_exp_t *subtilis_exp_lte(subtilis_parser_t *p, subtilis_exp_t *a1,
 	    .op_real_int = prv_lte_real_int,
 	    .op_real_real = prv_lte_real_real,
 	    .int_var_imm = SUBTILIS_OP_INSTR_LTEI_I32,
-	    .int_var_imm_swapped = SUBTILIS_OP_INSTR_GTI_I32,
+	    .int_var_imm_swapped = SUBTILIS_OP_INSTR_GTEI_I32,
 	    .int_var_var = SUBTILIS_OP_INSTR_LTE_I32,
 	    .real_var_imm = SUBTILIS_OP_INSTR_LTEI_REAL,
-	    .real_var_imm_swapped = SUBTILIS_OP_INSTR_GTI_REAL,
+	    .real_var_imm_swapped = SUBTILIS_OP_INSTR_GTEI_REAL,
 	    .real_var_var = SUBTILIS_OP_INSTR_LTE_REAL,
 	};
 
@@ -1724,10 +1725,10 @@ subtilis_exp_t *subtilis_exp_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 	    .op_real_int = prv_gte_real_int,
 	    .op_real_real = prv_gte_real_real,
 	    .int_var_imm = SUBTILIS_OP_INSTR_GTEI_I32,
-	    .int_var_imm_swapped = SUBTILIS_OP_INSTR_LTI_I32,
+	    .int_var_imm_swapped = SUBTILIS_OP_INSTR_LTEI_I32,
 	    .int_var_var = SUBTILIS_OP_INSTR_GTE_I32,
 	    .real_var_imm = SUBTILIS_OP_INSTR_GTEI_REAL,
-	    .real_var_imm_swapped = SUBTILIS_OP_INSTR_LTI_REAL,
+	    .real_var_imm_swapped = SUBTILIS_OP_INSTR_LTEI_REAL,
 	    .real_var_var = SUBTILIS_OP_INSTR_GTE_REAL,
 	};
 

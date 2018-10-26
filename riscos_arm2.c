@@ -70,6 +70,54 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	"jmpc r_1, label_1, *\n"
 	"label_1",
 		 subtilis_arm_gen_if_gte},
+	{"ltir r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_lt_imm},
+	{"gtir r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_gt_imm},
+	{"lteir r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_lte_imm},
+	{"neqir r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_neq_imm},
+	{"eqir r_1, *, *\n"
+	 "jmpc r_1, label_1, *\n"
+	 "label_1",
+		 subtilis_fpa_gen_if_eq_imm},
+	{"gteir r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_gte_imm},
+	{"ltr r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_lt},
+	{"gtr r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_gt},
+	{"lter r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_lte},
+	{"eqr r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_eq},
+	{"neqr r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_neq},
+	{"gter r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_gte},
 	{"jmpc *, label_1, *\n"
 	"label_1\n",
 		 subtilis_arm_gen_jmpc},
