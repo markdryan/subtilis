@@ -67,6 +67,12 @@ typedef subtilis_exp_t *(*subtilis_exp_fn_t)(subtilis_parser_t *,
 					     subtilis_exp_t *, subtilis_exp_t *,
 					     subtilis_error_t *err);
 
+/* Takes ownership of e */
+subtilis_exp_t *subtilis_exp_to_int(subtilis_parser_t *p, subtilis_exp_t *e,
+				    subtilis_error_t *err);
+subtilis_exp_t *subtilis_exp_to_real(subtilis_parser_t *p, subtilis_exp_t *e,
+				     subtilis_error_t *err);
+
 /* These functions assume ownership of a1 and a2 */
 subtilis_exp_t *subtilis_exp_add(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err);
@@ -76,6 +82,8 @@ subtilis_exp_t *subtilis_exp_mul(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_div(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err);
+subtilis_exp_t *subtilis_exp_divr(subtilis_parser_t *p, subtilis_exp_t *a1,
+				  subtilis_exp_t *a2, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_mod(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_and(subtilis_parser_t *p, subtilis_exp_t *a1,

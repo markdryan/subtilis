@@ -33,7 +33,7 @@ static subtilis_arm_section_t *prv_create_section(subtilis_arm_op_pool_t *pool,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	s = subtilis_arm_section_new(pool, stype, 0, 0, 0, err);
+	s = subtilis_arm_section_new(pool, stype, 0, 0, 0, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -83,7 +83,7 @@ static int prv_test_arm_regs_used_before(void)
 	subtilis_arm_section_t *s = NULL;
 	subtilis_arm_op_pool_t *pool = NULL;
 	int retval = 1;
-	size_t reg_list;
+	subtilis_regs_used_t regs_used_before;
 	size_t op_ptr;
 	size_t i;
 	size_t expected[] = {
@@ -104,13 +104,13 @@ static int prv_test_arm_regs_used_before(void)
 
 	op_ptr = s->first_op;
 	for (i = 0; i < sizeof(expected) / sizeof(size_t); i++) {
-		reg_list =
-		    subtilis_arm_regs_used_before(s, &pool->ops[op_ptr], &err);
+		subtilis_arm_regs_used_before(s, &pool->ops[op_ptr],
+					      &regs_used_before, &err);
 		if (err.type != SUBTILIS_ERROR_OK)
 			goto on_error;
-		if (reg_list != expected[i]) {
+		if (regs_used_before.int_regs != expected[i]) {
 			printf("Expected 0x%zx got 0x%zx\n", expected[i],
-			       reg_list);
+			       regs_used_before.int_regs);
 			goto on_error;
 		}
 		op_ptr = pool->ops[op_ptr].next;
@@ -137,7 +137,7 @@ static int prv_test_arm_regs_used_after(void)
 	subtilis_arm_section_t *s = NULL;
 	subtilis_arm_op_pool_t *pool = NULL;
 	int retval = 1;
-	size_t reg_list;
+	subtilis_regs_used_t regs_used_after;
 	size_t op_ptr;
 	size_t i;
 	size_t expected[] = {
@@ -158,13 +158,13 @@ static int prv_test_arm_regs_used_after(void)
 
 	op_ptr = s->first_op;
 	for (i = 0; i < sizeof(expected) / sizeof(size_t); i++) {
-		reg_list =
-		    subtilis_arm_regs_used_after(s, &pool->ops[op_ptr], &err);
+		subtilis_arm_regs_used_after(s, &pool->ops[op_ptr],
+					     &regs_used_after, &err);
 		if (err.type != SUBTILIS_ERROR_OK)
 			goto on_error;
-		if (reg_list != expected[i]) {
+		if (regs_used_after.int_regs != expected[i]) {
 			printf("Expected 0x%zx got 0x%zx\n", expected[i],
-			       reg_list);
+			       regs_used_after.int_regs);
 			goto on_error;
 		}
 		op_ptr = pool->ops[op_ptr].next;

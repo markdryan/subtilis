@@ -196,6 +196,15 @@ void subtilis_error_set_basic(subtilis_error_t *e, subtilis_error_type_t type,
 				subtilis_line);
 }
 
+void subtilis_error_set_syntax(subtilis_error_t *e, subtilis_error_type_t type,
+			       const char *file, unsigned int line,
+			       const char *subtilis_file,
+			       unsigned int subtilis_line)
+{
+	subtilis_error_set_full(e, type, "", "", file, line, subtilis_file,
+				subtilis_line);
+}
+
 void subtilis_error_set_errno(subtilis_error_t *e, subtilis_error_type_t type,
 			      const char *data1, const char *subtilis_file,
 			      unsigned int subtilis_line)

@@ -20,8 +20,19 @@
 #include "arm_core.h"
 #include "buffer.h"
 
+struct subtilis_arm_vm_freg_t_ {
+	union {
+		double real64;
+		float real32;
+	} val;
+	size_t size;
+};
+
+typedef struct subtilis_arm_vm_freg_t_ subtilis_arm_vm_freg_t;
+
 struct subtilis_arm_vm_t_ {
 	int32_t regs[16];
+	subtilis_arm_vm_freg_t fregs[6];
 	uint8_t *memory;
 	size_t mem_size;
 	size_t code_size;
@@ -31,6 +42,7 @@ struct subtilis_arm_vm_t_ {
 	bool carry_flag;
 	bool overflow_flag;
 	bool quit;
+	bool reverse_fpa_consts;
 };
 
 typedef struct subtilis_arm_vm_t_ subtilis_arm_vm_t;

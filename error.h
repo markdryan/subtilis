@@ -134,7 +134,8 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_integer_expected(e, str, file, line)                \
 	subtilis_error_set1(e, SUBTILIS_ERROR_INTEGER_EXPECTED, str, file, line)
 #define subtilis_error_set_bad_expression(e, file, line)                       \
-	subtilis_error_set_basic(e, SUBTILIS_ERROR_BAD_EXPRESSION, file, line)
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_BAD_EXPRESSION, file,      \
+				  line, __FILE__, __LINE__)
 #define subtilis_error_set_divide_by_zero(e, file, line)                       \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_DIVIDE_BY_ZERO, file, line)
 #define subtilis_error_set_unknown_variable(e, str, file, line)                \
@@ -184,6 +185,10 @@ void subtilis_error_set_int(subtilis_error_t *e, subtilis_error_type_t type,
 void subtilis_error_set_basic(subtilis_error_t *e, subtilis_error_type_t type,
 			      const char *subtilis_file,
 			      unsigned int subtilis_line);
+void subtilis_error_set_syntax(subtilis_error_t *e, subtilis_error_type_t type,
+			       const char *file, unsigned int line,
+			       const char *subtilis_file,
+			       unsigned int subtilis_line);
 void subtilis_error_set_hex(subtilis_error_t *e, subtilis_error_type_t type,
 			    uint32_t num, const char *subtilis_file,
 			    unsigned int subtilis_line);

@@ -203,6 +203,207 @@ static void prv_decode_datai(subtilis_arm_instr_t *instr, uint32_t encoded,
 	prv_decode_op2(encoded, &datai->op2);
 }
 
+static void prv_decode_fpa_stran(subtilis_arm_instr_t *instr, uint32_t encoded,
+				 subtilis_error_t *err)
+{
+	uint32_t scratch;
+	subtilis_fpa_stran_instr_t *stran = &instr->operands.fpa_stran;
+
+	if (encoded & (1 << 20))
+		instr->type = SUBTILIS_FPA_INSTR_LDF;
+	else
+		instr->type = SUBTILIS_FPA_INSTR_STF;
+
+	scratch = ((encoded >> 21) & 2) | ((encoded >> 15) & 1);
+	if (scratch == 3) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	stran->size = 4 << scratch;
+
+	stran->ccode = (encoded >> 28);
+	stran->pre_indexed = (encoded & (1 << 24)) != 0;
+	stran->write_back = (encoded & (1 << 21)) != 0;
+	stran->subtract = (encoded & (1 << 23)) == 0;
+	stran->dest.type = SUBTILIS_ARM_REG_FIXED;
+	stran->dest.num = (encoded >> 12) & 0x7;
+	stran->base.type = SUBTILIS_ARM_REG_FIXED;
+	stran->base.num = (encoded >> 16) & 0x0f;
+	stran->offset = encoded & 0xff;
+}
+
+/* clang-format off */
+static subtilis_arm_instr_type_t prv_fpa_data_opcodes[] = {
+	SUBTILIS_FPA_INSTR_ADF,
+	SUBTILIS_FPA_INSTR_MVF,
+	SUBTILIS_FPA_INSTR_MUF,
+	SUBTILIS_FPA_INSTR_MNF,
+	SUBTILIS_FPA_INSTR_SUF,
+	SUBTILIS_FPA_INSTR_ABS,
+	SUBTILIS_FPA_INSTR_RSF,
+	SUBTILIS_FPA_INSTR_RND,
+	SUBTILIS_FPA_INSTR_DVF,
+	SUBTILIS_FPA_INSTR_SQT,
+	SUBTILIS_FPA_INSTR_RDF,
+	SUBTILIS_FPA_INSTR_LOG,
+	SUBTILIS_FPA_INSTR_POW,
+	SUBTILIS_FPA_INSTR_LGN,
+	SUBTILIS_FPA_INSTR_RPW,
+	SUBTILIS_FPA_INSTR_EXP,
+	SUBTILIS_FPA_INSTR_RMF,
+	SUBTILIS_FPA_INSTR_SIN,
+	SUBTILIS_FPA_INSTR_FML,
+	SUBTILIS_FPA_INSTR_COS,
+	SUBTILIS_FPA_INSTR_FDV,
+	SUBTILIS_FPA_INSTR_TAN,
+	SUBTILIS_FPA_INSTR_FRD,
+	SUBTILIS_FPA_INSTR_ASN,
+	SUBTILIS_FPA_INSTR_POL,
+	SUBTILIS_FPA_INSTR_ACS,
+	SUBTILIS_ARM_INSTR_MAX,
+	SUBTILIS_FPA_INSTR_ATN,
+	SUBTILIS_ARM_INSTR_MAX,
+	SUBTILIS_FPA_INSTR_URD,
+	SUBTILIS_ARM_INSTR_MAX,
+	SUBTILIS_FPA_INSTR_NRM,
+};
+
+/* clang-format on */
+
+static subtilis_fpa_op2_t prv_fpa_encode_op2(uint32_t encoded, bool *immediate)
+{
+	subtilis_fpa_op2_t op2;
+
+	if (encoded & (1 << 3)) {
+		*immediate = true;
+		op2.imm = encoded & 0xf;
+	} else {
+		*immediate = false;
+		op2.reg.num = encoded & 7;
+		op2.reg.type = SUBTILIS_ARM_REG_FIXED;
+	}
+
+	return op2;
+}
+
+static void prv_decode_fpa_data(subtilis_arm_instr_t *instr, uint32_t encoded,
+				subtilis_error_t *err)
+{
+	subtilis_arm_instr_type_t type;
+	size_t scratch;
+	subtilis_fpa_data_instr_t *data = &instr->operands.fpa_data;
+
+	scratch = ((encoded >> 19) & 0x1E) | ((encoded >> 15) & 1);
+	if (scratch >= sizeof(prv_fpa_data_opcodes) / sizeof(type)) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	type = prv_fpa_data_opcodes[scratch];
+	if (type == SUBTILIS_ARM_INSTR_MAX) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	instr->type = type;
+
+	data->ccode = (encoded >> 28);
+
+	scratch = ((encoded >> 18) & 2) | ((encoded >> 7) & 1);
+	if (scratch == 3) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	data->size = 4 << scratch;
+
+	scratch = ((encoded >> 5) & 3);
+	data->rounding = (subtilis_fpa_rounding_t)scratch;
+
+	data->dest.type = SUBTILIS_ARM_REG_FIXED;
+	data->dest.num = (encoded >> 12) & 0x7;
+
+	data->op1.type = SUBTILIS_ARM_REG_FIXED;
+	if (encoded & (1 << 15))
+		data->op1.num = 6;
+	else
+		data->op1.num = (encoded >> 16) & 0x7;
+
+	data->op2 = prv_fpa_encode_op2(encoded, &data->immediate);
+}
+
+static void prv_decode_fpa_cmp(subtilis_arm_instr_t *instr, uint32_t encoded,
+			       subtilis_error_t *err)
+{
+	subtilis_arm_instr_type_t type;
+	subtilis_fpa_cmp_instr_t *cmp = &instr->operands.fpa_cmp;
+
+	switch ((encoded >> 21) & 0x7) {
+	case 4:
+		type = SUBTILIS_FPA_INSTR_CMF;
+		break;
+	case 5:
+		type = SUBTILIS_FPA_INSTR_CNF;
+		break;
+	case 6:
+		type = SUBTILIS_FPA_INSTR_CMFE;
+		break;
+	case 7:
+		type = SUBTILIS_FPA_INSTR_CNFE;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	instr->type = type;
+
+	cmp->ccode = (encoded >> 28);
+
+	cmp->dest.type = SUBTILIS_ARM_REG_FIXED;
+	cmp->dest.num = (encoded >> 16) & 0x7;
+	cmp->op2 = prv_fpa_encode_op2(encoded, &cmp->immediate);
+}
+
+static void prv_decode_fpa_tran(subtilis_arm_instr_t *instr, uint32_t encoded,
+				subtilis_error_t *err)
+{
+	subtilis_arm_instr_type_t type;
+	size_t scratch;
+	subtilis_fpa_tran_instr_t *tran = &instr->operands.fpa_tran;
+
+	switch ((encoded >> 20) & 0xf) {
+	case 0:
+		type = SUBTILIS_FPA_INSTR_FLT;
+		break;
+	case 1:
+		type = SUBTILIS_FPA_INSTR_FIX;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	instr->type = type;
+
+	tran->ccode = (encoded >> 28);
+	scratch = ((encoded >> 5) & 3);
+	tran->rounding = (subtilis_fpa_rounding_t)scratch;
+
+	tran->dest.type = SUBTILIS_ARM_REG_FIXED;
+	if (type == SUBTILIS_FPA_INSTR_FLT) {
+		scratch = ((encoded >> 18) & 2) | ((encoded >> 7) & 1);
+		if (scratch == 3) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		tran->size = 4 << scratch;
+		tran->dest.num = (encoded >> 16) & 0x7;
+		tran->immediate = false;
+		tran->op2.reg.type = SUBTILIS_ARM_REG_FIXED;
+		tran->op2.reg.num = (encoded >> 12) & 0xf;
+	} else {
+		tran->dest.num = (encoded >> 12) & 0xf;
+		tran->size = 0;
+		tran->op2 = prv_fpa_encode_op2(encoded, &tran->immediate);
+	}
+}
+
 void subtilis_arm_disass(subtilis_arm_instr_t *instr, uint32_t encoded,
 			 subtilis_error_t *err)
 {
@@ -239,6 +440,26 @@ void subtilis_arm_disass(subtilis_arm_instr_t *instr, uint32_t encoded,
 
 	if (mask == 0) {
 		prv_decode_datai(instr, encoded, err);
+		return;
+	}
+	mask = (encoded >> 25) & 7;
+	if (mask == 6) {
+		prv_decode_fpa_stran(instr, encoded, err);
+		return;
+	}
+
+	if (mask == 7) {
+		if ((encoded & (1 << 4)) == 0) {
+			prv_decode_fpa_data(instr, encoded, err);
+			return;
+		}
+
+		if (((encoded >> 12) & 0xf) == 0xf) {
+			prv_decode_fpa_cmp(instr, encoded, err);
+			return;
+		}
+
+		prv_decode_fpa_tran(instr, encoded, err);
 		return;
 	}
 

@@ -41,6 +41,7 @@ typedef enum {
 	SUBTILIS_OP_LABEL,
 	SUBTILIS_OP_CALL,
 	SUBTILIS_OP_CALLI32,
+	SUBTILIS_OP_CALLREAL,
 	SUBTILIS_OP_PHI,
 	SUBTILIS_OP_MAX,
 } subtilis_op_type_t;
@@ -351,7 +352,7 @@ typedef enum {
 	 * fp0 = r
 	 */
 
-	SUBTILIS_OP_INSTR_MOV_REAL,
+	SUBTILIS_OP_INSTR_MOVI_REAL,
 
 	/*
 	 * mov r0, r1
@@ -380,6 +381,14 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_PRINT_I32,
+
+	/*
+	 * printfp r0
+	 *
+	 * Prints the floating point number stored in r0 to the output stream.
+	 */
+
+	SUBTILIS_OP_INSTR_PRINT_FP,
 
 	/*
 	 * rsubii32 r0, r1, #i32
@@ -501,6 +510,17 @@ typedef enum {
 	SUBTILIS_OP_INSTR_EQ_I32,
 
 	/*
+	 * eqr r0, fp1, fp2
+	 *
+	 * Compares the 32 bit integers in fp1 and fp2, storing -1 in R0
+	 * if they are equal, and 0 otherwise.
+	 *
+	 * r0 = fp1 == fp2 ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_EQ_REAL,
+
+	/*
 	 * eqii32 r0, r1, i32
 	 *
 	 * Compares the 32 bit integers in r1 with a 32 bit immediate
@@ -510,6 +530,17 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_EQI_I32,
+
+	/*
+	 * eqiir r0, fp1, #r
+	 *
+	 * Compares the 64 bit double in r1 with an immediate
+	 * constant, storing -1 in R0 if they are equal, and 0 otherwise.
+	 *
+	 * r0 = fp1 == #r ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_EQI_REAL,
 
 	/*
 	 * neqi32 r0, r1, r2
@@ -523,6 +554,17 @@ typedef enum {
 	SUBTILIS_OP_INSTR_NEQ_I32,
 
 	/*
+	 * neqr r0, f1, f2
+	 *
+	 * Compares the 64 bit doubles in f1 and f2, storing -1 in R0
+	 * if they are not equal, and 0 otherwise.
+	 *
+	 * r0 = f1 != f2 ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_NEQ_REAL,
+
+	/*
 	 * neqii32 r0, r1, i32
 	 *
 	 * Compares the 32 bit integers in r1 with a 32 bit immediate
@@ -534,6 +576,17 @@ typedef enum {
 	SUBTILIS_OP_INSTR_NEQI_I32,
 
 	/*
+	 * neqir r0, f1, #r
+	 *
+	 * Compares the 64 bit integer in f1 with an immediate
+	 * constant, storing -1 in R0 if they are not equal, and 0 otherwise.
+	 *
+	 * r0 = f1 != #r ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_NEQI_REAL,
+
+	/*
 	 * gti32 r0, r1, r2
 	 *
 	 * Compares the 32 bit integers in r1 and r2, storing -1 in
@@ -543,6 +596,17 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_GT_I32,
+
+	/*
+	 * gtr r0, fp1, fp2
+	 *
+	 * Compares the 64 bit doubles in fp1 and fp2, storing -1 in
+	 * r0 if fp1 > fp2 and 0 otherwise.
+	 *
+	 * r0 = fp1 > fp2 ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_GT_REAL,
 
 	/*
 	 * gtii32 r0, r1, i32
@@ -557,6 +621,18 @@ typedef enum {
 	SUBTILIS_OP_INSTR_GTI_I32,
 
 	/*
+	 * gtir r0, fp1, #r
+	 *
+	 * Compares the 64 bit double in fp1 with an immediate
+	 * constant, storing -1 in r0 if the value in fp1 is greater than
+	 * the immediate constant and 0 otherwise.
+	 *
+	 * r0 = fp > #r ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_GTI_REAL,
+
+	/*
 	 * ltei32 r0, r1, r2
 	 *
 	 * Compares the 32 bit integers in r1 and r2, storing -1 in
@@ -566,6 +642,17 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_LTE_I32,
+
+	/*
+	 * lter32 r0, fp1, fp2
+	 *
+	 * Compares the 64 bit doubles in fp1 and fp2, storing -1 in
+	 * r0 if fp1 <= fp2 and 0 otherwise.
+	 *
+	 * r0 = fp1 <= fp2 ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_LTE_REAL,
 
 	/*
 	 * lteii32 r0, r1, i32
@@ -580,6 +667,18 @@ typedef enum {
 	SUBTILIS_OP_INSTR_LTEI_I32,
 
 	/*
+	 * lteir r0, fp, #r
+	 *
+	 * Compares the 64 bit double in fp1 with an immediate
+	 * constant, storing -1 in r0 if the value in fp1 is less than
+	 * or equal to the immediate constant and 0 otherwise.
+	 *
+	 * r0 = fp1 <= #r ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_LTEI_REAL,
+
+	/*
 	 * lti32 r0, r1, r2
 	 *
 	 * Compares the 32 bit integers in r1 and r2, storing -1 in
@@ -589,6 +688,17 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_LT_I32,
+
+	/*
+	 * ltr r0, fp1, fp2
+	 *
+	 * Compares the 64 bit doubles in fp1 and fp2, storing -1 in
+	 * r0 if fp1 < fp2 and 0 otherwise.
+	 *
+	 * r0 = fp1 < fp2 ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_LT_REAL,
 
 	/*
 	 * ltii32 r0, r1, i32
@@ -603,6 +713,18 @@ typedef enum {
 	SUBTILIS_OP_INSTR_LTI_I32,
 
 	/*
+	 * ltir r0, fp1, #r
+	 *
+	 * Compares the 64 bit doubles in fp1 with an immediate
+	 * constant, storing -1 in r0 if the value in fp1 is less than
+	 * the immediate constant and 0 otherwise.
+	 *
+	 * r0 = fp1 < #r ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_LTI_REAL,
+
+	/*
 	 * gtei32 r0, r1, r2
 	 *
 	 * Compares the 32 bit integers in r1 and r2, storing -1 in
@@ -612,6 +734,17 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_GTE_I32,
+
+	/*
+	 * gter r0, fp1, fp2
+	 *
+	 * Compares the 64 bit doubles in fp1 and fp2, storing -1 in
+	 * r0 if fp1 >= fp2 and 0 otherwise.
+	 *
+	 * r0 = fp1 >= fp2 ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_GTE_REAL,
 
 	/*
 	 * gteii32 r0, r1, i32
@@ -624,6 +757,18 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_GTEI_I32,
+
+	/*
+	 * gteir r0, fp1, #r
+	 *
+	 * Compares the 64 bit double in fp1 with an immediate
+	 * constant, storing -1 in r0 if the value in fp1 is greater than
+	 * or equal to the immediate constant and 0 otherwise.
+	 *
+	 * r0 = fp1 >= #r ? -1 : 0
+	 */
+
+	SUBTILIS_OP_INSTR_GTEI_REAL,
 
 	/*
 	 * JMPC r0, label1, label2
@@ -671,6 +816,25 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_RETI_I32,
+
+	/*
+	 * RET_REAL
+	 *
+	 * returns from the value stored in a 64 bit floating point register
+	 * from a sub-routine call.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_RET_REAL,
+
+	/*
+	 * RETI_REAL
+	 *
+	 * returns a 64 bit floating point value from a sub-routine call.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_RETI_REAL,
 
 	/*
 	 * lsli32 r0, r1, r2
@@ -737,18 +901,59 @@ typedef enum {
 
 	SUBTILIS_OP_INSTR_ASRI_I32,
 
+	/*
+	 * movi32fp f0, r0
+	 *
+	 * Copies the contents of a 32 bit integer register into a floating
+	 * point register.
+	 *
+	 * f0 = r0
+	 */
+
+	SUBTILIS_OP_INSTR_MOV_I32_FP,
+
+	/*
+	 * movfpi32 r0, f0
+	 *
+	 * Copies the contents of a floating point register into a 32
+	 * bit integer register.  The number is truncated by the copy.
+	 *
+	 * f0 = r0
+	 */
+
+	SUBTILIS_OP_INSTR_MOV_FP_I32,
+
+	/*
+	 * nop
+	 *
+	 * Does nothing.  This is used a placeholder for type promotion
+	 * of parameters.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_NOP,
+
 } subtilis_op_instr_type_t;
 
 typedef enum {
 	SUBTILIS_OP_CLASS_REG_REG_REG,
+	SUBTILIS_OP_CLASS_FREG_FREG_FREG,
 	SUBTILIS_OP_CLASS_REG_REG_I32,
-	SUBTILIS_OP_CLASS_REG_REG_REAL,
+	SUBTILIS_OP_CLASS_FREG_REG_I32,
+	SUBTILIS_OP_CLASS_FREG_FREG_REAL,
 	SUBTILIS_OP_CLASS_REG_LABEL_LABEL,
+	SUBTILIS_OP_CLASS_REG_FREG_FREG,
+	SUBTILIS_OP_CLASS_REG_FREG_REAL,
 	SUBTILIS_OP_CLASS_REG_I32,
-	SUBTILIS_OP_CLASS_REG_REAL,
+	SUBTILIS_OP_CLASS_FREG_REAL,
 	SUBTILIS_OP_CLASS_REG_REG,
+	SUBTILIS_OP_CLASS_FREG_FREG,
+	SUBTILIS_OP_CLASS_REG_FREG,
+	SUBTILIS_OP_CLASS_FREG_REG,
 	SUBTILIS_OP_CLASS_REG,
+	SUBTILIS_OP_CLASS_FREG,
 	SUBTILIS_OP_CLASS_I32,
+	SUBTILIS_OP_CLASS_REAL,
 	SUBTILIS_OP_CLASS_LABEL,
 	SUBTILIS_OP_CLASS_NONE,
 } subtilis_op_instr_class_t;
@@ -780,6 +985,7 @@ typedef enum {
 struct subtilis_ir_arg_t_ {
 	subtilis_ir_reg_type_t type;
 	size_t reg;
+	size_t nop;
 };
 
 typedef struct subtilis_ir_arg_t_ subtilis_ir_arg_t;
@@ -808,6 +1014,7 @@ struct subtilis_ir_section_t_ {
 	subtilis_type_section_t *type;
 	size_t locals;
 	size_t reg_counter;
+	size_t freg_counter;
 	size_t label_counter;
 	size_t len;
 	size_t max_len;
@@ -882,7 +1089,7 @@ typedef struct subtilis_ir_rule_raw_t_ subtilis_ir_rule_raw_t;
 subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err);
 /* clang-format off */
 subtilis_ir_section_t *subtilis_ir_prog_section_new(
-	subtilis_ir_prog_t *p, const char *name, size_t locals, size_t params,
+	subtilis_ir_prog_t *p, const char *name, size_t locals,
 	subtilis_type_section_t *tp, subtilis_builtin_type_t ftype,
 	const char *file, size_t line, subtilis_error_t *err);
 
@@ -891,6 +1098,12 @@ subtilis_ir_section_t *subtilis_ir_prog_find_section(subtilis_ir_prog_t *p,
 						     const char *name);
 void subtilis_ir_prog_dump(subtilis_ir_prog_t *p);
 void subtilis_ir_prog_delete(subtilis_ir_prog_t *p);
+/* Returns a private handle to the NOP */
+size_t subtilis_ir_section_add_nop(subtilis_ir_section_t *s,
+				   subtilis_error_t *err);
+size_t subtilis_ir_section_promote_nop(subtilis_ir_section_t *s, size_t nop,
+				       subtilis_op_instr_type_t type,
+				       size_t op1, subtilis_error_t *err);
 size_t subtilis_ir_section_add_instr(subtilis_ir_section_t *s,
 				     subtilis_op_instr_type_t type,
 				     subtilis_ir_operand_t op1,
@@ -921,10 +1134,14 @@ void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t arg_count,
 				  subtilis_ir_arg_t *args,
 				  subtilis_error_t *err);
-size_t subtilis_ir_section_add_fn_call(subtilis_ir_section_t *s,
-				       size_t arg_count,
-				       subtilis_ir_arg_t *args,
-				       subtilis_error_t *err);
+size_t subtilis_ir_section_add_i32_call(subtilis_ir_section_t *s,
+					size_t arg_count,
+					subtilis_ir_arg_t *args,
+					subtilis_error_t *err);
+size_t subtilis_ir_section_add_real_call(subtilis_ir_section_t *s,
+					 size_t arg_count,
+					 subtilis_ir_arg_t *args,
+					 subtilis_error_t *err);
 void subtilis_ir_parse_rules(const subtilis_ir_rule_raw_t *raw,
 			     subtilis_ir_rule_t *parsed, size_t count,
 			     subtilis_error_t *err);

@@ -23,8 +23,6 @@
 #include "lexer.h"
 #include "symbol_table.h"
 
-typedef struct subtilis_exp_t_ subtilis_exp_t;
-
 struct subtilis_parser_t_ {
 	subtilis_lexer_t *l;
 	subtilis_backend_caps_t caps;

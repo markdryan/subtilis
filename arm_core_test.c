@@ -176,7 +176,7 @@ static subtilis_arm_section_t *prv_add_imm(subtilis_arm_op_pool_t *pool,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	s = subtilis_arm_section_new(pool, stype, 0, 0, 0, err);
+	s = subtilis_arm_section_new(pool, stype, 0, 0, 0, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -216,9 +216,9 @@ static int prv_check_imm(subtilis_arm_section_t *s,
 		return 1;
 	}
 
-	if (s->constant_count != 0) {
+	if (s->constants.ui32_count != 0) {
 		fprintf(stderr, "Expected 0 constants, found %zu\n",
-			s->constant_count);
+			s->constants.ui32_count);
 		return 1;
 	}
 
@@ -421,9 +421,9 @@ static int prv_test_arm_add_data_ldr_imm(void)
 		return 1;
 	}
 
-	if (s->constant_count != 1) {
+	if (s->constants.ui32_count != 1) {
 		fprintf(stderr, "Expected 1 constant, found %zu\n",
-			s->constant_count);
+			s->constants.ui32_count);
 		return 1;
 	}
 
@@ -455,9 +455,9 @@ static int prv_test_arm_add_data_ldr_imm(void)
 		return 1;
 	}
 
-	if (s->constants[0].integer != 0xf0f0f0f0) {
+	if (s->constants.ui32[0].integer != 0xf0f0f0f0) {
 		fprintf(stderr, "Expected constant %d, found %d\n", 0xf0f0f0f0,
-			s->constants[0].integer);
+			s->constants.ui32[0].integer);
 		return 1;
 	}
 

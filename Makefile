@@ -22,9 +22,14 @@ ARM =\
 	arm_gen.c \
 	arm_walker.c \
 	arm_reg_alloc.c \
+	arm_int_dist.c \
+	arm_fpa_dist.c \
 	arm_encode.c \
 	arm_link.c \
-	arm2_div.c
+	arm2_div.c \
+	arm_dump.c \
+	fpa.c \
+	fpa_gen.c
 
 COMPILER =\
 	compiler.c
@@ -38,7 +43,9 @@ RUNARM =\
 	arm_vm.c \
 	arm_disass.c \
 	arm_core.c \
-	arm_walker.c
+	arm_walker.c \
+	arm_dump.c \
+	fpa.c
 
 TESTS =\
 	unit_tests.c \
@@ -52,7 +59,8 @@ TESTS =\
 	arm_vm.c \
 	arm_test.c \
 	arm_reg_alloc_test.c \
-	arm_disass.c
+	arm_disass.c \
+	fpa_test.c
 
 CFLAGS ?= -O3
 CFLAGS += -Wall -Werror -MMD
@@ -61,13 +69,13 @@ basicc: $(COMPILER:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^
 
 inter: $(INTER:%.c=%.o) $(COMMON:%.c=%.o)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 runarm: $(RUNARM:%.c=%.o) $(COMMON:%.c=%.o)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 clean:
 	rm basicc *.o *.d unit_tests
@@ -75,6 +83,9 @@ clean:
 check: unit_tests
 	./unit_tests
 
+-include $(ARM:%.c=%.d)
 -include $(COMPILER:%.c=%.d)
 -include $(COMMON:%.c=%.d)
+-include $(INTER:%.c=%.d)
+-include $(RUNARM:%.c=%.d)
 -include $(TESTS:%.c=%.d)

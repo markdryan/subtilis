@@ -17,6 +17,7 @@
 #include "riscos_arm2.h"
 #include "arm_core.h"
 #include "arm_gen.h"
+#include "fpa_gen.h"
 #include "riscos_arm.h"
 
 /* clang-format off */
@@ -69,26 +70,89 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	"jmpc r_1, label_1, *\n"
 	"label_1",
 		 subtilis_arm_gen_if_gte},
+	{"ltir r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_lt_imm},
+	{"gtir r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_gt_imm},
+	{"lteir r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_lte_imm},
+	{"neqir r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_neq_imm},
+	{"eqir r_1, *, *\n"
+	 "jmpc r_1, label_1, *\n"
+	 "label_1",
+		 subtilis_fpa_gen_if_eq_imm},
+	{"gteir r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_gte_imm},
+	{"ltr r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_lt},
+	{"gtr r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_gt},
+	{"lter r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_lte},
+	{"eqr r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_eq},
+	{"neqr r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_neq},
+	{"gter r_1, *, *\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_fpa_gen_if_gte},
 	{"jmpc *, label_1, *\n"
 	"label_1\n",
 		 subtilis_arm_gen_jmpc},
 	{"call\n", subtilis_arm_gen_call},
 	{"calli32\n", subtilis_arm_gen_calli32},
+	{"callr\n", subtilis_fpa_gen_callr},
 	{"ret\n", subtilis_arm_gen_ret},
 	{"reti32\n", subtilis_arm_gen_reti32},
 	{"retii32\n", subtilis_arm_gen_retii32},
+	{"retr\n", subtilis_fpa_gen_retr},
+	{"retir\n", subtilis_fpa_gen_retir},
 	{"gtii32 *, *, *\n", subtilis_arm_gen_gtii32},
+	{"gtir *, *, *\n", subtilis_fpa_gen_gtir},
 	{"ltii32 *, *, *\n", subtilis_arm_gen_ltii32},
+	{"ltir *, *, *\n", subtilis_fpa_gen_ltir},
 	{"gteii32 *, *, *\n", subtilis_arm_gen_gteii32},
+	{"gteir *, *, *\n", subtilis_fpa_gen_gteir},
 	{"lteii32 *, *, *\n", subtilis_arm_gen_lteii32},
+	{"lteir *, *, *\n", subtilis_fpa_gen_lteir},
 	{"eqii32 *, *, *\n", subtilis_arm_gen_eqii32},
+	{"eqir *, *, *\n", subtilis_fpa_gen_eqir},
 	{"neqii32 *, *, *\n", subtilis_arm_gen_neqii32},
+	{"neqir *, *, *\n", subtilis_fpa_gen_neqir},
 	{"gti32 *, *, *\n", subtilis_arm_gen_gti32},
+	{"gtr *, *, *\n", subtilis_fpa_gen_gtr},
 	{"lti32 *, *, *\n", subtilis_arm_gen_lti32},
+	{"ltr *, *, *\n", subtilis_fpa_gen_ltr},
 	{"eqi32 *, *, *\n", subtilis_arm_gen_eqi32},
+	{"eqr *, *, *\n", subtilis_fpa_gen_eqr},
 	{"neqi32 *, *, *\n", subtilis_arm_gen_neqi32},
+	{"neqr *, *, *\n", subtilis_fpa_gen_neqr},
 	{"gtei32 *, *, *\n", subtilis_arm_gen_gtei32},
+	{"gtr *, *, *\n", subtilis_fpa_gen_gtr},
 	{"ltei32 *, *, *\n", subtilis_arm_gen_ltei32},
+	{"lter *, *, *\n", subtilis_fpa_gen_lter},
 	{"mov *, *", subtilis_arm_gen_mov},
 	{"movii32 *, *", subtilis_arm_gen_movii32},
 	{"addii32 *, *, *", subtilis_arm_gen_addii32},
@@ -110,12 +174,29 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"andi32 *, *, *\n", subtilis_arm_gen_andi32},
 	{"ori32 *, *, *\n", subtilis_arm_gen_ori32},
 	{"eori32 *, *, *\n", subtilis_arm_gen_eori32},
-	{ "lsli32 *, *, *\n", subtilis_arm_gen_lsli32},
-	{ "lslii32 *, *, *\n", subtilis_arm_gen_lslii32},
-	{ "lsri32 *, *, *\n", subtilis_arm_gen_lsri32},
-	{ "lsrii32 *, *, *\n", subtilis_arm_gen_lsrii32},
-	{ "asri32 *, *, *\n", subtilis_arm_gen_asri32},
-	{ "asrii32 *, *, *\n", subtilis_arm_gen_asrii32},
+	{"lsli32 *, *, *\n", subtilis_arm_gen_lsli32},
+	{"lslii32 *, *, *\n", subtilis_arm_gen_lslii32},
+	{"lsri32 *, *, *\n", subtilis_arm_gen_lsri32},
+	{"lsrii32 *, *, *\n", subtilis_arm_gen_lsrii32},
+	{"asri32 *, *, *\n", subtilis_arm_gen_asri32},
+	{"asrii32 *, *, *\n", subtilis_arm_gen_asrii32},
+	{"movfp *, *\n", subtilis_fpa_gen_movr},
+	{"movir *, *\n", subtilis_fpa_gen_movir},
+	{"movfpi32 *, *\n", subtilis_fpa_gen_movri32},
+	{"movi32fp *, *\n", subtilis_fpa_gen_movi32r},
+	{"addr *, *, *\n", subtilis_fpa_gen_addr},
+	{"addir *, *, *\n", subtilis_fpa_gen_addir},
+	{"subr *, *, *\n", subtilis_fpa_gen_subr},
+	{"subir *, *, *\n", subtilis_fpa_gen_subir},
+	{"rsubir *, *, *\n", subtilis_fpa_gen_rsubir},
+	{"mulr *, *, *\n", subtilis_fpa_gen_mulr},
+	{"mulir *, *, *\n", subtilis_fpa_gen_mulir},
+	{"divr *, *, *\n", subtilis_fpa_gen_divr},
+	{"divir *, *, *\n", subtilis_fpa_gen_divir},
+	{"rdivir *, *, *\n", subtilis_fpa_gen_rdivir},
+	{"storeor *, *, *", subtilis_fpa_gen_storeor},
+	{"loador *, *, *", subtilis_fpa_gen_loador},
+
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

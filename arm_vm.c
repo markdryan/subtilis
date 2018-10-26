@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,6 +24,8 @@
 subtilis_arm_vm_t *subtilis_arm_vm_new(uint32_t *code, size_t code_size,
 				       size_t mem_size, subtilis_error_t *err)
 {
+	double dummy_float = 1.0;
+	uint32_t *lower_word = (uint32_t *)((void *)&dummy_float);
 	subtilis_arm_vm_t *arm_vm = calloc(1, sizeof(*arm_vm));
 
 	if (!arm_vm) {
@@ -39,6 +42,8 @@ subtilis_arm_vm_t *subtilis_arm_vm_new(uint32_t *code, size_t code_size,
 	memcpy(arm_vm->memory, code, sizeof(*code) * code_size);
 	arm_vm->code_size = code_size;
 	arm_vm->mem_size = mem_size;
+
+	arm_vm->reverse_fpa_consts = (*lower_word) == 0;
 
 	return arm_vm;
 
@@ -148,7 +153,6 @@ static int32_t prv_eval_op2(subtilis_arm_vm_t *arm_vm, bool status,
 		case SUBTILIS_ARM_SHIFT_LSL:
 		case SUBTILIS_ARM_SHIFT_ASL:
 			if (shift < 0 || shift > 31) {
-				printf("SHIFT %d\n", shift);
 				subtilis_error_set_assertion_failed(err);
 				return 0;
 			}
@@ -580,6 +584,54 @@ static size_t prv_compute_stran_addr(subtilis_arm_vm_t *arm_vm,
 	return addr;
 }
 
+static void prv_set_fpa_f32(subtilis_arm_vm_t *arm_vm, size_t reg, float val)
+{
+	arm_vm->fregs[reg].val.real32 = val;
+	arm_vm->fregs[reg].size = 4;
+}
+
+static void prv_set_fpa_f64(subtilis_arm_vm_t *arm_vm, size_t reg, double val)
+{
+	arm_vm->fregs[reg].val.real64 = val;
+	arm_vm->fregs[reg].size = 8;
+}
+
+static size_t prv_compute_fpa_stran_addr(subtilis_arm_vm_t *arm_vm,
+					 subtilis_fpa_stran_instr_t *op,
+					 subtilis_error_t *err)
+{
+	int32_t offset;
+	size_t addr;
+
+	offset = op->offset;
+	if (offset > 256) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+	offset *= 4;
+	if (op->subtract)
+		offset = -offset;
+
+	if (op->pre_indexed) {
+		addr = arm_vm->regs[op->base.num] + offset;
+		if (op->write_back)
+			arm_vm->regs[op->base.num] = (int32_t)addr;
+	} else {
+		addr = arm_vm->regs[op->base.num];
+		if (op->write_back)
+			arm_vm->regs[op->base.num] += offset;
+	}
+
+	addr -= 0x8000;
+
+	if (addr + op->size > arm_vm->mem_size) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+
+	return addr;
+}
+
 static void prv_process_mov(subtilis_arm_vm_t *arm_vm,
 			    subtilis_arm_data_instr_t *op,
 			    subtilis_error_t *err)
@@ -864,8 +916,393 @@ static void prv_process_ldm(subtilis_arm_vm_t *arm_vm,
 	if (op->write_back)
 		arm_vm->regs[op->op0.num] = addr + 0x8000;
 
+	// TODO: Is this correct? We dont do this for other loads
+
 	if (!((1 << 15) & op->reg_list))
 		arm_vm->regs[15] += 4;
+}
+
+static void prv_process_fpa_ldf(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_stran_instr_t *op,
+				subtilis_error_t *err)
+{
+	size_t addr;
+	uint32_t *ptr;
+	uint64_t dbl;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	addr = prv_compute_fpa_stran_addr(arm_vm, op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (op->size == 4) {
+		prv_set_fpa_f32(arm_vm, op->dest.num,
+				*((float *)&arm_vm->memory[addr]));
+	} else if (op->size == 8) {
+		if (arm_vm->reverse_fpa_consts) {
+			ptr = (uint32_t *)&arm_vm->memory[addr];
+			dbl = ptr[0];
+			dbl = (dbl << 32) | ptr[1];
+			prv_set_fpa_f64(arm_vm, op->dest.num,
+					*((double *)&dbl));
+		} else {
+			prv_set_fpa_f64(arm_vm, op->dest.num,
+					*((double *)&arm_vm->memory[addr]));
+		}
+	} else {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_fpa_stf(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_stran_instr_t *op,
+				subtilis_error_t *err)
+{
+	size_t addr;
+	uint32_t *ptr;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	addr = prv_compute_fpa_stran_addr(arm_vm, op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	if (op->size == 4) {
+		*((float *)&arm_vm->memory[addr]) =
+		    arm_vm->fregs[op->dest.num].val.real32;
+	} else if (op->size == 8) {
+		if (arm_vm->reverse_fpa_consts) {
+			ptr =
+			    (uint32_t *)&arm_vm->fregs[op->dest.num].val.real64;
+			*((uint32_t *)&arm_vm->memory[addr]) = ptr[1];
+			*((uint32_t *)&arm_vm->memory[addr + 4]) = ptr[0];
+		} else {
+			*((double *)&arm_vm->memory[addr]) =
+			    arm_vm->fregs[op->dest.num].val.real64;
+		}
+	} else {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_fpa_mvf(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	double imm;
+	size_t dest;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	dest = op->dest.num;
+
+	if (op->size == 4) {
+		if (op->immediate) {
+			imm = subtilis_fpa_extract_imm(op->op2, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			prv_set_fpa_f32(arm_vm, dest, (float)imm);
+		} else {
+			prv_set_fpa_f32(
+			    arm_vm, dest,
+			    arm_vm->fregs[op->op2.reg.num].val.real32);
+		}
+	} else if (op->size == 8) {
+		if (op->immediate) {
+			imm = subtilis_fpa_extract_imm(op->op2, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			prv_set_fpa_f64(arm_vm, dest, imm);
+		} else {
+			prv_set_fpa_f64(
+			    arm_vm, dest,
+			    arm_vm->fregs[op->op2.reg.num].val.real64);
+		}
+	} else {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_fpa_mnf(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	size_t dest;
+
+	prv_process_fpa_mvf(arm_vm, op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	dest = op->dest.num;
+
+	if (op->size == 4)
+		prv_set_fpa_f32(arm_vm, dest, -arm_vm->fregs[dest].val.real32);
+	else if (op->size == 8)
+		prv_set_fpa_f64(arm_vm, dest, -arm_vm->fregs[dest].val.real64);
+}
+
+static void prv_process_fpa_dyadic(subtilis_arm_vm_t *arm_vm,
+				   subtilis_fpa_data_instr_t *op,
+				   float (*f32_op)(float, float),
+				   double (*f64_op)(double, double),
+				   subtilis_error_t *err)
+{
+	size_t dest;
+	size_t op1;
+	double imm;
+	float res32;
+	double res64;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	dest = op->dest.num;
+	op1 = op->op1.num;
+
+	if (op->size == 4) {
+		res32 = arm_vm->fregs[op1].val.real32;
+		if (op->immediate) {
+			imm = subtilis_fpa_extract_imm(op->op2, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			res32 = f32_op(res32, (float)imm);
+		} else {
+			res32 = f32_op(
+			    res32, arm_vm->fregs[op->op2.reg.num].val.real32);
+		}
+		prv_set_fpa_f32(arm_vm, dest, res32);
+	} else if (op->size == 8) {
+		res64 = arm_vm->fregs[op1].val.real64;
+		if (op->immediate) {
+			imm = subtilis_fpa_extract_imm(op->op2, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			res64 = f64_op(res64, imm);
+		} else {
+			res64 = f64_op(
+			    res64, arm_vm->fregs[op->op2.reg.num].val.real64);
+		}
+		prv_set_fpa_f64(arm_vm, dest, res64);
+	} else {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	arm_vm->regs[15] += 4;
+}
+
+static float prv_process_fpa_add_real32(float a, float b) { return a + b; }
+
+static double prv_process_fpa_add_real64(double a, double b) { return a + b; }
+
+static void prv_process_fpa_adf(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_dyadic(arm_vm, op, prv_process_fpa_add_real32,
+			       prv_process_fpa_add_real64, err);
+}
+
+static float prv_process_fpa_mul_real32(float a, float b) { return a * b; }
+
+static double prv_process_fpa_mul_real64(double a, double b) { return a * b; }
+
+static void prv_process_fpa_muf(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_dyadic(arm_vm, op, prv_process_fpa_mul_real32,
+			       prv_process_fpa_mul_real64, err);
+}
+
+static float prv_process_fpa_sub_real32(float a, float b) { return a - b; }
+
+static double prv_process_fpa_sub_real64(double a, double b) { return a - b; }
+
+static void prv_process_fpa_suf(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_dyadic(arm_vm, op, prv_process_fpa_sub_real32,
+			       prv_process_fpa_sub_real64, err);
+}
+
+static float prv_process_fpa_rsub_real32(float a, float b) { return b - a; }
+
+static double prv_process_fpa_rsub_real64(double a, double b) { return b - a; }
+
+static void prv_process_fpa_rsf(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_dyadic(arm_vm, op, prv_process_fpa_rsub_real32,
+			       prv_process_fpa_rsub_real64, err);
+}
+
+static float prv_process_fpa_div_real32(float a, float b) { return a / b; }
+
+static double prv_process_fpa_div_real64(double a, double b) { return a / b; }
+
+static void prv_process_fpa_dvf(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_dyadic(arm_vm, op, prv_process_fpa_div_real32,
+			       prv_process_fpa_div_real64, err);
+}
+
+static float prv_process_fpa_rdiv_real32(float a, float b) { return b / a; }
+
+static double prv_process_fpa_rdiv_real64(double a, double b) { return b / a; }
+
+static void prv_process_fpa_rdf(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_dyadic(arm_vm, op, prv_process_fpa_rdiv_real32,
+			       prv_process_fpa_rdiv_real64, err);
+}
+
+static void prv_process_fpa_fix(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_tran_instr_t *op,
+				subtilis_error_t *err)
+{
+	double val;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	if (arm_vm->fregs[op->op2.reg.num].size == 4)
+		val = (double)arm_vm->fregs[op->op2.reg.num].val.real32;
+	else
+		val = arm_vm->fregs[op->op2.reg.num].val.real64;
+	if (op->rounding == SUBTILIS_FPA_ROUNDING_ZERO)
+		arm_vm->regs[op->dest.num] = (int32_t)val;
+	else
+		arm_vm->regs[op->dest.num] = (int32_t)round(val);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_fpa_flt(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_tran_instr_t *op,
+				subtilis_error_t *err)
+{
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	if (op->size == 4) {
+		prv_set_fpa_f32(arm_vm, op->dest.num,
+				(float)arm_vm->regs[op->op2.reg.num]);
+	} else if (op->size == 8) {
+		prv_set_fpa_f64(arm_vm, op->dest.num,
+				(double)arm_vm->regs[op->op2.reg.num]);
+	} else {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_set_double_sub_flags(subtilis_arm_vm_t *arm_vm, double op1,
+				     double op2, double res)
+{
+	prv_reset_flags(arm_vm);
+	arm_vm->zero_flag = res == 0;
+	arm_vm->negative_flag = res < 0;
+	arm_vm->carry_flag = (op1 < 0 && op2 >= 0) || (op1 < 0 && res >= 0) ||
+			     (op2 >= 0 && res >= 0);
+	if (((op1 < 0 && op2 >= 0) || (op1 >= 0 && op2 < 0)) &&
+	    ((op1 >= 0 && res < 0) || (op1 < 0 && res >= 0)))
+		arm_vm->overflow_flag = true;
+}
+
+static void prv_process_fpa_cmf_gen(subtilis_arm_vm_t *arm_vm,
+				    subtilis_fpa_cmp_instr_t *op,
+				    bool negate_op2, subtilis_error_t *err)
+{
+	double op1;
+	double op2;
+	double res;
+	size_t size;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	size = arm_vm->fregs[op->dest.num].size;
+	if (size == 4) {
+		op1 = (double)arm_vm->fregs[op->dest.num].val.real32;
+	} else if (size == 8) {
+		op1 = arm_vm->fregs[op->dest.num].val.real64;
+	} else {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (op->immediate) {
+		op2 = subtilis_fpa_extract_imm(op->op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		size = arm_vm->fregs[op->op2.reg.num].size;
+		if (size == 4) {
+			op2 = (double)arm_vm->fregs[op->op2.reg.num].val.real32;
+		} else if (size == 8) {
+			op2 = arm_vm->fregs[op->op2.reg.num].val.real64;
+		} else {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+	}
+
+	if (negate_op2)
+		op2 = -op2;
+
+	res = op1 - op2;
+	prv_set_double_sub_flags(arm_vm, op1, op2, res);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_fpa_cmf(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_cmp_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_cmf_gen(arm_vm, op, false, err);
+}
+
+static void prv_process_fpa_cnf(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_cmp_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_cmf_gen(arm_vm, op, true, err);
 }
 
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
@@ -941,6 +1378,62 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			break;
 		case SUBTILIS_ARM_INSTR_LDM:
 			prv_process_ldm(arm_vm, &instr.operands.mtran, err);
+			break;
+		case SUBTILIS_FPA_INSTR_LDF:
+			prv_process_fpa_ldf(arm_vm, &instr.operands.fpa_stran,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_STF:
+			prv_process_fpa_stf(arm_vm, &instr.operands.fpa_stran,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_MVF:
+			prv_process_fpa_mvf(arm_vm, &instr.operands.fpa_data,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_MNF:
+			prv_process_fpa_mnf(arm_vm, &instr.operands.fpa_data,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_ADF:
+			prv_process_fpa_adf(arm_vm, &instr.operands.fpa_data,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_MUF:
+			prv_process_fpa_muf(arm_vm, &instr.operands.fpa_data,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_SUF:
+			prv_process_fpa_suf(arm_vm, &instr.operands.fpa_data,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_RSF:
+			prv_process_fpa_rsf(arm_vm, &instr.operands.fpa_data,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_DVF:
+			prv_process_fpa_dvf(arm_vm, &instr.operands.fpa_data,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_RDF:
+			prv_process_fpa_rdf(arm_vm, &instr.operands.fpa_data,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_FLT:
+			prv_process_fpa_flt(arm_vm, &instr.operands.fpa_tran,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_FIX:
+			prv_process_fpa_fix(arm_vm, &instr.operands.fpa_tran,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_CMF:
+			prv_process_fpa_cmf(arm_vm, &instr.operands.fpa_cmp,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_CNF:
+			prv_process_fpa_cnf(arm_vm, &instr.operands.fpa_cmp,
+					    err);
 			break;
 		default:
 			printf("instr type %d\n", instr.type);
