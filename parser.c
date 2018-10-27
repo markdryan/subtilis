@@ -1229,6 +1229,46 @@ cleanup:
 	subtilis_exp_delete(e);
 }
 
+static void prv_repeat(subtilis_parser_t *p, subtilis_token_t *t,
+		       subtilis_error_t *err)
+{
+	subtilis_exp_t *e = NULL;
+	subtilis_ir_operand_t cond;
+	subtilis_ir_operand_t start_label;
+	subtilis_ir_operand_t true_label;
+
+	start_label.reg = subtilis_ir_section_new_label(p->current);
+	subtilis_ir_section_add_label(p->current, start_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_compound(p, t, SUBTILIS_KEYWORD_UNTIL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = prv_conditional_exp(p, t, &cond, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	true_label.reg = subtilis_ir_section_new_label(p->current);
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  cond, true_label, start_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, true_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+cleanup:
+	subtilis_exp_delete(e);
+}
+
 static subtilis_type_t *prv_def_parameters(subtilis_parser_t *p,
 					   subtilis_token_t *t,
 					   size_t *num_parameters,
@@ -1968,7 +2008,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_RECTANGLE */
 	NULL, /* SUBTILIS_KEYWORD_REM */
 	NULL, /* SUBTILIS_KEYWORD_RENUMBER */
-	NULL, /* SUBTILIS_KEYWORD_REPEAT */
+	prv_repeat, /* SUBTILIS_KEYWORD_REPEAT */
 	NULL, /* SUBTILIS_KEYWORD_REPORT */
 	NULL, /* SUBTILIS_KEYWORD_REPORT_STR */
 	NULL, /* SUBTILIS_KEYWORD_RESTORE */
