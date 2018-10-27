@@ -530,6 +530,32 @@ static subtilis_exp_t *prv_expression(subtilis_parser_t *p, subtilis_token_t *t,
 	return prv_priority7(p, t, err);
 }
 
+static subtilis_exp_t *prv_int_var_expression(subtilis_parser_t *p,
+					      subtilis_token_t *t,
+					      subtilis_error_t *err)
+{
+	subtilis_exp_t *e = NULL;
+
+	e = prv_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	e = subtilis_exp_to_int(p, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_to_var(p, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return e;
+
+cleanup:
+
+	subtilis_exp_delete(e);
+	return NULL;
+}
+
 static void prv_assign_to_reg(subtilis_parser_t *p, subtilis_token_t *t,
 			      const char *tbuf, size_t loc, subtilis_exp_t *e,
 			      subtilis_error_t *err)
@@ -778,6 +804,119 @@ static void prv_parse_locals(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
+}
+
+static void prv_mode(subtilis_parser_t *p, subtilis_token_t *t,
+		     subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+
+	e = prv_int_var_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_MODE_I32, e->exp.ir_op, err);
+
+	subtilis_exp_delete(e);
+}
+
+static void prv_statement_int_args(subtilis_parser_t *p, subtilis_token_t *t,
+				   subtilis_exp_t **e, size_t expected,
+				   subtilis_error_t *err)
+{
+	size_t i;
+	const char *tbuf;
+
+	e[0] = prv_int_var_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	for (i = 1; i < expected; i++) {
+		tbuf = subtilis_token_get_text(t);
+		if (t->type != SUBTILIS_TOKEN_OPERATOR) {
+			subtilis_error_set_expected(
+			    err, ",", tbuf, p->l->stream->name, p->l->line);
+			return;
+		}
+
+		if (strcmp(tbuf, ",")) {
+			subtilis_error_set_expected(
+			    err, ",", tbuf, p->l->stream->name, p->l->line);
+			return;
+		}
+
+		e[i] = prv_int_var_expression(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+}
+
+static void prv_plot(subtilis_parser_t *p, subtilis_token_t *t,
+		     subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_exp_t *e[3];
+
+	memset(&e, 0, sizeof(e));
+
+	prv_statement_int_args(p, t, e, 3, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_PLOT,
+					  e[0]->exp.ir_op, e[1]->exp.ir_op,
+					  e[2]->exp.ir_op, err);
+
+cleanup:
+	for (i = 0; i < 3; i++)
+		subtilis_exp_delete(e[i]);
+}
+
+static void prv_gcol(subtilis_parser_t *p, subtilis_token_t *t,
+		     subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_exp_t *e[2];
+	subtilis_ir_operand_t op2;
+
+	memset(&e, 0, sizeof(e));
+	memset(&op2, 0, sizeof(op2));
+
+	prv_statement_int_args(p, t, e, 2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_GCOL,
+					  e[0]->exp.ir_op, e[1]->exp.ir_op, op2,
+					  err);
+
+cleanup:
+	for (i = 0; i < 2; i++)
+		subtilis_exp_delete(e[i]);
+}
+
+static void prv_origin(subtilis_parser_t *p, subtilis_token_t *t,
+		       subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_exp_t *e[2];
+	subtilis_ir_operand_t op2;
+
+	memset(&e, 0, sizeof(e));
+	memset(&op2, 0, sizeof(op2));
+
+	prv_statement_int_args(p, t, e, 2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_ORIGIN,
+					  e[0]->exp.ir_op, e[1]->exp.ir_op, op2,
+					  err);
+
+cleanup:
+	for (i = 0; i < 2; i++)
+		subtilis_exp_delete(e[i]);
 }
 
 static void prv_print(subtilis_parser_t *p, subtilis_token_t *t,
@@ -1765,7 +1904,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_FILL */
 	NULL, /* SUBTILIS_KEYWORD_FN */
 	NULL, /* SUBTILIS_KEYWORD_FOR */
-	NULL, /* SUBTILIS_KEYWORD_GCOL */
+	prv_gcol, /* SUBTILIS_KEYWORD_GCOL */
 	NULL, /* SUBTILIS_KEYWORD_GET */
 	NULL, /* SUBTILIS_KEYWORD_GET_STR */
 	NULL, /* SUBTILIS_KEYWORD_GET_STR_HASH */
@@ -1796,7 +1935,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_LVAR */
 	NULL, /* SUBTILIS_KEYWORD_MID_STR */
 	NULL, /* SUBTILIS_KEYWORD_MOD */
-	NULL, /* SUBTILIS_KEYWORD_MODE */
+	prv_mode, /* SUBTILIS_KEYWORD_MODE */
 	NULL, /* SUBTILIS_KEYWORD_MOUSE */
 	NULL, /* SUBTILIS_KEYWORD_MOVE */
 	NULL, /* SUBTILIS_KEYWORD_NEW */
@@ -1810,13 +1949,13 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_OPENOUT */
 	NULL, /* SUBTILIS_KEYWORD_OPENUP */
 	NULL, /* SUBTILIS_KEYWORD_OR */
-	NULL, /* SUBTILIS_KEYWORD_ORIGIN */
+	prv_origin, /* SUBTILIS_KEYWORD_ORIGIN */
 	NULL, /* SUBTILIS_KEYWORD_OSCLI */
 	NULL, /* SUBTILIS_KEYWORD_OTHERWISE */
 	NULL, /* SUBTILIS_KEYWORD_OVERLAY */
 	NULL, /* SUBTILIS_KEYWORD_PAGE */
 	NULL, /* SUBTILIS_KEYWORD_PI */
-	NULL, /* SUBTILIS_KEYWORD_PLOT */
+	prv_plot, /* SUBTILIS_KEYWORD_PLOT */
 	NULL, /* SUBTILIS_KEYWORD_POINT */
 	NULL, /* SUBTILIS_KEYWORD_POS */
 	prv_print, /* SUBTILIS_KEYWORD_PRINT */
