@@ -137,6 +137,10 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "movi32fp", SUBTILIS_OP_CLASS_FREG_REG },
 	{ "movfpi32", SUBTILIS_OP_CLASS_REG_FREG },
 	{ "nop", SUBTILIS_OP_CLASS_NONE },
+	{ "modei32", SUBTILIS_OP_CLASS_REG },
+	{ "plot", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "gcol", SUBTILIS_OP_CLASS_REG_REG },
+	{ "origin", SUBTILIS_OP_CLASS_REG_REG },
 };
 
 /*

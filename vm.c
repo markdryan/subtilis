@@ -997,6 +997,10 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_movi32fp,                        /* SUBTILIS_OP_INSTR_MOV_I32_FP */
 	prv_movfpi32,                        /* SUBTILIS_OP_INSTR_MOV_FP_I32 */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_NOP */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_MODE_I32 */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_PLOT */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_GCOL */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_ORIGIN */
 };
 
 /* clang-format on */

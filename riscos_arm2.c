@@ -194,9 +194,12 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"divr *, *, *\n", subtilis_fpa_gen_divr},
 	{"divir *, *, *\n", subtilis_fpa_gen_divir},
 	{"rdivir *, *, *\n", subtilis_fpa_gen_rdivir},
-	{"storeor *, *, *", subtilis_fpa_gen_storeor},
-	{"loador *, *, *", subtilis_fpa_gen_loador},
-
+	{"storeor *, *, *\n", subtilis_fpa_gen_storeor},
+	{"loador *, *, *\n", subtilis_fpa_gen_loador},
+	{"modei32 *\n", subtilis_riscos_arm_modei32},
+	{"plot *, *, *\n", subtilis_riscos_arm_plot},
+	{"gcol *, *\n", subtilis_riscos_arm_gcol},
+	{"origin *, *\n", subtilis_riscos_arm_origin},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

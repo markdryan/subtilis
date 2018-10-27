@@ -933,6 +933,42 @@ typedef enum {
 
 	SUBTILIS_OP_INSTR_NOP,
 
+	/*
+	 * mode_i32 r0
+	 *
+	 * Changes the screen mode to that of the number contained in the
+	 * specified register.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_MODE_I32,
+
+	/*
+	 * plot r0, r1, r2
+	 *
+	 * Platform specific drawing routine.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_PLOT,
+
+	/*
+	 * gcol r0, r1
+	 *
+	 * Change the colour used for graphics operations
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_GCOL,
+
+	/*
+	 * origin r0, r1
+	 *
+	 * Sets the graphics origin
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_ORIGIN,
 } subtilis_op_instr_type_t;
 
 typedef enum {
