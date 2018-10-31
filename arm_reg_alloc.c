@@ -494,8 +494,8 @@ static void prv_allocate_floating(subtilis_arm_section_t *arm_s,
 {
 	subtilis_arm_reg_t target_reg;
 	int i;
-	size_t next = regs->max_regs;
-	size_t max_next = -1;
+	int next = regs->max_regs;
+	int max_next = -1;
 
 	/* Virtual register is not already assigned. */
 
@@ -519,8 +519,8 @@ static void prv_allocate_floating(subtilis_arm_section_t *arm_s,
 			return;
 		}
 		target_reg.num = next;
-		prv_spill_reg(arm_s, current, next, int_regs, regs, target_reg,
-			      err);
+		prv_spill_reg(arm_s, current, regs->phys_to_virt[next],
+			      int_regs, regs, target_reg, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
@@ -534,6 +534,7 @@ static void prv_allocate(subtilis_arm_section_t *arm_s,
 			 subtilis_arm_reg_class_t *regs,
 			 subtilis_arm_reg_t *reg, subtilis_error_t *err)
 {
+	size_t assigned;
 	size_t virt_num = reg->num;
 
 	if (reg->type == SUBTILIS_ARM_REG_FIXED) {
@@ -541,8 +542,18 @@ static void prv_allocate(subtilis_arm_section_t *arm_s,
 			return;
 		prv_allocate_fixed(arm_s, current, int_regs, regs, reg, err);
 	} else {
-		prv_allocate_floating(arm_s, current, int_regs, regs, reg, err);
+		assigned = prv_virt_to_phys(regs, reg);
+		if (assigned != INT_MAX) {
+			reg->num = assigned;
+			reg->type = SUBTILIS_ARM_REG_FIXED;
+		} else {
+			prv_allocate_floating(arm_s, current, int_regs, regs,
+					      reg, err);
+		}
 	}
+
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	regs->phys_to_virt[reg->num] = virt_num;
 }
@@ -583,6 +594,7 @@ static bool prv_ensure(subtilis_arm_section_t *arm_s,
 			reg->num = assigned;
 			reg->type = SUBTILIS_ARM_REG_FIXED;
 		} else {
+			target_reg = *reg;
 			prv_allocate_floating(arm_s, current, int_regs, regs,
 					      &target_reg, err);
 			if (err->type != SUBTILIS_ERROR_OK)
