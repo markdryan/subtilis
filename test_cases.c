@@ -422,7 +422,14 @@ const subtilis_test_case_t test_cases[] = {
 	  "PRINT FALSE\n"
 	  "ENDIF\n"
 	  "ENDPROC\n",
-	  "-1\n0\n0\n0\n-1\n0\n-1\n-1\n-1\n0\n-1\n0\n-1\n"}
+	  "-1\n0\n0\n0\n-1\n0\n-1\n-1\n-1\n0\n-1\n0\n-1\n"},
+	{ "repeat",
+	  "LET i% = 0\n"
+	  "REPEAT\n"
+	  "  PRINT i%\n"
+	  "  LET i%=i%+1\n"
+	  "UNTIL i%=5\n",
+	  "0\n1\n2\n3\n4\n"},
 };
 
 /* clang-format on */
