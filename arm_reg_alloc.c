@@ -799,7 +799,10 @@ static void prv_alloc_mov_instr(void *user_data, subtilis_arm_op_t *op,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	if (reg)
+	/* Need to check for useless moves */
+
+	if (reg && !shift_reg && ((type != SUBTILIS_ARM_INSTR_MOV) ||
+				  (instr->dest.num != instr->op2.op.reg.num)))
 		ud->int_regs->next[reg->num] = dist_op2;
 
 	if (shift_reg)
@@ -1163,7 +1166,10 @@ static void prv_alloc_fpa_data_monadic_instr(void *user_data,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	if (!instr->immediate)
+	/* Need to check for useless moves */
+
+	if (!instr->immediate && ((type != SUBTILIS_FPA_INSTR_MVF) ||
+				  instr->op2.reg.num != instr->dest.num))
 		ud->fpa_regs->next[instr->op2.reg.num] = dist_op2;
 
 	ud->instr_count++;
