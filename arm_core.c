@@ -290,7 +290,7 @@ subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg)
 	default:
 		arm_reg.type = SUBTILIS_ARM_REG_FLOATING;
 		ir_reg = ir_reg - SUBTILIS_IR_REG_TEMP_START + 4;
-		if (ir_reg > 10 && ir_reg < 16)
+		if (ir_reg > 10)
 			ir_reg += 6;
 		arm_reg.num = ir_reg;
 		break;
