@@ -150,6 +150,8 @@ void subtilis_arm_section_delete(subtilis_arm_section_t *s)
 
 void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s,
 					size_t stm_site, size_t ldm_site,
+					size_t stf_site, size_t ldf_site,
+					size_t int_args, size_t real_args,
 					size_t op, subtilis_error_t *err)
 {
 	size_t new_max;
@@ -170,6 +172,10 @@ void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s,
 	site = &s->call_sites[s->call_site_count++];
 	site->stm_site = stm_site;
 	site->ldm_site = ldm_site;
+	site->stf_site = stf_site;
+	site->ldf_site = ldf_site;
+	site->int_args = int_args;
+	site->real_args = real_args;
 	site->call_site = op;
 }
 
@@ -290,7 +296,7 @@ subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg)
 	default:
 		arm_reg.type = SUBTILIS_ARM_REG_FLOATING;
 		ir_reg = ir_reg - SUBTILIS_IR_REG_TEMP_START + 4;
-		if (ir_reg > 10 && ir_reg < 16)
+		if (ir_reg > 10)
 			ir_reg += 6;
 		arm_reg.num = ir_reg;
 		break;

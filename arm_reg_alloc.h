@@ -37,11 +37,13 @@ size_t subtilis_arm_reg_alloc(subtilis_arm_section_t *arm_s,
 			      subtilis_error_t *err);
 
 void subtilis_arm_regs_used_before(subtilis_arm_section_t *arm_s,
-				   subtilis_arm_op_t *op,
+				   subtilis_arm_op_t *op, size_t int_args,
+				   size_t real_args,
 				   subtilis_regs_used_t *regs_used,
 				   subtilis_error_t *err);
 void subtilis_arm_regs_used_after(subtilis_arm_section_t *arm_s,
-				  subtilis_arm_op_t *op,
+				  subtilis_arm_op_t *op, size_t int_args,
+				  size_t real_args,
 				  subtilis_regs_used_t *regs_used,
 				  subtilis_error_t *err);
 

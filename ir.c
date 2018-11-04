@@ -861,6 +861,11 @@ static const char *prv_parse_operands(const char *rule,
 				return NULL;
 			}
 			match->op.instr.operands[j].reg = (int32_t)num;
+		} else {
+			/* Missing arguments on rule */
+
+			subtilis_error_set_assertion_failed(err);
+			return NULL;
 		}
 	}
 
@@ -1145,7 +1150,9 @@ void subtilis_ir_match(subtilis_ir_section_t *s, subtilis_ir_rule_t *rules,
 		for (i = 0; i < rule_count; i++) {
 			state.regs_count = 0;
 			state.labels_count = 0;
-			for (j = 0; j < rules[i].matches_count; j++) {
+			for (j = 0;
+			     j < rules[i].matches_count && pc + j < s->len;
+			     j++) {
 				op = s->ops[pc + j];
 				if (!prv_match_op(op, &rules[i].matches[j],
 						  &state, err))
