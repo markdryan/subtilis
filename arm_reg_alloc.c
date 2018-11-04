@@ -1430,7 +1430,8 @@ static bool prv_is_reg_used_before(subtilis_arm_reg_ud_t *ud, size_t reg_num,
 }
 
 void subtilis_arm_regs_used_before(subtilis_arm_section_t *arm_s,
-				   subtilis_arm_op_t *op,
+				   subtilis_arm_op_t *op, size_t int_args,
+				   size_t real_args,
 				   subtilis_regs_used_t *regs_used,
 				   subtilis_error_t *err)
 {
@@ -1446,22 +1447,19 @@ void subtilis_arm_regs_used_before(subtilis_arm_section_t *arm_s,
 
 	from = &arm_s->op_pool->ops[arm_s->first_op];
 
-	/*
-	 * TODO: This is wrong.  The register allocator for a procedure that
-	 * takes no parameters but which uses lots of registers may modify
-	 * r0-r3 as may the calling function.  This is more relevant for FPA
-	 *  as there are only 6 registers available.
-	 */
-
-	for (i = SUBTILIS_ARM_REG_MIN_INT_REGS;
-	     i <= SUBTILIS_ARM_REG_MAX_INT_REGS; i++) {
+	i = int_args;
+	if (i > SUBTILIS_ARM_REG_MIN_INT_REGS)
+		i = SUBTILIS_ARM_REG_MIN_INT_REGS;
+	for (; i <= SUBTILIS_ARM_REG_MAX_INT_REGS; i++) {
 		if (prv_is_reg_used_before(&ud, i, &ud.int_dist_walker, from,
 					   op))
 			int_reg_list |= 1 << i;
 	}
 
-	for (i = SUBTILIS_ARM_REG_MIN_FPA_REGS;
-	     i <= SUBTILIS_ARM_REG_MAX_FPA_REGS; i++) {
+	i = real_args;
+	if (i > SUBTILIS_ARM_REG_MIN_FPA_REGS)
+		i = SUBTILIS_ARM_REG_MIN_FPA_REGS;
+	for (; i < SUBTILIS_ARM_REG_MAX_FPA_REGS; i++) {
 		if (prv_is_reg_used_before(&ud, i, &ud.fpa_dist_walker, from,
 					   op))
 			fpa_reg_list |= 1 << i;
@@ -1496,7 +1494,8 @@ static bool prv_is_reg_used_after(subtilis_arm_reg_ud_t *ud, size_t reg_num,
 }
 
 void subtilis_arm_regs_used_after(subtilis_arm_section_t *arm_s,
-				  subtilis_arm_op_t *op,
+				  subtilis_arm_op_t *op, size_t int_args,
+				  size_t real_args,
 				  subtilis_regs_used_t *regs_used,
 				  subtilis_error_t *err)
 {
@@ -1509,14 +1508,18 @@ void subtilis_arm_regs_used_after(subtilis_arm_section_t *arm_s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	for (i = SUBTILIS_ARM_REG_MIN_INT_REGS;
-	     i <= SUBTILIS_ARM_REG_MAX_INT_REGS; i++) {
+	i = int_args;
+	if (i > SUBTILIS_ARM_REG_MIN_INT_REGS)
+		i = SUBTILIS_ARM_REG_MIN_INT_REGS;
+	for (; i <= SUBTILIS_ARM_REG_MAX_INT_REGS; i++) {
 		if (prv_is_reg_used_after(&ud, i, &ud.int_dist_walker, op))
 			int_reg_list |= 1 << i;
 	}
 
-	for (i = SUBTILIS_ARM_REG_MIN_FPA_REGS;
-	     i <= SUBTILIS_ARM_REG_MAX_FPA_REGS; i++) {
+	i = real_args;
+	if (i > SUBTILIS_ARM_REG_MIN_FPA_REGS)
+		i = SUBTILIS_ARM_REG_MIN_FPA_REGS;
+	for (; i < SUBTILIS_ARM_REG_MAX_FPA_REGS; i++) {
 		if (prv_is_reg_used_after(&ud, i, &ud.fpa_dist_walker, op))
 			fpa_reg_list |= 1 << i;
 	}
@@ -1531,96 +1534,86 @@ void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
 			    subtilis_error_t *err)
 {
 	size_t i;
-	size_t cs;
-	size_t stm;
-	size_t stf;
-	size_t ldm;
 	size_t start;
 	size_t end;
 	size_t int_regs_used;
 	size_t real_regs_used;
+	size_t real_regs_saved;
+	subtilis_arm_call_site_t *call_site;
 	subtilis_regs_used_t regs_used_before;
 	subtilis_regs_used_t regs_used_after;
 	subtilis_arm_mtran_instr_t *mtran;
 	subtilis_arm_op_t *op;
-	subtilis_arm_op_t *old_op;
 	size_t fpa_reg_count;
+	size_t j;
 
 	for (i = 0; i < arm_s->call_site_count; i++) {
-		cs = arm_s->call_sites[i].call_site;
-		stm = arm_s->call_sites[i].stm_site;
-		ldm = arm_s->call_sites[i].ldm_site;
-		end = arm_s->op_pool->ops[stm].prev;
+		call_site = &arm_s->call_sites[i];
+		end = arm_s->op_pool->ops[call_site->stm_site].prev;
 		if (end != SIZE_MAX) {
-			subtilis_arm_regs_used_before(arm_s,
-						      &arm_s->op_pool->ops[end],
-						      &regs_used_before, err);
+			subtilis_arm_regs_used_before(
+			    arm_s, &arm_s->op_pool->ops[end],
+			    call_site->int_args, call_site->real_args,
+			    &regs_used_before, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 		}
 
-		start = arm_s->op_pool->ops[ldm].next;
+		start = arm_s->op_pool->ops[call_site->ldm_site].next;
 		if (start == SIZE_MAX)
 			continue;
 
 		subtilis_arm_regs_used_after(arm_s, &arm_s->op_pool->ops[start],
+					     call_site->int_args,
+					     call_site->real_args,
+
 					     &regs_used_after, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
 		int_regs_used =
 		    regs_used_before.int_regs & regs_used_after.int_regs;
+
+		op = &arm_s->op_pool->ops[call_site->stm_site];
+		mtran = &op->op.instr.operands.mtran;
+		mtran->reg_list |= int_regs_used;
+		op = &arm_s->op_pool->ops[call_site->ldm_site];
+		mtran = &op->op.instr.operands.mtran;
+		mtran->reg_list |= int_regs_used;
+
+		if (call_site->ldf_site == INT_MAX)
+			continue;
+
 		real_regs_used =
 		    regs_used_before.fpa_regs & regs_used_after.fpa_regs;
 
-		mtran = &arm_s->op_pool->ops[stm].op.instr.operands.mtran;
-		mtran->reg_list |= int_regs_used;
-		mtran = &arm_s->op_pool->ops[ldm].op.instr.operands.mtran;
-		mtran->reg_list |= int_regs_used;
+		real_regs_saved = arm_s->call_sites[i].real_args;
+		if (real_regs_saved > SUBTILIS_ARM_REG_MIN_FPA_REGS)
+			real_regs_saved = 2;
+		else
+			real_regs_saved =
+			    SUBTILIS_ARM_REG_MAX_FPA_REGS - real_regs_saved;
 
-		fpa_reg_count = SUBTILIS_ARM_REG_MAX_FPA_REGS;
-		stf = arm_s->op_pool->ops[stm].next;
-		op = &arm_s->op_pool->ops[stf];
-		old_op = op;
+		fpa_reg_count = SUBTILIS_ARM_REG_MAX_FPA_REGS - real_regs_saved;
+		op = &arm_s->op_pool->ops[call_site->stf_site];
 
-		/*
-		 * TODO: This isn't great.  We need to find a better way
-		 * of identifying location and number of these instructions.
-		 */
-
-		while ((op->op.instr.type == SUBTILIS_FPA_INSTR_STF) &&
-		       (op->op.instr.operands.fpa_stran.ccode ==
-			SUBTILIS_ARM_CCODE_NV))
-			op = &arm_s->op_pool->ops[op->next];
-		if (op != old_op)
-			op = &arm_s->op_pool->ops[op->prev];
-		while (fpa_reg_count > 0 && op->type == SUBTILIS_OP_INSTR &&
-		       op->op.instr.type == SUBTILIS_FPA_INSTR_STF) {
-			--fpa_reg_count;
-			/*
-			 * printf("stf real_regs_used 0x%zx reg test %zu\n",
-			 *	 real_regs_used, fpa_reg_count);
-			 */
-			if (real_regs_used & (1 << fpa_reg_count))
+		for (; fpa_reg_count < SUBTILIS_ARM_REG_MAX_FPA_REGS;
+		     fpa_reg_count++) {
+			if (real_regs_used & (1 << fpa_reg_count)) {
 				op->op.instr.operands.fpa_stran.ccode =
 				    SUBTILIS_ARM_CCODE_AL;
-			op = &arm_s->op_pool->ops[op->prev];
+			}
+			op = &arm_s->op_pool->ops[op->next];
 		}
 
-		fpa_reg_count = SUBTILIS_ARM_REG_MAX_FPA_REGS;
-		ldm = arm_s->op_pool->ops[cs].next;
-		op = &arm_s->op_pool->ops[ldm];
-		while (fpa_reg_count > 0 && op->type == SUBTILIS_OP_INSTR &&
-		       op->op.instr.type == SUBTILIS_FPA_INSTR_LDF) {
-			--fpa_reg_count;
-			/*
-			 * printf("ldf real_regs_used 0x%zx reg test %zu\n",
-			 *	  real_regs_used, fpa_reg_count);
-			 */
+		fpa_reg_count = SUBTILIS_ARM_REG_MAX_FPA_REGS - 1;
+		op = &arm_s->op_pool->ops[call_site->ldf_site];
+		for (j = 0; j < real_regs_saved; j++) {
 			if (real_regs_used & (1 << fpa_reg_count))
 				op->op.instr.operands.fpa_stran.ccode =
 				    SUBTILIS_ARM_CCODE_AL;
 			op = &arm_s->op_pool->ops[op->next];
+			fpa_reg_count--;
 		}
 	}
 }

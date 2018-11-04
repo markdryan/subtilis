@@ -123,18 +123,18 @@ static void prv_dist_fpa_data_dyadic_instr(void *user_data,
 {
 	subtilis_dist_data_t *ud = user_data;
 
-	if (instr->dest.num == ud->reg_num) {
-		ud->last_used = -1;
-		subtilis_error_set_walker_failed(err);
-		return;
-	}
-
 	if (instr->op1.num == ud->reg_num) {
 		subtilis_error_set_walker_failed(err);
 		return;
 	}
 
 	if (!instr->immediate && ud->reg_num == instr->op2.reg.num) {
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
+	if (instr->dest.num == ud->reg_num) {
+		ud->last_used = -1;
 		subtilis_error_set_walker_failed(err);
 		return;
 	}
@@ -162,13 +162,13 @@ static void prv_dist_fpa_data_monadic_instr(void *user_data,
 		return;
 	}
 
-	if (instr->dest.num == ud->reg_num) {
-		ud->last_used = -1;
+	if (!instr->immediate && ud->reg_num == instr->op2.reg.num) {
 		subtilis_error_set_walker_failed(err);
 		return;
 	}
 
-	if (!instr->immediate && ud->reg_num == instr->op2.reg.num) {
+	if (instr->dest.num == ud->reg_num) {
+		ud->last_used = -1;
 		subtilis_error_set_walker_failed(err);
 		return;
 	}

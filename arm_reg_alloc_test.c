@@ -104,7 +104,7 @@ static int prv_test_arm_regs_used_before(void)
 
 	op_ptr = s->first_op;
 	for (i = 0; i < sizeof(expected) / sizeof(size_t); i++) {
-		subtilis_arm_regs_used_before(s, &pool->ops[op_ptr],
+		subtilis_arm_regs_used_before(s, &pool->ops[op_ptr], 4, 4,
 					      &regs_used_before, &err);
 		if (err.type != SUBTILIS_ERROR_OK)
 			goto on_error;
@@ -158,7 +158,7 @@ static int prv_test_arm_regs_used_after(void)
 
 	op_ptr = s->first_op;
 	for (i = 0; i < sizeof(expected) / sizeof(size_t); i++) {
-		subtilis_arm_regs_used_after(s, &pool->ops[op_ptr],
+		subtilis_arm_regs_used_after(s, &pool->ops[op_ptr], 4, 4,
 					     &regs_used_after, &err);
 		if (err.type != SUBTILIS_ERROR_OK)
 			goto on_error;

@@ -60,13 +60,15 @@ static void prv_dist_mov_instr(void *user_data, subtilis_arm_op_t *op,
 		return;
 	}
 
+	prv_dist_handle_op2(ud, &instr->op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	if (instr->dest.num == ud->reg_num) {
 		ud->last_used = -1;
 		subtilis_error_set_walker_failed(err);
 		return;
 	}
-
-	prv_dist_handle_op2(ud, &instr->op2, err);
 }
 
 static void prv_dist_data_instr(void *user_data, subtilis_arm_op_t *op,
@@ -76,18 +78,20 @@ static void prv_dist_data_instr(void *user_data, subtilis_arm_op_t *op,
 {
 	subtilis_dist_data_t *ud = user_data;
 
-	if (instr->dest.num == ud->reg_num) {
-		ud->last_used = -1;
-		subtilis_error_set_walker_failed(err);
-		return;
-	}
-
 	if (instr->op1.num == ud->reg_num) {
 		subtilis_error_set_walker_failed(err);
 		return;
 	}
 
 	prv_dist_handle_op2(ud, &instr->op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (instr->dest.num == ud->reg_num) {
+		ud->last_used = -1;
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
 }
 
 static void prv_dist_mul_instr(void *user_data, subtilis_arm_op_t *op,
@@ -97,16 +101,17 @@ static void prv_dist_mul_instr(void *user_data, subtilis_arm_op_t *op,
 {
 	subtilis_dist_data_t *ud = user_data;
 
+	if ((instr->rm.num == ud->reg_num) || (instr->rs.num == ud->reg_num)) {
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
 	if (instr->dest.num == ud->reg_num) {
 		ud->last_used = -1;
 		subtilis_error_set_walker_failed(err);
 		return;
 	}
 
-	if ((instr->rm.num == ud->reg_num) || (instr->rs.num == ud->reg_num)) {
-		subtilis_error_set_walker_failed(err);
-		return;
-	}
 	ud->last_used++;
 }
 
