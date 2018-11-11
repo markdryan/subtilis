@@ -254,11 +254,11 @@ static void prv_dump_br_instr(void *user_data, subtilis_arm_op_t *op,
 			printf(" %s\n",
 			       p->string_pool->strings[instr->target.label]);
 		else
-			printf(" %d\n", (int32_t)instr->target.label + 2);
+			printf(" %d\n", (int32_t)instr->target.label);
 	} else if (p) {
 		printf(" label_%zu\n", instr->target.label);
 	} else {
-		printf(" %d\n", (int32_t)instr->target.label + 2);
+		printf(" %d\n", (int32_t)instr->target.label);
 	}
 }
 
@@ -552,6 +552,10 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 	case SUBTILIS_ARM_INSTR_STR:
 		prv_dump_stran_instr(NULL, NULL, instr->type,
 				     &instr->operands.stran, NULL);
+		break;
+	case SUBTILIS_ARM_INSTR_LDRC:
+		prv_dump_ldrc_instr(NULL, NULL, instr->type,
+				    &instr->operands.ldrc, NULL);
 		break;
 	case SUBTILIS_ARM_INSTR_LDM:
 	case SUBTILIS_ARM_INSTR_STM:
