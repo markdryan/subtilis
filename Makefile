@@ -29,7 +29,8 @@ ARM =\
 	arm2_div.c \
 	arm_dump.c \
 	fpa.c \
-	fpa_gen.c
+	fpa_gen.c \
+	bitset.c
 
 COMPILER =\
 	compiler.c
@@ -60,7 +61,8 @@ TESTS =\
 	arm_test.c \
 	arm_reg_alloc_test.c \
 	arm_disass.c \
-	fpa_test.c
+	fpa_test.c \
+	bitset_test.c
 
 CFLAGS ?= -O3
 CFLAGS += -Wall -Werror -MMD
