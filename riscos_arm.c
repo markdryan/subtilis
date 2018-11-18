@@ -18,6 +18,7 @@
 
 #include "arm2_div.h"
 #include "arm_reg_alloc.h"
+#include "arm_sub_section.h"
 #include "riscos_arm.h"
 
 static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
@@ -206,6 +207,21 @@ static void prv_add_builtin(subtilis_ir_section_t *s,
 	}
 }
 
+static void prv_compute_sss(subtilis_arm_section_t *arm_s,
+			    subtilis_error_t *err)
+{
+	subtilis_arm_subsections_t sss;
+
+	subtilis_arm_subsections_init(&sss);
+	subtilis_arm_subsections_calculate(&sss, arm_s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+cleanup:
+
+	subtilis_arm_subsections_free(&sss);
+}
+
 static void prv_add_section(subtilis_ir_section_t *s,
 			    subtilis_arm_section_t *arm_s,
 			    subtilis_ir_rule_t *parsed, size_t rule_count,
@@ -248,6 +264,10 @@ static void prv_add_section(subtilis_ir_section_t *s,
 	}
 
 	subtilis_ir_match(s, parsed, rule_count, arm_s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_compute_sss(arm_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

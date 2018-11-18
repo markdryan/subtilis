@@ -30,7 +30,8 @@ ARM =\
 	arm_dump.c \
 	fpa.c \
 	fpa_gen.c \
-	bitset.c
+	bitset.c \
+	arm_sub_section.c
 
 COMPILER =\
 	compiler.c

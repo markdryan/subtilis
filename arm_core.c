@@ -130,6 +130,23 @@ subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 	return s;
 }
 
+/* The register counters in the arm_section are very confusing.  They always
+ * count virtual registers as used in the IR.  To map them to ARM registers
+ * one needs to call a function, e.g., subtilis_arm_ir_to_arm_reg.  Sometimes
+ * you need to know the maximum number of registers used and the counters
+ * won't tell you this.  This function will.  We always return at least
+ * 16 for the integer registers as we're always going to use PC.
+ */
+
+void subtilis_arm_section_max_regs(subtilis_arm_section_t *s, size_t *int_regs,
+				   size_t *real_regs)
+{
+	*int_regs = subtilis_arm_ir_to_arm_reg(s->reg_counter).num;
+	if (*int_regs < 16)
+		*int_regs = 16;
+	*real_regs = subtilis_arm_ir_to_freg(s->freg_counter).num;
+}
+
 static void prv_free_constants(subtilis_arm_constants_t *constants)
 {
 	free(constants->ui32);

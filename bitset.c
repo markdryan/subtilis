@@ -84,7 +84,7 @@ bool subtilis_bitset_isset(subtilis_bitset_t *bs, size_t bit)
 	size_t offset;
 
 	if (!bs->bits || bit > INT_MAX || ((int)bit) > bs->max_value)
-		return 0;
+		return false;
 
 	cell = bit / (sizeof(unsigned int) * 8);
 	offset = bit - (cell * (sizeof(unsigned int) * 8));
@@ -198,6 +198,15 @@ void subtilis_bitset_dump(subtilis_bitset_t *bs)
 		}
 	}
 	printf("\n");
+}
+
+void subtilis_bitset_claim(subtilis_bitset_t *dst, subtilis_bitset_t *src)
+{
+	subtilis_bitset_free(dst);
+	dst->bits = src->bits;
+	dst->max_value = src->max_value;
+	dst->allocated = src->allocated;
+	subtilis_bitset_init(src);
 }
 
 void subtilis_bitset_free(subtilis_bitset_t *bs) { free(bs->bits); }
