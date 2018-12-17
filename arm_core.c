@@ -42,6 +42,11 @@ static const uint32_t subitlis_arm_imm_mask[] = {
 
 /* clang-format on */
 
+bool subtilis_arm_is_fixed(size_t reg)
+{
+	return reg < SUBTILIS_ARM_INT_VIRT_REG_START;
+}
+
 subtilis_arm_op_pool_t *subtilis_arm_op_pool_new(subtilis_error_t *err)
 {
 	subtilis_arm_op_pool_t *pool = malloc(sizeof(subtilis_arm_op_pool_t));
@@ -300,18 +305,14 @@ subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg)
 	switch (ir_reg) {
 	case SUBTILIS_IR_REG_GLOBAL:
 		arm_reg.num = 12;
-		arm_reg.type = SUBTILIS_ARM_REG_FIXED;
 		break;
 	case SUBTILIS_IR_REG_LOCAL:
 		arm_reg.num = 11;
-		arm_reg.type = SUBTILIS_ARM_REG_FIXED;
 		break;
 	case SUBTILIS_IR_REG_STACK:
 		arm_reg.num = 13;
-		arm_reg.type = SUBTILIS_ARM_REG_FIXED;
 		break;
 	default:
-		arm_reg.type = SUBTILIS_ARM_REG_FLOATING;
 		ir_reg = ir_reg - SUBTILIS_IR_REG_TEMP_START +
 			 SUBTILIS_ARM_INT_VIRT_REG_START;
 		arm_reg.num = ir_reg;
@@ -326,7 +327,6 @@ subtilis_arm_reg_t subtilis_arm_ir_to_freg(size_t ir_reg)
 	subtilis_arm_reg_t arm_reg;
 
 	arm_reg.num = ir_reg + SUBTILIS_ARM_FPA_VIRT_REG_START;
-	arm_reg.type = SUBTILIS_ARM_REG_FLOATING;
 
 	return arm_reg;
 }
@@ -687,7 +687,6 @@ size_t subtilis_add_data_imm_ldr_datai(subtilis_arm_section_t *s,
 	datai->dest = dest;
 	datai->op1 = op1;
 	datai->op2.op.reg.num = ldr_dest.num;
-	datai->op2.op.reg.type = SUBTILIS_ARM_REG_FLOATING;
 	return label;
 }
 
@@ -1031,10 +1030,8 @@ void subtilis_arm_insert_push(subtilis_arm_section_t *s,
 	subtilis_arm_stran_instr_t *stran;
 
 	dest.num = 0;
-	dest.type = SUBTILIS_ARM_REG_FIXED;
 
 	base.num = 13;
-	base.type = SUBTILIS_ARM_REG_FIXED;
 
 	instr = subtilis_arm_section_insert_instr(s, current,
 						  SUBTILIS_ARM_INSTR_STR, err);
@@ -1062,10 +1059,8 @@ void subtilis_arm_insert_pop(subtilis_arm_section_t *s,
 	subtilis_arm_stran_instr_t *stran;
 
 	dest.num = 0;
-	dest.type = SUBTILIS_ARM_REG_FIXED;
 
 	base.num = 13;
-	base.type = SUBTILIS_ARM_REG_FIXED;
 
 	instr = subtilis_arm_section_insert_instr(s, current,
 						  SUBTILIS_ARM_INSTR_LDR, err);
@@ -1173,7 +1168,6 @@ void subtilis_arm_add_cmp_imm(subtilis_arm_section_t *s,
 		if (subtilis_arm_encode_imm(-op2, &encoded)) {
 			itype = SUBTILIS_ARM_INSTR_CMN;
 		} else {
-			dest.type = SUBTILIS_ARM_REG_FIXED;
 			dest.num = 0xffffffff;
 			(void)subtilis_add_data_imm_ldr_datai(
 			    s, itype, ccode, false, dest, op1, op2, err);

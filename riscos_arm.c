@@ -36,9 +36,7 @@ static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 	// TODO we need to check that the globals are not too big
 	// for the amount of memory we have been allocated by the OS
 
-	dest.type = SUBTILIS_ARM_REG_FIXED;
 	dest.num = 12;
-	op1.type = SUBTILIS_ARM_REG_FIXED;
 	op1.num = 1;
 
 	/*
@@ -53,7 +51,6 @@ static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 		return;
 
 	dest.num = 13;
-	op2.type = SUBTILIS_ARM_REG_FIXED;
 	op2.num = 12;
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
 				 err);
@@ -63,7 +60,6 @@ static void prv_add_coda(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 {
 	subtilis_arm_reg_t dest;
 
-	dest.type = SUBTILIS_ARM_REG_FIXED;
 	dest.num = 0;
 	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
 				 err);
@@ -101,7 +97,6 @@ static void prv_clear_locals(subtilis_arm_section_t *arm_s,
 
 	dest = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
 	base.num = 11;
-	base.type = SUBTILIS_ARM_REG_FIXED;
 	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -174,8 +169,6 @@ static void prv_add_builtin(subtilis_ir_section_t *s,
 
 	switch (s->ftype) {
 	case SUBTILIS_BUILTINS_ABS:
-		dest.type = SUBTILIS_ARM_REG_FIXED;
-		op2.type = SUBTILIS_ARM_REG_FIXED;
 		dest.num = 0;
 
 		subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_AL, dest, 0,
@@ -243,15 +236,12 @@ static void prv_add_section(subtilis_ir_section_t *s,
 	datai = &stack_sub->operands.data;
 	datai->status = false;
 	datai->ccode = SUBTILIS_ARM_CCODE_AL;
-	datai->dest.type = SUBTILIS_ARM_REG_FIXED;
 	datai->dest.num = 13;
 	datai->op1 = datai->dest;
 	datai->op2.type = SUBTILIS_ARM_OP2_I32;
 	datai->op2.op.integer = 0;
 
 	dest.num = 11;
-	dest.type = SUBTILIS_ARM_REG_FIXED;
-	op2.type = SUBTILIS_ARM_REG_FIXED;
 	op2.num = 13;
 
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
@@ -376,7 +366,6 @@ void subtilis_riscos_arm_printi(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_section_t *arm_s = user_data;
 	subtilis_ir_inst_t *printi = &s->ops[start]->op.instr;
 
-	dest.type = SUBTILIS_ARM_REG_FIXED;
 	dest.num = 0;
 	op2 = subtilis_arm_ir_to_arm_reg(printi->operands[0].reg);
 
@@ -385,7 +374,6 @@ void subtilis_riscos_arm_printi(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	op1.type = SUBTILIS_ARM_REG_FIXED;
 	op1.num = 13;
 	dest.num = 1;
 
@@ -423,7 +411,6 @@ void subtilis_riscos_arm_modei32(subtilis_ir_section_t *s, size_t start,
 	subtilis_ir_inst_t *modei = &s->ops[start]->op.instr;
 	const size_t vdu = 256;
 
-	dest.type = SUBTILIS_ARM_REG_FIXED;
 	dest.num = 0;
 	op2 = subtilis_arm_ir_to_arm_reg(modei->operands[0].reg);
 
@@ -452,7 +439,6 @@ void subtilis_riscos_arm_plot(subtilis_ir_section_t *s, size_t start,
 	subtilis_ir_inst_t *plot = &s->ops[start]->op.instr;
 	const size_t os_plot = 0x45;
 
-	dest.type = SUBTILIS_ARM_REG_FIXED;
 	dest.num = 0;
 	op2 = subtilis_arm_ir_to_arm_reg(plot->operands[0].reg);
 
@@ -497,7 +483,6 @@ void subtilis_riscos_arm_gcol(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.type = SUBTILIS_ARM_REG_FIXED;
 	dest.num = 0;
 	op2 = subtilis_arm_ir_to_arm_reg(gcol->operands[0].reg);
 
@@ -511,7 +496,6 @@ void subtilis_riscos_arm_gcol(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.type = SUBTILIS_ARM_REG_FIXED;
 	dest.num = 0;
 	op2 = subtilis_arm_ir_to_arm_reg(gcol->operands[1].reg);
 
@@ -544,7 +528,6 @@ void subtilis_riscos_arm_origin(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	for (i = 0; i < 2; i++) {
-		dest.type = SUBTILIS_ARM_REG_FIXED;
 		dest.num = 0;
 		op2 = subtilis_arm_ir_to_arm_reg(origin->operands[i].reg);
 

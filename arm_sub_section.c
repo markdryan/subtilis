@@ -167,9 +167,9 @@ static void prv_add_args(subtilis_arm_ss_t *ss, subtilis_arm_section_t *arm_s,
 				return;
 		}
 		for (i = 0; i < arm_s->stype->fp_regs; i++) {
-			subtilis_bitset_set(
-			    &link->real_outputs,
-			    SUBTILIS_ARM_FPA_VIRT_REG_START + i, err);
+			subtilis_bitset_set(&link->real_outputs,
+					    SUBTILIS_ARM_FPA_VIRT_REG_START + i,
+					    err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 		}

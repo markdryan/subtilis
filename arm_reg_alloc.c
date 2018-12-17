@@ -143,6 +143,8 @@ typedef void (*subtilis_arm_reg_stran_imm_t)(subtilis_arm_section_t *s,
 
 /* clang-format on */
 
+typedef bool (*subtilis_arm_reg_is_fixed_t)(size_t reg);
+
 struct subtilis_arm_reg_class_t_ {
 	size_t max_regs;
 	size_t *phys_to_virt;
@@ -158,6 +160,7 @@ struct subtilis_arm_reg_class_t_ {
 	subtilis_arm_reg_stran_imm_t stran_imm;
 	subtilis_arm_instr_type_t store_type;
 	subtilis_arm_instr_type_t load_type;
+	subtilis_arm_reg_is_fixed_t is_fixed;
 };
 
 typedef struct subtilis_arm_reg_class_t_ subtilis_arm_reg_class_t;
@@ -186,13 +189,16 @@ void subtilis_regs_used_virt_free(subtilis_regs_used_virt_t *regs_usedv)
 	subtilis_bitset_free(&regs_usedv->real_regs);
 }
 
-static subtilis_arm_reg_class_t *
-prv_new_regs(size_t reg_count, size_t max_regs, size_t reg_start,
-	     size_t reg_size, size_t args, int32_t max_offset,
-	     subtilis_arm_reg_spill_imm_t spill_imm,
-	     subtilis_arm_reg_stran_imm_t stran_imm,
-	     subtilis_arm_instr_type_t store_type,
-	     subtilis_arm_instr_type_t load_type, subtilis_error_t *err)
+/* clang-format off */
+static subtilis_arm_reg_class_t *prv_new_regs(
+	size_t reg_count, size_t max_regs, size_t reg_start, size_t reg_size,
+	size_t args, int32_t max_offset, subtilis_arm_reg_spill_imm_t spill_imm,
+	subtilis_arm_reg_stran_imm_t stran_imm,
+	subtilis_arm_instr_type_t store_type,
+	subtilis_arm_instr_type_t load_type,
+	subtilis_arm_reg_is_fixed_t is_fixed, subtilis_error_t *err)
+
+/* clang-format on */
 {
 	size_t i;
 	size_t index;
@@ -242,6 +248,7 @@ prv_new_regs(size_t reg_count, size_t max_regs, size_t reg_start,
 	regs->store_type = store_type;
 	regs->load_type = load_type;
 	regs->max_offset = max_offset;
+	regs->is_fixed = is_fixed;
 
 	for (i = 0; i < reg_count; i++) {
 		regs->spilt_regs[i] = -1;
@@ -301,7 +308,7 @@ static void prv_init_arm_reg_ud(subtilis_arm_reg_ud_t *ud,
 	    SUBTILIS_ARM_INT_VIRT_REG_START, sizeof(int32_t),
 	    arm_s->stype->int_regs, 4095, subtilis_arm_insert_stran_spill_imm,
 	    subtilis_arm_insert_stran_imm, SUBTILIS_ARM_INSTR_STR,
-	    SUBTILIS_ARM_INSTR_LDR, err);
+	    SUBTILIS_ARM_INSTR_LDR, subtilis_arm_is_fixed, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -310,7 +317,7 @@ static void prv_init_arm_reg_ud(subtilis_arm_reg_ud_t *ud,
 	    SUBTILIS_ARM_FPA_VIRT_REG_START, sizeof(double),
 	    arm_s->stype->fp_regs, 1023, subtilis_fpa_insert_stran_spill_imm,
 	    subtilis_fpa_insert_stran_imm, SUBTILIS_FPA_INSTR_STF,
-	    SUBTILIS_FPA_INSTR_LDF, err);
+	    SUBTILIS_FPA_INSTR_LDF, subtilis_fpa_is_fixed, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		prv_free_regs(ud->int_regs);
 		return;
@@ -405,7 +412,6 @@ static void prv_load_spilled_reg(subtilis_arm_reg_ud_t *ud,
 
 	offset += arm_s->locals;
 
-	base.type = SUBTILIS_ARM_REG_FIXED;
 	base.num = 11;
 	if (offset > regs->max_offset || offset < -regs->max_offset) {
 		regs->spill_imm(arm_s, current, regs->load_type,
@@ -452,7 +458,6 @@ static void prv_spill_reg(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *current,
 
 	regs->spilt_regs[assigned] = offset;
 
-	base.type = SUBTILIS_ARM_REG_FIXED;
 	base.num = 11;
 	if (offset > regs->max_offset || offset < -regs->max_offset) {
 		/*
@@ -469,7 +474,6 @@ static void prv_spill_reg(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *current,
 			    (int_regs != regs || i != reg.num))
 				break;
 
-		spill_reg.type = SUBTILIS_ARM_REG_FIXED;
 		if (i == int_regs->max_regs) {
 			subtilis_arm_insert_push(arm_s, current,
 						 SUBTILIS_ARM_CCODE_AL, 0, err);
@@ -536,7 +540,6 @@ static void prv_allocate_floating(subtilis_arm_reg_ud_t *ud,
 		if (regs->phys_to_virt[i] == INT_MAX)
 			break;
 
-	target_reg.type = SUBTILIS_ARM_REG_FIXED;
 	if (i >= 0) {
 		target_reg.num = (size_t)i;
 	} else {
@@ -569,7 +572,7 @@ static void prv_allocate(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *current,
 	size_t assigned;
 	size_t virt_num = reg->num;
 
-	if (reg->type == SUBTILIS_ARM_REG_FIXED) {
+	if (regs->is_fixed(reg->num)) {
 		if (reg->num >= regs->max_regs)
 			return;
 		prv_allocate_fixed(ud, current, int_regs, regs, reg, err);
@@ -577,7 +580,6 @@ static void prv_allocate(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *current,
 		assigned = prv_virt_to_phys(regs, reg);
 		if (assigned != INT_MAX) {
 			reg->num = assigned;
-			reg->type = SUBTILIS_ARM_REG_FIXED;
 		} else {
 			prv_allocate_floating(ud, current, int_regs, regs, reg,
 					      err);
@@ -600,7 +602,7 @@ static bool prv_ensure(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *current,
 	size_t assigned;
 	subtilis_arm_reg_t target_reg;
 
-	if (reg->type == SUBTILIS_ARM_REG_FIXED) {
+	if (regs->is_fixed(reg->num)) {
 		/*
 		 * Register has fixed use and is unavailable to user's code
 		 * Physical register has already been allocated, e.g., r12, r13
@@ -623,7 +625,6 @@ static bool prv_ensure(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *current,
 		assigned = prv_virt_to_phys(regs, reg);
 		if (assigned != INT_MAX) {
 			reg->num = assigned;
-			reg->type = SUBTILIS_ARM_REG_FIXED;
 		} else {
 			target_reg = *reg;
 			prv_allocate_floating(ud, current, int_regs, regs,
@@ -706,7 +707,7 @@ static void prv_allocate_dest(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *op,
 	int dist_dest;
 	size_t vreg_dest = dest->num;
 
-	if ((dest->type == SUBTILIS_ARM_REG_FIXED) &&
+	if ((ud->int_regs->is_fixed(vreg_dest)) &&
 	    (vreg_dest >= SUBTILIS_ARM_REG_MAX_INT_REGS))
 		return;
 
@@ -789,7 +790,7 @@ static void prv_alloc_mov_instr(void *user_data, subtilis_arm_op_t *op,
 
 	if ((type == SUBTILIS_ARM_INSTR_MOV) &&
 	    (instr->op2.type == SUBTILIS_ARM_OP2_REG) &&
-	    ((instr->op2.op.reg.type == SUBTILIS_ARM_REG_FLOATING) ||
+	    ((!subtilis_arm_is_fixed(instr->op2.op.reg.num)) ||
 	     (instr->op2.op.reg.num < SUBTILIS_ARM_REG_MAX_INT_REGS))) {
 		assigned = prv_virt_to_phys(ud->int_regs, &instr->op2.op.reg);
 		if (assigned == INT_MAX) {
@@ -1024,7 +1025,6 @@ static void prv_alloc_swi_instr(void *user_data, subtilis_arm_op_t *op,
 
 	/* SWIs can only use the first 10 regs */
 
-	reg.type = SUBTILIS_ARM_REG_FIXED;
 	for (i = 0; i < 10; i++) {
 		if ((1 << i) & instr->reg_mask) {
 			reg.num = i;

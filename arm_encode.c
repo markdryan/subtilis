@@ -483,7 +483,6 @@ static void prv_encode_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 
 	stran.ccode = instr->ccode;
 	stran.dest = instr->dest;
-	stran.base.type = SUBTILIS_ARM_REG_FIXED;
 	stran.base.num = 15;
 	stran.offset.type = SUBTILIS_ARM_OP2_I32;
 	stran.offset.op.integer = 0;
@@ -786,7 +785,6 @@ static void prv_encode_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	stran.ccode = instr->ccode;
 	stran.size = instr->size;
 	stran.dest = instr->dest;
-	stran.base.type = SUBTILIS_ARM_REG_FIXED;
 	stran.base.num = 15;
 	stran.offset = 0;
 	stran.pre_indexed = true;

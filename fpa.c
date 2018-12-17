@@ -18,6 +18,11 @@
 
 #include "arm_core.h"
 
+bool subtilis_fpa_is_fixed(size_t reg)
+{
+	return reg < SUBTILIS_ARM_FPA_VIRT_REG_START;
+}
+
 static void prv_add_real_constant(subtilis_arm_section_t *s, size_t label,
 				  double num, subtilis_error_t *err)
 {
@@ -466,7 +471,6 @@ void subtilis_fpa_push_reg(subtilis_arm_section_t *s,
 	stran->ccode = ccode;
 	stran->size = 8;
 	stran->dest = dest;
-	stran->base.type = SUBTILIS_ARM_REG_FIXED;
 	stran->base.num = 13;
 	stran->offset = 2;
 	stran->pre_indexed = true;
@@ -489,7 +493,6 @@ void subtilis_fpa_pop_reg(subtilis_arm_section_t *s,
 	stran->ccode = ccode;
 	stran->size = 8;
 	stran->dest = dest;
-	stran->base.type = SUBTILIS_ARM_REG_FIXED;
 	stran->base.num = 13;
 	stran->offset = 2;
 	stran->pre_indexed = false;

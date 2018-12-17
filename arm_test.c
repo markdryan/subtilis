@@ -153,10 +153,6 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	subtilis_arm_data_instr_t *datai;
 	subtilis_arm_stran_instr_t *stran;
 
-	dest.type = SUBTILIS_ARM_REG_FIXED;
-	op1.type = SUBTILIS_ARM_REG_FIXED;
-	op2.type = SUBTILIS_ARM_REG_FIXED;
-
 	/* MOVEQ R0, r1 */
 	dest.num = 0;
 	op1.num = 2;
@@ -276,13 +272,10 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	stran = &instr->operands.stran;
 	stran->ccode = SUBTILIS_ARM_CCODE_CS;
 	stran->dest.num = 0;
-	stran->dest.type = SUBTILIS_ARM_REG_FIXED;
 	stran->base.num = 2;
-	stran->base.type = SUBTILIS_ARM_REG_FIXED;
 	stran->offset.type = SUBTILIS_ARM_OP2_SHIFTED;
 	stran->offset.op.shift.shift.integer = 2;
 	stran->offset.op.shift.reg.num = 1;
-	stran->offset.op.shift.reg.type = SUBTILIS_ARM_REG_FIXED;
 	stran->offset.op.shift.type = SUBTILIS_ARM_SHIFT_LSL;
 	stran->pre_indexed = false;
 	stran->write_back = false;
@@ -304,7 +297,6 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	datai->op2.op.shift.reg = op1;
 	datai->op2.op.shift.type = SUBTILIS_ARM_SHIFT_ASR;
 	datai->op2.op.shift.shift.reg.num = 2;
-	datai->op2.op.shift.shift.reg.type = SUBTILIS_ARM_REG_FIXED;
 	datai->op2.op.shift.shift_reg = true;
 }
 

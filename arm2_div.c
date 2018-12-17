@@ -36,12 +36,8 @@ static void prv_add_rsa_group(subtilis_ir_section_t *s,
 	subtilis_arm_op2_t op2_reg;
 	subtilis_arm_op2_t op2_reg_shift;
 
-	dest.type = SUBTILIS_ARM_REG_FIXED;
-	op1.type = SUBTILIS_ARM_REG_FIXED;
 	op2_reg.type = SUBTILIS_ARM_OP2_REG;
-	op2_reg.op.reg.type = SUBTILIS_ARM_REG_FIXED;
 	op2_reg_shift.type = SUBTILIS_ARM_OP2_SHIFTED;
-	op2_reg_shift.op.shift.reg.type = SUBTILIS_ARM_REG_FIXED;
 	op2_reg_shift.op.shift.shift_reg = false;
 
 	instr =
@@ -110,12 +106,8 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	subtilis_arm_data_instr_t *mov;
 	subtilis_arm_br_instr_t *br;
 
-	dest.type = SUBTILIS_ARM_REG_FIXED;
-	op1.type = SUBTILIS_ARM_REG_FIXED;
 	op2_reg.type = SUBTILIS_ARM_OP2_REG;
-	op2_reg.op.reg.type = SUBTILIS_ARM_REG_FIXED;
 	op2_reg_shift.type = SUBTILIS_ARM_OP2_SHIFTED;
-	op2_reg_shift.op.shift.reg.type = SUBTILIS_ARM_REG_FIXED;
 	op2_reg_shift.op.shift.shift_reg = false;
 
 	dest.num = sign;
