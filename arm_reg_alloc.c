@@ -298,8 +298,8 @@ static void prv_init_arm_reg_ud(subtilis_arm_reg_ud_t *ud,
 
 	ud->int_regs = prv_new_regs(
 	    max_int_regs, SUBTILIS_ARM_REG_MAX_INT_REGS,
-	    SUBTILIS_IR_REG_TEMP_START, sizeof(int32_t), arm_s->stype->int_regs,
-	    4095, subtilis_arm_insert_stran_spill_imm,
+	    SUBTILIS_ARM_INT_VIRT_REG_START, sizeof(int32_t),
+	    arm_s->stype->int_regs, 4095, subtilis_arm_insert_stran_spill_imm,
 	    subtilis_arm_insert_stran_imm, SUBTILIS_ARM_INSTR_STR,
 	    SUBTILIS_ARM_INSTR_LDR, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -307,7 +307,7 @@ static void prv_init_arm_reg_ud(subtilis_arm_reg_ud_t *ud,
 
 	ud->fpa_regs = prv_new_regs(
 	    max_real_regs, SUBTILIS_ARM_REG_MAX_FPA_REGS,
-	    SUBTILIS_ARM_REG_MIN_FPA_REGS, sizeof(double),
+	    SUBTILIS_ARM_FPA_VIRT_REG_START, sizeof(double),
 	    arm_s->stype->fp_regs, 1023, subtilis_fpa_insert_stran_spill_imm,
 	    subtilis_fpa_insert_stran_imm, SUBTILIS_FPA_INSTR_STF,
 	    SUBTILIS_FPA_INSTR_LDF, err);

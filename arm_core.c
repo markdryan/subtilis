@@ -142,8 +142,8 @@ void subtilis_arm_section_max_regs(subtilis_arm_section_t *s, size_t *int_regs,
 				   size_t *real_regs)
 {
 	*int_regs = subtilis_arm_ir_to_arm_reg(s->reg_counter).num;
-	if (*int_regs < 16)
-		*int_regs = 16;
+	if (*int_regs < SUBTILIS_ARM_INT_VIRT_REG_START)
+		*int_regs = SUBTILIS_ARM_INT_VIRT_REG_START;
 	*real_regs = subtilis_arm_ir_to_freg(s->freg_counter).num;
 }
 
@@ -312,9 +312,8 @@ subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg)
 		break;
 	default:
 		arm_reg.type = SUBTILIS_ARM_REG_FLOATING;
-		ir_reg = ir_reg - SUBTILIS_IR_REG_TEMP_START + 4;
-		if (ir_reg > 10)
-			ir_reg += 6;
+		ir_reg = ir_reg - SUBTILIS_IR_REG_TEMP_START +
+			 SUBTILIS_ARM_INT_VIRT_REG_START;
 		arm_reg.num = ir_reg;
 		break;
 	}
@@ -326,7 +325,7 @@ subtilis_arm_reg_t subtilis_arm_ir_to_freg(size_t ir_reg)
 {
 	subtilis_arm_reg_t arm_reg;
 
-	arm_reg.num = ir_reg + 4;
+	arm_reg.num = ir_reg + SUBTILIS_ARM_FPA_VIRT_REG_START;
 	arm_reg.type = SUBTILIS_ARM_REG_FLOATING;
 
 	return arm_reg;

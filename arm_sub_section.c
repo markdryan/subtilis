@@ -161,15 +161,15 @@ static void prv_add_args(subtilis_arm_ss_t *ss, subtilis_arm_section_t *arm_s,
 		link = &ss->links[j];
 		for (i = 0; i < arm_s->stype->int_regs; i++) {
 			subtilis_bitset_set(&link->int_outputs,
-					    SUBTILIS_ARM_REG_MIN_INT_REGS + i,
+					    SUBTILIS_ARM_INT_VIRT_REG_START + i,
 					    err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 		}
 		for (i = 0; i < arm_s->stype->fp_regs; i++) {
-			subtilis_bitset_set(&link->real_outputs,
-					    SUBTILIS_ARM_REG_MIN_FPA_REGS + i,
-					    err);
+			subtilis_bitset_set(
+			    &link->real_outputs,
+			    SUBTILIS_ARM_FPA_VIRT_REG_START + i, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 		}
