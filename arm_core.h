@@ -34,11 +34,7 @@
 #define SUBTILIS_ARM_INT_VIRT_REG_START 16
 #define SUBTILIS_ARM_FPA_VIRT_REG_START 6
 
-struct subtilis_arm_reg_t_ {
-	size_t num;
-};
-
-typedef struct subtilis_arm_reg_t_ subtilis_arm_reg_t;
+typedef size_t subtilis_arm_reg_t;
 
 typedef enum {
 	SUBTILIS_ARM_OP2_REG,
@@ -587,7 +583,7 @@ void subtilis_arm_add_mtran(subtilis_arm_section_t *s,
 			    subtilis_arm_mtran_type_t type, bool write_back,
 			    subtilis_error_t *err);
 
-bool subtilis_arm_is_fixed(size_t reg);
+bool subtilis_arm_is_fixed(subtilis_arm_reg_t reg);
 
 #define subtilis_arm_add_add_imm(s, cc, st, dst, op1, op2, err)                \
 	subtilis_arm_add_addsub_imm(s, SUBTILIS_ARM_INSTR_ADD,                 \
@@ -690,7 +686,7 @@ void subtilis_fpa_pop_reg(subtilis_arm_section_t *s,
 			  subtilis_arm_reg_t dest, subtilis_error_t *err);
 double subtilis_fpa_extract_imm(subtilis_fpa_op2_t op2, subtilis_error_t *err);
 
-bool subtilis_fpa_is_fixed(size_t reg);
+bool subtilis_fpa_is_fixed(subtilis_arm_reg_t reg);
 
 #define subtilis_fpa_add_mov_imm(s, cc, round, dst, op2, err)                  \
 	subtilis_fpa_add_mvfmnf_imm(s, cc, SUBTILIS_FPA_INSTR_MVF,             \

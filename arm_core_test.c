@@ -180,9 +180,9 @@ static subtilis_arm_section_t *prv_add_imm(subtilis_arm_op_pool_t *pool,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	dest.num = 0;
+	dest = 0;
 
-	op1.num = 1;
+	op1 = 1;
 
 	subtilis_arm_add_addsub_imm(s, itype, alt_type, SUBTILIS_ARM_CCODE_AL,
 				    false, dest, op1, num, err);

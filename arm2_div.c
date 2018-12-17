@@ -44,10 +44,10 @@ static void prv_add_rsa_group(subtilis_ir_section_t *s,
 	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_RSB, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	dest.num = t;
-	op1.num = d;
+	dest = t;
+	op1 = d;
 	op2_reg_shift.op.shift.type = SUBTILIS_ARM_SHIFT_LSR;
-	op2_reg_shift.op.shift.reg.num = r;
+	op2_reg_shift.op.shift.reg = r;
 	op2_reg_shift.op.shift.shift.integer = i;
 	rsb = &instr->operands.data;
 	rsb->status = true;
@@ -61,8 +61,8 @@ static void prv_add_rsa_group(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.num = r;
-	op2_reg_shift.op.shift.reg.num = d;
+	dest = r;
+	op2_reg_shift.op.shift.reg = d;
 	op2_reg_shift.op.shift.type = SUBTILIS_ARM_SHIFT_LSL;
 	op2_reg_shift.op.shift.shift.integer = i;
 
@@ -78,7 +78,7 @@ static void prv_add_rsa_group(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.num = q;
+	dest = q;
 	op2_reg.op.reg = dest;
 	adc = &instr->operands.data;
 	adc->status = false;
@@ -110,15 +110,15 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	op2_reg_shift.type = SUBTILIS_ARM_OP2_SHIFTED;
 	op2_reg_shift.op.shift.shift_reg = false;
 
-	dest.num = sign;
-	op1.num = d;
+	dest = sign;
+	op1 = d;
 	subtilis_arm_add_data_imm(arm_s, SUBTILIS_ARM_INSTR_AND,
 				  SUBTILIS_ARM_CCODE_AL, true, dest, op1,
 				  1 << 31, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	op1.num = d;
+	op1 = d;
 	subtilis_arm_add_data_imm(arm_s, SUBTILIS_ARM_INSTR_RSB,
 				  SUBTILIS_ARM_CCODE_MI, false, op1, op1, 0,
 				  err);
@@ -130,7 +130,7 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	op2_reg_shift.op.shift.reg.num = r;
+	op2_reg_shift.op.shift.reg = r;
 	op2_reg_shift.op.shift.type = SUBTILIS_ARM_SHIFT_ASR;
 	op2_reg_shift.op.shift.shift.integer = 32;
 
@@ -141,14 +141,14 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	eor->op1 = dest;
 	eor->op2 = op2_reg_shift;
 
-	op1.num = r;
+	op1 = r;
 	subtilis_arm_add_data_imm(arm_s, SUBTILIS_ARM_INSTR_RSB,
 				  SUBTILIS_ARM_CCODE_CS, false, op1, op1, 0,
 				  err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.num = q;
+	dest = q;
 	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -159,9 +159,9 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.num = t;
-	op1.num = d;
-	op2_reg_shift.op.shift.reg.num = r;
+	dest = t;
+	op1 = d;
+	op2_reg_shift.op.shift.reg = r;
 	op2_reg_shift.op.shift.type = SUBTILIS_ARM_SHIFT_LSR;
 	op2_reg_shift.op.shift.shift.integer = 3;
 
@@ -202,8 +202,8 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.num = d;
-	op2_reg_shift.op.shift.reg.num = d;
+	dest = d;
+	op2_reg_shift.op.shift.reg = d;
 	op2_reg_shift.op.shift.type = SUBTILIS_ARM_SHIFT_LSL;
 	op2_reg_shift.op.shift.shift.integer = 8;
 
@@ -213,7 +213,7 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	shiftd->dest = dest;
 	shiftd->op2 = op2_reg_shift;
 
-	dest.num = q;
+	dest = q;
 	subtilis_arm_add_data_imm(arm_s, SUBTILIS_ARM_INSTR_ORR,
 				  SUBTILIS_ARM_CCODE_AL, false, dest, dest,
 				  0xFF000000, err);
@@ -258,7 +258,7 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 		return;
 	instr->operands.data = *shiftd;
 
-	dest.num = q;
+	dest = q;
 	subtilis_arm_add_data_imm(arm_s, SUBTILIS_ARM_INSTR_ORR,
 				  SUBTILIS_ARM_CCODE_AL, false, dest, dest,
 				  0x00FF0000, err);
@@ -279,7 +279,7 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	instr->operands.data = *shiftd;
 	instr->operands.data.ccode = SUBTILIS_ARM_CCODE_CS;
 
-	dest.num = q;
+	dest = q;
 	subtilis_arm_add_data_imm(arm_s, SUBTILIS_ARM_INSTR_ORR,
 				  SUBTILIS_ARM_CCODE_CS, false, dest, dest,
 				  0x0000FF00, err);
@@ -363,7 +363,7 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_RSB, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	op2_reg.op.reg.num = r;
+	op2_reg.op.reg = r;
 	instr->operands.data = *rsb;
 	instr->operands.data.op2 = op2_reg;
 
@@ -372,8 +372,8 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.num = r;
-	op2_reg.op.reg.num = d;
+	dest = r;
+	op2_reg.op.reg = d;
 	sub = &instr->operands.data;
 	sub->status = false;
 	sub->ccode = SUBTILIS_ARM_CCODE_CS;
@@ -386,8 +386,8 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.num = q;
-	op2_reg.op.reg.num = q;
+	dest = q;
+	op2_reg.op.reg = q;
 	adc = &instr->operands.data;
 	adc->status = true;
 	adc->ccode = SUBTILIS_ARM_CCODE_AL;
@@ -408,7 +408,7 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	br->link = false;
 	br->target.label = 0;
 
-	op1.num = mod;
+	op1 = mod;
 	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_AL, op1, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -422,8 +422,8 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	br->link = false;
 	br->target.label = 6;
 
-	dest.num = 0;
-	op1.num = q;
+	dest = 0;
+	op1 = q;
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -434,8 +434,8 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.num = sign;
-	op2_reg_shift.op.shift.reg.num = sign;
+	dest = sign;
+	op2_reg_shift.op.shift.reg = sign;
 	op2_reg_shift.op.shift.type = SUBTILIS_ARM_SHIFT_LSL;
 	op2_reg_shift.op.shift.shift.integer = 1;
 
@@ -445,15 +445,15 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	mov->dest = dest;
 	mov->op2 = op2_reg_shift;
 
-	op1.num = r;
+	op1 = r;
 	subtilis_arm_add_data_imm(arm_s, SUBTILIS_ARM_INSTR_RSB,
 				  SUBTILIS_ARM_CCODE_CS, false, op1, op1, 0,
 				  err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.num = 15;
-	op1.num = 14;
+	dest = 15;
+	op1 = 14;
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
 				 err);
 
@@ -466,8 +466,8 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.num = sign;
-	op2_reg_shift.op.shift.reg.num = sign;
+	dest = sign;
+	op2_reg_shift.op.shift.reg = sign;
 	op2_reg_shift.op.shift.type = SUBTILIS_ARM_SHIFT_LSL;
 	op2_reg_shift.op.shift.shift.integer = 1;
 
@@ -477,15 +477,15 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	mov->dest = dest;
 	mov->op2 = op2_reg_shift;
 
-	op1.num = r;
+	op1 = r;
 	subtilis_arm_add_data_imm(arm_s, SUBTILIS_ARM_INSTR_RSB,
 				  SUBTILIS_ARM_CCODE_MI, false, op1, op1, 0,
 				  err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.num = 15;
-	op1.num = 14;
+	dest = 15;
+	op1 = 14;
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
 				 err);
 
@@ -493,14 +493,14 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.num = 0;
+	dest = 0;
 	subtilis_arm_add_mvn_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.num = 15;
-	op1.num = 14;
+	dest = 15;
+	op1 = 14;
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
 				 err);
 }

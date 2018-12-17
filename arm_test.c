@@ -154,9 +154,9 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	subtilis_arm_stran_instr_t *stran;
 
 	/* MOVEQ R0, r1 */
-	dest.num = 0;
-	op1.num = 2;
-	op2.num = 1;
+	dest = 0;
+	op1 = 2;
+	op2 = 1;
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_EQ, false, dest, op2,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -204,7 +204,7 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	instr->operands.br.target.label = 0;
 
 	/* LDMFA R7!, {R0} */
-	dest.num = 7;
+	dest = 7;
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_LDM,
 			       SUBTILIS_ARM_CCODE_AL, dest, 0x1,
 			       SUBTILIS_ARM_MTRAN_FA, true, err);
@@ -219,7 +219,7 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 		return;
 
 	/* LDMED R0!, {r3-r8} */
-	dest.num = 0;
+	dest = 0;
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_LDM,
 			       SUBTILIS_ARM_CCODE_AL, dest, 0x1F8,
 			       SUBTILIS_ARM_MTRAN_ED, true, err);
@@ -234,7 +234,7 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 		return;
 
 	/* LDMFD R1!, {r15} */
-	dest.num = 1;
+	dest = 1;
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_LDM,
 			       SUBTILIS_ARM_CCODE_AL, dest, 0x8000,
 			       SUBTILIS_ARM_MTRAN_FD, true, err);
@@ -249,7 +249,7 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 		return;
 
 	/* LDMEA R13, {r0-r3} */
-	dest.num = 13;
+	dest = 13;
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_LDM,
 			       SUBTILIS_ARM_CCODE_AL, dest, 0xf,
 			       SUBTILIS_ARM_MTRAN_EA, false, err);
@@ -271,11 +271,11 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 
 	stran = &instr->operands.stran;
 	stran->ccode = SUBTILIS_ARM_CCODE_CS;
-	stran->dest.num = 0;
-	stran->base.num = 2;
+	stran->dest = 0;
+	stran->base = 2;
 	stran->offset.type = SUBTILIS_ARM_OP2_SHIFTED;
 	stran->offset.op.shift.shift.integer = 2;
-	stran->offset.op.shift.reg.num = 1;
+	stran->offset.op.shift.reg = 1;
 	stran->offset.op.shift.type = SUBTILIS_ARM_SHIFT_LSL;
 	stran->pre_indexed = false;
 	stran->write_back = false;
@@ -287,8 +287,8 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_MOV, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	dest.num = 0;
-	op1.num = 1;
+	dest = 0;
+	op1 = 1;
 	datai = &instr->operands.data;
 	datai->status = false;
 	datai->ccode = SUBTILIS_ARM_CCODE_AL;
@@ -296,7 +296,7 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	datai->op2.type = SUBTILIS_ARM_OP2_SHIFTED;
 	datai->op2.op.shift.reg = op1;
 	datai->op2.op.shift.type = SUBTILIS_ARM_SHIFT_ASR;
-	datai->op2.op.shift.shift.reg.num = 2;
+	datai->op2.op.shift.shift.reg = 2;
 	datai->op2.op.shift.shift_reg = true;
 }
 
@@ -405,9 +405,8 @@ static int prv_test_disass_data(void)
 		return 1;
 	}
 
-	if ((datai->dest.num != 0) ||
-	    (datai->op2.type != SUBTILIS_ARM_OP2_REG) ||
-	    (datai->op2.op.reg.num != 1)) {
+	if ((datai->dest != 0) || (datai->op2.type != SUBTILIS_ARM_OP2_REG) ||
+	    (datai->op2.op.reg != 1)) {
 		fprintf(stderr, "[0] bad register values\n");
 		return 1;
 	}
@@ -437,9 +436,8 @@ static int prv_test_disass_data(void)
 		return 1;
 	}
 
-	if ((datai->dest.num != 0) ||
-	    (datai->op2.type != SUBTILIS_ARM_OP2_REG) ||
-	    (datai->op2.op.reg.num != 1)) {
+	if ((datai->dest != 0) || (datai->op2.type != SUBTILIS_ARM_OP2_REG) ||
+	    (datai->op2.op.reg != 1)) {
 		fprintf(stderr, "[1] bad register values\n");
 		return 1;
 	}
@@ -469,9 +467,8 @@ static int prv_test_disass_data(void)
 		return 1;
 	}
 
-	if ((datai->dest.num != 0) ||
-	    (datai->op2.type != SUBTILIS_ARM_OP2_REG) ||
-	    (datai->op2.op.reg.num != 1)) {
+	if ((datai->dest != 0) || (datai->op2.type != SUBTILIS_ARM_OP2_REG) ||
+	    (datai->op2.op.reg != 1)) {
 		fprintf(stderr, "[2] bad register values\n");
 		return 1;
 	}
@@ -513,7 +510,7 @@ static int prv_test_disass_mul(void)
 		return 1;
 	}
 
-	if ((mul->dest.num != 0) || (mul->rs.num != 2) || (mul->rm.num != 1)) {
+	if ((mul->dest != 0) || (mul->rs != 2) || (mul->rm != 1)) {
 		fprintf(stderr, "[3] bad register values\n");
 		return 1;
 	}
@@ -564,7 +561,7 @@ static int prv_test_disass_stran(void)
 		return 1;
 	}
 
-	if ((stran->dest.num != 0) || (stran->base.num != 2)) {
+	if ((stran->dest != 0) || (stran->base != 2)) {
 		fprintf(stderr, "[4] bad register values\n");
 		return 1;
 	}
@@ -605,13 +602,13 @@ static int prv_test_disass_stran(void)
 		return 1;
 	}
 
-	if ((stran->dest.num != 0) || (stran->base.num != 2)) {
+	if ((stran->dest != 0) || (stran->base != 2)) {
 		fprintf(stderr, "[15] bad register values\n");
 		return 1;
 	}
 
 	if ((stran->offset.type != SUBTILIS_ARM_OP2_SHIFTED) ||
-	    (stran->offset.op.shift.reg.num != 1) ||
+	    (stran->offset.op.shift.reg != 1) ||
 	    (stran->offset.op.shift.shift.integer != 2) ||
 	    (stran->offset.op.shift.type != SUBTILIS_ARM_SHIFT_LSL)) {
 		fprintf(stderr, "[15] bad  values\n");
@@ -742,7 +739,7 @@ static int prv_check_mtran(size_t index, bool write_back,
 		return 1;
 	}
 
-	if (mtran->op0.num != reg_num) {
+	if (mtran->op0 != reg_num) {
 		fprintf(stderr, "[%zu] bad register value\n", index);
 		return 1;
 	}

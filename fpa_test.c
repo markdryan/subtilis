@@ -85,7 +85,7 @@ static subtilis_arm_section_t *prv_mov_imm(subtilis_arm_op_pool_t *pool,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	dest.num = 0;
+	dest = 0;
 
 	subtilis_fpa_add_mvfmnf_imm(s, SUBTILIS_ARM_CCODE_AL, itype, alt_type,
 				    SUBTILIS_FPA_ROUNDING_NEAREST, dest, num,

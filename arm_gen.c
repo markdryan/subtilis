@@ -603,7 +603,7 @@ static void prv_stack_args(subtilis_arm_section_t *arm_s,
 	subtilis_arm_stran_instr_t *stran;
 	subtilis_fpa_stran_instr_t *fstran;
 
-	op0.num = 13;
+	op0 = 13;
 
 	/* TODO: There should be an argument limit here. */
 
@@ -659,7 +659,7 @@ static void prv_stack_args(subtilis_arm_section_t *arm_s,
 	}
 
 	for (i = 0; i < int_args_left; i++) {
-		arg_dest.num = i;
+		arg_dest = i;
 		arg_src = subtilis_arm_ir_to_arm_reg(call->args[i].reg);
 		subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false,
 					 arg_dest, arg_src, err);
@@ -668,7 +668,7 @@ static void prv_stack_args(subtilis_arm_section_t *arm_s,
 	}
 
 	for (i = 0; i < real_args_left; i++) {
-		arg_dest.num = i;
+		arg_dest = i;
 		arg_src = subtilis_arm_ir_to_freg(call->args[i].reg);
 		subtilis_fpa_add_mov(arm_s, SUBTILIS_ARM_CCODE_AL,
 				     SUBTILIS_FPA_ROUNDING_NEAREST, arg_dest,
@@ -697,7 +697,7 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 	size_t real_args = 0;
 	int save_real_start;
 
-	op0.num = 13;
+	op0 = 13;
 
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_STM,
 			       SUBTILIS_ARM_CCODE_AL, op0, 1 << 14,
@@ -719,7 +719,7 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 	if (s->freg_counter > 0) {
 		save_real_start = real_args > 4 ? 4 : real_args;
 		for (i = save_real_start; i < 6; i++) {
-			fpa_reg.num = i;
+			fpa_reg = i;
 			subtilis_fpa_push_reg(arm_s, SUBTILIS_ARM_CCODE_NV,
 					      fpa_reg, err);
 			if (err->type != SUBTILIS_ERROR_OK)
@@ -747,7 +747,7 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 
 	if (s->freg_counter > 0) {
 		for (i = 5; i >= save_real_start; i--) {
-			fpa_reg.num = i;
+			fpa_reg = i;
 			subtilis_fpa_pop_reg(arm_s, SUBTILIS_ARM_CCODE_NV,
 					     fpa_reg, err);
 			if (err->type != SUBTILIS_ERROR_OK)
@@ -782,7 +782,7 @@ void subtilis_arm_gen_calli32(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	dest = subtilis_arm_ir_to_arm_reg(call->reg);
-	op1.num = 0;
+	op1 = 0;
 
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
 				 err);
@@ -805,7 +805,7 @@ void subtilis_arm_gen_ret(subtilis_ir_section_t *s, size_t start,
 	datai = &stack_add->operands.data;
 	datai->status = false;
 	datai->ccode = SUBTILIS_ARM_CCODE_AL;
-	datai->dest.num = 13;
+	datai->dest = 13;
 	datai->op1 = datai->dest;
 	datai->op2.type = SUBTILIS_ARM_OP2_I32;
 	datai->op2.op.integer = 0;
@@ -814,8 +814,8 @@ void subtilis_arm_gen_ret(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest.num = 15;
-	op2.num = 14;
+	dest = 15;
+	op2 = 14;
 
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
 				 err);
@@ -829,7 +829,7 @@ void subtilis_arm_gen_reti32(subtilis_ir_section_t *s, size_t start,
 	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
 	subtilis_arm_reg_t op2;
 
-	dest.num = 0;
+	dest = 0;
 	op2 = subtilis_arm_ir_to_arm_reg(instr->operands[0].reg);
 
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
@@ -847,7 +847,7 @@ void subtilis_arm_gen_retii32(subtilis_ir_section_t *s, size_t start,
 	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
 	int32_t op2 = instr->operands[0].integer;
 
-	dest.num = 0;
+	dest = 0;
 
 	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
 				 err);

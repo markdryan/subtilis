@@ -471,7 +471,7 @@ void subtilis_fpa_push_reg(subtilis_arm_section_t *s,
 	stran->ccode = ccode;
 	stran->size = 8;
 	stran->dest = dest;
-	stran->base.num = 13;
+	stran->base = 13;
 	stran->offset = 2;
 	stran->pre_indexed = true;
 	stran->write_back = true;
@@ -493,7 +493,7 @@ void subtilis_fpa_pop_reg(subtilis_arm_section_t *s,
 	stran->ccode = ccode;
 	stran->size = 8;
 	stran->dest = dest;
-	stran->base.num = 13;
+	stran->base = 13;
 	stran->offset = 2;
 	stran->pre_indexed = false;
 	stran->write_back = true;

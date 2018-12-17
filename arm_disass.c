@@ -23,7 +23,7 @@ static void prv_decode_mul(subtilis_arm_instr_t *instr, uint32_t encoded,
 
 	if (encoded & (1 << 21)) {
 		instr->type = SUBTILIS_ARM_INSTR_MLA;
-		mul->rn.num = (encoded >> 15) & 0x0f;
+		mul->rn = (encoded >> 15) & 0x0f;
 	} else {
 		instr->type = SUBTILIS_ARM_INSTR_MUL;
 	}
@@ -31,10 +31,10 @@ static void prv_decode_mul(subtilis_arm_instr_t *instr, uint32_t encoded,
 	mul->ccode = (encoded >> 28);
 	mul->status = ((encoded >> 20) & 1);
 
-	mul->dest.num = (encoded >> 16) & 0x0f;
+	mul->dest = (encoded >> 16) & 0x0f;
 
-	mul->rm.num = (encoded >> 8) & 0x0f;
-	mul->rs.num = encoded & 0x0f;
+	mul->rm = (encoded >> 8) & 0x0f;
+	mul->rs = encoded & 0x0f;
 }
 
 static void prv_decode_swi(subtilis_arm_instr_t *instr, uint32_t encoded,
@@ -78,7 +78,7 @@ static void prv_decode_mtran(subtilis_arm_instr_t *instr, uint32_t encoded,
 
 	mtran->ccode = (encoded >> 28);
 
-	mtran->op0.num = (encoded >> 16) & 0x0f;
+	mtran->op0 = (encoded >> 16) & 0x0f;
 	mtran->reg_list = encoded & 0xffff;
 	mtran->write_back = (encoded & (1 << 21)) != 0;
 
@@ -107,10 +107,10 @@ static void prv_decode_op2(uint32_t encoded, subtilis_arm_op2_t *op2)
 		op2->op.integer = encoded & 0xfff;
 	} else if (encoded & 0xff0) {
 		op2->type = SUBTILIS_ARM_OP2_SHIFTED;
-		op2->op.shift.reg.num = encoded & 0xf;
+		op2->op.shift.reg = encoded & 0xf;
 		op2->op.shift.shift_reg = (encoded & (1 << 4)) != 0;
 		if (op2->op.shift.shift_reg) {
-			op2->op.shift.shift.reg.num = (encoded >> 8) & 0xf;
+			op2->op.shift.shift.reg = (encoded >> 8) & 0xf;
 		} else {
 			op2->op.shift.shift.integer = (encoded >> 7) & 0x1f;
 			if (op2->op.shift.shift.integer == 0)
@@ -119,7 +119,7 @@ static void prv_decode_op2(uint32_t encoded, subtilis_arm_op2_t *op2)
 		op2->op.shift.type = shtype[((encoded >> 5) & 3)];
 	} else {
 		op2->type = SUBTILIS_ARM_OP2_REG;
-		op2->op.reg.num = encoded & 0xf;
+		op2->op.reg = encoded & 0xf;
 	}
 }
 
@@ -133,14 +133,14 @@ static void prv_decode_stran_op2(uint32_t encoded, subtilis_arm_op2_t *op2)
 	if (encoded & (1 << 25)) {
 		if (encoded & 0xff0) {
 			op2->type = SUBTILIS_ARM_OP2_SHIFTED;
-			op2->op.shift.reg.num = encoded & 0xf;
+			op2->op.shift.reg = encoded & 0xf;
 			op2->op.shift.shift.integer = (encoded >> 7) & 0x1f;
 			if (op2->op.shift.shift.integer == 0)
 				op2->op.shift.shift.integer = 32;
 			op2->op.shift.type = shtype[((encoded >> 5) & 3)];
 		} else {
 			op2->type = SUBTILIS_ARM_OP2_REG;
-			op2->op.reg.num = encoded & 0xf;
+			op2->op.reg = encoded & 0xf;
 		}
 	} else {
 		op2->type = SUBTILIS_ARM_OP2_I32;
@@ -168,8 +168,8 @@ static void prv_decode_stran(subtilis_arm_instr_t *instr, uint32_t encoded,
 	stran->pre_indexed = (encoded & (1 << 24)) != 0;
 	stran->write_back = (encoded & (1 << 21)) != 0;
 	stran->subtract = (encoded & (1 << 23)) == 0;
-	stran->dest.num = (encoded >> 12) & 0x0f;
-	stran->base.num = (encoded >> 16) & 0x0f;
+	stran->dest = (encoded >> 12) & 0x0f;
+	stran->base = (encoded >> 16) & 0x0f;
 	prv_decode_stran_op2(encoded, &stran->offset);
 }
 
@@ -182,9 +182,9 @@ static void prv_decode_datai(subtilis_arm_instr_t *instr, uint32_t encoded,
 	datai->ccode = (encoded >> 28);
 	datai->status = ((encoded >> 20) & 1);
 
-	datai->dest.num = (encoded >> 12) & 0x0f;
+	datai->dest = (encoded >> 12) & 0x0f;
 
-	datai->op1.num = (encoded >> 16) & 0x0f;
+	datai->op1 = (encoded >> 16) & 0x0f;
 	prv_decode_op2(encoded, &datai->op2);
 }
 
@@ -210,8 +210,8 @@ static void prv_decode_fpa_stran(subtilis_arm_instr_t *instr, uint32_t encoded,
 	stran->pre_indexed = (encoded & (1 << 24)) != 0;
 	stran->write_back = (encoded & (1 << 21)) != 0;
 	stran->subtract = (encoded & (1 << 23)) == 0;
-	stran->dest.num = (encoded >> 12) & 0x7;
-	stran->base.num = (encoded >> 16) & 0x0f;
+	stran->dest = (encoded >> 12) & 0x7;
+	stran->base = (encoded >> 16) & 0x0f;
 	stran->offset = encoded & 0xff;
 }
 
@@ -262,7 +262,7 @@ static subtilis_fpa_op2_t prv_fpa_encode_op2(uint32_t encoded, bool *immediate)
 		op2.imm = encoded & 0xf;
 	} else {
 		*immediate = false;
-		op2.reg.num = encoded & 7;
+		op2.reg = encoded & 7;
 	}
 
 	return op2;
@@ -299,12 +299,12 @@ static void prv_decode_fpa_data(subtilis_arm_instr_t *instr, uint32_t encoded,
 	scratch = ((encoded >> 5) & 3);
 	data->rounding = (subtilis_fpa_rounding_t)scratch;
 
-	data->dest.num = (encoded >> 12) & 0x7;
+	data->dest = (encoded >> 12) & 0x7;
 
 	if (encoded & (1 << 15))
-		data->op1.num = 6;
+		data->op1 = 6;
 	else
-		data->op1.num = (encoded >> 16) & 0x7;
+		data->op1 = (encoded >> 16) & 0x7;
 
 	data->op2 = prv_fpa_encode_op2(encoded, &data->immediate);
 }
@@ -336,7 +336,7 @@ static void prv_decode_fpa_cmp(subtilis_arm_instr_t *instr, uint32_t encoded,
 
 	cmp->ccode = (encoded >> 28);
 
-	cmp->dest.num = (encoded >> 16) & 0x7;
+	cmp->dest = (encoded >> 16) & 0x7;
 	cmp->op2 = prv_fpa_encode_op2(encoded, &cmp->immediate);
 }
 
@@ -371,11 +371,11 @@ static void prv_decode_fpa_tran(subtilis_arm_instr_t *instr, uint32_t encoded,
 			return;
 		}
 		tran->size = 4 << scratch;
-		tran->dest.num = (encoded >> 16) & 0x7;
+		tran->dest = (encoded >> 16) & 0x7;
 		tran->immediate = false;
-		tran->op2.reg.num = (encoded >> 12) & 0xf;
+		tran->op2.reg = (encoded >> 12) & 0xf;
 	} else {
-		tran->dest.num = (encoded >> 12) & 0xf;
+		tran->dest = (encoded >> 12) & 0xf;
 		tran->size = 0;
 		tran->op2 = prv_fpa_encode_op2(encoded, &tran->immediate);
 	}

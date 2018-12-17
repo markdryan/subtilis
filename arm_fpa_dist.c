@@ -123,17 +123,17 @@ static void prv_dist_fpa_data_dyadic_instr(void *user_data,
 {
 	subtilis_dist_data_t *ud = user_data;
 
-	if (instr->op1.num == ud->reg_num) {
+	if (instr->op1 == ud->reg_num) {
 		subtilis_error_set_walker_failed(err);
 		return;
 	}
 
-	if (!instr->immediate && ud->reg_num == instr->op2.reg.num) {
+	if (!instr->immediate && ud->reg_num == instr->op2.reg) {
 		subtilis_error_set_walker_failed(err);
 		return;
 	}
 
-	if (instr->dest.num == ud->reg_num) {
+	if (instr->dest == ud->reg_num) {
 		ud->last_used = -1;
 		subtilis_error_set_walker_failed(err);
 		return;
@@ -157,17 +157,17 @@ static void prv_dist_fpa_data_monadic_instr(void *user_data,
 	 */
 
 	if ((type == SUBTILIS_FPA_INSTR_MVF) && (!instr->immediate) &&
-	    (instr->dest.num == instr->op2.reg.num)) {
+	    (instr->dest == instr->op2.reg)) {
 		ud->last_used++;
 		return;
 	}
 
-	if (!instr->immediate && ud->reg_num == instr->op2.reg.num) {
+	if (!instr->immediate && ud->reg_num == instr->op2.reg) {
 		subtilis_error_set_walker_failed(err);
 		return;
 	}
 
-	if (instr->dest.num == ud->reg_num) {
+	if (instr->dest == ud->reg_num) {
 		ud->last_used = -1;
 		subtilis_error_set_walker_failed(err);
 		return;
@@ -191,12 +191,12 @@ static void prv_dist_fpa_stran_instr(void *user_data, subtilis_arm_op_t *op,
 
 	if (instr->ccode != SUBTILIS_ARM_CCODE_NV) {
 		if (type == SUBTILIS_FPA_INSTR_STF) {
-			if (instr->dest.num == ud->reg_num) {
+			if (instr->dest == ud->reg_num) {
 				subtilis_error_set_walker_failed(err);
 				return;
 			}
 		} else {
-			if (instr->dest.num == ud->reg_num) {
+			if (instr->dest == ud->reg_num) {
 				ud->last_used = -1;
 				subtilis_error_set_walker_failed(err);
 				return;
@@ -215,12 +215,12 @@ static void prv_dist_fpa_tran_instr(void *user_data, subtilis_arm_op_t *op,
 	subtilis_dist_data_t *ud = user_data;
 
 	if (type != SUBTILIS_FPA_INSTR_FLT) {
-		if (!instr->immediate && instr->op2.reg.num == ud->reg_num) {
+		if (!instr->immediate && instr->op2.reg == ud->reg_num) {
 			subtilis_error_set_walker_failed(err);
 			return;
 		}
 	} else {
-		if (instr->dest.num == ud->reg_num) {
+		if (instr->dest == ud->reg_num) {
 			ud->last_used = -1;
 			subtilis_error_set_walker_failed(err);
 			return;
@@ -237,12 +237,12 @@ static void prv_dist_fpa_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 {
 	subtilis_dist_data_t *ud = user_data;
 
-	if (instr->dest.num == ud->reg_num) {
+	if (instr->dest == ud->reg_num) {
 		subtilis_error_set_walker_failed(err);
 		return;
 	}
 
-	if (!instr->immediate && instr->op2.reg.num == ud->reg_num) {
+	if (!instr->immediate && instr->op2.reg == ud->reg_num) {
 		subtilis_error_set_walker_failed(err);
 		return;
 	}
@@ -257,7 +257,7 @@ static void prv_dist_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 {
 	subtilis_dist_data_t *ud = user_data;
 
-	if (instr->dest.num == ud->reg_num) {
+	if (instr->dest == ud->reg_num) {
 		ud->last_used = -1;
 		subtilis_error_set_walker_failed(err);
 		return;
