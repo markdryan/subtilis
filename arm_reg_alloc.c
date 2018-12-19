@@ -1452,7 +1452,7 @@ void subtilis_arm_regs_used_before_from_tov(subtilis_arm_section_t *arm_s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	for (i = 0; i < int_args; i++) {
+	for (i = SUBTILIS_ARM_INT_VIRT_REG_START; i < int_args; i++) {
 		if (prv_is_reg_used_before(&ud, i, &ud.int_dist_walker, from,
 					   op)) {
 			subtilis_bitset_set(&used->int_regs, i, err);
@@ -1461,7 +1461,7 @@ void subtilis_arm_regs_used_before_from_tov(subtilis_arm_section_t *arm_s,
 		}
 	}
 
-	for (i = 0; i < real_args; i++) {
+	for (i = SUBTILIS_ARM_FPA_VIRT_REG_START; i < real_args; i++) {
 		if (prv_is_reg_used_before(&ud, i, &ud.fpa_dist_walker, from,
 					   op)) {
 			subtilis_bitset_set(&used->real_regs, i, err);
@@ -1564,7 +1564,7 @@ void subtilis_arm_regs_used_afterv(subtilis_arm_section_t *arm_s,
 		return;
 	ud.instr_count = count + 1;
 
-	for (i = 0; i < int_args; i++) {
+	for (i = SUBTILIS_ARM_INT_VIRT_REG_START; i < int_args; i++) {
 		if (prv_is_reg_used_after_to(&ud, i, &ud.int_dist_walker, from,
 					     to)) {
 			subtilis_bitset_set(&used->int_regs, i, err);
@@ -1573,7 +1573,7 @@ void subtilis_arm_regs_used_afterv(subtilis_arm_section_t *arm_s,
 		}
 	}
 
-	for (i = 0; i < real_args; i++) {
+	for (i = SUBTILIS_ARM_FPA_VIRT_REG_START; i < real_args; i++) {
 		if (prv_is_reg_used_after_to(&ud, i, &ud.fpa_dist_walker, from,
 					     to)) {
 			subtilis_bitset_set(&used->real_regs, i, err);
