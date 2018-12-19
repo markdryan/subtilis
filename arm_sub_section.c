@@ -72,20 +72,21 @@ prv_add_new_sub_section(subtilis_arm_subsections_t *sss,
 }
 
 static void prv_add_link(subtilis_arm_ss_t *ss, subtilis_arm_section_t *arm_s,
-			 subtilis_arm_op_t *to, size_t label,
-			 subtilis_error_t *err)
+			 size_t ptr, size_t label, subtilis_error_t *err)
 {
 	subtilis_arm_ss_link_t *link;
 	subtilis_arm_op_t *from;
 	subtilis_regs_used_virt_t regs_used;
 	size_t max_int_regs;
 	size_t max_real_regs;
+	subtilis_arm_op_t *to;
 
 	if (ss->num_links + 1 >= arm_s->label_counter) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
+	to = &arm_s->op_pool->ops[ptr];
 	subtilis_arm_section_max_regs(arm_s, &max_int_regs, &max_real_regs);
 	subtilis_regs_used_virt_init(&regs_used);
 
@@ -102,6 +103,7 @@ static void prv_add_link(subtilis_arm_ss_t *ss, subtilis_arm_section_t *arm_s,
 		goto cleanup;
 
 	link->link = label;
+	link->op = ptr;
 	subtilis_bitset_claim(&link->int_outputs, &regs_used.int_regs);
 	subtilis_bitset_claim(&link->real_outputs, &regs_used.real_regs);
 
@@ -119,6 +121,7 @@ static void prv_finalize_sub_section(subtilis_arm_ss_t *ss,
 	subtilis_regs_used_virt_t regs_used;
 	size_t max_int_regs;
 	size_t max_real_regs;
+	size_t ptr;
 
 	subtilis_arm_section_max_regs(arm_s, &max_int_regs, &max_real_regs);
 	subtilis_regs_used_virt_init(&regs_used);
@@ -140,9 +143,10 @@ static void prv_finalize_sub_section(subtilis_arm_ss_t *ss,
 	     (op->op.instr.type != SUBTILIS_ARM_INSTR_B) ||
 	     (op->op.instr.operands.br.ccode != SUBTILIS_ARM_CCODE_AL)) &&
 	    (op->next != SIZE_MAX)) {
-		op = &arm_s->op_pool->ops[op->next];
+		ptr = op->next;
+		op = &arm_s->op_pool->ops[ptr];
 		if (op->type == SUBTILIS_OP_LABEL)
-			prv_add_link(ss, arm_s, op, op->op.label, err);
+			prv_add_link(ss, arm_s, ptr, op->op.label, err);
 	}
 
 cleanup:
@@ -348,7 +352,7 @@ void subtilis_arm_subsections_calculate(subtilis_arm_subsections_t *sss,
 			   (!op->op.instr.operands.br.link) &&
 			   (op->op.instr.operands.br.ccode !=
 			    SUBTILIS_ARM_CCODE_NV)) {
-			prv_add_link(ss, arm_s, op,
+			prv_add_link(ss, arm_s, ptr,
 				     op->op.instr.operands.br.target.label,
 				     err);
 			if (err->type != SUBTILIS_ERROR_OK)
@@ -486,6 +490,12 @@ void subtilis_arm_subsections_dump(subtilis_arm_subsections_t *sss,
 			subtilis_bitset_dump(&ss->links[j].int_save);
 			printf("\tMust Save Real: ");
 			subtilis_bitset_dump(&ss->links[j].real_save);
+			op = &arm_s->op_pool->ops[ss->links[j].op];
+			printf("\tOP ptr %zu: ", ss->links[j].op);
+			if (op->type == SUBTILIS_OP_LABEL)
+				printf("label_%zu\n", op->op.label);
+			else
+				subtilis_arm_instr_dump(&op->op.instr);
 			printf("\n");
 		}
 		printf("\n");

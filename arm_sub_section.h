@@ -26,6 +26,7 @@ struct subtilis_arm_ss_link_t_ {
 	subtilis_bitset_t int_save;
 	subtilis_bitset_t real_save;
 	size_t link;
+	size_t op;
 };
 
 typedef struct subtilis_arm_ss_link_t_ subtilis_arm_ss_link_t;
