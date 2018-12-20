@@ -304,8 +304,6 @@ void subtilis_arm_subsections_calculate(subtilis_arm_subsections_t *sss,
 	subtilis_arm_ss_t *first;
 	subtilis_arm_op_t *op;
 	size_t count;
-	size_t *links;
-	size_t link_count;
 	size_t label;
 
 	if (arm_s->first_op == arm_s->last_op) {
@@ -328,8 +326,6 @@ void subtilis_arm_subsections_calculate(subtilis_arm_subsections_t *sss,
 	first = ss;
 
 	count = 0;
-	links = NULL;
-	link_count = 0;
 	while (ptr != SIZE_MAX) {
 		op = &arm_s->op_pool->ops[ptr];
 		if (op->type == SUBTILIS_OP_LABEL) {
