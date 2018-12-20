@@ -191,7 +191,7 @@ void subtilis_bitset_dump(subtilis_bitset_t *bs)
 {
 	size_t i;
 
-	if (bs->max_value > 0) {
+	if (bs->max_value >= 0) {
 		for (i = 0; i <= bs->max_value; i++) {
 			if (subtilis_bitset_isset(bs, i))
 				printf("%zu ", i);
@@ -210,3 +210,45 @@ void subtilis_bitset_claim(subtilis_bitset_t *dst, subtilis_bitset_t *src)
 }
 
 void subtilis_bitset_free(subtilis_bitset_t *bs) { free(bs->bits); }
+
+size_t subtilis_bitset_count(subtilis_bitset_t *bs)
+{
+	size_t i;
+	size_t count = 0;
+
+	if (bs->max_value >= 0) {
+		for (i = 0; i <= bs->max_value; i++) {
+			if (subtilis_bitset_isset(bs, i))
+				++count;
+		}
+	}
+
+	return count;
+}
+
+size_t *subtilis_bitset_values(subtilis_bitset_t *bs, size_t *count,
+			       subtilis_error_t *err)
+{
+	size_t i;
+	size_t j;
+	size_t *vals = NULL;
+	size_t cnt = subtilis_bitset_count(bs);
+
+	if (cnt > 0) {
+		vals = malloc(cnt * sizeof(size_t));
+		if (!vals) {
+			subtilis_error_set_oom(err);
+			return NULL;
+		}
+
+		j = 0;
+		for (i = 0; i <= bs->max_value; i++) {
+			if (subtilis_bitset_isset(bs, i))
+				vals[j++] = i;
+		}
+	}
+
+	*count = cnt;
+
+	return vals;
+}

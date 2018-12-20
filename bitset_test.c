@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
+
 #include "bitset.h"
 #include "bitset_test.h"
 
@@ -293,6 +295,106 @@ fail:
 	return retval;
 }
 
+static int prv_bitset_count(void)
+{
+	subtilis_bitset_t bs;
+	subtilis_error_t err;
+	int retval = 1;
+
+	printf("bitset_count_test");
+
+	subtilis_error_init(&err);
+	subtilis_bitset_init(&bs);
+
+	if (subtilis_bitset_count(&bs) != 0)
+		goto fail;
+
+	subtilis_bitset_set(&bs, 0, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_set(&bs, 64, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_set(&bs, 128, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	if (subtilis_bitset_count(&bs) != 3)
+		goto fail;
+
+	retval = 0;
+
+fail:
+
+	subtilis_bitset_free(&bs);
+
+	if (retval == 0)
+		printf(": [OK]\n");
+	else
+		printf(": [FAIL]\n");
+
+	return retval;
+}
+
+static int prv_bitset_values(void)
+{
+	subtilis_bitset_t bs;
+	subtilis_error_t err;
+	size_t *values = NULL;
+	size_t count;
+	int retval = 1;
+
+	printf("bitset_values_test");
+
+	subtilis_error_init(&err);
+	subtilis_bitset_init(&bs);
+
+	values = subtilis_bitset_values(&bs, &count, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	if (count != 0 || values)
+		goto fail;
+
+	subtilis_bitset_set(&bs, 0, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_set(&bs, 64, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_set(&bs, 128, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	values = subtilis_bitset_values(&bs, &count, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	if (count != 3)
+		goto fail;
+
+	if (values[0] != 0 || values[1] != 64 || values[2] != 128)
+		goto fail;
+
+	retval = 0;
+
+fail:
+
+	free(values);
+	subtilis_bitset_free(&bs);
+
+	if (retval == 0)
+		printf(": [OK]\n");
+	else
+		printf(": [FAIL]\n");
+
+	return retval;
+}
+
 int bitset_test(void)
 {
 	int retval;
@@ -301,6 +403,8 @@ int bitset_test(void)
 	retval |= prv_bitset_reuse();
 	retval |= prv_bitset_empty();
 	retval |= prv_bitset_same_size();
+	retval |= prv_bitset_count();
+	retval |= prv_bitset_values();
 
 	return retval;
 }
