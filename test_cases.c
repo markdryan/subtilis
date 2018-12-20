@@ -567,6 +567,19 @@ const subtilis_test_case_t test_cases[] = {
 	 "PRINT a%\n"
 	 "ENDPROC\n",
 	 "60\n10\n"},
+	{"branch_save",
+	 "LOCAL a%\n"
+	 "LOCAL c%\n"
+	 "WHILE c% < 2\n"
+	 "PRINT a%\n"
+	 "PROCa\n"
+	 "LET c% = c% + 1\n"
+	 "ENDWHILE\n"
+	 "DEF PROCa\n"
+	 "LOCAL b%\n"
+	 "LET b% = 2\n"
+	 "ENDPROC\n",
+	 "0\n0\n"},
 };
 
 /* clang-format on */
