@@ -399,6 +399,9 @@ void subtilis_arm_subsections_free(subtilis_arm_subsections_t *sss)
 {
 	size_t i;
 
+	subtilis_bitset_free(&sss->int_save);
+	subtilis_bitset_free(&sss->real_save);
+
 	free(sss->ss_link_map);
 	if (!sss->sub_sections)
 		return;
