@@ -92,8 +92,7 @@ void subtilis_fpa_gen_callr(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	dest = subtilis_arm_ir_to_freg(call->reg);
-	op1.num = 0;
-	op1.type = SUBTILIS_ARM_REG_FIXED;
+	op1 = 0;
 
 	subtilis_fpa_add_mov(arm_s, SUBTILIS_ARM_CCODE_AL,
 			     SUBTILIS_FPA_ROUNDING_NEAREST, dest, op1, err);
@@ -250,8 +249,7 @@ void subtilis_fpa_gen_retr(subtilis_ir_section_t *s, size_t start,
 	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
 	subtilis_arm_reg_t op2;
 
-	dest.num = 0;
-	dest.type = SUBTILIS_ARM_REG_FIXED;
+	dest = 0;
 	op2 = subtilis_arm_ir_to_freg(instr->operands[0].reg);
 
 	subtilis_fpa_add_mov(arm_s, SUBTILIS_ARM_CCODE_AL,
@@ -269,8 +267,7 @@ void subtilis_fpa_gen_retir(subtilis_ir_section_t *s, size_t start,
 	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
 	double op2 = instr->operands[0].real;
 
-	dest.num = 0;
-	dest.type = SUBTILIS_ARM_REG_FIXED;
+	dest = 0;
 
 	subtilis_fpa_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL,
 				 SUBTILIS_FPA_ROUNDING_NEAREST, dest, op2, err);

@@ -119,18 +119,18 @@ static void prv_dump_op2(subtilis_arm_op2_t *op2)
 {
 	switch (op2->type) {
 	case SUBTILIS_ARM_OP2_REG:
-		printf("R%zu", op2->op.reg.num);
+		printf("R%zu", op2->op.reg);
 		break;
 	case SUBTILIS_ARM_OP2_I32:
 		printf("#%d", op2->op.integer);
 		break;
 	default:
 		if (op2->op.shift.shift_reg)
-			printf("R%zu, %s R%zu", op2->op.shift.reg.num,
+			printf("R%zu, %s R%zu", op2->op.shift.reg,
 			       shift_desc[op2->op.shift.type],
-			       op2->op.shift.shift.reg.num);
+			       op2->op.shift.shift.reg);
 		else
-			printf("R%zu, %s #%d", op2->op.shift.reg.num,
+			printf("R%zu, %s #%d", op2->op.shift.reg,
 			       shift_desc[op2->op.shift.type],
 			       op2->op.shift.shift.integer);
 
@@ -148,7 +148,7 @@ static void prv_dump_mov_instr(void *user_data, subtilis_arm_op_t *op,
 		printf("%s", ccode_desc[instr->ccode]);
 	if (instr->status)
 		printf("S");
-	printf(" R%zu, ", instr->dest.num);
+	printf(" R%zu, ", instr->dest);
 	prv_dump_op2(&instr->op2);
 	printf("\n");
 }
@@ -163,7 +163,7 @@ static void prv_dump_data_instr(void *user_data, subtilis_arm_op_t *op,
 		printf("%s", ccode_desc[instr->ccode]);
 	if (instr->status)
 		printf("S");
-	printf(" R%zu, R%zu, ", instr->dest.num, instr->op1.num);
+	printf(" R%zu, R%zu, ", instr->dest, instr->op1);
 	prv_dump_op2(&instr->op2);
 	printf("\n");
 }
@@ -178,8 +178,7 @@ static void prv_dump_mul_instr(void *user_data, subtilis_arm_op_t *op,
 		printf("%s", ccode_desc[instr->ccode]);
 	if (instr->status)
 		printf("S");
-	printf(" R%zu, R%zu, R%zu\n", instr->dest.num, instr->rm.num,
-	       instr->rs.num);
+	printf(" R%zu, R%zu, R%zu\n", instr->dest, instr->rm, instr->rs);
 }
 
 static void prv_dump_stran_instr(void *user_data, subtilis_arm_op_t *op,
@@ -192,15 +191,15 @@ static void prv_dump_stran_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
-	printf(" R%zu", instr->dest.num);
+	printf(" R%zu", instr->dest);
 	if (instr->pre_indexed) {
-		printf(", [R%zu, %s", instr->base.num, sub);
+		printf(", [R%zu, %s", instr->base, sub);
 		prv_dump_op2(&instr->offset);
 		printf("]");
 		if (instr->write_back)
 			printf("!");
 	} else {
-		printf(", [R%zu], %s", instr->base.num, sub);
+		printf(", [R%zu], %s", instr->base, sub);
 		prv_dump_op2(&instr->offset);
 	}
 	printf("\n");
@@ -217,7 +216,7 @@ static void prv_dump_mtran_instr(void *user_data, subtilis_arm_op_t *op,
 	};
 
 	printf("\t%s%s %zu", instr_desc[type], direction[(size_t)instr->type],
-	       instr->op0.num);
+	       instr->op0);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
 	if (instr->write_back)
@@ -254,11 +253,11 @@ static void prv_dump_br_instr(void *user_data, subtilis_arm_op_t *op,
 			printf(" %s\n",
 			       p->string_pool->strings[instr->target.label]);
 		else
-			printf(" %d\n", (int32_t)instr->target.label + 2);
+			printf(" %d\n", (int32_t)instr->target.label);
 	} else if (p) {
 		printf(" label_%zu\n", instr->target.label);
 	} else {
-		printf(" %d\n", (int32_t)instr->target.label + 2);
+		printf(" %d\n", (int32_t)instr->target.label);
 	}
 }
 
@@ -281,7 +280,7 @@ static void prv_dump_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
-	printf(" R%zu, label_%zu\n", instr->dest.num, instr->label);
+	printf(" R%zu, label_%zu\n", instr->dest, instr->label);
 }
 
 static void prv_dump_cmp_instr(void *user_data, subtilis_arm_op_t *op,
@@ -292,7 +291,7 @@ static void prv_dump_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
-	printf(" R%zu, ", instr->op1.num);
+	printf(" R%zu, ", instr->op1);
 	prv_dump_op2(&instr->op2);
 	printf("\n");
 }
@@ -348,12 +347,11 @@ static void prv_dump_fpa_data(void *user_data, bool dyadic,
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
 	printf("%s", prv_fpa_size(instr->size));
-	printf("%s F%zu, ", prv_extract_rounding(instr->rounding),
-	       instr->dest.num);
+	printf("%s F%zu, ", prv_extract_rounding(instr->rounding), instr->dest);
 	if (dyadic)
-		printf("F%zu, ", instr->op1.num);
+		printf("F%zu, ", instr->op1);
 	if (!instr->immediate)
-		printf("F%zu", instr->op2.reg.num);
+		printf("F%zu", instr->op2.reg);
 	else
 		printf("#%f", prv_extract_imm(instr->op2));
 	printf("\n");
@@ -388,14 +386,11 @@ static void prv_dump_fpa_stran_instr(void *user_data, subtilis_arm_op_t *op,
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
 	printf("%s", prv_fpa_size(instr->size));
-	printf(" F%zu", instr->dest.num);
-	if (instr->pre_indexed) {
-		printf(", [R%zu, %s#%d]", instr->base.num, sub,
-		       instr->offset * 4);
-	} else {
-		printf(", [R%zu], %s#%d", instr->base.num, sub,
-		       instr->offset * 4);
-	}
+	printf(" F%zu", instr->dest);
+	if (instr->pre_indexed)
+		printf(", [R%zu, %s#%d]", instr->base, sub, instr->offset * 4);
+	else
+		printf(", [R%zu], %s#%d", instr->base, sub, instr->offset * 4);
 	if (instr->write_back)
 		printf("!");
 	printf("\n");
@@ -412,13 +407,13 @@ static void prv_dump_fpa_tran_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("%s%s", prv_fpa_size(instr->size),
 	       prv_extract_rounding(instr->rounding));
 	if (type == SUBTILIS_FPA_INSTR_FLT) {
-		printf(" F%zu, ", instr->dest.num);
+		printf(" F%zu, ", instr->dest);
 		if (instr->immediate)
 			printf("#%f", prv_extract_imm(instr->op2));
 		else
-			printf("R%zu", instr->op2.reg.num);
+			printf("R%zu", instr->op2.reg);
 	} else {
-		printf(" R%zu, F%zu", instr->dest.num, instr->op2.reg.num);
+		printf(" R%zu, F%zu", instr->dest, instr->op2.reg);
 	}
 	printf("\n");
 }
@@ -431,11 +426,11 @@ static void prv_dump_fpa_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
-	printf(" F%zu,", instr->dest.num);
+	printf(" F%zu,", instr->dest);
 	if (instr->immediate)
 		printf(" #%f", prv_extract_imm(instr->op2));
 	else
-		printf(" F%zu", instr->op2.reg.num);
+		printf(" F%zu", instr->op2.reg);
 	printf("\n");
 }
 
@@ -447,7 +442,7 @@ static void prv_dump_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("\t%s%s", instr_desc[type], prv_fpa_size(instr->size));
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
-	printf(" F%zu, label_%zu\n", instr->dest.num, instr->label);
+	printf(" F%zu, label_%zu\n", instr->dest, instr->label);
 }
 
 static void prv_dump_label(void *user_data, subtilis_arm_op_t *op, size_t label,
@@ -552,6 +547,10 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 	case SUBTILIS_ARM_INSTR_STR:
 		prv_dump_stran_instr(NULL, NULL, instr->type,
 				     &instr->operands.stran, NULL);
+		break;
+	case SUBTILIS_ARM_INSTR_LDRC:
+		prv_dump_ldrc_instr(NULL, NULL, instr->type,
+				    &instr->operands.ldrc, NULL);
 		break;
 	case SUBTILIS_ARM_INSTR_LDM:
 	case SUBTILIS_ARM_INSTR_STM:

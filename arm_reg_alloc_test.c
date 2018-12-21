@@ -25,10 +25,6 @@ static subtilis_arm_section_t *prv_create_section(subtilis_arm_op_pool_t *pool,
 	subtilis_arm_reg_t op2;
 	subtilis_type_section_t *stype = NULL;
 
-	dest.type = SUBTILIS_ARM_REG_FLOATING;
-	op1.type = SUBTILIS_ARM_REG_FLOATING;
-	op2.type = SUBTILIS_ARM_REG_FLOATING;
-
 	stype = subtilis_type_section_new(SUBTILIS_TYPE_VOID, 0, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
@@ -37,30 +33,30 @@ static subtilis_arm_section_t *prv_create_section(subtilis_arm_op_pool_t *pool,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	dest.num = 0;
-	op1.num = 1;
-	op2.num = 8;
+	dest = 0;
+	op1 = 1;
+	op2 = 8;
 	subtilis_arm_add_mul(s, SUBTILIS_ARM_CCODE_AL, false, dest, op1, op2,
 			     err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	dest.num = 3;
-	op1.num = 4;
+	dest = 3;
+	op1 = 4;
 	subtilis_arm_add_cmp(s, SUBTILIS_ARM_INSTR_CMP, SUBTILIS_ARM_CCODE_AL,
 			     dest, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	dest.num = 8;
-	op2.num = 4;
+	dest = 8;
+	op2 = 4;
 	subtilis_arm_add_mov_reg(s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	dest.num = 4;
-	op2.num = 10;
+	dest = 4;
+	op2 = 10;
 	subtilis_arm_add_mvn_reg(s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)

@@ -42,6 +42,11 @@ static const uint32_t subitlis_arm_imm_mask[] = {
 
 /* clang-format on */
 
+bool subtilis_arm_is_fixed(size_t reg)
+{
+	return reg < SUBTILIS_ARM_INT_VIRT_REG_START;
+}
+
 subtilis_arm_op_pool_t *subtilis_arm_op_pool_new(subtilis_error_t *err)
 {
 	subtilis_arm_op_pool_t *pool = malloc(sizeof(subtilis_arm_op_pool_t));
@@ -128,6 +133,23 @@ subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 	s->op_pool = pool;
 
 	return s;
+}
+
+/* The register counters in the arm_section are very confusing.  They always
+ * count virtual registers as used in the IR.  To map them to ARM registers
+ * one needs to call a function, e.g., subtilis_arm_ir_to_arm_reg.  Sometimes
+ * you need to know the maximum number of registers used and the counters
+ * won't tell you this.  This function will.  We always return at least
+ * 16 for the integer registers as we're always going to use PC.
+ */
+
+void subtilis_arm_section_max_regs(subtilis_arm_section_t *s, size_t *int_regs,
+				   size_t *real_regs)
+{
+	*int_regs = subtilis_arm_ir_to_arm_reg(s->reg_counter);
+	if (*int_regs < SUBTILIS_ARM_INT_VIRT_REG_START)
+		*int_regs = SUBTILIS_ARM_INT_VIRT_REG_START;
+	*real_regs = subtilis_arm_ir_to_freg(s->freg_counter);
 }
 
 static void prv_free_constants(subtilis_arm_constants_t *constants)
@@ -282,23 +304,18 @@ subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg)
 
 	switch (ir_reg) {
 	case SUBTILIS_IR_REG_GLOBAL:
-		arm_reg.num = 12;
-		arm_reg.type = SUBTILIS_ARM_REG_FIXED;
+		arm_reg = 12;
 		break;
 	case SUBTILIS_IR_REG_LOCAL:
-		arm_reg.num = 11;
-		arm_reg.type = SUBTILIS_ARM_REG_FIXED;
+		arm_reg = 11;
 		break;
 	case SUBTILIS_IR_REG_STACK:
-		arm_reg.num = 13;
-		arm_reg.type = SUBTILIS_ARM_REG_FIXED;
+		arm_reg = 13;
 		break;
 	default:
-		arm_reg.type = SUBTILIS_ARM_REG_FLOATING;
-		ir_reg = ir_reg - SUBTILIS_IR_REG_TEMP_START + 4;
-		if (ir_reg > 10)
-			ir_reg += 6;
-		arm_reg.num = ir_reg;
+		ir_reg = ir_reg - SUBTILIS_IR_REG_TEMP_START +
+			 SUBTILIS_ARM_INT_VIRT_REG_START;
+		arm_reg = ir_reg;
 		break;
 	}
 
@@ -309,8 +326,7 @@ subtilis_arm_reg_t subtilis_arm_ir_to_freg(size_t ir_reg)
 {
 	subtilis_arm_reg_t arm_reg;
 
-	arm_reg.num = ir_reg + 4;
-	arm_reg.type = SUBTILIS_ARM_REG_FLOATING;
+	arm_reg = ir_reg + SUBTILIS_ARM_FPA_VIRT_REG_START;
 
 	return arm_reg;
 }
@@ -670,8 +686,7 @@ size_t subtilis_add_data_imm_ldr_datai(subtilis_arm_section_t *s,
 	datai->ccode = ccode;
 	datai->dest = dest;
 	datai->op1 = op1;
-	datai->op2.op.reg.num = ldr_dest.num;
-	datai->op2.op.reg.type = SUBTILIS_ARM_REG_FLOATING;
+	datai->op2.op.reg = ldr_dest;
 	return label;
 }
 
@@ -802,7 +817,7 @@ void subtilis_arm_add_mul_imm(subtilis_arm_section_t *s,
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_mul_instr_t *mul;
 
-	if (rm.num == dest.num) {
+	if (rm == dest) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
@@ -835,8 +850,8 @@ void subtilis_arm_add_mul(subtilis_arm_section_t *s,
 	subtilis_arm_reg_t tmp_reg;
 	subtilis_arm_mul_instr_t *mul;
 
-	if (dest.num == rm.num) {
-		if (dest.num == rs.num) {
+	if (dest == rm) {
+		if (dest == rs) {
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
@@ -1014,11 +1029,8 @@ void subtilis_arm_insert_push(subtilis_arm_section_t *s,
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_stran_instr_t *stran;
 
-	dest.num = 0;
-	dest.type = SUBTILIS_ARM_REG_FIXED;
-
-	base.num = 13;
-	base.type = SUBTILIS_ARM_REG_FIXED;
+	dest = 0;
+	base = 13;
 
 	instr = subtilis_arm_section_insert_instr(s, current,
 						  SUBTILIS_ARM_INSTR_STR, err);
@@ -1045,11 +1057,8 @@ void subtilis_arm_insert_pop(subtilis_arm_section_t *s,
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_stran_instr_t *stran;
 
-	dest.num = 0;
-	dest.type = SUBTILIS_ARM_REG_FIXED;
-
-	base.num = 13;
-	base.type = SUBTILIS_ARM_REG_FIXED;
+	dest = 0;
+	base = 13;
 
 	instr = subtilis_arm_section_insert_instr(s, current,
 						  SUBTILIS_ARM_INSTR_LDR, err);
@@ -1157,8 +1166,7 @@ void subtilis_arm_add_cmp_imm(subtilis_arm_section_t *s,
 		if (subtilis_arm_encode_imm(-op2, &encoded)) {
 			itype = SUBTILIS_ARM_INSTR_CMN;
 		} else {
-			dest.type = SUBTILIS_ARM_REG_FIXED;
-			dest.num = 0xffffffff;
+			dest = 0xffffffff;
 			(void)subtilis_add_data_imm_ldr_datai(
 			    s, itype, ccode, false, dest, op1, op2, err);
 			return;

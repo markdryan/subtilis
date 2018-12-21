@@ -23,17 +23,18 @@
 
 #include "ir.h"
 
-typedef enum {
-	SUBTILIS_ARM_REG_FIXED,
-	SUBTILIS_ARM_REG_FLOATING,
-} subtilis_arm_reg_type_t;
+/*
+ * Two register namespaces overlap for each register type, int or real.
+ * For integers register numbers < 16 are fixed and will not be altered
+ * by the register allocator.  FPA register numbers < 6 are fixed.
+ * All other register numbers are floating and will need to be allocated
+ * to a fixed register during register allocation.
+ */
 
-struct subtilis_arm_reg_t_ {
-	subtilis_arm_reg_type_t type;
-	size_t num;
-};
+#define SUBTILIS_ARM_INT_VIRT_REG_START 16
+#define SUBTILIS_ARM_FPA_VIRT_REG_START 6
 
-typedef struct subtilis_arm_reg_t_ subtilis_arm_reg_t;
+typedef size_t subtilis_arm_reg_t;
 
 typedef enum {
 	SUBTILIS_ARM_OP2_REG,
@@ -453,6 +454,9 @@ subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 			      size_t locals, subtilis_error_t *err);
 /* clang-format on */
 
+void subtilis_arm_section_max_regs(subtilis_arm_section_t *s, size_t *int_regs,
+				   size_t *real_regs);
+
 void subtilis_arm_prog_delete(subtilis_arm_prog_t *prog);
 void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s,
 					size_t stm_site, size_t ldm_site,
@@ -579,6 +583,8 @@ void subtilis_arm_add_mtran(subtilis_arm_section_t *s,
 			    subtilis_arm_mtran_type_t type, bool write_back,
 			    subtilis_error_t *err);
 
+bool subtilis_arm_is_fixed(subtilis_arm_reg_t reg);
+
 #define subtilis_arm_add_add_imm(s, cc, st, dst, op1, op2, err)                \
 	subtilis_arm_add_addsub_imm(s, SUBTILIS_ARM_INSTR_ADD,                 \
 				    SUBTILIS_ARM_INSTR_SUB, cc, st, dst, op1,  \
@@ -679,6 +685,8 @@ void subtilis_fpa_pop_reg(subtilis_arm_section_t *s,
 			  subtilis_arm_ccode_type_t ccode,
 			  subtilis_arm_reg_t dest, subtilis_error_t *err);
 double subtilis_fpa_extract_imm(subtilis_fpa_op2_t op2, subtilis_error_t *err);
+
+bool subtilis_fpa_is_fixed(subtilis_arm_reg_t reg);
 
 #define subtilis_fpa_add_mov_imm(s, cc, round, dst, op2, err)                  \
 	subtilis_fpa_add_mvfmnf_imm(s, cc, SUBTILIS_FPA_INSTR_MVF,             \

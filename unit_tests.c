@@ -19,6 +19,7 @@
 #include "arm_core_test.h"
 #include "arm_reg_alloc_test.h"
 #include "arm_test.h"
+#include "bitset_test.h"
 #include "fpa_test.h"
 #include "ir_test.h"
 #include "lexer_test.h"
@@ -39,6 +40,7 @@ int main(int argc, char *argv[])
 	failure |= arm_reg_alloc_test();
 	failure |= arm_test();
 	failure |= fpa_test();
+	failure |= bitset_test();
 
 	return failure;
 }

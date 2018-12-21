@@ -182,11 +182,11 @@ static void prv_encode_data_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 	uint32_t shift;
 
 	if (op2->type == SUBTILIS_ARM_OP2_REG) {
-		if (op2->op.reg.num > 15) {
+		if (op2->op.reg > 15) {
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
-		*word |= op2->op.reg.num;
+		*word |= op2->op.reg;
 	} else if (op2->type == SUBTILIS_ARM_OP2_I32) {
 		if (op2->op.integer & 0xfffff000) {
 			subtilis_error_set_assertion_failed(err);
@@ -195,21 +195,20 @@ static void prv_encode_data_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 		*word |= op2->op.integer;
 		*word |= 1 << 25;
 	} else if (op2->type == SUBTILIS_ARM_OP2_SHIFTED) {
-		if (op2->op.shift.reg.num > 15) {
+		if (op2->op.shift.reg > 15) {
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 
-		if (op2->op.shift.shift_reg &&
-		    op2->op.shift.shift.reg.num > 15) {
+		if (op2->op.shift.shift_reg && op2->op.shift.shift.reg > 15) {
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 
-		*word |= op2->op.shift.reg.num;
+		*word |= op2->op.shift.reg;
 		if (op2->op.shift.shift_reg) {
 			*word |= 1 << 4;
-			*word |= (op2->op.shift.shift.reg.num & 15) << 8;
+			*word |= (op2->op.shift.shift.reg & 15) << 8;
 		} else {
 			*word |= (op2->op.shift.shift.integer & 31) << 7;
 		}
@@ -228,7 +227,7 @@ static void prv_encode_data_instr(void *user_data, subtilis_arm_op_t *op,
 	subtilis_arm_encode_ud_t *ud = user_data;
 	uint32_t word = 0;
 
-	if ((instr->dest.num > 15) || (instr->op1.num > 15)) {
+	if ((instr->dest > 15) || (instr->op1 > 15)) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
@@ -237,8 +236,8 @@ static void prv_encode_data_instr(void *user_data, subtilis_arm_op_t *op,
 	word |= type << 21;
 	if (instr->status)
 		word |= 1 << 20;
-	word |= instr->op1.num << 16;
-	word |= instr->dest.num << 12;
+	word |= instr->op1 << 16;
+	word |= instr->dest << 12;
 	prv_encode_data_op2(&instr->op2, &word, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -254,8 +253,7 @@ static void prv_encode_mul_instr(void *user_data, subtilis_arm_op_t *op,
 	subtilis_arm_encode_ud_t *ud = user_data;
 	uint32_t word = 0x90;
 
-	if ((instr->dest.num > 15) || (instr->rm.num > 15) ||
-	    (instr->rs.num > 15)) {
+	if ((instr->dest > 15) || (instr->rm > 15) || (instr->rs > 15)) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
@@ -268,9 +266,9 @@ static void prv_encode_mul_instr(void *user_data, subtilis_arm_op_t *op,
 	word |= instr->ccode << 28;
 	if (instr->status)
 		word |= 1 << 20;
-	word |= instr->dest.num << 16;
-	word |= instr->rs.num << 8;
-	word |= instr->rm.num;
+	word |= instr->dest << 16;
+	word |= instr->rs << 8;
+	word |= instr->rm;
 
 	ud->code[ud->words_written++] = word;
 }
@@ -289,12 +287,12 @@ static void prv_encode_stran_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 	uint32_t shift;
 
 	if (op2->type == SUBTILIS_ARM_OP2_REG) {
-		if (op2->op.reg.num > 15) {
+		if (op2->op.reg > 15) {
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 		*word |= 1 << 25;
-		*word |= op2->op.reg.num;
+		*word |= op2->op.reg;
 	} else if (op2->type == SUBTILIS_ARM_OP2_I32) {
 		if (op2->op.integer > 4095) {
 			subtilis_error_set_assertion_failed(err);
@@ -302,12 +300,12 @@ static void prv_encode_stran_op2(subtilis_arm_op2_t *op2, uint32_t *word,
 		}
 		*word |= op2->op.integer;
 	} else if (op2->type == SUBTILIS_ARM_OP2_SHIFTED) {
-		if (op2->op.shift.reg.num > 15) {
+		if (op2->op.shift.reg > 15) {
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 
-		*word |= op2->op.shift.reg.num;
+		*word |= op2->op.shift.reg;
 		*word |= 1 << 25;
 		*word |= (op2->op.shift.shift.integer & 31) << 7;
 		shift = prv_convert_shift(op2->op.shift.type, err);
@@ -325,7 +323,7 @@ static void prv_encode_stran_instr(void *user_data, subtilis_arm_op_t *op,
 	subtilis_arm_encode_ud_t *ud = user_data;
 	uint32_t word = 0;
 
-	if ((instr->base.num > 15) || (instr->dest.num > 15)) {
+	if ((instr->base > 15) || (instr->dest > 15)) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
@@ -341,8 +339,8 @@ static void prv_encode_stran_instr(void *user_data, subtilis_arm_op_t *op,
 		word |= 1 << 23;
 	if (type == SUBTILIS_ARM_INSTR_LDR)
 		word |= 1 << 20;
-	word |= instr->base.num << 16;
-	word |= instr->dest.num << 12;
+	word |= instr->base << 16;
+	word |= instr->dest << 12;
 	prv_encode_stran_op2(&instr->offset, &word, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -424,7 +422,7 @@ static void prv_encode_mtran_instr(void *user_data, subtilis_arm_op_t *op,
 	if (type == SUBTILIS_ARM_INSTR_LDM)
 		word |= 1 << 20;
 
-	word |= instr->op0.num << 16;
+	word |= instr->op0 << 16;
 	word |= instr->reg_list & 0xffff;
 
 	ud->code[ud->words_written++] = word;
@@ -483,8 +481,7 @@ static void prv_encode_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 
 	stran.ccode = instr->ccode;
 	stran.dest = instr->dest;
-	stran.base.type = SUBTILIS_ARM_REG_FIXED;
-	stran.base.num = 15;
+	stran.base = 15;
 	stran.offset.type = SUBTILIS_ARM_OP2_I32;
 	stran.offset.op.integer = 0;
 	stran.pre_indexed = true;
@@ -620,18 +617,18 @@ static void prv_encode_fpa_data_instr(void *user_data, subtilis_arm_op_t *op,
 		word |= 1 << 19;
 
 	if (dyadic)
-		word |= instr->op1.num << 16;
+		word |= instr->op1 << 16;
 	else
 		word |= 1 << 15;
 
-	word |= instr->dest.num << 12;
+	word |= instr->dest << 12;
 	word |= 1 << 8;
 	prv_encode_fpa_rounding(instr->rounding, &word);
 	if (instr->immediate) {
 		word |= 1 << 3;
 		word |= instr->op2.imm;
 	} else {
-		word |= instr->op2.reg.num;
+		word |= instr->op2.reg;
 	}
 
 	ud->code[ud->words_written++] = word;
@@ -679,8 +676,8 @@ static void prv_encode_fpa_stran_instr(void *user_data, subtilis_arm_op_t *op,
 	if (type == SUBTILIS_FPA_INSTR_LDF)
 		word |= 1 << 20;
 
-	word |= instr->base.num << 16;
-	word |= instr->dest.num << 12;
+	word |= instr->base << 16;
+	word |= instr->dest << 12;
 	word |= 1 << 8;
 	word |= instr->offset;
 	ud->code[ud->words_written++] = word;
@@ -702,15 +699,15 @@ static void prv_encode_fpa_tran_instr(void *user_data, subtilis_arm_op_t *op,
 			word |= 1 << 7;
 		else if (instr->size == 12)
 			word |= 1 << 19;
-		word |= instr->dest.num << 16;
-		word |= instr->op2.reg.num << 12;
+		word |= instr->dest << 16;
+		word |= instr->op2.reg << 12;
 	} else if (type == SUBTILIS_FPA_INSTR_FIX) {
 		if (instr->immediate) {
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
-		word |= instr->dest.num << 12;
-		word |= instr->op2.reg.num;
+		word |= instr->dest << 12;
+		word |= instr->op2.reg;
 		word |= 1 << 20;
 	} else {
 		subtilis_error_set_assertion_failed(err);
@@ -755,7 +752,7 @@ static void prv_encode_fpa_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	}
 	word |= op_code << 21;
 	word |= 1 << 20;
-	word |= instr->dest.num << 16;
+	word |= instr->dest << 16;
 	word |= 15 << 12;
 	word |= 1 << 8;
 	word |= 1 << 4;
@@ -764,7 +761,7 @@ static void prv_encode_fpa_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 		word |= 1 << 3;
 		word |= instr->op2.imm;
 	} else {
-		word |= instr->op2.reg.num;
+		word |= instr->op2.reg;
 	}
 
 	ud->code[ud->words_written++] = word;
@@ -786,8 +783,7 @@ static void prv_encode_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	stran.ccode = instr->ccode;
 	stran.size = instr->size;
 	stran.dest = instr->dest;
-	stran.base.type = SUBTILIS_ARM_REG_FIXED;
-	stran.base.num = 15;
+	stran.base = 15;
 	stran.offset = 0;
 	stran.pre_indexed = true;
 	stran.write_back = false;
