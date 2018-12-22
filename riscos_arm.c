@@ -563,3 +563,33 @@ void subtilis_riscos_arm_origin(subtilis_ir_section_t *s, size_t start,
 			return;
 	}
 }
+
+void subtilis_riscos_arm_gettime(subtilis_ir_section_t *s, size_t start,
+				 void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *origin = &s->ops[start]->op.instr;
+	size_t ir_dest = origin->operands[0].reg;
+	subtilis_arm_reg_t dest = subtilis_arm_ir_to_arm_reg(ir_dest);
+
+	/*
+	 * TOOD: Need to check for stack overflow.
+	 */
+
+	subtilis_arm_add_data_imm(arm_s, SUBTILIS_ARM_INSTR_SUB,
+				  SUBTILIS_ARM_CCODE_AL, false, 1, 13, 8, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 1,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x07, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, dest, 1, 0, err);
+}

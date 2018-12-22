@@ -200,6 +200,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"plot *, *, *\n", subtilis_riscos_arm_plot},
 	{"gcol *, *\n", subtilis_riscos_arm_gcol},
 	{"origin *, *\n", subtilis_riscos_arm_origin},
+	{"gettime *\n", subtilis_riscos_arm_gettime},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

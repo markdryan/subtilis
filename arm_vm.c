@@ -20,6 +20,7 @@
 
 #include "arm_disass.h"
 #include "arm_vm.h"
+#include "utils.h"
 
 subtilis_arm_vm_t *subtilis_arm_vm_new(uint32_t *code, size_t code_size,
 				       size_t mem_size, subtilis_error_t *err)
@@ -760,6 +761,7 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	char buf[64];
 	uint8_t *addr;
 	size_t buf_len;
+	size_t ptr;
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
@@ -807,6 +809,14 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		subtilis_buffer_append_string(b, "\n", err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
+		break;
+	case 0x7:
+		/* OS_Word  */
+		if (arm_vm->regs[0] == 1) {
+			ptr = arm_vm->regs[1] - 0x8000;
+			*((int32_t *)&arm_vm->memory[ptr]) =
+			    subtilis_get_i32_time();
+		}
 		break;
 	}
 
