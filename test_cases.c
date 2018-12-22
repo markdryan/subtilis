@@ -580,6 +580,11 @@ const subtilis_test_case_t test_cases[] = {
 	 "LET b% = 2\n"
 	 "ENDPROC\n",
 	 "0\n0\n"},
+	{"time",
+	 "LOCAL a%\n"
+	 "LET a% = TIME\n"
+	 "PRINT TRUE\n",
+	 "-1\n"},
 };
 
 /* clang-format on */

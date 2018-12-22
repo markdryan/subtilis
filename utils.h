@@ -17,6 +17,12 @@
 #ifndef __SUBTILIS_UTILS_H
 #define __SUBTILIS_UTILS_H
 
-const char *subtilis_utils_basename(const char *path);
+#include <stdint.h>
 
+const char *subtilis_utils_basename(const char *path);
+/*
+ * Returns centi-seconds since a fixed date.  Results are expected to be
+ * positive.  Date will need to be updated every year or so.
+ */
+int32_t subtilis_get_i32_time(void);
 #endif

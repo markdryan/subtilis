@@ -141,6 +141,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "plot", SUBTILIS_OP_CLASS_REG_REG_REG },
 	{ "gcol", SUBTILIS_OP_CLASS_REG_REG },
 	{ "origin", SUBTILIS_OP_CLASS_REG_REG },
+	{ "gettime", SUBTILIS_OP_CLASS_REG },
 };
 
 /*
@@ -279,6 +280,18 @@ size_t subtilis_ir_section_add_instr2(subtilis_ir_section_t *s,
 {
 	subtilis_ir_operand_t op2;
 
+	memset(&op2, 0, sizeof(op2));
+	return subtilis_ir_section_add_instr(s, type, op1, op2, err);
+}
+
+size_t subtilis_ir_section_add_instr1(subtilis_ir_section_t *s,
+				      subtilis_op_instr_type_t type,
+				      subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+
+	memset(&op1, 0, sizeof(op1));
 	memset(&op2, 0, sizeof(op2));
 	return subtilis_ir_section_add_instr(s, type, op1, op2, err);
 }

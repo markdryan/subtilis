@@ -602,12 +602,11 @@ static void prv_allocate_fixed(subtilis_arm_reg_ud_t *ud,
 	}
 }
 
-static void prv_allocate_floating(subtilis_arm_reg_ud_t *ud,
-				  subtilis_arm_op_t *current,
-				  subtilis_arm_reg_class_t *int_regs,
-				  subtilis_arm_reg_class_t *regs,
-				  subtilis_arm_reg_t *reg,
-				  subtilis_error_t *err)
+static void
+prv_allocate_floating(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *current,
+		      subtilis_arm_reg_class_t *int_regs,
+		      subtilis_arm_reg_class_t *regs, subtilis_arm_reg_t *reg,
+		      subtilis_arm_reg_t restricted, subtilis_error_t *err)
 {
 	subtilis_arm_reg_t target_reg;
 	int i;
@@ -617,7 +616,8 @@ static void prv_allocate_floating(subtilis_arm_reg_ud_t *ud,
 	/* Virtual register is not already assigned. */
 
 	for (i = regs->max_regs - 1; i >= 0; i--)
-		if (regs->phys_to_virt[i] == INT_MAX)
+		if ((regs->phys_to_virt[i] == INT_MAX) &&
+		    (restricted == SIZE_MAX || restricted != i))
 			break;
 
 	if (i >= 0) {
@@ -626,7 +626,8 @@ static void prv_allocate_floating(subtilis_arm_reg_ud_t *ud,
 		/* No free physical regs.  Need to spill. */
 
 		for (i = 0; i < regs->max_regs; i++)
-			if (regs->next[i] > max_next) {
+			if ((regs->next[i] > max_next) &&
+			    (restricted == SIZE_MAX || restricted != i)) {
 				max_next = regs->next[i];
 				next = i;
 			}
@@ -647,7 +648,8 @@ static void prv_allocate_floating(subtilis_arm_reg_ud_t *ud,
 static void prv_allocate(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *current,
 			 subtilis_arm_reg_class_t *int_regs,
 			 subtilis_arm_reg_class_t *regs,
-			 subtilis_arm_reg_t *reg, subtilis_error_t *err)
+			 subtilis_arm_reg_t *reg, subtilis_arm_reg_t restricted,
+			 subtilis_error_t *err)
 {
 	size_t assigned;
 	size_t virt_num = *reg;
@@ -662,7 +664,7 @@ static void prv_allocate(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *current,
 			*reg = assigned;
 		} else {
 			prv_allocate_floating(ud, current, int_regs, regs, reg,
-					      err);
+					      restricted, err);
 		}
 	}
 
@@ -708,7 +710,7 @@ static bool prv_ensure(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *current,
 		} else {
 			target_reg = *reg;
 			prv_allocate_floating(ud, current, int_regs, regs,
-					      &target_reg, err);
+					      &target_reg, SIZE_MAX, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return false;
 			prv_load_spilled_reg(ud, current, regs, *reg,
@@ -781,8 +783,11 @@ static subtilis_arm_reg_t *prv_ensure_op2_shift_reg(subtilis_arm_reg_ud_t *ud,
 				  err);
 }
 
-static void prv_allocate_dest(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *op,
-			      subtilis_arm_reg_t *dest, subtilis_error_t *err)
+static void prv_allocate_dest_restricted(subtilis_arm_reg_ud_t *ud,
+					 subtilis_arm_op_t *op,
+					 subtilis_arm_reg_t *dest,
+					 subtilis_arm_reg_t restricted,
+					 subtilis_error_t *err)
 {
 	int dist_dest;
 	size_t vreg_dest = *dest;
@@ -791,13 +796,19 @@ static void prv_allocate_dest(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *op,
 	    (vreg_dest >= SUBTILIS_ARM_REG_MAX_INT_REGS))
 		return;
 
-	prv_allocate(ud, op, ud->int_regs, ud->int_regs, dest, err);
+	prv_allocate(ud, op, ud->int_regs, ud->int_regs, dest, restricted, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	dist_dest = prv_calculate_dist(ud, vreg_dest, op, &ud->int_dist_walker);
 	if (dist_dest == -1)
 		ud->int_regs->phys_to_virt[*dest] = INT_MAX;
 	ud->int_regs->next[*dest] = dist_dest;
+}
+
+static void prv_allocate_dest(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *op,
+			      subtilis_arm_reg_t *dest, subtilis_error_t *err)
+{
+	prv_allocate_dest_restricted(ud, op, dest, SIZE_MAX, err);
 }
 
 static void prv_allocate_fpa_dest(subtilis_arm_reg_ud_t *ud,
@@ -808,7 +819,7 @@ static void prv_allocate_fpa_dest(subtilis_arm_reg_ud_t *ud,
 	int dist_dest;
 	size_t vreg_dest = *dest;
 
-	prv_allocate(ud, op, ud->int_regs, ud->fpa_regs, dest, err);
+	prv_allocate(ud, op, ud->int_regs, ud->fpa_regs, dest, SIZE_MAX, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -993,9 +1004,14 @@ static void prv_alloc_mul_instr(void *user_data, subtilis_arm_op_t *op,
 			ud->int_regs->phys_to_virt[instr->rs] = INT_MAX;
 	}
 
-	prv_allocate_dest(ud, op, &instr->dest, err);
+	prv_allocate_dest_restricted(ud, op, &instr->dest, instr->rm, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	if (instr->dest == instr->rm) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
 
 	if (!fixed_reg_rm)
 		ud->int_regs->next[instr->rm] = dist_rm;

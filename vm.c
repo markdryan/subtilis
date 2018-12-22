@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "utils.h"
 #include "vm.h"
 
 static void prv_ensure_label_buffer(subitlis_vm_t *vm, size_t label,
@@ -914,6 +915,12 @@ static void prv_nop(subitlis_vm_t *vm, subtilis_buffer_t *b,
 {
 }
 
+static void prv_gettime(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = subtilis_get_i32_time();
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1001,6 +1008,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_nop,                             /* SUBTILIS_OP_INSTR_PLOT */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_GCOL */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_ORIGIN */
+	prv_gettime,                         /* SUBTILIS_OP_INSTR_GETTIME */
 };
 
 /* clang-format on */

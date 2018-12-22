@@ -969,6 +969,16 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_ORIGIN,
+
+	/*
+	 * gettime r0
+	 *
+	 * Stores the current value of the system timer in centi-seconds
+	 * in r0.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_GETTIME,
 } subtilis_op_instr_type_t;
 
 typedef enum {
@@ -1145,6 +1155,9 @@ size_t subtilis_ir_section_add_instr(subtilis_ir_section_t *s,
 				     subtilis_ir_operand_t op1,
 				     subtilis_ir_operand_t op2,
 				     subtilis_error_t *err);
+size_t subtilis_ir_section_add_instr1(subtilis_ir_section_t *s,
+				      subtilis_op_instr_type_t type,
+				      subtilis_error_t *err);
 size_t subtilis_ir_section_add_instr2(subtilis_ir_section_t *s,
 				      subtilis_op_instr_type_t type,
 				      subtilis_ir_operand_t op1,

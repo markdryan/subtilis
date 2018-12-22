@@ -207,6 +207,32 @@ static subtilis_exp_t *prv_not_exp(subtilis_parser_t *p, subtilis_token_t *t,
 	return subtilis_exp_not(p, e, err);
 }
 
+static subtilis_exp_t *prv_gettime(subtilis_parser_t *p, subtilis_token_t *t,
+				   subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_exp_t *e;
+
+	reg = subtilis_ir_section_add_instr1(p->current,
+					     SUBTILIS_OP_INSTR_GETTIME, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	e = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	return e;
+
+on_error:
+	subtilis_exp_delete(e);
+	return NULL;
+}
+
 static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
@@ -272,9 +298,11 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return e;
 		case SUBTILIS_KEYWORD_FN:
 			return prv_call(p, t, err);
+		case SUBTILIS_KEYWORD_TIME:
+			return prv_gettime(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
-			    err, "FN, TRUE FALSE or NOT expected",
+			    err, "TIME, FN, TRUE FALSE or NOT expected",
 			    p->l->stream->name, p->l->line);
 			goto cleanup;
 		}
