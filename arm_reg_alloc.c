@@ -47,12 +47,12 @@
  *
  * The register allocator is called once per section.  It begins by
  * identifying the basic blocks, or subsections, within each section.
- * Each subsection is delimited by a branch target.  It then figures
- * out which virtual registers have lifetimes beyond a single basic
- * block and it ensures that their values are correctly transferred
- * between the basic blocks.  It does this by storing their values
- * on the stack before each branch and loading them from the stack at
- * the start of each new basic block.  Care is taken to only store
+ * Each subsection is delimited by branches and branch targets.  It
+ * then figures out which virtual registers have lifetimes beyond a
+ * single basic block and it ensures that their values are correctly
+ * transferred between the basic blocks.  It does this by storing their
+ * values on the stack before each branch and loading them from the stack
+ * at the start of each new basic block.  Care is taken to only store
  * and load the registers that really needed to be persisted and
  * restored during a branch.  These values are stored and reloaded
  * by adding store and load instructions to the code.  Once this

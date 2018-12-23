@@ -467,6 +467,9 @@ void subtilis_arm_section_add_ret_site(subtilis_arm_section_t *s, size_t op,
 				       subtilis_error_t *err);
 void subtilis_arm_section_add_label(subtilis_arm_section_t *s, size_t label,
 				    subtilis_error_t *err);
+void subtilis_arm_section_insert_label(subtilis_arm_section_t *s, size_t label,
+				       subtilis_arm_op_t *pos,
+				       subtilis_error_t *err);
 subtilis_arm_instr_t *
 subtilis_arm_section_add_instr(subtilis_arm_section_t *s,
 			       subtilis_arm_instr_type_t type,
