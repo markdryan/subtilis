@@ -37,9 +37,8 @@ struct subtilis_arm_ss_t_ {
 	size_t end;
 	subtilis_bitset_t int_inputs;
 	subtilis_bitset_t real_inputs;
-	subtilis_arm_ss_link_t *links;
+	subtilis_arm_ss_link_t links[2];
 	size_t num_links;
-	size_t max_links;
 };
 
 typedef struct subtilis_arm_ss_t_ subtilis_arm_ss_t;

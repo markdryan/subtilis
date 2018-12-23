@@ -57,34 +57,13 @@ static size_t prv_add_new_sub_section(subtilis_arm_subsections_t *sss,
 	ss = &sss->sub_sections[sss->count++];
 	memset(ss, 0, sizeof(*ss));
 
-	ss->links = NULL;
 	subtilis_bitset_init(&ss->int_inputs);
 	subtilis_bitset_init(&ss->real_inputs);
 	ss->start = start;
 	ss->end = 0;
 	ss->num_links = 0;
-	ss->max_links = 0;
 
 	return ptr;
-}
-
-static void prv_ensure_ss_links(subtilis_arm_ss_t *ss, subtilis_error_t *err)
-{
-	size_t new_max;
-	subtilis_arm_ss_link_t *new_links;
-
-	if (ss->num_links < ss->max_links)
-		return;
-
-	new_max = ss->num_links + SUBTILIS_CONFIG_SSS_GRAN;
-	new_links =
-	    realloc(ss->links, new_max * sizeof(subtilis_arm_ss_link_t));
-	if (!new_links) {
-		subtilis_error_set_oom(err);
-		return;
-	}
-	ss->links = new_links;
-	ss->max_links = new_max;
 }
 
 static void prv_sss_link_map_insert(subtilis_arm_subsections_t *sss,
@@ -123,9 +102,10 @@ static void prv_add_link(subtilis_arm_ss_t *ss, subtilis_arm_section_t *arm_s,
 	size_t max_real_regs;
 	subtilis_arm_op_t *to;
 
-	prv_ensure_ss_links(ss, err);
-	if (err->type != SUBTILIS_ERROR_OK)
+	if (ss->num_links >= 2) {
+		subtilis_error_set_assertion_failed(err);
 		return;
+	}
 
 	to = &arm_s->op_pool->ops[ptr];
 	subtilis_arm_section_max_regs(arm_s, &max_int_regs, &max_real_regs);
@@ -437,7 +417,6 @@ static void prv_free_sub_section(subtilis_arm_ss_t *ss)
 		subtilis_bitset_free(&ss->links[i].int_save);
 		subtilis_bitset_free(&ss->links[i].real_save);
 	}
-	free(ss->links);
 	subtilis_bitset_free(&ss->int_inputs);
 	subtilis_bitset_free(&ss->real_inputs);
 }
