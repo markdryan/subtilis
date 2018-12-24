@@ -1447,17 +1447,82 @@ static void prv_alloc_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	ud->instr_count++;
 }
 
+static void prv_sub_section_int_links(subtilis_arm_reg_ud_t *ud,
+				      subtilis_bitset_t *int_save,
+				      subtilis_arm_ccode_type_t ccode,
+				      subtilis_arm_prespilt_offsets_t *offsets,
+				      subtilis_arm_op_t *op,
+				      subtilis_error_t *err)
+{
+	int j;
+	int32_t offset;
+	subtilis_arm_reg_t reg;
+
+	for (j = 0; j <= int_save->max_value; j++) {
+		if (!subtilis_bitset_isset(int_save, j))
+			continue;
+		offset = prv_arm_presplit_int_offset(offsets, j, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		offset += ud->arm_s->locals;
+
+		if (offset > 4095 || offset < -4095) {
+			reg = subtilis_arm_acquire_new_reg(ud->arm_s);
+			subtilis_arm_insert_stran_spill_imm(
+			    ud->arm_s, op, SUBTILIS_ARM_INSTR_STR, ccode, j, 11,
+			    reg, offset, err);
+		} else {
+			subtilis_arm_insert_stran_imm(
+			    ud->arm_s, op, SUBTILIS_ARM_INSTR_STR, ccode, j, 11,
+			    offset, err);
+		}
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+}
+
+static void prv_sub_section_real_links(subtilis_arm_reg_ud_t *ud,
+				       subtilis_bitset_t *real_save,
+				       subtilis_arm_ccode_type_t ccode,
+				       subtilis_arm_prespilt_offsets_t *offsets,
+				       subtilis_arm_op_t *op,
+				       subtilis_error_t *err)
+{
+	int j;
+	int32_t offset;
+	subtilis_arm_reg_t reg;
+
+	for (j = 0; j <= real_save->max_value; j++) {
+		if (!subtilis_bitset_isset(real_save, j))
+			continue;
+		offset = prv_arm_presplit_real_offset(offsets, j, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		offset += ud->arm_s->locals;
+
+		if (offset > 1023 || offset < -1024) {
+			reg = subtilis_arm_acquire_new_reg(ud->arm_s);
+			subtilis_fpa_insert_stran_spill_imm(
+			    ud->arm_s, op, SUBTILIS_FPA_INSTR_STF, ccode, j, 11,
+			    reg, offset, err);
+		} else {
+			subtilis_fpa_insert_stran_imm(
+			    ud->arm_s, op, SUBTILIS_FPA_INSTR_STF, ccode, j, 11,
+			    offset, err);
+		}
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+}
+
 static void prv_init_sub_section_links(subtilis_arm_reg_ud_t *ud,
 				       subtilis_arm_ss_t *ss,
 				       subtilis_arm_prespilt_offsets_t *offsets,
 				       subtilis_error_t *err)
 {
 	size_t i;
-	int j;
 	subtilis_arm_ss_link_t *link;
 	subtilis_arm_op_t *op;
-	int32_t offset;
-	subtilis_arm_reg_t reg;
 	subtilis_arm_ccode_type_t ccode;
 
 	for (i = 0; i < ss->num_links; i++) {
@@ -1467,49 +1532,15 @@ static void prv_init_sub_section_links(subtilis_arm_reg_ud_t *ud,
 			    ? SUBTILIS_ARM_CCODE_AL
 			    : op->op.instr.operands.br.ccode;
 
-		for (j = 0; j <= link->int_save.max_value; j++) {
-			if (!subtilis_bitset_isset(&link->int_save, j))
-				continue;
-			offset = prv_arm_presplit_int_offset(offsets, j, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			offset += ud->arm_s->locals;
+		prv_sub_section_int_links(ud, &link->int_save, ccode, offsets,
+					  op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 
-			if (offset > 4095 || offset < -4095) {
-				reg = subtilis_arm_acquire_new_reg(ud->arm_s);
-				subtilis_arm_insert_stran_spill_imm(
-				    ud->arm_s, op, SUBTILIS_ARM_INSTR_STR,
-				    ccode, j, 11, reg, offset, err);
-			} else {
-				subtilis_arm_insert_stran_imm(
-				    ud->arm_s, op, SUBTILIS_ARM_INSTR_STR,
-				    ccode, j, 11, offset, err);
-			}
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-		}
-
-		for (j = 0; j <= link->real_save.max_value; j++) {
-			if (!subtilis_bitset_isset(&link->real_save, j))
-				continue;
-			offset = prv_arm_presplit_real_offset(offsets, j, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			offset += ud->arm_s->locals;
-
-			if (offset > 1023 || offset < -1024) {
-				reg = subtilis_arm_acquire_new_reg(ud->arm_s);
-				subtilis_fpa_insert_stran_spill_imm(
-				    ud->arm_s, op, SUBTILIS_FPA_INSTR_STF,
-				    ccode, j, 11, reg, offset, err);
-			} else {
-				subtilis_fpa_insert_stran_imm(
-				    ud->arm_s, op, SUBTILIS_FPA_INSTR_STF,
-				    ccode, j, 11, offset, err);
-			}
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-		}
+		prv_sub_section_real_links(ud, &link->real_save, ccode, offsets,
+					   op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 	}
 }
 
