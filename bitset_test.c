@@ -126,6 +126,49 @@ fail:
 	;
 }
 
+static int prv_bitset_clear(void)
+{
+	subtilis_bitset_t bs;
+	size_t i;
+	subtilis_error_t err;
+	int retval = 1;
+
+	printf("bitset_clear_test");
+
+	subtilis_bitset_init(&bs);
+	subtilis_error_init(&err);
+
+	for (i = 0; i <= 130; i++) {
+		subtilis_bitset_set(&bs, i, &err);
+		if (err.type != SUBTILIS_ERROR_OK)
+			goto fail;
+	}
+
+	subtilis_bitset_clear(&bs, 130);
+	if (bs.max_value != 129)
+		goto fail;
+
+	subtilis_bitset_clear(&bs, 129);
+	if (bs.max_value != 128)
+		goto fail;
+
+	subtilis_bitset_clear(&bs, 128);
+	if (bs.max_value != 127)
+		goto fail;
+
+	retval = 0;
+fail:
+
+	subtilis_bitset_free(&bs);
+
+	if (retval == 0)
+		printf(": [OK]\n");
+	else
+		printf(": [FAIL]\n");
+
+	return retval;
+}
+
 static int prv_bitset_reuse(void)
 {
 	subtilis_bitset_t bs1;
@@ -395,16 +438,67 @@ fail:
 	return retval;
 }
 
+static int prv_bitset_not(void)
+{
+	subtilis_bitset_t bs;
+	size_t i;
+	subtilis_error_t err;
+	size_t count;
+	int retval = 1;
+	size_t *values = NULL;
+
+	printf("bitset_not_test");
+
+	subtilis_bitset_init(&bs);
+	subtilis_error_init(&err);
+
+	for (i = 0; i <= 130; i++) {
+		subtilis_bitset_set(&bs, i, &err);
+		if (err.type != SUBTILIS_ERROR_OK)
+			goto fail;
+	}
+
+	subtilis_bitset_clear(&bs, 1);
+	subtilis_bitset_clear(&bs, 128);
+	subtilis_bitset_clear(&bs, 129);
+	subtilis_bitset_not(&bs);
+
+	values = subtilis_bitset_values(&bs, &count, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	if (count != 3 || !values)
+		goto fail;
+
+	if (values[0] != 1 || values[1] != 128 || values[2] != 129)
+		goto fail;
+
+	retval = 0;
+fail:
+
+	free(values);
+	subtilis_bitset_free(&bs);
+
+	if (retval == 0)
+		printf(": [OK]\n");
+	else
+		printf(": [FAIL]\n");
+
+	return retval;
+}
+
 int bitset_test(void)
 {
 	int retval;
 
 	retval = prv_bitset_basic();
+	retval |= prv_bitset_clear();
 	retval |= prv_bitset_reuse();
 	retval |= prv_bitset_empty();
 	retval |= prv_bitset_same_size();
 	retval |= prv_bitset_count();
 	retval |= prv_bitset_values();
+	retval |= prv_bitset_not();
 
 	return retval;
 }

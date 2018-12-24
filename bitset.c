@@ -122,7 +122,7 @@ static void prv_set_max(subtilis_bitset_t *bs, size_t block)
 		if (mask & bs->bits[block])
 			break;
 	}
-	bs->max_value = (block * sizeof(unsigned int)) + (byte * 8) + i;
+	bs->max_value = (block * sizeof(unsigned int) * 8) + (byte * 8) + i;
 }
 
 void subtilis_bitset_clear(subtilis_bitset_t *bs, size_t bit)
@@ -185,6 +185,23 @@ void subtilis_bitset_or(subtilis_bitset_t *bs, subtilis_bitset_t *bs1,
 
 	if (bs->max_value < bs1->max_value)
 		bs->max_value = bs1->max_value;
+}
+
+void subtilis_bitset_not(subtilis_bitset_t *bs)
+{
+	size_t limit;
+	size_t bits_left;
+	size_t i;
+
+	if (bs->max_value < 0)
+		return;
+
+	limit = (bs->max_value / (sizeof(unsigned int) * 8));
+	for (i = 0; i < limit; i++)
+		bs->bits[i] = ~bs->bits[i];
+
+	bits_left = bs->max_value - (limit * sizeof(unsigned int) * 8);
+	bs->bits[i] = ~bs->bits[i] & ((1u << bits_left) - 1);
 }
 
 void subtilis_bitset_dump(subtilis_bitset_t *bs)
