@@ -965,6 +965,16 @@ static void prv_move(subtilis_parser_t *p, subtilis_token_t *t,
 	prv_move_draw(p, t, 4, err);
 }
 
+static void prv_fill(subtilis_parser_t *p, subtilis_token_t *t,
+		     subtilis_error_t *err)
+{
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_simple_plot(p, t, 133, err);
+}
+
 static void prv_circle(subtilis_parser_t *p, subtilis_token_t *t,
 		       subtilis_error_t *err)
 {
@@ -2260,7 +2270,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_EXP */
 	NULL, /* SUBTILIS_KEYWORD_EXT_HASH */
 	NULL, /* SUBTILIS_KEYWORD_FALSE */
-	NULL, /* SUBTILIS_KEYWORD_FILL */
+	prv_fill, /* SUBTILIS_KEYWORD_FILL */
 	NULL, /* SUBTILIS_KEYWORD_FN */
 	NULL, /* SUBTILIS_KEYWORD_FOR */
 	prv_gcol, /* SUBTILIS_KEYWORD_GCOL */
