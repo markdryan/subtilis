@@ -1515,23 +1515,125 @@ static void prv_sub_section_real_links(subtilis_arm_reg_ud_t *ud,
 	}
 }
 
+static void prv_compute_save_sets(subtilis_bitset_t *old_link1_save,
+				  subtilis_bitset_t *old_link2_save,
+				  subtilis_bitset_t *common_save,
+				  subtilis_bitset_t *link1_save,
+				  subtilis_bitset_t *link2_save,
+				  subtilis_error_t *err)
+{
+	subtilis_bitset_or(common_save, old_link1_save, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_bitset_and(common_save, old_link2_save);
+
+	subtilis_bitset_or(link1_save, old_link1_save, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_bitset_or(link2_save, old_link2_save, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_bitset_sub(link1_save, common_save);
+	subtilis_bitset_sub(link2_save, common_save);
+}
+
+static void prv_init_two_links(subtilis_arm_reg_ud_t *ud, subtilis_arm_ss_t *ss,
+			       subtilis_arm_prespilt_offsets_t *offsets,
+			       subtilis_error_t *err)
+{
+	subtilis_arm_ss_link_t *link1;
+	subtilis_arm_ss_link_t *link2;
+	subtilis_arm_op_t *op1;
+	subtilis_arm_op_t *op2;
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_bitset_t common_save;
+	subtilis_bitset_t link1_save;
+	subtilis_bitset_t link2_save;
+
+	subtilis_bitset_init(&common_save);
+	subtilis_bitset_init(&link1_save);
+	subtilis_bitset_init(&link2_save);
+
+	link1 = &ss->links[0];
+	link2 = &ss->links[1];
+	op1 = &ud->arm_s->op_pool->ops[link1->op];
+	op2 = &ud->arm_s->op_pool->ops[link2->op];
+	if ((op1->type != SUBTILIS_OP_INSTR) ||
+	    (op1->op.instr.type != SUBTILIS_ARM_INSTR_B) ||
+	    (op2->type != SUBTILIS_OP_LABEL)) {
+		subtilis_error_set_assertion_failed(err);
+		goto cleanup;
+	}
+	ccode = op1->op.instr.operands.br.ccode;
+
+	prv_compute_save_sets(&link1->int_save, &link2->int_save, &common_save,
+			      &link1_save, &link2_save, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_sub_section_int_links(ud, &common_save, SUBTILIS_ARM_CCODE_AL,
+				  offsets, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_sub_section_int_links(ud, &link1_save, ccode, offsets, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_sub_section_int_links(ud, &link2_save, SUBTILIS_ARM_CCODE_AL,
+				  offsets, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_bitset_reset(&common_save);
+	subtilis_bitset_reset(&link1_save);
+	subtilis_bitset_reset(&link2_save);
+
+	prv_compute_save_sets(&link1->real_save, &link2->real_save,
+			      &common_save, &link1_save, &link2_save, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_sub_section_real_links(ud, &common_save, SUBTILIS_ARM_CCODE_AL,
+				   offsets, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_sub_section_real_links(ud, &link1_save, ccode, offsets, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_sub_section_real_links(ud, &link2_save, SUBTILIS_ARM_CCODE_AL,
+				   offsets, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+cleanup:
+
+	subtilis_bitset_free(&link2_save);
+	subtilis_bitset_free(&link1_save);
+	subtilis_bitset_free(&common_save);
+}
+
 static void prv_init_sub_section_links(subtilis_arm_reg_ud_t *ud,
 				       subtilis_arm_ss_t *ss,
 				       subtilis_arm_prespilt_offsets_t *offsets,
 				       subtilis_error_t *err)
 {
-	size_t i;
 	subtilis_arm_ss_link_t *link;
 	subtilis_arm_op_t *op;
 	subtilis_arm_ccode_type_t ccode;
 
-	for (i = 0; i < ss->num_links; i++) {
-		link = &ss->links[i];
-		op = &ud->arm_s->op_pool->ops[link->op];
-		ccode = (op->type == SUBTILIS_OP_LABEL)
-			    ? SUBTILIS_ARM_CCODE_AL
-			    : op->op.instr.operands.br.ccode;
+	if (ss->num_links == 0)
+		return;
 
+	if (ss->num_links == 1) {
+		link = &ss->links[0];
+		op = &ud->arm_s->op_pool->ops[link->op];
+		ccode = SUBTILIS_ARM_CCODE_AL;
 		prv_sub_section_int_links(ud, &link->int_save, ccode, offsets,
 					  op, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -1541,7 +1643,16 @@ static void prv_init_sub_section_links(subtilis_arm_reg_ud_t *ud,
 					   op, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
+
+		return;
 	}
+
+	if (ss->num_links != 2) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	prv_init_two_links(ud, ss, offsets, err);
 }
 
 static void prv_init_sub_section(subtilis_arm_reg_ud_t *ud,
