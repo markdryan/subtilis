@@ -1,0 +1,11 @@
+LOCAL i%
+MODE 13
+ORIGIN 640,512
+LET i% = 200
+LET col% = 1
+WHILE i% > 0
+      GCOL 0, col%
+      RECTANGLE FILL -i%,-i%,i%*2,i%*2
+      LET i% = i% - 20
+      LET col% = col% + 1
+ENDWHILE

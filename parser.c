@@ -914,7 +914,7 @@ cleanup:
 }
 
 static void prv_simple_plot(subtilis_parser_t *p, subtilis_token_t *t,
-			     int32_t plot_code, subtilis_error_t *err)
+			    int32_t plot_code, subtilis_error_t *err)
 {
 	size_t i;
 	subtilis_exp_t *e[3];
@@ -959,7 +959,6 @@ static void prv_move_draw(subtilis_parser_t *p, subtilis_token_t *t,
 	prv_simple_plot(p, t, plot_code, err);
 }
 
-
 static void prv_move(subtilis_parser_t *p, subtilis_token_t *t,
 		     subtilis_error_t *err)
 {
@@ -988,17 +987,19 @@ static void prv_circle(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	prv_simple_plot(p, t, 4, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	tbuf = subtilis_token_get_text(t);
 	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
-		subtilis_error_set_expected(
-			err, ",", tbuf, p->l->stream->name, p->l->line);
+		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
+					    p->l->line);
 		return;
 	}
 
 	if (strcmp(tbuf, ",")) {
-		subtilis_error_set_expected(
-			err, ",", tbuf, p->l->stream->name, p->l->line);
+		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
+					    p->l->line);
 		return;
 	}
 
@@ -1026,13 +1027,132 @@ static void prv_circle(subtilis_parser_t *p, subtilis_token_t *t,
 					  e[0]->exp.ir_op, e[1]->exp.ir_op,
 					  e[2]->exp.ir_op, err);
 
-
 cleanup:
 
 	for (i = 0; i < 3; i++)
 		subtilis_exp_delete(e[i]);
 }
 
+static void prv_rectangle_outline(subtilis_parser_t *p, subtilis_token_t *t,
+				  subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_exp_t *e[6];
+
+	memset(&e, 0, sizeof(e));
+
+	e[0] = subtilis_exp_new_int32(1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	e[0] = subtilis_exp_to_var(p, e[0], err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e[1] = subtilis_exp_new_int32(0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e[1] = subtilis_exp_to_var(p, e[1], err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	;
+
+	prv_statement_int_args(p, t, &e[2], 2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e[4] = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, e[2]->exp.ir_op.reg,
+				    err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e[4] = subtilis_exp_unary_minus(p, e[4], err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e[5] = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, e[3]->exp.ir_op.reg,
+				    err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e[5] = subtilis_exp_unary_minus(p, e[5], err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_PLOT,
+					  e[0]->exp.ir_op, e[2]->exp.ir_op,
+					  e[1]->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_PLOT,
+					  e[0]->exp.ir_op, e[1]->exp.ir_op,
+					  e[3]->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_PLOT,
+					  e[0]->exp.ir_op, e[4]->exp.ir_op,
+					  e[1]->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_PLOT,
+					  e[0]->exp.ir_op, e[1]->exp.ir_op,
+					  e[5]->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+cleanup:
+
+	for (i = 0; i < 6; i++)
+		subtilis_exp_delete(e[i]);
+}
+
+static void prv_rectangle(subtilis_parser_t *p, subtilis_token_t *t,
+			  subtilis_error_t *err)
+{
+	const char *tbuf;
+	bool fill = false;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
+	    (t->tok.keyword.type == SUBTILIS_KEYWORD_FILL)) {
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		fill = true;
+	}
+
+	prv_simple_plot(p, t, 4, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
+		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
+					    p->l->line);
+		return;
+	}
+
+	if (strcmp(tbuf, ",")) {
+		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
+					    p->l->line);
+		return;
+	}
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (fill)
+		prv_simple_plot(p, t, 97, err);
+	else
+		prv_rectangle_outline(p, t, err);
+}
 
 static void prv_draw(subtilis_parser_t *p, subtilis_token_t *t,
 		     subtilis_error_t *err)
@@ -1041,7 +1161,7 @@ static void prv_draw(subtilis_parser_t *p, subtilis_token_t *t,
 }
 
 static void prv_point(subtilis_parser_t *p, subtilis_token_t *t,
-		     subtilis_error_t *err)
+		      subtilis_error_t *err)
 {
 	int32_t plot_code = 69;
 
@@ -2204,7 +2324,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_QUIT */
 	NULL, /* SUBTILIS_KEYWORD_RAD */
 	NULL, /* SUBTILIS_KEYWORD_READ */
-	NULL, /* SUBTILIS_KEYWORD_RECTANGLE */
+	prv_rectangle, /* SUBTILIS_KEYWORD_RECTANGLE */
 	NULL, /* SUBTILIS_KEYWORD_REM */
 	NULL, /* SUBTILIS_KEYWORD_RENUMBER */
 	prv_repeat, /* SUBTILIS_KEYWORD_REPEAT */
