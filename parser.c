@@ -975,6 +975,37 @@ static void prv_fill(subtilis_parser_t *p, subtilis_token_t *t,
 	prv_simple_plot(p, t, 133, err);
 }
 
+static void prv_line(subtilis_parser_t *p, subtilis_token_t *t,
+		     subtilis_error_t *err)
+{
+	const char *tbuf;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_simple_plot(p, t, 4, err);
+
+	tbuf = subtilis_token_get_text(t);
+	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
+		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
+					    p->l->line);
+		return;
+	}
+
+	if (strcmp(tbuf, ",")) {
+		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
+					    p->l->line);
+		return;
+	}
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_simple_plot(p, t, 5, err);
+}
+
 static void prv_circle(subtilis_parser_t *p, subtilis_token_t *t,
 		       subtilis_error_t *err)
 {
@@ -2293,7 +2324,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_LEN */
 	prv_let, /* SUBTILIS_KEYWORD_LET */
 	NULL, /* SUBTILIS_KEYWORD_LIBRARY */
-	NULL, /* SUBTILIS_KEYWORD_LINE */
+	prv_line, /* SUBTILIS_KEYWORD_LINE */
 	NULL, /* SUBTILIS_KEYWORD_LIST */
 	NULL, /* SUBTILIS_KEYWORD_LISTO */
 	NULL, /* SUBTILIS_KEYWORD_LN */
