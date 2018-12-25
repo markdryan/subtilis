@@ -34,8 +34,10 @@ void subtilis_bitset_set(subtilis_bitset_t *bs, size_t bit,
 bool subtilis_bitset_isset(subtilis_bitset_t *bs, size_t bit);
 void subtilis_bitset_clear(subtilis_bitset_t *bs, size_t bit);
 void subtilis_bitset_and(subtilis_bitset_t *bs, subtilis_bitset_t *bs1);
+void subtilis_bitset_sub(subtilis_bitset_t *bs, subtilis_bitset_t *bs1);
 void subtilis_bitset_or(subtilis_bitset_t *bs, subtilis_bitset_t *bs1,
 			subtilis_error_t *err);
+void subtilis_bitset_not(subtilis_bitset_t *bs);
 void subtilis_bitset_dump(subtilis_bitset_t *bs);
 void subtilis_bitset_claim(subtilis_bitset_t *dst, subtilis_bitset_t *src);
 void subtilis_bitset_free(subtilis_bitset_t *bs);

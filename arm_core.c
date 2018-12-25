@@ -399,6 +399,20 @@ void subtilis_arm_section_add_label(subtilis_arm_section_t *s, size_t label,
 	s->label_counter++;
 }
 
+void subtilis_arm_section_insert_label(subtilis_arm_section_t *s, size_t label,
+				       subtilis_arm_op_t *pos,
+				       subtilis_error_t *err)
+{
+	subtilis_arm_op_t *op;
+
+	op = prv_insert_op(s, pos, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	op->type = SUBTILIS_OP_LABEL;
+	op->op.label = label;
+	s->label_counter++;
+}
+
 static void prv_add_ui32_constant(subtilis_arm_section_t *s, size_t label,
 				  uint32_t num, subtilis_error_t *err)
 {

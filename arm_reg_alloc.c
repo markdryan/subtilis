@@ -47,12 +47,12 @@
  *
  * The register allocator is called once per section.  It begins by
  * identifying the basic blocks, or subsections, within each section.
- * Each subsection is delimited by a branch target.  It then figures
- * out which virtual registers have lifetimes beyond a single basic
- * block and it ensures that their values are correctly transferred
- * between the basic blocks.  It does this by storing their values
- * on the stack before each branch and loading them from the stack at
- * the start of each new basic block.  Care is taken to only store
+ * Each subsection is delimited by branches and branch targets.  It
+ * then figures out which virtual registers have lifetimes beyond a
+ * single basic block and it ensures that their values are correctly
+ * transferred between the basic blocks.  It does this by storing their
+ * values on the stack before each branch and loading them from the stack
+ * at the start of each new basic block.  Care is taken to only store
  * and load the registers that really needed to be persisted and
  * restored during a branch.  These values are stored and reloaded
  * by adding store and load instructions to the code.  Once this
@@ -1447,70 +1447,212 @@ static void prv_alloc_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	ud->instr_count++;
 }
 
+static void prv_sub_section_int_links(subtilis_arm_reg_ud_t *ud,
+				      subtilis_bitset_t *int_save,
+				      subtilis_arm_ccode_type_t ccode,
+				      subtilis_arm_prespilt_offsets_t *offsets,
+				      subtilis_arm_op_t *op,
+				      subtilis_error_t *err)
+{
+	int j;
+	int32_t offset;
+	subtilis_arm_reg_t reg;
+
+	for (j = 0; j <= int_save->max_value; j++) {
+		if (!subtilis_bitset_isset(int_save, j))
+			continue;
+		offset = prv_arm_presplit_int_offset(offsets, j, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		offset += ud->arm_s->locals;
+
+		if (offset > 4095 || offset < -4095) {
+			reg = subtilis_arm_acquire_new_reg(ud->arm_s);
+			subtilis_arm_insert_stran_spill_imm(
+			    ud->arm_s, op, SUBTILIS_ARM_INSTR_STR, ccode, j, 11,
+			    reg, offset, err);
+		} else {
+			subtilis_arm_insert_stran_imm(
+			    ud->arm_s, op, SUBTILIS_ARM_INSTR_STR, ccode, j, 11,
+			    offset, err);
+		}
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+}
+
+static void prv_sub_section_real_links(subtilis_arm_reg_ud_t *ud,
+				       subtilis_bitset_t *real_save,
+				       subtilis_arm_ccode_type_t ccode,
+				       subtilis_arm_prespilt_offsets_t *offsets,
+				       subtilis_arm_op_t *op,
+				       subtilis_error_t *err)
+{
+	int j;
+	int32_t offset;
+	subtilis_arm_reg_t reg;
+
+	for (j = 0; j <= real_save->max_value; j++) {
+		if (!subtilis_bitset_isset(real_save, j))
+			continue;
+		offset = prv_arm_presplit_real_offset(offsets, j, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		offset += ud->arm_s->locals;
+
+		if (offset > 1023 || offset < -1024) {
+			reg = subtilis_arm_acquire_new_reg(ud->arm_s);
+			subtilis_fpa_insert_stran_spill_imm(
+			    ud->arm_s, op, SUBTILIS_FPA_INSTR_STF, ccode, j, 11,
+			    reg, offset, err);
+		} else {
+			subtilis_fpa_insert_stran_imm(
+			    ud->arm_s, op, SUBTILIS_FPA_INSTR_STF, ccode, j, 11,
+			    offset, err);
+		}
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+}
+
+static void prv_compute_save_sets(subtilis_bitset_t *old_link1_save,
+				  subtilis_bitset_t *old_link2_save,
+				  subtilis_bitset_t *common_save,
+				  subtilis_bitset_t *link1_save,
+				  subtilis_bitset_t *link2_save,
+				  subtilis_error_t *err)
+{
+	subtilis_bitset_or(common_save, old_link1_save, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_bitset_and(common_save, old_link2_save);
+
+	subtilis_bitset_or(link1_save, old_link1_save, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_bitset_or(link2_save, old_link2_save, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_bitset_sub(link1_save, common_save);
+	subtilis_bitset_sub(link2_save, common_save);
+}
+
+static void prv_init_two_links(subtilis_arm_reg_ud_t *ud, subtilis_arm_ss_t *ss,
+			       subtilis_arm_prespilt_offsets_t *offsets,
+			       subtilis_error_t *err)
+{
+	subtilis_arm_ss_link_t *link1;
+	subtilis_arm_ss_link_t *link2;
+	subtilis_arm_op_t *op1;
+	subtilis_arm_op_t *op2;
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_bitset_t common_save;
+	subtilis_bitset_t link1_save;
+	subtilis_bitset_t link2_save;
+
+	subtilis_bitset_init(&common_save);
+	subtilis_bitset_init(&link1_save);
+	subtilis_bitset_init(&link2_save);
+
+	link1 = &ss->links[0];
+	link2 = &ss->links[1];
+	op1 = &ud->arm_s->op_pool->ops[link1->op];
+	op2 = &ud->arm_s->op_pool->ops[link2->op];
+	if ((op1->type != SUBTILIS_OP_INSTR) ||
+	    (op1->op.instr.type != SUBTILIS_ARM_INSTR_B) ||
+	    (op2->type != SUBTILIS_OP_LABEL)) {
+		subtilis_error_set_assertion_failed(err);
+		goto cleanup;
+	}
+	ccode = op1->op.instr.operands.br.ccode;
+
+	prv_compute_save_sets(&link1->int_save, &link2->int_save, &common_save,
+			      &link1_save, &link2_save, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_sub_section_int_links(ud, &common_save, SUBTILIS_ARM_CCODE_AL,
+				  offsets, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_sub_section_int_links(ud, &link1_save, ccode, offsets, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_sub_section_int_links(ud, &link2_save, SUBTILIS_ARM_CCODE_AL,
+				  offsets, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_bitset_reset(&common_save);
+	subtilis_bitset_reset(&link1_save);
+	subtilis_bitset_reset(&link2_save);
+
+	prv_compute_save_sets(&link1->real_save, &link2->real_save,
+			      &common_save, &link1_save, &link2_save, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_sub_section_real_links(ud, &common_save, SUBTILIS_ARM_CCODE_AL,
+				   offsets, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_sub_section_real_links(ud, &link1_save, ccode, offsets, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_sub_section_real_links(ud, &link2_save, SUBTILIS_ARM_CCODE_AL,
+				   offsets, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+cleanup:
+
+	subtilis_bitset_free(&link2_save);
+	subtilis_bitset_free(&link1_save);
+	subtilis_bitset_free(&common_save);
+}
+
 static void prv_init_sub_section_links(subtilis_arm_reg_ud_t *ud,
 				       subtilis_arm_ss_t *ss,
 				       subtilis_arm_prespilt_offsets_t *offsets,
 				       subtilis_error_t *err)
 {
-	size_t i;
-	int j;
 	subtilis_arm_ss_link_t *link;
 	subtilis_arm_op_t *op;
-	int32_t offset;
-	subtilis_arm_reg_t reg;
 	subtilis_arm_ccode_type_t ccode;
 
-	for (i = 0; i < ss->num_links; i++) {
-		link = &ss->links[i];
+	if (ss->num_links == 0)
+		return;
+
+	if (ss->num_links == 1) {
+		link = &ss->links[0];
 		op = &ud->arm_s->op_pool->ops[link->op];
-		ccode = (op->type == SUBTILIS_OP_LABEL)
-			    ? SUBTILIS_ARM_CCODE_AL
-			    : op->op.instr.operands.br.ccode;
+		ccode = SUBTILIS_ARM_CCODE_AL;
+		prv_sub_section_int_links(ud, &link->int_save, ccode, offsets,
+					  op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 
-		for (j = 0; j <= link->int_save.max_value; j++) {
-			if (!subtilis_bitset_isset(&link->int_save, j))
-				continue;
-			offset = prv_arm_presplit_int_offset(offsets, j, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			offset += ud->arm_s->locals;
+		prv_sub_section_real_links(ud, &link->real_save, ccode, offsets,
+					   op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 
-			if (offset > 4095 || offset < -4095) {
-				reg = subtilis_arm_acquire_new_reg(ud->arm_s);
-				subtilis_arm_insert_stran_spill_imm(
-				    ud->arm_s, op, SUBTILIS_ARM_INSTR_STR,
-				    ccode, j, 11, reg, offset, err);
-			} else {
-				subtilis_arm_insert_stran_imm(
-				    ud->arm_s, op, SUBTILIS_ARM_INSTR_STR,
-				    ccode, j, 11, offset, err);
-			}
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-		}
-
-		for (j = 0; j <= link->real_save.max_value; j++) {
-			if (!subtilis_bitset_isset(&link->real_save, j))
-				continue;
-			offset = prv_arm_presplit_real_offset(offsets, j, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			offset += ud->arm_s->locals;
-
-			if (offset > 1023 || offset < -1024) {
-				reg = subtilis_arm_acquire_new_reg(ud->arm_s);
-				subtilis_fpa_insert_stran_spill_imm(
-				    ud->arm_s, op, SUBTILIS_FPA_INSTR_STF,
-				    ccode, j, 11, reg, offset, err);
-			} else {
-				subtilis_fpa_insert_stran_imm(
-				    ud->arm_s, op, SUBTILIS_FPA_INSTR_STF,
-				    ccode, j, 11, offset, err);
-			}
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-		}
+		return;
 	}
+
+	if (ss->num_links != 2) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	prv_init_two_links(ud, ss, offsets, err);
 }
 
 static void prv_init_sub_section(subtilis_arm_reg_ud_t *ud,

@@ -126,6 +126,49 @@ fail:
 	;
 }
 
+static int prv_bitset_clear(void)
+{
+	subtilis_bitset_t bs;
+	size_t i;
+	subtilis_error_t err;
+	int retval = 1;
+
+	printf("bitset_clear_test");
+
+	subtilis_bitset_init(&bs);
+	subtilis_error_init(&err);
+
+	for (i = 0; i <= 130; i++) {
+		subtilis_bitset_set(&bs, i, &err);
+		if (err.type != SUBTILIS_ERROR_OK)
+			goto fail;
+	}
+
+	subtilis_bitset_clear(&bs, 130);
+	if (bs.max_value != 129)
+		goto fail;
+
+	subtilis_bitset_clear(&bs, 129);
+	if (bs.max_value != 128)
+		goto fail;
+
+	subtilis_bitset_clear(&bs, 128);
+	if (bs.max_value != 127)
+		goto fail;
+
+	retval = 0;
+fail:
+
+	subtilis_bitset_free(&bs);
+
+	if (retval == 0)
+		printf(": [OK]\n");
+	else
+		printf(": [FAIL]\n");
+
+	return retval;
+}
+
 static int prv_bitset_reuse(void)
 {
 	subtilis_bitset_t bs1;
@@ -395,16 +438,194 @@ fail:
 	return retval;
 }
 
+static int prv_bitset_not(void)
+{
+	subtilis_bitset_t bs;
+	size_t i;
+	subtilis_error_t err;
+	size_t count;
+	int retval = 1;
+	size_t *values = NULL;
+
+	printf("bitset_not_test");
+
+	subtilis_bitset_init(&bs);
+	subtilis_error_init(&err);
+
+	for (i = 0; i <= 130; i++) {
+		subtilis_bitset_set(&bs, i, &err);
+		if (err.type != SUBTILIS_ERROR_OK)
+			goto fail;
+	}
+
+	subtilis_bitset_clear(&bs, 1);
+	subtilis_bitset_clear(&bs, 128);
+	subtilis_bitset_clear(&bs, 129);
+	subtilis_bitset_not(&bs);
+
+	if (bs.max_value != 129)
+		goto fail;
+
+	values = subtilis_bitset_values(&bs, &count, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	if (count != 3 || !values)
+		goto fail;
+
+	if (values[0] != 1 || values[1] != 128 || values[2] != 129)
+		goto fail;
+
+	retval = 0;
+fail:
+
+	free(values);
+	subtilis_bitset_free(&bs);
+
+	if (retval == 0)
+		printf(": [OK]\n");
+	else
+		printf(": [FAIL]\n");
+
+	return retval;
+}
+
+static int prv_bitset_sub(void)
+{
+	subtilis_bitset_t bs;
+	subtilis_bitset_t bs1;
+	subtilis_error_t err;
+	size_t count;
+	size_t *values = NULL;
+	int retval = 1;
+
+	printf("bitset_sub_test");
+
+	subtilis_bitset_init(&bs);
+	subtilis_bitset_init(&bs1);
+	subtilis_error_init(&err);
+
+	subtilis_bitset_set(&bs, 0, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_set(&bs, 67, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_set(&bs, 128, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_set(&bs, 140, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_sub(&bs, &bs1);
+	values = subtilis_bitset_values(&bs, &count, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	if (count != 4)
+		goto fail;
+
+	if (values[0] != 0 || values[1] != 67 || values[2] != 128 ||
+	    values[3] != 140)
+		goto fail;
+
+	free(values);
+	values = NULL;
+
+	subtilis_bitset_set(&bs1, 0, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_sub(&bs, &bs1);
+	values = subtilis_bitset_values(&bs, &count, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	if (count != 3)
+		goto fail;
+
+	if (values[0] != 67 || values[1] != 128 || values[2] != 140)
+		goto fail;
+
+	free(values);
+	values = NULL;
+
+	subtilis_bitset_set(&bs1, 141, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_set(&bs1, 128, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_set(&bs1, 200, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_sub(&bs, &bs1);
+	values = subtilis_bitset_values(&bs, &count, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	if (count != 2)
+		goto fail;
+
+	if (values[0] != 67 || values[1] != 140)
+		goto fail;
+
+	free(values);
+	values = NULL;
+
+	subtilis_bitset_set(&bs1, 140, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_sub(&bs, &bs1);
+	values = subtilis_bitset_values(&bs, &count, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	if (count != 1)
+		goto fail;
+
+	if (values[0] != 67)
+		goto fail;
+
+	if (bs.max_value != 67)
+		goto fail;
+
+	retval = 0;
+fail:
+
+	free(values);
+	subtilis_bitset_free(&bs1);
+	subtilis_bitset_free(&bs);
+
+	if (retval == 0)
+		printf(": [OK]\n");
+	else
+		printf(": [FAIL]\n");
+
+	return retval;
+}
+
 int bitset_test(void)
 {
 	int retval;
 
 	retval = prv_bitset_basic();
+	retval |= prv_bitset_clear();
 	retval |= prv_bitset_reuse();
 	retval |= prv_bitset_empty();
 	retval |= prv_bitset_same_size();
 	retval |= prv_bitset_count();
 	retval |= prv_bitset_values();
+	retval |= prv_bitset_not();
+	retval |= prv_bitset_sub();
 
 	return retval;
 }
