@@ -204,6 +204,16 @@ void subtilis_bitset_not(subtilis_bitset_t *bs)
 	bs->bits[i] = ~bs->bits[i] & ((1u << bits_left) - 1);
 }
 
+void subtilis_bitset_sub(subtilis_bitset_t *bs, subtilis_bitset_t *bs1)
+{
+	int i;
+
+	for (i = 0; i <= bs1->max_value && i <= bs->max_value; i++) {
+		if (subtilis_bitset_isset(bs1, i))
+			subtilis_bitset_clear(bs, i);
+	}
+}
+
 void subtilis_bitset_dump(subtilis_bitset_t *bs)
 {
 	size_t i;
