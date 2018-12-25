@@ -463,6 +463,9 @@ static int prv_bitset_not(void)
 	subtilis_bitset_clear(&bs, 129);
 	subtilis_bitset_not(&bs);
 
+	if (bs.max_value != 129)
+		goto fail;
+
 	values = subtilis_bitset_values(&bs, &count, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;

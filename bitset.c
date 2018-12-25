@@ -202,6 +202,7 @@ void subtilis_bitset_not(subtilis_bitset_t *bs)
 
 	bits_left = bs->max_value - (limit * sizeof(unsigned int) * 8);
 	bs->bits[i] = ~bs->bits[i] & ((1u << bits_left) - 1);
+	prv_set_max(bs, limit);
 }
 
 void subtilis_bitset_sub(subtilis_bitset_t *bs, subtilis_bitset_t *bs1)
