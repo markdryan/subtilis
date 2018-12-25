@@ -564,7 +564,7 @@ static subtilis_exp_t *prv_int_var_expression(subtilis_parser_t *p,
 {
 	subtilis_exp_t *e = NULL;
 
-	e = prv_expression(p, t, err);
+	e = prv_priority7(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -839,6 +839,10 @@ static void prv_mode(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	subtilis_exp_t *e;
 
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	e = prv_int_var_expression(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -874,6 +878,10 @@ static void prv_statement_int_args(subtilis_parser_t *p, subtilis_token_t *t,
 			return;
 		}
 
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
 		e[i] = prv_int_var_expression(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
@@ -887,6 +895,10 @@ static void prv_plot(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_exp_t *e[3];
 
 	memset(&e, 0, sizeof(e));
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	prv_statement_int_args(p, t, e, 3, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -930,22 +942,58 @@ cleanup:
 		subtilis_exp_delete(e[i]);
 }
 
+static void prv_move_draw(subtilis_parser_t *p, subtilis_token_t *t,
+			  int32_t plot_code, subtilis_error_t *err)
+{
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
+	    (t->tok.keyword.type == SUBTILIS_KEYWORD_BY)) {
+		plot_code -= 4;
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	prv_simple_plot(p, t, plot_code, err);
+}
+
+
 static void prv_move(subtilis_parser_t *p, subtilis_token_t *t,
 		     subtilis_error_t *err)
 {
-	prv_simple_plot(p, t, 4, err);
+	prv_move_draw(p, t, 4, err);
 }
 
 static void prv_draw(subtilis_parser_t *p, subtilis_token_t *t,
 		     subtilis_error_t *err)
 {
-	prv_simple_plot(p, t, 5, err);
+	prv_move_draw(p, t, 5, err);
 }
 
 static void prv_point(subtilis_parser_t *p, subtilis_token_t *t,
 		     subtilis_error_t *err)
 {
-	prv_simple_plot(p, t, 69, err);
+	int32_t plot_code = 69;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * TODO: Implement POINT TO, once I figure out how
+	 */
+
+	if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
+	    (t->tok.keyword.type == SUBTILIS_KEYWORD_BY)) {
+		plot_code -= 4;
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	prv_simple_plot(p, t, plot_code, err);
 }
 
 static void prv_gcol(subtilis_parser_t *p, subtilis_token_t *t,
@@ -957,6 +1005,10 @@ static void prv_gcol(subtilis_parser_t *p, subtilis_token_t *t,
 
 	memset(&e, 0, sizeof(e));
 	memset(&op2, 0, sizeof(op2));
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	prv_statement_int_args(p, t, e, 2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -980,6 +1032,10 @@ static void prv_origin(subtilis_parser_t *p, subtilis_token_t *t,
 
 	memset(&e, 0, sizeof(e));
 	memset(&op2, 0, sizeof(op2));
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	prv_statement_int_args(p, t, e, 2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
