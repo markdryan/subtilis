@@ -533,11 +533,33 @@ static int prv_bitset_sub(void)
 	free(values);
 	values = NULL;
 
-	subtilis_bitset_clear(&bs, 128);
+	subtilis_bitset_set(&bs1, 0, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	subtilis_bitset_clear(&bs, 0);
+	subtilis_bitset_sub(&bs, &bs1);
+	values = subtilis_bitset_values(&bs, &count, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	if (count != 3)
+		goto fail;
+
+	if (values[0] != 67 || values[1] != 128 || values[2] != 140)
+		goto fail;
+
+	free(values);
+	values = NULL;
+
+	subtilis_bitset_set(&bs1, 141, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_set(&bs1, 128, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_set(&bs1, 200, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
@@ -552,10 +574,32 @@ static int prv_bitset_sub(void)
 	if (values[0] != 67 || values[1] != 140)
 		goto fail;
 
+	free(values);
+	values = NULL;
+
+	subtilis_bitset_set(&bs1, 140, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	subtilis_bitset_sub(&bs, &bs1);
+	values = subtilis_bitset_values(&bs, &count, &err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto fail;
+
+	if (count != 1)
+		goto fail;
+
+	if (values[0] != 67)
+		goto fail;
+
+	if (bs.max_value != 67)
+		goto fail;
+
 	retval = 0;
 fail:
 
 	free(values);
+	subtilis_bitset_free(&bs1);
 	subtilis_bitset_free(&bs);
 
 	if (retval == 0)

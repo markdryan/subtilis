@@ -206,12 +206,23 @@ void subtilis_bitset_not(subtilis_bitset_t *bs)
 
 void subtilis_bitset_sub(subtilis_bitset_t *bs, subtilis_bitset_t *bs1)
 {
-	int i;
+	size_t i;
+	int min_max_value;
+	size_t limit;
 
-	for (i = 0; i <= bs1->max_value && i <= bs->max_value; i++) {
-		if (subtilis_bitset_isset(bs1, i))
-			subtilis_bitset_clear(bs, i);
-	}
+	min_max_value =
+	    bs->max_value <= bs1->max_value ? bs->max_value : bs1->max_value;
+
+	if (min_max_value < 0)
+		return;
+
+	limit = (min_max_value / (sizeof(unsigned int) * 8));
+
+	for (i = 0; i < limit; i++)
+		bs->bits[i] &= ~bs1->bits[i];
+	bs->bits[i] &= ~bs1->bits[i];
+	if (bs->max_value <= bs1->max_value)
+		prv_set_max(bs, limit);
 }
 
 void subtilis_bitset_dump(subtilis_bitset_t *bs)
