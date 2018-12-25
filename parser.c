@@ -966,6 +966,74 @@ static void prv_move(subtilis_parser_t *p, subtilis_token_t *t,
 	prv_move_draw(p, t, 4, err);
 }
 
+static void prv_circle(subtilis_parser_t *p, subtilis_token_t *t,
+		       subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_exp_t *e[3];
+	size_t i;
+	int32_t plot_code = 145;
+
+	memset(&e, 0, sizeof(e));
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
+	    (t->tok.keyword.type == SUBTILIS_KEYWORD_FILL)) {
+		plot_code = 153;
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	prv_simple_plot(p, t, 4, err);
+
+	tbuf = subtilis_token_get_text(t);
+	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
+		subtilis_error_set_expected(
+			err, ",", tbuf, p->l->stream->name, p->l->line);
+		return;
+	}
+
+	if (strcmp(tbuf, ",")) {
+		subtilis_error_set_expected(
+			err, ",", tbuf, p->l->stream->name, p->l->line);
+		return;
+	}
+
+	e[0] = subtilis_exp_new_int32(plot_code, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	e[0] = subtilis_exp_to_var(p, e[0], err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	e[1] = prv_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e[2] = subtilis_exp_new_int32(0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e[2] = subtilis_exp_to_var(p, e[2], err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_PLOT,
+					  e[0]->exp.ir_op, e[1]->exp.ir_op,
+					  e[2]->exp.ir_op, err);
+
+
+cleanup:
+
+	for (i = 0; i < 3; i++)
+		subtilis_exp_delete(e[i]);
+}
+
+
 static void prv_draw(subtilis_parser_t *p, subtilis_token_t *t,
 		     subtilis_error_t *err)
 {
@@ -2038,7 +2106,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_CASE */
 	NULL, /* SUBTILIS_KEYWORD_CHAIN */
 	NULL, /* SUBTILIS_KEYWORD_CHR_STR */
-	NULL, /* SUBTILIS_KEYWORD_CIRCLE */
+	prv_circle, /* SUBTILIS_KEYWORD_CIRCLE */
 	NULL, /* SUBTILIS_KEYWORD_CLEAR */
 	NULL, /* SUBTILIS_KEYWORD_CLG */
 	NULL, /* SUBTILIS_KEYWORD_CLOSE_HASH */
