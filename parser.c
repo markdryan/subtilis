@@ -901,6 +901,53 @@ cleanup:
 		subtilis_exp_delete(e[i]);
 }
 
+static void prv_simple_plot(subtilis_parser_t *p, subtilis_token_t *t,
+			     int32_t plot_code, subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_exp_t *e[3];
+
+	memset(&e, 0, sizeof(e));
+
+	prv_statement_int_args(p, t, &e[1], 2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e[0] = subtilis_exp_new_int32(plot_code, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	e[0] = subtilis_exp_to_var(p, e[0], err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_PLOT,
+					  e[0]->exp.ir_op, e[1]->exp.ir_op,
+					  e[2]->exp.ir_op, err);
+
+cleanup:
+	for (i = 0; i < 3; i++)
+		subtilis_exp_delete(e[i]);
+}
+
+static void prv_move(subtilis_parser_t *p, subtilis_token_t *t,
+		     subtilis_error_t *err)
+{
+	prv_simple_plot(p, t, 4, err);
+}
+
+static void prv_draw(subtilis_parser_t *p, subtilis_token_t *t,
+		     subtilis_error_t *err)
+{
+	prv_simple_plot(p, t, 5, err);
+}
+
+static void prv_point(subtilis_parser_t *p, subtilis_token_t *t,
+		     subtilis_error_t *err)
+{
+	prv_simple_plot(p, t, 69, err);
+}
+
 static void prv_gcol(subtilis_parser_t *p, subtilis_token_t *t,
 		     subtilis_error_t *err)
 {
@@ -1951,7 +1998,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_DELETE */
 	NULL, /* SUBTILIS_KEYWORD_DIM */
 	NULL, /* SUBTILIS_KEYWORD_DIV */
-	NULL, /* SUBTILIS_KEYWORD_DRAW */
+	prv_draw, /* SUBTILIS_KEYWORD_DRAW */
 	NULL, /* SUBTILIS_KEYWORD_EDIT */
 	NULL, /* SUBTILIS_KEYWORD_ELLIPSE */
 	NULL, /* SUBTILIS_KEYWORD_ELSE */
@@ -2005,7 +2052,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_MOD */
 	prv_mode, /* SUBTILIS_KEYWORD_MODE */
 	NULL, /* SUBTILIS_KEYWORD_MOUSE */
-	NULL, /* SUBTILIS_KEYWORD_MOVE */
+	prv_move, /* SUBTILIS_KEYWORD_MOVE */
 	NULL, /* SUBTILIS_KEYWORD_NEW */
 	NULL, /* SUBTILIS_KEYWORD_NEXT */
 	NULL, /* SUBTILIS_KEYWORD_NOT */
@@ -2024,7 +2071,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_PAGE */
 	NULL, /* SUBTILIS_KEYWORD_PI */
 	prv_plot, /* SUBTILIS_KEYWORD_PLOT */
-	NULL, /* SUBTILIS_KEYWORD_POINT */
+	prv_point, /* SUBTILIS_KEYWORD_POINT */
 	NULL, /* SUBTILIS_KEYWORD_POS */
 	prv_print, /* SUBTILIS_KEYWORD_PRINT */
 	NULL, /* SUBTILIS_KEYWORD_PRINT_HASH */
