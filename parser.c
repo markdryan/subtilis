@@ -234,16 +234,12 @@ on_error:
 	return NULL;
 }
 
-static subtilis_exp_t *prv_real_unary_fn(subtilis_parser_t *p,
-					 subtilis_token_t *t,
-					 subtilis_op_instr_type_t itype,
-					 double (*const_fn)(double),
-					 subtilis_error_t *err)
+static subtilis_exp_t *prv_real_bracketed_exp(subtilis_parser_t *p,
+					      subtilis_token_t *t,
+					      subtilis_error_t *err)
 {
 	const char *tbuf;
-	size_t reg;
 	subtilis_exp_t *e = NULL;
-	subtilis_exp_t *e2 = NULL;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -268,6 +264,28 @@ static subtilis_exp_t *prv_real_unary_fn(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	return e;
+
+cleanup:
+
+	subtilis_exp_delete(e);
+	return NULL;
+}
+
+static subtilis_exp_t *prv_real_unary_fn(subtilis_parser_t *p,
+					 subtilis_token_t *t,
+					 subtilis_op_instr_type_t itype,
+					 double (*const_fn)(double),
+					 subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_exp_t *e = NULL;
+	subtilis_exp_t *e2 = NULL;
+
+	e  = prv_real_bracketed_exp(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
 	if (e->type == SUBTILIS_EXP_CONST_REAL) {
 		e2 = subtilis_exp_new_real(const_fn(e->exp.ir_op.real), err);
 	} else {
@@ -277,6 +295,40 @@ static subtilis_exp_t *prv_real_unary_fn(subtilis_parser_t *p,
 			goto cleanup;
 
 		e2 = subtilis_exp_new_var(SUBTILIS_EXP_REAL, reg, err);
+	}
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_delete(e);
+
+	return e2;
+
+cleanup:
+
+	subtilis_exp_delete(e);
+	return NULL;
+}
+
+static subtilis_exp_t *prv_rad(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	subtilis_exp_t *e = NULL;
+	subtilis_exp_t *e2 = NULL;
+	subtilis_exp_t *e3 = NULL;
+	const double radian = ((22/7.0)/180);
+
+	e  = prv_real_bracketed_exp(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (e->type == SUBTILIS_EXP_CONST_REAL) {
+		e2 = subtilis_exp_new_real(e->exp.ir_op.real * radian, err);
+	} else {
+		e3 = subtilis_exp_new_real(radian, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		e2 = subtilis_exp_mul(p, e, e3, err);
+		e = NULL;
 	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -374,6 +426,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return prv_sin(p, t, err);
 		case SUBTILIS_KEYWORD_COS:
 			return prv_cos(p, t, err);
+		case SUBTILIS_KEYWORD_RAD:
+			return prv_rad(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "TIME, FN, TRUE FALSE or NOT expected",
