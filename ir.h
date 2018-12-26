@@ -979,6 +979,51 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_GETTIME,
+
+	/*
+	 * cls
+	 *
+	 * Clears the text viewport
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_CLS,
+
+	/*
+	 * clg
+	 *
+	 * Clears the graphics viewport
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_CLG,
+
+	/*
+	 * on
+	 *
+	 * Turns on the text cursor
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_ON,
+
+	/*
+	 * off
+	 *
+	 * Turns off the text cursor
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_OFF,
+
+	/*
+	 * wait
+	 *
+	 * Wait for end of current display frame
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_WAIT,
 } subtilis_op_instr_type_t;
 
 typedef enum {

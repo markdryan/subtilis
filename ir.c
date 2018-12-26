@@ -142,6 +142,11 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "gcol", SUBTILIS_OP_CLASS_REG_REG },
 	{ "origin", SUBTILIS_OP_CLASS_REG_REG },
 	{ "gettime", SUBTILIS_OP_CLASS_REG },
+	{ "cls", SUBTILIS_OP_CLASS_NONE },
+	{ "clg", SUBTILIS_OP_CLASS_NONE },
+	{ "on", SUBTILIS_OP_CLASS_NONE },
+	{ "off", SUBTILIS_OP_CLASS_NONE },
+	{ "wait", SUBTILIS_OP_CLASS_NONE },
 };
 
 /*

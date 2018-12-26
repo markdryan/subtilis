@@ -1,0 +1,13 @@
+LOCAL a%
+
+MODE 13
+OFF
+ORIGIN 640,512
+WHILE a% < 16
+      GCOL 0, a%+1
+      WAIT
+      CLG
+      CIRCLE FILL 0,0, (16-a%) *20
+      LET a% = a% + 1
+ENDWHILE
+ON

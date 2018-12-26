@@ -1009,6 +1009,11 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_nop,                             /* SUBTILIS_OP_INSTR_GCOL */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_ORIGIN */
 	prv_gettime,                         /* SUBTILIS_OP_INSTR_GETTIME */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_CLS */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_CLG */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_ON */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_OFF */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_WAIT */
 };
 
 /* clang-format on */

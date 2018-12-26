@@ -593,3 +593,61 @@ void subtilis_riscos_arm_gettime(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
 				   SUBTILIS_ARM_CCODE_AL, dest, 1, 0, err);
 }
+
+void subtilis_riscos_arm_cls(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s = user_data;
+	const size_t vdu = 256;
+
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, vdu + 12, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+}
+
+void subtilis_riscos_arm_clg(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s = user_data;
+	const size_t vdu = 256;
+
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, vdu + 16, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+}
+
+void subtilis_riscos_arm_on(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s = user_data;
+
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x37, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+}
+
+void subtilis_riscos_arm_off(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s = user_data;
+
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x36, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+}
+
+void subtilis_riscos_arm_wait(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s = user_data;
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 19,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	// 0x6 = r1, r2
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 6, 0x6, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+}
