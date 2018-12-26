@@ -606,6 +606,14 @@ const subtilis_test_case_t test_cases[] = {
 	 "PRINT a < 0.001\n"
 	 "ENDPROC\n",
 	 "-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n"},
+	{"pi",
+	 "PROCCheck(2 * PI , RAD(360))\n"
+	 "DEF PROCCheck(a, e)\n"
+	 "LET a = e - a\n"
+	 "IF a < 0.0 THEN LET a = -a ENDIF\n"
+	 "PRINT a < 0.001\n"
+	 "ENDPROC\n",
+	 "-1\n"},
 };
 
 /* clang-format on */
