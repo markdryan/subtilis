@@ -1116,6 +1116,52 @@ static void prv_process_fpa_dyadic(subtilis_arm_vm_t *arm_vm,
 	arm_vm->regs[15] += 4;
 }
 
+static void prv_process_fpa_monadic_dbl(subtilis_arm_vm_t *arm_vm,
+					subtilis_fpa_data_instr_t *op,
+					double (*f64_op)(double),
+					subtilis_error_t *err)
+{
+	size_t dest;
+	double imm;
+	float res32;
+	double res64;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	dest = op->dest;
+
+	if (op->size == 4) {
+		if (op->immediate) {
+			imm = subtilis_fpa_extract_imm(op->op2, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			res32 = (float)f64_op(imm);
+		} else {
+			res32 = (float)f64_op(
+			    (double)arm_vm->fregs[op->op2.reg].val.real32);
+		}
+		prv_set_fpa_f32(arm_vm, dest, res32);
+	} else if (op->size == 8) {
+		if (op->immediate) {
+			imm = subtilis_fpa_extract_imm(op->op2, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			res64 = f64_op(imm);
+		} else {
+			res64 = f64_op(arm_vm->fregs[op->op2.reg].val.real64);
+		}
+		prv_set_fpa_f64(arm_vm, dest, res64);
+	} else {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	arm_vm->regs[15] += 4;
+}
+
 static float prv_process_fpa_add_real32(float a, float b) { return a + b; }
 
 static double prv_process_fpa_add_real64(double a, double b) { return a + b; }
@@ -1310,6 +1356,20 @@ static void prv_process_fpa_cnf(subtilis_arm_vm_t *arm_vm,
 	prv_process_fpa_cmf_gen(arm_vm, op, true, err);
 }
 
+static void prv_process_fpa_sin(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_monadic_dbl(arm_vm, op, sin, err);
+}
+
+static void prv_process_fpa_cos(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_monadic_dbl(arm_vm, op, cos, err);
+}
+
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			 subtilis_error_t *err)
 {
@@ -1438,6 +1498,14 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			break;
 		case SUBTILIS_FPA_INSTR_CNF:
 			prv_process_fpa_cnf(arm_vm, &instr.operands.fpa_cmp,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_SIN:
+			prv_process_fpa_sin(arm_vm, &instr.operands.fpa_data,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_COS:
+			prv_process_fpa_cos(arm_vm, &instr.operands.fpa_data,
 					    err);
 			break;
 		default:

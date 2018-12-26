@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -921,6 +922,18 @@ static void prv_gettime(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = subtilis_get_i32_time();
 }
 
+static void prv_sin(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->fregs[ops[0].reg] = sin(vm->fregs[ops[1].reg]);
+}
+
+static void prv_cos(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->fregs[ops[0].reg] = cos(vm->fregs[ops[1].reg]);
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1009,6 +1022,13 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_nop,                             /* SUBTILIS_OP_INSTR_GCOL */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_ORIGIN */
 	prv_gettime,                         /* SUBTILIS_OP_INSTR_GETTIME */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_CLS */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_CLG */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_ON */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_OFF */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_WAIT */
+	prv_sin,                             /* SUBTILIS_OP_INSTR_SIN */
+	prv_cos,                             /* SUBTILIS_OP_INSTR_COS */
 };
 
 /* clang-format on */

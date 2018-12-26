@@ -69,7 +69,7 @@ CFLAGS ?= -O3
 CFLAGS += -Wall -Werror -MMD
 
 basicc: $(COMPILER:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 inter: $(INTER:%.c=%.o) $(COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
