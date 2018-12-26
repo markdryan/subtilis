@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -236,6 +237,7 @@ on_error:
 static subtilis_exp_t *prv_real_unary_fn(subtilis_parser_t *p,
 					 subtilis_token_t *t,
 					 subtilis_op_instr_type_t itype,
+					 double (*const_fn)(double),
 					 subtilis_error_t *err)
 {
 	const char *tbuf;
@@ -266,16 +268,16 @@ static subtilis_exp_t *prv_real_unary_fn(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_to_var(p, e, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+	if (e->type == SUBTILIS_EXP_CONST_REAL) {
+		e2 = subtilis_exp_new_real(const_fn(e->exp.ir_op.real), err);
+	} else {
+		reg = subtilis_ir_section_add_instr2(p->current, itype,
+						     e->exp.ir_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
 
-	reg = subtilis_ir_section_add_instr2(p->current, itype, e->exp.ir_op,
-					     err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	e2 = subtilis_exp_new_var(SUBTILIS_EXP_REAL, reg, err);
+		e2 = subtilis_exp_new_var(SUBTILIS_EXP_REAL, reg, err);
+	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -292,13 +294,13 @@ cleanup:
 static subtilis_exp_t *prv_sin(subtilis_parser_t *p, subtilis_token_t *t,
 			       subtilis_error_t *err)
 {
-	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_SIN, err);
+	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_SIN, sin, err);
 }
 
 static subtilis_exp_t *prv_cos(subtilis_parser_t *p, subtilis_token_t *t,
 			       subtilis_error_t *err)
 {
-	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_COS, err);
+	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_COS, cos, err);
 }
 
 static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
