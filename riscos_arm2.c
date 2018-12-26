@@ -206,6 +206,8 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"on\n", subtilis_riscos_arm_on},
 	{"off\n", subtilis_riscos_arm_off},
 	{"wait\n", subtilis_riscos_arm_wait},
+	{"sin *, *\n", subtilis_fpa_gen_sin},
+	{"cos *, *\n", subtilis_fpa_gen_cos},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

@@ -122,6 +122,31 @@ static void prv_data_simple(subtilis_ir_section_t *s, size_t start,
 	datai->op2.reg = subtilis_arm_ir_to_freg(ir_op->operands[2].reg);
 }
 
+static void prv_data_monadic_simple(subtilis_ir_section_t *s, size_t start,
+				    void *user_data,
+				    subtilis_arm_instr_type_t itype,
+				    subtilis_arm_ccode_type_t ccode,
+				    subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_fpa_data_instr_t *datai;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *ir_op = &s->ops[start]->op.instr;
+
+	instr = subtilis_arm_section_add_instr(arm_s, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai = &instr->operands.fpa_data;
+	datai->ccode = ccode;
+	datai->size = 8;
+	datai->rounding = SUBTILIS_FPA_ROUNDING_NEAREST;
+	datai->dest = subtilis_arm_ir_to_freg(ir_op->operands[0].reg);
+	datai->op1 = 0;
+	datai->immediate = false;
+	datai->op2.reg = subtilis_arm_ir_to_freg(ir_op->operands[1].reg);
+}
+
 static void prv_data_simple_imm(subtilis_ir_section_t *s, size_t start,
 				void *user_data,
 				subtilis_arm_instr_type_t itype,
@@ -541,4 +566,18 @@ void subtilis_fpa_gen_neqr(subtilis_ir_section_t *s, size_t start,
 {
 	prv_cmp(s, start, user_data, SUBTILIS_ARM_CCODE_NE,
 		SUBTILIS_ARM_CCODE_EQ, err);
+}
+
+void subtilis_fpa_gen_sin(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	prv_data_monadic_simple(s, start, user_data, SUBTILIS_FPA_INSTR_SIN,
+				SUBTILIS_ARM_CCODE_AL, err);
+}
+
+void subtilis_fpa_gen_cos(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	prv_data_monadic_simple(s, start, user_data, SUBTILIS_FPA_INSTR_COS,
+				SUBTILIS_ARM_CCODE_AL, err);
 }

@@ -233,6 +233,74 @@ on_error:
 	return NULL;
 }
 
+static subtilis_exp_t *prv_real_unary_fn(subtilis_parser_t *p,
+					 subtilis_token_t *t,
+					 subtilis_op_instr_type_t itype,
+					 subtilis_error_t *err)
+{
+	const char *tbuf;
+	size_t reg;
+	subtilis_exp_t *e = NULL;
+	subtilis_exp_t *e2 = NULL;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	if (strcmp(tbuf, "(")) {
+		subtilis_error_set_exp_expected(err, "( ", p->l->stream->name,
+						p->l->line);
+		return NULL;
+	}
+
+	e = prv_bracketed_exp(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_to_real(p, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_to_var(p, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	reg = subtilis_ir_section_add_instr2(p->current, itype, e->exp.ir_op,
+					     err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e2 = subtilis_exp_new_var(SUBTILIS_EXP_REAL, reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_delete(e);
+
+	return e2;
+
+cleanup:
+
+	subtilis_exp_delete(e);
+	return NULL;
+}
+
+static subtilis_exp_t *prv_sin(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_SIN, err);
+}
+
+static subtilis_exp_t *prv_cos(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_COS, err);
+}
+
 static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
@@ -300,6 +368,10 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return prv_call(p, t, err);
 		case SUBTILIS_KEYWORD_TIME:
 			return prv_gettime(p, t, err);
+		case SUBTILIS_KEYWORD_SIN:
+			return prv_sin(p, t, err);
+		case SUBTILIS_KEYWORD_COS:
+			return prv_cos(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "TIME, FN, TRUE FALSE or NOT expected",

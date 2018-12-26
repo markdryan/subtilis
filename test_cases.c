@@ -585,6 +585,25 @@ const subtilis_test_case_t test_cases[] = {
 	 "LET a% = TIME\n"
 	 "PRINT TRUE\n",
 	 "-1\n"},
+	{"cos_and_sin",
+	 "LOCAL a\n"
+	 "PROCCheck(SIN(0), 0)\n"
+	 "PROCCheck(COS(0), 1)\n"
+	 "LET a = 0\n"
+	 "PROCCheck(SIN(a), 0)\n"
+	 "PROCCheck(COS(a), 1)\n"
+	 "PROCCheck(SIN(30 * 0.0174533), 0.5)\n"
+	 "PROCCheck(COS(60 * 0.0174533), 0.5)\n"
+	 "LET a = 30 * 0.0174533\n"
+	 "PROCCheck(SIN(a), 0.5)\n"
+	 "LET a = 60 * 0.0174533\n"
+	 "PROCCheck(COS(a), 0.5)\n"
+	 "DEF PROCCheck(a, e)\n"
+	 "LET a = e - a\n"
+	 "IF a < 0.0 THEN LET a = -a ENDIF\n"
+	 "PRINT a < 0.001\n"
+	 "ENDPROC\n",
+	 "-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n"},
 };
 
 /* clang-format on */

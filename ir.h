@@ -1024,6 +1024,24 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_WAIT,
+
+	/*
+	 * sin fp0, fp1
+	 *
+	 * fp0 = sin(fp1) where fp1 is an angle in radians.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_SIN,
+
+	/*
+	 * cos fp0, fp1
+	 *
+	 * fp0 = cos(fp1) where fp1 is an angle in radians.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_COS,
 } subtilis_op_instr_type_t;
 
 typedef enum {

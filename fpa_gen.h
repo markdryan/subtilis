@@ -106,5 +106,9 @@ void subtilis_fpa_gen_eqr(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_fpa_gen_neqr(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err);
+void subtilis_fpa_gen_sin(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
+void subtilis_fpa_gen_cos(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
 
 #endif
