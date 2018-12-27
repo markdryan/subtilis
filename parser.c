@@ -373,6 +373,27 @@ static subtilis_exp_t *prv_cos(subtilis_parser_t *p, subtilis_token_t *t,
 	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_COS, cos, err);
 }
 
+static subtilis_exp_t *prv_get(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_exp_t *e;
+
+	reg = subtilis_ir_section_add_instr1(p->current, SUBTILIS_OP_INSTR_GET,
+					     err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	e = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return e;
+}
+
 static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
@@ -448,6 +469,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return prv_rad(p, t, err);
 		case SUBTILIS_KEYWORD_PI:
 			return prv_pi(p, t, err);
+		case SUBTILIS_KEYWORD_GET:
+			return prv_get(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "TIME, FN, TRUE FALSE or NOT expected",

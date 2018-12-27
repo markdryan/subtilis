@@ -651,3 +651,22 @@ void subtilis_riscos_arm_wait(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 }
+
+void subtilis_riscos_arm_get(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *get = &s->ops[start]->op.instr;
+	size_t ir_dest = get->operands[0].reg;
+	subtilis_arm_reg_t dest = subtilis_arm_ir_to_arm_reg(ir_dest);
+
+	// 0x1 = r0
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x4, 0x1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/* TOOD: Check for error on carry here */
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
+				 err);
+}

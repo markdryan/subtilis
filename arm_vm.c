@@ -810,6 +810,10 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		break;
+	case 0x4:
+		/* OS_ReadC  */
+		arm_vm->regs[0] = getchar();
+		break;
 	case 0x7:
 		/* OS_Word  */
 		if (arm_vm->regs[0] == 1) {

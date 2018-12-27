@@ -1042,6 +1042,16 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_COS,
+
+	/*
+	 * get r0
+	 *
+	 * Wait for a key press from the user and store the ASCII code
+	 * in r0.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_GET,
 } subtilis_op_instr_type_t;
 
 typedef enum {
