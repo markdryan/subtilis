@@ -149,6 +149,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "wait", SUBTILIS_OP_CLASS_NONE },
 	{ "sin", SUBTILIS_OP_CLASS_FREG_FREG },
 	{ "cos", SUBTILIS_OP_CLASS_FREG_FREG },
+	{ "sqr", SUBTILIS_OP_CLASS_FREG_FREG },
 	{ "get", SUBTILIS_OP_CLASS_REG },
 };
 

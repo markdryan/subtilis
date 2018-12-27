@@ -1044,6 +1044,15 @@ typedef enum {
 	SUBTILIS_OP_INSTR_COS,
 
 	/*
+	 * sqr fp0, fp1
+	 *
+	 * fp0 = squarerootof(fp1)
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_SQR,
+
+	/*
 	 * get r0
 	 *
 	 * Wait for a key press from the user and store the ASCII code
