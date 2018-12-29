@@ -151,6 +151,9 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "cos", SUBTILIS_OP_CLASS_FREG_FREG },
 	{ "sqr", SUBTILIS_OP_CLASS_FREG_FREG },
 	{ "get", SUBTILIS_OP_CLASS_REG },
+	{ "gettimeout", SUBTILIS_OP_CLASS_REG_REG },
+	{ "inkey", SUBTILIS_OP_CLASS_REG_REG },
+	{ "osbyteid", SUBTILIS_OP_CLASS_REG },
 };
 
 /*
@@ -314,6 +317,18 @@ void subtilis_ir_section_add_instr_no_reg(subtilis_ir_section_t *s,
 	subtilis_ir_operand_t op2;
 
 	memset(&op1, 0, sizeof(op1));
+	memset(&op2, 0, sizeof(op2));
+	subtilis_ir_section_add_instr_reg(s, type, op0, op1, op2, err);
+}
+
+void subtilis_ir_section_add_instr_no_reg2(subtilis_ir_section_t *s,
+					   subtilis_op_instr_type_t type,
+					   subtilis_ir_operand_t op0,
+					   subtilis_ir_operand_t op1,
+					   subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op2;
+
 	memset(&op2, 0, sizeof(op2));
 	subtilis_ir_section_add_instr_reg(s, type, op0, op1, op2, err);
 }

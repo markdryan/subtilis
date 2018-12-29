@@ -755,6 +755,27 @@ static void prv_process_b(subtilis_arm_vm_t *arm_vm,
 		subtilis_error_set_assertion_failed(err);
 }
 
+static void prv_inkey(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
+{
+	if (arm_vm->regs[2] != 0xff)
+		arm_vm->regs[1] = getchar();
+	else if (arm_vm->regs[1] == 0)
+		arm_vm->regs[1] = 2;
+	else
+		arm_vm->regs[1] = 0;
+}
+
+static void prv_os_byte(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
+{
+	switch (arm_vm->regs[0]) {
+	case 129:
+		prv_inkey(arm_vm, err);
+		break;
+	default:
+		break;
+	}
+}
+
 static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			    subtilis_arm_swi_instr_t *op, subtilis_error_t *err)
 {
@@ -813,6 +834,12 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	case 0x4:
 		/* OS_ReadC  */
 		arm_vm->regs[0] = getchar();
+		break;
+	case 0x6:
+		/* OS_Byte */
+		prv_os_byte(arm_vm, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 		break;
 	case 0x7:
 		/* OS_Word  */

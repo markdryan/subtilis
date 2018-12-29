@@ -1061,6 +1061,42 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_GET,
+
+	/*
+	 * get_timeout r0, r1
+	 *
+	 * Wait for a key press from the user for r1 centi-seconds and store
+	 * the ASCII code of the pressed key in r0. If no key was pressed
+	 * within the time limit r0 will contain -1.
+	 */
+
+	SUBTILIS_OP_INSTR_GET_TO,
+
+	/*
+	 * inkey r0, r1
+	 *
+	 * r0 is set to 255 if the key specified in r1 is currently depressed,
+	 * 0 otherwise.
+	 */
+
+	SUBTILIS_OP_INSTR_INKEY,
+
+	/*
+	 * osbyteid r0
+	 *
+	 * r0 is set to a single byte that identifies the operating system.
+	 * Known values are:
+	 * - &A0 for Arthur 1.20
+	 * - &A1 for RISCOS 2.0
+	 * - &A2 for RISCOS 2.01
+	 * - &A3 for RISCOS 3
+	 * - &A4 for RISCOS 3.10 and 3.11
+	 * - &A7 for RISCOS 3.7.1
+	 * - &01 for Subtilis VM
+	 * - &02 for Subtilis ARM VM
+	 */
+
+	SUBTILIS_OP_INSTR_OS_BYTE_ID,
 } subtilis_op_instr_type_t;
 
 typedef enum {
@@ -1251,6 +1287,11 @@ void subtilis_ir_section_add_instr_no_reg(subtilis_ir_section_t *s,
 					  subtilis_op_instr_type_t type,
 					  subtilis_ir_operand_t op1,
 					  subtilis_error_t *err);
+void subtilis_ir_section_add_instr_no_reg2(subtilis_ir_section_t *s,
+					   subtilis_op_instr_type_t type,
+					   subtilis_ir_operand_t op0,
+					   subtilis_ir_operand_t op1,
+					   subtilis_error_t *err);
 void subtilis_ir_section_add_instr_reg(subtilis_ir_section_t *s,
 				       subtilis_op_instr_type_t type,
 				       subtilis_ir_operand_t op0,

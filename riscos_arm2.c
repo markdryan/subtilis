@@ -210,6 +210,9 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"cos *, *\n", subtilis_fpa_gen_cos},
 	{"sqr *, *\n", subtilis_fpa_gen_sqr},
 	{"get *\n", subtilis_riscos_arm_get},
+	{"gettimeout *, *\n", subtilis_riscos_arm_get_to},
+	{"inkey *, *\n", subtilis_riscos_arm_inkey},
+	{"osbyteid *\n", subtilis_riscos_arm_os_byte_id},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /
