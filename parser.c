@@ -234,9 +234,9 @@ on_error:
 	return NULL;
 }
 
-static subtilis_exp_t *prv_real_bracketed_exp(subtilis_parser_t *p,
-					      subtilis_token_t *t,
-					      subtilis_error_t *err)
+static subtilis_exp_t *prv_parse_bracketed_exp(subtilis_parser_t *p,
+					       subtilis_token_t *t,
+					       subtilis_error_t *err)
 {
 	const char *tbuf;
 	subtilis_exp_t *e = NULL;
@@ -260,16 +260,25 @@ static subtilis_exp_t *prv_real_bracketed_exp(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_to_real(p, e, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
 	return e;
 
 cleanup:
 
 	subtilis_exp_delete(e);
 	return NULL;
+}
+
+static subtilis_exp_t *prv_real_bracketed_exp(subtilis_parser_t *p,
+					      subtilis_token_t *t,
+					      subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+
+	e = prv_parse_bracketed_exp(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_to_real(p, e, err);
 }
 
 static subtilis_exp_t *prv_real_unary_fn(subtilis_parser_t *p,
@@ -307,6 +316,19 @@ cleanup:
 
 	subtilis_exp_delete(e);
 	return NULL;
+}
+
+static subtilis_exp_t *prv_integer_bracketed_exp(subtilis_parser_t *p,
+						 subtilis_token_t *t,
+						 subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+
+	e = prv_parse_bracketed_exp(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_to_int(p, e, err);
 }
 
 static subtilis_exp_t *prv_rad(subtilis_parser_t *p, subtilis_token_t *t,
@@ -371,6 +393,182 @@ static subtilis_exp_t *prv_cos(subtilis_parser_t *p, subtilis_token_t *t,
 			       subtilis_error_t *err)
 {
 	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_COS, cos, err);
+}
+
+static subtilis_exp_t *prv_sqr(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_SQR, sqrt, err);
+}
+
+static subtilis_exp_t *prv_get(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_exp_t *e;
+
+	reg = subtilis_ir_section_add_instr1(p->current, SUBTILIS_OP_INSTR_GET,
+					     err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	e = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return e;
+}
+
+static subtilis_exp_t *prv_inkey_const(subtilis_parser_t *p,
+				       subtilis_token_t *t, subtilis_exp_t *e,
+				       subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_op_instr_type_t itype;
+	subtilis_ir_operand_t op1;
+	int32_t inkey_value = e->exp.ir_op.integer;
+
+	if (inkey_value == -256) {
+		reg = subtilis_ir_section_add_instr1(
+		    p->current, SUBTILIS_OP_INSTR_OS_BYTE_ID, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	} else {
+		if (inkey_value >= 0)
+			itype = SUBTILIS_OP_INSTR_GET_TO;
+		else
+			itype = SUBTILIS_OP_INSTR_INKEY;
+
+		e = subtilis_exp_to_var(p, e, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		op1.reg = e->exp.ir_op.reg;
+		;
+		reg =
+		    subtilis_ir_section_add_instr2(p->current, itype, op1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	subtilis_exp_delete(e);
+
+	return subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(e);
+	return NULL;
+}
+
+static subtilis_exp_t *prv_inkey(subtilis_parser_t *p, subtilis_token_t *t,
+				 subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t cond;
+	subtilis_ir_operand_t true_label;
+	subtilis_ir_operand_t false_label;
+	subtilis_ir_operand_t end_label;
+
+	e = prv_integer_bracketed_exp(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (e->type == SUBTILIS_EXP_CONST_INTEGER)
+		return prv_inkey_const(p, t, e, err);
+
+	/*
+	 * TODO: This needs to go in a builtin.  It's too large to inline.
+	 */
+
+	op0.reg = p->current->reg_counter++;
+
+	op1.reg = e->exp.ir_op.reg;
+	op2.integer = 0;
+	cond.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_GTEI_I32, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	true_label.reg = subtilis_ir_section_new_label(p->current);
+	false_label.reg = subtilis_ir_section_new_label(p->current);
+	end_label.reg = subtilis_ir_section_new_label(p->current);
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  cond, true_label, false_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	subtilis_ir_section_add_label(p->current, true_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_GET_TO, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, false_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op2.integer = -256;
+	cond.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_EQI_I32, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	true_label.reg = subtilis_ir_section_new_label(p->current);
+	false_label.reg = subtilis_ir_section_new_label(p->current);
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  cond, true_label, false_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	subtilis_ir_section_add_label(p->current, true_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_OS_BYTE_ID, op0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, false_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_INKEY, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_label(p->current, end_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_delete(e);
+
+	return subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, op0.reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(e);
+	return NULL;
 }
 
 static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
@@ -444,10 +642,16 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return prv_sin(p, t, err);
 		case SUBTILIS_KEYWORD_COS:
 			return prv_cos(p, t, err);
+		case SUBTILIS_KEYWORD_SQR:
+			return prv_sqr(p, t, err);
 		case SUBTILIS_KEYWORD_RAD:
 			return prv_rad(p, t, err);
 		case SUBTILIS_KEYWORD_PI:
 			return prv_pi(p, t, err);
+		case SUBTILIS_KEYWORD_GET:
+			return prv_get(p, t, err);
+		case SUBTILIS_KEYWORD_INKEY:
+			return prv_inkey(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "TIME, FN, TRUE FALSE or NOT expected",

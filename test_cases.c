@@ -614,6 +614,24 @@ const subtilis_test_case_t test_cases[] = {
 	 "PRINT a < 0.001\n"
 	 "ENDPROC\n",
 	 "-1\n"},
+	{"sqr",
+	 "PROCCheck(SQR(2), 1.414)\n"
+	 "LET A=2\n"
+	 "PROCCheck(SQR(A), 1.414)\n"
+	 "DEF PROCCheck(a, e)\n"
+	 "LET a = e - a\n"
+	 "IF a < 0.0 THEN LET a = -a ENDIF\n"
+	 "PRINT a < 0.001\n"
+	 "ENDPROC\n",
+	 "-1\n-1\n"},
+	{"mixed_args",
+	 "PROCAdd(10, 10.0)\n"
+	 "DEF PROCAdd(A%, A)\n"
+	 "LOCAL R%\n"
+	 "LET R% = A% + A\n"
+	 "PRINT R%\n"
+	 "ENDPROC",
+	 "20\n"},
 };
 
 /* clang-format on */

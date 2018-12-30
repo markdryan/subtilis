@@ -934,6 +934,24 @@ static void prv_cos(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->fregs[ops[0].reg] = cos(vm->fregs[ops[1].reg]);
 }
 
+static void prv_sqr(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->fregs[ops[0].reg] = sqrt(vm->fregs[ops[1].reg]);
+}
+
+static void prv_get(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = getchar();
+}
+
+static void prv_osbyteid(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			 subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = 1;
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1029,6 +1047,11 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_nop,                             /* SUBTILIS_OP_INSTR_WAIT */
 	prv_sin,                             /* SUBTILIS_OP_INSTR_SIN */
 	prv_cos,                             /* SUBTILIS_OP_INSTR_COS */
+	prv_sqr,                             /* SUBTILIS_OP_INSTR_SQR */
+	prv_get,                             /* SUBTILIS_OP_INSTR_GET */
+	prv_get,                             /* SUBTILIS_OP_INSTR_GETTIMEOUT */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_INKEY */
+	prv_osbyteid,                        /* SUBTILIS_OP_INSTR_OS_BYTE_ID */
 };
 
 /* clang-format on */

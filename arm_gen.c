@@ -599,6 +599,7 @@ static void prv_stack_args(subtilis_arm_section_t *arm_s,
 	subtilis_arm_reg_t arg_src;
 	size_t i;
 	size_t reg_num;
+	size_t arg;
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_stran_instr_t *stran;
 	subtilis_fpa_stran_instr_t *fstran;
@@ -658,23 +659,29 @@ static void prv_stack_args(subtilis_arm_section_t *arm_s,
 		real_args_left--;
 	}
 
-	for (i = 0; i < int_args_left; i++) {
-		arg_dest = i;
+	for (i = 0, arg = 0; i < call->arg_count && arg < int_args_left; i++) {
+		if (call->args[i].type != SUBTILIS_IR_REG_TYPE_INTEGER)
+			continue;
+		arg_dest = arg;
 		arg_src = subtilis_arm_ir_to_arm_reg(call->args[i].reg);
 		subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false,
 					 arg_dest, arg_src, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
+		arg++;
 	}
 
-	for (i = 0; i < real_args_left; i++) {
-		arg_dest = i;
+	for (i = 0, arg = 0; i < call->arg_count && arg < real_args_left; i++) {
+		if (call->args[i].type != SUBTILIS_IR_REG_TYPE_REAL)
+			continue;
+		arg_dest = arg;
 		arg_src = subtilis_arm_ir_to_freg(call->args[i].reg);
 		subtilis_fpa_add_mov(arm_s, SUBTILIS_ARM_CCODE_AL,
 				     SUBTILIS_FPA_ROUNDING_NEAREST, arg_dest,
 				     arg_src, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
+		arg++;
 	}
 }
 
