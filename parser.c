@@ -1404,7 +1404,11 @@ static void prv_circle(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	e[1] = prv_expression(p, t, err);
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e[1] = prv_int_var_expression(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
