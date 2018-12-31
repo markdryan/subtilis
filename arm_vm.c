@@ -815,6 +815,14 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		arm_vm->regs[1] += buf_len - 1;
 		arm_vm->regs[2] -= buf_len;
 		break;
+	case 0x0:
+		/* OS_WriteCh  */
+		buf[0] = arm_vm->regs[0] & 0xff;
+		buf[1] = 0;
+		subtilis_buffer_append_string(b, buf, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		break;
 	case 0x2:
 		/* OS_Write0  */
 		addr = prv_get_vm_address(arm_vm, arm_vm->regs[0], 1, err);
@@ -847,6 +855,15 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			ptr = arm_vm->regs[1] - 0x8000;
 			*((int32_t *)&arm_vm->memory[ptr]) =
 			    subtilis_get_i32_time();
+		}
+		break;
+	default:
+		if (op->code >= 256 && op->code < 512) {
+			buf[0] = op->code - 256;
+			buf[1] = 0;
+			subtilis_buffer_append_string(b, buf, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
 		}
 		break;
 	}

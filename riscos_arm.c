@@ -792,3 +792,31 @@ void subtilis_riscos_arm_os_byte_id(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 1,
 				 err);
 }
+
+void subtilis_riscos_arm_vdui(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *vdu = &s->ops[start]->op.instr;
+	size_t ch = vdu->operands[0].integer & 0xff;
+
+	// 0x0 = No register corruption
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 256 + ch, 0x0, err);
+}
+
+void subtilis_riscos_arm_vdu(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *vdu = &s->ops[start]->op.instr;
+	size_t ir_src = vdu->operands[0].reg;
+	subtilis_arm_reg_t src = subtilis_arm_ir_to_arm_reg(ir_src);
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, src,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	// 0x0 = No register corruption
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x0, 0x0, err);
+}

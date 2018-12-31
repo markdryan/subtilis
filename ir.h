@@ -1097,6 +1097,26 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_OS_BYTE_ID,
+
+	/*
+	 *
+	 * vdui i32
+	 *
+	 * Sends the lowest 8 bits of the integer constant to the output
+	 * stream.
+	 */
+
+	SUBTILIS_OP_INSTR_VDUI,
+
+	/*
+	 *
+	 * vdui r0
+	 *
+	 * Sends the lowest 8 bits of the integer stored in r0 to the
+	 * output stream.
+	 */
+
+	SUBTILIS_OP_INSTR_VDU,
 } subtilis_op_instr_type_t;
 
 typedef enum {
