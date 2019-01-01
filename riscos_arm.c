@@ -152,6 +152,7 @@ static void prv_clear_locals(subtilis_arm_section_t *arm_s,
 	br = &instr->operands.br;
 	br->ccode = SUBTILIS_ARM_CCODE_GT;
 	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
 	br->target.label = label;
 }
 

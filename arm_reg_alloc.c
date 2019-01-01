@@ -1106,6 +1106,25 @@ static void prv_alloc_br_instr(void *user_data, subtilis_arm_op_t *op,
 			       subtilis_error_t *err)
 {
 	subtilis_arm_reg_ud_t *ud = user_data;
+	size_t reg = 0;
+	subtilis_arm_reg_class_t *regs = NULL;
+
+	/*
+	 * We need to make sure that F0 or R0 are marked as being
+	 * allocated when we return from a function.  Otherwise we
+	 * can get an assertion when we ensure them later in the code.
+	 */
+
+	if (instr->link_type == SUBTILIS_ARM_BR_LINK_INT)
+		regs = ud->int_regs;
+	else if (instr->link_type == SUBTILIS_ARM_BR_LINK_REAL)
+		regs = ud->fpa_regs;
+
+	if (regs) {
+		prv_allocate(ud, op, ud->int_regs, regs, &reg, SIZE_MAX, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 
 	ud->instr_count++;
 }
@@ -2053,9 +2072,12 @@ void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
 	subtilis_arm_op_t *op;
 	size_t fpa_reg_count;
 	size_t j;
+	subtilis_arm_br_instr_t *br;
 
 	for (i = 0; i < arm_s->call_site_count; i++) {
 		call_site = &arm_s->call_sites[i];
+		op = &arm_s->op_pool->ops[call_site->call_site];
+		br = &op->op.instr.operands.br;
 		end = arm_s->op_pool->ops[call_site->stm_site].prev;
 		if (end != SIZE_MAX) {
 			subtilis_arm_regs_used_before(
@@ -2081,6 +2103,9 @@ void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
 		int_regs_used =
 		    regs_used_before.int_regs & regs_used_after.int_regs;
 
+		if (br->link_type == SUBTILIS_ARM_BR_LINK_INT)
+			int_regs_used &= ~((size_t)1);
+
 		op = &arm_s->op_pool->ops[call_site->stm_site];
 		mtran = &op->op.instr.operands.mtran;
 		mtran->reg_list |= int_regs_used;
@@ -2093,6 +2118,9 @@ void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
 
 		real_regs_used =
 		    regs_used_before.fpa_regs & regs_used_after.fpa_regs;
+
+		if (br->link_type == SUBTILIS_ARM_BR_LINK_REAL)
+			real_regs_used &= ~((size_t)1);
 
 		real_regs_saved = arm_s->call_sites[i].real_args;
 		if (real_regs_saved > SUBTILIS_ARM_REG_MIN_FPA_REGS)

@@ -17,6 +17,7 @@
 #ifndef __SUBTILIS_ARM_GEN_H
 #define __SUBTILIS_ARM_GEN_H
 
+#include "arm_core.h"
 #include "ir.h"
 
 void subtilis_arm_gen_mov(subtilis_ir_section_t *s, size_t start,
@@ -111,6 +112,10 @@ void subtilis_arm_gen_neqi32(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_call_gen(subtilis_ir_section_t *s, size_t start,
+			       void *user_data,
+			       subtilis_arm_br_link_type_t link_type,
+			       subtilis_error_t *err);
 void subtilis_arm_gen_calli32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_ret(subtilis_ir_section_t *s, size_t start,

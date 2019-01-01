@@ -87,7 +87,8 @@ void subtilis_fpa_gen_callr(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_section_t *arm_s = user_data;
 	subtilis_ir_call_t *call = &s->ops[start]->op.call;
 
-	subtilis_arm_gen_call(s, start, user_data, err);
+	subtilis_arm_gen_call_gen(s, start, user_data,
+				  SUBTILIS_ARM_BR_LINK_REAL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -327,6 +328,7 @@ static void prv_cmp_jmp_imm(subtilis_ir_section_t *s, size_t start,
 	br = &instr->operands.br;
 	br->ccode = ccode;
 	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
 	br->target.label = jmp->operands[2].label;
 }
 
@@ -403,6 +405,7 @@ static void prv_cmp_jmp(subtilis_ir_section_t *s, size_t start, void *user_data,
 	br = &instr->operands.br;
 	br->ccode = ccode;
 	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
 	br->target.label = jmp->operands[2].label;
 }
 

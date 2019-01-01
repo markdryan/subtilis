@@ -245,6 +245,7 @@ static void prv_cmp_jmp_imm(subtilis_ir_section_t *s, size_t start,
 	br = &instr->operands.br;
 	br->ccode = ccode;
 	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
 	br->target.label = jmp->operands[2].label;
 }
 
@@ -322,6 +323,7 @@ static void prv_cmp_jmp(subtilis_ir_section_t *s, size_t start, void *user_data,
 	br = &instr->operands.br;
 	br->ccode = ccode;
 	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
 	br->target.label = jmp->operands[2].label;
 }
 
@@ -503,6 +505,7 @@ void subtilis_arm_gen_jump(subtilis_ir_section_t *s, size_t start,
 	br = &instr->operands.br;
 	br->ccode = SUBTILIS_ARM_CCODE_AL;
 	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
 	br->target.label = jmp->operands[0].label;
 }
 
@@ -529,6 +532,7 @@ void subtilis_arm_gen_jmpc(subtilis_ir_section_t *s, size_t start,
 	br = &instr->operands.br;
 	br->ccode = SUBTILIS_ARM_CCODE_EQ;
 	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
 	br->target.label = jmp->operands[2].label;
 }
 
@@ -685,8 +689,10 @@ static void prv_stack_args(subtilis_arm_section_t *arm_s,
 	}
 }
 
-void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
-			   void *user_data, subtilis_error_t *err)
+void subtilis_arm_gen_call_gen(subtilis_ir_section_t *s, size_t start,
+			       void *user_data,
+			       subtilis_arm_br_link_type_t link_type,
+			       subtilis_error_t *err)
 {
 	subtilis_arm_reg_t op0;
 	subtilis_arm_reg_t fpa_reg;
@@ -748,6 +754,7 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 	br = &instr->operands.br;
 	br->ccode = SUBTILIS_ARM_CCODE_AL;
 	br->link = true;
+	br->link_type = link_type;
 	br->target.label = call->proc_id;
 
 	call_site = arm_s->last_op;
@@ -776,6 +783,13 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 					   call_site, err);
 }
 
+void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err)
+{
+	return subtilis_arm_gen_call_gen(s, start, user_data,
+					 SUBTILIS_ARM_BR_LINK_VOID, err);
+}
+
 void subtilis_arm_gen_calli32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err)
 {
@@ -784,7 +798,8 @@ void subtilis_arm_gen_calli32(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_section_t *arm_s = user_data;
 	subtilis_ir_call_t *call = &s->ops[start]->op.call;
 
-	subtilis_arm_gen_call(s, start, user_data, err);
+	subtilis_arm_gen_call_gen(s, start, user_data, SUBTILIS_ARM_BR_LINK_INT,
+				  err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
