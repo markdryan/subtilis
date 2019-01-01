@@ -17,6 +17,7 @@
 #include <stdlib.h>
 
 #include "arm2_div.h"
+#include "arm_peephole.h"
 #include "arm_reg_alloc.h"
 #include "arm_sub_section.h"
 #include "riscos_arm.h"
@@ -275,7 +276,12 @@ static void prv_add_section(subtilis_ir_section_t *s,
 	datai->op2.op.integer = encoded;
 
 	subtilis_arm_save_regs(arm_s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 	subtilis_arm_restore_stack(arm_s, encoded, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_arm_peephole(arm_s, err);
 }
 
 /* clang-format off */
