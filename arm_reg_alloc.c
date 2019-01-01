@@ -879,6 +879,10 @@ static void prv_alloc_mov_instr(void *user_data, subtilis_arm_op_t *op,
 	size_t assigned;
 	subtilis_arm_reg_ud_t *ud = user_data;
 
+	/*
+	 * TODO: Not entirely sure I understand this code.  Looks weird.
+	 */
+
 	if ((type == SUBTILIS_ARM_INSTR_MOV) &&
 	    (instr->op2.type == SUBTILIS_ARM_OP2_REG) &&
 	    ((!subtilis_arm_is_fixed(instr->op2.op.reg)) ||
@@ -1267,6 +1271,10 @@ static void prv_alloc_fpa_data_monadic_instr(void *user_data,
 	subtilis_arm_reg_ud_t *ud = user_data;
 
 	if (!instr->immediate) {
+		/*
+		 * TODO: Not entirely sure I understand this code.  Looks weird.
+		 */
+
 		if (type == SUBTILIS_FPA_INSTR_MVF) {
 			assigned =
 			    prv_virt_to_phys(ud->fpa_regs, &instr->op2.reg);
