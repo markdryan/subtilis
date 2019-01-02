@@ -952,6 +952,26 @@ static void prv_osbyteid(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = 1;
 }
 
+static void prv_vdui(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	char buf[2];
+
+	buf[0] = ops[0].integer;
+	buf[1] = 0;
+	subtilis_buffer_append_string(b, buf, err);
+}
+
+static void prv_vdu(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	char buf[2];
+
+	buf[0] = vm->regs[ops[0].reg];
+	buf[1] = 0;
+	subtilis_buffer_append_string(b, buf, err);
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1052,6 +1072,8 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_get,                             /* SUBTILIS_OP_INSTR_GETTIMEOUT */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_INKEY */
 	prv_osbyteid,                        /* SUBTILIS_OP_INSTR_OS_BYTE_ID */
+	prv_vdui,                            /* SUBTILIS_OP_INSTR_VDUI */
+	prv_vdu,                             /* SUBTILIS_OP_INSTR_VDU */
 };
 
 /* clang-format on */

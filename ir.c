@@ -154,6 +154,8 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "gettimeout", SUBTILIS_OP_CLASS_REG_REG },
 	{ "inkey", SUBTILIS_OP_CLASS_REG_REG },
 	{ "osbyteid", SUBTILIS_OP_CLASS_REG },
+	{ "vdui", SUBTILIS_OP_CLASS_I32 },
+	{ "vdu", SUBTILIS_OP_CLASS_REG },
 };
 
 /*

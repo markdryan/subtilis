@@ -31,7 +31,8 @@ ARM =\
 	fpa.c \
 	fpa_gen.c \
 	bitset.c \
-	arm_sub_section.c
+	arm_sub_section.c \
+	arm_peephole.c
 
 COMPILER =\
 	compiler.c

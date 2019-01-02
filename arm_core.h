@@ -221,9 +221,16 @@ struct subtilis_arm_mtran_instr_t_ {
 
 typedef struct subtilis_arm_mtran_instr_t_ subtilis_arm_mtran_instr_t;
 
+typedef enum {
+	SUBTILIS_ARM_BR_LINK_VOID,
+	SUBTILIS_ARM_BR_LINK_INT,
+	SUBTILIS_ARM_BR_LINK_REAL,
+} subtilis_arm_br_link_type_t;
+
 struct subtilis_arm_br_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	bool link;
+	subtilis_arm_br_link_type_t link_type;
 	union {
 		size_t label;
 		int32_t offset;

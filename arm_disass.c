@@ -56,6 +56,7 @@ static void prv_decode_branch(subtilis_arm_instr_t *instr, uint32_t encoded,
 	br->link = (encoded & (1 << 24));
 	br->ccode = (encoded >> 28);
 	br->target.offset = encoded & 0xffffff;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
 	if (encoded & 0x800000)
 		br->target.offset = encoded | 0xff000000;
 }

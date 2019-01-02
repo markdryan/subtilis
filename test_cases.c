@@ -632,6 +632,30 @@ const subtilis_test_case_t test_cases[] = {
 	 "PRINT R%\n"
 	 "ENDPROC",
 	 "20\n"},
+	{"vdu",
+	 "LOCAL C%\n"
+	 "LOCAL D%\n"
+	 "VDU 115, 117, 98, 116, 105, 108, 105, 115\n"
+	 "VDU [32]\n"
+	 "VDU [&7573;&7462;&6C69;&7369;]\n"
+	 "LET C% = 98\n"
+	 "LET D% = &7573\n"
+	 "VDU 32\n"
+	 "VDU D%; C%, 116, 105, 108, 105, 115\n",
+	 "subtilis subtilis subtilis"},
+	{"void_fn",
+	 "LOCAL C%\n"
+	 "LET C%=FNA\n"
+	 "PRINT C%\n"
+	 "PROCB\n"
+	 "DEF PROCB\n"
+	 "PRINT FNA%\n"
+	 "ENDPROC\n"
+	 "DEF FNA%\n"
+	 "=1\n"
+	 "DEF FNA\n"
+	 "=1.0\n",
+	 "1\n1\n"},
 };
 
 /* clang-format on */

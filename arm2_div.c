@@ -179,6 +179,7 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	br = &instr->operands.br;
 	br->ccode = SUBTILIS_ARM_CCODE_CC;
 	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
 	br->target.label = 3;
 
 	instr =

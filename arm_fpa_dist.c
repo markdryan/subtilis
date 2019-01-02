@@ -74,6 +74,13 @@ static void prv_dist_br_instr(void *user_data, subtilis_arm_op_t *op,
 {
 	subtilis_dist_data_t *ud = user_data;
 
+	if ((instr->link_type == SUBTILIS_ARM_BR_LINK_REAL) &&
+	    (ud->reg_num == 0)) {
+		ud->last_used = -1;
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
 	ud->last_used++;
 }
 
