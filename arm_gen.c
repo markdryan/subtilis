@@ -786,8 +786,8 @@ void subtilis_arm_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err)
 {
-	return subtilis_arm_gen_call_gen(s, start, user_data,
-					 SUBTILIS_ARM_BR_LINK_VOID, err);
+	subtilis_arm_gen_call_gen(s, start, user_data,
+				  SUBTILIS_ARM_BR_LINK_VOID, err);
 }
 
 void subtilis_arm_gen_calli32(subtilis_ir_section_t *s, size_t start,

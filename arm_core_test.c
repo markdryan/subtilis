@@ -38,8 +38,8 @@ static int prv_test_encode_imm(void)
 		{ 19968, 0xc4e, true },
 		{ 0x3FC00, 0xbff, true },
 		{ 0x102, 0, false},
-		{ 0xFF0000FF, 0, false},
-		{ 0xC0000034, 0x1d3, true},
+		{ (int32_t)0xFF0000FF, 0, false},
+		{ (int32_t)0xC0000034, 0x1d3, true},
 	};
 
 	/* clang-format on */
@@ -79,8 +79,8 @@ static int prv_test_encode_nearest(void)
 	    /* clang-format off */
 		{ 173, 173, true },
 		{ 257, 0xf41, true }, /* 260 */
-		{ 0xFE010000, 0x4ff, true},
-		{ 0xfffffff0, 0, false},
+		{ (int32_t)0xFE010000, 0x4ff, true},
+		{ (int32_t)0xfffffff0, 0, false},
 	};
 
 	/* clang-format on */
@@ -334,7 +334,7 @@ static int prv_test_arm_add_data_neg_imm(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	s = prv_add_imm(pool, 0xffffff00, SUBTILIS_ARM_INSTR_ADD,
+	s = prv_add_imm(pool, (int32_t)0xffffff00, SUBTILIS_ARM_INSTR_ADD,
 			SUBTILIS_ARM_INSTR_SUB, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
@@ -371,7 +371,7 @@ static int prv_test_arm_add_data_neg_2_imm(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	s = prv_add_imm(pool, 0xff00fff0, SUBTILIS_ARM_INSTR_ADD,
+	s = prv_add_imm(pool, (int32_t)0xff00fff0, SUBTILIS_ARM_INSTR_ADD,
 			SUBTILIS_ARM_INSTR_SUB, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
@@ -409,7 +409,7 @@ static int prv_test_arm_add_data_ldr_imm(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	s = prv_add_imm(pool, 0xf0f0f0f0, SUBTILIS_ARM_INSTR_ADD,
+	s = prv_add_imm(pool, (int32_t)0xf0f0f0f0, SUBTILIS_ARM_INSTR_ADD,
 			SUBTILIS_ARM_INSTR_SUB, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;

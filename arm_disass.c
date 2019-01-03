@@ -28,7 +28,7 @@ static void prv_decode_mul(subtilis_arm_instr_t *instr, uint32_t encoded,
 		instr->type = SUBTILIS_ARM_INSTR_MUL;
 	}
 
-	mul->ccode = (encoded >> 28);
+	mul->ccode = (subtilis_arm_ccode_type_t)(encoded >> 28);
 	mul->status = ((encoded >> 20) & 1);
 
 	mul->dest = (encoded >> 16) & 0x0f;
@@ -43,7 +43,7 @@ static void prv_decode_swi(subtilis_arm_instr_t *instr, uint32_t encoded,
 	subtilis_arm_swi_instr_t *swi = &instr->operands.swi;
 
 	instr->type = SUBTILIS_ARM_INSTR_SWI;
-	swi->ccode = (encoded >> 28);
+	swi->ccode = (subtilis_arm_ccode_type_t)(encoded >> 28);
 	swi->code = encoded & 0xffffff;
 }
 
@@ -54,7 +54,7 @@ static void prv_decode_branch(subtilis_arm_instr_t *instr, uint32_t encoded,
 
 	instr->type = SUBTILIS_ARM_INSTR_B;
 	br->link = (encoded & (1 << 24));
-	br->ccode = (encoded >> 28);
+	br->ccode = (subtilis_arm_ccode_type_t)(encoded >> 28);
 	br->target.offset = encoded & 0xffffff;
 	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
 	if (encoded & 0x800000)
@@ -77,7 +77,7 @@ static void prv_decode_mtran(subtilis_arm_instr_t *instr, uint32_t encoded,
 	else
 		instr->type = SUBTILIS_ARM_INSTR_STM;
 
-	mtran->ccode = (encoded >> 28);
+	mtran->ccode = (subtilis_arm_ccode_type_t)(encoded >> 28);
 
 	mtran->op0 = (encoded >> 16) & 0x0f;
 	mtran->reg_list = encoded & 0xffff;
@@ -165,7 +165,7 @@ static void prv_decode_stran(subtilis_arm_instr_t *instr, uint32_t encoded,
 	else
 		instr->type = SUBTILIS_ARM_INSTR_STR;
 
-	stran->ccode = (encoded >> 28);
+	stran->ccode = (subtilis_arm_ccode_type_t)(encoded >> 28);
 	stran->pre_indexed = (encoded & (1 << 24)) != 0;
 	stran->write_back = (encoded & (1 << 21)) != 0;
 	stran->subtract = (encoded & (1 << 23)) == 0;
@@ -179,8 +179,8 @@ static void prv_decode_datai(subtilis_arm_instr_t *instr, uint32_t encoded,
 {
 	subtilis_arm_data_instr_t *datai = &instr->operands.data;
 
-	instr->type = (subtilis_arm_instr_type_t)(encoded >> 21) & 0xf;
-	datai->ccode = (encoded >> 28);
+	instr->type = (subtilis_arm_instr_type_t)((encoded >> 21) & 0xf);
+	datai->ccode = (subtilis_arm_ccode_type_t)(encoded >> 28);
 	datai->status = ((encoded >> 20) & 1);
 
 	datai->dest = (encoded >> 12) & 0x0f;
@@ -207,7 +207,7 @@ static void prv_decode_fpa_stran(subtilis_arm_instr_t *instr, uint32_t encoded,
 	}
 	stran->size = 4 << scratch;
 
-	stran->ccode = (encoded >> 28);
+	stran->ccode = (subtilis_arm_ccode_type_t)(encoded >> 28);
 	stran->pre_indexed = (encoded & (1 << 24)) != 0;
 	stran->write_back = (encoded & (1 << 21)) != 0;
 	stran->subtract = (encoded & (1 << 23)) == 0;
@@ -288,7 +288,7 @@ static void prv_decode_fpa_data(subtilis_arm_instr_t *instr, uint32_t encoded,
 	}
 	instr->type = type;
 
-	data->ccode = (encoded >> 28);
+	data->ccode = (subtilis_arm_ccode_type_t)(encoded >> 28);
 
 	scratch = ((encoded >> 18) & 2) | ((encoded >> 7) & 1);
 	if (scratch == 3) {
@@ -335,7 +335,7 @@ static void prv_decode_fpa_cmp(subtilis_arm_instr_t *instr, uint32_t encoded,
 	}
 	instr->type = type;
 
-	cmp->ccode = (encoded >> 28);
+	cmp->ccode = (subtilis_arm_ccode_type_t)(encoded >> 28);
 
 	cmp->dest = (encoded >> 16) & 0x7;
 	cmp->op2 = prv_fpa_encode_op2(encoded, &cmp->immediate);
@@ -361,7 +361,7 @@ static void prv_decode_fpa_tran(subtilis_arm_instr_t *instr, uint32_t encoded,
 	}
 	instr->type = type;
 
-	tran->ccode = (encoded >> 28);
+	tran->ccode = (subtilis_arm_ccode_type_t)(encoded >> 28);
 	scratch = ((encoded >> 5) & 3);
 	tran->rounding = (subtilis_fpa_rounding_t)scratch;
 
