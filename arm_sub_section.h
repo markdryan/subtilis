@@ -60,6 +60,11 @@ void subtilis_arm_subsections_init(subtilis_arm_subsections_t *sss);
 void subtilis_arm_subsections_calculate(subtilis_arm_subsections_t *sss,
 					subtilis_arm_section_t *arm_s,
 					subtilis_error_t *err);
+void subtilis_arm_subsections_must_save(subtilis_arm_subsections_t *sss,
+					subtilis_arm_ss_t *ss, size_t link,
+					subtilis_bitset_t *int_save,
+					subtilis_bitset_t *real_save,
+					subtilis_error_t *err);
 void subtilis_arm_subsections_dump(subtilis_arm_subsections_t *sss,
 				   subtilis_arm_section_t *arm_s);
 void subtilis_arm_subsections_free(subtilis_arm_subsections_t *sss);

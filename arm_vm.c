@@ -241,7 +241,7 @@ static void prv_set_shift_flags(subtilis_arm_vm_t *arm_vm, int32_t shifted,
 			arm_vm->carry_flag =
 			    (shifted & (1 << (shift_val - 1))) != 0;
 		else if (shift_val == 32)
-			arm_vm->carry_flag = (shifted & (1 << 31)) != 0;
+			arm_vm->carry_flag = (shifted & (1u << 31)) != 0;
 		else if (shift_val > 32)
 			arm_vm->carry_flag = false;
 		break;
@@ -250,7 +250,7 @@ static void prv_set_shift_flags(subtilis_arm_vm_t *arm_vm, int32_t shifted,
 			arm_vm->carry_flag =
 			    (shifted & (1 << (shift_val - 1))) != 0;
 		else if (shift_val >= 32)
-			arm_vm->carry_flag = (shifted & (1 << 31)) != 0;
+			arm_vm->carry_flag = (shifted & (1u << 31)) != 0;
 		break;
 	case SUBTILIS_ARM_SHIFT_ROR:
 		if (shift_val > 0 && shift_val <= 31)

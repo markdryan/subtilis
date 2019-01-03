@@ -1864,8 +1864,10 @@ static void prv_vdu(subtilis_parser_t *p, subtilis_token_t *t,
 
 	if (t->type == SUBTILIS_TOKEN_OPERATOR) {
 		tbuf = subtilis_token_get_text(t);
-		if (strcmp(tbuf, "[") == 0)
-			return prv_vdu_brackets(p, t, err);
+		if (strcmp(tbuf, "[") == 0) {
+			prv_vdu_brackets(p, t, err);
+			return;
+		}
 	}
 
 	do {
@@ -2719,7 +2721,8 @@ static void prv_proc(subtilis_parser_t *p, subtilis_token_t *t,
 	(void)prv_call(p, t, err);
 }
 
-void prv_root(subtilis_parser_t *p, subtilis_token_t *t, subtilis_error_t *err)
+static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
+		     subtilis_error_t *err)
 {
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
