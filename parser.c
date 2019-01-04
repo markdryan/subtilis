@@ -1960,6 +1960,12 @@ prv_if_compund(subtilis_parser_t *p, subtilis_token_t *t, subtilis_error_t *err)
 		return key_type;
 	start = p->l->line;
 	while (t->type != SUBTILIS_TOKEN_EOF) {
+		if (t->type == SUBTILIS_TOKEN_IDENTIFIER) {
+			prv_assignment(p, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return key_type;
+			continue;
+		}
 		if (t->type != SUBTILIS_TOKEN_KEYWORD) {
 			tbuf = subtilis_token_get_text(t);
 			subtilis_error_set_keyword_expected(
@@ -1999,7 +2005,10 @@ static void prv_statement(subtilis_parser_t *p, subtilis_token_t *t,
 	const char *tbuf;
 	subtilis_keyword_type_t key_type;
 
-	if (t->type != SUBTILIS_TOKEN_KEYWORD) {
+	if (t->type == SUBTILIS_TOKEN_IDENTIFIER) {
+		prv_assignment(p, t, err);
+		return;
+	} else if (t->type != SUBTILIS_TOKEN_KEYWORD) {
 		tbuf = subtilis_token_get_text(t);
 		subtilis_error_set_keyword_expected(
 		    err, tbuf, p->l->stream->name, p->l->line);

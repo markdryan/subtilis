@@ -275,6 +275,19 @@ const subtilis_test_case_t test_cases[] = {
 	  "  ENDIF\n"
 	  "=res%\n",
 	  "24\n"},
+	{ "fn_fact_no_let",
+	  "LOCAL x%\n"
+	  "x% = FNFac%(4)\n"
+	  "PRINT x%\n"
+	  "DEF FNFac%(a%)\n"
+	  "  LOCAL res%\n"
+	  "  IF a% <= 1 THEN\n"
+	  "    res% = 1\n"
+	  "  ELSE\n"
+	  "    res% = a% * FNFac%(a%-1)\n"
+	  "  ENDIF\n"
+	  "=res%\n",
+	  "24\n"},
 	{ "abs",
 	  "LET x%=-10\n"
 	  "PRINT ABS(x%)\n"
