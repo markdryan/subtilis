@@ -2062,7 +2062,7 @@ static void prv_fn_compound(subtilis_parser_t *p, subtilis_token_t *t,
 	while (t->type != SUBTILIS_TOKEN_EOF) {
 		tbuf = subtilis_token_get_text(t);
 		if ((t->type == SUBTILIS_TOKEN_OPERATOR) &&
-		    !strcmp(tbuf, "=") && (p->level == 1))
+		    !strcmp(tbuf, "<-") && (p->level == 1))
 			break;
 
 		prv_statement(p, t, err);

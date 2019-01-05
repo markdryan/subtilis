@@ -273,7 +273,7 @@ const subtilis_test_case_t test_cases[] = {
 	  "  ELSE\n"
 	  "    LET res% = a% * FNFac%(a%-1)\n"
 	  "  ENDIF\n"
-	  "=res%\n",
+	  "<-res%\n",
 	  "24\n"},
 	{ "fn_fact_no_let",
 	  "LOCAL x%\n"
@@ -286,7 +286,7 @@ const subtilis_test_case_t test_cases[] = {
 	  "  ELSE\n"
 	  "    res% = a% * FNFac%(a%-1)\n"
 	  "  ENDIF\n"
-	  "=res%\n",
+	  "<-res%\n",
 	  "24\n"},
 	{ "abs",
 	  "LET x%=-10\n"
@@ -665,10 +665,18 @@ const subtilis_test_case_t test_cases[] = {
 	 "PRINT FNA%\n"
 	 "ENDPROC\n"
 	 "DEF FNA%\n"
-	 "=1\n"
+	 "<--1\n"
 	 "DEF FNA\n"
-	 "=1.0\n",
-	 "1\n1\n"},
+	 "<-1.0\n",
+	 "1\n-1\n"},
+	{"assign_fn",
+	 "LOCAL C%\n"
+	 "PRINT FNA%\n"
+	 "DEF FNA%\n"
+	 "LOCAL A%\n"
+	 "A%= 10\n"
+	 "<-A%\n",
+	 "10\n"},
 };
 
 /* clang-format on */

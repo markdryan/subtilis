@@ -186,6 +186,9 @@ static void prv_process_complex_operator(subtilis_lexer_t *l,
 	case '=':
 		prv_set_next(l, t);
 		break;
+	case '-':
+		prv_set_next(l, t);
+		break;
 	case '<':
 		if (ch == '<')
 			prv_set_next(l, t);

@@ -9,4 +9,4 @@ DEF FNFac%(a%)
     ELSE
        LET res% = a% * FNFac%(a%-1)
     ENDIF
-=res%
+<-res%
