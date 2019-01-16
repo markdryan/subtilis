@@ -677,6 +677,111 @@ const subtilis_test_case_t test_cases[] = {
 	 "A%= 10\n"
 	 "<-A%\n",
 	 "10\n"},
+	{"for_basic_int",
+	 "LOCAL I%\n"
+	 "FOR I% = 1 TO 4\n"
+	 "PRINT I%\n"
+	 "NEXT\n"
+	 "FOR I% = 1 TO 0\n"
+	 "PRINT I%\n"
+	 "NEXT\n"
+	 "FOR A% = 1 TO 4\n"
+	 "PRINT A%\n"
+	 "NEXT\n"
+	 "FOR A% = 1 TO 0\n"
+	 "PRINT A%\n"
+	 "NEXT\n",
+	 "1\n2\n3\n4\n1\n1\n2\n3\n4\n1\n"},
+	{"for_basic_real",
+	 "LOCAL I\n"
+	 "LOCAL A%\n"
+	 "FOR I = 1 TO 4\n"
+	 "A%=I\n"
+	 "PRINT A%\n"
+	 "NEXT\n"
+	 "FOR I = 1 TO 0\n"
+	 "A%=I\n"
+	 "PRINT A%\n"
+	 "NEXT\n"
+	 "FOR A = 1 TO 4\n"
+	 "A%=A\n"
+	 "PRINT A%\n"
+	 "NEXT\n"
+	 "FOR A = 1 TO 0\n"
+	 "A%=A\n"
+	 "PRINT A%\n"
+	 "NEXT\n",
+	 "1\n2\n3\n4\n1\n1\n2\n3\n4\n1\n"},
+	{"for_step_int_const",
+	 "FOR A% = 1 TO 10 STEP 2\n"
+	 "PRINT A%\n"
+	 "NEXT\n"
+	 "FOR A% = 10 TO 0 STEP -2\n"
+	 "PRINT A%\n"
+	 "NEXT\n",
+	 "1\n3\n5\n7\n9\n10\n8\n6\n4\n2\n0\n"},
+	{"for_step_real_const",
+	 "LOCAL A\n"
+	 "FOR A = 1 TO 10 STEP 2\n"
+	 "A%=A\n"
+	 "PRINT A%\n"
+	 "NEXT\n"
+	 "FOR I = 10 TO 0 STEP -2\n"
+	 "A%=I\n"
+	 "PRINT A%\n"
+	 "NEXT\n",
+	 "1\n3\n5\n7\n9\n10\n8\n6\n4\n2\n0\n"},
+	{"for_step_int_var",
+	 "LOCAL S%\n"
+	 "LOCAL A%\n"
+	 "S% = 2\n"
+	 "FOR A% = 0 TO 10 STEP S%\n"
+	 "PRINT A%\n"
+	 "NEXT\n"
+	 "S% = -2\n"
+	 "FOR A% = -1 TO -10 STEP S%\n"
+	 "PRINT A%\n"
+	 "NEXT\n"
+	 "FOR A% = 0 TO -10 STEP S%\n"
+	 "PRINT A%\n"
+	 "NEXT\n",
+	 "0\n2\n4\n6\n8\n10\n-1\n-3\n-5\n-7\n-9\n0\n-2\n-4\n-6\n-8\n-10\n"},
+	{"for_step_real_var",
+	 "LOCAL S\n"
+	 "LOCAL A\n"
+	 "S = 1.5\n"
+	 "FOR A = 0 TO 10 STEP S\n"
+	 "A% = A\n"
+	 "PRINT A%\n"
+	 "NEXT\n"
+	 "S = 2.0\n"
+	 "FOR A = -1 TO -10 STEP -S\n"
+	 "A% = A\n"
+	 "PRINT A%\n"
+	 "NEXT\n"
+	 "S = -2.0\n"
+	 "FOR A = 0 TO -10 STEP S\n"
+	 "A% = A\n"
+	 "PRINT A%\n"
+	 "NEXT\n",
+	 "0\n1\n3\n4\n6\n7\n9\n-1\n-3\n-5\n-7\n-9\n0\n-2\n-4\n-6\n-8\n-10\n"},
+	{"for_mod_step",
+	 "LOCAL A%\n"
+	 "LOCAL S%\n"
+	 "LOCAL A\n"
+	 "LOCAL S\n"
+	 "S% = 2\n"
+	 "FOR A% = 0 TO 10 STEP S%\n"
+	 "PRINT A%\n"
+	 "S%=S%+1\n"
+	 "NEXT\n"
+	 "S = 2\n"
+	 "FOR A = 0 TO 10 STEP S\n"
+	 "A% = A\n"
+	 "PRINT A%\n"
+	 "S=S+1\n"
+	 "NEXT\n",
+	 "0\n2\n4\n6\n8\n10\n0\n2\n4\n6\n8\n10\n"},
 };
 
 /* clang-format on */

@@ -536,6 +536,44 @@ void subtilis_arm_gen_jmpc(subtilis_ir_section_t *s, size_t start,
 	br->target.label = jmp->operands[2].label;
 }
 
+void subtilis_arm_gen_jmpc_no_label(subtilis_ir_section_t *s, size_t start,
+				    void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_br_instr_t *br;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *jmp = &s->ops[start]->op.instr;
+
+	op1 = subtilis_arm_ir_to_arm_reg(jmp->operands[0].reg);
+
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_AL, op1, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_NE;
+	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
+	br->target.label = jmp->operands[1].label;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_EQ;
+	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
+	br->target.label = jmp->operands[2].label;
+}
+
 void subtilis_arm_gen_eorii32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err)
 {

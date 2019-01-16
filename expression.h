@@ -57,8 +57,11 @@ subtilis_exp_t *subtilis_exp_new_int32(int32_t integer, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_real(double real, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_str(subtilis_buffer_t *str,
 				     subtilis_error_t *err);
+subtilis_exp_t *subtilis_exp_dup(subtilis_exp_t *exp, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
 				    subtilis_error_t *err);
+subtilis_exp_t *subtilis_exp_copy_var(subtilis_parser_t *p, subtilis_exp_t *e,
+				      subtilis_error_t *err);
 
 subtilis_type_t subtilis_exp_type(subtilis_exp_t *e);
 subtilis_exp_type_t subtilis_type_to_exp_type(subtilis_type_t type);

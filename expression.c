@@ -644,6 +644,35 @@ subtilis_exp_t *subtilis_exp_new_str(subtilis_buffer_t *str,
 	return e;
 }
 
+subtilis_exp_t *subtilis_exp_dup(subtilis_exp_t *exp, subtilis_error_t *err)
+{
+	subtilis_exp_t *e = malloc(sizeof(*e));
+
+	if (!e) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+	e->type = exp->type;
+
+	switch (e->type) {
+	case SUBTILIS_EXP_CONST_INTEGER:
+	case SUBTILIS_EXP_CONST_REAL:
+	case SUBTILIS_EXP_INTEGER:
+	case SUBTILIS_EXP_REAL:
+	case SUBTILIS_EXP_STRING:
+		e->exp.ir_op = exp->exp.ir_op;
+		break;
+	case SUBTILIS_EXP_CONST_STRING:
+		subtilis_buffer_init(&e->exp.str, exp->exp.str.granularity);
+		subtilis_buffer_append(&e->exp.str, exp->exp.str.buffer->data,
+				       subtilis_buffer_get_size(&exp->exp.str),
+				       err);
+		break;
+	}
+
+	return e;
+}
+
 subtilis_exp_t *subtilis_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
 				    subtilis_error_t *err)
 {
@@ -678,6 +707,44 @@ subtilis_exp_t *subtilis_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
 	case SUBTILIS_EXP_REAL:
 	case SUBTILIS_EXP_STRING:
 		return e;
+	}
+
+on_error:
+
+	subtilis_exp_delete(e);
+	return NULL;
+}
+
+subtilis_exp_t *subtilis_exp_copy_var(subtilis_parser_t *p, subtilis_exp_t *e,
+				      subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_exp_t *e2;
+
+	switch (e->type) {
+	case SUBTILIS_EXP_INTEGER:
+		reg = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_MOV, e->exp.ir_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+		e2 = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+		subtilis_exp_delete(e);
+		return e2;
+	case SUBTILIS_EXP_REAL:
+		reg = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_MOVFP, e->exp.ir_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+		e2 = subtilis_exp_new_var(SUBTILIS_EXP_REAL, reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+		subtilis_exp_delete(e);
+		return e2;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		break;
 	}
 
 on_error:
@@ -917,7 +984,7 @@ static size_t prv_div_mod_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	size_t res;
 	size_t div_flag;
 	subtilis_ir_operand_t div_mod;
-	const char idiv[] = "_idiv";
+	static const char idiv[] = "_idiv";
 	char *name = NULL;
 
 	if (p->caps & SUBTILIS_BACKEND_HAVE_DIV)

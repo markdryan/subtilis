@@ -793,8 +793,8 @@ void subtilis_arm_add_rsub_imm(subtilis_arm_section_t *s,
 		can_encode = subtilis_arm_encode_imm(-op2, &encoded);
 		if (can_encode) {
 			neg_dest = subtilis_arm_acquire_new_reg(s);
-			subtilis_arm_add_sub_imm(s, ccode, false, neg_dest, op1,
-						 0, err);
+			subtilis_arm_add_rsub_imm(s, ccode, false, neg_dest,
+						  op1, 0, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 			op1 = neg_dest;
