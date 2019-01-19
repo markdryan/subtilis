@@ -480,7 +480,7 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 
 	op1 = r;
 	subtilis_arm_add_data_imm(arm_s, SUBTILIS_ARM_INSTR_RSB,
-				  SUBTILIS_ARM_CCODE_MI, false, op1, op1, 0,
+				  SUBTILIS_ARM_CCODE_CS, false, op1, op1, 0,
 				  err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
