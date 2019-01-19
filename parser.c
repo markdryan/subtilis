@@ -2310,6 +2310,7 @@ static subtilis_exp_t *prv_increment_var(subtilis_parser_t *p,
 		goto cleanup;
 
 	inc = subtilis_exp_add(p, var, inc, err);
+	var = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
