@@ -197,7 +197,7 @@ static int prv_test_print(void)
 static int prv_test_not_keyword(void)
 {
 	printf("parser_not_keyword");
-	return parser_test_wrapper("id", SUBTILIS_BACKEND_HAVE_ALL,
+	return parser_test_wrapper("+", SUBTILIS_BACKEND_HAVE_ALL,
 				   prv_check_not_keyword, NULL);
 }
 

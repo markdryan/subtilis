@@ -397,7 +397,7 @@ static int prv_test_keywords(void)
 	subtilis_error_t err;
 	size_t i;
 	int res = 0;
-	const char sep[] = "\n \r \t";
+	static const char sep[] = "\n \r \t";
 
 	printf("lexer_keywords");
 
