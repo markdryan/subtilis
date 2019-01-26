@@ -531,12 +531,12 @@ static void prv_spill_reg(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *current,
 		return;
 	}
 
-	offset = (int32_t)regs->spill_stack[regs->spill_top++] +
-		 ud->basic_block_spill + arm_s->locals;
+	offset = (int32_t)regs->spill_stack[regs->spill_top++];
 	if (regs->spill_max < regs->spill_top)
 		regs->spill_max = regs->spill_top;
 
 	regs->spilt_regs[assigned] = offset;
+	offset += ud->basic_block_spill + arm_s->locals;
 
 	base = 11;
 	if (offset > regs->max_offset || offset < -regs->max_offset) {
