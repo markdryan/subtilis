@@ -476,10 +476,12 @@ static void prv_load_spilled_reg(subtilis_arm_reg_ud_t *ud,
 {
 	subtilis_arm_reg_t base;
 	int added_instructions;
+	int i;
+	int32_t offset;
 	subtilis_arm_section_t *arm_s = ud->arm_s;
-	int32_t offset = regs->spilt_regs[virt];
+	int32_t basic_offset = regs->spilt_regs[virt];
 
-	if (offset == INT_MAX) {
+	if (basic_offset == INT_MAX) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
@@ -489,7 +491,7 @@ static void prv_load_spilled_reg(subtilis_arm_reg_ud_t *ud,
 		return;
 	}
 
-	offset += ud->basic_block_spill + arm_s->locals;
+	offset = basic_offset + ud->basic_block_spill + arm_s->locals;
 
 	base = 11;
 	if (offset > regs->max_offset || offset < -regs->max_offset) {
@@ -509,8 +511,16 @@ static void prv_load_spilled_reg(subtilis_arm_reg_ud_t *ud,
 
 	regs->phys_to_virt[phys] = virt;
 	regs->spilt_regs[virt] = INT_MAX;
-	regs->spill_top--;
-	regs->spill_stack[regs->spill_top] = offset;
+	i = basic_offset / regs->reg_size;
+	regs->spill_stack[i] = basic_offset;
+	if (i == regs->spill_top - 1) {
+		regs->spill_top--;
+		for (i = i - 1; i >= 0; i--) {
+			if (regs->spill_stack[i] != INT_MAX)
+				break;
+			regs->spill_top--;
+		}
+	}
 	regs->next[phys] = -1;
 }
 
@@ -531,12 +541,19 @@ static void prv_spill_reg(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *current,
 		return;
 	}
 
-	offset = (int32_t)regs->spill_stack[regs->spill_top++] +
-		 ud->basic_block_spill + arm_s->locals;
-	if (regs->spill_max < regs->spill_top)
-		regs->spill_max = regs->spill_top;
+	for (i = 0; i < regs->spill_top; i++)
+		if (regs->spill_stack[i] == INT_MAX)
+			break;
+
+	offset = (int32_t)regs->spill_stack[i];
+	if (i == regs->spill_top) {
+		regs->spill_top++;
+		if (regs->spill_max < regs->spill_top)
+			regs->spill_max = regs->spill_top;
+	}
 
 	regs->spilt_regs[assigned] = offset;
+	offset += ud->basic_block_spill + arm_s->locals;
 
 	base = 11;
 	if (offset > regs->max_offset || offset < -regs->max_offset) {
