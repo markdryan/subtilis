@@ -39,6 +39,11 @@ static subtilis_exp_t *prv_call(subtilis_parser_t *p, subtilis_token_t *t,
 static void prv_assign_hidden(subtilis_parser_t *p, const char *var_name,
 			      subtilis_type_t id_type, subtilis_exp_t *e,
 			      subtilis_error_t *err);
+static subtilis_exp_t *prv_bracketed_2_int_args(subtilis_parser_t *p,
+						subtilis_token_t *t,
+						subtilis_op_instr_type_t itype,
+						subtilis_error_t *err);
+
 #define SUBTILIS_MAIN_FN "subtilis_main"
 
 subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
@@ -672,6 +677,18 @@ cleanup:
 	return NULL;
 }
 
+static subtilis_exp_t *prv_get_point(subtilis_parser_t *p, subtilis_token_t *t,
+				     subtilis_error_t *err)
+{
+	return prv_bracketed_2_int_args(p, t, SUBTILIS_OP_INSTR_POINT, err);
+}
+
+static subtilis_exp_t *prv_get_tint(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_error_t *err)
+{
+	return prv_bracketed_2_int_args(p, t, SUBTILIS_OP_INSTR_TINT, err);
+}
+
 static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
@@ -755,9 +772,13 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return prv_get(p, t, err);
 		case SUBTILIS_KEYWORD_INKEY:
 			return prv_inkey(p, t, err);
+		case SUBTILIS_KEYWORD_POINT:
+			return prv_get_point(p, t, err);
+		case SUBTILIS_KEYWORD_TINT:
+			return prv_get_tint(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
-			    err, "TIME, FN, TRUE FALSE or NOT expected",
+			    err, "Unexpected keyword in expression",
 			    p->l->stream->name, p->l->line);
 			goto cleanup;
 		}
@@ -1395,6 +1416,72 @@ static void prv_statement_int_args(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
+}
+
+static void prv_bracketed_int_args(subtilis_parser_t *p, subtilis_token_t *t,
+				   subtilis_exp_t **e, size_t expected,
+				   subtilis_error_t *err)
+{
+	const char *tbuf;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+	if (strcmp(tbuf, "(")) {
+		subtilis_error_set_exp_expected(err, "( ", p->l->stream->name,
+						p->l->line);
+		return;
+	}
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_statement_int_args(p, t, e, expected, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+	if (strcmp(tbuf, ")")) {
+		subtilis_error_set_exp_expected(err, ") ", p->l->stream->name,
+						p->l->line);
+		return;
+	}
+
+	subtilis_lexer_get(p->l, t, err);
+}
+
+static subtilis_exp_t *prv_bracketed_2_int_args(subtilis_parser_t *p,
+						subtilis_token_t *t,
+						subtilis_op_instr_type_t itype,
+						subtilis_error_t *err)
+{
+	subtilis_exp_t *e[2];
+	size_t reg;
+	size_t i;
+	subtilis_exp_t *retval = NULL;
+
+	memset(&e, 0, sizeof(e));
+
+	prv_bracketed_int_args(p, t, e, 2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	reg = subtilis_ir_section_add_instr(p->current, itype, e[0]->exp.ir_op,
+					    e[1]->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	retval = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+
+cleanup:
+
+	for (i = 0; i < 2; i++)
+		subtilis_exp_delete(e[i]);
+
+	return retval;
 }
 
 static void prv_plot(subtilis_parser_t *p, subtilis_token_t *t,

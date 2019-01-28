@@ -857,8 +857,14 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			    subtilis_get_i32_time();
 		}
 		break;
+	case 0x32:
+		/* OS_ReadPoint  */
+		arm_vm->regs[2] = 0;
+		arm_vm->regs[3] = 0;
+		arm_vm->regs[4] = 0;
+		break;
 	default:
-		if (op->code >= 256 && op->code < 512) {
+		if (op->code >= (256 + 32) && op->code < 512) {
 			buf[0] = op->code - 256;
 			buf[1] = 0;
 			subtilis_buffer_append_string(b, buf, err);

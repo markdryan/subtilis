@@ -1117,6 +1117,24 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_VDU,
+
+	/*
+	 *
+	 * point r0, r1, r2
+	 *
+	 * Stores the pixel colour at location r1, r2 in r0.
+	 */
+
+	SUBTILIS_OP_INSTR_POINT,
+
+	/*
+	 *
+	 * tint r0, r1, r2
+	 *
+	 * Stores the tint at location r1, r2 in r0.
+	 */
+
+	SUBTILIS_OP_INSTR_TINT,
 } subtilis_op_instr_type_t;
 
 typedef enum {

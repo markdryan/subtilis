@@ -972,6 +972,18 @@ static void prv_vdu(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	subtilis_buffer_append_string(b, buf, err);
 }
 
+static void prv_point(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		      subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = 0;
+}
+
+static void prv_tint(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = 0;
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1074,6 +1086,8 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_osbyteid,                        /* SUBTILIS_OP_INSTR_OS_BYTE_ID */
 	prv_vdui,                            /* SUBTILIS_OP_INSTR_VDUI */
 	prv_vdu,                             /* SUBTILIS_OP_INSTR_VDU */
+	prv_point,                           /* SUBTILIS_OP_INSTR_POINT */
+	prv_tint,                            /* SUBTILIS_OP_INSTR_TINT */
 };
 
 /* clang-format on */
