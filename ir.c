@@ -156,6 +156,8 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "osbyteid", SUBTILIS_OP_CLASS_REG },
 	{ "vdui", SUBTILIS_OP_CLASS_I32 },
 	{ "vdu", SUBTILIS_OP_CLASS_REG },
+	{ "point", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "tint", SUBTILIS_OP_CLASS_REG_REG_REG },
 };
 
 /*

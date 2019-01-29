@@ -216,6 +216,8 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"osbyteid *\n", subtilis_riscos_arm_os_byte_id},
 	{"vdui *\n", subtilis_riscos_arm_vdui},
 	{"vdu *\n", subtilis_riscos_arm_vdu},
+	{"point *, *, *\n", subtilis_riscos_arm_point},
+	{"tint *, *, *\n", subtilis_riscos_arm_tint},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

@@ -827,3 +827,47 @@ void subtilis_riscos_arm_vdu(subtilis_ir_section_t *s, size_t start,
 	// 0x0 = No register corruption
 	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x0, 0x0, err);
 }
+
+static void prv_point_tint(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, size_t res_reg,
+			   subtilis_error_t *err)
+{
+	subtilis_arm_reg_t x;
+	subtilis_arm_reg_t y;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *plot = &s->ops[start]->op.instr;
+
+	x = subtilis_arm_ir_to_arm_reg(plot->operands[1].reg);
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, x,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	y = subtilis_arm_ir_to_arm_reg(plot->operands[2].reg);
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 1, y,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	// 0x1C = R2, R3, R4 are corrupted
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x32, 0x1C, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	dest = subtilis_arm_ir_to_arm_reg(plot->operands[0].reg);
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest,
+				 res_reg, err);
+}
+
+void subtilis_riscos_arm_point(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_error_t *err)
+{
+	prv_point_tint(s, start, user_data, 2, err);
+}
+
+void subtilis_riscos_arm_tint(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	prv_point_tint(s, start, user_data, 3, err);
+}

@@ -782,6 +782,11 @@ const subtilis_test_case_t test_cases[] = {
 	 "S=S+1\n"
 	 "NEXT\n",
 	 "0\n2\n4\n6\n8\n10\n0\n2\n4\n6\n8\n10\n"},
+	{"point_tint",
+	 "CLG\n"
+	 "PRINT POINT(0,0)\n"
+	 "PRINT TINT(0,0)\n",
+	 "0\n0\n"},
 };
 
 /* clang-format on */
