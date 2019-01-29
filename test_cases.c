@@ -22,8 +22,10 @@ const subtilis_test_case_t test_cases[] = {
 	  "LET b% = 100 - 5\n"
 	  "LET c% = 10 - b% -10\n"
 	  "LET d% = c% - b% - 1\n"
-	  "PRINT d%\n",
-	  "-191\n"},
+	  "LET e% = d% - 1030\n"
+	  "PRINT d%\n"
+	  "PRINT e%\n",
+	  "-191\n-1221\n"},
 	{ "division",
 	  "LOCAL f%\n"
 	  "LET b% = 100 DIV 5\n"

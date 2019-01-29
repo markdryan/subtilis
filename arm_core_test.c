@@ -286,7 +286,7 @@ static int prv_test_arm_add_data_2_imm(void)
 {
 	subtilis_arm_section_t *s = NULL;
 	subtilis_error_t err;
-	uint32_t nums[] = {0xc01, 1};
+	uint32_t nums[] = {1, 0xc01};
 	subtilis_arm_op_pool_t *pool;
 
 	printf("arm_add_data_2_imm");
@@ -360,7 +360,7 @@ static int prv_test_arm_add_data_neg_2_imm(void)
 {
 	subtilis_arm_section_t *s = NULL;
 	subtilis_error_t err;
-	uint32_t nums[] = {0x8ff, 0x10};
+	uint32_t nums[] = {0x10, 0x8ff};
 	subtilis_arm_op_pool_t *pool;
 
 	printf("arm_add_data_neg_2_imm");
