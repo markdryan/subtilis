@@ -134,6 +134,73 @@
  * needed.
  */
 
+/*
+ * The other thing that needs documenting is the layout of the stack.  It should
+ * look something like this.
+ *
+ * |------------------|     -------------------------------------------
+ * |   int arg 1      |     Callee saved integer registers.  This section
+ * |------------------|     is mandatory and always contains at least one
+ * |   int arg n      |     register, R14
+ * |----------------- |     -------------------------------------------
+ * |   real arg 1     |     Callee saved real registers.  This section
+ * |                  |     optional and only exists if the callee
+ * |----------------- |     uses real virtual registers that need to be
+ * |   real arg n     |     preserved across a procuedure call.
+ * |                  |
+ * |------------------|
+ * |   return value   |
+ * |------------------|     -------------------------------------------
+ * |   int arg n      |     This section is optional and only exists
+ * |------------------|     if there are more than 4 integer arguments.
+ * |   int arg n-1    |     Arguments are pushed in reverse order.
+ * |----------------- |     Each argument consumes 4 bytes.
+ * |   int arg 4      |
+ * |----------------- |     -------------------------------------------
+ * |   real arg n     |     This section is optional and only exists
+ * |                  |     if there are more than 4 real arguments.
+ * |------------------|     Arguments are pushed in reverse order.
+ * |   real arg n-1   |     Each argument consumes 8 bytes.
+ * |                  |
+ * |----------------- |
+ * |   real arg 4     |
+ * |                  |
+ * |----------------- |     -------------------------------------------
+ * |  spilt int reg 1 |     This section is optional and exists if the
+ * |----------------- |     register allocator needed to spill any
+ * |  spilt int reg n |     virtual integer registers. 4 bytes per reg.
+ * |----------------- |     -------------------------------------------
+ * | spilt real reg 1 |     This section is optional and exists if the
+ * |                  |     register allocator needed to spill any
+ * |----------------- |     virtual real registers.  Each spilt
+ * | spilt real reg n |     register consumes 8 bytes.
+ * |                  |
+ * |----------------- |     -------------------------------------------
+ * | prespilt real    |     This section is optional and exists if the
+ * | reg1             |     register allocator needed to spill any
+ * |----------------- |     virtual real registers at the end of a
+ * | prespilt real    |     basic block.  Each spilt register consumes
+ * | reg n            |     8 bytes.
+ * |----------------- |     -------------------------------------------
+ * | prespilt int reg1|     This section is optional and exists if the
+ * |----------------- |     register allocator needed to spill any
+ * | prespilt int reg2|     virtual int registers at the end of a
+ * |----------------- |     basic block.  Each spilt register consumes
+ * | prespilt int regn|     4 bytes
+ * |----------------- |     -------------------------------------------
+ * |                  |     Area reserved for storing local data, i.e.,
+ * |                  |     local variables that are too large to fit
+ * |  Local data      |     into a virtual register e.g., a string or
+ * |                  |     an array.  Not currently used.
+ * |                  |
+ * |----------------- |     -------------------------------------------  <- R11
+ *
+ * On entry to a function or procedure R11 and R13 point to the bottom
+ * of the stack frame.  R13 may change during the lifetime of the function
+ * call if stack space is needed for temporary storage, e.g., for calling
+ * SWIs.
+ */
+
 /* clang-format off */
 typedef void (*subtilis_arm_reg_spill_imm_t)(subtilis_arm_section_t *s,
 					     subtilis_arm_op_t *current,
