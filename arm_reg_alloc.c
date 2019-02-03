@@ -350,6 +350,11 @@ static subtilis_arm_reg_class_t *prv_new_regs(
 		regs->spilt_regs[i + reg_start] = index * reg_size;
 	}
 
+	if (i > reg_args) {
+		regs->spill_top = i - reg_args;
+		regs->spill_max = regs->spill_top;
+	}
+
 	return regs;
 
 on_error:
@@ -516,7 +521,7 @@ static void prv_load_spilled_reg(subtilis_arm_reg_ud_t *ud,
 	if (i == regs->spill_top - 1) {
 		regs->spill_top--;
 		for (i = i - 1; i >= 0; i--) {
-			if (regs->spill_stack[i] != INT_MAX)
+			if (regs->spill_stack[i] == INT_MAX)
 				break;
 			regs->spill_top--;
 		}
@@ -542,10 +547,11 @@ static void prv_spill_reg(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *current,
 	}
 
 	for (i = 0; i < regs->spill_top; i++)
-		if (regs->spill_stack[i] == INT_MAX)
+		if (regs->spill_stack[i] != INT_MAX)
 			break;
 
 	offset = (int32_t)regs->spill_stack[i];
+	regs->spill_stack[i] = INT_MAX;
 	if (i == regs->spill_top) {
 		regs->spill_top++;
 		if (regs->spill_max < regs->spill_top)
