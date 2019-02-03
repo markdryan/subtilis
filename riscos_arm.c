@@ -248,6 +248,8 @@ static void prv_add_section(subtilis_ir_section_t *s,
 
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
 				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	if (arm_s->locals > 0) {
 		prv_clear_locals(arm_s, err);
