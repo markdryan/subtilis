@@ -1564,6 +1564,7 @@ static void prv_alloc_fpa_tran_instr(void *user_data, subtilis_arm_op_t *op,
 			if (dist_op2 == -1)
 				ud->fpa_regs->phys_to_virt[instr->op2.reg] =
 				    INT_MAX;
+			ud->fpa_regs->next[instr->op2.reg] = dist_op2;
 		}
 
 		prv_allocate_dest(ud, op, &instr->dest, err);
