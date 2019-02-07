@@ -139,14 +139,14 @@
  * look something like this.
  *
  * |------------------|     -------------------------------------------
- * |   int arg 1      |     Callee saved integer registers.  This section
+ * |   int save 1     |     Callee saved integer registers.  This section
  * |------------------|     is mandatory and always contains at least one
- * |   int arg n      |     register, R14
+ * |   int save n     |     register, R14
  * |----------------- |     -------------------------------------------
- * |   real arg 1     |     Callee saved real registers.  This section
+ * |   real save 1    |     Callee saved real registers.  This section
  * |                  |     optional and only exists if the callee
  * |----------------- |     uses real virtual registers that need to be
- * |   real arg n     |     preserved across a procuedure call.
+ * |   real save n    |     preserved across a procuedure call.
  * |                  |
  * |------------------|
  * |   return value   |
@@ -224,6 +224,20 @@ typedef void (*subtilis_arm_reg_stran_imm_t)(subtilis_arm_section_t *s,
 
 typedef bool (*subtilis_arm_reg_is_fixed_t)(subtilis_arm_reg_t reg);
 
+typedef enum {
+	SUBTILIS_SPILL_POINT_LOAD,
+	SUBTILIS_SPILL_POINT_STORE,
+} subtilis_spill_point_type_t;
+
+struct subtilis_spill_point_t_ {
+	subtilis_spill_point_type_t type;
+	size_t pos;
+	int32_t offset;
+	subtilis_arm_reg_t phys;
+};
+
+typedef struct subtilis_spill_point_t_ subtilis_spill_point_t;
+
 struct subtilis_arm_reg_class_t_ {
 	size_t max_regs;
 	size_t *phys_to_virt;
@@ -235,11 +249,15 @@ struct subtilis_arm_reg_class_t_ {
 	size_t spill_max;
 	size_t reg_size;
 	int32_t max_offset;
+	size_t spilt_args;
 	subtilis_arm_reg_spill_imm_t spill_imm;
 	subtilis_arm_reg_stran_imm_t stran_imm;
 	subtilis_arm_instr_type_t store_type;
 	subtilis_arm_instr_type_t load_type;
 	subtilis_arm_reg_is_fixed_t is_fixed;
+	subtilis_spill_point_t *spill_points;
+	size_t spill_points_count;
+	size_t spill_points_max;
 };
 
 typedef struct subtilis_arm_reg_class_t_ subtilis_arm_reg_class_t;
@@ -418,9 +436,18 @@ static subtilis_arm_reg_class_t *prv_new_regs(
 	}
 
 	if (i > reg_args) {
-		regs->spill_top = i - reg_args;
+		regs->spilt_args = i - reg_args;
+		regs->spill_top = regs->spilt_args;
 		regs->spill_max = regs->spill_top;
+		for (i = 0; i < regs->spilt_args; i++)
+			regs->spill_stack[i] = INT_MAX;
+	} else {
+		regs->spilt_args = 0;
 	}
+
+	regs->spill_points = NULL;
+	regs->spill_points_count = 0;
+	regs->spill_points_max = 0;
 
 	return regs;
 
@@ -437,12 +464,38 @@ on_error:
 static void prv_free_regs(subtilis_arm_reg_class_t *regs)
 {
 	if (regs) {
+		free(regs->spill_points);
 		free(regs->spill_stack);
 		free(regs->spilt_regs);
 		free(regs->next);
 		free(regs->phys_to_virt);
 		free(regs);
 	}
+}
+
+static void prv_add_spill_point(subtilis_arm_reg_class_t *regs,
+				subtilis_spill_point_type_t type, size_t pos,
+				int32_t offset, subtilis_arm_reg_t phys,
+				subtilis_error_t *err)
+{
+	subtilis_spill_point_t *sp;
+	size_t new_max;
+
+	if (regs->spill_points_count == regs->spill_points_max) {
+		new_max = regs->spill_points_count + SUBTILIS_CONFIG_SSS_GRAN;
+		sp = realloc(regs->spill_points, new_max * sizeof(*sp));
+		if (!sp) {
+			subtilis_error_set_oom(err);
+			return;
+		}
+		regs->spill_points = sp;
+		regs->spill_points_max = new_max;
+	}
+	sp = &regs->spill_points[regs->spill_points_count++];
+	sp->type = type;
+	sp->pos = pos;
+	sp->offset = offset;
+	sp->phys = phys;
 }
 
 static void prv_init_arm_reg_ud(subtilis_arm_reg_ud_t *ud,
@@ -527,17 +580,100 @@ static size_t prv_virt_to_phys(subtilis_arm_reg_class_t *regs,
 	return retval;
 }
 
-static void prv_update_next(subtilis_arm_reg_ud_t *ud, int count)
+static void prv_insert_spill_code_load(subtilis_arm_section_t *arm_s,
+				       subtilis_arm_reg_t reg,
+				       subtilis_arm_op_t *current,
+				       subtilis_arm_reg_class_t *regs,
+				       int32_t offset, subtilis_error_t *err)
+{
+	if (offset > regs->max_offset || offset < -regs->max_offset)
+		regs->spill_imm(arm_s, current, regs->load_type,
+				SUBTILIS_ARM_CCODE_AL, reg, 11, reg, offset,
+				err);
+	else
+		regs->stran_imm(arm_s, current, regs->load_type,
+				SUBTILIS_ARM_CCODE_AL, reg, 11, offset, err);
+}
+
+static void prv_insert_spill_code_store(subtilis_arm_section_t *arm_s,
+					subtilis_arm_reg_t reg,
+					subtilis_arm_op_t *current,
+					subtilis_arm_reg_class_t *int_regs,
+					subtilis_arm_reg_class_t *regs,
+					int32_t offset, subtilis_error_t *err)
 {
 	size_t i;
+	subtilis_arm_reg_t spill_reg;
 
-	for (i = 0; i < ud->int_regs->max_regs; i++)
-		if (ud->int_regs->next[i] != -1)
-			ud->int_regs->next[i] += count;
+	if (offset > regs->max_offset || offset < -regs->max_offset) {
+		/*
+		 * We need to find an integer register to act as our base
+		 * when spilling the contents of reg_num.  So if we're
+		 * currently spilling the contents of a floating point
+		 * register we still need to use the int_regs structure
+		 * to use as our base.
+		 */
 
-	for (i = 0; i < ud->fpa_regs->max_regs; i++)
-		if (ud->fpa_regs->next[i] != -1)
-			ud->fpa_regs->next[i] += count;
+		for (i = 0; i < int_regs->max_regs; i++)
+			if ((int_regs->phys_to_virt[i] == INT_MAX) &&
+			    (int_regs != regs || i != reg))
+				break;
+
+		if (i == int_regs->max_regs) {
+			subtilis_arm_insert_push(arm_s, current,
+						 SUBTILIS_ARM_CCODE_AL, 0, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			spill_reg = 0;
+		} else {
+			spill_reg = i;
+		}
+		regs->spill_imm(arm_s, current, regs->store_type,
+				SUBTILIS_ARM_CCODE_AL, reg, 11, spill_reg,
+				offset, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (i == int_regs->max_regs) {
+			subtilis_arm_insert_pop(arm_s, current,
+						SUBTILIS_ARM_CCODE_AL, 0, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		}
+	} else {
+		regs->stran_imm(arm_s, current, regs->store_type,
+				SUBTILIS_ARM_CCODE_AL, reg, 11, offset, err);
+	}
+}
+
+static void prv_insert_spill_code(subtilis_arm_reg_ud_t *ud,
+				  subtilis_arm_reg_class_t *regs,
+				  int32_t offset, int32_t arg_offset,
+				  subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_spill_point_t *sp;
+	subtilis_arm_op_t *current;
+	int32_t basic_offset;
+	subtilis_arm_section_t *arm_s = ud->arm_s;
+
+	for (i = 0; i < regs->spill_points_count; i++) {
+		sp = &regs->spill_points[i];
+		current = &arm_s->op_pool->ops[sp->pos];
+		if (sp->offset < regs->spilt_args * regs->reg_size)
+			basic_offset = arg_offset;
+		else
+			basic_offset = offset;
+		basic_offset += sp->offset;
+		if (sp->type == SUBTILIS_SPILL_POINT_LOAD) {
+			prv_insert_spill_code_load(arm_s, sp->phys, current,
+						   regs, basic_offset, err);
+		} else {
+			prv_insert_spill_code_store(arm_s, sp->phys, current,
+						    ud->int_regs, regs,
+						    basic_offset, err);
+		}
+	}
 }
 
 static void prv_load_spilled_reg(subtilis_arm_reg_ud_t *ud,
@@ -546,10 +682,8 @@ static void prv_load_spilled_reg(subtilis_arm_reg_ud_t *ud,
 				 subtilis_arm_reg_t virt,
 				 subtilis_arm_reg_t phys, subtilis_error_t *err)
 {
-	subtilis_arm_reg_t base;
-	int added_instructions;
 	int i;
-	int32_t offset;
+	size_t pos;
 	subtilis_arm_section_t *arm_s = ud->arm_s;
 	int32_t basic_offset = regs->spilt_regs[virt];
 
@@ -563,23 +697,13 @@ static void prv_load_spilled_reg(subtilis_arm_reg_ud_t *ud,
 		return;
 	}
 
-	offset = basic_offset + ud->basic_block_spill + arm_s->locals;
+	if (current->prev == SIZE_MAX)
+		pos = arm_s->first_op;
+	else
+		pos = arm_s->op_pool->ops[current->prev].next;
 
-	base = 11;
-	if (offset > regs->max_offset || offset < -regs->max_offset) {
-		regs->spill_imm(arm_s, current, regs->load_type,
-				SUBTILIS_ARM_CCODE_AL, phys, base, phys, offset,
-				err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-		added_instructions = 2;
-	} else {
-		regs->stran_imm(arm_s, current, regs->load_type,
-				SUBTILIS_ARM_CCODE_AL, phys, base, offset, err);
-		added_instructions = 2;
-	}
-
-	prv_update_next(ud, added_instructions);
+	prv_add_spill_point(regs, SUBTILIS_SPILL_POINT_LOAD, pos, basic_offset,
+			    phys, err);
 
 	regs->phys_to_virt[phys] = virt;
 	regs->spilt_regs[virt] = INT_MAX;
@@ -602,10 +726,8 @@ static void prv_spill_reg(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *current,
 			  subtilis_arm_reg_t reg, subtilis_error_t *err)
 {
 	size_t i;
-	subtilis_arm_reg_t spill_reg;
 	int32_t offset;
-	subtilis_arm_reg_t base;
-	int added_instructions;
+	size_t pos;
 	subtilis_arm_section_t *arm_s = ud->arm_s;
 
 	if (regs->spill_top == regs->vr_reg_count) {
@@ -626,54 +748,14 @@ static void prv_spill_reg(subtilis_arm_reg_ud_t *ud, subtilis_arm_op_t *current,
 	}
 
 	regs->spilt_regs[assigned] = offset;
-	offset += ud->basic_block_spill + arm_s->locals;
 
-	base = 11;
-	if (offset > regs->max_offset || offset < -regs->max_offset) {
-		/*
-		 * We need to find an integer register to act as our base
-		 * when spilling the contents of reg_num.  So if we're
-		 * currently spilling the contents of a floating point
-		 * register we still need to use the int_regs structure
-		 * to use as our base.
-		 */
+	if (current->prev == SIZE_MAX)
+		pos = arm_s->first_op;
+	else
+		pos = arm_s->op_pool->ops[current->prev].next;
 
-		added_instructions = 2;
-		for (i = 0; i < int_regs->max_regs; i++)
-			if ((int_regs->phys_to_virt[i] == INT_MAX) &&
-			    (int_regs != regs || i != reg))
-				break;
-
-		if (i == int_regs->max_regs) {
-			subtilis_arm_insert_push(arm_s, current,
-						 SUBTILIS_ARM_CCODE_AL, 0, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			spill_reg = 0;
-			added_instructions++;
-		} else {
-			spill_reg = i;
-		}
-		regs->spill_imm(arm_s, current, regs->store_type,
-				SUBTILIS_ARM_CCODE_AL, reg, base, spill_reg,
-				offset, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-
-		if (i == int_regs->max_regs) {
-			subtilis_arm_insert_pop(arm_s, current,
-						SUBTILIS_ARM_CCODE_AL, 0, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			added_instructions++;
-		}
-	} else {
-		regs->stran_imm(arm_s, current, regs->store_type,
-				SUBTILIS_ARM_CCODE_AL, reg, base, offset, err);
-		added_instructions = 1;
-	}
-
-	prv_update_next(ud, added_instructions);
+	prv_add_spill_point(regs, SUBTILIS_SPILL_POINT_STORE, pos, offset, reg,
+			    err);
 }
 
 static void prv_allocate_fixed(subtilis_arm_reg_ud_t *ud,
@@ -1874,6 +1956,11 @@ size_t subtilis_arm_reg_alloc(subtilis_arm_section_t *arm_s,
 	subtlis_arm_walker_t walker;
 	subtilis_arm_reg_ud_t ud;
 	size_t retval;
+	int32_t offset;
+	int32_t adjusted_offset;
+	int32_t arg_offset;
+	int32_t int_spill_space;
+	int32_t fpa_spill_space;
 
 	prv_init_arm_reg_ud(&ud, arm_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1902,7 +1989,60 @@ size_t subtilis_arm_reg_alloc(subtilis_arm_section_t *arm_s,
 	walker.fpa_ldrc_fn = prv_alloc_fpa_ldrc_instr;
 
 	subtilis_arm_walk(arm_s, &walker, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
+	/*
+	 * See the description of the stack layout above to understand
+	 * this code.  The register allocators assume they are sole
+	 * onwers of the stack and that any arguments of their type
+	 * are the first offsets spilled.  This assumption is invalid
+	 * if more than one type of argument is passed on the stack or
+	 * virtual registers of any type are actually spilled.  So we
+	 * need to adjust the offsets of the spill code before we
+	 * insert it.  There are two offsets one for spilled registers
+	 * and one for spilled arguments.  The register allocators
+	 * treat spilled arguments as being contiguous with their spilled
+	 * registers but this is not necessarily the case, hence the
+	 * two offsets.
+	 */
+
+	/*
+	 * Note the space allocated to spill arguments by the register
+	 * allocators won't actually be used as their values are stored
+	 * further up the stack.
+	 */
+
+	int_spill_space = (ud.int_regs->spill_max - ud.int_regs->spilt_args) *
+			  ud.int_regs->reg_size;
+
+	fpa_spill_space = (ud.fpa_regs->spill_max - ud.fpa_regs->spilt_args) *
+			  ud.fpa_regs->reg_size;
+
+	offset = ud.basic_block_spill + arm_s->locals;
+
+	/*
+	 * The register allocators assign offsets to spilled registers after
+	 * they have assigned offsets to any arguments passed on the stack.
+	 * However, such arguments are not in reality stored as part of the
+	 * virtual registers spill space, so we need to subtract these
+	 * arguments to correctly compute the adjusted offset.
+	 */
+
+	adjusted_offset =
+	    offset - (ud.fpa_regs->spilt_args * ud.fpa_regs->reg_size);
+	arg_offset = offset + fpa_spill_space + int_spill_space;
+	prv_insert_spill_code(&ud, ud.fpa_regs, adjusted_offset, arg_offset,
+			      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	offset += fpa_spill_space;
+	adjusted_offset =
+	    offset - (ud.int_regs->spilt_args * ud.int_regs->reg_size);
+	arg_offset += ud.fpa_regs->spilt_args * ud.fpa_regs->reg_size;
+	prv_insert_spill_code(&ud, ud.int_regs, adjusted_offset, arg_offset,
+			      err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
