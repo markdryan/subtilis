@@ -1,0 +1,47 @@
+PROCTWELVE(1,2,3,4,5,6,7.0,8.0,9.0,10.0,11.0,12.0)
+
+DEF PROCTWELVE(A%, B%, C%, D%, E%, F%, A, B, C, D, E, F)
+  LOCAL Z%
+  LOCAL G
+  LOCAL H
+  LOCAL I
+
+  PRINT A%
+  PRINT B%
+  PRINT C%
+  PRINT D%
+  PRINT E%
+  PRINT F%
+  Z% = A
+  PRINT Z%
+  Z% = B
+  PRINT Z%
+  Z% = C
+  PRINT Z%
+  Z% = D
+  PRINT Z%  
+  Z% = E
+  PRINT Z%
+  Z% = F
+  PRINT Z%
+  G = F + 1
+  H = G + 1
+  I = H + 1  
+  Z% = G
+  PRINT Z%
+  Z% = H
+  PRINT Z%
+  Z% = I
+  PRINT Z%
+  Z% = A
+  PRINT Z%
+  Z% = B
+  PRINT Z%
+  Z% = C
+  PRINT Z%
+  Z% = D
+  PRINT Z%
+  Z% = E
+  PRINT Z%
+  Z% = F
+ENDPROC
