@@ -3,8 +3,7 @@
 [![Build Status](https://travis-ci.org/markdryan/subtilis.svg?branch=master)](https://travis-ci.org/markdryan/subtilis)
 
 
-A BASIC compiler for retro computers.  (At least that's the plan.  Right now
-all that's supported is integer expressions and a few keywords.)
+A BASIC compiler for retro computers.
 
 BASIC is over 50 years old and may not be the most respected of computer
 languages, but it, at least the BBC variant of BASIC, is not that bad really.
@@ -19,5 +18,5 @@ The tentative plan for the project is to first create a compiler for a subset of
 the existing BBC BASIC V features and then figure out a way of adding modern
 constructs to the lanuage.  To start with there will probably only be two target
 OSes, RISCOS 3 and RISCOS 4, and one CPU family, ARM 2 or greater.  Ultimately
-the goal is to create a 6502 backend for the BBC micro as well, but this is a
-long way off.
+the goal is to create a backend for the native ARM processor mode of PiTubeDirect,
+but this is a long way off.
