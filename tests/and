@@ -1,0 +1,2 @@
+LET b% = -1
+PRINT -1 AND TRUE AND b%

@@ -1,0 +1,35 @@
+LOCAL a%
+LOCAL b%
+LOCAL c%
+LOCAL d%
+LOCAL e%
+LOCAL f%
+LOCAL i%
+LOCAL g%
+LOCAL h%
+LOCAL k%
+LOCAL l%
+LOCAL m%
+LOCAL n%
+LOCAL o%
+
+LET a% = 0
+LET b% = 1
+LET c% = 2
+LET d% = 3
+LET e% = 4
+LET f% = 5
+LET k% = 6
+LET l% = 7
+LET n% = 8
+
+LET g% = a% + b% + c% + d% + e% + f% + i% + k% + l% + n%
+LET o% = g%
+LET h% = a% + b% + c% + d% + e% + f% + i% + k% + l% + n%
+LET m% = a% + b% + c% + d% + e% + f% + i% + k% + l% + n%
+PRINT g%
+PRINT h%
+PRINT m%
+PRINT o%
+LET i% = i% + 1
+

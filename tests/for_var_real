@@ -1,0 +1,16 @@
+LOCAL S
+LOCAL A
+
+S = 1.5
+
+FOR A = 0 TO 10 STEP S
+    A% = A
+    PRINT A%
+NEXT
+
+S = 2.0
+FOR A = 10 TO -10 STEP -S
+    A% = A
+    PRINT A%
+NEXT
+

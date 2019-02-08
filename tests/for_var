@@ -1,0 +1,15 @@
+LOCAL S%
+LOCAL A%
+
+S% = 2
+
+FOR A% = 0 TO 10 STEP S%
+    PRINT A%
+NEXT
+
+PRINT -1
+S% = -2
+FOR A% = -1 TO -10 STEP S%
+    PRINT A%
+NEXT
+

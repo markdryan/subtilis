@@ -1,0 +1,7 @@
+LOCAL B%
+
+LET B%=FNA(500,-500)
+PRINT B%
+
+DEF FNA(X%,Y%)
+<-SIN(RAD(SQR(X%*X%+Y%*Y%)))*200

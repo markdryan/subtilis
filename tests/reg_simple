@@ -1,0 +1,18 @@
+LOCAL a
+LOCAL b
+LOCAL c
+LOCAL d
+LOCAL e
+LOCAL i%
+
+LET a = 1
+LET b = 2
+LET c = 3
+LET d = 4
+
+WHILE i% < 10
+      LET e = a + b + c + d
+      LET v% = e
+      PRINT v%
+      LET i% = i% +1
+ENDWHILE

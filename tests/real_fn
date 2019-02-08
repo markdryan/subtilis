@@ -1,0 +1,11 @@
+LOCAL angle
+
+LET angle =30
+
+LET a% = FNRad(30)
+PRINT a%
+LET a% = FNRad(angle)
+PRINT a%
+
+DEF FNRad(a)
+<- a * ((22/7.0) /180)

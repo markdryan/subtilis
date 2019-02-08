@@ -1,0 +1,30 @@
+LOCAL a
+LOCAL b
+LOCAL c
+LOCAL d
+LOCAL e
+LOCAL f
+
+LET a = 1
+LET b = 2
+LET c = 3
+LET d = 4
+LET e = 4
+LET f = 5
+
+PROCOverwrite(f)
+
+LET a% = a + b + c + d
+PRINT a%
+
+DEF PROCOverwrite(a)
+LOCAL b
+LOCAL c
+LOCAL a%
+
+LET a = 10
+LET b = 20
+LET c = 30
+LET a% = a + b + c
+PRINT a%
+ENDPROC
