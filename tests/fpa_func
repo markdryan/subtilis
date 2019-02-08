@@ -1,0 +1,5 @@
+LET a% = FNA(10.0, 3.14)
+PRINT a%
+
+DEF FNA(a,b)
+<- a+b

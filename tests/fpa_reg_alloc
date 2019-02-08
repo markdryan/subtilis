@@ -1,0 +1,36 @@
+LOCAL a
+LOCAL b
+LOCAL c
+LOCAL d
+LOCAL e
+LOCAL f
+LOCAL g
+LOCAL h
+LOCAL i
+LOCAL m
+
+LET a = 0
+LET b = 1
+LET c = 2
+LET d = 3
+LET e = 4
+LET i = 5
+
+LET a = a + 1
+LET b = b + 1
+LET c = c + 1
+LET d = d + 1
+LET e = e + 1
+LET i = i + 1
+
+LET g = a + b + c + d + e + i
+LET h = a + b + c + d + e + i  
+LET m = a + b + c + d + e + i 
+LET a% = g
+PRINT a%
+LET a% = h
+PRINT a%
+LET a% = m
+PRINT a%
+LET i = i + 1
+

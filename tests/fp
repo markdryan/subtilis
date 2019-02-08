@@ -1,0 +1,44 @@
+LOCAL a
+LOCAL a%
+LET a = 0.0
+LET f = a + 1
+LET b = 10.0 + f
+LET c = b - 1.0
+LET d = a - b
+LET e = d / 3.14
+LET g = e + b * c
+LET a% = 10
+PRINT b
+PRINT c
+PRINT d
+PRINT e
+PRINT g
+PRINT a% + 1.1414
+PRINT a% + g
+PRINT g + a%
+PRINT a% / g
+PRINT a% / 3.0
+PRINT a%
+PRINT g / a%
+PRINT g DIV a%
+
+WHILE g
+      LET g = g * 0
+ENDWHILE
+
+PRINT FNMidpoint(-3.0, -8.0)
+
+LET int% = FNMidpoint(-3.0, -8.0)
+LET real = FNMidpoint%(3, 8)
+
+PRINT int%
+PRINT real
+
+PRINT FNMidpoint(-3, -8)
+PRINT FNMidpoint%(-3.0, -8.0)
+
+DEF FNMidpoint(x1,x2)
+<- (x1+x2) / 2
+
+DEF FNMidpoint%(x1%,x2%)
+<- (x1%+x2%) / 2

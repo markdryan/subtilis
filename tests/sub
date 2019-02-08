@@ -1,0 +1,7 @@
+ANGLE = 0.2
+OY% = 712+200*SIN(ANGLE/12)
+X% = (OY% - 1030)
+PRINT X%
+X% = 0
+X% = X% + &ff00fff0
+PRINT X%

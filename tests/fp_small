@@ -1,0 +1,28 @@
+LOCAL x
+LOCAL y
+LOCAL a
+LOCAL b
+LOCAL c
+LOCAL d
+
+LET x = 2.0
+LET y = 3.14
+LET z = (x+x) / 2
+LET a = z - x -10.0
+LET b = a * 10
+
+PROCa(a,b,x,y,z)
+
+LET c = b * a
+LET d = 2 / c
+LET e% = d
+LET f = e%
+LET h = -y
+LET e% = z
+PRINT e%
+
+DEF PROCa(a,b,c,d,e)
+    LOCAL a%
+    LET a% = a + b + c + d + e
+    PRINT a%
+ENDPROC

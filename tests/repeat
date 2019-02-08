@@ -1,0 +1,5 @@
+LET i%=0
+REPEAT
+ PRINT i%
+ LET i% = i% +1
+UNTIL i% = 10

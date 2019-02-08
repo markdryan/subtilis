@@ -1,0 +1,41 @@
+LOCAL A%
+LOCAL I%
+LOCAL R
+
+FOR I% = 1 TO 10
+    PRINT I%
+NEXT
+
+FOR I% = 1 TO 0
+    PRINT I%
+NEXT
+
+FOR A% = 1 TO 10
+    PRINT A%
+NEXT
+
+FOR A% = 1 TO 0
+    PRINT A%
+NEXT
+
+FOR R = 1 TO 10
+    LET I% = R
+    PRINT I%
+NEXT
+
+FOR R = 1 TO 0
+    LET I% = R
+    PRINT I%
+NEXT
+
+FOR A% = 1 TO R
+    PRINT A%
+NEXT
+
+FOR A% = 1 TO 10 STEP 2
+    PRINT A%
+NEXT
+
+FOR A% = 10 TO 0 STEP -2
+    PRINT A%
+NEXT

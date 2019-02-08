@@ -1,0 +1,4 @@
+LET A%=-1
+PRINT 1 << A%
+PRINT 1 >> -1
+PRINT 1 >>> -1

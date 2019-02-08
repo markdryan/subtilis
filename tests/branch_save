@@ -1,0 +1,15 @@
+LOCAL a%
+LOCAL c%
+
+WHILE c% < 2
+      PRINT a%
+      PROCa
+      LET c% = c% + 1
+ENDWHILE
+
+
+DEF PROCa
+    LOCAL b%
+    LET b% = 2
+ENDPROC
+

@@ -1,0 +1,5 @@
+LOCAL I%
+FOR I% = 0 TO 100
+    PRINT RND(3)
+NEXT
+

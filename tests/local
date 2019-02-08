@@ -1,0 +1,11 @@
+LOCAL i%
+LET i% = 5
+LET i%=i%+1
+PROCInci
+PRINT i%
+
+DEF PROCInci
+LOCAL i%
+LET i%=i%+1
+PRINT i%
+ENDPROC
