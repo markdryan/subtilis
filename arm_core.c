@@ -714,6 +714,7 @@ void subtilis_arm_add_addsub_imm(subtilis_arm_section_t *s,
 {
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_data_instr_t *datai;
+	subtilis_arm_data_instr_t *datai2;
 	bool can_encode;
 	uint32_t encoded;
 	uint32_t encoded2 = 0;
@@ -762,7 +763,7 @@ void subtilis_arm_add_addsub_imm(subtilis_arm_section_t *s,
 	datai->status = status;
 	datai->op2.type = SUBTILIS_ARM_OP2_I32;
 	datai->ccode = ccode;
-	datai->dest = dest;
+	datai->dest = encoded2 == 0 ? dest : subtilis_arm_acquire_new_reg(s);
 	datai->op1 = op1;
 	datai->op2.op.integer = encoded;
 
@@ -772,7 +773,10 @@ void subtilis_arm_add_addsub_imm(subtilis_arm_section_t *s,
 	instr = subtilis_arm_section_dup_instr(s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	datai->op2.op.integer = encoded2;
+	datai2 = &instr->operands.data;
+	datai2->op1 = datai->dest;
+	datai2->op2.op.integer = encoded2;
+	datai2->dest = dest;
 }
 
 void subtilis_arm_add_rsub_imm(subtilis_arm_section_t *s,
