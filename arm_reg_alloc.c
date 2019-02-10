@@ -2156,7 +2156,8 @@ void subtilis_arm_regs_used_before_from_to(subtilis_arm_section_t *arm_s,
 	if (i > SUBTILIS_ARM_REG_MIN_INT_REGS)
 		i = SUBTILIS_ARM_REG_MIN_INT_REGS;
 	for (; i <= SUBTILIS_ARM_REG_MAX_INT_REGS; i++) {
-		if (prv_is_reg_used_before(&ud, i, &ud.int_dist_walker, from,
+		if (i < arm_s->stype->int_regs ||
+		    prv_is_reg_used_before(&ud, i, &ud.int_dist_walker, from,
 					   op))
 			int_reg_list |= 1 << i;
 	}
@@ -2165,7 +2166,8 @@ void subtilis_arm_regs_used_before_from_to(subtilis_arm_section_t *arm_s,
 	if (i > SUBTILIS_ARM_REG_MIN_FPA_REGS)
 		i = SUBTILIS_ARM_REG_MIN_FPA_REGS;
 	for (; i < SUBTILIS_ARM_REG_MAX_FPA_REGS; i++) {
-		if (prv_is_reg_used_before(&ud, i, &ud.fpa_dist_walker, from,
+		if (i < arm_s->stype->fp_regs ||
+		    prv_is_reg_used_before(&ud, i, &ud.fpa_dist_walker, from,
 					   op))
 			fpa_reg_list |= 1 << i;
 	}

@@ -1,0 +1,26 @@
+PROCA(1,2,3)
+PROCF(1.0,2.0,3.0)
+
+DEF PROCA(A%, B%, C%)
+  PROCB(A%, B%)
+  PRINT C%
+ENDPROC
+
+DEF PROCB(A%, B%)
+    PRINT A%
+    PRINT B%
+ENDPROC
+
+DEF PROCF(A, B, C)
+    LOCAL A%
+    PROCG
+    A% = C
+    PRINT A%
+ENDPROC
+
+DEF PROCG
+    PROCH(4.0, 5.0, 6.0)
+ENDPROC
+
+DEF PROCH(A, B, C)
+ENDPROC
