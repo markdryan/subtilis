@@ -861,6 +861,19 @@ const subtilis_test_case_t test_cases[] = {
 	 "DEF PROCH(A, B, C)\n"
 	 "ENDPROC\n",
 	 "1\n2\n3\n3\n"
+	},
+	{"save_useless_move",
+	 "PROCA(10)\n"
+	 "\n"
+	 "DEF PROCA(A%)\n"
+	 "    PROCB\n"
+	 "    PRINT A%\n"
+	 "ENDPROC\n"
+	 "\n"
+	 "DEF PROCB\n"
+	 "    GCOL 0, 1\n"
+	 "ENDPROC\n",
+	 "10\n"
 	}
 };
 

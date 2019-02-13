@@ -819,9 +819,12 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		/* OS_WriteCh  */
 		buf[0] = arm_vm->regs[0] & 0xff;
 		buf[1] = 0;
-		subtilis_buffer_append_string(b, buf, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+		if (buf[0] == 10 || buf[0] == 13 ||
+		    (buf[0] >= 32 && buf[0] <= 127)) {
+			subtilis_buffer_append_string(b, buf, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		}
 		break;
 	case 0x2:
 		/* OS_Write0  */
