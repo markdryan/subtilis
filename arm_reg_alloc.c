@@ -1001,44 +1001,6 @@ static void prv_allocate_fpa_dest(subtilis_arm_reg_ud_t *ud,
 	ud->fpa_regs->next[*dest] = dist_dest;
 }
 
-static void prv_alloc_load_spilled(subtilis_arm_reg_ud_t *ud,
-				   subtilis_arm_op_t *op,
-				   subtilis_arm_data_instr_t *instr,
-				   subtilis_error_t *err)
-{
-	prv_allocate_dest(ud, op, &instr->dest, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	prv_load_spilled_reg(ud, op, ud->int_regs, instr->op2.op.reg,
-			     instr->dest, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-	instr->op2.op.reg = instr->dest;
-	instr->ccode = SUBTILIS_ARM_CCODE_NV;
-
-	ud->instr_count++;
-}
-
-static void prv_alloc_fpa_load_spilled(subtilis_arm_reg_ud_t *ud,
-				       subtilis_arm_op_t *op,
-				       subtilis_fpa_data_instr_t *instr,
-				       subtilis_error_t *err)
-{
-	prv_allocate_fpa_dest(ud, op, &instr->dest, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	prv_load_spilled_reg(ud, op, ud->fpa_regs, instr->op2.reg, instr->dest,
-			     err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-	instr->op2.reg = instr->dest;
-	instr->ccode = SUBTILIS_ARM_CCODE_NV;
-
-	ud->instr_count++;
-}
-
 static void prv_alloc_mov_instr(void *user_data, subtilis_arm_op_t *op,
 				subtilis_arm_instr_type_t type,
 				subtilis_arm_data_instr_t *instr,
@@ -1048,23 +1010,7 @@ static void prv_alloc_mov_instr(void *user_data, subtilis_arm_op_t *op,
 	int dist_op2_shift;
 	subtilis_arm_reg_t *reg;
 	subtilis_arm_reg_t *shift_reg;
-	size_t assigned;
 	subtilis_arm_reg_ud_t *ud = user_data;
-
-	/*
-	 * TODO: Not entirely sure I understand this code.  Looks weird.
-	 */
-
-	if ((type == SUBTILIS_ARM_INSTR_MOV) &&
-	    (instr->op2.type == SUBTILIS_ARM_OP2_REG) &&
-	    ((!subtilis_arm_is_fixed(instr->op2.op.reg)) ||
-	     (instr->op2.op.reg < SUBTILIS_ARM_REG_MAX_INT_REGS))) {
-		assigned = prv_virt_to_phys(ud->int_regs, &instr->op2.op.reg);
-		if (assigned == INT_MAX) {
-			prv_alloc_load_spilled(ud, op, instr, err);
-			return;
-		}
-	}
 
 	reg = prv_ensure_op2(ud, op, &instr->op2, &dist_op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1439,23 +1385,9 @@ static void prv_alloc_fpa_data_monadic_instr(void *user_data,
 {
 	int dist_op2;
 	size_t vreg_op2;
-	size_t assigned;
 	subtilis_arm_reg_ud_t *ud = user_data;
 
 	if (!instr->immediate) {
-		/*
-		 * TODO: Not entirely sure I understand this code.  Looks weird.
-		 */
-
-		if (type == SUBTILIS_FPA_INSTR_MVF) {
-			assigned =
-			    prv_virt_to_phys(ud->fpa_regs, &instr->op2.reg);
-			if (assigned == INT_MAX) {
-				prv_alloc_fpa_load_spilled(ud, op, instr, err);
-				return;
-			}
-		}
-
 		vreg_op2 = instr->op2.reg;
 		(void)prv_ensure(ud, op, ud->int_regs, ud->fpa_regs,
 				 &instr->op2.reg, err);

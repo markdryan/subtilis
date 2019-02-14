@@ -874,6 +874,19 @@ const subtilis_test_case_t test_cases[] = {
 	 "    GCOL 0, 1\n"
 	 "ENDPROC\n",
 	 "10\n"
+	},
+	{"save_fixed_reg_arg",
+	 "PROCFOR(2)\n"
+	 "\n"
+	 "DEF PROCFOR(S%)\n"
+	 "  LOCAL I%\n"
+	 "\n"
+	 "  GCOL 0, 2\n"
+	 "  FOR I% = -10 TO 10 STEP S%\n"
+	 "    PRINT I%\n"
+	 "  NEXT\n"
+	 "ENDPROC\n",
+	 "-10\n-8\n-6\n-4\n-2\n0\n2\n4\n6\n8\n10\n"
 	}
 };
 
