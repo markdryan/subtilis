@@ -385,6 +385,8 @@ struct subtilis_arm_call_site_t_ {
 	size_t int_args;
 	size_t real_args;
 	size_t call_site;
+	size_t int_arg_ops[SUBTILIS_IR_MAX_ARGS_PER_TYPE - 4];
+	size_t real_arg_ops[SUBTILIS_IR_MAX_ARGS_PER_TYPE - 4];
 };
 
 typedef struct subtilis_arm_call_site_t_ subtilis_arm_call_site_t;
@@ -469,7 +471,9 @@ void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s,
 					size_t stm_site, size_t ldm_site,
 					size_t stf_site, size_t ldf_site,
 					size_t int_args, size_t real_args,
-					size_t op, subtilis_error_t *err);
+					size_t op, size_t *int_arg_ops,
+					size_t *real_arg_ops,
+					subtilis_error_t *err);
 void subtilis_arm_section_add_ret_site(subtilis_arm_section_t *s, size_t op,
 				       subtilis_error_t *err);
 void subtilis_arm_section_add_label(subtilis_arm_section_t *s, size_t label,

@@ -837,6 +837,56 @@ const subtilis_test_case_t test_cases[] = {
 	 "  Z% = F\n"
 	 "ENDPROC\n",
 	 "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n7\n8\n9\n10\n11\n"
+	},
+	{"save_third",
+	 "PROCA(1,2,3)\n"
+	 "PROCF(1.0,2.0,3.0)\n"
+	 "DEF PROCA(A%, B%, C%)\n"
+	 "  PROCB(A%, B%)\n"
+	 "  PRINT C%\n"
+	 "ENDPROC\n"
+	 "DEF PROCB(A%, B%)\n"
+	 "    PRINT A%\n"
+	 "    PRINT B%\n"
+	 "ENDPROC\n"
+	 "DEF PROCF(A, B, C)\n"
+	 "    LOCAL A%\n"
+	 "    PROCG\n"
+	 "    A% = C\n"
+	 "    PRINT A%\n"
+	 "ENDPROC\n"
+	 "DEF PROCG\n"
+	 "    PROCH(4.0, 5.0, 6.0)\n"
+	 "ENDPROC\n"
+	 "DEF PROCH(A, B, C)\n"
+	 "ENDPROC\n",
+	 "1\n2\n3\n3\n"
+	},
+	{"save_useless_move",
+	 "PROCA(10)\n"
+	 "\n"
+	 "DEF PROCA(A%)\n"
+	 "    PROCB\n"
+	 "    PRINT A%\n"
+	 "ENDPROC\n"
+	 "\n"
+	 "DEF PROCB\n"
+	 "    GCOL 0, 1\n"
+	 "ENDPROC\n",
+	 "10\n"
+	},
+	{"save_fixed_reg_arg",
+	 "PROCFOR(2)\n"
+	 "\n"
+	 "DEF PROCFOR(S%)\n"
+	 "  LOCAL I%\n"
+	 "\n"
+	 "  GCOL 0, 2\n"
+	 "  FOR I% = -10 TO 10 STEP S%\n"
+	 "    PRINT I%\n"
+	 "  NEXT\n"
+	 "ENDPROC\n",
+	 "-10\n-8\n-6\n-4\n-2\n0\n2\n4\n6\n8\n10\n"
 	}
 };
 

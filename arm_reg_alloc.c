@@ -201,6 +201,29 @@
  * SWIs.
  */
 
+/*
+ * And finally, some words on how registers are preserved across function
+ * and procedure calls.  Subtilis uses a caller save model, in which the
+ * caller is responsible for saving and restoring any registers it needs
+ * before and after a procedure call, regardless whether that call
+ * actually corrupts those registers.  We could easily implement this
+ * strategy in the pre-register allocation phase by having the BL instruction
+ * trigger the end of a basic block.  All virtual registers used before and
+ * after this instruction would be saved and restored for us using the
+ * existing code.  However, I've decided not to do this for the time being as
+ *
+ * 1. It would be difficult to use stm and ldm.
+ * 2. We'd need extra code to handle R11 and R14.  These aren't virtual
+ *    registers so the basic block spill code can't account for them.
+ *
+ * Consequently, saving and preseving of registers before and after procedure
+ * calls is done by a separate step after register allocation has been
+ * completed.  It's a bit trick as you have to work out which registers need to
+ * be saved and restored and then update the offsets of any arguments passed via
+ * the stack to reflect these values.  It all works out nicely in the end
+ * though.
+ */
+
 /* clang-format off */
 typedef void (*subtilis_arm_reg_spill_imm_t)(subtilis_arm_section_t *s,
 					     subtilis_arm_op_t *current,
@@ -1001,44 +1024,6 @@ static void prv_allocate_fpa_dest(subtilis_arm_reg_ud_t *ud,
 	ud->fpa_regs->next[*dest] = dist_dest;
 }
 
-static void prv_alloc_load_spilled(subtilis_arm_reg_ud_t *ud,
-				   subtilis_arm_op_t *op,
-				   subtilis_arm_data_instr_t *instr,
-				   subtilis_error_t *err)
-{
-	prv_allocate_dest(ud, op, &instr->dest, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	prv_load_spilled_reg(ud, op, ud->int_regs, instr->op2.op.reg,
-			     instr->dest, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-	instr->op2.op.reg = instr->dest;
-	instr->ccode = SUBTILIS_ARM_CCODE_NV;
-
-	ud->instr_count++;
-}
-
-static void prv_alloc_fpa_load_spilled(subtilis_arm_reg_ud_t *ud,
-				       subtilis_arm_op_t *op,
-				       subtilis_fpa_data_instr_t *instr,
-				       subtilis_error_t *err)
-{
-	prv_allocate_fpa_dest(ud, op, &instr->dest, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	prv_load_spilled_reg(ud, op, ud->fpa_regs, instr->op2.reg, instr->dest,
-			     err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-	instr->op2.reg = instr->dest;
-	instr->ccode = SUBTILIS_ARM_CCODE_NV;
-
-	ud->instr_count++;
-}
-
 static void prv_alloc_mov_instr(void *user_data, subtilis_arm_op_t *op,
 				subtilis_arm_instr_type_t type,
 				subtilis_arm_data_instr_t *instr,
@@ -1048,23 +1033,7 @@ static void prv_alloc_mov_instr(void *user_data, subtilis_arm_op_t *op,
 	int dist_op2_shift;
 	subtilis_arm_reg_t *reg;
 	subtilis_arm_reg_t *shift_reg;
-	size_t assigned;
 	subtilis_arm_reg_ud_t *ud = user_data;
-
-	/*
-	 * TODO: Not entirely sure I understand this code.  Looks weird.
-	 */
-
-	if ((type == SUBTILIS_ARM_INSTR_MOV) &&
-	    (instr->op2.type == SUBTILIS_ARM_OP2_REG) &&
-	    ((!subtilis_arm_is_fixed(instr->op2.op.reg)) ||
-	     (instr->op2.op.reg < SUBTILIS_ARM_REG_MAX_INT_REGS))) {
-		assigned = prv_virt_to_phys(ud->int_regs, &instr->op2.op.reg);
-		if (assigned == INT_MAX) {
-			prv_alloc_load_spilled(ud, op, instr, err);
-			return;
-		}
-	}
 
 	reg = prv_ensure_op2(ud, op, &instr->op2, &dist_op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1439,23 +1408,9 @@ static void prv_alloc_fpa_data_monadic_instr(void *user_data,
 {
 	int dist_op2;
 	size_t vreg_op2;
-	size_t assigned;
 	subtilis_arm_reg_ud_t *ud = user_data;
 
 	if (!instr->immediate) {
-		/*
-		 * TODO: Not entirely sure I understand this code.  Looks weird.
-		 */
-
-		if (type == SUBTILIS_FPA_INSTR_MVF) {
-			assigned =
-			    prv_virt_to_phys(ud->fpa_regs, &instr->op2.reg);
-			if (assigned == INT_MAX) {
-				prv_alloc_fpa_load_spilled(ud, op, instr, err);
-				return;
-			}
-		}
-
 		vreg_op2 = instr->op2.reg;
 		(void)prv_ensure(ud, op, ud->int_regs, ud->fpa_regs,
 				 &instr->op2.reg, err);
@@ -2156,7 +2111,8 @@ void subtilis_arm_regs_used_before_from_to(subtilis_arm_section_t *arm_s,
 	if (i > SUBTILIS_ARM_REG_MIN_INT_REGS)
 		i = SUBTILIS_ARM_REG_MIN_INT_REGS;
 	for (; i <= SUBTILIS_ARM_REG_MAX_INT_REGS; i++) {
-		if (prv_is_reg_used_before(&ud, i, &ud.int_dist_walker, from,
+		if (i < arm_s->stype->int_regs ||
+		    prv_is_reg_used_before(&ud, i, &ud.int_dist_walker, from,
 					   op))
 			int_reg_list |= 1 << i;
 	}
@@ -2165,7 +2121,8 @@ void subtilis_arm_regs_used_before_from_to(subtilis_arm_section_t *arm_s,
 	if (i > SUBTILIS_ARM_REG_MIN_FPA_REGS)
 		i = SUBTILIS_ARM_REG_MIN_FPA_REGS;
 	for (; i < SUBTILIS_ARM_REG_MAX_FPA_REGS; i++) {
-		if (prv_is_reg_used_before(&ud, i, &ud.fpa_dist_walker, from,
+		if (i < arm_s->stype->fp_regs ||
+		    prv_is_reg_used_before(&ud, i, &ud.fpa_dist_walker, from,
 					   op))
 			fpa_reg_list |= 1 << i;
 	}
@@ -2295,6 +2252,116 @@ void subtilis_arm_regs_used_after(subtilis_arm_section_t *arm_s,
 	prv_free_arm_reg_ud(&ud);
 }
 
+static void prv_update_arg_offsets(subtilis_arm_section_t *arm_s,
+				   subtilis_arm_call_site_t *call_site,
+				   size_t int_regs_used, size_t real_regs_used,
+				   subtilis_error_t *err)
+{
+	size_t i;
+	size_t ptr;
+	subtilis_arm_op_t *op;
+	subtilis_arm_stran_instr_t *st;
+	subtilis_fpa_stran_instr_t *ft;
+	size_t bytes_saved = 0;
+
+	for (i = 0; i < 15; i++)
+		if (1 << i & int_regs_used)
+			bytes_saved += sizeof(int32_t);
+
+	/* TODO: 6 here is FPA specific */
+
+	for (i = 0; i < 6; i++)
+		if (1 << i & real_regs_used)
+			bytes_saved += sizeof(double);
+
+	if (call_site->int_args > 4) {
+		for (i = 0; i < call_site->int_args - 4; i++) {
+			ptr = call_site->int_arg_ops[i];
+			op = &arm_s->op_pool->ops[ptr];
+			st = &op->op.instr.operands.stran;
+			st->offset.op.integer += bytes_saved;
+		}
+	}
+
+	if (call_site->real_args > 4) {
+		for (i = 0; i < call_site->real_args - 4; i++) {
+			ptr = call_site->real_arg_ops[i];
+			op = &arm_s->op_pool->ops[ptr];
+			ft = &op->op.instr.operands.fpa_stran;
+			ft->offset += bytes_saved / 4;
+		}
+	}
+}
+
+static void prv_compute_regs_used(subtilis_arm_section_t *arm_s,
+				  subtilis_arm_call_site_t *call_site,
+				  subtilis_regs_used_t regs_used_before,
+				  subtilis_regs_used_t regs_used_after,
+				  size_t *int_regs_used, size_t *real_regs_used,
+				  subtilis_error_t *err)
+{
+	subtilis_arm_mtran_instr_t *mtran;
+	subtilis_arm_op_t *op;
+	size_t fpa_reg_count;
+	size_t real_regs_saved;
+	subtilis_arm_br_instr_t *br;
+	size_t i;
+
+	op = &arm_s->op_pool->ops[call_site->call_site];
+	br = &op->op.instr.operands.br;
+
+	op = &arm_s->op_pool->ops[call_site->stm_site];
+	mtran = &op->op.instr.operands.mtran;
+
+	*int_regs_used = regs_used_before.int_regs & regs_used_after.int_regs;
+	*int_regs_used |= mtran->reg_list;
+
+	if (br->link_type == SUBTILIS_ARM_BR_LINK_INT)
+		*int_regs_used &= ~((size_t)1);
+
+	mtran->reg_list = *int_regs_used;
+	op = &arm_s->op_pool->ops[call_site->ldm_site];
+	mtran = &op->op.instr.operands.mtran;
+	mtran->reg_list |= *int_regs_used;
+
+	*real_regs_used = 0;
+	if (call_site->ldf_site == INT_MAX)
+		return;
+
+	*real_regs_used = regs_used_before.fpa_regs & regs_used_after.fpa_regs;
+
+	if (br->link_type == SUBTILIS_ARM_BR_LINK_REAL)
+		*real_regs_used &= ~((size_t)1);
+
+	real_regs_saved = call_site->real_args;
+	if (real_regs_saved > SUBTILIS_ARM_REG_MIN_FPA_REGS)
+		real_regs_saved = 2;
+	else
+		real_regs_saved =
+		    SUBTILIS_ARM_REG_MAX_FPA_REGS - real_regs_saved;
+
+	fpa_reg_count = SUBTILIS_ARM_REG_MAX_FPA_REGS - real_regs_saved;
+	op = &arm_s->op_pool->ops[call_site->stf_site];
+
+	for (; fpa_reg_count < SUBTILIS_ARM_REG_MAX_FPA_REGS; fpa_reg_count++) {
+		if (*real_regs_used & (1 << fpa_reg_count)) {
+			op->op.instr.operands.fpa_stran.ccode =
+			    SUBTILIS_ARM_CCODE_AL;
+		}
+		op = &arm_s->op_pool->ops[op->next];
+	}
+
+	fpa_reg_count = SUBTILIS_ARM_REG_MAX_FPA_REGS - 1;
+	op = &arm_s->op_pool->ops[call_site->ldf_site];
+	for (i = 0; i < real_regs_saved; i++) {
+		if (*real_regs_used & (1 << fpa_reg_count))
+			op->op.instr.operands.fpa_stran.ccode =
+			    SUBTILIS_ARM_CCODE_AL;
+		op = &arm_s->op_pool->ops[op->next];
+		fpa_reg_count--;
+	}
+}
+
 void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
 			    subtilis_error_t *err)
 {
@@ -2303,91 +2370,48 @@ void subtilis_arm_save_regs(subtilis_arm_section_t *arm_s,
 	size_t end;
 	size_t int_regs_used;
 	size_t real_regs_used;
-	size_t real_regs_saved;
 	subtilis_arm_call_site_t *call_site;
 	subtilis_regs_used_t regs_used_before;
 	subtilis_regs_used_t regs_used_after;
 	subtilis_arm_mtran_instr_t *mtran;
 	subtilis_arm_op_t *op;
-	size_t fpa_reg_count;
-	size_t j;
-	subtilis_arm_br_instr_t *br;
 
 	for (i = 0; i < arm_s->call_site_count; i++) {
 		call_site = &arm_s->call_sites[i];
-		op = &arm_s->op_pool->ops[call_site->call_site];
-		br = &op->op.instr.operands.br;
+		start = arm_s->op_pool->ops[call_site->ldm_site].next;
 		end = arm_s->op_pool->ops[call_site->stm_site].prev;
-		if (end != SIZE_MAX) {
-			subtilis_arm_regs_used_before(
-			    arm_s, &arm_s->op_pool->ops[end],
-			    call_site->int_args, call_site->real_args,
-			    &regs_used_before, err);
+
+		if (start == SIZE_MAX || end == SIZE_MAX) {
+			op = &arm_s->op_pool->ops[call_site->stm_site];
+			mtran = &op->op.instr.operands.mtran;
+			prv_update_arg_offsets(arm_s, call_site,
+					       mtran->reg_list, 0, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
+			continue;
 		}
 
-		start = arm_s->op_pool->ops[call_site->ldm_site].next;
-		if (start == SIZE_MAX)
-			continue;
-
-		subtilis_arm_regs_used_after(arm_s, &arm_s->op_pool->ops[start],
-					     call_site->int_args,
-					     call_site->real_args,
-
-					     &regs_used_after, err);
+		subtilis_arm_regs_used_before(
+		    arm_s, &arm_s->op_pool->ops[end], call_site->int_args,
+		    call_site->real_args, &regs_used_before, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
-		int_regs_used =
-		    regs_used_before.int_regs & regs_used_after.int_regs;
+		subtilis_arm_regs_used_after(
+		    arm_s, &arm_s->op_pool->ops[start], call_site->int_args,
+		    call_site->real_args, &regs_used_after, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 
-		if (br->link_type == SUBTILIS_ARM_BR_LINK_INT)
-			int_regs_used &= ~((size_t)1);
+		prv_compute_regs_used(arm_s, call_site, regs_used_before,
+				      regs_used_after, &int_regs_used,
+				      &real_regs_used, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 
-		op = &arm_s->op_pool->ops[call_site->stm_site];
-		mtran = &op->op.instr.operands.mtran;
-		mtran->reg_list |= int_regs_used;
-		op = &arm_s->op_pool->ops[call_site->ldm_site];
-		mtran = &op->op.instr.operands.mtran;
-		mtran->reg_list |= int_regs_used;
-
-		if (call_site->ldf_site == INT_MAX)
-			continue;
-
-		real_regs_used =
-		    regs_used_before.fpa_regs & regs_used_after.fpa_regs;
-
-		if (br->link_type == SUBTILIS_ARM_BR_LINK_REAL)
-			real_regs_used &= ~((size_t)1);
-
-		real_regs_saved = arm_s->call_sites[i].real_args;
-		if (real_regs_saved > SUBTILIS_ARM_REG_MIN_FPA_REGS)
-			real_regs_saved = 2;
-		else
-			real_regs_saved =
-			    SUBTILIS_ARM_REG_MAX_FPA_REGS - real_regs_saved;
-
-		fpa_reg_count = SUBTILIS_ARM_REG_MAX_FPA_REGS - real_regs_saved;
-		op = &arm_s->op_pool->ops[call_site->stf_site];
-
-		for (; fpa_reg_count < SUBTILIS_ARM_REG_MAX_FPA_REGS;
-		     fpa_reg_count++) {
-			if (real_regs_used & (1 << fpa_reg_count)) {
-				op->op.instr.operands.fpa_stran.ccode =
-				    SUBTILIS_ARM_CCODE_AL;
-			}
-			op = &arm_s->op_pool->ops[op->next];
-		}
-
-		fpa_reg_count = SUBTILIS_ARM_REG_MAX_FPA_REGS - 1;
-		op = &arm_s->op_pool->ops[call_site->ldf_site];
-		for (j = 0; j < real_regs_saved; j++) {
-			if (real_regs_used & (1 << fpa_reg_count))
-				op->op.instr.operands.fpa_stran.ccode =
-				    SUBTILIS_ARM_CCODE_AL;
-			op = &arm_s->op_pool->ops[op->next];
-			fpa_reg_count--;
-		}
+		prv_update_arg_offsets(arm_s, call_site, int_regs_used,
+				       real_regs_used, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 	}
 }

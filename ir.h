@@ -25,6 +25,8 @@
 #include "string_pool.h"
 #include "type.h"
 
+#define SUBTILIS_IR_MAX_ARGS_PER_TYPE 16
+
 /* clang-format off */
 enum {
 	SUBTILIS_IR_REG_UNDEFINED,

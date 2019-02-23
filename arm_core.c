@@ -170,15 +170,21 @@ void subtilis_arm_section_delete(subtilis_arm_section_t *s)
 	free(s);
 }
 
+/* clang-format off */
 void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s,
 					size_t stm_site, size_t ldm_site,
 					size_t stf_site, size_t ldf_site,
 					size_t int_args, size_t real_args,
-					size_t op, subtilis_error_t *err)
+					size_t op, size_t *int_arg_ops,
+					size_t *real_arg_ops,
+					subtilis_error_t *err)
+/* clang-format on */
+
 {
 	size_t new_max;
 	subtilis_arm_call_site_t *site;
 	subtilis_arm_call_site_t *new_call_sites;
+	size_t i;
 
 	if (s->call_site_count == s->max_call_site_count) {
 		new_max = s->call_site_count + SUBTILIS_CONFIG_PROC_GRAN;
@@ -199,6 +205,14 @@ void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s,
 	site->int_args = int_args;
 	site->real_args = real_args;
 	site->call_site = op;
+
+	if (int_args > 4)
+		for (i = 0; i < int_args - 4; i++)
+			site->int_arg_ops[i] = int_arg_ops[i];
+
+	if (real_args > 4)
+		for (i = 0; i < real_args - 4; i++)
+			site->real_arg_ops[i] = real_arg_ops[i];
 }
 
 void subtilis_arm_section_add_ret_site(subtilis_arm_section_t *s, size_t op,
