@@ -1198,9 +1198,9 @@ void subtilis_arm_add_cmp_imm(subtilis_arm_section_t *s,
 		if (subtilis_arm_encode_imm(-op2, &encoded)) {
 			itype = SUBTILIS_ARM_INSTR_CMN;
 		} else {
-			dest = 0xffffffff;
+			dest = 0;
 			(void)subtilis_add_data_imm_ldr_datai(
-			    s, itype, ccode, false, dest, op1, op2, err);
+			    s, itype, ccode, true, dest, op1, op2, err);
 			return;
 		}
 	}
