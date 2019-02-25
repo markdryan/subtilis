@@ -1,0 +1,26 @@
+LOCAL A%
+LOCAL B%
+LOCAL B
+
+A% = 10
+A% += 1
+PRINT A%
+A% -= 10
+PRINT A%
+
+B% = 10
+A% += B%
+PRINT A%
+A% -= B%
+PRINT A%
+
+A% += 10.0
+PRINT A%
+A% -= 10.0
+PRINT A%
+
+B = 10.0
+A% += B
+PRINT A%
+A% -= B
+PRINT A%
