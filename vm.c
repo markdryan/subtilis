@@ -911,6 +911,12 @@ static void prv_movfpi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = (int32_t)vm->fregs[ops[1].reg];
 }
 
+static void prv_movfprdi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			   subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = (int32_t)floor(vm->fregs[ops[1].reg]);
+}
+
 static void prv_nop(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -1066,6 +1072,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_asrii32,                         /* SUBTILIS_OP_INSTR_ASRI_I32 */
 	prv_movi32fp,                        /* SUBTILIS_OP_INSTR_MOV_I32_FP */
 	prv_movfpi32,                        /* SUBTILIS_OP_INSTR_MOV_FP_I32 */
+	prv_movfprdi32,                      /* SUBTILIS_OP_INSTR_MOV_FPRD_I32*/
 	prv_nop,                             /* SUBTILIS_OP_INSTR_NOP */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_MODE_I32 */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_PLOT */

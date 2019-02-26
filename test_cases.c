@@ -947,6 +947,15 @@ const subtilis_test_case_t test_cases[] = {
 	  "PRINT A%\n",
 	  "11\n1\n11\n1\n11\n1\n11\n1\n11\n1\n11\n1\n11\n1\n"
 	},
+	{ "int",
+	  "PRINT INT(1.5)\n"
+	  "PRINT INT(-1.5)\n"
+	  "A = 1.5\n"
+	  "\n"
+	  "PRINT INT(A)\n"
+	  "PRINT INT(-A)\n",
+	  "1\n-2\n1\n-2\n"
+	},
 };
 
 /* clang-format on */

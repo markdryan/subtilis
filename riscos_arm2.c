@@ -184,6 +184,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"movfp *, *\n", subtilis_fpa_gen_movr},
 	{"movir *, *\n", subtilis_fpa_gen_movir},
 	{"movfpi32 *, *\n", subtilis_fpa_gen_movri32},
+	{"movfprdi32 *, *\n", subtilis_fpa_gen_movrrdi32},
 	{"movi32fp *, *\n", subtilis_fpa_gen_movi32r},
 	{"addr *, *, *\n", subtilis_fpa_gen_addr},
 	{"addir *, *, *\n", subtilis_fpa_gen_addir},

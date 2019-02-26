@@ -63,6 +63,22 @@ void subtilis_fpa_gen_movri32(subtilis_ir_section_t *s, size_t start,
 			      dest, op2, err);
 }
 
+void subtilis_fpa_gen_movrrdi32(subtilis_ir_section_t *s, size_t start,
+				void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op2;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+
+	dest = subtilis_arm_ir_to_arm_reg(instr->operands[0].reg);
+	op2 = subtilis_arm_ir_to_freg(instr->operands[1].reg);
+
+	subtilis_fpa_add_tran(
+	    arm_s, SUBTILIS_FPA_INSTR_FIX, SUBTILIS_ARM_CCODE_AL,
+	    SUBTILIS_FPA_ROUNDING_MINUS_INFINITY, dest, op2, err);
+}
+
 void subtilis_fpa_gen_movi32r(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err)
 {

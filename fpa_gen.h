@@ -25,6 +25,8 @@ void subtilis_fpa_gen_movir(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_error_t *err);
 void subtilis_fpa_gen_movri32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
+void subtilis_fpa_gen_movrrdi32(subtilis_ir_section_t *s, size_t start,
+				void *user_data, subtilis_error_t *err);
 void subtilis_fpa_gen_movi32r(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_fpa_gen_callr(subtilis_ir_section_t *s, size_t start,

@@ -392,6 +392,41 @@ static subtilis_exp_t *prv_pi(subtilis_parser_t *p, subtilis_token_t *t,
 	return e;
 }
 
+static subtilis_exp_t *prv_int(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_exp_t *e = NULL;
+	subtilis_exp_t *e2 = NULL;
+
+	e = prv_real_bracketed_exp(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (e->type == SUBTILIS_EXP_CONST_REAL) {
+		e2 = subtilis_exp_new_int32(floor(e->exp.ir_op.real), err);
+	} else {
+		reg = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_MOV_FPRD_I32, e->exp.ir_op,
+		    err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		e2 = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+	}
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_delete(e);
+
+	return e2;
+
+cleanup:
+
+	subtilis_exp_delete(e);
+	return NULL;
+}
+
 static subtilis_exp_t *prv_sin(subtilis_parser_t *p, subtilis_token_t *t,
 			       subtilis_error_t *err)
 {
@@ -754,6 +789,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return e;
 		case SUBTILIS_KEYWORD_FN:
 			return prv_call(p, t, err);
+		case SUBTILIS_KEYWORD_INT:
+			return prv_int(p, t, err);
 		case SUBTILIS_KEYWORD_TIME:
 			return prv_gettime(p, t, err);
 		case SUBTILIS_KEYWORD_SIN:

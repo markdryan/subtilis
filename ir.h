@@ -926,6 +926,17 @@ typedef enum {
 	SUBTILIS_OP_INSTR_MOV_FP_I32,
 
 	/*
+	 * movfprdi32 r0, f0
+	 *
+	 * Copies the contents of a floating point register into a 32
+	 * bit integer register.  The number is rounded down to - infinity.
+	 *
+	 * f0 = r0
+	 */
+
+	SUBTILIS_OP_INSTR_MOV_FPRD_I32,
+
+	/*
 	 * nop
 	 *
 	 * Does nothing.  This is used a placeholder for type promotion
