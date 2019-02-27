@@ -887,7 +887,13 @@ const subtilis_test_case_t test_cases[] = {
 	 "  NEXT\n"
 	 "ENDPROC\n",
 	 "-10\n-8\n-6\n-4\n-2\n0\n2\n4\n6\n8\n10\n"
-	}
+	},
+	{ "cmp_imm",
+	"FOR X% = 0 TO 1300 STEP 1300\n"
+	"    PRINT X%\n"
+	"NEXT",
+	"0\n1300\n"
+	},
 };
 
 /* clang-format on */
