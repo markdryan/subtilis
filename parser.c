@@ -392,6 +392,41 @@ static subtilis_exp_t *prv_pi(subtilis_parser_t *p, subtilis_token_t *t,
 	return e;
 }
 
+static subtilis_exp_t *prv_int(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_exp_t *e = NULL;
+	subtilis_exp_t *e2 = NULL;
+
+	e = prv_real_bracketed_exp(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (e->type == SUBTILIS_EXP_CONST_REAL) {
+		e2 = subtilis_exp_new_int32(floor(e->exp.ir_op.real), err);
+	} else {
+		reg = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_MOV_FPRD_I32, e->exp.ir_op,
+		    err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		e2 = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+	}
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_delete(e);
+
+	return e2;
+
+cleanup:
+
+	subtilis_exp_delete(e);
+	return NULL;
+}
+
 static subtilis_exp_t *prv_sin(subtilis_parser_t *p, subtilis_token_t *t,
 			       subtilis_error_t *err)
 {
@@ -402,6 +437,30 @@ static subtilis_exp_t *prv_cos(subtilis_parser_t *p, subtilis_token_t *t,
 			       subtilis_error_t *err)
 {
 	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_COS, cos, err);
+}
+
+static subtilis_exp_t *prv_tan(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_TAN, tan, err);
+}
+
+static subtilis_exp_t *prv_asn(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_ASN, asin, err);
+}
+
+static subtilis_exp_t *prv_acs(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_ACS, acos, err);
+}
+
+static subtilis_exp_t *prv_atn(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_ATN, atan, err);
 }
 
 static subtilis_exp_t *prv_rnd(subtilis_parser_t *p, subtilis_token_t *t,
@@ -754,12 +813,22 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return e;
 		case SUBTILIS_KEYWORD_FN:
 			return prv_call(p, t, err);
+		case SUBTILIS_KEYWORD_INT:
+			return prv_int(p, t, err);
 		case SUBTILIS_KEYWORD_TIME:
 			return prv_gettime(p, t, err);
 		case SUBTILIS_KEYWORD_SIN:
 			return prv_sin(p, t, err);
 		case SUBTILIS_KEYWORD_COS:
 			return prv_cos(p, t, err);
+		case SUBTILIS_KEYWORD_TAN:
+			return prv_tan(p, t, err);
+		case SUBTILIS_KEYWORD_ACS:
+			return prv_acs(p, t, err);
+		case SUBTILIS_KEYWORD_ASN:
+			return prv_asn(p, t, err);
+		case SUBTILIS_KEYWORD_ATN:
+			return prv_atn(p, t, err);
 		case SUBTILIS_KEYWORD_RND:
 			return prv_rnd(p, t, err);
 		case SUBTILIS_KEYWORD_SQR:
@@ -1224,15 +1293,63 @@ cleanup:
 	subtilis_exp_delete(e);
 }
 
+typedef enum {
+	SUBTILIS_ASSIGN_TYPE_EQUAL,
+	SUBTILIS_ASSIGN_TYPE_PLUS_EQUAL,
+	SUBTILIS_ASSIGN_TYPE_MINUS_EQUAL,
+} subtilis_assign_type_t;
+
+static subtilis_exp_t *prv_assignment_operator(subtilis_parser_t *p,
+					       const char *var_name,
+					       subtilis_exp_t *e,
+					       subtilis_assign_type_t at,
+					       subtilis_error_t *err)
+{
+	subtilis_exp_t *var;
+
+	if (at == SUBTILIS_ASSIGN_TYPE_EQUAL)
+		return e;
+
+	var = prv_variable(p, var_name, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (at == SUBTILIS_ASSIGN_TYPE_PLUS_EQUAL)
+		e = subtilis_exp_add(p, var, e, err);
+	else
+		e = subtilis_exp_sub(p, var, e, err);
+
+	var = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return e;
+
+cleanup:
+
+	subtilis_exp_delete(var);
+	subtilis_exp_delete(e);
+
+	return NULL;
+}
+
 static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err)
 {
 	const char *tbuf;
 	subtilis_ir_operand_t op1;
 	const subtilis_symbol_t *s;
+	subtilis_assign_type_t at;
+	char *var_name = NULL;
 	subtilis_exp_t *e = NULL;
 
 	tbuf = subtilis_token_get_text(t);
+	var_name = malloc(strlen(tbuf) + 1);
+	if (!var_name) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	strcpy(var_name, tbuf);
 	s = subtilis_symbol_table_lookup(p->local_st, tbuf);
 	if (s) {
 		op1.reg = SUBTILIS_IR_REG_LOCAL;
@@ -1244,46 +1361,60 @@ static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 			s = subtilis_symbol_table_insert(p->st, tbuf,
 							 t->tok.id_type, err);
 			if (err->type != SUBTILIS_ERROR_OK)
-				return;
+				goto cleanup;
 			op1.reg = SUBTILIS_IR_REG_GLOBAL;
 		} else {
 			subtilis_error_set_unknown_variable(
 			    err, tbuf, p->l->stream->name, p->l->line);
-			return;
+			goto cleanup;
 		}
 	}
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		goto cleanup;
 
 	tbuf = subtilis_token_get_text(t);
 	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
 		subtilis_error_set_assignment_op_expected(
 		    err, tbuf, p->l->stream->name, p->l->line);
-		return;
+		goto cleanup;
 	}
 
-	if (strcmp(tbuf, "=") && strcmp(tbuf, "+=") && strcmp(tbuf, "-=")) {
+	if (!strcmp(tbuf, "=")) {
+		at = SUBTILIS_ASSIGN_TYPE_EQUAL;
+	} else if (!strcmp(tbuf, "+=")) {
+		at = SUBTILIS_ASSIGN_TYPE_PLUS_EQUAL;
+	} else if (!strcmp(tbuf, "-=")) {
+		at = SUBTILIS_ASSIGN_TYPE_MINUS_EQUAL;
+	} else {
 		subtilis_error_set_assignment_op_expected(
 		    err, tbuf, p->l->stream->name, p->l->line);
-		return;
+		goto cleanup;
 	}
 
 	e = prv_expression(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		goto cleanup;
 
 	/* Ownership of e is passed to the following functions. */
 
 	e = prv_coerce_type(p, e, s->t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		goto cleanup;
+
+	e = prv_assignment_operator(p, var_name, e, at, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
 	if (s->is_reg)
 		prv_assign_to_reg(p, t, tbuf, s->loc, e, err);
 	else
 		prv_assign_to_mem(p, tbuf, op1, s->loc, e, err);
+
+cleanup:
+
+	free(var_name);
 }
 
 static void prv_let(subtilis_parser_t *p, subtilis_token_t *t,

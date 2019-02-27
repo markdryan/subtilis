@@ -25,6 +25,8 @@ void subtilis_fpa_gen_movir(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_error_t *err);
 void subtilis_fpa_gen_movri32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
+void subtilis_fpa_gen_movrrdi32(subtilis_ir_section_t *s, size_t start,
+				void *user_data, subtilis_error_t *err);
 void subtilis_fpa_gen_movi32r(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_fpa_gen_callr(subtilis_ir_section_t *s, size_t start,
@@ -109,6 +111,14 @@ void subtilis_fpa_gen_neqr(subtilis_ir_section_t *s, size_t start,
 void subtilis_fpa_gen_sin(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_fpa_gen_cos(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
+void subtilis_fpa_gen_tan(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
+void subtilis_fpa_gen_asn(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
+void subtilis_fpa_gen_acs(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
+void subtilis_fpa_gen_atn(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_fpa_gen_sqr(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);

@@ -1308,6 +1308,10 @@ static void prv_process_fpa_fix(subtilis_arm_vm_t *arm_vm,
 		val = arm_vm->fregs[op->op2.reg].val.real64;
 	if (op->rounding == SUBTILIS_FPA_ROUNDING_ZERO)
 		arm_vm->regs[op->dest] = (int32_t)val;
+	else if (op->rounding == SUBTILIS_FPA_ROUNDING_MINUS_INFINITY)
+		arm_vm->regs[op->dest] = (int32_t)floor(val);
+	else if (op->rounding == SUBTILIS_FPA_ROUNDING_PLUS_INFINITY)
+		arm_vm->regs[op->dest] = (int32_t)ceil(val);
 	else
 		arm_vm->regs[op->dest] = (int32_t)round(val);
 
@@ -1425,6 +1429,34 @@ static void prv_process_fpa_cos(subtilis_arm_vm_t *arm_vm,
 				subtilis_error_t *err)
 {
 	prv_process_fpa_monadic_dbl(arm_vm, op, cos, err);
+}
+
+static void prv_process_fpa_tan(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_monadic_dbl(arm_vm, op, tan, err);
+}
+
+static void prv_process_fpa_asn(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_monadic_dbl(arm_vm, op, asin, err);
+}
+
+static void prv_process_fpa_acs(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_monadic_dbl(arm_vm, op, acos, err);
+}
+
+static void prv_process_fpa_atn(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_monadic_dbl(arm_vm, op, atan, err);
 }
 
 static void prv_process_fpa_sqr(subtilis_arm_vm_t *arm_vm,
@@ -1570,6 +1602,22 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			break;
 		case SUBTILIS_FPA_INSTR_COS:
 			prv_process_fpa_cos(arm_vm, &instr.operands.fpa_data,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_TAN:
+			prv_process_fpa_tan(arm_vm, &instr.operands.fpa_data,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_ASN:
+			prv_process_fpa_asn(arm_vm, &instr.operands.fpa_data,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_ACS:
+			prv_process_fpa_acs(arm_vm, &instr.operands.fpa_data,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_ATN:
+			prv_process_fpa_atn(arm_vm, &instr.operands.fpa_data,
 					    err);
 			break;
 		case SUBTILIS_FPA_INSTR_SQT:

@@ -926,6 +926,17 @@ typedef enum {
 	SUBTILIS_OP_INSTR_MOV_FP_I32,
 
 	/*
+	 * movfprdi32 r0, f0
+	 *
+	 * Copies the contents of a floating point register into a 32
+	 * bit integer register.  The number is rounded down to - infinity.
+	 *
+	 * f0 = r0
+	 */
+
+	SUBTILIS_OP_INSTR_MOV_FPRD_I32,
+
+	/*
 	 * nop
 	 *
 	 * Does nothing.  This is used a placeholder for type promotion
@@ -1044,6 +1055,42 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_COS,
+
+	/*
+	 * tan fp0, fp1
+	 *
+	 * fp0 = tan(fp1) where fp1 is an angle in radians.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_TAN,
+
+	/*
+	 * asn fp0, fp1
+	 *
+	 * fp0 = asn(fp1) where fp1 is an angle in radians.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_ASN,
+
+	/*
+	 * acs fp0, fp1
+	 *
+	 * fp0 = acs(fp1) where fp1 is an angle in radians.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_ACS,
+
+	/*
+	 * atn fp0, fp1
+	 *
+	 * fp0 = atn(fp1) where fp1 is an angle in radians.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_ATN,
 
 	/*
 	 * sqr fp0, fp1
