@@ -1057,6 +1057,42 @@ typedef enum {
 	SUBTILIS_OP_INSTR_COS,
 
 	/*
+	 * tan fp0, fp1
+	 *
+	 * fp0 = tan(fp1) where fp1 is an angle in radians.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_TAN,
+
+	/*
+	 * asn fp0, fp1
+	 *
+	 * fp0 = asn(fp1) where fp1 is an angle in radians.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_ASN,
+
+	/*
+	 * acs fp0, fp1
+	 *
+	 * fp0 = acs(fp1) where fp1 is an angle in radians.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_ACS,
+
+	/*
+	 * atn fp0, fp1
+	 *
+	 * fp0 = atn(fp1) where fp1 is an angle in radians.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_ATN,
+
+	/*
 	 * sqr fp0, fp1
 	 *
 	 * fp0 = squarerootof(fp1)

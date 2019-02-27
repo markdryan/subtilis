@@ -1,0 +1,25 @@
+PRINT INT(TAN(RAD(45)))
+A = RAD(45)
+PRINT INT(TAN(A))
+
+A = ASN(0.5) - 0.5236
+PRINT NOT (A > 0.001 OR A < - 0.001)
+
+A = 0.5
+A = ASN(A) - 0.5236
+PRINT NOT (A > 0.001 OR A < - 0.001)
+
+A = ACS(0.3) - 1.2661
+PRINT NOT (A > 0.001 OR A < - 0.001)
+
+A = 0.3
+A = ACS(A) - 1.2661
+PRINT NOT (A > 0.001 OR A < - 0.001)
+
+A = ATN(0.8) - 0.6747
+PRINT NOT (A > 0.001 OR A < - 0.001)
+
+A = 0.8
+A = ATN(A) - 0.6747
+PRINT NOT (A > 0.001 OR A < - 0.001)
+

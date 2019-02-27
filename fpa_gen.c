@@ -601,6 +601,34 @@ void subtilis_fpa_gen_cos(subtilis_ir_section_t *s, size_t start,
 				SUBTILIS_ARM_CCODE_AL, err);
 }
 
+void subtilis_fpa_gen_tan(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	prv_data_monadic_simple(s, start, user_data, SUBTILIS_FPA_INSTR_TAN,
+				SUBTILIS_ARM_CCODE_AL, err);
+}
+
+void subtilis_fpa_gen_asn(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	prv_data_monadic_simple(s, start, user_data, SUBTILIS_FPA_INSTR_ASN,
+				SUBTILIS_ARM_CCODE_AL, err);
+}
+
+void subtilis_fpa_gen_acs(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	prv_data_monadic_simple(s, start, user_data, SUBTILIS_FPA_INSTR_ACS,
+				SUBTILIS_ARM_CCODE_AL, err);
+}
+
+void subtilis_fpa_gen_atn(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	prv_data_monadic_simple(s, start, user_data, SUBTILIS_FPA_INSTR_ATN,
+				SUBTILIS_ARM_CCODE_AL, err);
+}
+
 void subtilis_fpa_gen_sqr(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err)
 {

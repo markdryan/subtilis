@@ -956,6 +956,33 @@ const subtilis_test_case_t test_cases[] = {
 	  "PRINT INT(-A)\n",
 	  "1\n-2\n1\n-2\n"
 	},
+	{ "trig",
+	  "PRINT INT(TAN(RAD(45)))\n"
+	  "A = RAD(45)\n"
+	  "PRINT INT(TAN(A))\n"
+	  "\n"
+	  "A = ASN(0.5) - 0.5236\n"
+	  "PRINT NOT (A > 0.001 OR A < - 0.001)\n"
+	  "\n"
+	  "A = 0.5\n"
+	  "A = ASN(A) - 0.5236\n"
+	  "PRINT NOT (A > 0.001 OR A < - 0.001)\n"
+	  "\n"
+	  "A = ACS(0.3) - 1.2661\n"
+	  "PRINT NOT (A > 0.001 OR A < - 0.001)\n"
+	  "\n"
+	  "A = 0.3\n"
+	  "A = ACS(A) - 1.2661\n"
+	  "PRINT NOT (A > 0.001 OR A < - 0.001)\n"
+	  "\n"
+	  "A = ATN(0.8) - 0.6747\n"
+	  "PRINT NOT (A > 0.001 OR A < - 0.001)\n"
+	  "\n"
+	  "A = 0.8\n"
+	  "A = ATN(A) - 0.6747\n"
+	  "PRINT NOT (A > 0.001 OR A < - 0.001)\n",
+	  "1\n1\n-1\n-1\n-1\n-1\n-1\n-1\n"
+	},
 };
 
 /* clang-format on */
