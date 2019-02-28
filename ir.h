@@ -1102,6 +1102,24 @@ typedef enum {
 	SUBTILIS_OP_INSTR_SQR,
 
 	/*
+	 * log fp0, fp1
+	 *
+	 * fp0 = log10(fp1)
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_LOG,
+
+	/*
+	 * ln fp0, fp1
+	 *
+	 * fp0 = loge(fp1)
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_LN,
+
+	/*
 	 * get r0
 	 *
 	 * Wait for a key press from the user and store the ASCII code

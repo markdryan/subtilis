@@ -215,6 +215,8 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"acs *, *\n", subtilis_fpa_gen_acs},
 	{"atn *, *\n", subtilis_fpa_gen_atn},
 	{"sqr *, *\n", subtilis_fpa_gen_sqr},
+	{"log *, *\n", subtilis_fpa_gen_log},
+	{"ln *, *\n", subtilis_fpa_gen_ln},
 	{"get *\n", subtilis_riscos_arm_get},
 	{"gettimeout *, *\n", subtilis_riscos_arm_get_to},
 	{"inkey *, *\n", subtilis_riscos_arm_inkey},

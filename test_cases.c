@@ -983,6 +983,19 @@ const subtilis_test_case_t test_cases[] = {
 	  "PRINT NOT (A > 0.001 OR A < - 0.001)\n",
 	  "1\n1\n-1\n-1\n-1\n-1\n-1\n-1\n"
 	},
+	{"log",
+	 "PRINT INT(LOG(1000))\n"
+	 "A = 1000\n"
+	 "PRINT INT(LOG(A))\n"
+	 "\n"
+	 "A = LN(10)\n"
+	 "A -= 2.30258509\n"
+	 "PRINT NOT (A > 0.001 OR A < - 0.001)\n"
+	 "\n"
+	 "A = 10\n"
+	 "A = LN(A) - 2.30258509\n"
+	 "PRINT NOT (A > 0.001 OR A < - 0.001)\n",
+	 "3\n3\n-1\n-1\n"},
 };
 
 /* clang-format on */
