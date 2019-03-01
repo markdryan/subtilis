@@ -463,6 +463,18 @@ static subtilis_exp_t *prv_atn(subtilis_parser_t *p, subtilis_token_t *t,
 	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_ATN, atan, err);
 }
 
+static subtilis_exp_t *prv_log(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_LOG, log10, err);
+}
+
+static subtilis_exp_t *prv_ln(subtilis_parser_t *p, subtilis_token_t *t,
+			      subtilis_error_t *err)
+{
+	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_LN, log, err);
+}
+
 static subtilis_exp_t *prv_rnd(subtilis_parser_t *p, subtilis_token_t *t,
 			       subtilis_error_t *err)
 {
@@ -736,6 +748,68 @@ cleanup:
 	return NULL;
 }
 
+static subtilis_exp_t *prv_abs(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+	size_t reg;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+
+	e = prv_parse_bracketed_exp(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	switch (e->type) {
+	case SUBTILIS_EXP_CONST_INTEGER:
+		e->exp.ir_op.integer = abs(e->exp.ir_op.integer);
+		break;
+	case SUBTILIS_EXP_CONST_REAL:
+		e->exp.ir_op.real = fabs(e->exp.ir_op.real);
+		break;
+	case SUBTILIS_EXP_INTEGER:
+		op2.integer = 31;
+		reg = subtilis_ir_section_add_instr(p->current,
+						    SUBTILIS_OP_INSTR_ASRI_I32,
+						    e->exp.ir_op, op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		op2.reg = reg;
+		reg = subtilis_ir_section_add_instr(p->current,
+						    SUBTILIS_OP_INSTR_ADD_I32,
+						    e->exp.ir_op, op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		op1.reg = reg;
+		reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_EOR_I32, op1, op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		e->exp.ir_op.reg = reg;
+		break;
+	case SUBTILIS_EXP_REAL:
+		reg = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_ABSR, e->exp.ir_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		subtilis_exp_delete(e);
+		e = subtilis_exp_new_var(SUBTILIS_EXP_REAL, reg, err);
+		break;
+	default:
+		subtilis_error_set_numeric_expected(err, "", p->l->stream->name,
+						    p->l->line);
+		goto cleanup;
+	}
+
+	return e;
+
+cleanup:
+
+	subtilis_exp_delete(e);
+	return NULL;
+}
+
 static subtilis_exp_t *prv_get_point(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
@@ -833,8 +907,14 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return prv_rnd(p, t, err);
 		case SUBTILIS_KEYWORD_SQR:
 			return prv_sqr(p, t, err);
+		case SUBTILIS_KEYWORD_LOG:
+			return prv_log(p, t, err);
+		case SUBTILIS_KEYWORD_LN:
+			return prv_ln(p, t, err);
 		case SUBTILIS_KEYWORD_RAD:
 			return prv_rad(p, t, err);
+		case SUBTILIS_KEYWORD_ABS:
+			return prv_abs(p, t, err);
 		case SUBTILIS_KEYWORD_PI:
 			return prv_pi(p, t, err);
 		case SUBTILIS_KEYWORD_GET:
@@ -3798,6 +3878,7 @@ cleanup:
 
 /* clang-format off */
 static const subtilis_keyword_fn keyword_fns[] = {
+	NULL, /* SUBTILIS_KEYWORD_ABS */
 	NULL, /* SUBTILIS_KEYWORD_ACS */
 	NULL, /* SUBTILIS_KEYWORD_ADVAL */
 	NULL, /* SUBTILIS_KEYWORD_AND */

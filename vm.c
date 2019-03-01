@@ -633,30 +633,10 @@ static void prv_set_args(subitlis_vm_t *vm, subtilis_ir_call_t *call,
 	free(real_args_copy);
 }
 
-static void prv_abs(subitlis_vm_t *vm, subtilis_ir_call_t *call,
-		    subtilis_error_t *err)
-{
-	int32_t val;
-
-	if (call->arg_count != 1) {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
-	val = vm->regs[call->args[0].reg];
-	if (val < 0)
-		vm->regs[call->reg] = -val;
-	else
-		vm->regs[call->reg] = val;
-}
-
 static void prv_handle_builtin(subitlis_vm_t *vm, subtilis_builtin_type_t ftype,
 			       subtilis_ir_call_t *call, subtilis_error_t *err)
 {
 	switch (ftype) {
-	case SUBTILIS_BUILTINS_ABS:
-		prv_abs(vm, call, err);
-		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
 	}
@@ -970,6 +950,24 @@ static void prv_sqr(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->fregs[ops[0].reg] = sqrt(vm->fregs[ops[1].reg]);
 }
 
+static void prv_log(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->fregs[ops[0].reg] = log10(vm->fregs[ops[1].reg]);
+}
+
+static void prv_ln(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		   subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->fregs[ops[0].reg] = log(vm->fregs[ops[1].reg]);
+}
+
+static void prv_absr(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->fregs[ops[0].reg] = fabs(vm->fregs[ops[1].reg]);
+}
+
 static void prv_get(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -1115,6 +1113,9 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_acs,                             /* SUBTILIS_OP_INSTR_ACS */
 	prv_atn,                             /* SUBTILIS_OP_INSTR_ATN */
 	prv_sqr,                             /* SUBTILIS_OP_INSTR_SQR */
+	prv_log,                             /* SUBTILIS_OP_INSTR_LOG */
+	prv_ln,                              /* SUBTILIS_OP_INSTR_LN */
+	prv_absr,                            /* SUBTILIS_OP_INSTR_ABSR */
 	prv_get,                             /* SUBTILIS_OP_INSTR_GET */
 	prv_get,                             /* SUBTILIS_OP_INSTR_GETTIMEOUT */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_INKEY */

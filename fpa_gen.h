@@ -122,5 +122,10 @@ void subtilis_fpa_gen_atn(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_fpa_gen_sqr(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
-
+void subtilis_fpa_gen_log(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
+void subtilis_fpa_gen_ln(subtilis_ir_section_t *s, size_t start,
+			 void *user_data, subtilis_error_t *err);
+void subtilis_fpa_gen_absr(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err);
 #endif

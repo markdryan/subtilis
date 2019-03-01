@@ -291,10 +291,27 @@ const subtilis_test_case_t test_cases[] = {
 	  "<-res%\n",
 	  "24\n"},
 	{ "abs",
+	  "LOCAL A\n"
+	  "LOCAL x%\n"
+	  "\n"
 	  "LET x%=-10\n"
 	  "PRINT ABS(x%)\n"
-	  "PRINT ABS(10)\n",
-	  "10\n10\n"},
+	  "PRINT ABS(10)\n"
+	  "PRINT INT(ABS(10.0))\n"
+	  "PRINT INT(ABS(-10.0))\n"
+	  "A = 10\n"
+	  "PRINT INT(ABS(A))\n"
+	  "A = -10\n"
+	  "PRINT INT(ABS(A))\n"
+	  "\n"
+	  "PRINT ABS(-1)\n"
+	  "X% = &ffffffff\n"
+	  "PRINT ABS(X%)\n"
+	  "\n"
+	  "PRINT ABS(&80000000)\n"
+	  "X% = &80000000\n"
+	  "PRINT ABS(X%)\n",
+	  "10\n10\n10\n10\n10\n10\n1\n1\n-2147483648\n-2147483648\n"},
 	{ "fpa_small",
 	  "LOCAL x\n"
 	  "LOCAL y\n"
@@ -983,6 +1000,19 @@ const subtilis_test_case_t test_cases[] = {
 	  "PRINT NOT (A > 0.001 OR A < - 0.001)\n",
 	  "1\n1\n-1\n-1\n-1\n-1\n-1\n-1\n"
 	},
+	{"log",
+	 "PRINT INT(LOG(1000))\n"
+	 "A = 1000\n"
+	 "PRINT INT(LOG(A))\n"
+	 "\n"
+	 "A = LN(10)\n"
+	 "A -= 2.30258509\n"
+	 "PRINT NOT (A > 0.001 OR A < - 0.001)\n"
+	 "\n"
+	 "A = 10\n"
+	 "A = LN(A) - 2.30258509\n"
+	 "PRINT NOT (A > 0.001 OR A < - 0.001)\n",
+	 "3\n3\n-1\n-1\n"},
 };
 
 /* clang-format on */
