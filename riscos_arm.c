@@ -161,39 +161,7 @@ static void prv_add_builtin(subtilis_ir_section_t *s,
 			    subtilis_arm_section_t *arm_s,
 			    subtilis_error_t *err)
 {
-	subtilis_arm_reg_t dest;
-	subtilis_arm_reg_t op2;
-
-	/*
-	 * TODO:  Just a place holder for now to test builtin functions.  ABS
-	 * will be inlined soon.
-	 */
-
 	switch (s->ftype) {
-	case SUBTILIS_BUILTINS_ABS:
-		dest = 0;
-
-		subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_AL, dest, 0,
-					 err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-		op2 = 0;
-
-		subtilis_arm_add_mvn_reg(arm_s, SUBTILIS_ARM_CCODE_LT, false,
-					 dest, op2, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-
-		subtilis_arm_add_add_imm(arm_s, SUBTILIS_ARM_CCODE_LT, false,
-					 dest, dest, 1, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-
-		dest = 15;
-		op2 = 14;
-		subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false,
-					 dest, op2, err);
-		break;
 	case SUBTILIS_BUILTINS_IDIV:
 		subtilis_arm2_idiv_add(s, arm_s, err);
 		break;

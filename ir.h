@@ -1120,6 +1120,15 @@ typedef enum {
 	SUBTILIS_OP_INSTR_LN,
 
 	/*
+	 * absr fp0, fp1
+	 *
+	 * fp0 = absolute value of (fp1)
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_ABSR,
+
+	/*
 	 * get r0
 	 *
 	 * Wait for a key press from the user and store the ASCII code

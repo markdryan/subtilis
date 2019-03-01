@@ -22,7 +22,6 @@
 #include "type.h"
 
 typedef enum {
-	SUBTILIS_BUILTINS_ABS,
 	SUBTILIS_BUILTINS_IDIV,
 	SUBTILIS_BUILTINS_MAX
 } subtilis_builtin_type_t;

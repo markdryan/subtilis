@@ -1480,6 +1480,13 @@ static void prv_process_fpa_ln(subtilis_arm_vm_t *arm_vm,
 	prv_process_fpa_monadic_dbl(arm_vm, op, log, err);
 }
 
+static void prv_process_fpa_abs(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_monadic_dbl(arm_vm, op, fabs, err);
+}
+
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			 subtilis_error_t *err)
 {
@@ -1645,6 +1652,10 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		case SUBTILIS_FPA_INSTR_LGN:
 			prv_process_fpa_ln(arm_vm, &instr.operands.fpa_data,
 					   err);
+			break;
+		case SUBTILIS_FPA_INSTR_ABS:
+			prv_process_fpa_abs(arm_vm, &instr.operands.fpa_data,
+					    err);
 			break;
 		default:
 			printf("instr type %d\n", instr.type);

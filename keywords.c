@@ -20,6 +20,7 @@
 
 /* clang-format off */
 const subtilis_keyword_t subtilis_keywords_list[] = {
+	{"ABS",       SUBTILIS_KEYWORD_ABS,          true},
 	{"ACS",       SUBTILIS_KEYWORD_ACS,          true},
 	{"ADVAL",     SUBTILIS_KEYWORD_ADVAL,        true},
 	{"AND",       SUBTILIS_KEYWORD_AND,          true},

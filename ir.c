@@ -157,6 +157,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "sqr", SUBTILIS_OP_CLASS_FREG_FREG },
 	{ "log", SUBTILIS_OP_CLASS_FREG_FREG },
 	{ "ln", SUBTILIS_OP_CLASS_FREG_FREG },
+	{ "absr", SUBTILIS_OP_CLASS_FREG_FREG },
 	{ "get", SUBTILIS_OP_CLASS_REG },
 	{ "gettimeout", SUBTILIS_OP_CLASS_REG_REG },
 	{ "inkey", SUBTILIS_OP_CLASS_REG_REG },
