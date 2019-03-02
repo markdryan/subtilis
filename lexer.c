@@ -424,14 +424,6 @@ static int prv_compare_keyword(const void *a, const void *b)
 	return strcmp(kw1->str, kw2->str);
 }
 
-static int prv_compare_function(const void *a, const void *b)
-{
-	subtilis_builtin_t *fn1 = (subtilis_builtin_t *)a;
-	subtilis_builtin_t *fn2 = (subtilis_builtin_t *)b;
-
-	return strcmp(fn1->str, fn2->str);
-}
-
 static void prv_validate_identifier(subtilis_lexer_t *l, subtilis_token_t *t,
 				    subtilis_error_t *err)
 {
@@ -506,7 +498,6 @@ static void prv_process_call(subtilis_lexer_t *l, subtilis_token_t *t,
 		t->tok.keyword.type = SUBTILIS_KEYWORD_FN;
 		t->tok.keyword.supported = true;
 	}
-	t->tok.keyword.ftype = SUBTILIS_BUILTINS_MAX;
 }
 
 static void prv_process_keyword(subtilis_lexer_t *l, char ch,
@@ -514,8 +505,6 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 {
 	subtilis_keyword_t *kw;
 	subtilis_keyword_t key;
-	subtilis_builtin_t *fn;
-	subtilis_builtin_t fn_key;
 	const char *tbuf;
 	bool possible_id = true;
 	bool possible_fn = false;
@@ -577,22 +566,6 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	// TODO: bsearch may not be efficient for large files.
-
-	fn_key.str = tbuf;
-	fn = bsearch(&fn_key, subtilis_builtin_list,
-		     sizeof(subtilis_builtin_list) / sizeof(subtilis_builtin_t),
-		     sizeof(subtilis_builtin_t), prv_compare_function);
-	if (fn) {
-		t->type = SUBTILIS_TOKEN_KEYWORD;
-		t->tok.keyword.type = SUBTILIS_KEYWORD_FN;
-		t->tok.keyword.supported = true;
-		t->tok.keyword.ftype = fn->type;
-		/* Type cannot be inferred from the name of builtins */
-		t->tok.keyword.id_type = SUBTILIS_TYPE_MAX;
-		return;
-	}
-
 	if (possible_id) {
 		possible_proc = strncmp(tbuf, "PROC", 4) == 0;
 		possible_fn = strncmp(tbuf, "FN", 2) == 0;
@@ -602,6 +575,8 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 			return;
 		}
 	}
+
+	// TODO: bsearch may not be efficient for large files.
 
 	key.str = tbuf;
 	kw =

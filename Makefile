@@ -13,6 +13,7 @@ COMMON =\
 	string_pool.c \
 	type.c \
 	builtins.c \
+	builtins_ir.c \
 	call.c
 
 ARM =\

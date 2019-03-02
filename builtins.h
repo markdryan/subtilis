@@ -23,13 +23,13 @@
 
 typedef enum {
 	SUBTILIS_BUILTINS_IDIV,
+	SUBTILIS_BUILTINS_INKEY,
 	SUBTILIS_BUILTINS_MAX
 } subtilis_builtin_type_t;
 
 struct _subtilis_builtin_t {
 	const char *str;
 	subtilis_builtin_type_t type;
-	bool inline_fn;
 	subtilis_type_t ret_type;
 	size_t num_parameters;
 	subtilis_type_t arg_types[4];

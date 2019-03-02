@@ -17,7 +17,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "builtins_ir.h"
 #include "expression.h"
+#include "ir.h"
 
 typedef int32_t (*subtilis_const_shift_t)(int32_t a, int32_t b);
 
@@ -71,6 +73,48 @@ static void prv_add_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 	p->calls[p->num_calls++] = call;
 }
 
+static void prv_add_builtin(subtilis_parser_t *p, char *name,
+			    subtilis_builtin_type_t ftype,
+			    subtilis_error_t *err)
+{
+	subtilis_type_section_t *ts;
+	subtilis_ir_section_t *current;
+	subtilis_builtin_type_t ftype_to_use;
+
+	ts = subtilis_builtin_ts(ftype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	/*
+	 * There are two types of builtins.  Builtins that are implemented
+	 * purely in IR which are used for keywords that are too large too
+	 * implement inline, and builtins that are implemented in the
+	 * assembly language of the target platform.  For IR builtins we set
+	 * the ftype to be SUBTILIS_BUILTINS_MAX so that they are ignored by
+	 * the backend.
+	 */
+
+	ftype_to_use = ftype;
+	if (ftype == SUBTILIS_BUILTINS_INKEY)
+		ftype_to_use = SUBTILIS_BUILTINS_MAX;
+	current = subtilis_ir_prog_section_new(p->prog, name, 0, ts,
+					       ftype_to_use, "builtin", 0, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
+			goto on_error;
+		subtilis_error_init(err);
+		subtilis_type_section_delete(ts);
+	} else if (ftype == SUBTILIS_BUILTINS_INKEY) {
+		subtilis_builtins_ir_inkey(current, err);
+	}
+
+	return;
+
+on_error:
+
+	subtilis_type_section_delete(ts);
+}
+
 /*
  * Takes ownership of name and args and stype. stype may be NULL if we're
  * calling a builtin function that's actually used to implement an operator
@@ -88,7 +132,6 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 {
 	size_t reg;
 	subtilis_exp_t *e = NULL;
-	subtilis_type_section_t *ts = NULL;
 	subtilis_parser_call_t *call = NULL;
 
 	if (fn_type == SUBTILIS_TYPE_VOID) {
@@ -116,18 +159,9 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 	}
 
 	if (ftype != SUBTILIS_BUILTINS_MAX) {
-		ts = subtilis_builtin_ts(ftype, err);
+		prv_add_builtin(p, name, ftype, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
-		(void)subtilis_ir_prog_section_new(p->prog, name, 0, ts, ftype,
-						   "builtin", 0, err);
-		if (err->type != SUBTILIS_ERROR_OK) {
-			if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
-				goto on_error;
-			subtilis_error_init(err);
-			subtilis_type_section_delete(ts);
-		}
-		ts = NULL;
 	}
 
 	call = subtilis_parser_call_new(p->current, p->current->len - 1, name,
@@ -145,7 +179,6 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 
 on_error:
 
-	subtilis_type_section_delete(ts);
 	subtilis_exp_delete(e);
 	free(args);
 	subtilis_parser_call_delete(call);
