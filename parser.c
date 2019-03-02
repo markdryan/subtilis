@@ -641,13 +641,44 @@ cleanup:
 	return NULL;
 }
 
+static subtilis_exp_t *prv_call_1_arg_int_fn(subtilis_parser_t *p,
+					     const char *name, size_t reg,
+					     subtilis_error_t *err)
+{
+	subtilis_ir_arg_t *args = NULL;
+	char *name_dup = NULL;
+
+	args = malloc(sizeof(*args) * 1);
+	if (!args) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+
+	name_dup = malloc(strlen(name) + 1);
+	if (!name_dup) {
+		subtilis_error_set_oom(err);
+		goto cleanup;
+	}
+	strcpy(name_dup, name);
+
+	args[0].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[0].reg = reg;
+
+	return subtilis_exp_add_call(p, name_dup, SUBTILIS_BUILTINS_INKEY, NULL,
+				     args, SUBTILIS_TYPE_INTEGER, 1, err);
+
+cleanup:
+
+	free(args);
+
+	return NULL;
+}
+
 static subtilis_exp_t *prv_inkey(subtilis_parser_t *p, subtilis_token_t *t,
 				 subtilis_error_t *err)
 {
 	subtilis_exp_t *e;
-	subtilis_ir_arg_t *args = NULL;
-	char *name = NULL;
-	static const char inkey[] = "inkey";
+	size_t reg;
 
 	e = prv_integer_bracketed_exp(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -656,30 +687,10 @@ static subtilis_exp_t *prv_inkey(subtilis_parser_t *p, subtilis_token_t *t,
 	if (e->type == SUBTILIS_EXP_CONST_INTEGER)
 		return prv_inkey_const(p, t, e, err);
 
-	args = malloc(sizeof(*args) * 1);
-	if (!args) {
-		subtilis_error_set_oom(err);
-		goto cleanup;
-	}
-
-	name = malloc(sizeof(inkey));
-	if (!name) {
-		subtilis_error_set_oom(err);
-		goto cleanup;
-	}
-	strcpy(name, inkey);
-
-	args[0].type = SUBTILIS_IR_REG_TYPE_INTEGER;
-	args[0].reg = e->exp.ir_op.reg;
+	reg = e->exp.ir_op.reg;
 	subtilis_exp_delete(e);
-	return subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_INKEY, NULL,
-				     args, SUBTILIS_TYPE_INTEGER, 1, err);
 
-cleanup:
-
-	free(args);
-	subtilis_exp_delete(e);
-	return NULL;
+	return prv_call_1_arg_int_fn(p, "inkey", reg, err);
 }
 
 static subtilis_exp_t *prv_abs(subtilis_parser_t *p, subtilis_token_t *t,
