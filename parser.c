@@ -3365,15 +3365,12 @@ static char *prv_proc_name_and_type(subtilis_parser_t *p, subtilis_token_t *t,
 		return NULL;
 	}
 
-	if (t->tok.keyword.ftype != SUBTILIS_BUILTINS_MAX) {
-		id_type = subtilis_builtin_list[t->tok.keyword.ftype].ret_type;
-	} else {
-		if (t->tok.keyword.type == SUBTILIS_KEYWORD_PROC)
-			tbuf += 4;
-		else if (t->tok.keyword.type == SUBTILIS_KEYWORD_FN)
-			tbuf += 2;
-		id_type = t->tok.keyword.id_type;
-	}
+	if (t->tok.keyword.type == SUBTILIS_KEYWORD_PROC)
+		tbuf += 4;
+	else if (t->tok.keyword.type == SUBTILIS_KEYWORD_FN)
+		tbuf += 2;
+	id_type = t->tok.keyword.id_type;
+
 	name = malloc(strlen(tbuf) + 1);
 	if (!name) {
 		subtilis_error_set_oom(err);
@@ -3644,7 +3641,6 @@ static subtilis_exp_t *prv_call(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	const char *tbuf;
 	subtilis_type_t fn_type;
-	subtilis_builtin_type_t ftype;
 	subtilis_type_section_t *stype = NULL;
 	subtilis_type_t *ptypes = NULL;
 	char *name = NULL;
@@ -3655,7 +3651,6 @@ static subtilis_exp_t *prv_call(subtilis_parser_t *p, subtilis_token_t *t,
 	name = prv_proc_name_and_type(p, t, &fn_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	ftype = t->tok.keyword.ftype;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -3682,8 +3677,8 @@ static subtilis_exp_t *prv_call(subtilis_parser_t *p, subtilis_token_t *t,
 
 	/* Ownership of stypes, args and name passed to this function. */
 
-	return subtilis_exp_add_call(p, name, ftype, stype, args, fn_type,
-				     num_params, err);
+	return subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_MAX, stype,
+				     args, fn_type, num_params, err);
 
 on_error:
 
