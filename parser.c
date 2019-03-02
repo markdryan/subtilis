@@ -645,13 +645,9 @@ static subtilis_exp_t *prv_inkey(subtilis_parser_t *p, subtilis_token_t *t,
 				 subtilis_error_t *err)
 {
 	subtilis_exp_t *e;
-	subtilis_ir_operand_t op0;
-	subtilis_ir_operand_t op1;
-	subtilis_ir_operand_t op2;
-	subtilis_ir_operand_t cond;
-	subtilis_ir_operand_t true_label;
-	subtilis_ir_operand_t false_label;
-	subtilis_ir_operand_t end_label;
+	subtilis_ir_arg_t *args = NULL;
+	char *name = NULL;
+	static const char inkey[] = "inkey";
 
 	e = prv_integer_bracketed_exp(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -660,90 +656,28 @@ static subtilis_exp_t *prv_inkey(subtilis_parser_t *p, subtilis_token_t *t,
 	if (e->type == SUBTILIS_EXP_CONST_INTEGER)
 		return prv_inkey_const(p, t, e, err);
 
-	/*
-	 * TODO: This needs to go in a builtin.  It's too large to inline.
-	 */
-
-	op0.reg = p->current->reg_counter++;
-
-	op1.reg = e->exp.ir_op.reg;
-	op2.integer = 0;
-	cond.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_GTEI_I32, op1, op2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
+	args = malloc(sizeof(*args) * 1);
+	if (!args) {
+		subtilis_error_set_oom(err);
 		goto cleanup;
+	}
 
-	true_label.reg = subtilis_ir_section_new_label(p->current);
-	false_label.reg = subtilis_ir_section_new_label(p->current);
-	end_label.reg = subtilis_ir_section_new_label(p->current);
-
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
-					  cond, true_label, false_label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
+	name = malloc(sizeof(inkey));
+	if (!name) {
+		subtilis_error_set_oom(err);
 		goto cleanup;
-	subtilis_ir_section_add_label(p->current, true_label.reg, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+	}
+	strcpy(name, inkey);
 
-	subtilis_ir_section_add_instr_no_reg2(
-	    p->current, SUBTILIS_OP_INSTR_GET_TO, op0, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
-					     end_label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_label(p->current, false_label.reg, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	op2.integer = -256;
-	cond.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_EQI_I32, op1, op2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	true_label.reg = subtilis_ir_section_new_label(p->current);
-	false_label.reg = subtilis_ir_section_new_label(p->current);
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
-					  cond, true_label, false_label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-	subtilis_ir_section_add_label(p->current, true_label.reg, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_no_reg(
-	    p->current, SUBTILIS_OP_INSTR_OS_BYTE_ID, op0, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
-					     end_label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_label(p->current, false_label.reg, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_no_reg2(
-	    p->current, SUBTILIS_OP_INSTR_INKEY, op0, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return NULL;
-
-	subtilis_ir_section_add_label(p->current, end_label.reg, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
+	args[0].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[0].reg = e->exp.ir_op.reg;
 	subtilis_exp_delete(e);
-
-	return subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, op0.reg, err);
+	return subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_INKEY, NULL,
+				     args, SUBTILIS_TYPE_INTEGER, 1, err);
 
 cleanup:
 
+	free(args);
 	subtilis_exp_delete(e);
 	return NULL;
 }
