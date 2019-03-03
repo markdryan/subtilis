@@ -24,6 +24,8 @@ const subtilis_builtin_t subtilis_builtin_list[] = {
 	 { SUBTILIS_TYPE_INTEGER, SUBTILIS_TYPE_INTEGER } },
 	{"_inkey", SUBTILIS_BUILTINS_INKEY, SUBTILIS_TYPE_INTEGER, 1,
 	 { SUBTILIS_TYPE_INTEGER} },
+	{"_rnd", SUBTILIS_BUILTINS_RND, SUBTILIS_TYPE_INTEGER, 1,
+	 { SUBTILIS_TYPE_INTEGER} },
 };
 
 /* clang-format on */

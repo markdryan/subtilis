@@ -95,7 +95,8 @@ static void prv_add_builtin(subtilis_parser_t *p, char *name,
 	 */
 
 	ftype_to_use = ftype;
-	if (ftype == SUBTILIS_BUILTINS_INKEY)
+	if ((ftype == SUBTILIS_BUILTINS_INKEY) ||
+	    (ftype == SUBTILIS_BUILTINS_RND))
 		ftype_to_use = SUBTILIS_BUILTINS_MAX;
 	current = subtilis_ir_prog_section_new(p->prog, name, 0, ts,
 					       ftype_to_use, "builtin", 0, err);
@@ -106,6 +107,8 @@ static void prv_add_builtin(subtilis_parser_t *p, char *name,
 		subtilis_type_section_delete(ts);
 	} else if (ftype == SUBTILIS_BUILTINS_INKEY) {
 		subtilis_builtins_ir_inkey(current, err);
+	} else if (ftype == SUBTILIS_BUILTINS_RND) {
+		subtilis_builtins_ir_rnd(p, current, err);
 	}
 
 	return;

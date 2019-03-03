@@ -15,6 +15,9 @@
  */
 
 #include "builtins_ir.h"
+#include "variable.h"
+
+const char *subtilis_rnd_hidden_var = "_RND";
 
 void subtilis_builtins_ir_inkey(subtilis_ir_section_t *current,
 				subtilis_error_t *err)
@@ -105,4 +108,120 @@ void subtilis_builtins_ir_inkey(subtilis_ir_section_t *current,
 
 	subtilis_ir_section_add_instr_no_reg(current, SUBTILIS_OP_INSTR_RET_I32,
 					     op0, err);
+}
+
+/*
+ * TODO: This needs to be moved to a better location.
+ */
+
+subtilis_exp_t *subtilis_builtins_ir_basic_rnd(subtilis_parser_t *p,
+					       subtilis_error_t *err)
+{
+	subtilis_exp_t *e = NULL;
+	subtilis_exp_t *a = NULL;
+	subtilis_exp_t *c = NULL;
+
+	a = subtilis_exp_new_int32(1664525, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	c = subtilis_exp_new_int32(1013904223, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_var_lookup_var(p, subtilis_rnd_hidden_var, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_mul(p, a, e, err);
+	a = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return subtilis_exp_add(p, e, c, err);
+
+cleanup:
+
+	subtilis_exp_delete(e);
+	subtilis_exp_delete(a);
+	subtilis_exp_delete(c);
+
+	return NULL;
+}
+
+void subtilis_builtins_ir_rnd(subtilis_parser_t *p,
+			      subtilis_ir_section_t *current,
+			      subtilis_error_t *err)
+{
+	subtilis_exp_t *m = NULL;
+	subtilis_exp_t *e = NULL;
+	subtilis_exp_t *e_dup = NULL;
+	subtilis_exp_t *top_bit = NULL;
+	subtilis_ir_section_t *old_current;
+	subtilis_ir_operand_t op0;
+
+	/*
+	 * This is a bit nasty.  The expression functions take a parser
+	 * and not a section.  As we don't want to add to the current section
+	 * here we need to temporarily replace the current section.  We should
+	 * probably update the expression functions to take an explicit section.
+	 */
+
+	old_current = p->current;
+	p->current = current;
+
+	e = subtilis_builtins_ir_basic_rnd(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e_dup = subtilis_exp_dup(e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	m = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER,
+				 SUBTILIS_IR_REG_TEMP_START, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	top_bit = subtilis_exp_new_int32((int32_t)0x7fffffff, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_and(p, e, top_bit, err);
+	top_bit = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_mod(p, e, m, err);
+	m = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	top_bit = subtilis_exp_new_int32(1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_add(p, e, top_bit, err);
+	top_bit = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_var_assign_hidden(p, subtilis_rnd_hidden_var,
+				   SUBTILIS_TYPE_INTEGER, e_dup, err);
+	e_dup = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op0.reg = e->exp.ir_op.reg;
+	subtilis_ir_section_add_instr_no_reg(current, SUBTILIS_OP_INSTR_RET_I32,
+					     op0, err);
+
+cleanup:
+
+	p->current = old_current;
+
+	subtilis_exp_delete(top_bit);
+	subtilis_exp_delete(e_dup);
+	subtilis_exp_delete(e);
+	subtilis_exp_delete(m);
 }

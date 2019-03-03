@@ -17,9 +17,19 @@
 #ifndef __SUBTILIS_BUILTINS_IR_H__
 #define __SUBTILIS_BUILTINS_IR_H__
 
+#include "expression.h"
 #include "ir.h"
+#include "parser.h"
+
+extern const char *subtilis_rnd_hidden_var;
 
 void subtilis_builtins_ir_inkey(subtilis_ir_section_t *current,
 				subtilis_error_t *err);
+
+subtilis_exp_t *subtilis_builtins_ir_basic_rnd(subtilis_parser_t *p,
+					       subtilis_error_t *err);
+void subtilis_builtins_ir_rnd(subtilis_parser_t *p,
+			      subtilis_ir_section_t *current,
+			      subtilis_error_t *err);
 
 #endif
