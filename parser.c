@@ -643,7 +643,7 @@ static subtilis_exp_t *prv_inkey(subtilis_parser_t *p, subtilis_token_t *t,
 	reg = e->exp.ir_op.reg;
 	subtilis_exp_delete(e);
 
-	return prv_call_1_arg_int_fn(p, "inkey", reg, err);
+	return prv_call_1_arg_int_fn(p, "_inkey", reg, err);
 }
 
 static subtilis_exp_t *prv_abs(subtilis_parser_t *p, subtilis_token_t *t,
