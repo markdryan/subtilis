@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
+
 #include "builtins_ir.h"
 #include "variable.h"
 
@@ -224,4 +226,30 @@ cleanup:
 	subtilis_exp_delete(e_dup);
 	subtilis_exp_delete(e);
 	subtilis_exp_delete(m);
+}
+
+subtilis_ir_section_t *subtilis_builtins_ir_add_1_arg_int(subtilis_parser_t *p,
+							  const char *name,
+							  subtilis_error_t *err)
+{
+	subtilis_type_section_t *ts;
+	subtilis_type_t *params;
+	subtilis_ir_section_t *current;
+
+	params = malloc(sizeof(subtilis_type_t) * 1);
+	if (!params) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+	params[0] = SUBTILIS_TYPE_INTEGER;
+	ts = subtilis_type_section_new(SUBTILIS_TYPE_INTEGER, 1, params, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	current = subtilis_ir_prog_section_new(
+	    p->prog, name, 0, ts, SUBTILIS_BUILTINS_MAX, "builtin", 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		subtilis_type_section_delete(ts);
+
+	return current;
 }

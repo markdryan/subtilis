@@ -32,4 +32,8 @@ void subtilis_builtins_ir_rnd(subtilis_parser_t *p,
 			      subtilis_ir_section_t *current,
 			      subtilis_error_t *err);
 
+subtilis_ir_section_t *
+subtilis_builtins_ir_add_1_arg_int(subtilis_parser_t *p, const char *name,
+				   subtilis_error_t *err);
+
 #endif

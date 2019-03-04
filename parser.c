@@ -34,7 +34,6 @@ typedef struct subtilis_parser_param_t_ subtilis_parser_param_t;
 
 static subtilis_exp_t *prv_call_1_arg_int_fn(subtilis_parser_t *p,
 					     const char *name, size_t reg,
-					     subtilis_builtin_type_t ftype,
 					     subtilis_error_t *err);
 static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err);
@@ -436,6 +435,7 @@ static subtilis_exp_t *prv_rnd(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	const char *tbuf;
 	size_t reg;
+	subtilis_ir_section_t *current;
 	subtilis_exp_t *e = NULL;
 	subtilis_exp_t *e_dup = NULL;
 
@@ -465,8 +465,19 @@ static subtilis_exp_t *prv_rnd(subtilis_parser_t *p, subtilis_token_t *t,
 			reg = e->exp.ir_op.reg;
 			subtilis_exp_delete(e);
 
-			return prv_call_1_arg_int_fn(
-			    p, "_rnd", reg, SUBTILIS_BUILTINS_RND, err);
+			current =
+			    subtilis_builtins_ir_add_1_arg_int(p, "_rnd", err);
+			if (err->type != SUBTILIS_ERROR_OK) {
+				if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
+					return NULL;
+				subtilis_error_init(err);
+			} else {
+				subtilis_builtins_ir_rnd(p, current, err);
+				if (err->type != SUBTILIS_ERROR_OK)
+					return NULL;
+			}
+
+			return prv_call_1_arg_int_fn(p, "_rnd", reg, err);
 		}
 	}
 
@@ -564,7 +575,6 @@ cleanup:
 
 static subtilis_exp_t *prv_call_1_arg_int_fn(subtilis_parser_t *p,
 					     const char *name, size_t reg,
-					     subtilis_builtin_type_t ftype,
 					     subtilis_error_t *err)
 {
 	subtilis_ir_arg_t *args = NULL;
@@ -586,8 +596,8 @@ static subtilis_exp_t *prv_call_1_arg_int_fn(subtilis_parser_t *p,
 	args[0].type = SUBTILIS_IR_REG_TYPE_INTEGER;
 	args[0].reg = reg;
 
-	return subtilis_exp_add_call(p, name_dup, ftype, NULL, args,
-				     SUBTILIS_TYPE_INTEGER, 1, err);
+	return subtilis_exp_add_call(p, name_dup, SUBTILIS_BUILTINS_MAX, NULL,
+				     args, SUBTILIS_TYPE_INTEGER, 1, err);
 
 cleanup:
 
@@ -601,6 +611,7 @@ static subtilis_exp_t *prv_inkey(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	subtilis_exp_t *e;
 	size_t reg;
+	subtilis_ir_section_t *current;
 
 	e = prv_integer_bracketed_exp(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -612,8 +623,18 @@ static subtilis_exp_t *prv_inkey(subtilis_parser_t *p, subtilis_token_t *t,
 	reg = e->exp.ir_op.reg;
 	subtilis_exp_delete(e);
 
-	return prv_call_1_arg_int_fn(p, "_inkey", reg, SUBTILIS_BUILTINS_INKEY,
-				     err);
+	current = subtilis_builtins_ir_add_1_arg_int(p, "_inkey", err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
+			return NULL;
+		subtilis_error_init(err);
+	} else {
+		subtilis_builtins_ir_inkey(current, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+	}
+
+	return prv_call_1_arg_int_fn(p, "_inkey", reg, err);
 }
 
 static subtilis_exp_t *prv_abs(subtilis_parser_t *p, subtilis_token_t *t,
