@@ -155,12 +155,19 @@ void subtilis_builtins_ir_rnd(subtilis_parser_t *p,
 			      subtilis_ir_section_t *current,
 			      subtilis_error_t *err)
 {
+	subtilis_ir_section_t *old_current;
+	subtilis_ir_operand_t neg_label;
+	subtilis_ir_operand_t zero_pos_label;
+	subtilis_ir_operand_t end_label;
+	subtilis_ir_operand_t result;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t cond;
 	subtilis_exp_t *m = NULL;
 	subtilis_exp_t *e = NULL;
 	subtilis_exp_t *e_dup = NULL;
 	subtilis_exp_t *top_bit = NULL;
-	subtilis_ir_section_t *old_current;
-	subtilis_ir_operand_t op0;
 
 	/*
 	 * This is a bit nasty.  The expression functions take a parser
@@ -171,6 +178,54 @@ void subtilis_builtins_ir_rnd(subtilis_parser_t *p,
 
 	old_current = p->current;
 	p->current = current;
+
+	neg_label.label = subtilis_ir_section_new_label(current);
+	zero_pos_label.label = subtilis_ir_section_new_label(current);
+	end_label.label = subtilis_ir_section_new_label(current);
+
+	result.reg = current->reg_counter++;
+	op0.reg = current->reg_counter++;
+
+	op1.reg = SUBTILIS_IR_REG_TEMP_START;
+	op2.integer = 0;
+	cond.reg = subtilis_ir_section_add_instr(
+	    current, SUBTILIS_OP_INSTR_LTI_I32, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_JMPC, cond,
+					  neg_label, zero_pos_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(current, neg_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op2.integer = 0;
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_RSUBI_I32,
+					  result, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e_dup = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, result.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_var_assign_hidden(p, subtilis_rnd_hidden_var,
+				   SUBTILIS_TYPE_INTEGER, e_dup, err);
+	e_dup = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg(current, SUBTILIS_OP_INSTR_JMP,
+					     end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(current, zero_pos_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
 	e = subtilis_builtins_ir_basic_rnd(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -199,12 +254,9 @@ void subtilis_builtins_ir_rnd(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	top_bit = subtilis_exp_new_int32(1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	e = subtilis_exp_add(p, e, top_bit, err);
-	top_bit = NULL;
+	op2.integer = 1;
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_ADDI_I32,
+					  result, e->exp.ir_op, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -215,8 +267,13 @@ void subtilis_builtins_ir_rnd(subtilis_parser_t *p,
 		goto cleanup;
 
 	op0.reg = e->exp.ir_op.reg;
+
+	subtilis_ir_section_add_label(current, end_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	subtilis_ir_section_add_instr_no_reg(current, SUBTILIS_OP_INSTR_RET_I32,
-					     op0, err);
+					     result, err);
 
 cleanup:
 
