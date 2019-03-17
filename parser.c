@@ -32,9 +32,9 @@ struct subtilis_parser_param_t_ {
 
 typedef struct subtilis_parser_param_t_ subtilis_parser_param_t;
 
-static subtilis_exp_t *prv_call_1_arg_int_fn(subtilis_parser_t *p,
-					     const char *name, size_t reg,
-					     subtilis_error_t *err);
+static subtilis_exp_t *prv_call_1_arg_fn(subtilis_parser_t *p, const char *name,
+					 size_t reg, subtilis_type_t rtype,
+					 subtilis_error_t *err);
 static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err);
 static subtilis_exp_t *prv_call(subtilis_parser_t *p, subtilis_token_t *t,
@@ -430,12 +430,150 @@ static subtilis_exp_t *prv_ln(subtilis_parser_t *p, subtilis_token_t *t,
 	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_LN, log, err);
 }
 
+static subtilis_exp_t *prv_rnd_var(subtilis_parser_t *p, subtilis_exp_t *e,
+				   subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_ir_section_t *fn;
+	size_t zero;
+	size_t one;
+	size_t cond;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t else_label;
+	subtilis_ir_operand_t zero_one_label;
+	subtilis_ir_operand_t end_label;
+	subtilis_ir_operand_t result;
+
+	zero_one_label.label = subtilis_ir_section_new_label(p->current);
+	else_label.label = subtilis_ir_section_new_label(p->current);
+	end_label.label = subtilis_ir_section_new_label(p->current);
+
+	result.reg = p->current->freg_counter++;
+	reg = e->exp.ir_op.reg;
+	subtilis_exp_delete(e);
+	e = NULL;
+
+	fn = subtilis_builtins_ir_add_1_arg_int(p, "_rnd_int",
+						SUBTILIS_TYPE_INTEGER, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
+			goto cleanup;
+		subtilis_error_init(err);
+	} else {
+		subtilis_builtins_ir_rnd_int(p, fn, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	fn = subtilis_builtins_ir_add_1_arg_int(p, "_rnd_real",
+						SUBTILIS_TYPE_REAL, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
+			goto cleanup;
+		subtilis_error_init(err);
+	} else {
+		subtilis_builtins_ir_rnd_real(p, fn, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	op1.reg = reg;
+	op2.integer = 0;
+	zero = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_EQI_I32, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op2.integer = 1;
+	one = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_EQI_I32, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.reg = zero;
+	op2.reg = one;
+	cond = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_OR_I32, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.reg = cond;
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  op1, zero_one_label, else_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, zero_one_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = prv_call_1_arg_fn(p, "_rnd_real", reg, SUBTILIS_TYPE_REAL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_MOVFP, result, e->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_delete(e);
+	e = NULL;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, else_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = prv_call_1_arg_fn(p, "_rnd_int", reg, SUBTILIS_TYPE_INTEGER, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg2(p->current,
+					      SUBTILIS_OP_INSTR_MOV_I32_FP,
+					      result, e->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_delete(e);
+	e = NULL;
+
+	subtilis_ir_section_add_label(p->current, end_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return subtilis_exp_new_var(SUBTILIS_EXP_REAL, result.reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(e);
+
+	return NULL;
+}
+
+static subtilis_exp_t *prv_rnd_const(subtilis_parser_t *p, subtilis_exp_t *e,
+				     subtilis_error_t *err)
+{
+	if (e->exp.ir_op.integer == 0)
+		return subtilis_builtins_ir_rnd_0(p, err);
+	else if (e->exp.ir_op.integer == 1)
+		return subtilis_builtins_ir_rnd_1(p, err);
+	else if (e->exp.ir_op.integer < 0)
+		return subtilis_builtins_ir_rnd_neg(p, e->exp.ir_op.integer,
+						    err);
+	else
+		return subtilis_builtins_ir_rnd_pos(p, e->exp.ir_op.integer,
+						    err);
+}
+
 static subtilis_exp_t *prv_rnd(subtilis_parser_t *p, subtilis_token_t *t,
 			       subtilis_error_t *err)
 {
 	const char *tbuf;
-	size_t reg;
-	subtilis_ir_section_t *current;
 	subtilis_exp_t *e = NULL;
 	subtilis_exp_t *e_dup = NULL;
 
@@ -458,26 +596,9 @@ static subtilis_exp_t *prv_rnd(subtilis_parser_t *p, subtilis_token_t *t,
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
 
-			e = subtilis_exp_to_var(p, e, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				goto cleanup;
-
-			reg = e->exp.ir_op.reg;
-			subtilis_exp_delete(e);
-
-			current =
-			    subtilis_builtins_ir_add_1_arg_int(p, "_rnd", err);
-			if (err->type != SUBTILIS_ERROR_OK) {
-				if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
-					return NULL;
-				subtilis_error_init(err);
-			} else {
-				subtilis_builtins_ir_rnd(p, current, err);
-				if (err->type != SUBTILIS_ERROR_OK)
-					return NULL;
-			}
-
-			return prv_call_1_arg_int_fn(p, "_rnd", reg, err);
+			if (e->type == SUBTILIS_EXP_CONST_INTEGER)
+				return prv_rnd_const(p, e, err);
+			return prv_rnd_var(p, e, err);
 		}
 	}
 
@@ -573,9 +694,9 @@ cleanup:
 	return NULL;
 }
 
-static subtilis_exp_t *prv_call_1_arg_int_fn(subtilis_parser_t *p,
-					     const char *name, size_t reg,
-					     subtilis_error_t *err)
+static subtilis_exp_t *prv_call_1_arg_fn(subtilis_parser_t *p, const char *name,
+					 size_t reg, subtilis_type_t rtype,
+					 subtilis_error_t *err)
 {
 	subtilis_ir_arg_t *args = NULL;
 	char *name_dup = NULL;
@@ -597,7 +718,7 @@ static subtilis_exp_t *prv_call_1_arg_int_fn(subtilis_parser_t *p,
 	args[0].reg = reg;
 
 	return subtilis_exp_add_call(p, name_dup, SUBTILIS_BUILTINS_MAX, NULL,
-				     args, SUBTILIS_TYPE_INTEGER, 1, err);
+				     args, rtype, 1, err);
 
 cleanup:
 
@@ -623,7 +744,8 @@ static subtilis_exp_t *prv_inkey(subtilis_parser_t *p, subtilis_token_t *t,
 	reg = e->exp.ir_op.reg;
 	subtilis_exp_delete(e);
 
-	current = subtilis_builtins_ir_add_1_arg_int(p, "_inkey", err);
+	current = subtilis_builtins_ir_add_1_arg_int(
+	    p, "_inkey", SUBTILIS_TYPE_INTEGER, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
 			return NULL;
@@ -634,7 +756,7 @@ static subtilis_exp_t *prv_inkey(subtilis_parser_t *p, subtilis_token_t *t,
 			return NULL;
 	}
 
-	return prv_call_1_arg_int_fn(p, "_inkey", reg, err);
+	return prv_call_1_arg_fn(p, "_inkey", reg, SUBTILIS_TYPE_INTEGER, err);
 }
 
 static subtilis_exp_t *prv_abs(subtilis_parser_t *p, subtilis_token_t *t,
@@ -3447,14 +3569,14 @@ static void prv_proc(subtilis_parser_t *p, subtilis_token_t *t,
 static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 		     subtilis_error_t *err)
 {
-	subtilis_exp_t *zero;
+	subtilis_exp_t *seed;
 
-	zero = subtilis_exp_new_int32(0, err);
+	seed = subtilis_exp_new_int32(0x3fffffff, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	subtilis_var_assign_hidden(p, subtilis_rnd_hidden_var,
-				   SUBTILIS_TYPE_INTEGER, zero, err);
+				   SUBTILIS_TYPE_INTEGER, seed, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

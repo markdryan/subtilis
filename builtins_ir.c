@@ -151,9 +151,184 @@ cleanup:
 	return NULL;
 }
 
-void subtilis_builtins_ir_rnd(subtilis_parser_t *p,
-			      subtilis_ir_section_t *current,
-			      subtilis_error_t *err)
+subtilis_exp_t *subtilis_builtins_ir_rnd_0(subtilis_parser_t *p,
+					   subtilis_error_t *err)
+{
+	subtilis_exp_t *e = NULL;
+	subtilis_exp_t *top_bit = NULL;
+	subtilis_exp_t *top_bit_dup = NULL;
+
+	e = subtilis_var_lookup_var(p, subtilis_rnd_hidden_var, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	top_bit = subtilis_exp_new_int32((int32_t)0x7fffffff, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	top_bit_dup = subtilis_exp_dup(top_bit, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_and(p, e, top_bit, err);
+	top_bit = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_divr(p, e, top_bit_dup, err);
+	top_bit_dup = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return e;
+
+cleanup:
+
+	subtilis_exp_delete(e);
+	subtilis_exp_delete(top_bit);
+	subtilis_exp_delete(top_bit_dup);
+
+	return NULL;
+}
+
+subtilis_exp_t *subtilis_builtins_ir_rnd_1(subtilis_parser_t *p,
+					   subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+	subtilis_exp_t *e_dup = NULL;
+	subtilis_exp_t *top_bit = NULL;
+
+	e = subtilis_builtins_ir_basic_rnd(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e_dup = subtilis_exp_dup(e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_var_assign_hidden(p, subtilis_rnd_hidden_var,
+				   SUBTILIS_TYPE_INTEGER, e_dup, err);
+	e_dup = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	top_bit = subtilis_exp_new_int32((int32_t)0x7fffffff, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_and(p, e, top_bit, err);
+	top_bit = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	top_bit = subtilis_exp_new_int32((int32_t)0x7fffffff, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_divr(p, e, top_bit, err);
+	top_bit = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return e;
+
+cleanup:
+
+	subtilis_exp_delete(top_bit);
+	subtilis_exp_delete(e_dup);
+	subtilis_exp_delete(e);
+
+	return NULL;
+}
+
+subtilis_exp_t *subtilis_builtins_ir_rnd_pos(subtilis_parser_t *p, int32_t val,
+					     subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+	subtilis_exp_t *m;
+	subtilis_exp_t *e_dup = NULL;
+	subtilis_exp_t *top_bit = NULL;
+
+	e = subtilis_builtins_ir_basic_rnd(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	e_dup = subtilis_exp_dup(e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_var_assign_hidden(p, subtilis_rnd_hidden_var,
+				   SUBTILIS_TYPE_INTEGER, e_dup, err);
+	e_dup = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	top_bit = subtilis_exp_new_int32((int32_t)0x7fffffff, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_and(p, e, top_bit, err);
+	top_bit = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	m = subtilis_exp_new_int32(val, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_mod(p, e, m, err);
+	m = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	m = subtilis_exp_new_int32(1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return subtilis_exp_add(p, e, m, err);
+
+cleanup:
+
+	subtilis_exp_delete(top_bit);
+	subtilis_exp_delete(e_dup);
+	subtilis_exp_delete(e);
+
+	return NULL;
+}
+
+subtilis_exp_t *subtilis_builtins_ir_rnd_neg(subtilis_parser_t *p, int32_t val,
+					     subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+	subtilis_exp_t *e_dup = NULL;
+
+	e = subtilis_exp_new_int32(-val, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	e_dup = subtilis_exp_dup(e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_var_assign_hidden(p, subtilis_rnd_hidden_var,
+				   SUBTILIS_TYPE_INTEGER, e_dup, err);
+	e_dup = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return e;
+
+cleanup:
+
+	subtilis_exp_delete(e_dup);
+	subtilis_exp_delete(e);
+
+	return NULL;
+}
+
+void subtilis_builtins_ir_rnd_int(subtilis_parser_t *p,
+				  subtilis_ir_section_t *current,
+				  subtilis_error_t *err)
 {
 	subtilis_ir_section_t *old_current;
 	subtilis_ir_operand_t neg_label;
@@ -285,8 +460,98 @@ cleanup:
 	subtilis_exp_delete(m);
 }
 
+void subtilis_builtins_ir_rnd_real(subtilis_parser_t *p,
+				   subtilis_ir_section_t *current,
+				   subtilis_error_t *err)
+{
+	subtilis_ir_section_t *old_current;
+	subtilis_ir_operand_t one_label;
+	subtilis_ir_operand_t zero_label;
+	subtilis_ir_operand_t end_label;
+	subtilis_ir_operand_t result;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t cond;
+	subtilis_exp_t *e = NULL;
+
+	/*
+	 * This is a bit nasty.  The expression functions take a parser
+	 * and not a section.  As we don't want to add to the current section
+	 * here we need to temporarily replace the current section.  We should
+	 * probably update the expression functions to take an explicit section.
+	 */
+
+	old_current = p->current;
+	p->current = current;
+
+	one_label.label = subtilis_ir_section_new_label(current);
+	zero_label.label = subtilis_ir_section_new_label(current);
+	end_label.label = subtilis_ir_section_new_label(current);
+
+	result.reg = current->freg_counter++;
+
+	op1.reg = SUBTILIS_IR_REG_TEMP_START;
+	op2.integer = 1;
+	cond.reg = subtilis_ir_section_add_instr(
+	    current, SUBTILIS_OP_INSTR_EQI_I32, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_JMPC, cond,
+					  one_label, zero_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(current, one_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_builtins_ir_rnd_1(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg2(current, SUBTILIS_OP_INSTR_MOVFP,
+					      result, e->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	subtilis_exp_delete(e);
+	e = NULL;
+
+	subtilis_ir_section_add_instr_no_reg(current, SUBTILIS_OP_INSTR_JMP,
+					     end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(current, zero_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_builtins_ir_rnd_0(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg2(current, SUBTILIS_OP_INSTR_MOVFP,
+					      result, e->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(current, end_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg(
+	    current, SUBTILIS_OP_INSTR_RET_REAL, result, err);
+
+cleanup:
+
+	p->current = old_current;
+
+	subtilis_exp_delete(e);
+}
+
 subtilis_ir_section_t *subtilis_builtins_ir_add_1_arg_int(subtilis_parser_t *p,
 							  const char *name,
+							  subtilis_type_t rtype,
 							  subtilis_error_t *err)
 {
 	subtilis_type_section_t *ts;
@@ -299,7 +564,7 @@ subtilis_ir_section_t *subtilis_builtins_ir_add_1_arg_int(subtilis_parser_t *p,
 		return NULL;
 	}
 	params[0] = SUBTILIS_TYPE_INTEGER;
-	ts = subtilis_type_section_new(SUBTILIS_TYPE_INTEGER, 1, params, err);
+	ts = subtilis_type_section_new(rtype, 1, params, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
