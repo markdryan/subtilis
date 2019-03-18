@@ -335,7 +335,6 @@ void subtilis_builtins_ir_rnd_int(subtilis_parser_t *p,
 	subtilis_ir_operand_t zero_pos_label;
 	subtilis_ir_operand_t end_label;
 	subtilis_ir_operand_t result;
-	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t op2;
 	subtilis_ir_operand_t cond;
@@ -359,7 +358,6 @@ void subtilis_builtins_ir_rnd_int(subtilis_parser_t *p,
 	end_label.label = subtilis_ir_section_new_label(current);
 
 	result.reg = current->reg_counter++;
-	op0.reg = current->reg_counter++;
 
 	op1.reg = SUBTILIS_IR_REG_TEMP_START;
 	op2.integer = 0;
@@ -440,8 +438,6 @@ void subtilis_builtins_ir_rnd_int(subtilis_parser_t *p,
 	e_dup = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-
-	op0.reg = e->exp.ir_op.reg;
 
 	subtilis_ir_section_add_label(current, end_label.label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
