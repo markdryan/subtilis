@@ -1,5 +1,5 @@
 X%=100
-PRINT RND(-X%)
+PRINT INT(RND(-X%))
 FOR I% = 0 TO 5
   PRINT INT(RND(X%))
 NEXT

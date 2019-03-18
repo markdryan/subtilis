@@ -1013,6 +1013,29 @@ const subtilis_test_case_t test_cases[] = {
 	 "A = LN(A) - 2.30258509\n"
 	 "PRINT NOT (A > 0.001 OR A < - 0.001)\n",
 	 "3\n3\n-1\n-1\n"},
+	{"rnd_int",
+	 "X%=100\n"
+	 "PRINT INT(RND(-X%))\n"
+	 "FOR I% = 0 TO 5\n"
+	 "PRINT INT(RND(X%))\n"
+	 "NEXT\n"
+	 "PRINT RND(-100)\n"
+	 "FOR I% = 0 TO 5\n"
+	 "PRINT RND(100)\n"
+	 "NEXT\n",
+	 "100\n24\n99\n74\n1\n16\n23\n100\n24\n99\n74\n1\n16\n23\n"},
+	{"rnd_real",
+	 "X = RND(1)\n"
+	 "PRINT X >= 0 AND X <= 1\n"
+	 "Y = RND(0)\n"
+	 "PRINT X = Y\n"
+	 "I = 1\n"
+	 "X = RND(I)"
+	 "PRINT X >= 0 AND X <= 1\n"
+	 "I = 0\n"
+	 "Y = RND(I)\n"
+	 "PRINT X = Y\n",
+	 "-1\n-1\n-1\n-1\n"},
 };
 
 /* clang-format on */
