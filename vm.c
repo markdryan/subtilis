@@ -685,7 +685,8 @@ static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		vm->max_fregs = s->freg_counter;
 	}
 
-	space_needed = ((vm->s->reg_counter + 2) * sizeof(*vm->regs));
+	space_needed = ((vm->s->label_counter) * sizeof(*vm->labels));
+	space_needed += ((vm->s->reg_counter + 2) * sizeof(*vm->regs));
 	space_needed += ((vm->s->freg_counter) * sizeof(*vm->fregs));
 	space_needed += s->locals;
 	if (call_type != SUBTILIS_TYPE_VOID)
@@ -694,6 +695,9 @@ static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	memcpy(&vm->memory[vm->top], &vm->labels[0],
+	       vm->s->label_counter * sizeof(*vm->labels));
+	vm->top += vm->s->label_counter * sizeof(*vm->labels);
 	memcpy(&vm->memory[vm->top], &vm->regs[0],
 	       vm->s->reg_counter * sizeof(*vm->regs));
 	vm->top += vm->s->reg_counter * sizeof(*vm->regs);
@@ -771,6 +775,10 @@ static size_t prv_ret_gen(subitlis_vm_t *vm, subtilis_type_t call_type,
 	vm->top -= vm->s->reg_counter * sizeof(*vm->regs);
 	memcpy(&vm->regs[0], &vm->memory[vm->top],
 	       vm->s->reg_counter * sizeof(*vm->regs));
+
+	vm->top -= vm->s->label_counter * sizeof(*vm->labels);
+	memcpy(&vm->labels[0], &vm->memory[vm->top],
+	       vm->s->label_counter * sizeof(*vm->labels));
 
 	vm->regs[SUBTILIS_IR_REG_LOCAL] = vm->top - cs->locals;
 

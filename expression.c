@@ -78,34 +78,18 @@ static void prv_add_builtin(subtilis_parser_t *p, char *name,
 			    subtilis_error_t *err)
 {
 	subtilis_type_section_t *ts;
-	subtilis_ir_section_t *current;
-	subtilis_builtin_type_t ftype_to_use;
 
 	ts = subtilis_builtin_ts(ftype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	/*
-	 * There are two types of builtins.  Builtins that are implemented
-	 * purely in IR which are used for keywords that are too large too
-	 * implement inline, and builtins that are implemented in the
-	 * assembly language of the target platform.  For IR builtins we set
-	 * the ftype to be SUBTILIS_BUILTINS_MAX so that they are ignored by
-	 * the backend.
-	 */
-
-	ftype_to_use = ftype;
-	if (ftype == SUBTILIS_BUILTINS_INKEY)
-		ftype_to_use = SUBTILIS_BUILTINS_MAX;
-	current = subtilis_ir_prog_section_new(p->prog, name, 0, ts,
-					       ftype_to_use, "builtin", 0, err);
+	(void)subtilis_ir_prog_section_new(p->prog, name, 0, ts, ftype,
+					   "builtin", 0, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
 			goto on_error;
 		subtilis_error_init(err);
 		subtilis_type_section_delete(ts);
-	} else if (ftype == SUBTILIS_BUILTINS_INKEY) {
-		subtilis_builtins_ir_inkey(current, err);
 	}
 
 	return;
@@ -265,6 +249,26 @@ subtilis_exp_t *subtilis_exp_to_real(subtilis_parser_t *p, subtilis_exp_t *e,
 		e = NULL;
 	}
 
+	return e;
+}
+
+subtilis_exp_t *subtilis_exp_coerce_type(subtilis_parser_t *p,
+					 subtilis_exp_t *e,
+					 subtilis_type_t type,
+					 subtilis_error_t *err)
+{
+	switch (type) {
+	case SUBTILIS_TYPE_REAL:
+		e = subtilis_exp_to_real(p, e, err);
+		break;
+	case SUBTILIS_TYPE_INTEGER:
+		e = subtilis_exp_to_int(p, e, err);
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		subtilis_exp_delete(e);
+		e = NULL;
+	}
 	return e;
 }
 

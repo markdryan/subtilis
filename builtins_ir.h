@@ -17,9 +17,36 @@
 #ifndef __SUBTILIS_BUILTINS_IR_H__
 #define __SUBTILIS_BUILTINS_IR_H__
 
+#include "expression.h"
 #include "ir.h"
+#include "parser.h"
+
+extern const char *subtilis_rnd_hidden_var;
 
 void subtilis_builtins_ir_inkey(subtilis_ir_section_t *current,
 				subtilis_error_t *err);
+
+subtilis_exp_t *subtilis_builtins_ir_basic_rnd(subtilis_parser_t *p,
+					       subtilis_error_t *err);
+subtilis_exp_t *subtilis_builtins_ir_rnd_0(subtilis_parser_t *p,
+					   subtilis_error_t *err);
+subtilis_exp_t *subtilis_builtins_ir_rnd_pos(subtilis_parser_t *p, int32_t val,
+					     subtilis_error_t *err);
+subtilis_exp_t *subtilis_builtins_ir_rnd_neg(subtilis_parser_t *p, int32_t val,
+					     subtilis_error_t *err);
+subtilis_exp_t *subtilis_builtins_ir_rnd_1(subtilis_parser_t *p,
+					   subtilis_error_t *err);
+void subtilis_builtins_ir_rnd_int(subtilis_parser_t *p,
+				  subtilis_ir_section_t *current,
+				  subtilis_error_t *err);
+
+void subtilis_builtins_ir_rnd_real(subtilis_parser_t *p,
+				   subtilis_ir_section_t *current,
+				   subtilis_error_t *err);
+
+subtilis_ir_section_t *
+subtilis_builtins_ir_add_1_arg_int(subtilis_parser_t *p, const char *name,
+				   subtilis_type_t rtype,
+				   subtilis_error_t *err);
 
 #endif
