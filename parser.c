@@ -558,16 +558,17 @@ cleanup:
 static subtilis_exp_t *prv_rnd_const(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err)
 {
-	if (e->exp.ir_op.integer == 0)
+	int32_t val = e->exp.ir_op.integer;
+
+	subtilis_exp_delete(e);
+	if (val == 0)
 		return subtilis_builtins_ir_rnd_0(p, err);
-	else if (e->exp.ir_op.integer == 1)
+	else if (val == 1)
 		return subtilis_builtins_ir_rnd_1(p, err);
-	else if (e->exp.ir_op.integer < 0)
-		return subtilis_builtins_ir_rnd_neg(p, e->exp.ir_op.integer,
-						    err);
+	else if (val < 0)
+		return subtilis_builtins_ir_rnd_neg(p, val, err);
 	else
-		return subtilis_builtins_ir_rnd_pos(p, e->exp.ir_op.integer,
-						    err);
+		return subtilis_builtins_ir_rnd_pos(p, val, err);
 }
 
 static subtilis_exp_t *prv_rnd(subtilis_parser_t *p, subtilis_token_t *t,
