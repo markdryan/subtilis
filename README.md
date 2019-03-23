@@ -20,3 +20,5 @@ constructs to the lanuage.  To start with there will probably only be two target
 OSes, RISCOS 3 and RISCOS 4, and one CPU family, ARM 2 or greater.  Ultimately
 the goal is to create a backend for the native ARM processor mode of PiTubeDirect,
 but this is a long way off.
+
+Please see the Subtilis [documentation](https://github.com/markdryan/subtilis/blob/master/docs/Subtilis.md) for more details
