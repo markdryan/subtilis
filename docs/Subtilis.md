@@ -189,7 +189,7 @@ ENDPROC
 ```
 
 will not.  This is done on purpose to prevent users from accidentally declaring a
-global variable when the really want a local variable.  You almost always want a
+global variable when they really want a local variable.  You almost always want a
 local variable in Subtilis as local variables are assigned to registers where as
 global variables are not.  Operations involving local variables are consequently,
 much faster than the equivalent operations involving global variables.  One side
@@ -379,7 +379,7 @@ Here's a list of other language features that are currently not implemented but 
 * POINT TO
 
 There are also some enhancements that will need to be added to the language to make it
-more palatable to the modern programmers.
+more palatable to the modern programmer.
 
 * Lower case keywords
 * Structures
