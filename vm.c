@@ -327,7 +327,7 @@ static void prv_printi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 {
 	char buf[64];
 
-	sprintf(buf, "%d\n", vm->regs[ops[0].reg]);
+	sprintf(buf, "%d", vm->regs[ops[0].reg]);
 	subtilis_buffer_append_string(b, buf, err);
 }
 
@@ -336,8 +336,14 @@ static void prv_printfp(subitlis_vm_t *vm, subtilis_buffer_t *b,
 {
 	char buf[64];
 
-	sprintf(buf, "%f\n", vm->fregs[ops[0].reg]);
+	sprintf(buf, "%f", vm->fregs[ops[0].reg]);
 	subtilis_buffer_append_string(b, buf, err);
+}
+
+static void prv_printnl(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	subtilis_buffer_append_string(b, "\n", err);
 }
 
 static void prv_rsubii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
@@ -1053,6 +1059,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_movfp,                           /* SUBTILIS_OP_INSTR_MOVFP */
 	prv_printi32,                        /* SUBTILIS_OP_INSTR_PRINT_I32 */
 	prv_printfp,                         /* SUBTILIS_OP_INSTR_PRINT_FP */
+	prv_printnl,                         /* SUBTILIS_OP_INSTR_PRINT_NL */
 	prv_rsubii32,                        /* SUBTILIS_OP_INSTR_RSUBI_I32 */
 	prv_rsubir,                          /* SUBTILIS_OP_INSTR_RSUBI_REAL */
 	prv_rdivir,                          /* SUBTILIS_OP_INSTR_RDIVI_REAL */
