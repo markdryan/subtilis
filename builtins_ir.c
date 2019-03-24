@@ -545,10 +545,197 @@ cleanup:
 	subtilis_exp_delete(e);
 }
 
-subtilis_ir_section_t *subtilis_builtins_ir_add_1_arg_int(subtilis_parser_t *p,
-							  const char *name,
-							  subtilis_type_t rtype,
-							  subtilis_error_t *err)
+void subtilis_builtins_ir_print_fp(subtilis_parser_t *p,
+				   subtilis_ir_section_t *current,
+				   subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t op1i;
+	subtilis_ir_operand_t number;
+	subtilis_ir_operand_t cond;
+	subtilis_ir_operand_t counter;
+	subtilis_ir_operand_t loop_label;
+	subtilis_ir_operand_t first_not_zero_label;
+	subtilis_ir_operand_t second_not_zero_label;
+	subtilis_ir_operand_t end_label;
+	subtilis_ir_operand_t end_label2;
+
+	loop_label.label = subtilis_ir_section_new_label(current);
+	end_label.label = subtilis_ir_section_new_label(current);
+	first_not_zero_label.label = subtilis_ir_section_new_label(current);
+	second_not_zero_label.label = subtilis_ir_section_new_label(current);
+	end_label2.label = subtilis_ir_section_new_label(current);
+
+	op1.reg = 0;
+	op1i.reg = subtilis_ir_section_add_instr2(
+	    current, SUBTILIS_OP_INSTR_MOV_FP_I32, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg(
+	    current, SUBTILIS_OP_INSTR_PRINT_I32, op1i, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.reg = subtilis_ir_section_add_instr2(
+	    current, SUBTILIS_OP_INSTR_ABSR, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1i.reg = subtilis_ir_section_add_instr2(
+	    current, SUBTILIS_OP_INSTR_MOV_FP_I32, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.reg = subtilis_ir_section_add_instr2(
+	    current, SUBTILIS_OP_INSTR_MOV_I32_FP, op1i, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	number.reg = subtilis_ir_section_add_instr(
+	    current, SUBTILIS_OP_INSTR_SUB_REAL, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.real = 0.0;
+	cond.reg = subtilis_ir_section_add_instr(
+	    current, SUBTILIS_OP_INSTR_NEQI_REAL, number, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_JMPC, cond,
+					  first_not_zero_label, end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(current, first_not_zero_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1i.integer = '.';
+	subtilis_ir_section_add_instr_no_reg(current, SUBTILIS_OP_INSTR_VDUI,
+					     op1i, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.integer = 10;
+	counter.reg = subtilis_ir_section_add_instr2(
+	    current, SUBTILIS_OP_INSTR_MOVI_I32, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(current, loop_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.real = 10.0;
+	op1.reg = subtilis_ir_section_add_instr(
+	    current, SUBTILIS_OP_INSTR_MULI_REAL, number, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1i.reg = subtilis_ir_section_add_instr2(
+	    current, SUBTILIS_OP_INSTR_MOV_FP_I32, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.reg = subtilis_ir_section_add_instr2(
+	    current, SUBTILIS_OP_INSTR_MOV_I32_FP, op1i, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.reg = subtilis_ir_section_add_instr(
+	    current, SUBTILIS_OP_INSTR_SUB_REAL, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/* TODO:
+	 * We can't use the subtraction operation to write directly into the
+	 * destinationr register as the register allocator cannot currently
+	 * handle the case when the destination register  is the same as one
+	 * of the operands.  In the long run the move gets removed by the
+	 * peephole optimizer, but we shouldn't need to add it in the first
+	 * place.  This needs to be fixed.
+	 */
+
+	subtilis_ir_section_add_instr_no_reg2(current, SUBTILIS_OP_INSTR_MOVFP,
+					      number, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.integer = '0';
+	op1i.reg = subtilis_ir_section_add_instr(
+	    current, SUBTILIS_OP_INSTR_ADDI_I32, op1i, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg(current, SUBTILIS_OP_INSTR_VDU,
+					     op1i, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.real = 0.0;
+	cond.reg = subtilis_ir_section_add_instr(
+	    current, SUBTILIS_OP_INSTR_NEQI_REAL, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_JMPC, cond,
+					  second_not_zero_label, end_label,
+					  err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(current, second_not_zero_label.label,
+				      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.integer = 1;
+	op1i.reg = subtilis_ir_section_add_instr(
+	    current, SUBTILIS_OP_INSTR_SUBI_I32, counter, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg2(current, SUBTILIS_OP_INSTR_MOV,
+					      counter, op1i, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.integer = 0;
+	cond.reg = subtilis_ir_section_add_instr(
+	    current, SUBTILIS_OP_INSTR_EQI_I32, counter, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_JMPC, cond,
+					  end_label2, loop_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/* TODO:
+	 * There's a bug in the ARM code generator which gobbles up labels if
+	 * they are proceeded by a comparison and a JUMP.  So we're adding an
+	 * extra label here to be consumed as there are other jumps to the
+	 * end label.
+	 */
+
+	subtilis_ir_section_add_label(current, end_label2.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(current, end_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_arg(current, SUBTILIS_OP_INSTR_RET,
+					     err);
+}
+
+static subtilis_ir_section_t *
+prv_add_1_arg(subtilis_parser_t *p, const char *name, subtilis_type_t ptype,
+	      subtilis_type_t rtype, subtilis_error_t *err)
 {
 	subtilis_type_section_t *ts;
 	subtilis_type_t *params;
@@ -559,7 +746,7 @@ subtilis_ir_section_t *subtilis_builtins_ir_add_1_arg_int(subtilis_parser_t *p,
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
-	params[0] = SUBTILIS_TYPE_INTEGER;
+	params[0] = ptype;
 	ts = subtilis_type_section_new(rtype, 1, params, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
@@ -570,4 +757,20 @@ subtilis_ir_section_t *subtilis_builtins_ir_add_1_arg_int(subtilis_parser_t *p,
 		subtilis_type_section_delete(ts);
 
 	return current;
+}
+
+subtilis_ir_section_t *subtilis_builtins_ir_add_1_arg_int(subtilis_parser_t *p,
+							  const char *name,
+							  subtilis_type_t rtype,
+							  subtilis_error_t *err)
+{
+	return prv_add_1_arg(p, name, SUBTILIS_TYPE_INTEGER, rtype, err);
+}
+
+subtilis_ir_section_t *
+subtilis_builtins_ir_add_1_arg_real(subtilis_parser_t *p, const char *name,
+				    subtilis_type_t rtype,
+				    subtilis_error_t *err)
+{
+	return prv_add_1_arg(p, name, SUBTILIS_TYPE_REAL, rtype, err);
 }
