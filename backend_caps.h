@@ -22,9 +22,7 @@
 #define SUBTILIS_BACKEND_HAVE_DIV 1
 #define SUBTILIS_BACKEND_HAVE_PRINT_FP 2
 
-#define SUBTILIS_BACKEND_HAVE_ALL                                              \
-	(SUBTILIS_BACKEND_HAVE_DIV | SUBTILIS_BACKEND_HAVE_PRINT_FP)
-
+#define SUBTILIS_BACKEND_INTER_CAPS SUBTILIS_BACKEND_HAVE_DIV
 typedef uint32_t subtilis_backend_caps_t;
 
 #endif

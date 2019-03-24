@@ -1036,6 +1036,11 @@ const subtilis_test_case_t test_cases[] = {
 	 "Y = RND(I)\n"
 	 "PRINT X = Y\n",
 	 "-1\n-1\n-1\n-1\n"},
+	{"printfp",
+	 "PRINT PI\n"
+	 "PRINT -PI\n"
+	 "PRINT 3.5\n",
+	 "3.1428571428\n-3.1428571428\n3.5\n"},
 };
 
 /* clang-format on */

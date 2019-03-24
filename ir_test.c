@@ -430,7 +430,7 @@ static int prv_test_matcher(void)
 			     "ENDIF\n";
 
 	printf("ir_test_matcher");
-	return parser_test_wrapper(source, SUBTILIS_BACKEND_HAVE_ALL,
+	return parser_test_wrapper(source, SUBTILIS_BACKEND_INTER_CAPS,
 				   prv_check_matcher, NULL);
 }
 

@@ -167,7 +167,7 @@ static int prv_test_let(void)
 			       "PRINT 10 + 10 + b%\n";
 
 	printf("parser_let");
-	return parser_test_wrapper(let_test, SUBTILIS_BACKEND_HAVE_ALL,
+	return parser_test_wrapper(let_test, SUBTILIS_BACKEND_INTER_CAPS,
 				   prv_check_eval_res, "119\n");
 }
 
@@ -179,7 +179,7 @@ static int prv_test_expressions(void)
 	for (i = 0; i < SUBTILIS_TEST_CASE_ID_MAX; i++) {
 		printf("parser_%s", test_cases[i].name);
 		retval |= parser_test_wrapper(
-		    test_cases[i].source, SUBTILIS_BACKEND_HAVE_ALL,
+		    test_cases[i].source, SUBTILIS_BACKEND_INTER_CAPS,
 		    prv_check_eval_res, test_cases[i].result);
 	}
 
@@ -190,14 +190,14 @@ static int prv_test_print(void)
 {
 	printf("parser_print");
 	return parser_test_wrapper("PRINT (10 * 3 * 3 + 1) DIV 2",
-				   SUBTILIS_BACKEND_HAVE_ALL,
+				   SUBTILIS_BACKEND_INTER_CAPS,
 				   prv_check_eval_res, "45\n");
 }
 
 static int prv_test_not_keyword(void)
 {
 	printf("parser_not_keyword");
-	return parser_test_wrapper("+", SUBTILIS_BACKEND_HAVE_ALL,
+	return parser_test_wrapper("+", SUBTILIS_BACKEND_INTER_CAPS,
 				   prv_check_not_keyword, NULL);
 }
 
@@ -215,7 +215,7 @@ static int prv_test_unknown_procedure(void)
 			   "ENDPROC\n";
 
 	printf("parser_unknown_procedure");
-	return parser_test_wrapper(test, SUBTILIS_BACKEND_HAVE_ALL,
+	return parser_test_wrapper(test, SUBTILIS_BACKEND_INTER_CAPS,
 				   prv_check_unknown_procedure, NULL);
 }
 
