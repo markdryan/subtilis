@@ -2301,6 +2301,9 @@ static void prv_print(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 	}
 
+	subtilis_ir_section_add_instr_no_arg(p->current,
+					     SUBTILIS_OP_INSTR_PRINT_NL, err);
+
 cleanup:
 	subtilis_exp_delete(e);
 }

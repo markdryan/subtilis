@@ -373,10 +373,14 @@ void subtilis_riscos_arm_printi(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x2, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+}
+
+void subtilis_riscos_arm_printnl(subtilis_ir_section_t *s, size_t start,
+				 void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s = user_data;
 
 	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x3, 0, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 }
 
 void subtilis_riscos_arm_modei32(subtilis_ir_section_t *s, size_t start,

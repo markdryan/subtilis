@@ -393,6 +393,14 @@ typedef enum {
 	SUBTILIS_OP_INSTR_PRINT_FP,
 
 	/*
+	 * printnl
+	 *
+	 * Prints a newline character to the output stream.
+	 */
+
+	SUBTILIS_OP_INSTR_PRINT_NL,
+
+	/*
 	 * rsubii32 r0, r1, #i32
 	 *
 	 * Subtracts a 32 bit integer stored in a register from a
