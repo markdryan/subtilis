@@ -145,6 +145,12 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_ZERO_STEP */
 	{"step must not be zero\n"},
+
+	/* SUBTILIS_ERROR_ENDPROC_IN_MAIN */
+	{"ENDPROC is not allowed in the main function\n"},
+
+	/* SUBTILIS_ERROR_USELESS_STATEMENT */
+	{"Statement will never be executed\n"},
 };
 
 /* clang-format on */

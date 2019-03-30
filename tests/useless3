@@ -1,0 +1,8 @@
+PROCMultipleReturns
+
+DEF PROCMultipleReturns
+    REPEAT
+        ENDPROC
+    UNTIL TRUE
+    PRINT 0
+ENDPROC
