@@ -218,10 +218,22 @@
  *
  * Consequently, saving and preseving of registers before and after procedure
  * calls is done by a separate step after register allocation has been
- * completed.  It's a bit trick as you have to work out which registers need to
+ * completed.  It's a bit tricky as you have to work out which registers need to
  * be saved and restored and then update the offsets of any arguments passed via
  * the stack to reflect these values.  It all works out nicely in the end
  * though.
+ *
+ */
+
+/*
+ * The register allocator ignores MOV PC, *, which you would expect would
+ * affect the distance calculations.  However, the front end will ensure
+ * that this statement always comes at the end of a basic block so we can
+ * safely ignore it.  In addition the code for computing the registers that
+ * need to be saved across function calls treats everything that comes
+ * before (and after) the function call as a basic block, which of course
+ * it isn't.  Therefore we can't use MOV PC, * to affect the registers to
+ * save calculation.
  */
 
 /* clang-format off */
