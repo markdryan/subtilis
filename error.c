@@ -151,6 +151,12 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_USELESS_STATEMENT */
 	{"Statement will never be executed\n"},
+
+	/* SUBTILIS_ERROR_RETURN_IN_MAIN */
+	{"<- is not allowed in the main function\n"},
+
+	/* SUBTILIS_ERROR_RETURN_IN_PROC */
+	{"<- is not allowed in a procedure\n"},
 };
 
 /* clang-format on */
