@@ -1,0 +1,12 @@
+PROCMultipleReturns
+
+DEF PROCMultipleReturns
+LOCAL I%
+FOR I% = 0 TO 10
+  IF I% = 5 THEN
+      ENDPROC
+  ENDIF
+  PRINT I%
+NEXT
+ENDPROC
+

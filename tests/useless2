@@ -1,0 +1,8 @@
+PROCMultipleReturns
+
+DEF PROCMultipleReturns
+    FOR I% = 0 TO 10
+        ENDPROC
+    NEXT
+    PRINT 0
+ENDPROC

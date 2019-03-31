@@ -63,6 +63,10 @@ typedef enum {
 	SUBTILIS_ERROR_BAD_ARG_TYPE,
 	SUBTILIS_ERROR_ZERO_STEP,
 	SUBTILIS_ERROR_NUMERIC_EXPECTED,
+	SUBTILIS_ERROR_ENDPROC_IN_MAIN,
+	SUBTILIS_ERROR_USELESS_STATEMENT,
+	SUBTILIS_ERROR_RETURN_IN_MAIN,
+	SUBTILIS_ERROR_RETURN_IN_PROC,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -178,6 +182,18 @@ void subtilis_error_init(subtilis_error_t *e);
 	subtilis_error_set1(e, SUBTILIS_ERROR_NUMERIC_EXPECTED, id, file, line)
 #define subtilis_error_set_zero_step(e, file, line)                            \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_ZERO_STEP, file, line)
+#define subtilis_error_set_proc_in_main(e, file, line)                         \
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_ENDPROC_IN_MAIN, file,     \
+				  line, __FILE__, __LINE__)
+#define subtilis_error_set_useless_statement(e, file, line)                    \
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_USELESS_STATEMENT, file,   \
+				  line, __FILE__, __LINE__)
+#define subtilis_error_set_return_in_main(e, file, line)                       \
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_RETURN_IN_MAIN, file,      \
+				  line, __FILE__, __LINE__)
+#define subtilis_error_set_return_in_proc(e, file, line)                       \
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_RETURN_IN_PROC, file,      \
+				  line, __FILE__, __LINE__)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,

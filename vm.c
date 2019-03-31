@@ -760,7 +760,13 @@ static size_t prv_ret_gen(subitlis_vm_t *vm, subtilis_type_t call_type,
 		reg = *((int32_t *)&vm->memory[vm->top]);
 		vm->top -= sizeof(*vm->regs);
 	}
+
 	caller_index = *((int32_t *)&vm->memory[vm->top]);
+	if (caller_index >= vm->p->num_sections) {
+		subtilis_error_set_assertion_failed(err);
+		return reg;
+	}
+
 	cs = vm->p->sections[caller_index];
 
 	to_pop = (cs->reg_counter + 1) * sizeof(*vm->regs);

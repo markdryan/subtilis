@@ -257,6 +257,10 @@ defines a function that returns an integer.  In the case of the first function,
 the compiler will generate extra code to convert the value of X%, 0, to a real
 number.
 
+ENDPROC or <- cannot be used in the main function.  There's currently no way
+to terminate the main function early, although END will be implemented at
+some point.
+
 ### Real numbers
 
 Real numbers are currently defined to be 64 bit in Subtilis and are very slow
@@ -350,19 +354,7 @@ fixed at some point, once I figure out how.
 There's no assembler, either inline or otherwise.  I have most of the code for this so it
 will be implemented at some point.
 
-### Multiple returns
-
-It's currently only possible to have a single return point in a procedure of function.
-You can't currently write
-
-```
-DEF PROCTest(A%)
-    IF A% = 0 THEN
-        ENDPROC
-    ENDIF
-    PRINT A%
-ENDPROC
-```
+### Other missing items
 
 Here's a list of other language features that are currently not implemented but which will be at some point
 
