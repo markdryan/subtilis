@@ -40,6 +40,7 @@ struct subitlis_vm_t_ {
 	size_t label_len;
 	size_t max_labels;
 	size_t top;
+	bool quit_flag;
 };
 
 typedef struct subitlis_vm_t_ subitlis_vm_t;

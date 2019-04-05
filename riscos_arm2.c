@@ -227,6 +227,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"vdu *\n", subtilis_riscos_arm_vdu},
 	{"point *, *, *\n", subtilis_riscos_arm_point},
 	{"tint *, *, *\n", subtilis_riscos_arm_tint},
+	{"end\n", subtilis_riscos_arm_end},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

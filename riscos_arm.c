@@ -845,3 +845,11 @@ void subtilis_riscos_arm_tint(subtilis_ir_section_t *s, size_t start,
 {
 	prv_point_tint(s, start, user_data, 3, err);
 }
+
+void subtilis_riscos_arm_end(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s = user_data;
+
+	prv_add_coda(arm_s, err);
+}

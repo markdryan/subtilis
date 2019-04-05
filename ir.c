@@ -167,6 +167,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "vdu", SUBTILIS_OP_CLASS_REG },
 	{ "point", SUBTILIS_OP_CLASS_REG_REG_REG },
 	{ "tint", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "end", SUBTILIS_OP_CLASS_NONE },
 };
 
 /*

@@ -1219,6 +1219,15 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_TINT,
+
+	/*
+	 *
+	 * end
+	 *
+	 * Causes the execution of the program to end successfully
+	 */
+
+	SUBTILIS_OP_INSTR_END,
 } subtilis_op_instr_type_t;
 
 typedef enum {

@@ -1038,6 +1038,14 @@ const subtilis_test_case_t test_cases[] = {
 	 "PRINT -PI\n"
 	 "PRINT 3.5\n",
 	 "3.1428571428\n-3.1428571428\n3.5\n"},
+	{"end",
+	 "FOR I% = 0 TO 10\n"
+	 "  IF I% = 5 THEN\n"
+	 "    END\n"
+	 "  ENDIF\n"
+	 "  PRINT I%\n"
+	 "NEXT\n",
+	 "0\n1\n2\n3\n4\n"},
 };
 
 /* clang-format on */
