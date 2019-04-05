@@ -2011,6 +2011,21 @@ static void prv_off(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_lexer_get(p->l, t, err);
 }
 
+static void prv_end(subtilis_parser_t *p, subtilis_token_t *t,
+		    subtilis_error_t *err)
+{
+	subtilis_ir_section_add_instr_no_arg(p->current, SUBTILIS_OP_INSTR_END,
+					     err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	p->endproc = true;
+}
+
 static void prv_wait(subtilis_parser_t *p, subtilis_token_t *t,
 		     subtilis_error_t *err)
 {
@@ -3903,7 +3918,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_EDIT */
 	NULL, /* SUBTILIS_KEYWORD_ELLIPSE */
 	NULL, /* SUBTILIS_KEYWORD_ELSE */
-	NULL, /* SUBTILIS_KEYWORD_END */
+	prv_end, /* SUBTILIS_KEYWORD_END */
 	NULL, /* SUBTILIS_KEYWORD_ENDCASE */
 	NULL, /* SUBTILIS_KEYWORD_ENDIF */
 	prv_endproc, /* SUBTILIS_KEYWORD_ENDPROC */

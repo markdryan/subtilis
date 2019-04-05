@@ -73,6 +73,8 @@ void subtilis_riscos_arm_point(subtilis_ir_section_t *s, size_t start,
 			       void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_tint(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_end(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err);
 
 #define SUBTILIS_RISCOS_ARM_CAPS 0
 

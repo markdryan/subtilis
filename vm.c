@@ -1032,6 +1032,12 @@ static void prv_tint(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = 0;
 }
 
+static void prv_end(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->quit_flag = true;
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1145,6 +1151,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_vdu,                             /* SUBTILIS_OP_INSTR_VDU */
 	prv_point,                           /* SUBTILIS_OP_INSTR_POINT */
 	prv_tint,                            /* SUBTILIS_OP_INSTR_TINT */
+	prv_end,                             /* SUBTILIS_OP_INSTR_END */
 };
 
 /* clang-format on */
@@ -1179,6 +1186,8 @@ void subitlis_vm_run(subitlis_vm_t *vm, subtilis_buffer_t *b,
 				return;
 			}
 			fn(vm, b, ops, err);
+			if (vm->quit_flag)
+				return;
 		}
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;

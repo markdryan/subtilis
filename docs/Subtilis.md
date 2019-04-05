@@ -127,7 +127,6 @@ however contain some basic statements that occur before, after or in between fun
 definitions.  These basic statements are actually part of the main function although no function is
 explicitly defined.  They are the first statements that will be executed when the program is run.
 There is no need to insert and END statement before the first procedure of function definition.
-In fact the END statement isn't currently implemented.
 
 For example
 
@@ -257,9 +256,8 @@ defines a function that returns an integer.  In the case of the first function,
 the compiler will generate extra code to convert the value of X%, 0, to a real
 number.
 
-ENDPROC or <- cannot be used in the main function.  There's currently no way
-to terminate the main function early, although END will be implemented at
-some point.
+ENDPROC or <- cannot be used in the main function but END can.  END can also
+be called from inside a function or a procedure.
 
 ### Real numbers
 
