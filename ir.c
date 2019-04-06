@@ -208,6 +208,59 @@ static const subtilis_ir_class_info_t class_details[] = {
 
 /* clang-format on */
 
+void subtilis_handler_list_free(subtilis_handler_list_t *list)
+{
+	subtilis_handler_list_t *p;
+
+	while (list) {
+		p = list->next;
+		free(list);
+		list = p;
+	}
+}
+
+subtilis_handler_list_t *
+subtilis_handler_list_truncate(subtilis_handler_list_t *list, size_t level)
+{
+	subtilis_handler_list_t *p;
+
+	while (list && level < list->level) {
+		p = list->next;
+		free(list);
+		list = p;
+	}
+
+	return list;
+}
+
+subtilis_handler_list_t *
+subtilis_handler_list_update(subtilis_handler_list_t *list, size_t level,
+			     size_t label, subtilis_error_t *err)
+{
+	subtilis_handler_list_t *p;
+
+	if (!list || level > list->level) {
+		p = malloc(sizeof(*p));
+		if (!p) {
+			subtilis_error_set_oom(err);
+			return NULL;
+		}
+		p->level = level;
+		p->label = label;
+		p->next = list;
+		return p;
+	}
+
+	if (level < list->level) {
+		subtilis_error_set_assertion_failed(err);
+		return list;
+	}
+
+	list->label = label;
+
+	return list;
+}
+
 static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 {
 	subtilis_ir_section_t *s = malloc(sizeof(*s));
@@ -228,6 +281,8 @@ static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 	s->error_len = 0;
 	s->error_ops = NULL;
 	s->in_error_handler = false;
+	s->handler_list = NULL;
+	s->handler_offset = 0;
 
 	return s;
 }
@@ -297,6 +352,7 @@ static void prv_ir_section_delete(subtilis_ir_section_t *s)
 		free(op);
 	}
 	free(s->error_ops);
+	subtilis_handler_list_free(s->handler_list);
 
 	free(s);
 }
@@ -305,6 +361,7 @@ void subtilis_ir_merge_errors(subtilis_ir_section_t *s, subtilis_error_t *err)
 {
 	size_t i;
 
+	s->handler_offset = s->len;
 	for (i = 0; i < s->error_len; i++) {
 		prv_ensure_buffer(s, err);
 		if (err->type != SUBTILIS_ERROR_OK)

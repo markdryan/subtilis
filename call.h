@@ -22,6 +22,7 @@
 struct subtilis_parser_call_t_ {
 	subtilis_ir_section_t *s;
 	size_t index;
+	bool in_error_handler;
 	char *name;
 	subtilis_type_section_t *call_type;
 	subtilis_builtin_type_t ftype;
@@ -31,7 +32,8 @@ struct subtilis_parser_call_t_ {
 typedef struct subtilis_parser_call_t_ subtilis_parser_call_t;
 
 subtilis_parser_call_t *
-subtilis_parser_call_new(subtilis_ir_section_t *s, size_t index, char *name,
+subtilis_parser_call_new(subtilis_ir_section_t *s, size_t index,
+			 bool in_error_handler, char *name,
 			 subtilis_type_section_t *ct, size_t line,
 			 subtilis_builtin_type_t ft, subtilis_error_t *err);
 void subtilis_parser_call_delete(subtilis_parser_call_t *call);

@@ -157,6 +157,15 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_RETURN_IN_PROC */
 	{"<- is not allowed in a procedure\n"},
+
+	/* SUBTILIS_ERROR_NESTED_HANDLER */
+	{"Nested error handlers are not allowed\n", 0},
+
+	/* SUBTILIS_ERROR_ENDPROC_IN_FN */
+	{"ENDPROC is not allowed in functions\n"},
+
+	/* SUBTILIS_ERROR_RETURN_EXPECTED */
+	{"The top most error handler in a function must return a value\n"},
 };
 
 /* clang-format on */

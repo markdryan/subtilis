@@ -19,7 +19,8 @@
 #include "call.h"
 
 subtilis_parser_call_t *
-subtilis_parser_call_new(subtilis_ir_section_t *s, size_t index, char *name,
+subtilis_parser_call_new(subtilis_ir_section_t *s, size_t index,
+			 bool in_error_handler, char *name,
 			 subtilis_type_section_t *ct, size_t line,
 			 subtilis_builtin_type_t ft, subtilis_error_t *err)
 {
@@ -31,6 +32,7 @@ subtilis_parser_call_new(subtilis_ir_section_t *s, size_t index, char *name,
 
 	call->s = s;
 	call->index = index;
+	call->in_error_handler = in_error_handler;
 	call->name = name;
 	call->call_type = ct;
 	call->line = line;

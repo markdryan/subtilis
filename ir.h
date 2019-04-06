@@ -1305,6 +1305,13 @@ struct subtilis_ir_op_t_ {
 
 typedef struct subtilis_ir_op_t_ subtilis_ir_op_t;
 
+typedef struct subtilis_handler_list_t_ subtilis_handler_list_t;
+struct subtilis_handler_list_t_ {
+	size_t level;
+	size_t label;
+	subtilis_handler_list_t *next;
+};
+
 struct subtilis_ir_section_t_ {
 	subtilis_type_section_t *type;
 	size_t locals;
@@ -1319,6 +1326,8 @@ struct subtilis_ir_section_t_ {
 	size_t max_error_len;
 	bool in_error_handler;
 	subtilis_ir_op_t **error_ops;
+	subtilis_handler_list_t *handler_list;
+	size_t handler_offset;
 };
 
 typedef struct subtilis_ir_section_t_ subtilis_ir_section_t;
@@ -1384,6 +1393,13 @@ struct subtilis_ir_rule_raw_t_ {
 };
 
 typedef struct subtilis_ir_rule_raw_t_ subtilis_ir_rule_raw_t;
+
+void subtilis_handler_list_free(subtilis_handler_list_t *list);
+subtilis_handler_list_t *
+subtilis_handler_list_truncate(subtilis_handler_list_t *list, size_t level);
+subtilis_handler_list_t *
+subtilis_handler_list_update(subtilis_handler_list_t *list, size_t level,
+			     size_t label, subtilis_error_t *err);
 
 subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err);
 /* clang-format off */

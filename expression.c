@@ -115,6 +115,7 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 				      size_t num_params, subtilis_error_t *err)
 {
 	size_t reg;
+	size_t call_site;
 	subtilis_exp_t *e = NULL;
 	subtilis_parser_call_t *call = NULL;
 
@@ -148,7 +149,16 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 			goto on_error;
 	}
 
-	call = subtilis_parser_call_new(p->current, p->current->len - 1, name,
+	/* For calls made inside handlers we will add the offset from the start
+	 * of the handler section and fix it up later on when checking the
+	 * calls.
+	 */
+
+	call_site = p->current->in_error_handler ? p->current->error_len
+						 : p->current->len;
+	call_site--;
+	call = subtilis_parser_call_new(p->current, call_site,
+					p->current->in_error_handler, name,
 					stype, p->l->line, ftype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
