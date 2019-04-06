@@ -3730,6 +3730,9 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
+
+	subtilis_ir_section_add_instr_no_arg(p->current, SUBTILIS_OP_INSTR_END,
+					     err);
 }
 
 static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,

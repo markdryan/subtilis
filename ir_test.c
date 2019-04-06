@@ -361,6 +361,14 @@ static void prv_matched_7(subtilis_ir_section_t *s, size_t start,
 	d->sequence[d->count++] = 7;
 }
 
+static void prv_matched_8(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	ir_test_matcher_data_t *d = (ir_test_matcher_data_t *)user_data;
+
+	d->sequence[d->count++] = 8;
+}
+
 static int prv_check_matcher(subtilis_lexer_t *l, subtilis_parser_t *p,
 			     const char *expected)
 {
@@ -378,11 +386,12 @@ static int prv_check_matcher(subtilis_lexer_t *l, subtilis_parser_t *p,
 	    {"storeoi32 *, *, *", prv_matched_5},
 	    {"loadoi32 *, *, *", prv_matched_6},
 	    {"label_1", prv_matched_7},
+	    {"end", prv_matched_8},
 	};
 	const size_t rule_count =
 	    sizeof(raw_rules) / sizeof(subtilis_ir_rule_raw_t);
 	subtilis_ir_rule_t parsed[rule_count];
-	const size_t rule_order[] = {4, 5, 3, 5, 4, 5, 6, 1, 6, 2, 5, 7};
+	const size_t rule_order[] = {4, 5, 3, 5, 4, 5, 6, 1, 6, 2, 5, 7, 8};
 
 	subtilis_error_init(&err);
 	subtilis_parse(p, &err);
