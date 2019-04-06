@@ -1315,6 +1315,10 @@ struct subtilis_ir_section_t_ {
 	size_t max_len;
 	subtilis_builtin_type_t ftype;
 	subtilis_ir_op_t **ops;
+	size_t error_len;
+	size_t max_error_len;
+	bool in_error_handler;
+	subtilis_ir_op_t **error_ops;
 };
 
 typedef struct subtilis_ir_section_t_ subtilis_ir_section_t;
@@ -1433,6 +1437,7 @@ void subtilis_ir_section_dump(subtilis_ir_section_t *s);
 size_t subtilis_ir_section_new_label(subtilis_ir_section_t *s);
 void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 				   subtilis_error_t *err);
+void subtilis_ir_merge_errors(subtilis_ir_section_t *s, subtilis_error_t *err);
 /* Ownership of args passes to this function */
 void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t arg_count,
 				  subtilis_ir_arg_t *args,
