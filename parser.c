@@ -3335,6 +3335,52 @@ cleanup:
 	p->current->in_error_handler = false;
 }
 
+static void prv_error(subtilis_parser_t *p, subtilis_token_t *t,
+		      subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+	subtilis_ir_operand_t target_label;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	e = prv_priority7(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	e = subtilis_exp_to_int(p, e, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return;
+	}
+
+	subtilis_var_assign_hidden(p, subtilis_err_hidden_var,
+				   SUBTILIS_TYPE_INTEGER, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (p->current->in_error_handler) {
+		/* TODO: Need to figure out how this works and what about
+		 * functions.  Maybe we need a new keyword to propegate
+		 * the error.
+		 */
+
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (p->current->handler_list) {
+		target_label.label = p->current->handler_list->label;
+		subtilis_ir_section_add_instr_no_reg(
+		    p->current, SUBTILIS_OP_INSTR_JMP, target_label, err);
+	} else {
+		/* TODO: we need a rete here */
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+}
+
 static subtilis_type_t *prv_def_parameters(subtilis_parser_t *p,
 					   subtilis_token_t *t,
 					   size_t *num_parameters,
@@ -4063,7 +4109,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_EOR */
 	NULL, /* SUBTILIS_KEYWORD_ERL */
 	NULL, /* SUBTILIS_KEYWORD_ERR */
-	NULL, /* SUBTILIS_KEYWORD_ERROR */
+	prv_error, /* SUBTILIS_KEYWORD_ERROR */
 	NULL, /* SUBTILIS_KEYWORD_EVAL */
 	NULL, /* SUBTILIS_KEYWORD_EXP */
 	NULL, /* SUBTILIS_KEYWORD_EXT_HASH */
