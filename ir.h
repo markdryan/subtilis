@@ -1328,6 +1328,7 @@ struct subtilis_ir_section_t_ {
 	subtilis_ir_op_t **error_ops;
 	subtilis_handler_list_t *handler_list;
 	size_t handler_offset;
+	bool endproc;
 };
 
 typedef struct subtilis_ir_section_t_ subtilis_ir_section_t;

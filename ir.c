@@ -283,6 +283,7 @@ static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 	s->in_error_handler = false;
 	s->handler_list = NULL;
 	s->handler_offset = 0;
+	s->endproc = false;
 
 	return s;
 }

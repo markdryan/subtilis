@@ -89,7 +89,6 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 	p->l = l;
 	p->caps = caps;
 	p->level = 0;
-	p->endproc = false;
 
 	return p;
 
@@ -2043,7 +2042,7 @@ static void prv_end(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	p->endproc = true;
+	p->current->endproc = true;
 }
 
 static void prv_wait(subtilis_parser_t *p, subtilis_token_t *t,
@@ -2375,7 +2374,7 @@ static void prv_return(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	p->endproc = true;
+	p->current->endproc = true;
 }
 
 static subtilis_keyword_type_t
@@ -2394,7 +2393,7 @@ prv_if_compund(subtilis_parser_t *p, subtilis_token_t *t, subtilis_error_t *err)
 	while (t->type != SUBTILIS_TOKEN_EOF) {
 		tbuf = subtilis_token_get_text(t);
 		if (t->type == SUBTILIS_TOKEN_IDENTIFIER) {
-			if (p->endproc) {
+			if (p->current->endproc) {
 				subtilis_error_set_useless_statement(
 				    err, p->l->stream->name, p->l->line);
 				return key_type;
@@ -2420,7 +2419,7 @@ prv_if_compund(subtilis_parser_t *p, subtilis_token_t *t, subtilis_error_t *err)
 		    (key_type == SUBTILIS_KEYWORD_ENDIF))
 			break;
 
-		if (p->endproc) {
+		if (p->current->endproc) {
 			subtilis_error_set_useless_statement(
 			    err, p->l->stream->name, p->l->line);
 			return key_type;
@@ -2442,7 +2441,7 @@ prv_if_compund(subtilis_parser_t *p, subtilis_token_t *t, subtilis_error_t *err)
 		subtilis_error_set_compund_not_term(err, p->l->stream->name,
 						    start);
 
-	p->endproc = false;
+	p->current->endproc = false;
 	p->level--;
 	p->current->handler_list =
 	    subtilis_handler_list_truncate(p->current->handler_list, p->level);
@@ -2456,7 +2455,7 @@ static void prv_statement(subtilis_parser_t *p, subtilis_token_t *t,
 	const char *tbuf;
 	subtilis_keyword_type_t key_type;
 
-	if (p->endproc) {
+	if (p->current->endproc) {
 		subtilis_error_set_useless_statement(err, p->l->stream->name,
 						     p->l->line);
 		return;
@@ -2512,7 +2511,7 @@ static void prv_compound(subtilis_parser_t *p, subtilis_token_t *t,
 
 	if ((end_key != SUBTILIS_KEYWORD_NEXT) &&
 	    (end_key != SUBTILIS_KEYWORD_UNTIL))
-		p->endproc = false;
+		p->current->endproc = false;
 	p->level--;
 	p->current->handler_list =
 	    subtilis_handler_list_truncate(p->current->handler_list, p->level);
@@ -2540,7 +2539,7 @@ static void prv_fn_compound(subtilis_parser_t *p, subtilis_token_t *t,
 	if (t->type == SUBTILIS_TOKEN_EOF)
 		subtilis_error_set_compund_not_term(err, p->l->stream->name,
 						    start);
-	p->endproc = false;
+	p->current->endproc = false;
 	p->level--;
 	p->current->handler_list =
 	    subtilis_handler_list_truncate(p->current->handler_list, p->level);
@@ -3297,7 +3296,7 @@ static void prv_onerror(subtilis_parser_t *p, subtilis_token_t *t,
 		subtilis_error_set_compund_not_term(err, p->l->stream->name,
 						    start);
 
-	if (!p->endproc) {
+	if (!p->current->endproc) {
 		if (!p->current->handler_list) {
 			if (p->current == p->main)
 				subtilis_ir_section_add_instr_no_arg(
@@ -3327,7 +3326,7 @@ static void prv_onerror(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 
 	p->level--;
-	p->endproc = false;
+	p->current->endproc = false;
 
 	subtilis_lexer_get(p->l, t, err);
 
@@ -3849,7 +3848,7 @@ static void prv_endproc(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 
-	p->endproc = true;
+	p->current->endproc = true;
 
 	subtilis_ir_section_add_instr_no_arg(p->current, SUBTILIS_OP_INSTR_RET,
 					     err);
