@@ -2455,7 +2455,9 @@ static void prv_statement(subtilis_parser_t *p, subtilis_token_t *t,
 	const char *tbuf;
 	subtilis_keyword_type_t key_type;
 
-	if (p->current->endproc) {
+	if ((p->current->endproc) &&
+	    !((t->type == SUBTILIS_TOKEN_KEYWORD) &&
+	      (t->tok.keyword.type == SUBTILIS_KEYWORD_DEF))) {
 		subtilis_error_set_useless_statement(err, p->l->stream->name,
 						     p->l->line);
 		return;
@@ -3378,6 +3380,8 @@ static void prv_error(subtilis_parser_t *p, subtilis_token_t *t,
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
+
+	p->current->endproc = true;
 }
 
 static subtilis_type_t *prv_def_parameters(subtilis_parser_t *p,
