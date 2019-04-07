@@ -391,7 +391,8 @@ static int prv_check_matcher(subtilis_lexer_t *l, subtilis_parser_t *p,
 	const size_t rule_count =
 	    sizeof(raw_rules) / sizeof(subtilis_ir_rule_raw_t);
 	subtilis_ir_rule_t parsed[rule_count];
-	const size_t rule_order[] = {4, 5, 3, 5, 4, 5, 6, 1, 6, 2, 5, 7, 8};
+	const size_t rule_order[] = {4, 5, 4, 5, 3, 5, 4, 5,
+				     6, 1, 6, 2, 5, 7, 8};
 
 	subtilis_error_init(&err);
 	subtilis_parse(p, &err);

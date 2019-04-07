@@ -22,6 +22,7 @@
 #include "parser.h"
 
 extern const char *subtilis_rnd_hidden_var;
+extern const char *subtilis_err_hidden_var;
 
 void subtilis_builtins_ir_inkey(subtilis_ir_section_t *current,
 				subtilis_error_t *err);

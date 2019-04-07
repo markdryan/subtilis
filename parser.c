@@ -844,6 +844,24 @@ static subtilis_exp_t *prv_get_tint(subtilis_parser_t *p, subtilis_token_t *t,
 	return prv_bracketed_2_int_args(p, t, SUBTILIS_OP_INSTR_TINT, err);
 }
 
+static subtilis_exp_t *prv_get_err(subtilis_parser_t *p, subtilis_token_t *t,
+				   subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+
+	e = subtilis_var_lookup_var(p, subtilis_err_hidden_var, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return e;
+}
+
 static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
@@ -947,6 +965,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return prv_get_point(p, t, err);
 		case SUBTILIS_KEYWORD_TINT:
 			return prv_get_tint(p, t, err);
+		case SUBTILIS_KEYWORD_ERR:
+			return prv_get_err(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "Unexpected keyword in expression",
@@ -3803,6 +3823,15 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 
 	subtilis_var_assign_hidden(p, subtilis_rnd_hidden_var,
+				   SUBTILIS_TYPE_INTEGER, seed, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	seed = subtilis_exp_new_int32(0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_var_assign_hidden(p, subtilis_err_hidden_var,
 				   SUBTILIS_TYPE_INTEGER, seed, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
