@@ -1228,6 +1228,34 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_END,
+
+	/*
+	 *
+	 * sete
+	 *
+	 * Sets the error flag.  The error flag is a backend specific
+	 * value.
+	 */
+
+	SUBTILIS_OP_INSTR_SETE,
+
+	/*
+	 *
+	 * cleare
+	 *
+	 * Clears the error flag
+	 */
+
+	SUBTILIS_OP_INSTR_CLEARE,
+
+	/*
+	 *
+	 *  teste R0
+	 *
+	 * Sets R0 to -1 if the error flag is set, 0 otherwise
+	 */
+
+	SUBTILIS_OP_INSTR_TESTE,
 } subtilis_op_instr_type_t;
 
 typedef enum {

@@ -118,6 +118,14 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	"jmpc r_1, label_1, *\n"
 	"label_1",
 		 subtilis_fpa_gen_if_gte},
+	{"teste r_1\n"
+	"jmpc r_1, *, label_1\n"
+	"label_1",
+		 subtilis_arm_gen_if_err},
+	{"teste r_1\n"
+	"jmpc r_1, label_1, *\n"
+	"label_1",
+		 subtilis_arm_gen_if_err_rev},
 	{"jmpc *, label_1, *\n"
 	 "label_1\n",
 	 subtilis_arm_gen_jmpc},
@@ -228,6 +236,8 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"point *, *, *\n", subtilis_riscos_arm_point},
 	{"tint *, *, *\n", subtilis_riscos_arm_tint},
 	{"end\n", subtilis_riscos_arm_end},
+	{"sete\n", subtilis_arm_gen_sete},
+	{"cleare\n", subtilis_arm_gen_cleare},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

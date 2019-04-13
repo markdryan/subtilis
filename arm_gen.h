@@ -68,6 +68,10 @@ void subtilis_arm_gen_if_gt(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_if_gte(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_if_err(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_if_err_rev(subtilis_ir_section_t *s, size_t start,
+				 void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_jump(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_jmpc(subtilis_ir_section_t *s, size_t start,
@@ -138,5 +142,9 @@ void subtilis_arm_gen_asri32(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_asrii32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_sete(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_cleare(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err);
 
 #endif

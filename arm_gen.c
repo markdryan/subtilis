@@ -363,6 +363,46 @@ void subtilis_arm_gen_if_gte(subtilis_ir_section_t *s, size_t start,
 	prv_cmp_jmp(s, start, user_data, SUBTILIS_ARM_CCODE_LT, err);
 }
 
+void subtilis_arm_gen_if_err(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_br_instr_t *br;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *jmp = &s->ops[start + 1]->op.instr;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_VS;
+	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
+	br->target.label = jmp->operands[1].label;
+}
+
+void subtilis_arm_gen_if_err_rev(subtilis_ir_section_t *s, size_t start,
+				 void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_br_instr_t *br;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *jmp = &s->ops[start + 1]->op.instr;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_VC;
+	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
+	br->target.label = jmp->operands[2].label;
+}
+
 static void prv_cmp_imm(subtilis_ir_section_t *s, size_t start, void *user_data,
 			subtilis_arm_ccode_type_t ok,
 			subtilis_arm_ccode_type_t nok, subtilis_error_t *err)
@@ -1027,4 +1067,45 @@ void subtilis_arm_gen_asrii32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err)
 {
 	prv_gen_shift_i32(s, start, user_data, SUBTILIS_ARM_SHIFT_ASR, err);
+}
+
+void subtilis_arm_gen_sete(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_section_t *arm_s = user_data;
+
+	/*
+	 * We need this move to stop the register allocator from asserting.
+	 */
+
+	dest = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_AL, dest, 1 << 31,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_VC, dest, 1 << 31,
+				 err);
+}
+
+void subtilis_arm_gen_cleare(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_section_t *arm_s = user_data;
+
+	dest = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_cmp(arm_s, SUBTILIS_ARM_INSTR_CMP,
+			     SUBTILIS_ARM_CCODE_AL, dest, dest, err);
 }

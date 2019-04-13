@@ -1,0 +1,19 @@
+PRINT 0
+
+PRINT FNNested%
+
+PRINT 1
+
+DEF FNNested%
+
+  ONERROR
+    PRINT 1
+  ENDERROR
+
+  ONERROR
+    PRINT 2
+    <-0
+  ENDERROR
+
+  ERROR 3
+<-0
