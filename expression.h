@@ -45,6 +45,8 @@ struct subtilis_exp_t_ {
 
 typedef struct subtilis_exp_t_ subtilis_exp_t;
 
+void subtilis_exp_return_default_value(subtilis_parser_t *p,
+				       subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 				      subtilis_builtin_type_t ftype,
 				      subtilis_type_section_t *stype,

@@ -19,7 +19,10 @@
 #include "builtins_ir.h"
 #include "variable.h"
 
+/* TODO: These should probably be moved into their own file */
+
 const char *subtilis_rnd_hidden_var = "_RND";
+const char *subtilis_err_hidden_var = "_ERR";
 
 void subtilis_builtins_ir_inkey(subtilis_ir_section_t *current,
 				subtilis_error_t *err)

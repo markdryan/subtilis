@@ -1228,6 +1228,34 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_END,
+
+	/*
+	 *
+	 * sete
+	 *
+	 * Sets the error flag.  The error flag is a backend specific
+	 * value.
+	 */
+
+	SUBTILIS_OP_INSTR_SETE,
+
+	/*
+	 *
+	 * cleare
+	 *
+	 * Clears the error flag
+	 */
+
+	SUBTILIS_OP_INSTR_CLEARE,
+
+	/*
+	 *
+	 *  teste R0
+	 *
+	 * Sets R0 to -1 if the error flag is set, 0 otherwise
+	 */
+
+	SUBTILIS_OP_INSTR_TESTE,
 } subtilis_op_instr_type_t;
 
 typedef enum {
@@ -1305,6 +1333,13 @@ struct subtilis_ir_op_t_ {
 
 typedef struct subtilis_ir_op_t_ subtilis_ir_op_t;
 
+typedef struct subtilis_handler_list_t_ subtilis_handler_list_t;
+struct subtilis_handler_list_t_ {
+	size_t level;
+	size_t label;
+	subtilis_handler_list_t *next;
+};
+
 struct subtilis_ir_section_t_ {
 	subtilis_type_section_t *type;
 	size_t locals;
@@ -1315,6 +1350,13 @@ struct subtilis_ir_section_t_ {
 	size_t max_len;
 	subtilis_builtin_type_t ftype;
 	subtilis_ir_op_t **ops;
+	size_t error_len;
+	size_t max_error_len;
+	bool in_error_handler;
+	subtilis_ir_op_t **error_ops;
+	subtilis_handler_list_t *handler_list;
+	size_t handler_offset;
+	bool endproc;
 };
 
 typedef struct subtilis_ir_section_t_ subtilis_ir_section_t;
@@ -1381,6 +1423,13 @@ struct subtilis_ir_rule_raw_t_ {
 
 typedef struct subtilis_ir_rule_raw_t_ subtilis_ir_rule_raw_t;
 
+void subtilis_handler_list_free(subtilis_handler_list_t *list);
+subtilis_handler_list_t *
+subtilis_handler_list_truncate(subtilis_handler_list_t *list, size_t level);
+subtilis_handler_list_t *
+subtilis_handler_list_update(subtilis_handler_list_t *list, size_t level,
+			     size_t label, subtilis_error_t *err);
+
 subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err);
 /* clang-format off */
 subtilis_ir_section_t *subtilis_ir_prog_section_new(
@@ -1433,6 +1482,7 @@ void subtilis_ir_section_dump(subtilis_ir_section_t *s);
 size_t subtilis_ir_section_new_label(subtilis_ir_section_t *s);
 void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 				   subtilis_error_t *err);
+void subtilis_ir_merge_errors(subtilis_ir_section_t *s, subtilis_error_t *err);
 /* Ownership of args passes to this function */
 void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t arg_count,
 				  subtilis_ir_arg_t *args,

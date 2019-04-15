@@ -168,6 +168,9 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "point", SUBTILIS_OP_CLASS_REG_REG_REG },
 	{ "tint", SUBTILIS_OP_CLASS_REG_REG_REG },
 	{ "end", SUBTILIS_OP_CLASS_NONE },
+	{ "sete", SUBTILIS_OP_CLASS_NONE },
+	{ "cleare", SUBTILIS_OP_CLASS_NONE },
+	{ "teste", SUBTILIS_OP_CLASS_REG },
 };
 
 /*
@@ -208,6 +211,59 @@ static const subtilis_ir_class_info_t class_details[] = {
 
 /* clang-format on */
 
+void subtilis_handler_list_free(subtilis_handler_list_t *list)
+{
+	subtilis_handler_list_t *p;
+
+	while (list) {
+		p = list->next;
+		free(list);
+		list = p;
+	}
+}
+
+subtilis_handler_list_t *
+subtilis_handler_list_truncate(subtilis_handler_list_t *list, size_t level)
+{
+	subtilis_handler_list_t *p;
+
+	while (list && level < list->level) {
+		p = list->next;
+		free(list);
+		list = p;
+	}
+
+	return list;
+}
+
+subtilis_handler_list_t *
+subtilis_handler_list_update(subtilis_handler_list_t *list, size_t level,
+			     size_t label, subtilis_error_t *err)
+{
+	subtilis_handler_list_t *p;
+
+	if (!list || level > list->level) {
+		p = malloc(sizeof(*p));
+		if (!p) {
+			subtilis_error_set_oom(err);
+			return NULL;
+		}
+		p->level = level;
+		p->label = label;
+		p->next = list;
+		return p;
+	}
+
+	if (level < list->level) {
+		subtilis_error_set_assertion_failed(err);
+		return list;
+	}
+
+	list->label = label;
+
+	return list;
+}
+
 static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 {
 	subtilis_ir_section_t *s = malloc(sizeof(*s));
@@ -224,6 +280,13 @@ static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 	s->ops = NULL;
 	s->type = NULL;
 	s->ftype = SUBTILIS_BUILTINS_MAX;
+	s->max_error_len = 0;
+	s->error_len = 0;
+	s->error_ops = NULL;
+	s->in_error_handler = false;
+	s->handler_list = NULL;
+	s->handler_offset = 0;
+	s->endproc = false;
 
 	return s;
 }
@@ -246,6 +309,25 @@ static void prv_ensure_buffer(subtilis_ir_section_t *s, subtilis_error_t *err)
 	s->ops = new_ops;
 }
 
+static void prv_ensure_error_buffer(subtilis_ir_section_t *s,
+				    subtilis_error_t *err)
+{
+	subtilis_ir_op_t **new_ops;
+	size_t new_max;
+
+	if (s->error_len < s->max_error_len)
+		return;
+
+	new_max = s->max_error_len + SUBTILIS_CONFIG_PROGRAM_GRAN;
+	new_ops = realloc(s->error_ops, new_max * sizeof(subtilis_ir_op_t *));
+	if (!new_ops) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	s->max_error_len = new_max;
+	s->error_ops = new_ops;
+}
+
 static void prv_ir_section_delete(subtilis_ir_section_t *s)
 {
 	size_t i;
@@ -264,7 +346,37 @@ static void prv_ir_section_delete(subtilis_ir_section_t *s)
 		free(op);
 	}
 	free(s->ops);
+
+	for (i = 0; i < s->error_len; i++) {
+		op = s->error_ops[i];
+		if ((op->type == SUBTILIS_OP_CALL) ||
+		    (op->type == SUBTILIS_OP_CALLI32) ||
+		    (op->type == SUBTILIS_OP_CALLREAL))
+			free(op->op.call.args);
+		free(op);
+	}
+	free(s->error_ops);
+	subtilis_handler_list_free(s->handler_list);
+
 	free(s);
+}
+
+void subtilis_ir_merge_errors(subtilis_ir_section_t *s, subtilis_error_t *err)
+{
+	size_t i;
+
+	s->handler_offset = s->len;
+	for (i = 0; i < s->error_len; i++) {
+		prv_ensure_buffer(s, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		s->ops[s->len++] = s->error_ops[i];
+		s->error_ops[i] = NULL;
+	}
+	s->error_len = 0;
+	s->max_error_len = 0;
+	free(s->error_ops);
+	s->error_ops = NULL;
 }
 
 size_t subtilis_ir_section_add_instr(subtilis_ir_section_t *s,
@@ -367,7 +479,10 @@ void subtilis_ir_section_add_instr_reg(subtilis_ir_section_t *s,
 	subtilis_ir_op_t *op;
 	subtilis_ir_inst_t *instr;
 
-	prv_ensure_buffer(s, err);
+	if (s->in_error_handler)
+		prv_ensure_error_buffer(s, err);
+	else
+		prv_ensure_buffer(s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -384,7 +499,10 @@ void subtilis_ir_section_add_instr_reg(subtilis_ir_section_t *s,
 	instr->operands[1] = op1;
 	instr->operands[2] = op2;
 
-	s->ops[s->len++] = op;
+	if (s->in_error_handler)
+		s->error_ops[s->error_len++] = op;
+	else
+		s->ops[s->len++] = op;
 }
 
 size_t subtilis_ir_section_add_nop(subtilis_ir_section_t *s,
@@ -393,7 +511,10 @@ size_t subtilis_ir_section_add_nop(subtilis_ir_section_t *s,
 	size_t ret;
 	subtilis_ir_op_t *op;
 
-	prv_ensure_buffer(s, err);
+	if (s->in_error_handler)
+		prv_ensure_error_buffer(s, err);
+	else
+		prv_ensure_buffer(s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
@@ -407,7 +528,11 @@ size_t subtilis_ir_section_add_nop(subtilis_ir_section_t *s,
 	op->op.instr.type = SUBTILIS_OP_INSTR_NOP;
 
 	ret = s->len;
-	s->ops[s->len++] = op;
+
+	if (s->in_error_handler)
+		s->error_ops[s->error_len++] = op;
+	else
+		s->ops[s->len++] = op;
 
 	return ret;
 }
@@ -419,8 +544,8 @@ size_t subtilis_ir_section_promote_nop(subtilis_ir_section_t *s, size_t nop,
 	subtilis_ir_inst_t *instr;
 	subtilis_ir_op_t *op;
 
-	if ((type != SUBTILIS_OP_INSTR_MOV_I32_FP) &&
-	    (type != SUBTILIS_OP_INSTR_MOV_FP_I32)) {
+	if (s->in_error_handler || ((type != SUBTILIS_OP_INSTR_MOV_I32_FP) &&
+				    (type != SUBTILIS_OP_INSTR_MOV_FP_I32))) {
 		subtilis_error_set_assertion_failed(err);
 		return 0;
 	}
@@ -687,25 +812,31 @@ static void prv_dump_call(subtilis_op_type_t type, subtilis_ir_call_t *c)
 	}
 }
 
-void subtilis_ir_section_dump(subtilis_ir_section_t *s)
+static void prv_dump_section_ops(subtilis_ir_op_t **ops, size_t len)
 {
 	size_t i;
 
-	for (i = 0; i < s->len; i++) {
-		if (!s->ops[i])
+	for (i = 0; i < len; i++) {
+		if (!ops[i])
 			continue;
-		if (s->ops[i]->type == SUBTILIS_OP_INSTR)
-			prv_dump_instr(&s->ops[i]->op.instr);
-		else if (s->ops[i]->type == SUBTILIS_OP_LABEL)
-			printf("label_%zu", s->ops[i]->op.label);
-		else if ((s->ops[i]->type == SUBTILIS_OP_CALL) ||
-			 (s->ops[i]->type == SUBTILIS_OP_CALLI32) ||
-			 (s->ops[i]->type == SUBTILIS_OP_CALLREAL))
-			prv_dump_call(s->ops[i]->type, &s->ops[i]->op.call);
+		if (ops[i]->type == SUBTILIS_OP_INSTR)
+			prv_dump_instr(&ops[i]->op.instr);
+		else if (ops[i]->type == SUBTILIS_OP_LABEL)
+			printf("label_%zu", ops[i]->op.label);
+		else if ((ops[i]->type == SUBTILIS_OP_CALL) ||
+			 (ops[i]->type == SUBTILIS_OP_CALLI32) ||
+			 (ops[i]->type == SUBTILIS_OP_CALLREAL))
+			prv_dump_call(ops[i]->type, &ops[i]->op.call);
 		else
 			continue;
 		printf("\n");
 	}
+}
+
+void subtilis_ir_section_dump(subtilis_ir_section_t *s)
+{
+	prv_dump_section_ops(s->ops, s->len);
+	prv_dump_section_ops(s->error_ops, s->error_len);
 }
 
 size_t subtilis_ir_section_new_label(subtilis_ir_section_t *s)
@@ -718,7 +849,10 @@ void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 {
 	subtilis_ir_op_t *op;
 
-	prv_ensure_buffer(s, err);
+	if (s->in_error_handler)
+		prv_ensure_error_buffer(s, err);
+	else
+		prv_ensure_buffer(s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -729,7 +863,10 @@ void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 	}
 	op->type = SUBTILIS_OP_LABEL;
 	op->op.label = l;
-	s->ops[s->len++] = op;
+	if (s->in_error_handler)
+		s->error_ops[s->error_len++] = op;
+	else
+		s->ops[s->len++] = op;
 }
 
 static void prv_add_call(subtilis_ir_section_t *s, subtilis_op_type_t type,
@@ -738,7 +875,10 @@ static void prv_add_call(subtilis_ir_section_t *s, subtilis_op_type_t type,
 {
 	subtilis_ir_op_t *op;
 
-	prv_ensure_buffer(s, err);
+	if (s->in_error_handler)
+		prv_ensure_error_buffer(s, err);
+	else
+		prv_ensure_buffer(s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -751,7 +891,10 @@ static void prv_add_call(subtilis_ir_section_t *s, subtilis_op_type_t type,
 	op->op.call.proc_id = 0;
 	op->op.call.arg_count = arg_count;
 	op->op.call.args = args;
-	s->ops[s->len++] = op;
+	if (s->in_error_handler)
+		s->error_ops[s->error_len++] = op;
+	else
+		s->ops[s->len++] = op;
 }
 
 void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t arg_count,
@@ -771,7 +914,10 @@ size_t subtilis_ir_section_add_i32_call(subtilis_ir_section_t *s,
 	prv_add_call(s, SUBTILIS_OP_CALLI32, arg_count, args, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
-	op = s->ops[s->len - 1];
+	if (s->in_error_handler)
+		op = s->error_ops[s->error_len - 1];
+	else
+		op = s->ops[s->len - 1];
 	op->op.call.reg = s->reg_counter++;
 	return op->op.call.reg;
 }
@@ -786,7 +932,10 @@ size_t subtilis_ir_section_add_real_call(subtilis_ir_section_t *s,
 	prv_add_call(s, SUBTILIS_OP_CALLREAL, arg_count, args, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
-	op = s->ops[s->len - 1];
+	if (s->in_error_handler)
+		op = s->error_ops[s->error_len - 1];
+	else
+		op = s->ops[s->len - 1];
 	op->op.call.reg = s->freg_counter++;
 	return op->op.call.reg;
 }
@@ -1190,6 +1339,11 @@ void subtilis_ir_match(subtilis_ir_section_t *s, subtilis_ir_rule_t *rules,
 	size_t j;
 	subtilis_ir_match_state_t state;
 	subtilis_ir_op_t *op;
+
+	if (s->in_error_handler) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
 
 	for (pc = 0; pc < s->len;) {
 		op = s->ops[pc];

@@ -99,6 +99,106 @@ on_error:
 	subtilis_type_section_delete(ts);
 }
 
+void subtilis_exp_return_default_value(subtilis_parser_t *p,
+				       subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+	subtilis_op_instr_type_t type;
+
+	if (p->current == p->main) {
+		subtilis_ir_section_add_instr_no_arg(
+		    p->current, SUBTILIS_OP_INSTR_END, err);
+		return;
+	}
+
+	switch (p->current->type->return_type) {
+	case SUBTILIS_TYPE_VOID:
+		subtilis_ir_section_add_instr_no_arg(
+		    p->current, SUBTILIS_OP_INSTR_RET, err);
+		return;
+	case SUBTILIS_TYPE_REAL:
+		type = SUBTILIS_OP_INSTR_RETI_REAL;
+		e = subtilis_exp_new_real(0.0, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		break;
+	case SUBTILIS_TYPE_INTEGER:
+		type = SUBTILIS_OP_INSTR_RETI_I32;
+		e = subtilis_exp_new_int32(0, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	subtilis_ir_section_add_instr_no_reg(p->current, type, e->exp.ir_op,
+					     err);
+	subtilis_exp_delete(e);
+}
+
+static void prv_handle_errors(subtilis_parser_t *p, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t error_label;
+	subtilis_ir_operand_t ok_label;
+	subtilis_ir_operand_t op1;
+
+	if (p->current->in_error_handler) {
+		/*
+		 * We're in an error handler.  We ignore any error and continue.
+		 */
+
+		subtilis_ir_section_add_instr_no_arg(
+		    p->current, SUBTILIS_OP_INSTR_CLEARE, err);
+		return;
+	}
+
+	op1.reg = subtilis_ir_section_add_instr1(p->current,
+						 SUBTILIS_OP_INSTR_TESTE, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	ok_label.label = subtilis_ir_section_new_label(p->current);
+
+	if (p->current->handler_list) {
+		/*
+		 * We're not in an error handler but there is one.
+		 * Let's transfer control to it.
+		 */
+
+		error_label.label = p->current->handler_list->label;
+		subtilis_ir_section_add_instr_reg(p->current,
+						  SUBTILIS_OP_INSTR_JMPC, op1,
+						  error_label, ok_label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		/*
+		 * There's no error handler so we need to return.
+		 */
+
+		error_label.label = subtilis_ir_section_new_label(p->current);
+
+		subtilis_ir_section_add_instr_reg(p->current,
+						  SUBTILIS_OP_INSTR_JMPC, op1,
+						  error_label, ok_label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_ir_section_add_label(p->current, error_label.label,
+					      err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_exp_return_default_value(p, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	subtilis_ir_section_add_label(p->current, ok_label.label, err);
+}
+
 /*
  * Takes ownership of name and args and stype. stype may be NULL if we're
  * calling a builtin function that's actually used to implement an operator
@@ -115,6 +215,7 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 				      size_t num_params, subtilis_error_t *err)
 {
 	size_t reg;
+	size_t call_site;
 	subtilis_exp_t *e = NULL;
 	subtilis_parser_call_t *call = NULL;
 
@@ -142,13 +243,27 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 			goto on_error;
 	}
 
+	/* For calls made inside handlers we will add the offset from the start
+	 * of the handler section and fix it up later on when checking the
+	 * calls.
+	 */
+
+	call_site = p->current->in_error_handler ? p->current->error_len
+						 : p->current->len;
+	call_site--;
+
+	prv_handle_errors(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
 	if (ftype != SUBTILIS_BUILTINS_MAX) {
 		prv_add_builtin(p, name, ftype, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 	}
 
-	call = subtilis_parser_call_new(p->current, p->current->len - 1, name,
+	call = subtilis_parser_call_new(p->current, call_site,
+					p->current->in_error_handler, name,
 					stype, p->l->line, ftype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;

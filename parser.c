@@ -89,7 +89,6 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 	p->l = l;
 	p->caps = caps;
 	p->level = 0;
-	p->endproc = false;
 
 	return p;
 
@@ -844,6 +843,24 @@ static subtilis_exp_t *prv_get_tint(subtilis_parser_t *p, subtilis_token_t *t,
 	return prv_bracketed_2_int_args(p, t, SUBTILIS_OP_INSTR_TINT, err);
 }
 
+static subtilis_exp_t *prv_get_err(subtilis_parser_t *p, subtilis_token_t *t,
+				   subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+
+	e = subtilis_var_lookup_var(p, subtilis_err_hidden_var, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return e;
+}
+
 static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
@@ -947,6 +964,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return prv_get_point(p, t, err);
 		case SUBTILIS_KEYWORD_TINT:
 			return prv_get_tint(p, t, err);
+		case SUBTILIS_KEYWORD_ERR:
+			return prv_get_err(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "Unexpected keyword in expression",
@@ -2023,7 +2042,7 @@ static void prv_end(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	p->endproc = true;
+	p->current->endproc = true;
 }
 
 static void prv_wait(subtilis_parser_t *p, subtilis_token_t *t,
@@ -2355,7 +2374,7 @@ static void prv_return(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	p->endproc = true;
+	p->current->endproc = true;
 }
 
 static subtilis_keyword_type_t
@@ -2374,7 +2393,7 @@ prv_if_compund(subtilis_parser_t *p, subtilis_token_t *t, subtilis_error_t *err)
 	while (t->type != SUBTILIS_TOKEN_EOF) {
 		tbuf = subtilis_token_get_text(t);
 		if (t->type == SUBTILIS_TOKEN_IDENTIFIER) {
-			if (p->endproc) {
+			if (p->current->endproc) {
 				subtilis_error_set_useless_statement(
 				    err, p->l->stream->name, p->l->line);
 				return key_type;
@@ -2400,7 +2419,7 @@ prv_if_compund(subtilis_parser_t *p, subtilis_token_t *t, subtilis_error_t *err)
 		    (key_type == SUBTILIS_KEYWORD_ENDIF))
 			break;
 
-		if (p->endproc) {
+		if (p->current->endproc) {
 			subtilis_error_set_useless_statement(
 			    err, p->l->stream->name, p->l->line);
 			return key_type;
@@ -2422,8 +2441,10 @@ prv_if_compund(subtilis_parser_t *p, subtilis_token_t *t, subtilis_error_t *err)
 		subtilis_error_set_compund_not_term(err, p->l->stream->name,
 						    start);
 
-	p->endproc = false;
+	p->current->endproc = false;
 	p->level--;
+	p->current->handler_list =
+	    subtilis_handler_list_truncate(p->current->handler_list, p->level);
 	return key_type;
 }
 
@@ -2434,7 +2455,9 @@ static void prv_statement(subtilis_parser_t *p, subtilis_token_t *t,
 	const char *tbuf;
 	subtilis_keyword_type_t key_type;
 
-	if (p->endproc) {
+	if ((p->current->endproc) &&
+	    !((t->type == SUBTILIS_TOKEN_KEYWORD) &&
+	      (t->tok.keyword.type == SUBTILIS_KEYWORD_DEF))) {
 		subtilis_error_set_useless_statement(err, p->l->stream->name,
 						     p->l->line);
 		return;
@@ -2489,9 +2512,12 @@ static void prv_compound(subtilis_parser_t *p, subtilis_token_t *t,
 						    start);
 
 	if ((end_key != SUBTILIS_KEYWORD_NEXT) &&
-	    (end_key != SUBTILIS_KEYWORD_UNTIL))
-		p->endproc = false;
+	    (end_key != SUBTILIS_KEYWORD_UNTIL) &&
+	    (end_key != SUBTILIS_KEYWORD_ENDPROC))
+		p->current->endproc = false;
 	p->level--;
+	p->current->handler_list =
+	    subtilis_handler_list_truncate(p->current->handler_list, p->level);
 }
 
 static void prv_fn_compound(subtilis_parser_t *p, subtilis_token_t *t,
@@ -2516,8 +2542,10 @@ static void prv_fn_compound(subtilis_parser_t *p, subtilis_token_t *t,
 	if (t->type == SUBTILIS_TOKEN_EOF)
 		subtilis_error_set_compund_not_term(err, p->l->stream->name,
 						    start);
-	p->endproc = false;
+	//	p->current->endproc = false;
 	p->level--;
+	p->current->handler_list =
+	    subtilis_handler_list_truncate(p->current->handler_list, p->level);
 }
 
 static subtilis_exp_t *prv_conditional_exp(subtilis_parser_t *p,
@@ -3233,6 +3261,162 @@ cleanup:
 	subtilis_exp_delete(to);
 }
 
+static void prv_onerror(subtilis_parser_t *p, subtilis_token_t *t,
+			subtilis_error_t *err)
+{
+	subtilis_ir_operand_t handler_label;
+	subtilis_ir_operand_t target_label;
+	unsigned int start;
+
+	if (p->current->in_error_handler) {
+		subtilis_error_set_nested_handler(err, p->l->stream->name,
+						  p->l->line);
+		return;
+	}
+
+	p->current->in_error_handler = true;
+	handler_label.label = subtilis_ir_section_new_label(p->current);
+	subtilis_ir_section_add_label(p->current, handler_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	/*
+	 * The error flag needs to be clear when we're inside an error
+	 * handler.  Otherwise and procedures or functions call in that
+	 * handler may appear to have failed when they return.
+	 */
+
+	subtilis_ir_section_add_instr_no_arg(p->current,
+					     SUBTILIS_OP_INSTR_CLEARE, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	p->level++;
+	start = p->l->line;
+	while (t->type != SUBTILIS_TOKEN_EOF) {
+		if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
+		    (t->tok.keyword.type == SUBTILIS_KEYWORD_ENDERROR))
+			break;
+		prv_statement(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	if (t->type == SUBTILIS_TOKEN_EOF)
+		subtilis_error_set_compund_not_term(err, p->l->stream->name,
+						    start);
+
+	if (!p->current->endproc) {
+		if (!p->current->handler_list) {
+			if (p->current == p->main) {
+				subtilis_ir_section_add_instr_no_arg(
+				    p->current, SUBTILIS_OP_INSTR_END, err);
+			} else {
+				subtilis_ir_section_add_instr_no_arg(
+				    p->current, SUBTILIS_OP_INSTR_SETE, err);
+				if (err->type != SUBTILIS_ERROR_OK)
+					return;
+				subtilis_exp_return_default_value(p, err);
+				if (err->type != SUBTILIS_ERROR_OK)
+					return;
+			}
+		} else {
+			target_label.label = p->current->handler_list->label;
+			subtilis_ir_section_add_instr_no_reg(
+			    p->current, SUBTILIS_OP_INSTR_JMP, target_label,
+			    err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+		}
+	}
+
+	p->current->handler_list = subtilis_handler_list_update(
+	    p->current->handler_list, p->level - 1, handler_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	p->level--;
+	p->current->endproc = false;
+
+	subtilis_lexer_get(p->l, t, err);
+
+cleanup:
+	p->current->in_error_handler = false;
+}
+
+static void prv_error(subtilis_parser_t *p, subtilis_token_t *t,
+		      subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+	subtilis_ir_operand_t target_label;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	e = prv_priority7(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	e = subtilis_exp_to_int(p, e, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return;
+	}
+
+	subtilis_var_assign_hidden(p, subtilis_err_hidden_var,
+				   SUBTILIS_TYPE_INTEGER, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (p->current->in_error_handler) {
+		/*
+		 * We're in an error handler. Let's set the error flag and
+		 * return the default value for the function type.
+		 */
+
+		subtilis_ir_section_add_instr_no_arg(
+		    p->current, SUBTILIS_OP_INSTR_SETE, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_exp_return_default_value(p, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else if (p->current->handler_list) {
+		/*
+		 * We're not in an error handler but one is defined.
+		 * Let's jump there.
+		 */
+
+		target_label.label = p->current->handler_list->label;
+		subtilis_ir_section_add_instr_no_reg(
+		    p->current, SUBTILIS_OP_INSTR_JMP, target_label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		/*
+		 * We're not in an error handler and none has been defined.
+		 * Let's set the error flag and return the default value.
+		 */
+
+		subtilis_ir_section_add_instr_no_arg(
+		    p->current, SUBTILIS_OP_INSTR_SETE, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_exp_return_default_value(p, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	p->current->endproc = true;
+}
+
 static subtilis_type_t *prv_def_parameters(subtilis_parser_t *p,
 					   subtilis_token_t *t,
 					   size_t *num_parameters,
@@ -3475,20 +3659,27 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 
 		/* Ownership of e is passed to add_fn_ret */
 
-		prv_add_fn_ret(p, e, fn_type, err);
+		if (p->current->endproc)
+			subtilis_exp_delete(e);
+		else
+			prv_add_fn_ret(p, e, fn_type, err);
 	} else {
 		prv_compound(p, t, SUBTILIS_KEYWORD_ENDPROC, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
-		subtilis_ir_section_add_instr_no_arg(
-		    p->current, SUBTILIS_OP_INSTR_RET, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto on_error;
+		if (!p->current->endproc) {
+			subtilis_ir_section_add_instr_no_arg(
+			    p->current, SUBTILIS_OP_INSTR_RET, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto on_error;
+		}
 		subtilis_lexer_get(p->l, t, err);
 	}
 
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
+
+	subtilis_ir_merge_errors(p->current, err);
 
 on_error:
 
@@ -3693,7 +3884,13 @@ static void prv_endproc(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 
-	p->endproc = true;
+	if (p->current->type->return_type != SUBTILIS_TYPE_VOID) {
+		subtilis_error_set_proc_in_fn(err, p->l->stream->name,
+					      p->l->line);
+		return;
+	}
+
+	p->current->endproc = true;
 
 	subtilis_ir_section_add_instr_no_arg(p->current, SUBTILIS_OP_INSTR_RET,
 					     err);
@@ -3717,6 +3914,15 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	seed = subtilis_exp_new_int32(0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_var_assign_hidden(p, subtilis_err_hidden_var,
+				   SUBTILIS_TYPE_INTEGER, seed, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -3730,12 +3936,20 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
+
+	subtilis_ir_section_add_instr_no_arg(p->current, SUBTILIS_OP_INSTR_END,
+					     err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_merge_errors(p->current, err);
 }
 
 static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 			   subtilis_error_t *err)
 {
 	size_t index;
+	size_t call_index;
 	size_t i;
 	subtilis_type_section_t *st;
 	const char *expected_typname;
@@ -3759,6 +3973,14 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 		return;
 	}
 
+	/* We need to fix up the call site of procedures call in an error
+	 * handler.
+	 */
+
+	call_index = call->index;
+	if (call->in_error_handler)
+		call_index += call->s->handler_offset;
+
 	/*
 	 * If the call has no type section that it is not a real function.
 	 * It's an operator that is being implemented as a function call
@@ -3773,7 +3995,7 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 	 */
 
 	if (!ct) {
-		call->s->ops[call->index]->op.call.proc_id = index;
+		call->s->ops[call_index]->op.call.proc_id = index;
 		return;
 	}
 
@@ -3798,7 +4020,7 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 		return;
 	}
 
-	call_site = &call->s->ops[call->index]->op.call;
+	call_site = &call->s->ops[call_index]->op.call;
 	for (i = 0; i < st->num_parameters; i++) {
 		if (st->parameters[i] == ct->parameters[i])
 			continue;
@@ -3821,7 +4043,7 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 			return;
 		}
 
-		switch (call->s->ops[call->index]->type) {
+		switch (call->s->ops[call_index]->type) {
 		case SUBTILIS_OP_CALL:
 		case SUBTILIS_OP_CALLI32:
 		case SUBTILIS_OP_CALLREAL:
@@ -3920,6 +4142,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_ELSE */
 	prv_end, /* SUBTILIS_KEYWORD_END */
 	NULL, /* SUBTILIS_KEYWORD_ENDCASE */
+	NULL, /* SUBTILIS_KEYWORD_ENDERROR */
 	NULL, /* SUBTILIS_KEYWORD_ENDIF */
 	prv_endproc, /* SUBTILIS_KEYWORD_ENDPROC */
 	NULL, /* SUBTILIS_KEYWORD_ENDWHILE */
@@ -3927,7 +4150,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_EOR */
 	NULL, /* SUBTILIS_KEYWORD_ERL */
 	NULL, /* SUBTILIS_KEYWORD_ERR */
-	NULL, /* SUBTILIS_KEYWORD_ERROR */
+	prv_error, /* SUBTILIS_KEYWORD_ERROR */
 	NULL, /* SUBTILIS_KEYWORD_EVAL */
 	NULL, /* SUBTILIS_KEYWORD_EXP */
 	NULL, /* SUBTILIS_KEYWORD_EXT_HASH */
@@ -3976,6 +4199,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	prv_off, /* SUBTILIS_KEYWORD_OFF */
 	NULL, /* SUBTILIS_KEYWORD_OLD */
 	prv_on, /* SUBTILIS_KEYWORD_ON */
+	prv_onerror, /* SUBTILIS_KEYWORD_ONERROR */
 	NULL, /* SUBTILIS_KEYWORD_OPENIN */
 	NULL, /* SUBTILIS_KEYWORD_OPENOUT */
 	NULL, /* SUBTILIS_KEYWORD_OPENUP */

@@ -1,0 +1,25 @@
+PRINT 0
+
+ONERROR
+  PRINT ERR
+ENDERROR
+
+PRINT FNFail%
+
+PRINT 6
+
+DEF FNFail%
+    PRINT 1
+
+    ONERROR
+      PRINT 3
+      <-4
+    ENDERROR
+
+    PRINT FNFail2%
+<-0
+
+DEF FNFail2%
+    PRINT 2
+    ERROR 5
+<-0

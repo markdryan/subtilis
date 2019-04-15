@@ -33,7 +33,6 @@ struct subtilis_parser_t_ {
 	subtilis_symbol_table_t *local_st;
 	subtilis_symbol_table_t *main_st;
 	size_t level;
-	bool endproc;
 	size_t num_calls;
 	size_t max_calls;
 	subtilis_parser_call_t **calls;

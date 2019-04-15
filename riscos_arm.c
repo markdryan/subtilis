@@ -295,9 +295,6 @@ subtilis_riscos_generate(
 	prv_add_section(s, arm_s, parsed, rule_count, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	prv_add_coda(arm_s, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
 
 	for (i = 1; i < p->num_sections; i++) {
 		s = p->sections[i];

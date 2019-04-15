@@ -293,6 +293,187 @@ without requiring the FN prefix.  This means that their parameters must be enclo
 within brackets even if there is only one parameter.  In BBC BASIC you could write SINA
 but in Subtilis you must write SIN(A)
 
+### Error Handling
+
+Error handling in a Subtilis is a little different from BBC Basic.  When an error
+occurs inside a procedure of function, one of three things happen.
+
+1. The program will jump to the nearest approoriate error handler defined in
+   the procedure or function.
+2. If there are no appropriate error handlers and we're not in the main procedure,
+   the procedure or function will return, and we check for an error handler in the
+   calling procedure or function, executing steps 1, 2 or 3 as appropriate.
+3. If there are no appropriate error handlers and we're in the main procedure
+   the process will exit.
+
+Error handlers are defined using the ONERROR statement.  They are compound blocks
+that are terminated by ENDERROR.  An error handler can contain any number of
+statements and can call functions or procedures, although special rules apply
+in such cases.  For example, the following code
+
+```
+ONERROR
+    PRINT 0
+ENDERROR
+
+PRINT 1
+
+ERROR 29
+```
+
+ will print
+
+```
+1
+0
+```
+
+When control is passed to an error handler normal execution of that function ceases.
+It is not possible to return to the statement that caused the error, or indeed the
+subsequent statement.  Once the error handler has finished excuting control will
+transfer to any other available error handlers in the same function or control will
+return to the calling function.  By default, errors not consume by error handlers.
+The error will still be present in the calling function.  This behaviour can be
+overriding by explicitly returning from the error handler using ENDPROC or <-
+as appropriate.  For example, the following code will print
+
+```
+PROCFail
+PRINT 2
+
+DEF PROCFail
+    ONERROR
+        PRINT 0
+    ENDERROR
+
+    PRINT 1
+
+    ERROR 29
+ENDPROC
+```
+
+will print
+```
+1
+0
+```
+
+This is because the error has not been consumed by PROCFail and it has been propegated
+to the main procedure.  As this procedure does not have an error handler, we exit the
+program.  However, if we modify the code to add an ENDPROC after PRINT 0, e.g.,
+
+```
+PROCFail
+PRINT 2
+
+DEF PROCFail
+    ONERROR
+        PRINT 0
+	ENDPROC
+    ENDERROR
+
+    PRINT 1
+
+    ERROR 29
+ENDPROC
+```
+
+we will get
+
+```
+1
+0
+2
+```
+
+Procedures or functions, including the main procedure, can have multiple error handlers.
+These handlers are lexically scoped.  When an error handler finishes executing control
+will pass to the previously declared error handler in the same scope.  If there
+are no more error handlers the procedure or function or program will exit.
+
+For example,
+
+```
+ONERROR
+        PRINT 0
+ENDERROR
+
+FOR I% = 0 TO 10
+    ONERROR
+       PRINT 1
+    ENDERROR
+
+    ERROR 29
+NEXT
+```
+
+will print
+
+```
+1
+0
+```
+
+while
+
+```
+ONERROR
+        PRINT 0
+ENDERROR
+
+FOR I% = 0 TO 10
+    ONERROR
+       PRINT 1
+    ENDERROR
+NEXT
+
+ERROR 29
+```
+
+will just print
+
+```
+0
+```
+
+As we have seen, error handlers are chained by default.  This behaviour can be
+overridden by including an END, ERROR, ENDPROC or <- in an error handler.  When this
+is done the error handler will cause the program to return to the calling
+function ignoring any other error handlers declared in the procedure that
+generated the error.  For example,
+
+```
+ONERROR
+        PRINT 0
+ENDERROR
+
+FOR I% = 0 TO 10
+    ONERROR
+       PRINT 1
+       END
+    ENDERROR
+
+    ERROR 29
+NEXT
+```
+
+will simply print
+
+```
+1
+```
+
+Procedures and functions can be called inside an error handler but they cannot
+generate errors.  Any errors that they do generate are discarded.  ERROR can be
+called from inside an error handler.  The main motivation for doing this would
+be to alter the code of the error being returned.  Currently, the ERROR keyword
+only accepts a number as we don't yet have any strings in Subtilis.
+
+When an error is propegated from a function, the return value of that function
+is set to the default value for the type.  This is sort of irrelvant as that
+value cannot be accessed by the program.
+
+
 ## Current Issues with the Grammar
 
 ### Function like keywords returning integer values
@@ -357,7 +538,6 @@ will be implemented at some point.
 Here's a list of other language features that are currently not implemented but which will be at some point
 
 * The @% variable
-* Error Handling
 * Arrays
 * Strings
 * File Handling

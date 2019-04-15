@@ -67,6 +67,9 @@ typedef enum {
 	SUBTILIS_ERROR_USELESS_STATEMENT,
 	SUBTILIS_ERROR_RETURN_IN_MAIN,
 	SUBTILIS_ERROR_RETURN_IN_PROC,
+	SUBTILIS_ERROR_NESTED_HANDLER,
+	SUBTILIS_ERROR_ENDPROC_IN_FN,
+	SUBTILIS_ERROR_RETURN_EXPECTED,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -193,6 +196,14 @@ void subtilis_error_init(subtilis_error_t *e);
 				  line, __FILE__, __LINE__)
 #define subtilis_error_set_return_in_proc(e, file, line)                       \
 	subtilis_error_set_syntax(e, SUBTILIS_ERROR_RETURN_IN_PROC, file,      \
+				  line, __FILE__, __LINE__)
+#define subtilis_error_set_nested_handler(e, file, line)                       \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_NESTED_HANDLER, file, line)
+#define subtilis_error_set_proc_in_fn(e, file, line)                           \
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_ENDPROC_IN_FN, file, line, \
+				  __FILE__, __LINE__)
+#define subtilis_error_return_expected(e, file, line)                          \
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_RETURN_EXPECTED, file,     \
 				  line, __FILE__, __LINE__)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
