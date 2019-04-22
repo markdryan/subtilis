@@ -1,0 +1,13 @@
+LOCAL A%
+LOCAL B%
+
+A% = 100
+B% = 0
+
+ONERROR
+    PRINT ERR
+ENDERROR
+
+PRINT A% DIV B%
+
+PRINT &ff

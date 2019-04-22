@@ -1135,7 +1135,10 @@ static size_t prv_div_mod_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	subtilis_ir_arg_t *args;
 	size_t res;
 	size_t div_flag;
+	size_t err_reg;
 	subtilis_ir_operand_t div_mod;
+	subtilis_ir_operand_t err_offset;
+	const subtilis_symbol_t *s;
 	static const char idiv[] = "_idiv";
 	char *name = NULL;
 
@@ -1150,7 +1153,7 @@ static size_t prv_div_mod_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	}
 	strcpy(name, idiv);
 
-	args = malloc(sizeof(*args) * 3);
+	args = malloc(sizeof(*args) * 4);
 	if (!args) {
 		free(name);
 		subtilis_error_set_oom(err);
@@ -1163,14 +1166,28 @@ static size_t prv_div_mod_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
+	s = subtilis_symbol_table_lookup(p->st, subtilis_err_hidden_var);
+	if (!s) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+
+	err_offset.integer = s->loc;
+	err_reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, err_offset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
 	args[0].type = SUBTILIS_IR_REG_TYPE_INTEGER;
 	args[0].reg = a.reg;
 	args[1].type = SUBTILIS_IR_REG_TYPE_INTEGER;
 	args[1].reg = b.reg;
 	args[2].type = SUBTILIS_IR_REG_TYPE_INTEGER;
 	args[2].reg = div_flag;
+	args[3].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[3].reg = err_reg;
 	e = subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_IDIV, NULL, args,
-				  SUBTILIS_TYPE_INTEGER, 3, err);
+				  SUBTILIS_TYPE_INTEGER, 4, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 	res = e->exp.ir_op.reg;
