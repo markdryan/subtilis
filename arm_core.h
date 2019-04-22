@@ -26,13 +26,13 @@
 /*
  * Two register namespaces overlap for each register type, int or real.
  * For integers register numbers < 16 are fixed and will not be altered
- * by the register allocator.  FPA register numbers < 6 are fixed.
+ * by the register allocator.  FPA register numbers < 8 are fixed.
  * All other register numbers are floating and will need to be allocated
  * to a fixed register during register allocation.
  */
 
 #define SUBTILIS_ARM_INT_VIRT_REG_START 16
-#define SUBTILIS_ARM_FPA_VIRT_REG_START 6
+#define SUBTILIS_ARM_FPA_VIRT_REG_START 8
 
 typedef size_t subtilis_arm_reg_t;
 

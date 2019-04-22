@@ -2280,9 +2280,9 @@ static void prv_update_arg_offsets(subtilis_arm_section_t *arm_s,
 		if (1 << i & int_regs_used)
 			bytes_saved += sizeof(int32_t);
 
-	/* TODO: 6 here is FPA specific */
+	/* TODO: SUBTILIS_ARM_REG_MAX_FPA_REGS here is FPA specific */
 
-	for (i = 0; i < 6; i++)
+	for (i = 0; i < SUBTILIS_ARM_REG_MAX_FPA_REGS; i++)
 		if (1 << i & real_regs_used)
 			bytes_saved += sizeof(double);
 
@@ -2347,7 +2347,8 @@ static void prv_compute_regs_used(subtilis_arm_section_t *arm_s,
 
 	real_regs_saved = call_site->real_args;
 	if (real_regs_saved > SUBTILIS_ARM_REG_MIN_FPA_REGS)
-		real_regs_saved = 2;
+		real_regs_saved = SUBTILIS_ARM_REG_MAX_FPA_REGS -
+				  SUBTILIS_ARM_REG_MIN_FPA_REGS;
 	else
 		real_regs_saved =
 		    SUBTILIS_ARM_REG_MAX_FPA_REGS - real_regs_saved;
