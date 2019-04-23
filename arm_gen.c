@@ -19,6 +19,7 @@
 #include "arm_gen.h"
 
 #include "arm_core.h"
+#include "arm_reg_alloc.h"
 
 static void prv_data_simple(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_arm_instr_type_t itype,
@@ -828,7 +829,8 @@ void subtilis_arm_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 
 	if (s->freg_counter > 0) {
 		save_real_start = real_args > 4 ? 4 : real_args;
-		for (i = save_real_start; i < 6; i++) {
+		for (i = save_real_start; i < SUBTILIS_ARM_REG_MAX_FPA_REGS;
+		     i++) {
 			fpa_reg = i;
 			subtilis_fpa_push_reg(arm_s, SUBTILIS_ARM_CCODE_NV,
 					      fpa_reg, err);
@@ -853,7 +855,8 @@ void subtilis_arm_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 	call_site = arm_s->last_op;
 
 	if (s->freg_counter > 0) {
-		for (i = 5; i >= save_real_start; i--) {
+		for (i = SUBTILIS_ARM_REG_MAX_FPA_REGS - 1;
+		     i >= save_real_start; i--) {
 			fpa_reg = i;
 			subtilis_fpa_pop_reg(arm_s, SUBTILIS_ARM_CCODE_NV,
 					     fpa_reg, err);

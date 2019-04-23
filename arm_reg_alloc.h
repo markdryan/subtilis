@@ -24,7 +24,7 @@
 #define SUBTILIS_ARM_REG_MAX_INT_REGS 11
 
 #define SUBTILIS_ARM_REG_MIN_FPA_REGS 4
-#define SUBTILIS_ARM_REG_MAX_FPA_REGS 6
+#define SUBTILIS_ARM_REG_MAX_FPA_REGS 8
 
 struct subtilis_dist_data_t_ {
 	size_t reg_num;
