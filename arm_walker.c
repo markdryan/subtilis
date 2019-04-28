@@ -135,6 +135,11 @@ static void prv_walk_instr(subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 		walker->fpa_cmp_fn(walker->user_data, op, instr->type,
 				   &instr->operands.fpa_cmp, err);
 		break;
+	case SUBTILIS_FPA_INSTR_WFS:
+	case SUBTILIS_FPA_INSTR_RFS:
+		walker->fpa_cptran_fn(walker->user_data, op, instr->type,
+				      &instr->operands.fpa_cptran, err);
+		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
 		break;

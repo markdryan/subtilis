@@ -158,6 +158,8 @@ typedef enum {
 	SUBTILIS_FPA_INSTR_CNF,
 	SUBTILIS_FPA_INSTR_CMFE,
 	SUBTILIS_FPA_INSTR_CNFE,
+	SUBTILIS_FPA_INSTR_WFS,
+	SUBTILIS_FPA_INSTR_RFS,
 	SUBTILIS_ARM_INSTR_MAX,
 } subtilis_arm_instr_type_t;
 
@@ -305,6 +307,13 @@ struct subtilis_fpa_tran_instr_t_ {
 
 typedef struct subtilis_fpa_tran_instr_t_ subtilis_fpa_tran_instr_t;
 
+struct subtilis_fpa_cptran_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_reg_t dest;
+};
+
+typedef struct subtilis_fpa_cptran_instr_t_ subtilis_fpa_cptran_instr_t;
+
 struct subtilis_fpa_cmp_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	subtilis_arm_reg_t dest;
@@ -338,6 +347,7 @@ struct subtilis_arm_instr_t_ {
 		subtilis_fpa_tran_instr_t fpa_tran;
 		subtilis_fpa_cmp_instr_t fpa_cmp;
 		subtilis_fpa_ldrc_instr_t fpa_ldrc;
+		subtilis_fpa_cptran_instr_t fpa_cptran;
 	} operands;
 };
 
@@ -674,6 +684,11 @@ void subtilis_fpa_add_cmp(subtilis_arm_section_t *s,
 			  subtilis_arm_ccode_type_t ccode,
 			  subtilis_arm_reg_t dest, subtilis_arm_reg_t op2,
 			  subtilis_error_t *err);
+void subtilis_fpa_add_cptran(subtilis_arm_section_t *s,
+			     subtilis_arm_instr_type_t itype,
+			     subtilis_arm_ccode_type_t ccode,
+			     subtilis_arm_reg_t dest, subtilis_error_t *err);
+
 /* clang-format off */
 void subtilis_fpa_insert_stran_spill_imm(subtilis_arm_section_t *s,
 					 subtilis_arm_op_t *current,

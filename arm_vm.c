@@ -1487,12 +1487,29 @@ static void prv_process_fpa_abs(subtilis_arm_vm_t *arm_vm,
 	prv_process_fpa_monadic_dbl(arm_vm, op, fabs, err);
 }
 
+static void prv_process_fpa_wfs(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_cptran_instr_t *op,
+				subtilis_error_t *err)
+{
+	arm_vm->fpa_status = arm_vm->regs[op->dest];
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_fpa_rfs(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_cptran_instr_t *op,
+				subtilis_error_t *err)
+{
+	arm_vm->regs[op->dest] = arm_vm->fpa_status;
+	arm_vm->regs[15] += 4;
+}
+
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			 subtilis_error_t *err)
 {
 	size_t pc;
 	subtilis_arm_instr_t instr;
 
+	arm_vm->fpa_status = 0;
 	arm_vm->quit = false;
 	arm_vm->negative_flag = false;
 	arm_vm->zero_flag = false;
@@ -1655,6 +1672,14 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			break;
 		case SUBTILIS_FPA_INSTR_ABS:
 			prv_process_fpa_abs(arm_vm, &instr.operands.fpa_data,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_WFS:
+			prv_process_fpa_wfs(arm_vm, &instr.operands.fpa_cptran,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_RFS:
+			prv_process_fpa_rfs(arm_vm, &instr.operands.fpa_cptran,
 					    err);
 			break;
 		default:

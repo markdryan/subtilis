@@ -302,6 +302,24 @@ static void prv_dist_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	ud->last_used++;
 }
 
+static void prv_dist_fpa_cptran_instr(void *user_data, subtilis_arm_op_t *op,
+				      subtilis_arm_instr_type_t type,
+				      subtilis_fpa_cptran_instr_t *instr,
+				      subtilis_error_t *err)
+{
+	subtilis_dist_data_t *ud = user_data;
+
+	if (instr->dest == ud->reg_num) {
+		if (type == SUBTILIS_FPA_INSTR_RFS)
+			ud->last_used = -1;
+
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
+	ud->last_used++;
+}
+
 void subtilis_init_int_dist_walker(subtlis_arm_walker_t *walker,
 				   void *user_data)
 {
@@ -322,4 +340,5 @@ void subtilis_init_int_dist_walker(subtlis_arm_walker_t *walker,
 	walker->fpa_tran_fn = prv_dist_fpa_tran_instr;
 	walker->fpa_cmp_fn = prv_dist_fpa_cmp_instr;
 	walker->fpa_ldrc_fn = prv_dist_fpa_ldrc_instr;
+	walker->fpa_cptran_fn = prv_dist_fpa_cptran_instr;
 }

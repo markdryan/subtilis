@@ -792,6 +792,26 @@ static void prv_encode_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 				   &stran, err);
 }
 
+static void prv_encode_fpa_cptran_instr(void *user_data, subtilis_arm_op_t *op,
+					subtilis_arm_instr_type_t type,
+					subtilis_fpa_cptran_instr_t *instr,
+					subtilis_error_t *err)
+{
+	subtilis_arm_encode_ud_t *ud = user_data;
+	uint32_t word = 0;
+
+	word |= instr->ccode << 28;
+	word |= 0xE << 24;
+	if (type == SUBTILIS_FPA_INSTR_WFS)
+		word |= 2 << 20;
+	else
+		word |= 3 << 20;
+	word |= instr->dest << 12;
+	word |= (1 << 8 | 1 << 4);
+
+	ud->code[ud->words_written++] = word;
+}
+
 static void prv_apply_back_patches(subtilis_arm_encode_ud_t *ud,
 				   subtilis_error_t *err)
 {
@@ -857,6 +877,7 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 	walker.fpa_tran_fn = prv_encode_fpa_tran_instr;
 	walker.fpa_cmp_fn = prv_encode_fpa_cmp_instr;
 	walker.fpa_ldrc_fn = prv_encode_fpa_ldrc_instr;
+	walker.fpa_cptran_fn = prv_encode_fpa_cptran_instr;
 
 	subtilis_arm_walk(arm_s, &walker, err);
 	if (err->type != SUBTILIS_ERROR_OK)
