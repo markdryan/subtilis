@@ -1357,6 +1357,7 @@ struct subtilis_ir_section_t_ {
 	subtilis_handler_list_t *handler_list;
 	size_t handler_offset;
 	bool endproc;
+	int32_t error_offset; // Again this is 32 bit specific.
 };
 
 typedef struct subtilis_ir_section_t_ subtilis_ir_section_t;
@@ -1435,7 +1436,8 @@ subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err);
 subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	subtilis_ir_prog_t *p, const char *name, size_t locals,
 	subtilis_type_section_t *tp, subtilis_builtin_type_t ftype,
-	const char *file, size_t line, subtilis_error_t *err);
+	const char *file, size_t line, int32_t error_offset,
+	subtilis_error_t *err);
 
 /* clang-format on */
 subtilis_ir_section_t *subtilis_ir_prog_find_section(subtilis_ir_prog_t *p,

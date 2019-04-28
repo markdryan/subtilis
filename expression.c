@@ -84,7 +84,7 @@ static void prv_add_builtin(subtilis_parser_t *p, char *name,
 		goto on_error;
 
 	(void)subtilis_ir_prog_section_new(p->prog, name, 0, ts, ftype,
-					   "builtin", 0, err);
+					   "builtin", 0, p->error_offset, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
 			goto on_error;
@@ -1138,7 +1138,6 @@ static size_t prv_div_mod_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	size_t err_reg;
 	subtilis_ir_operand_t div_mod;
 	subtilis_ir_operand_t err_offset;
-	const subtilis_symbol_t *s;
 	static const char idiv[] = "_idiv";
 	char *name = NULL;
 
@@ -1166,13 +1165,7 @@ static size_t prv_div_mod_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
-	s = subtilis_symbol_table_lookup(p->st, subtilis_err_hidden_var);
-	if (!s) {
-		subtilis_error_set_assertion_failed(err);
-		return 0;
-	}
-
-	err_offset.integer = s->loc;
+	err_offset.integer = p->error_offset;
 	err_reg = subtilis_ir_section_add_instr2(
 	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, err_offset, err);
 	if (err->type != SUBTILIS_ERROR_OK)

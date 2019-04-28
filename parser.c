@@ -21,6 +21,7 @@
 #include "builtins_ir.h"
 #include "error.h"
 #include "expression.h"
+#include "globals.h"
 #include "parser.h"
 #include "variable.h"
 
@@ -54,6 +55,7 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 				       subtilis_backend_caps_t caps,
 				       subtilis_error_t *err)
 {
+	const subtilis_symbol_t *s;
 	subtilis_parser_t *p = calloc(1, sizeof(*p));
 	subtilis_type_section_t *stype = NULL;
 
@@ -78,9 +80,15 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 	stype = subtilis_type_section_new(SUBTILIS_TYPE_VOID, 0, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
+
+	s = subtilis_symbol_table_insert(p->st, subtilis_err_hidden_var,
+					 SUBTILIS_TYPE_INTEGER, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
 	p->current = subtilis_ir_prog_section_new(
 	    p->prog, SUBTILIS_MAIN_FN, 0, stype, SUBTILIS_BUILTINS_MAX,
-	    l->stream->name, l->line, err);
+	    l->stream->name, l->line, (int32_t)s->loc, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 	stype = NULL;
@@ -3641,7 +3649,7 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 
 	p->current = subtilis_ir_prog_section_new(
 	    p->prog, name, p->local_st->allocated, stype, SUBTILIS_BUILTINS_MAX,
-	    p->l->stream->name, p->l->line, err);
+	    p->l->stream->name, p->l->line, p->error_offset, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		subtilis_type_section_delete(stype);
 		goto on_error;

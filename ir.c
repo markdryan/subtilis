@@ -599,7 +599,8 @@ cleanup:
 subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	subtilis_ir_prog_t *p, const char *name, size_t locals,
 	subtilis_type_section_t *tp, subtilis_builtin_type_t ftype,
-	const char *file, size_t line, subtilis_error_t *err)
+	const char *file, size_t line, int32_t error_offset,
+	subtilis_error_t *err)
 
 /* clang-format on */
 {
@@ -612,6 +613,7 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	s->error_offset = error_offset;
 	s->reg_counter += tp->int_regs;
 	s->freg_counter += tp->fp_regs;
 	s->ftype = ftype;

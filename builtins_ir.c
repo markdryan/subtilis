@@ -17,12 +17,8 @@
 #include <stdlib.h>
 
 #include "builtins_ir.h"
+#include "globals.h"
 #include "variable.h"
-
-/* TODO: These should probably be moved into their own file */
-
-const char *subtilis_rnd_hidden_var = "_RND";
-const char *subtilis_err_hidden_var = "_ERR";
 
 void subtilis_builtins_ir_inkey(subtilis_ir_section_t *current,
 				subtilis_error_t *err)
@@ -754,8 +750,9 @@ prv_add_1_arg(subtilis_parser_t *p, const char *name, subtilis_type_t ptype,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	current = subtilis_ir_prog_section_new(
-	    p->prog, name, 0, ts, SUBTILIS_BUILTINS_MAX, "builtin", 0, err);
+	current = subtilis_ir_prog_section_new(p->prog, name, 0, ts,
+					       SUBTILIS_BUILTINS_MAX, "builtin",
+					       0, p->error_offset, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		subtilis_type_section_delete(ts);
 

@@ -2,7 +2,7 @@
 
 COMPONENT = unit_tests
 
-OBJS = stream lexer error utils keywords buffer parser expression ir hash_table symbol_table string_pool type arm_core riscos_arm riscos_arm2 arm_gen arm_walker arm_reg_alloc arm_int_dist arm_fpa_dist arm_encode arm_link call builtins builtins_ir variable arm2_div fpa unit_tests lexer_test parser_test symbol_table_test vm ir_test arm_core_test test_cases arm_test arm_reg_alloc_test arm_vm arm_disass fpa_test fpa_gen bitset bitset_test arm_sub_section arm_peephole arm_dump
+OBJS = stream lexer error utils keywords buffer parser expression ir hash_table symbol_table string_pool type arm_core riscos_arm riscos_arm2 arm_gen arm_walker arm_reg_alloc arm_int_dist arm_fpa_dist arm_encode arm_link call builtins builtins_ir variable arm2_div fpa unit_tests lexer_test parser_test symbol_table_test vm ir_test arm_core_test test_cases arm_test arm_reg_alloc_test arm_vm arm_disass fpa_test fpa_gen bitset bitset_test arm_sub_section arm_peephole arm_dump globals
 
 INSTDIR ?= <Obey$Dir>
 

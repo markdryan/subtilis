@@ -15,7 +15,8 @@ COMMON =\
 	builtins.c \
 	builtins_ir.c \
 	call.c \
-	variable.c
+	variable.c \
+	globals.c
 
 ARM =\
 	arm_core.c \
