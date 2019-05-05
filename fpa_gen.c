@@ -656,3 +656,45 @@ void subtilis_fpa_gen_absr(subtilis_ir_section_t *s, size_t start,
 	prv_data_monadic_simple(s, start, user_data, SUBTILIS_FPA_INSTR_ABS,
 				SUBTILIS_ARM_CCODE_AL, err);
 }
+
+void subtilis_fpa_gen_preamble(subtilis_arm_section_t *arm_s,
+			       subtilis_error_t *err)
+{
+	subtilis_arm_reg_t mask;
+	subtilis_arm_reg_t status;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_data_instr_t *datai;
+
+	mask = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	status = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, mask,
+				 31 << 16, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mvn_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, mask,
+				 mask, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_fpa_add_cptran(arm_s, SUBTILIS_FPA_INSTR_RFS,
+				SUBTILIS_ARM_CCODE_AL, status, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_AND, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai = &instr->operands.data;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->dest = status;
+	datai->op1 = status;
+	datai->op2.type = SUBTILIS_ARM_OP2_REG;
+	datai->op2.op.reg = mask;
+
+	subtilis_fpa_add_cptran(arm_s, SUBTILIS_FPA_INSTR_WFS,
+				SUBTILIS_ARM_CCODE_AL, status, err);
+}

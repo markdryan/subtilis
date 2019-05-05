@@ -19,6 +19,7 @@
 
 #include "arm_encode.h"
 #include "error.h"
+#include "fpa_gen.h"
 #include "lexer.h"
 #include "parser.h"
 #include "riscos_arm.h"
@@ -63,9 +64,9 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_p = subtilis_riscos_generate(pool, p->prog, riscos_arm2_rules,
-					 riscos_arm2_rules_count,
-					 p->st->allocated, &err);
+	arm_p = subtilis_riscos_generate(
+	    pool, p->prog, riscos_arm2_rules, riscos_arm2_rules_count,
+	    p->st->allocated, subtilis_fpa_gen_preamble, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
