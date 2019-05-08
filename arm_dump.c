@@ -535,8 +535,6 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 	case SUBTILIS_ARM_INSTR_ADC:
 	case SUBTILIS_ARM_INSTR_SBC:
 	case SUBTILIS_ARM_INSTR_RSC:
-	case SUBTILIS_ARM_INSTR_TST:
-	case SUBTILIS_ARM_INSTR_TEQ:
 	case SUBTILIS_ARM_INSTR_ORR:
 	case SUBTILIS_ARM_INSTR_BIC:
 		prv_dump_data_instr(NULL, NULL, instr->type,
@@ -547,6 +545,8 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 		prv_dump_mul_instr(NULL, NULL, instr->type,
 				   &instr->operands.mul, NULL);
 		break;
+	case SUBTILIS_ARM_INSTR_TST:
+	case SUBTILIS_ARM_INSTR_TEQ:
 	case SUBTILIS_ARM_INSTR_CMP:
 	case SUBTILIS_ARM_INSTR_CMN:
 		prv_dump_cmp_instr(NULL, NULL, instr->type,

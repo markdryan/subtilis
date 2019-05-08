@@ -1,0 +1,27 @@
+PRINT LN(10)
+PROCLogZero
+PROCLnNeg
+A = 10
+PRINT 105 / A
+
+DEF PROCLogZero
+    LOCAL A
+    A = 0
+    ONERROR
+        PRINT ERR
+	ENDPROC
+    ENDERROR
+    
+    PRINT LOG(A)
+ENDPROC
+
+DEF PROCLnNeg
+    LOCAL A
+    A = -1
+    ONERROR
+        PRINT ERR
+	ENDPROC
+    ENDERROR
+    
+    PRINT LN(A)
+ENDPROC

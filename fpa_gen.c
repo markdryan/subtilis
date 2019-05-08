@@ -17,6 +17,7 @@
 #include "fpa_gen.h"
 #include "arm_core.h"
 #include "arm_gen.h"
+#include "error_codes.h"
 
 void subtilis_fpa_gen_movr(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err)
@@ -233,11 +234,102 @@ void subtilis_fpa_gen_mulir(subtilis_ir_section_t *s, size_t start,
 			    SUBTILIS_ARM_CCODE_AL, err);
 }
 
+static void prv_check_divbyzero(subtilis_arm_section_t *arm_s,
+				int32_t error_offset, int32_t error_code,
+				int32_t mask, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t status;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_stran_instr_t *str;
+	subtilis_arm_data_instr_t *datai;
+	subtilis_arm_br_instr_t *br;
+	size_t label = arm_s->label_counter++;
+
+	status = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	dest = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+
+	subtilis_fpa_add_cptran(arm_s, SUBTILIS_FPA_INSTR_RFS,
+				SUBTILIS_ARM_CCODE_AL, status, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_TST,
+				 SUBTILIS_ARM_CCODE_AL, status, mask, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_EQ;
+	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
+	br->target.label = label;
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest,
+				 error_code, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_STR, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	str = &instr->operands.stran;
+	str->ccode = SUBTILIS_ARM_CCODE_AL;
+	str->dest = dest;
+	str->base = 12;
+	str->offset.type = SUBTILIS_ARM_OP2_I32;
+	str->offset.op.integer = error_offset;
+	str->pre_indexed = true;
+	str->write_back = false;
+	str->subtract = false;
+
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_AL, dest, 1 << 31, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_VC, dest, 1 << 31, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_BIC, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai = &instr->operands.data;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->dest = status;
+	datai->op1 = status;
+	datai->op2.type = SUBTILIS_ARM_OP2_I32;
+	datai->op2.op.integer = mask;
+
+	subtilis_fpa_add_cptran(arm_s, SUBTILIS_FPA_INSTR_WFS,
+				SUBTILIS_ARM_CCODE_AL, status, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_section_add_label(arm_s, label, err);
+}
+
 void subtilis_fpa_gen_divr(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err)
 {
+	subtilis_arm_section_t *arm_s = user_data;
+
 	prv_data_simple(s, start, user_data, SUBTILIS_FPA_INSTR_DVF,
 			SUBTILIS_ARM_CCODE_AL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	prv_check_divbyzero(arm_s, s->error_offset,
+			    SUBTILIS_ERROR_CODE_DIV_BY_ZERO, 2, err);
 }
 
 void subtilis_fpa_gen_divir(subtilis_ir_section_t *s, size_t start,
@@ -250,8 +342,14 @@ void subtilis_fpa_gen_divir(subtilis_ir_section_t *s, size_t start,
 void subtilis_fpa_gen_rdivir(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err)
 {
+	subtilis_arm_section_t *arm_s = user_data;
+
 	prv_data_simple_imm(s, start, user_data, SUBTILIS_FPA_INSTR_RDF,
 			    SUBTILIS_ARM_CCODE_AL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	prv_check_divbyzero(arm_s, s->error_offset,
+			    SUBTILIS_ERROR_CODE_DIV_BY_ZERO, 2, err);
 }
 
 static void prv_stran_instr(subtilis_arm_instr_type_t itype,
@@ -639,15 +737,27 @@ void subtilis_fpa_gen_sqr(subtilis_ir_section_t *s, size_t start,
 void subtilis_fpa_gen_log(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err)
 {
+	subtilis_arm_section_t *arm_s = user_data;
+
 	prv_data_monadic_simple(s, start, user_data, SUBTILIS_FPA_INSTR_LOG,
 				SUBTILIS_ARM_CCODE_AL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	prv_check_divbyzero(arm_s, s->error_offset,
+			    SUBTILIS_ERROR_CODE_LOG_RANGE, 3, err);
 }
 
 void subtilis_fpa_gen_ln(subtilis_ir_section_t *s, size_t start,
 			 void *user_data, subtilis_error_t *err)
 {
+	subtilis_arm_section_t *arm_s = user_data;
+
 	prv_data_monadic_simple(s, start, user_data, SUBTILIS_FPA_INSTR_LGN,
 				SUBTILIS_ARM_CCODE_AL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	prv_check_divbyzero(arm_s, s->error_offset,
+			    SUBTILIS_ERROR_CODE_LOG_RANGE, 3, err);
 }
 
 void subtilis_fpa_gen_absr(subtilis_ir_section_t *s, size_t start,

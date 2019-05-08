@@ -413,7 +413,8 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	br->target.label = 0;
 
 	op1 = mod;
-	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_AL, op1, 0, err);
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_AL, op1, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -524,13 +525,13 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_AL, dest, 1 << 31,
-				 err);
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_AL, dest, 1 << 31, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_VC, dest, 1 << 31,
-				 err);
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_VC, dest, 1 << 31, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

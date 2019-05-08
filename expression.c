@@ -138,7 +138,7 @@ void subtilis_exp_return_default_value(subtilis_parser_t *p,
 	subtilis_exp_delete(e);
 }
 
-static void prv_handle_errors(subtilis_parser_t *p, subtilis_error_t *err)
+void subtilis_exp_handle_errors(subtilis_parser_t *p, subtilis_error_t *err)
 {
 	subtilis_ir_operand_t error_label;
 	subtilis_ir_operand_t ok_label;
@@ -252,7 +252,7 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 						 : p->current->len;
 	call_site--;
 
-	prv_handle_errors(p, err);
+	subtilis_exp_handle_errors(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -1141,9 +1141,16 @@ static size_t prv_div_mod_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	static const char idiv[] = "_idiv";
 	char *name = NULL;
 
-	if (p->caps & SUBTILIS_BACKEND_HAVE_DIV)
-		return subtilis_ir_section_add_instr(p->current, type, a, b,
-						     err);
+	if (p->caps & SUBTILIS_BACKEND_HAVE_DIV) {
+		res =
+		    subtilis_ir_section_add_instr(p->current, type, a, b, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return 0;
+		subtilis_exp_handle_errors(p, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return 0;
+		return res;
+	}
 
 	name = malloc(sizeof(idiv));
 	if (!name) {
@@ -1476,6 +1483,8 @@ subtilis_exp_t *subtilis_exp_divr(subtilis_parser_t *p, subtilis_exp_t *a1,
 				  subtilis_exp_t *a2, subtilis_error_t *err)
 {
 	subtilis_non_commutative_exp_t no;
+	subtilis_exp_t *e;
+	bool div_by_const;
 
 	memset(&no, 0, sizeof(no));
 	no.op_real_real = prv_divr_real_real;
@@ -1495,7 +1504,26 @@ subtilis_exp_t *subtilis_exp_divr(subtilis_parser_t *p, subtilis_exp_t *a1,
 		return NULL;
 	}
 
-	return prv_exp_non_commutative(p, a1, a2, &no, err);
+	div_by_const = a2->type == SUBTILIS_EXP_CONST_REAL;
+	if (div_by_const && (a2->exp.ir_op.real == 0.0)) {
+		subtilis_error_set_divide_by_zero(err, p->l->stream->name,
+						  p->l->line);
+		return NULL;
+	}
+
+	e = prv_exp_non_commutative(p, a1, a2, &no, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (!div_by_const) {
+		subtilis_exp_handle_errors(p, err);
+		if (err->type != SUBTILIS_ERROR_OK) {
+			subtilis_exp_delete(e);
+			return NULL;
+		}
+	}
+
+	return e;
 }
 
 subtilis_exp_t *subtilis_exp_unary_minus(subtilis_parser_t *p,

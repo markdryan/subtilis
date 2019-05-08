@@ -431,15 +431,20 @@ static subtilis_exp_t *prv_atn(subtilis_parser_t *p, subtilis_token_t *t,
 }
 
 static subtilis_exp_t *prv_log(subtilis_parser_t *p, subtilis_token_t *t,
-			       subtilis_error_t *err)
+			       subtilis_op_instr_type_t itype,
+			       double (*log_fn)(double), subtilis_error_t *err)
 {
-	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_LOG, log10, err);
-}
+	subtilis_exp_t *e;
 
-static subtilis_exp_t *prv_ln(subtilis_parser_t *p, subtilis_token_t *t,
-			      subtilis_error_t *err)
-{
-	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_LN, log, err);
+	e = prv_real_unary_fn(p, t, itype, log_fn, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	subtilis_exp_handle_errors(p, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+	return e;
 }
 
 static subtilis_exp_t *prv_rnd_var(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -955,9 +960,9 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 		case SUBTILIS_KEYWORD_SQR:
 			return prv_sqr(p, t, err);
 		case SUBTILIS_KEYWORD_LOG:
-			return prv_log(p, t, err);
+			return prv_log(p, t, SUBTILIS_OP_INSTR_LOG, log10, err);
 		case SUBTILIS_KEYWORD_LN:
-			return prv_ln(p, t, err);
+			return prv_log(p, t, SUBTILIS_OP_INSTR_LN, log, err);
 		case SUBTILIS_KEYWORD_RAD:
 			return prv_rad(p, t, err);
 		case SUBTILIS_KEYWORD_ABS:

@@ -1,13 +1,52 @@
-LOCAL A%
-LOCAL B%
+PROCDIVByZero
+PROCDivideByZero
+PROCRDivideByZero
 
-A% = 100
-B% = 0
+DEF PROCDIVByZero
+    LOCAL A%
+    LOCAL B%
 
-ONERROR
-    PRINT ERR
-ENDERROR
+    A% = 100
+    B% = 0
 
-PRINT A% DIV B%
+    ONERROR
+        PRINT ERR
+        ENDPROC
+    ENDERROR
 
-PRINT &ff
+    PRINT A% DIV B%
+    PRINT &ff
+ENDPROC
+
+DEF PROCDivideByZero
+    LOCAL A
+    LOCAL B
+
+    A = 100
+    B = 0
+
+    ONERROR
+        PRINT ERR
+        ENDPROC
+    ENDERROR
+
+    PRINT A / B
+    PRINT &ff
+ENDPROC
+
+DEF PROCRDivideByZero
+    LOCAL A
+    LOCAL B
+
+    A = 100
+    B = 0
+
+    ONERROR
+        PRINT ERR
+        ENDPROC
+    ENDERROR
+
+    PRINT 10 / B
+    PRINT &ff
+ENDPROC
+
