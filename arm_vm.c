@@ -296,6 +296,37 @@ static void prv_process_and(subtilis_arm_vm_t *arm_vm,
 	arm_vm->regs[15] += 4;
 }
 
+static void prv_process_bic(subtilis_arm_vm_t *arm_vm,
+			    subtilis_arm_data_instr_t *op,
+			    subtilis_error_t *err)
+{
+	int32_t op2;
+	int32_t res;
+	int32_t op2_old;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	op2 = ~prv_eval_op2(arm_vm, op->status, &op->op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	res = arm_vm->regs[op->op1] & op2;
+	if (op->status) {
+		prv_set_and_flags(arm_vm, res);
+		if (op->op2.type == SUBTILIS_ARM_OP2_SHIFTED) {
+			op2_old = arm_vm->regs[op->op2.op.shift.reg];
+			prv_set_shift_flags(arm_vm, op2_old, res,
+					    op->op2.op.shift);
+		}
+	}
+
+	arm_vm->regs[op->dest] = res;
+	arm_vm->regs[15] += 4;
+}
+
 static void prv_process_eor(subtilis_arm_vm_t *arm_vm,
 			    subtilis_arm_data_instr_t *op,
 			    subtilis_error_t *err)
@@ -511,6 +542,70 @@ static void prv_process_cmn(subtilis_arm_vm_t *arm_vm,
 		return;
 	op1 = arm_vm->regs[op->op1];
 	prv_set_status_flags(arm_vm, op1, op2);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_tst(subtilis_arm_vm_t *arm_vm,
+			    subtilis_arm_data_instr_t *op,
+			    subtilis_error_t *err)
+{
+	int32_t op2;
+	int32_t res;
+	int32_t op2_old;
+
+	if (!op->status) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	op2 = prv_eval_op2(arm_vm, op->status, &op->op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	res = arm_vm->regs[op->op1] & op2;
+	prv_set_and_flags(arm_vm, res);
+	if (op->op2.type == SUBTILIS_ARM_OP2_SHIFTED) {
+		op2_old = arm_vm->regs[op->op2.op.shift.reg];
+		prv_set_shift_flags(arm_vm, op2_old, res, op->op2.op.shift);
+	}
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_teq(subtilis_arm_vm_t *arm_vm,
+			    subtilis_arm_data_instr_t *op,
+			    subtilis_error_t *err)
+{
+	int32_t op2;
+	int32_t res;
+	int32_t op2_old;
+
+	if (!op->status) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	op2 = prv_eval_op2(arm_vm, op->status, &op->op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	res = arm_vm->regs[op->op1] ^ op2;
+	prv_set_and_flags(arm_vm, res);
+	if (op->op2.type == SUBTILIS_ARM_OP2_SHIFTED) {
+		op2_old = arm_vm->regs[op->op2.op.shift.reg];
+		prv_set_shift_flags(arm_vm, op2_old, res, op->op2.op.shift);
+	}
 
 	arm_vm->regs[15] += 4;
 }
@@ -1275,6 +1370,14 @@ static void prv_process_fpa_dvf(subtilis_arm_vm_t *arm_vm,
 				subtilis_fpa_data_instr_t *op,
 				subtilis_error_t *err)
 {
+	if (!op->immediate) {
+		if (((op->size == 4) &&
+		     (arm_vm->fregs[op->op2.reg].val.real32 == 0.0)) ||
+		    ((op->size == 8) &&
+		     (arm_vm->fregs[op->op2.reg].val.real64 == 0.0)))
+			arm_vm->fpa_status |= 2;
+	}
+
 	prv_process_fpa_dyadic(arm_vm, op, prv_process_fpa_div_real32,
 			       prv_process_fpa_div_real64, err);
 }
@@ -1287,6 +1390,10 @@ static void prv_process_fpa_rdf(subtilis_arm_vm_t *arm_vm,
 				subtilis_fpa_data_instr_t *op,
 				subtilis_error_t *err)
 {
+	if (((op->size == 4) && (arm_vm->fregs[op->op1].val.real32 == 0.0)) ||
+	    ((op->size == 8) && (arm_vm->fregs[op->op1].val.real64 == 0.0)))
+		arm_vm->fpa_status |= 2;
+
 	prv_process_fpa_dyadic(arm_vm, op, prv_process_fpa_rdiv_real32,
 			       prv_process_fpa_rdiv_real64, err);
 }
@@ -1470,6 +1577,19 @@ static void prv_process_fpa_log(subtilis_arm_vm_t *arm_vm,
 				subtilis_fpa_data_instr_t *op,
 				subtilis_error_t *err)
 {
+	if (!op->immediate) {
+		if (((op->size == 4) &&
+		     (arm_vm->fregs[op->op2.reg].val.real32 == 0.0)) ||
+		    ((op->size == 8) &&
+		     (arm_vm->fregs[op->op2.reg].val.real64 == 0.0)))
+			arm_vm->fpa_status |= 2;
+		else if (((op->size == 4) &&
+			  (arm_vm->fregs[op->op2.reg].val.real32 < 0.0)) ||
+			 ((op->size == 8) &&
+			  (arm_vm->fregs[op->op2.reg].val.real64 < 0.0)))
+			arm_vm->fpa_status |= 1;
+	}
+
 	prv_process_fpa_monadic_dbl(arm_vm, op, log10, err);
 }
 
@@ -1477,6 +1597,19 @@ static void prv_process_fpa_ln(subtilis_arm_vm_t *arm_vm,
 			       subtilis_fpa_data_instr_t *op,
 			       subtilis_error_t *err)
 {
+	if (!op->immediate) {
+		if (((op->size == 4) &&
+		     (arm_vm->fregs[op->op2.reg].val.real32 < 0.0)) ||
+		    ((op->size == 8) &&
+		     (arm_vm->fregs[op->op2.reg].val.real64 < 0.0)))
+			arm_vm->fpa_status |= 2;
+		else if (((op->size == 4) &&
+			  (arm_vm->fregs[op->op2.reg].val.real32 < 0.0)) ||
+			 ((op->size == 8) &&
+			  (arm_vm->fregs[op->op2.reg].val.real64 < 0.0)))
+			arm_vm->fpa_status |= 1;
+	}
+
 	prv_process_fpa_monadic_dbl(arm_vm, op, log, err);
 }
 
@@ -1487,12 +1620,29 @@ static void prv_process_fpa_abs(subtilis_arm_vm_t *arm_vm,
 	prv_process_fpa_monadic_dbl(arm_vm, op, fabs, err);
 }
 
+static void prv_process_fpa_wfs(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_cptran_instr_t *op,
+				subtilis_error_t *err)
+{
+	arm_vm->fpa_status = arm_vm->regs[op->dest];
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_fpa_rfs(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_cptran_instr_t *op,
+				subtilis_error_t *err)
+{
+	arm_vm->regs[op->dest] = arm_vm->fpa_status;
+	arm_vm->regs[15] += 4;
+}
+
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			 subtilis_error_t *err)
 {
 	size_t pc;
 	subtilis_arm_instr_t instr;
 
+	arm_vm->fpa_status = 0;
 	arm_vm->quit = false;
 	arm_vm->negative_flag = false;
 	arm_vm->zero_flag = false;
@@ -1531,11 +1681,20 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		case SUBTILIS_ARM_INSTR_CMN:
 			prv_process_cmn(arm_vm, &instr.operands.data, err);
 			break;
+		case SUBTILIS_ARM_INSTR_TST:
+			prv_process_tst(arm_vm, &instr.operands.data, err);
+			break;
+		case SUBTILIS_ARM_INSTR_TEQ:
+			prv_process_teq(arm_vm, &instr.operands.data, err);
+			break;
 		case SUBTILIS_ARM_INSTR_ORR:
 			prv_process_orr(arm_vm, &instr.operands.data, err);
 			break;
 		case SUBTILIS_ARM_INSTR_MOV:
 			prv_process_mov(arm_vm, &instr.operands.data, err);
+			break;
+		case SUBTILIS_ARM_INSTR_BIC:
+			prv_process_bic(arm_vm, &instr.operands.data, err);
 			break;
 		case SUBTILIS_ARM_INSTR_MVN:
 			prv_process_mvn(arm_vm, &instr.operands.data, err);
@@ -1655,6 +1814,14 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			break;
 		case SUBTILIS_FPA_INSTR_ABS:
 			prv_process_fpa_abs(arm_vm, &instr.operands.fpa_data,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_WFS:
+			prv_process_fpa_wfs(arm_vm, &instr.operands.fpa_cptran,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_RFS:
+			prv_process_fpa_rfs(arm_vm, &instr.operands.fpa_cptran,
 					    err);
 			break;
 		default:

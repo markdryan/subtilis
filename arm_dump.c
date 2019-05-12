@@ -102,6 +102,8 @@ static const char *const instr_desc[] = {
 	"CNF",  // SUBTILIS_FPA_INSTR_CNF
 	"CMFE", // SUBTILIS_FPA_INSTR_CMFE
 	"CNFE", // SUBTILIS_FPA_INSTR_CNFE
+	"WFS",  // SUBTILIS_FPA_INSTR_WFS
+	"RFS",  // SUBTILIS_FPA_INSTR_RFS
 };
 
 static const char *const shift_desc[] = {
@@ -445,6 +447,17 @@ static void prv_dump_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	printf(" F%zu, label_%zu\n", instr->dest, instr->label);
 }
 
+static void prv_dump_fpa_cptran_instr(void *user_data, subtilis_arm_op_t *op,
+				      subtilis_arm_instr_type_t type,
+				      subtilis_fpa_cptran_instr_t *instr,
+				      subtilis_error_t *err)
+{
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf(" R%zu\n", instr->dest);
+}
+
 static void prv_dump_label(void *user_data, subtilis_arm_op_t *op, size_t label,
 			   subtilis_error_t *err)
 {
@@ -477,6 +490,7 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 	walker.fpa_tran_fn = prv_dump_fpa_tran_instr;
 	walker.fpa_cmp_fn = prv_dump_fpa_cmp_instr;
 	walker.fpa_ldrc_fn = prv_dump_fpa_ldrc_instr;
+	walker.fpa_cptran_fn = prv_dump_fpa_cptran_instr;
 
 	subtilis_arm_walk(s, &walker, &err);
 
@@ -521,8 +535,6 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 	case SUBTILIS_ARM_INSTR_ADC:
 	case SUBTILIS_ARM_INSTR_SBC:
 	case SUBTILIS_ARM_INSTR_RSC:
-	case SUBTILIS_ARM_INSTR_TST:
-	case SUBTILIS_ARM_INSTR_TEQ:
 	case SUBTILIS_ARM_INSTR_ORR:
 	case SUBTILIS_ARM_INSTR_BIC:
 		prv_dump_data_instr(NULL, NULL, instr->type,
@@ -533,6 +545,8 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 		prv_dump_mul_instr(NULL, NULL, instr->type,
 				   &instr->operands.mul, NULL);
 		break;
+	case SUBTILIS_ARM_INSTR_TST:
+	case SUBTILIS_ARM_INSTR_TEQ:
 	case SUBTILIS_ARM_INSTR_CMP:
 	case SUBTILIS_ARM_INSTR_CMN:
 		prv_dump_cmp_instr(NULL, NULL, instr->type,
@@ -620,6 +634,11 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 	case SUBTILIS_FPA_INSTR_CNFE:
 		prv_dump_fpa_cmp_instr(NULL, NULL, instr->type,
 				       &instr->operands.fpa_cmp, NULL);
+		break;
+	case SUBTILIS_FPA_INSTR_WFS:
+	case SUBTILIS_FPA_INSTR_RFS:
+		prv_dump_fpa_cptran_instr(NULL, NULL, instr->type,
+					  &instr->operands.fpa_cptran, NULL);
 		break;
 	default:
 		printf("\tUNKNOWN INSTRUCTION\n");

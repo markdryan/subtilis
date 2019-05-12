@@ -1182,17 +1182,15 @@ void subtilis_arm_insert_stran_imm(subtilis_arm_section_t *s,
 }
 
 void subtilis_arm_add_cmp_imm(subtilis_arm_section_t *s,
+			      subtilis_arm_instr_type_t itype,
 			      subtilis_arm_ccode_type_t ccode,
 			      subtilis_arm_reg_t op1, int32_t op2,
 			      subtilis_error_t *err)
 {
 	subtilis_arm_instr_t *instr;
-	subtilis_arm_instr_type_t itype;
 	subtilis_arm_data_instr_t *datai;
 	subtilis_arm_reg_t dest;
 	uint32_t encoded = 0;
-
-	itype = SUBTILIS_ARM_INSTR_CMP;
 
 	if (!subtilis_arm_encode_imm(op2, &encoded)) {
 		if (subtilis_arm_encode_imm(-op2, &encoded)) {

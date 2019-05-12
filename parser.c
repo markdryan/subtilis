@@ -21,6 +21,7 @@
 #include "builtins_ir.h"
 #include "error.h"
 #include "expression.h"
+#include "globals.h"
 #include "parser.h"
 #include "variable.h"
 
@@ -54,6 +55,7 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 				       subtilis_backend_caps_t caps,
 				       subtilis_error_t *err)
 {
+	const subtilis_symbol_t *s;
 	subtilis_parser_t *p = calloc(1, sizeof(*p));
 	subtilis_type_section_t *stype = NULL;
 
@@ -78,9 +80,15 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 	stype = subtilis_type_section_new(SUBTILIS_TYPE_VOID, 0, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
+
+	s = subtilis_symbol_table_insert(p->st, subtilis_err_hidden_var,
+					 SUBTILIS_TYPE_INTEGER, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
 	p->current = subtilis_ir_prog_section_new(
 	    p->prog, SUBTILIS_MAIN_FN, 0, stype, SUBTILIS_BUILTINS_MAX,
-	    l->stream->name, l->line, err);
+	    l->stream->name, l->line, (int32_t)s->loc, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 	stype = NULL;
@@ -423,15 +431,20 @@ static subtilis_exp_t *prv_atn(subtilis_parser_t *p, subtilis_token_t *t,
 }
 
 static subtilis_exp_t *prv_log(subtilis_parser_t *p, subtilis_token_t *t,
-			       subtilis_error_t *err)
+			       subtilis_op_instr_type_t itype,
+			       double (*log_fn)(double), subtilis_error_t *err)
 {
-	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_LOG, log10, err);
-}
+	subtilis_exp_t *e;
 
-static subtilis_exp_t *prv_ln(subtilis_parser_t *p, subtilis_token_t *t,
-			      subtilis_error_t *err)
-{
-	return prv_real_unary_fn(p, t, SUBTILIS_OP_INSTR_LN, log, err);
+	e = prv_real_unary_fn(p, t, itype, log_fn, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	subtilis_exp_handle_errors(p, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+	return e;
 }
 
 static subtilis_exp_t *prv_rnd_var(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -947,9 +960,9 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 		case SUBTILIS_KEYWORD_SQR:
 			return prv_sqr(p, t, err);
 		case SUBTILIS_KEYWORD_LOG:
-			return prv_log(p, t, err);
+			return prv_log(p, t, SUBTILIS_OP_INSTR_LOG, log10, err);
 		case SUBTILIS_KEYWORD_LN:
-			return prv_ln(p, t, err);
+			return prv_log(p, t, SUBTILIS_OP_INSTR_LN, log, err);
 		case SUBTILIS_KEYWORD_RAD:
 			return prv_rad(p, t, err);
 		case SUBTILIS_KEYWORD_ABS:
@@ -3641,7 +3654,7 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 
 	p->current = subtilis_ir_prog_section_new(
 	    p->prog, name, p->local_st->allocated, stype, SUBTILIS_BUILTINS_MAX,
-	    p->l->stream->name, p->l->line, err);
+	    p->l->stream->name, p->l->line, p->error_offset, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		subtilis_type_section_delete(stype);
 		goto on_error;

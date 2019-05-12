@@ -71,7 +71,7 @@ subtilis_exp_t *subtilis_exp_coerce_type(subtilis_parser_t *p,
 					 subtilis_error_t *err);
 subtilis_type_t subtilis_exp_type(subtilis_exp_t *e);
 subtilis_exp_type_t subtilis_type_to_exp_type(subtilis_type_t type);
-
+void subtilis_exp_handle_errors(subtilis_parser_t *p, subtilis_error_t *err);
 typedef subtilis_exp_t *(*subtilis_exp_fn_t)(subtilis_parser_t *,
 					     subtilis_exp_t *, subtilis_exp_t *,
 					     subtilis_error_t *err);

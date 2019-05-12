@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "error_codes.h"
 #include "utils.h"
 #include "vm.h"
 
@@ -238,13 +239,21 @@ static void prv_loador(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	memcpy(&vm->fregs[ops[0].reg], src, sizeof(double));
 }
 
+static void prv_divide_by_zero(subitlis_vm_t *vm, int32_t code)
+{
+	int32_t base = vm->regs[SUBTILIS_IR_REG_GLOBAL];
+
+	vm->error_flag = true;
+	vm->memory[base + vm->s->error_offset] = code;
+}
+
 static void prv_divi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	int32_t divisor = vm->regs[ops[2].reg];
 
 	if (divisor == 0) {
-		subtilis_error_set_divide_by_zero(err, "", 0);
+		prv_divide_by_zero(vm, SUBTILIS_ERROR_CODE_DIV_BY_ZERO);
 		return;
 	}
 	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] / divisor;
@@ -256,7 +265,7 @@ static void prv_divr(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	double divisor = vm->fregs[ops[2].reg];
 
 	if (divisor == 0.0) {
-		subtilis_error_set_divide_by_zero(err, "", 0);
+		prv_divide_by_zero(vm, SUBTILIS_ERROR_CODE_DIV_BY_ZERO);
 		return;
 	}
 	vm->fregs[ops[0].reg] = vm->fregs[ops[1].reg] / divisor;
@@ -268,7 +277,7 @@ static void prv_modi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	int32_t divisor = vm->regs[ops[2].reg];
 
 	if (divisor == 0) {
-		subtilis_error_set_divide_by_zero(err, "", 0);
+		prv_divide_by_zero(vm, SUBTILIS_ERROR_CODE_DIV_BY_ZERO);
 		return;
 	}
 	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] % divisor;
@@ -361,7 +370,13 @@ static void prv_rsubir(subitlis_vm_t *vm, subtilis_buffer_t *b,
 static void prv_rdivir(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	vm->fregs[ops[0].reg] = ops[2].real / vm->fregs[ops[1].reg];
+	double divisor = vm->fregs[ops[1].reg];
+
+	if (divisor == 0.0) {
+		prv_divide_by_zero(vm, SUBTILIS_ERROR_CODE_DIV_BY_ZERO);
+		return;
+	}
+	vm->fregs[ops[0].reg] = ops[2].real / divisor;
 }
 
 static void prv_andi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
@@ -973,13 +988,26 @@ static void prv_sqr(subitlis_vm_t *vm, subtilis_buffer_t *b,
 static void prv_log(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	vm->fregs[ops[0].reg] = log10(vm->fregs[ops[1].reg]);
+	double arg = vm->fregs[ops[1].reg];
+
+	if (arg <= 0.0) {
+		prv_divide_by_zero(vm, SUBTILIS_ERROR_CODE_LOG_RANGE);
+		return;
+	}
+	vm->fregs[ops[0].reg] = log10(arg);
 }
 
 static void prv_ln(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		   subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	vm->fregs[ops[0].reg] = log(vm->fregs[ops[1].reg]);
+	double arg = vm->fregs[ops[1].reg];
+
+	if (arg <= 0.0) {
+		prv_divide_by_zero(vm, SUBTILIS_ERROR_CODE_LOG_RANGE);
+		return;
+	}
+
+	vm->fregs[ops[0].reg] = log(arg);
 }
 
 static void prv_absr(subitlis_vm_t *vm, subtilis_buffer_t *b,

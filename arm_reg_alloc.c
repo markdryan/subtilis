@@ -1614,6 +1614,40 @@ static void prv_alloc_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	ud->instr_count++;
 }
 
+static void prv_alloc_fpa_cptran_instr(void *user_data, subtilis_arm_op_t *op,
+				       subtilis_arm_instr_type_t type,
+				       subtilis_fpa_cptran_instr_t *instr,
+				       subtilis_error_t *err)
+{
+	subtilis_arm_reg_ud_t *ud = user_data;
+	size_t vreg_dest;
+	bool fixed_reg_dest;
+	int dist_dest;
+
+	if (type == SUBTILIS_FPA_INSTR_RFS) {
+		prv_allocate_dest(ud, op, &instr->dest, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		vreg_dest = instr->dest;
+		fixed_reg_dest = prv_ensure(ud, op, ud->int_regs, ud->int_regs,
+					    &instr->dest, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		if (!fixed_reg_dest) {
+			dist_dest = prv_calculate_dist(ud, vreg_dest, op,
+						       &ud->int_dist_walker);
+			if (dist_dest == -1)
+				ud->int_regs->phys_to_virt[instr->dest] =
+				    INT_MAX;
+
+			ud->int_regs->next[instr->dest] = dist_dest;
+		}
+	}
+
+	ud->instr_count++;
+}
+
 static void prv_sub_section_int_links(subtilis_arm_reg_ud_t *ud,
 				      subtilis_bitset_t *int_save,
 				      subtilis_arm_ccode_type_t ccode,
@@ -1955,6 +1989,7 @@ size_t subtilis_arm_reg_alloc(subtilis_arm_section_t *arm_s,
 	walker.fpa_tran_fn = prv_alloc_fpa_tran_instr;
 	walker.fpa_cmp_fn = prv_alloc_fpa_cmp_instr;
 	walker.fpa_ldrc_fn = prv_alloc_fpa_ldrc_instr;
+	walker.fpa_cptran_fn = prv_alloc_fpa_cptran_instr;
 
 	subtilis_arm_walk(arm_s, &walker, err);
 	if (err->type != SUBTILIS_ERROR_OK)

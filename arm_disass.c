@@ -382,6 +382,17 @@ static void prv_decode_fpa_tran(subtilis_arm_instr_t *instr, uint32_t encoded,
 	}
 }
 
+static void prv_decode_fpa_cptran(subtilis_arm_instr_t *instr, uint32_t mask,
+				  uint32_t encoded, subtilis_error_t *err)
+{
+	subtilis_fpa_cptran_instr_t *cptran = &instr->operands.fpa_cptran;
+
+	instr->type =
+	    (mask == 2) ? SUBTILIS_FPA_INSTR_WFS : SUBTILIS_FPA_INSTR_RFS;
+	cptran->ccode = (subtilis_arm_ccode_type_t)(encoded >> 28);
+	cptran->dest = (encoded >> 12) & 0xf;
+}
+
 void subtilis_arm_disass(subtilis_arm_instr_t *instr, uint32_t encoded,
 			 subtilis_error_t *err)
 {
@@ -437,8 +448,16 @@ void subtilis_arm_disass(subtilis_arm_instr_t *instr, uint32_t encoded,
 			return;
 		}
 
-		prv_decode_fpa_tran(instr, encoded, err);
-		return;
+		mask = (encoded >> 20) & 7;
+		if (mask <= 1) {
+			prv_decode_fpa_tran(instr, encoded, err);
+			return;
+		}
+
+		if (mask == 2 || mask == 3) {
+			prv_decode_fpa_cptran(instr, mask, encoded, err);
+			return;
+		}
 	}
 
 	subtilis_error_set_bad_instruction(err, encoded);

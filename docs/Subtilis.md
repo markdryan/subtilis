@@ -332,7 +332,7 @@ When control is passed to an error handler normal execution of that function cea
 It is not possible to return to the statement that caused the error, or indeed the
 subsequent statement.  Once the error handler has finished excuting control will
 transfer to any other available error handlers in the same function or control will
-return to the calling function.  By default, errors not consume by error handlers.
+return to the calling function.  By default, errors are not consumed by error handlers.
 The error will still be present in the calling function.  This behaviour can be
 overriding by explicitly returning from the error handler using ENDPROC or <-
 as appropriate.  For example, the following code will print

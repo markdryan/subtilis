@@ -32,8 +32,6 @@ static void prv_walk_instr(subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 	case SUBTILIS_ARM_INSTR_ADC:
 	case SUBTILIS_ARM_INSTR_SBC:
 	case SUBTILIS_ARM_INSTR_RSC:
-	case SUBTILIS_ARM_INSTR_TST:
-	case SUBTILIS_ARM_INSTR_TEQ:
 	case SUBTILIS_ARM_INSTR_ORR:
 	case SUBTILIS_ARM_INSTR_BIC:
 		walker->data_fn(walker->user_data, op, instr->type,
@@ -44,6 +42,8 @@ static void prv_walk_instr(subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 		walker->mul_fn(walker->user_data, op, instr->type,
 			       &instr->operands.mul, err);
 		break;
+	case SUBTILIS_ARM_INSTR_TST:
+	case SUBTILIS_ARM_INSTR_TEQ:
 	case SUBTILIS_ARM_INSTR_CMP:
 	case SUBTILIS_ARM_INSTR_CMN:
 		walker->cmp_fn(walker->user_data, op, instr->type,
@@ -134,6 +134,11 @@ static void prv_walk_instr(subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 	case SUBTILIS_FPA_INSTR_CNFE:
 		walker->fpa_cmp_fn(walker->user_data, op, instr->type,
 				   &instr->operands.fpa_cmp, err);
+		break;
+	case SUBTILIS_FPA_INSTR_WFS:
+	case SUBTILIS_FPA_INSTR_RFS:
+		walker->fpa_cptran_fn(walker->user_data, op, instr->type,
+				      &instr->operands.fpa_cptran, err);
 		break;
 	default:
 		subtilis_error_set_assertion_failed(err);

@@ -21,6 +21,7 @@
 #include "arm_encode.h"
 #include "arm_test.h"
 #include "arm_vm.h"
+#include "fpa_gen.h"
 #include "parser_test.h"
 #include "riscos_arm.h"
 #include "riscos_arm2.h"
@@ -53,9 +54,9 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_p = subtilis_riscos_generate(pool, p->prog, riscos_arm2_rules,
-					 riscos_arm2_rules_count,
-					 p->st->allocated, &err);
+	arm_p = subtilis_riscos_generate(
+	    pool, p->prog, riscos_arm2_rules, riscos_arm2_rules_count,
+	    p->st->allocated, subtilis_fpa_gen_preamble, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

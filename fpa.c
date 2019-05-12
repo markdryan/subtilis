@@ -374,6 +374,23 @@ void subtilis_fpa_add_cmp(subtilis_arm_section_t *s,
 	tran->immediate = false;
 }
 
+void subtilis_fpa_add_cptran(subtilis_arm_section_t *s,
+			     subtilis_arm_instr_type_t itype,
+			     subtilis_arm_ccode_type_t ccode,
+			     subtilis_arm_reg_t dest, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_fpa_cptran_instr_t *cptran;
+
+	instr = subtilis_arm_section_add_instr(s, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	cptran = &instr->operands.fpa_cptran;
+	cptran->ccode = ccode;
+	cptran->dest = dest;
+}
+
 /* clang-format off */
 void subtilis_fpa_insert_stran_spill_imm(subtilis_arm_section_t *s,
 					 subtilis_arm_op_t *current,

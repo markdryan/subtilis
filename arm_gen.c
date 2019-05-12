@@ -233,7 +233,8 @@ static void prv_cmp_jmp_imm(subtilis_ir_section_t *s, size_t start,
 
 	op1 = subtilis_arm_ir_to_arm_reg(cmp->operands[1].reg);
 
-	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_AL, op1,
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_AL, op1,
 				 cmp->operands[2].integer, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -414,7 +415,8 @@ static void prv_cmp_imm(subtilis_ir_section_t *s, size_t start, void *user_data,
 	subtilis_ir_inst_t *cmp = &s->ops[start]->op.instr;
 
 	op1 = subtilis_arm_ir_to_arm_reg(cmp->operands[1].reg);
-	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_AL, op1,
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_AL, op1,
 				 cmp->operands[2].integer, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -561,7 +563,8 @@ void subtilis_arm_gen_jmpc(subtilis_ir_section_t *s, size_t start,
 
 	op1 = subtilis_arm_ir_to_arm_reg(jmp->operands[0].reg);
 
-	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_AL, op1, 0, err);
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_AL, op1, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -588,7 +591,8 @@ void subtilis_arm_gen_jmpc_no_label(subtilis_ir_section_t *s, size_t start,
 
 	op1 = subtilis_arm_ir_to_arm_reg(jmp->operands[0].reg);
 
-	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_AL, op1, 0, err);
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_AL, op1, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1088,13 +1092,13 @@ void subtilis_arm_gen_sete(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_AL, dest, 1 << 31,
-				 err);
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_AL, dest, 1 << 31, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_CCODE_VC, dest, 1 << 31,
-				 err);
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_VC, dest, 1 << 31, err);
 }
 
 void subtilis_arm_gen_cleare(subtilis_ir_section_t *s, size_t start,

@@ -33,6 +33,7 @@ typedef struct subtilis_arm_vm_freg_t_ subtilis_arm_vm_freg_t;
 struct subtilis_arm_vm_t_ {
 	int32_t regs[16];
 	subtilis_arm_vm_freg_t fregs[8];
+	uint32_t fpa_status;
 	uint8_t *memory;
 	size_t mem_size;
 	size_t code_size;

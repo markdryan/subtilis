@@ -23,6 +23,7 @@
 #include "riscos_arm.h"
 
 static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
+			     subtilis_riscos_fp_preamble_t fp_premable,
 			     subtilis_error_t *err)
 {
 	subtilis_arm_reg_t dest;
@@ -55,6 +56,10 @@ static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 	op2 = 12;
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
 				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	fp_premable(arm_s, err);
 }
 
 static void prv_add_coda(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
@@ -259,7 +264,9 @@ subtilis_arm_prog_t *
 subtilis_riscos_generate(
 	subtilis_arm_op_pool_t *op_pool, subtilis_ir_prog_t *p,
 	const subtilis_ir_rule_raw_t *rules_raw,
-	size_t rule_count, size_t globals, subtilis_error_t *err)
+	size_t rule_count, size_t globals,
+	subtilis_riscos_fp_preamble_t fp_premable,
+	subtilis_error_t *err)
 /* clang-format on */
 {
 	subtilis_ir_rule_t *parsed;
@@ -289,7 +296,7 @@ subtilis_riscos_generate(
 					      s->locals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	prv_add_preamble(arm_s, globals, err);
+	prv_add_preamble(arm_s, globals, fp_premable, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 	prv_add_section(s, arm_s, parsed, rule_count, err);
