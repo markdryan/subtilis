@@ -121,7 +121,9 @@ typedef enum {
 	 * divi32 r0, r1, r2
 	 *
 	 * Divides two 32 bit signed integers stored in registers storing the
-	 * result in a third register.
+	 * result in a third register.  If a division by zero occurs the
+	 * error flag is set and an error is written into the error offset for
+	 * the current section.
 	 *
 	 * r0 = r1 / r2
 	 */
@@ -132,7 +134,9 @@ typedef enum {
 	 * modi32 r0, r1, r2
 	 *
 	 * Divides two 32 bit signed integers stored in registers storing the
-	 * remainder in a third register.
+	 * remainder in a third register.  If a division by zero occurs the
+	 * error flag is set and an error is written into the error offset for
+	 * the current section.
 	 *
 	 * r0 = r1 % r2
 	 */
@@ -144,6 +148,8 @@ typedef enum {
 	 *
 	 * Divides two 64 bit doubles stored in floating point registers.
 	 * The result is stored in a third floating point register.
+	 * If a division by zero occurs the error flag is set and an error is
+	 * written into the error offset for the current section.
 	 *
 	 * fp0 = fp1 / fp2
 	 */
@@ -428,6 +434,8 @@ typedef enum {
 	 *
 	 * Divides a 64 bit double immediate constant by a 64 bit double
 	 * stored in a register.  The result is stored in a second register.
+	 * If a division by zero occurs the error flag is set and an error
+	 * is written into the error offset for the current section.
 	 *
 	 * fp0 = #r / fp1
 	 */
@@ -1112,6 +1120,9 @@ typedef enum {
 	/*
 	 * log fp0, fp1
 	 *
+	 * If fp <=0 the error flag is set and an error is written into
+	 * the error offset for the current section.
+	 *
 	 * fp0 = log10(fp1)
 	 *
 	 */
@@ -1120,6 +1131,9 @@ typedef enum {
 
 	/*
 	 * ln fp0, fp1
+	 *
+	 * If fp <=0 the error flag is set and an error is written into
+	 * the error offset for the current section.
 	 *
 	 * fp0 = loge(fp1)
 	 *
