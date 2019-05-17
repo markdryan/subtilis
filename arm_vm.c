@@ -878,6 +878,7 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	uint8_t *addr;
 	size_t buf_len;
 	size_t ptr;
+	size_t code;
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
@@ -885,15 +886,18 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	}
 
 	switch (op->code) {
+	case 0x11 + 0x20000:
 	case 0x11:
 		arm_vm->quit = true;
 		break;
+	case 0x10 + 0x20000:
 	case 0x10:
 		/* OS_GetEnv */
 		arm_vm->regs[0] = 0;
 		arm_vm->regs[1] = 0x8000 + arm_vm->mem_size;
 		arm_vm->regs[2] = 0;
 		break;
+	case 0xdc + 0x20000:
 	case 0xdc:
 		/* OS_ConvertInteger4  */
 		buf_len = sprintf(buf, "%d", arm_vm->regs[0]) + 1;
@@ -910,6 +914,7 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		arm_vm->regs[1] += buf_len - 1;
 		arm_vm->regs[2] -= buf_len;
 		break;
+	case 0x20000:
 	case 0x0:
 		/* OS_WriteCh  */
 		buf[0] = arm_vm->regs[0] & 0xff;
@@ -921,6 +926,7 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 				return;
 		}
 		break;
+	case 0x2 + 0x20000:
 	case 0x2:
 		/* OS_Write0  */
 		addr = prv_get_vm_address(arm_vm, arm_vm->regs[0], 1, err);
@@ -931,22 +937,26 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			return;
 		arm_vm->regs[0] += strlen((const char *)addr) + 1;
 		break;
+	case 0x3 + 0x20000:
 	case 0x3:
 		/* OS_Newline  */
 		subtilis_buffer_append_string(b, "\n", err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		break;
+	case 0x4 + 0x20000:
 	case 0x4:
 		/* OS_ReadC  */
 		arm_vm->regs[0] = getchar();
 		break;
+	case 0x6 + 0x20000:
 	case 0x6:
 		/* OS_Byte */
 		prv_os_byte(arm_vm, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		break;
+	case 0x7 + 0x20000:
 	case 0x7:
 		/* OS_Word  */
 		if (arm_vm->regs[0] == 1) {
@@ -955,6 +965,7 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			    subtilis_get_i32_time();
 		}
 		break;
+	case 0x32 + 0x20000:
 	case 0x32:
 		/* OS_ReadPoint  */
 		arm_vm->regs[2] = 0;
@@ -962,8 +973,10 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		arm_vm->regs[4] = 0;
 		break;
 	default:
-		if (op->code >= (256 + 32) && op->code < 512) {
-			buf[0] = op->code - 256;
+		code = op->code;
+		code &= ~((size_t)0x20000);
+		if (code >= (256 + 32) && code < 512) {
+			buf[0] = code - 256;
 			buf[1] = 0;
 			subtilis_buffer_append_string(b, buf, err);
 			if (err->type != SUBTILIS_ERROR_OK)

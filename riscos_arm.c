@@ -370,11 +370,13 @@ void subtilis_riscos_arm_printi(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	// 0x7 = r0, r1, r2
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0xdc, 0x7, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0xdc + 0x20000, 0x7,
+			     err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x2, 0, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_VC, 0x2 + 0x20000, 0,
+			     err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 }
@@ -384,7 +386,8 @@ void subtilis_riscos_arm_printnl(subtilis_ir_section_t *s, size_t start,
 {
 	subtilis_arm_section_t *arm_s = user_data;
 
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x3, 0, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x3 + 0x20000, 0,
+			     err);
 }
 
 void subtilis_riscos_arm_modei32(subtilis_ir_section_t *s, size_t start,
@@ -394,7 +397,7 @@ void subtilis_riscos_arm_modei32(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_reg_t op2;
 	subtilis_arm_section_t *arm_s = user_data;
 	subtilis_ir_inst_t *modei = &s->ops[start]->op.instr;
-	const size_t vdu = 256;
+	const size_t vdu = 256 + 0x20000;
 
 	dest = 0;
 	op2 = subtilis_arm_ir_to_arm_reg(modei->operands[0].reg);
@@ -410,7 +413,7 @@ void subtilis_riscos_arm_modei32(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	// 0x0 = r0
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0, 0, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_VC, 0 + 0x20000, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 }
@@ -422,7 +425,7 @@ void subtilis_riscos_arm_plot(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_reg_t op2;
 	subtilis_arm_section_t *arm_s = user_data;
 	subtilis_ir_inst_t *plot = &s->ops[start]->op.instr;
-	const size_t os_plot = 0x45;
+	const size_t os_plot = 0x45 + 0x20000;
 
 	dest = 0;
 	op2 = subtilis_arm_ir_to_arm_reg(plot->operands[0].reg);
@@ -461,7 +464,7 @@ void subtilis_riscos_arm_gcol(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_reg_t op2;
 	subtilis_arm_section_t *arm_s = user_data;
 	subtilis_ir_inst_t *gcol = &s->ops[start]->op.instr;
-	const size_t vdu = 256;
+	const size_t vdu = 256 + 0x20000;
 
 	// 0x0 = r0
 	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, vdu + 18, 0, err);
@@ -471,26 +474,26 @@ void subtilis_riscos_arm_gcol(subtilis_ir_section_t *s, size_t start,
 	dest = 0;
 	op2 = subtilis_arm_ir_to_arm_reg(gcol->operands[0].reg);
 
-	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_VC, false, dest, op2,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	// 0x0 = r0
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0, 0, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_VC, 0 + 0x20000, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	dest = 0;
 	op2 = subtilis_arm_ir_to_arm_reg(gcol->operands[1].reg);
 
-	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_VC, false, dest, op2,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	// 0x0 = r0
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0, 0, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_VC, 0 + 0x20000, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 }
@@ -504,7 +507,7 @@ void subtilis_riscos_arm_origin(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_data_instr_t *mov;
 	subtilis_arm_section_t *arm_s = user_data;
 	subtilis_ir_inst_t *origin = &s->ops[start]->op.instr;
-	const size_t vdu = 256;
+	const size_t vdu = 256 + 0x20000;
 	size_t i;
 
 	// 0x0 = r0
@@ -516,13 +519,14 @@ void subtilis_riscos_arm_origin(subtilis_ir_section_t *s, size_t start,
 		dest = 0;
 		op2 = subtilis_arm_ir_to_arm_reg(origin->operands[i].reg);
 
-		subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false,
+		subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_VC, false,
 					 dest, op2, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
 		// 0x0 = r0
-		subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0, 0, err);
+		subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_VC, 0 + 0x20000,
+				     0, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
@@ -533,7 +537,7 @@ void subtilis_riscos_arm_origin(subtilis_ir_section_t *s, size_t start,
 		mov = &instr->operands.data;
 
 		mov->status = false;
-		mov->ccode = SUBTILIS_ARM_CCODE_AL;
+		mov->ccode = SUBTILIS_ARM_CCODE_VC;
 		mov->dest = dest;
 		mov->op2.type = SUBTILIS_ARM_OP2_SHIFTED;
 		mov->op2.op.shift.type = SUBTILIS_ARM_SHIFT_LSR;
@@ -543,7 +547,8 @@ void subtilis_riscos_arm_origin(subtilis_ir_section_t *s, size_t start,
 		mov->op2.op.shift.shift.integer = 8;
 
 		// 0x0 = r0
-		subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0, 0, err);
+		subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_VC, 0 + 0x20000,
+				     0, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
@@ -571,19 +576,20 @@ void subtilis_riscos_arm_gettime(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x07, 0, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x07 + 0x20000, 0,
+			     err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
-				   SUBTILIS_ARM_CCODE_AL, dest, 1, 0, err);
+				   SUBTILIS_ARM_CCODE_VC, dest, 1, 0, err);
 }
 
 void subtilis_riscos_arm_cls(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err)
 {
 	subtilis_arm_section_t *arm_s = user_data;
-	const size_t vdu = 256;
+	const size_t vdu = 256 + 0x20000;
 
 	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, vdu + 12, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -594,7 +600,7 @@ void subtilis_riscos_arm_clg(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err)
 {
 	subtilis_arm_section_t *arm_s = user_data;
-	const size_t vdu = 256;
+	const size_t vdu = 256 + 0x20000;
 
 	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, vdu + 16, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -606,7 +612,8 @@ void subtilis_riscos_arm_on(subtilis_ir_section_t *s, size_t start,
 {
 	subtilis_arm_section_t *arm_s = user_data;
 
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x37, 0, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x37 + 0x20000, 0,
+			     err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 }
@@ -616,7 +623,8 @@ void subtilis_riscos_arm_off(subtilis_ir_section_t *s, size_t start,
 {
 	subtilis_arm_section_t *arm_s = user_data;
 
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x36, 0, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x36 + 0x20000, 0,
+			     err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 }
@@ -632,7 +640,8 @@ void subtilis_riscos_arm_wait(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	// 0x6 = r1, r2
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 6, 0x6, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 6, 0x6 + 0x20000,
+			     err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 }
@@ -646,13 +655,12 @@ void subtilis_riscos_arm_get(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_reg_t dest = subtilis_arm_ir_to_arm_reg(ir_dest);
 
 	// 0x1 = r0
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x4, 0x1, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x4 + 0x20000, 0x1,
+			     err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	/* TOOD: Check for error on carry here */
-
-	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_VC, false, dest, 0,
 				 err);
 }
 
@@ -700,11 +708,12 @@ void subtilis_riscos_arm_get_to(subtilis_ir_section_t *s, size_t start,
 	datai->op2.op.shift.shift.integer = 8;
 
 	// 0x6 = r1 and r2
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x6, 0x6, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x6 + 0x20000, 0x6,
+			     err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 1,
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_VC, false, dest, 1,
 				 err);
 }
 
@@ -734,11 +743,12 @@ void subtilis_riscos_arm_inkey(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	// 0x6 = r1, r2
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x6, 0x6, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x6 + 0x20000, 0x6,
+			     err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, true, dest, 1,
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_VC, true, dest, 1,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -770,11 +780,12 @@ void subtilis_riscos_arm_os_byte_id(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	// 0x6 = r1 and r2
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x6, 0x6, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x6 + 0x20000, 0x6,
+			     err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 1,
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_VC, false, dest, 1,
 				 err);
 }
 
@@ -786,7 +797,8 @@ void subtilis_riscos_arm_vdui(subtilis_ir_section_t *s, size_t start,
 	size_t ch = vdu->operands[0].integer & 0xff;
 
 	// 0x0 = No register corruption
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 256 + ch, 0x0, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 256 + ch + 0x20000,
+			     0x0, err);
 }
 
 void subtilis_riscos_arm_vdu(subtilis_ir_section_t *s, size_t start,
@@ -803,7 +815,8 @@ void subtilis_riscos_arm_vdu(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	// 0x0 = No register corruption
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x0, 0x0, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x0 + 0x20000, 0x0,
+			     err);
 }
 
 static void prv_point_tint(subtilis_ir_section_t *s, size_t start,
@@ -829,12 +842,13 @@ static void prv_point_tint(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	// 0x1C = R2, R3, R4 are corrupted
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x32, 0x1C, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x32 + 0x20000, 0x1C,
+			     err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	dest = subtilis_arm_ir_to_arm_reg(plot->operands[0].reg);
-	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest,
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_VC, false, dest,
 				 res_reg, err);
 }
 
