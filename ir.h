@@ -121,7 +121,9 @@ typedef enum {
 	 * divi32 r0, r1, r2
 	 *
 	 * Divides two 32 bit signed integers stored in registers storing the
-	 * result in a third register.
+	 * result in a third register.  If a division by zero occurs the
+	 * error flag is set and an error is written into the error offset for
+	 * the current section.
 	 *
 	 * r0 = r1 / r2
 	 */
@@ -132,7 +134,9 @@ typedef enum {
 	 * modi32 r0, r1, r2
 	 *
 	 * Divides two 32 bit signed integers stored in registers storing the
-	 * remainder in a third register.
+	 * remainder in a third register.  If a division by zero occurs the
+	 * error flag is set and an error is written into the error offset for
+	 * the current section.
 	 *
 	 * r0 = r1 % r2
 	 */
@@ -144,6 +148,8 @@ typedef enum {
 	 *
 	 * Divides two 64 bit doubles stored in floating point registers.
 	 * The result is stored in a third floating point register.
+	 * If a division by zero occurs the error flag is set and an error is
+	 * written into the error offset for the current section.
 	 *
 	 * fp0 = fp1 / fp2
 	 */
@@ -428,6 +434,8 @@ typedef enum {
 	 *
 	 * Divides a 64 bit double immediate constant by a 64 bit double
 	 * stored in a register.  The result is stored in a second register.
+	 * If a division by zero occurs the error flag is set and an error
+	 * is written into the error offset for the current section.
 	 *
 	 * fp0 = #r / fp1
 	 */
@@ -958,7 +966,9 @@ typedef enum {
 	 * mode_i32 r0
 	 *
 	 * Changes the screen mode to that of the number contained in the
-	 * specified register.
+	 * specified register.  If an error occurs the error flag is set
+	 * and an error is written into the error offset for the current
+	 * section.
 	 *
 	 */
 
@@ -967,7 +977,9 @@ typedef enum {
 	/*
 	 * plot r0, r1, r2
 	 *
-	 * Platform specific drawing routine.
+	 * Platform specific drawing routine.  If an error occurs the error
+	 * flag is set and an error is written into the error offset for
+	 * the current section.
 	 *
 	 */
 
@@ -976,7 +988,9 @@ typedef enum {
 	/*
 	 * gcol r0, r1
 	 *
-	 * Change the colour used for graphics operations
+	 * Change the colour used for graphics operations.  If an error occurs
+	 * the error flag is set and an error is written into the error offset
+	 * for the current section.
 	 *
 	 */
 
@@ -985,7 +999,9 @@ typedef enum {
 	/*
 	 * origin r0, r1
 	 *
-	 * Sets the graphics origin
+	 * Sets the graphics origin.  If an error occurs the error flag is set
+	 * and an error is written into the error offset for the current
+	 * section.
 	 *
 	 */
 
@@ -995,7 +1011,8 @@ typedef enum {
 	 * gettime r0
 	 *
 	 * Stores the current value of the system timer in centi-seconds
-	 * in r0.
+	 * in r0.  If an error occurs the error flag is set and an error is
+	 * written into the error offset for the current section.
 	 *
 	 */
 
@@ -1004,7 +1021,9 @@ typedef enum {
 	/*
 	 * cls
 	 *
-	 * Clears the text viewport
+	 * Clears the text viewport.  If an error occurs the error flag is set
+	 * and an error is written into the error offset for the current
+	 * section.
 	 *
 	 */
 
@@ -1013,7 +1032,9 @@ typedef enum {
 	/*
 	 * clg
 	 *
-	 * Clears the graphics viewport
+	 * Clears the graphics viewport. If an error occurs the error flag
+	 * is set and an error is written into the error offset for these
+	 * current section.
 	 *
 	 */
 
@@ -1022,7 +1043,9 @@ typedef enum {
 	/*
 	 * on
 	 *
-	 * Turns on the text cursor
+	 * Turns on the text cursor.  If an error occurs the error flag is set
+	 * and an error is written into the error offset for the current
+	 * section.
 	 *
 	 */
 
@@ -1031,7 +1054,9 @@ typedef enum {
 	/*
 	 * off
 	 *
-	 * Turns off the text cursor
+	 * Turns off the text cursor.  If an error occurs the error flag is set
+	 * and an error is written into the error offset for the current
+	 * section.
 	 *
 	 */
 
@@ -1040,7 +1065,9 @@ typedef enum {
 	/*
 	 * wait
 	 *
-	 * Wait for end of current display frame
+	 * Wait for end of current display frame.  If an error occurs the error
+	 * flag is set and an error is written into the error offset for these
+	 * current section.
 	 *
 	 */
 
@@ -1112,6 +1139,9 @@ typedef enum {
 	/*
 	 * log fp0, fp1
 	 *
+	 * If fp <=0 the error flag is set and an error is written into
+	 * the error offset for the current section.
+	 *
 	 * fp0 = log10(fp1)
 	 *
 	 */
@@ -1120,6 +1150,9 @@ typedef enum {
 
 	/*
 	 * ln fp0, fp1
+	 *
+	 * If fp <=0 the error flag is set and an error is written into
+	 * the error offset for the current section.
 	 *
 	 * fp0 = loge(fp1)
 	 *
@@ -1140,7 +1173,8 @@ typedef enum {
 	 * get r0
 	 *
 	 * Wait for a key press from the user and store the ASCII code
-	 * in r0.
+	 * in r0.  If an error occurs the error flag is set and an error
+	 * is written into the error offset for the current section.
 	 *
 	 */
 
@@ -1151,7 +1185,9 @@ typedef enum {
 	 *
 	 * Wait for a key press from the user for r1 centi-seconds and store
 	 * the ASCII code of the pressed key in r0. If no key was pressed
-	 * within the time limit r0 will contain -1.
+	 * within the time limit r0 will contain -1.  If an error occurs these
+	 * error flag is set and an error is written into the error offset for
+	 * the current section.
 	 */
 
 	SUBTILIS_OP_INSTR_GET_TO,
@@ -1160,7 +1196,8 @@ typedef enum {
 	 * inkey r0, r1
 	 *
 	 * r0 is set to 255 if the key specified in r1 is currently depressed,
-	 * 0 otherwise.
+	 * 0 otherwise.  If an error occurs the error flag is set and an error
+	 * is written into the error offset for the current section.
 	 */
 
 	SUBTILIS_OP_INSTR_INKEY,
@@ -1178,6 +1215,9 @@ typedef enum {
 	 * - &A7 for RISCOS 3.7.1
 	 * - &01 for Subtilis VM
 	 * - &02 for Subtilis ARM VM
+	 *
+	 * If an error occurs the error flag is set and an error is written
+	 * into the error offset for the current section.
 	 */
 
 	SUBTILIS_OP_INSTR_OS_BYTE_ID,
@@ -1187,7 +1227,8 @@ typedef enum {
 	 * vdui i32
 	 *
 	 * Sends the lowest 8 bits of the integer constant to the output
-	 * stream.
+	 * stream.  If an error occurs the error flag is set and an error
+	 * is written into the error offset for the current section.
 	 */
 
 	SUBTILIS_OP_INSTR_VDUI,
@@ -1197,7 +1238,8 @@ typedef enum {
 	 * vdui r0
 	 *
 	 * Sends the lowest 8 bits of the integer stored in r0 to the
-	 * output stream.
+	 * output stream.  If an error occurs the error flag is set and
+	 * an error is written into the error offset for the current section.
 	 */
 
 	SUBTILIS_OP_INSTR_VDU,
@@ -1206,7 +1248,9 @@ typedef enum {
 	 *
 	 * point r0, r1, r2
 	 *
-	 * Stores the pixel colour at location r1, r2 in r0.
+	 * Stores the pixel colour at location r1, r2 in r0.  If an error occurs
+	 * the error flag is set and an error is written into the error offsets
+	 * for the current section.
 	 */
 
 	SUBTILIS_OP_INSTR_POINT,
@@ -1215,7 +1259,9 @@ typedef enum {
 	 *
 	 * tint r0, r1, r2
 	 *
-	 * Stores the tint at location r1, r2 in r0.
+	 * Stores the tint at location r1, r2 in r0.  If an error occurs
+	 * the error flag is set and an error is written into the error offsets
+	 * for the current section.
 	 */
 
 	SUBTILIS_OP_INSTR_TINT,

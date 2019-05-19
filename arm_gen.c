@@ -822,7 +822,7 @@ void subtilis_arm_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 	op0 = 13;
 
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_STM,
-			       SUBTILIS_ARM_CCODE_AL, op0, 1 << 14,
+			       SUBTILIS_ARM_CCODE_AL, op0, 1 << 14 | 1 << 11,
 			       SUBTILIS_ARM_MTRAN_FD, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -872,7 +872,7 @@ void subtilis_arm_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 	}
 
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_LDM,
-			       SUBTILIS_ARM_CCODE_AL, op0, 1 << 14,
+			       SUBTILIS_ARM_CCODE_AL, op0, 1 << 14 | 1 << 11,
 			       SUBTILIS_ARM_MTRAN_FD, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
