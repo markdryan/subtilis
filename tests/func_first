@@ -1,0 +1,10 @@
+DEF FNFac%(X%)
+    LOCAL ret%
+    IF X% < 1 THEN
+        ret% = 1
+    ELSE
+        ret% = X% * FNFac%(X%-1)
+    ENDIF
+<- ret%
+
+PRINT FNFac%(6)

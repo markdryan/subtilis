@@ -1,0 +1,8 @@
+PRINT FNRetFromFor%
+
+DEF FNRetFromFor%
+    LOCAL I%
+    FOR I% = 1 TO 10
+       <- I%
+    NEXT
+<- 0
