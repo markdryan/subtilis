@@ -1367,6 +1367,14 @@ const subtilis_test_case_t test_cases[] = {
 	"PRINT LN(A)\n"
 	"ENDPROC\n",
 	"22\n22\n10.5\n"},
+	{"end_in_proc",
+	 "PRINT TRUE\n"
+	 "PROCEnd\n"
+	 "PRINT TRUE\n"
+	 "DEF PROCEnd\n"
+	 "END\n"
+	 "ENDPROC\n",
+	 "-1\n"},
 };
 
 /* clang-format on */

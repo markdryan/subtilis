@@ -2107,9 +2107,14 @@ static void prv_end(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	subtilis_ir_operand_t end_label;
 
-	end_label.label = p->current->end_label;
-	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
-					     end_label, err);
+	if (p->current != p->main) {
+		subtilis_ir_section_add_instr_no_arg(
+		    p->current, SUBTILIS_OP_INSTR_END, err);
+	} else {
+		end_label.label = p->current->end_label;
+		subtilis_ir_section_add_instr_no_reg(
+		    p->current, SUBTILIS_OP_INSTR_JMP, end_label, err);
+	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
