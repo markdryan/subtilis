@@ -102,40 +102,40 @@ on_error:
 void subtilis_exp_return_default_value(subtilis_parser_t *p,
 				       subtilis_error_t *err)
 {
-	subtilis_exp_t *e;
 	subtilis_op_instr_type_t type;
+	subtilis_ir_operand_t end_label;
+	subtilis_ir_operand_t zero_value;
+	subtilis_ir_operand_t ret_reg;
 
-	if (p->current == p->main) {
-		subtilis_ir_section_add_instr_no_arg(
-		    p->current, SUBTILIS_OP_INSTR_END, err);
+	end_label.label = p->current->end_label;
+	if ((p->current == p->main) ||
+	    (p->current->type->return_type == SUBTILIS_TYPE_VOID)) {
+		subtilis_ir_section_add_instr_no_reg(
+		    p->current, SUBTILIS_OP_INSTR_JMP, end_label, err);
 		return;
 	}
 
 	switch (p->current->type->return_type) {
-	case SUBTILIS_TYPE_VOID:
-		subtilis_ir_section_add_instr_no_arg(
-		    p->current, SUBTILIS_OP_INSTR_RET, err);
-		return;
 	case SUBTILIS_TYPE_REAL:
-		type = SUBTILIS_OP_INSTR_RETI_REAL;
-		e = subtilis_exp_new_real(0.0, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+		type = SUBTILIS_OP_INSTR_MOVI_REAL;
+		zero_value.integer = 0;
 		break;
 	case SUBTILIS_TYPE_INTEGER:
-		type = SUBTILIS_OP_INSTR_RETI_I32;
-		e = subtilis_exp_new_int32(0, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+		type = SUBTILIS_OP_INSTR_MOV;
+		zero_value.real = 0.0;
 		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
-	subtilis_ir_section_add_instr_no_reg(p->current, type, e->exp.ir_op,
-					     err);
-	subtilis_exp_delete(e);
+	ret_reg.reg = p->current->ret_reg;
+	subtilis_ir_section_add_instr_no_reg2(p->current, type, ret_reg,
+					      zero_value, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     end_label, err);
 }
 
 void subtilis_exp_handle_errors(subtilis_parser_t *p, subtilis_error_t *err)
@@ -173,6 +173,18 @@ void subtilis_exp_handle_errors(subtilis_parser_t *p, subtilis_error_t *err)
 						  error_label, ok_label, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
+	} else if ((p->current == p->main) ||
+		   (p->current->type->return_type == SUBTILIS_TYPE_VOID)) {
+		/*
+		 * There's no error handler so we need to return.  We can jump
+		 * straight to the exit code for the procedure as theres no
+		 * return value to zero.
+		 */
+
+		error_label.label = p->current->end_label;
+		subtilis_ir_section_add_instr_reg(p->current,
+						  SUBTILIS_OP_INSTR_JMPC, op1,
+						  error_label, ok_label, err);
 	} else {
 		/*
 		 * There's no error handler so we need to return.

@@ -179,6 +179,10 @@ subtilis_exp_t *subtilis_builtins_ir_rnd_0(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	subtilis_exp_handle_errors(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	return e;
 
 cleanup:
@@ -226,6 +230,10 @@ subtilis_exp_t *subtilis_builtins_ir_rnd_1(subtilis_parser_t *p,
 
 	e = subtilis_exp_divr(p, e, top_bit, err);
 	top_bit = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_handle_errors(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -354,9 +362,9 @@ void subtilis_builtins_ir_rnd_int(subtilis_parser_t *p,
 
 	neg_label.label = subtilis_ir_section_new_label(current);
 	zero_pos_label.label = subtilis_ir_section_new_label(current);
-	end_label.label = subtilis_ir_section_new_label(current);
+	end_label.label = current->end_label;
 
-	result.reg = current->reg_counter++;
+	result.reg = current->ret_reg;
 
 	op1.reg = SUBTILIS_IR_REG_TEMP_START;
 	op2.integer = 0;
@@ -481,9 +489,9 @@ void subtilis_builtins_ir_rnd_real(subtilis_parser_t *p,
 
 	one_label.label = subtilis_ir_section_new_label(current);
 	zero_label.label = subtilis_ir_section_new_label(current);
-	end_label.label = subtilis_ir_section_new_label(current);
+	end_label.label = current->end_label;
 
-	result.reg = current->freg_counter++;
+	result.reg = current->ret_reg;
 
 	op1.reg = SUBTILIS_IR_REG_TEMP_START;
 	op2.integer = 1;

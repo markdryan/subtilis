@@ -650,6 +650,21 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	s->type = tp;
 	s->locals = locals;
 	p->sections[name_index] = s;
+	s->end_label = subtilis_ir_section_new_label(s);
+	switch (tp->return_type) {
+	case SUBTILIS_TYPE_VOID:
+		s->ret_reg = SIZE_MAX;
+		break;
+	case SUBTILIS_TYPE_REAL:
+		s->ret_reg = s->freg_counter++;
+		break;
+	case SUBTILIS_TYPE_INTEGER:
+		s->ret_reg = s->reg_counter++;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		goto cleanup;
+	}
 
 	return s;
 
