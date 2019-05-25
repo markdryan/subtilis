@@ -1,0 +1,12 @@
+ONERROR
+        PRINT 0
+ENDERROR
+
+FOR I% = 0 TO 10
+    ONERROR
+       PRINT 1
+       ERROR 1
+    ENDERROR
+    ERROR 29
+NEXT
+

@@ -1,0 +1,50 @@
+LOCAL A%
+
+PRINT 1
+
+ONERROR
+    PRINT 10
+ENDERROR
+
+A = FNTest%
+
+
+IF A% > 0 THEN
+  ONERROR
+    PRINT 2
+  ENDERROR
+ENDIF
+
+A%=3
+ONERROR
+  PRINT A%
+  PRINT ERR
+  PROCTest
+ENDERROR
+
+ERROR 11
+
+
+DEF PROCTest
+    PRINT 5
+
+    ONERROR
+    ENDERROR
+
+    ONERROR
+       PRINT 6
+       ENDPROC
+    ENDERROR
+
+    PRINT 7
+ENDPROC
+
+DEF FNTest%
+    PRINT 5
+
+    ONERROR
+        PRINT ERR
+    ENDERROR
+
+    ERROR 666
+<-0

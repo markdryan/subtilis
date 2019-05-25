@@ -1,0 +1,6 @@
+X = RND(-TIME)
+IF RND(2) = 1 THEN
+   END
+ENDIF
+
+PRINT TRUE
