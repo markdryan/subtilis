@@ -176,7 +176,7 @@ static subtilis_arm_section_t *prv_add_imm(subtilis_arm_op_pool_t *pool,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	s = subtilis_arm_section_new(pool, stype, 0, 0, 0, 0, err);
+	s = subtilis_arm_section_new(pool, stype, 0, 0, 0, 0, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 

@@ -17,10 +17,119 @@
 #include <stdlib.h>
 
 #include "arm2_div.h"
+#include "arm_gen.h"
 #include "arm_peephole.h"
 #include "arm_reg_alloc.h"
 #include "arm_sub_section.h"
+#include "error_codes.h"
 #include "riscos_arm.h"
+
+#define RISCOS_ARM_GLOBAL_ESC_FLAG (-4)
+#define RISCOS_ARM_GLOBAL_ESC_HANDLER (-8)
+#define RISCOS_ARM_GLOBAL_ESC_R12 (-12)
+
+static void prv_add_escape_handler(subtilis_arm_section_t *arm_s,
+				   subtilis_error_t *err)
+{
+	size_t label;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_br_instr_t *br;
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 9,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_arm_add_add_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 1, 15, 16,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 2, 12,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/* 0x7 = R0, R1, R2 */
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x40, 0x7, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
+				   SUBTILIS_ARM_CCODE_AL, 1, 12,
+				   RISCOS_ARM_GLOBAL_ESC_HANDLER, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
+				   SUBTILIS_ARM_CCODE_AL, 2, 12,
+				   RISCOS_ARM_GLOBAL_ESC_R12, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	label = arm_s->label_counter++;
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_AL;
+	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
+	br->target.label = label;
+
+	/* Code for the handler */
+
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_TST,
+				 SUBTILIS_ARM_CCODE_AL, 11, 1 << 6, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_EQ, false, 15, 14,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 1,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
+				   SUBTILIS_ARM_CCODE_AL, 0, 12,
+				   RISCOS_ARM_GLOBAL_ESC_FLAG, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 15, 14,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_section_add_label(arm_s, label, err);
+}
+
+static void prv_remove_escape_handler(subtilis_arm_section_t *arm_s,
+				      subtilis_error_t *err)
+{
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 9,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, 1, 12,
+				   RISCOS_ARM_GLOBAL_ESC_HANDLER, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, 2, 12,
+				   RISCOS_ARM_GLOBAL_ESC_R12, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/* 0x7 = R0, R1, R2 */
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x40, 0x7, err);
+}
 
 static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 			     subtilis_riscos_fp_preamble_t fp_premable,
@@ -54,17 +163,46 @@ static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 
 	dest = 13;
 	op2 = 12;
-	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
-				 err);
+
+	if (arm_s->handle_escapes) {
+		// Reserve 12 bytes for escape condition and old handler details
+
+		subtilis_arm_add_sub_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false,
+					 dest, op2, 4, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 1,
+					 0, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
+					   SUBTILIS_ARM_CCODE_AL, 1, 12,
+					   RISCOS_ARM_GLOBAL_ESC_FLAG, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		prv_add_escape_handler(arm_s, err);
+	} else {
+		subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false,
+					 dest, op2, err);
+	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	fp_premable(arm_s, err);
 }
 
-static void prv_add_coda(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
+static void prv_add_coda(subtilis_arm_section_t *arm_s, bool handle_escapes,
+			 subtilis_error_t *err)
 {
 	subtilis_arm_reg_t dest;
+
+	if (handle_escapes) {
+		prv_remove_escape_handler(arm_s, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 
 	dest = 0;
 	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
@@ -286,7 +424,7 @@ subtilis_riscos_generate(
 		goto cleanup;
 
 	arm_p = subtilis_arm_prog_new(p->num_sections + 2, op_pool,
-				      p->string_pool, err);
+				      p->string_pool, p->handle_escapes, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -869,5 +1007,79 @@ void subtilis_riscos_arm_end(subtilis_ir_section_t *s, size_t start,
 {
 	subtilis_arm_section_t *arm_s = user_data;
 
-	prv_add_coda(arm_s, err);
+	prv_add_coda(arm_s, arm_s->handle_escapes, err);
+}
+
+void subtilis_riscos_arm_testesc(subtilis_ir_section_t *s, size_t start,
+				 void *user_data, subtilis_error_t *err)
+{
+	size_t label;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_br_instr_t *br;
+	subtilis_arm_section_t *arm_s = user_data;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, 0, 12,
+				   RISCOS_ARM_GLOBAL_ESC_FLAG, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_TEQ,
+				 SUBTILIS_ARM_CCODE_AL, 0, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	label = arm_s->label_counter++;
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_EQ;
+	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
+	br->target.label = label;
+
+	/* Clear escape variable */
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 0,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
+				   SUBTILIS_ARM_CCODE_AL, 0, 12,
+				   RISCOS_ARM_GLOBAL_ESC_FLAG, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/* Clear the escape condition */
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 124,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/* 0x6 = R1, R2 */
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x6 + 0x20000, 0x6,
+			     err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0,
+				 SUBTILIS_ERROR_CODE_ESCAPE, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
+				   SUBTILIS_ARM_CCODE_AL, 0, 12,
+				   s->error_offset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_gen_sete(s, start, user_data, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_section_add_label(arm_s, label, err);
 }

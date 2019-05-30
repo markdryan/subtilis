@@ -66,6 +66,8 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 		goto on_error;
 	}
 
+	p->handle_escapes = true;
+
 	p->st = subtilis_symbol_table_new(err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
@@ -75,7 +77,7 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 		goto on_error;
 	p->local_st = p->main_st;
 
-	p->prog = subtilis_ir_prog_new(err);
+	p->prog = subtilis_ir_prog_new(err, p->handle_escapes);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -2769,6 +2771,21 @@ cleanup:
 	subtilis_exp_delete(e);
 }
 
+static void prv_handle_escape(subtilis_parser_t *p, subtilis_error_t *err)
+{
+	/* Let's not test for escape in an error handler. */
+
+	if (!p->handle_escapes || p->current->in_error_handler)
+		return;
+
+	subtilis_ir_section_add_instr_no_arg(p->current,
+					     SUBTILIS_OP_INSTR_TESTESC, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_exp_handle_errors(p, err);
+}
+
 static void prv_while(subtilis_parser_t *p, subtilis_token_t *t,
 		      subtilis_error_t *err)
 {
@@ -2796,6 +2813,10 @@ static void prv_while(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 
 	subtilis_ir_section_add_label(p->current, true_label.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_handle_escape(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -2834,6 +2855,10 @@ static void prv_repeat(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 
 	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_handle_escape(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -2950,6 +2975,10 @@ static void prv_for_loop_start(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	start_label->reg = subtilis_ir_section_new_label(p->current);
 	subtilis_ir_section_add_label(p->current, start_label->reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_handle_escape(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -3783,6 +3812,10 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	prv_parse_locals(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	prv_handle_escape(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 

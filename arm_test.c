@@ -325,7 +325,7 @@ static int prv_test_encode(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_p = subtilis_arm_prog_new(1, op_pool, string_pool, &err);
+	arm_p = subtilis_arm_prog_new(1, op_pool, string_pool, false, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
