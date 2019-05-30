@@ -111,11 +111,17 @@ subtilis_arm_reg_t subtilis_arm_acquire_new_freg(subtilis_arm_section_t *s)
 	return subtilis_arm_ir_to_freg(s->freg_counter++);
 }
 
-subtilis_arm_section_t *
-subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
-			 subtilis_type_section_t *stype, size_t reg_counter,
-			 size_t freg_counter, size_t label_counter,
-			 size_t locals, subtilis_error_t *err)
+/* clang-format off */
+subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
+						 subtilis_type_section_t *stype,
+						 size_t reg_counter,
+						 size_t freg_counter,
+						 size_t label_counter,
+						 size_t locals,
+						 bool handle_escapes,
+						 subtilis_error_t *err)
+/* clang-format on */
+
 {
 	subtilis_arm_section_t *s = calloc(1, sizeof(*s));
 
@@ -131,6 +137,7 @@ subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 	s->last_op = SIZE_MAX;
 	s->locals = locals;
 	s->op_pool = pool;
+	s->handle_escapes = handle_escapes;
 
 	return s;
 }
@@ -238,6 +245,7 @@ void subtilis_arm_section_add_ret_site(subtilis_arm_section_t *s, size_t op,
 subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 					   subtilis_arm_op_pool_t *op_pool,
 					   subtilis_string_pool_t *string_pool,
+					   bool handle_escapes,
 					   subtilis_error_t *err)
 {
 	double dummy_float = 1.0;
@@ -262,6 +270,7 @@ subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 
 	/* Slightly weird but on ARM FPA the words of a double are big endian */
 	arm_p->reverse_fpa_consts = (*lower_word) == 0;
+	arm_p->handle_escapes = handle_escapes;
 
 	return arm_p;
 
@@ -286,9 +295,9 @@ subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 		return NULL;
 	}
 
-	arm_s =
-	    subtilis_arm_section_new(prog->op_pool, stype, reg_counter,
-				     freg_counter, label_counter, locals, err);
+	arm_s = subtilis_arm_section_new(prog->op_pool, stype, reg_counter,
+					 freg_counter, label_counter, locals,
+					 prog->handle_escapes, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 

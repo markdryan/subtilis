@@ -37,6 +37,7 @@ struct subtilis_parser_t_ {
 	size_t max_calls;
 	subtilis_parser_call_t **calls;
 	int32_t error_offset;
+	bool handle_escapes;
 };
 
 typedef struct subtilis_parser_t_ subtilis_parser_t;

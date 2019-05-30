@@ -171,6 +171,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "sete", SUBTILIS_OP_CLASS_NONE },
 	{ "cleare", SUBTILIS_OP_CLASS_NONE },
 	{ "teste", SUBTILIS_OP_CLASS_REG },
+	{ "testesc", SUBTILIS_OP_CLASS_NONE },
 };
 
 /*
@@ -572,7 +573,8 @@ size_t subtilis_ir_section_promote_nop(subtilis_ir_section_t *s, size_t nop,
 	return instr->operands[0].reg;
 }
 
-subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err)
+subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err,
+					 bool handle_escapes)
 {
 	subtilis_ir_prog_t *p;
 
@@ -585,6 +587,8 @@ subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err)
 	p->string_pool = subtilis_string_pool_new(err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
+
+	p->handle_escapes = handle_escapes;
 
 	return p;
 

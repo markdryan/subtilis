@@ -1296,12 +1296,24 @@ typedef enum {
 
 	/*
 	 *
-	 *  teste R0
+	 * teste R0
 	 *
 	 * Sets R0 to -1 if the error flag is set, 0 otherwise
 	 */
 
 	SUBTILIS_OP_INSTR_TESTE,
+
+	/*
+	 *
+	 * testesc
+	 *
+	 * Checks the system escape condition is set.  If it is, the the error
+	 * flag is set and an error is written into the error offsets for the
+	 * current section. This instruction also clears the system escape.
+	 * condition.
+	 */
+
+	SUBTILIS_OP_INSTR_TESTESC,
 } subtilis_op_instr_type_t;
 
 typedef enum {
@@ -1415,6 +1427,7 @@ struct subtilis_ir_prog_t_ {
 	size_t num_sections;
 	size_t max_sections;
 	subtilis_string_pool_t *string_pool;
+	bool handle_escapes;
 };
 
 typedef struct subtilis_ir_prog_t_ subtilis_ir_prog_t;
@@ -1479,7 +1492,8 @@ subtilis_handler_list_t *
 subtilis_handler_list_update(subtilis_handler_list_t *list, size_t level,
 			     size_t label, subtilis_error_t *err);
 
-subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err);
+subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err,
+					 bool handle_escapes);
 /* clang-format off */
 subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	subtilis_ir_prog_t *p, const char *name, size_t locals,

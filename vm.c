@@ -1084,6 +1084,11 @@ static void prv_teste(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = vm->error_flag ? -1 : 0;
 }
 
+static void prv_testesc(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1201,6 +1206,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_sete,                            /* SUBTILIS_OP_INSTR_SETE */
 	prv_cleare,                          /* SUBTILIS_OP_INSTR_CLEARE */
 	prv_teste,                           /* SUBTILIS_OP_INSTR_TESTE */
+	prv_testesc,                         /* SUBTILIS_OP_INSTR_TESTESC */
 };
 
 /* clang-format on */
