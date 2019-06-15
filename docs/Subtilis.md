@@ -519,15 +519,6 @@ floating point numbers and RND% returning integers.
 
 ## Unimplemented Language Features
 
-### Constant Pooling
-
-Currently, the ARM backend does not support constant pooling.  Any constants used by a function
-or procedure are placed at the end of that function or procedure.  If the location of the
-instruction that uses the constant is too far away from that constant, 1024 bytes for floating
-point constants and 4096 bytes for real numbers, the function cannot be compiled and the
-compiler will assert.  If this happens you need to split your functions up.  This will get
-fixed at some point, once I figure out how.
-
 ### Assembler
 
 There's no assembler, either inline or otherwise.  I have most of the code for this so it
