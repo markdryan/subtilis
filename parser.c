@@ -19,7 +19,7 @@
 #include <string.h>
 
 #include "builtins_ir.h"
-#include "error.h"
+#include "common/error.h"
 #include "expression.h"
 #include "globals.h"
 #include "parser.h"

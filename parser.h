@@ -19,7 +19,7 @@
 
 #include "backend_caps.h"
 #include "call.h"
-#include "ir.h"
+#include "common/ir.h"
 #include "lexer.h"
 #include "symbol_table.h"
 

@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ir.h"
+#include "common/ir.h"
 #include "ir_test.h"
 #include "parser_test.h"
 

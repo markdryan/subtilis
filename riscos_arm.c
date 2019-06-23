@@ -21,7 +21,7 @@
 #include "arm_peephole.h"
 #include "arm_reg_alloc.h"
 #include "arm_sub_section.h"
-#include "error_codes.h"
+#include "common/error_codes.h"
 #include "riscos_arm.h"
 
 #define RISCOS_ARM_GLOBAL_ESC_FLAG (-4)

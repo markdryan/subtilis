@@ -18,7 +18,7 @@
 #define __SUBTILIS_ARM2_DIV_H__
 
 #include "arm_core.h"
-#include "ir.h"
+#include "common/ir.h"
 
 void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 			    subtilis_arm_section_t *arm_s,

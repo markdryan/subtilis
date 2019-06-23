@@ -18,7 +18,7 @@
 #define __SUBTILIS_FPA_GEN_H
 
 #include "arm_core.h"
-#include "ir.h"
+#include "common/ir.h"
 
 void subtilis_fpa_gen_movr(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err);

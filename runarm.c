@@ -19,7 +19,7 @@
 
 #include "arm_disass.h"
 #include "arm_vm.h"
-#include "buffer.h"
+#include "common/buffer.h"
 
 const size_t block_size = 16 * 1024;
 

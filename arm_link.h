@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 
-#include "error.h"
+#include "common/error.h"
 
 struct subtilis_arm_link_t_ {
 	size_t *externals;

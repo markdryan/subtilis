@@ -17,8 +17,8 @@
 #ifndef __SUBTILIS_BUILTINS_IR_H__
 #define __SUBTILIS_BUILTINS_IR_H__
 
+#include "common/ir.h"
 #include "expression.h"
-#include "ir.h"
 #include "parser.h"
 
 void subtilis_builtins_ir_inkey(subtilis_ir_section_t *current,

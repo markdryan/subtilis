@@ -19,10 +19,10 @@
 
 #include <stdint.h>
 
-#include "buffer.h"
+#include "common/buffer.h"
+#include "common/type.h"
 #include "keywords.h"
 #include "stream.h"
-#include "type.h"
 
 /* Does not apply to strings which are limitless in size */
 

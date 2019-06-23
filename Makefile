@@ -1,3 +1,5 @@
+VPATH = common
+
 COMMON =\
 	stream.c \
 	lexer.c \

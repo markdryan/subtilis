@@ -17,7 +17,7 @@
 #ifndef __SUBTILIS_RISCOS_ARM2_H
 #define __SUBTILIS_RISCOS_ARM2_H
 
-#include "ir.h"
+#include "common/ir.h"
 
 extern const subtilis_ir_rule_raw_t riscos_arm2_rules[];
 extern const size_t riscos_arm2_rules_count;

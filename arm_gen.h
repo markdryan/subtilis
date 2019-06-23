@@ -18,7 +18,7 @@
 #define __SUBTILIS_ARM_GEN_H
 
 #include "arm_core.h"
-#include "ir.h"
+#include "common/ir.h"
 
 void subtilis_arm_gen_mov(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);

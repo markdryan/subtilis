@@ -18,7 +18,7 @@
 #include <stdio.h>
 
 #include "arm_encode.h"
-#include "error.h"
+#include "common/error.h"
 #include "fpa_gen.h"
 #include "lexer.h"
 #include "parser.h"

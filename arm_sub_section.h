@@ -18,7 +18,7 @@
 #define __SUBTILIS_ARM_SUB_SECTION_H
 
 #include "arm_core.h"
-#include "bitset.h"
+#include "common/bitset.h"
 
 struct subtilis_arm_ss_link_t_ {
 	subtilis_bitset_t int_outputs;

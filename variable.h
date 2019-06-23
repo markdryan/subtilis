@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
+#include "common/ir.h"
 #include "expression.h"
-#include "ir.h"
 #include "parser.h"
 
 #ifndef __SUBTILIS_VARIABLE_H__

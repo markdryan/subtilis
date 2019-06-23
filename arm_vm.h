@@ -18,7 +18,7 @@
 #define __SUBTILIS_ARM_VM_H
 
 #include "arm_core.h"
-#include "buffer.h"
+#include "common/buffer.h"
 
 struct subtilis_arm_vm_freg_t_ {
 	union {

@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "error_codes.h"
+#include "common/error_codes.h"
 #include "utils.h"
 #include "vm.h"
 
