@@ -1,3 +1,5 @@
+VPATH = common frontend test_cases arch/arm32 backends/riscos
+
 COMMON =\
 	stream.c \
 	lexer.c \

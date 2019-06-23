@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Mark Ryan
+ * Copyright (c) 2018 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,38 @@
 #include <locale.h>
 #include <stdio.h>
 
-#include "arch/arm32/arm_encode.h"
-#include "arch/arm32/fpa_gen.h"
-#include "backends/riscos/riscos_arm.h"
-#include "backends/riscos/riscos_arm2.h"
-#include "common/error.h"
-#include "frontend/lexer.h"
-#include "frontend/parser.h"
+#include "../common/error.h"
+#include "lexer.h"
+#include "parser.h"
+#include "vm.h"
+
+static void prv_run_prog(subtilis_parser_t *p, subtilis_error_t *err)
+{
+	subtilis_buffer_t b;
+	subitlis_vm_t *vm = NULL;
+
+	subtilis_buffer_init(&b, 1024);
+
+	vm = subitlis_vm_new(p->prog, p->st, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subitlis_vm_run(vm, &b, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_buffer_zero_terminate(&b, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	printf("\n\n==== OUTPUT====\n\n");
+	printf("%s\n", subtilis_buffer_get_string(&b));
+
+cleanup:
+
+	subitlis_vm_delete(vm);
+	subtilis_buffer_free(&b);
+}
 
 int main(int argc, char *argv[])
 {
@@ -31,11 +56,9 @@ int main(int argc, char *argv[])
 	subtilis_stream_t s;
 	subtilis_lexer_t *l = NULL;
 	subtilis_parser_t *p = NULL;
-	subtilis_arm_prog_t *arm_p = NULL;
-	subtilis_arm_op_pool_t *pool = NULL;
 
 	if (argc != 2) {
-		fprintf(stderr, "Usage: basicc file\n");
+		fprintf(stderr, "Usage: inter file\n");
 		return 1;
 	}
 
@@ -50,7 +73,7 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	p = subtilis_parser_new(l, SUBTILIS_RISCOS_ARM_CAPS, &err);
+	p = subtilis_parser_new(l, SUBTILIS_BACKEND_INTER_CAPS, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -60,33 +83,16 @@ int main(int argc, char *argv[])
 
 	subtilis_ir_prog_dump(p->prog);
 
-	pool = subtilis_arm_op_pool_new(&err);
+	prv_run_prog(p, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_p = subtilis_riscos_generate(
-	    pool, p->prog, riscos_arm2_rules, riscos_arm2_rules_count,
-	    p->st->allocated, subtilis_fpa_gen_preamble, &err);
-	if (err.type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	printf("\n\n");
-	subtilis_arm_prog_dump(arm_p);
-
-	subtilis_arm_encode(arm_p, "RunImage", &err);
-	if (err.type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_arm_prog_delete(arm_p);
-	subtilis_arm_op_pool_delete(pool);
 	subtilis_parser_delete(p);
 	subtilis_lexer_delete(l, &err);
 
 	return 0;
 
 cleanup:
-	subtilis_arm_prog_delete(arm_p);
-	subtilis_arm_op_pool_delete(pool);
 	subtilis_parser_delete(p);
 	if (l)
 		subtilis_lexer_delete(l, &err);

@@ -1,4 +1,0 @@
-Set ToROS$Dir <Obey$Dir>
-If "%0"="" Then Error Usage: ToROS |<target-dir>
-Set ToROS$TargetDir %0
-Run <ToROS$Dir>.ToROSBAS

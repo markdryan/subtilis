@@ -16,15 +16,15 @@
 
 #include <locale.h>
 
-#include "arm_core_test.h"
-#include "arm_reg_alloc_test.h"
-#include "arm_test.h"
-#include "bitset_test.h"
-#include "fpa_test.h"
-#include "ir_test.h"
-#include "lexer_test.h"
-#include "parser_test.h"
-#include "symbol_table_test.h"
+#include "arch/arm32/arm_core_test.h"
+#include "arch/arm32/arm_reg_alloc_test.h"
+#include "arch/arm32/fpa_test.h"
+#include "backends/riscos/arm_test.h"
+#include "common/bitset_test.h"
+#include "frontend/ir_test.h"
+#include "frontend/lexer_test.h"
+#include "frontend/parser_test.h"
+#include "frontend/symbol_table_test.h"
 
 int main(int argc, char *argv[])
 {
