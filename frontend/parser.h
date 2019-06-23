@@ -17,9 +17,9 @@
 #ifndef __SUBTILIS_PARSER_H
 #define __SUBTILIS_PARSER_H
 
-#include "backend_caps.h"
+#include "../common/backend_caps.h"
+#include "../common/ir.h"
 #include "call.h"
-#include "common/ir.h"
 #include "lexer.h"
 #include "symbol_table.h"
 

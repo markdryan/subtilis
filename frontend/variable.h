@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "common/ir.h"
+#include "../common/ir.h"
 #include "expression.h"
 #include "parser.h"
 

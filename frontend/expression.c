@@ -17,8 +17,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../common/ir.h"
 #include "builtins_ir.h"
-#include "common/ir.h"
 #include "expression.h"
 
 typedef int32_t (*subtilis_const_shift_t)(int32_t a, int32_t b);

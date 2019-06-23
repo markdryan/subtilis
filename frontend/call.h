@@ -17,7 +17,7 @@
 #ifndef __SUBTILIS_PARSER_CALL_H
 #define __SUBTILIS_PARSER_CALL_H
 
-#include "common/ir.h"
+#include "../common/ir.h"
 
 struct subtilis_parser_call_t_ {
 	subtilis_ir_section_t *s;

@@ -19,8 +19,8 @@
 
 #include <stdint.h>
 
-#include "common/buffer.h"
-#include "common/ir.h"
+#include "../common/buffer.h"
+#include "../common/ir.h"
 #include "symbol_table.h"
 
 struct subitlis_vm_t_ {

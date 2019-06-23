@@ -18,8 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "common/error_codes.h"
-#include "utils.h"
+#include "../common/error_codes.h"
+#include "../common/utils.h"
 #include "vm.h"
 
 static void prv_ensure_label_buffer(subitlis_vm_t *vm, size_t label,

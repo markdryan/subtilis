@@ -18,7 +18,7 @@
 #define __SUBTILIS_RISCOS_ARM_H
 
 #include "arm_core.h"
-#include "backend_caps.h"
+#include "common/backend_caps.h"
 
 typedef void (*subtilis_riscos_fp_preamble_t)(subtilis_arm_section_t *arm_s,
 					      subtilis_error_t *err);

@@ -20,7 +20,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "common/error.h"
+#include "../common/error.h"
 
 typedef struct subtilis_hashtable_t_ subtilis_hashtable_t;
 

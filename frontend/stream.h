@@ -17,7 +17,7 @@
 #ifndef __SUBTILIS_STREAM_H
 #define __SUBTILIS_STREAM_H
 
-#include "common/error.h"
+#include "../common/error.h"
 
 struct _subtilis_stream_t {
 	char name[SUBTILIS_CONFIG_PATH_MAX + 1];

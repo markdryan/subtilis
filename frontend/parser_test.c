@@ -18,9 +18,9 @@
 
 #include "parser_test.h"
 
+#include "../test_cases/test_cases.h"
 #include "lexer.h"
 #include "parser.h"
-#include "test_cases.h"
 #include "vm.h"
 
 int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,

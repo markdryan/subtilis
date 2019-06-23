@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "common/buffer.h"
+#include "../common/buffer.h"
 #include "lexer.h"
 #include "lexer_test.h"
 

@@ -18,8 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../common/error.h"
 #include "builtins_ir.h"
-#include "common/error.h"
 #include "expression.h"
 #include "globals.h"
 #include "parser.h"

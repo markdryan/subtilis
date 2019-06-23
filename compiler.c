@@ -20,8 +20,8 @@
 #include "arm_encode.h"
 #include "common/error.h"
 #include "fpa_gen.h"
-#include "lexer.h"
-#include "parser.h"
+#include "frontend/lexer.h"
+#include "frontend/parser.h"
 #include "riscos_arm.h"
 #include "riscos_arm2.h"
 

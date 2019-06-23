@@ -19,8 +19,8 @@
 
 #include <stdint.h>
 
-#include "common/buffer.h"
-#include "common/type.h"
+#include "../common/buffer.h"
+#include "../common/type.h"
 #include "keywords.h"
 #include "stream.h"
 

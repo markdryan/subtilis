@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "common/config.h"
+#include "../common/config.h"
 #include "symbol_table.h"
 
 subtilis_symbol_table_t *subtilis_symbol_table_new(subtilis_error_t *err)

@@ -22,10 +22,10 @@
 #include "arm_test.h"
 #include "arm_vm.h"
 #include "fpa_gen.h"
-#include "parser_test.h"
+#include "frontend/parser_test.h"
 #include "riscos_arm.h"
 #include "riscos_arm2.h"
-#include "test_cases.h"
+#include "test_cases/test_cases.h"
 
 static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 			    const char *expected)

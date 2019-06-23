@@ -17,7 +17,7 @@
 #include <locale.h>
 #include <stdio.h>
 
-#include "common/error.h"
+#include "../common/error.h"
 #include "lexer.h"
 #include "parser.h"
 #include "vm.h"

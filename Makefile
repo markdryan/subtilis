@@ -1,4 +1,4 @@
-VPATH = common
+VPATH = common frontend test_cases
 
 COMMON =\
 	stream.c \

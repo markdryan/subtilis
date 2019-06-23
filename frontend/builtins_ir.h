@@ -17,7 +17,7 @@
 #ifndef __SUBTILIS_BUILTINS_IR_H__
 #define __SUBTILIS_BUILTINS_IR_H__
 
-#include "common/ir.h"
+#include "../common/ir.h"
 #include "expression.h"
 #include "parser.h"
 

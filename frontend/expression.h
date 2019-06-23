@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "common/buffer.h"
-#include "common/error.h"
-#include "common/ir.h"
+#include "../common/buffer.h"
+#include "../common/error.h"
+#include "../common/ir.h"
 #include "parser.h"
 
 #ifndef __SUBTILIS_EXP_H
