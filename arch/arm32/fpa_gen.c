@@ -15,9 +15,9 @@
  */
 
 #include "fpa_gen.h"
+#include "../../common/error_codes.h"
 #include "arm_core.h"
 #include "arm_gen.h"
-#include "common/error_codes.h"
 
 void subtilis_fpa_gen_movr(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err)

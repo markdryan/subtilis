@@ -17,8 +17,8 @@
 #ifndef __SUBTILIS_ARM_VM_H
 #define __SUBTILIS_ARM_VM_H
 
+#include "../../common/buffer.h"
 #include "arm_core.h"
-#include "common/buffer.h"
 
 struct subtilis_arm_vm_freg_t_ {
 	union {

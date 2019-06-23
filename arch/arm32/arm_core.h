@@ -21,7 +21,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "common/ir.h"
+#include "../../common/ir.h"
 
 /*
  * Two register namespaces overlap for each register type, int or real.

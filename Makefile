@@ -1,4 +1,4 @@
-VPATH = common frontend test_cases
+VPATH = common frontend test_cases arch/arm32
 
 COMMON =\
 	stream.c \

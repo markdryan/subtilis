@@ -15,7 +15,7 @@
  */
 
 #include "arm2_div.h"
-#include "common/error_codes.h"
+#include "../../common/error_codes.h"
 
 static const size_t r;		 /* R0 */
 static const size_t d = 1;       /* R1 */

@@ -17,11 +17,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "arm_disass.h"
-#include "arm_encode.h"
+#include "arch/arm32/arm_disass.h"
+#include "arch/arm32/arm_encode.h"
+#include "arch/arm32/arm_vm.h"
+#include "arch/arm32/fpa_gen.h"
 #include "arm_test.h"
-#include "arm_vm.h"
-#include "fpa_gen.h"
 #include "frontend/parser_test.h"
 #include "riscos_arm.h"
 #include "riscos_arm2.h"

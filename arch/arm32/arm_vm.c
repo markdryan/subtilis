@@ -18,9 +18,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../../common/utils.h"
 #include "arm_disass.h"
 #include "arm_vm.h"
-#include "common/utils.h"
 
 subtilis_arm_vm_t *subtilis_arm_vm_new(uint32_t *code, size_t code_size,
 				       size_t mem_size, subtilis_error_t *err)

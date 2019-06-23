@@ -17,8 +17,8 @@
 #ifndef __SUBTILIS_ARM_REG_ALLOC_H
 #define __SUBTILIS_ARM_REG_ALLOC_H
 
+#include "../../common/bitset.h"
 #include "arm_core.h"
-#include "common/bitset.h"
 
 #define SUBTILIS_ARM_REG_MIN_INT_REGS 4
 #define SUBTILIS_ARM_REG_MAX_INT_REGS 11

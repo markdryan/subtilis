@@ -17,7 +17,7 @@
 #ifndef __SUBTILIS_RISCOS_ARM_H
 #define __SUBTILIS_RISCOS_ARM_H
 
-#include "arm_core.h"
+#include "arch/arm32/arm_core.h"
 #include "common/backend_caps.h"
 
 typedef void (*subtilis_riscos_fp_preamble_t)(subtilis_arm_section_t *arm_s,

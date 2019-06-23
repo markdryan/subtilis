@@ -19,8 +19,8 @@
 
 #include <stddef.h>
 
+#include "../../common/error.h"
 #include "arm_core.h"
-#include "common/error.h"
 
 typedef struct subtlis_arm_walker_t_ subtlis_arm_walker_t;
 

@@ -16,11 +16,11 @@
 
 #include <stdlib.h>
 
-#include "arm2_div.h"
-#include "arm_gen.h"
-#include "arm_peephole.h"
-#include "arm_reg_alloc.h"
-#include "arm_sub_section.h"
+#include "arch/arm32/arm2_div.h"
+#include "arch/arm32/arm_gen.h"
+#include "arch/arm32/arm_peephole.h"
+#include "arch/arm32/arm_reg_alloc.h"
+#include "arch/arm32/arm_sub_section.h"
 #include "common/error_codes.h"
 #include "riscos_arm.h"
 

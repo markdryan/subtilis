@@ -17,9 +17,9 @@
 #include <locale.h>
 #include <stdio.h>
 
-#include "arm_encode.h"
+#include "arch/arm32/arm_encode.h"
+#include "arch/arm32/fpa_gen.h"
 #include "common/error.h"
-#include "fpa_gen.h"
 #include "frontend/lexer.h"
 #include "frontend/parser.h"
 #include "riscos_arm.h"
