@@ -16,12 +16,12 @@
 
 #include <stdlib.h>
 
-#include "arch/arm32/arm2_div.h"
-#include "arch/arm32/arm_gen.h"
-#include "arch/arm32/arm_peephole.h"
-#include "arch/arm32/arm_reg_alloc.h"
-#include "arch/arm32/arm_sub_section.h"
-#include "common/error_codes.h"
+#include "../../arch/arm32/arm2_div.h"
+#include "../../arch/arm32/arm_gen.h"
+#include "../../arch/arm32/arm_peephole.h"
+#include "../../arch/arm32/arm_reg_alloc.h"
+#include "../../arch/arm32/arm_sub_section.h"
+#include "../../common/error_codes.h"
 #include "riscos_arm.h"
 
 #define RISCOS_ARM_GLOBAL_ESC_FLAG (-4)

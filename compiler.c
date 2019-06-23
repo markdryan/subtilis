@@ -19,11 +19,11 @@
 
 #include "arch/arm32/arm_encode.h"
 #include "arch/arm32/fpa_gen.h"
+#include "backends/riscos/riscos_arm.h"
+#include "backends/riscos/riscos_arm2.h"
 #include "common/error.h"
 #include "frontend/lexer.h"
 #include "frontend/parser.h"
-#include "riscos_arm.h"
-#include "riscos_arm2.h"
 
 int main(int argc, char *argv[])
 {

@@ -17,9 +17,9 @@
 #include <locale.h>
 #include <stdio.h>
 
-#include "arch/arm32/arm_disass.h"
-#include "arch/arm32/arm_vm.h"
-#include "common/buffer.h"
+#include "../../arch/arm32/arm_disass.h"
+#include "../../arch/arm32/arm_vm.h"
+#include "../../common/buffer.h"
 
 const size_t block_size = 16 * 1024;
 

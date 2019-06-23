@@ -17,15 +17,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "arch/arm32/arm_disass.h"
-#include "arch/arm32/arm_encode.h"
-#include "arch/arm32/arm_vm.h"
-#include "arch/arm32/fpa_gen.h"
+#include "../../arch/arm32/arm_disass.h"
+#include "../../arch/arm32/arm_encode.h"
+#include "../../arch/arm32/arm_vm.h"
+#include "../../arch/arm32/fpa_gen.h"
+#include "../../frontend/parser_test.h"
+#include "../../test_cases/test_cases.h"
 #include "arm_test.h"
-#include "frontend/parser_test.h"
 #include "riscos_arm.h"
 #include "riscos_arm2.h"
-#include "test_cases/test_cases.h"
 
 static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 			    const char *expected)

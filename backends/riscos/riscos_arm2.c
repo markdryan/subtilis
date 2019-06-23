@@ -15,9 +15,9 @@
  */
 
 #include "riscos_arm2.h"
-#include "arch/arm32/arm_core.h"
-#include "arch/arm32/arm_gen.h"
-#include "arch/arm32/fpa_gen.h"
+#include "../../arch/arm32/arm_core.h"
+#include "../../arch/arm32/arm_gen.h"
+#include "../../arch/arm32/fpa_gen.h"
 #include "riscos_arm.h"
 
 /* clang-format off */

@@ -19,7 +19,7 @@
 #include "arch/arm32/arm_core_test.h"
 #include "arch/arm32/arm_reg_alloc_test.h"
 #include "arch/arm32/fpa_test.h"
-#include "arm_test.h"
+#include "backends/riscos/arm_test.h"
 #include "common/bitset_test.h"
 #include "frontend/ir_test.h"
 #include "frontend/lexer_test.h"
