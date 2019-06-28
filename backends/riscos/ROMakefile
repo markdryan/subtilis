@@ -1,0 +1,126 @@
+# Makefile for basicc
+
+COMPONENT = riscos
+
+OBJS = riscos_arm riscos_arm2
+
+CFLAGS ?= -Wxla
+
+INSTDIR ?= <Obey$Dir>
+
+include CLibrary
+
+clean::
+        ${WIPE} ${INSTLIB} ${WFLAGS}
+
+# Dynamic dependencies:
+oz.riscos_arm:	c.riscos_arm
+oz.riscos_arm:	^.^.arch.arm32.h.arm2_div
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.ir
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.buffer
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.error
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.config
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.builtins
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.type
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.error
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.error
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.string_pool
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.error
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.type
+oz.riscos_arm:	^.^.arch.arm32.h.arm_core
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.ir
+oz.riscos_arm:	^.^.arch.arm32.h.arm_gen
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.ir
+oz.riscos_arm:	^.^.arch.arm32.h.arm_core
+oz.riscos_arm:	^.^.arch.arm32.h.arm_peephole
+oz.riscos_arm:	^.^.arch.arm32.h.arm_core
+oz.riscos_arm:	^.^.arch.arm32.h.arm_reg_alloc
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.bitset
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.error
+oz.riscos_arm:	^.^.arch.arm32.h.arm_core
+oz.riscos_arm:	^.^.arch.arm32.h.arm_sub_section
+oz.riscos_arm:	^.^.arch.arm32.^.^.common.h.bitset
+oz.riscos_arm:	^.^.arch.arm32.h.arm_core
+oz.riscos_arm:	^.^.common.h.error_codes
+oz.riscos_arm:	h.riscos_arm
+oz.riscos_arm:	^.^.arch.arm32.h.arm_core
+oz.riscos_arm:	^.^.common.h.backend_caps
+oz.riscos_arm2:	c.riscos_arm2
+oz.riscos_arm2:	h.riscos_arm2
+oz.riscos_arm2:	^.^.common.h.ir
+oz.riscos_arm2:	^.^.common.h.buffer
+oz.riscos_arm2:	^.^.common.h.error
+oz.riscos_arm2:	^.^.common.h.config
+oz.riscos_arm2:	^.^.common.h.builtins
+oz.riscos_arm2:	^.^.common.h.type
+oz.riscos_arm2:	^.^.common.h.error
+oz.riscos_arm2:	^.^.common.h.error
+oz.riscos_arm2:	^.^.common.h.string_pool
+oz.riscos_arm2:	^.^.common.h.error
+oz.riscos_arm2:	^.^.common.h.type
+oz.riscos_arm2:	^.^.arch.arm32.h.arm_core
+oz.riscos_arm2:	^.^.arch.arm32.^.^.common.h.ir
+oz.riscos_arm2:	^.^.arch.arm32.h.arm_gen
+oz.riscos_arm2:	^.^.arch.arm32.^.^.common.h.ir
+oz.riscos_arm2:	^.^.arch.arm32.h.arm_core
+oz.riscos_arm2:	^.^.arch.arm32.h.fpa_gen
+oz.riscos_arm2:	^.^.arch.arm32.^.^.common.h.ir
+oz.riscos_arm2:	^.^.arch.arm32.h.arm_core
+oz.riscos_arm2:	h.riscos_arm
+oz.riscos_arm2:	^.^.arch.arm32.h.arm_core
+oz.riscos_arm2:	^.^.common.h.backend_caps
+o.riscos_arm:	c.riscos_arm
+o.riscos_arm:	^.^.arch.arm32.h.arm2_div
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.ir
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.buffer
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.error
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.config
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.builtins
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.type
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.error
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.error
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.string_pool
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.error
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.type
+o.riscos_arm:	^.^.arch.arm32.h.arm_core
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.ir
+o.riscos_arm:	^.^.arch.arm32.h.arm_gen
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.ir
+o.riscos_arm:	^.^.arch.arm32.h.arm_core
+o.riscos_arm:	^.^.arch.arm32.h.arm_peephole
+o.riscos_arm:	^.^.arch.arm32.h.arm_core
+o.riscos_arm:	^.^.arch.arm32.h.arm_reg_alloc
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.bitset
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.error
+o.riscos_arm:	^.^.arch.arm32.h.arm_core
+o.riscos_arm:	^.^.arch.arm32.h.arm_sub_section
+o.riscos_arm:	^.^.arch.arm32.^.^.common.h.bitset
+o.riscos_arm:	^.^.arch.arm32.h.arm_core
+o.riscos_arm:	^.^.common.h.error_codes
+o.riscos_arm:	h.riscos_arm
+o.riscos_arm:	^.^.arch.arm32.h.arm_core
+o.riscos_arm:	^.^.common.h.backend_caps
+o.riscos_arm2:	c.riscos_arm2
+o.riscos_arm2:	h.riscos_arm2
+o.riscos_arm2:	^.^.common.h.ir
+o.riscos_arm2:	^.^.common.h.buffer
+o.riscos_arm2:	^.^.common.h.error
+o.riscos_arm2:	^.^.common.h.config
+o.riscos_arm2:	^.^.common.h.builtins
+o.riscos_arm2:	^.^.common.h.type
+o.riscos_arm2:	^.^.common.h.error
+o.riscos_arm2:	^.^.common.h.error
+o.riscos_arm2:	^.^.common.h.string_pool
+o.riscos_arm2:	^.^.common.h.error
+o.riscos_arm2:	^.^.common.h.type
+o.riscos_arm2:	^.^.arch.arm32.h.arm_core
+o.riscos_arm2:	^.^.arch.arm32.^.^.common.h.ir
+o.riscos_arm2:	^.^.arch.arm32.h.arm_gen
+o.riscos_arm2:	^.^.arch.arm32.^.^.common.h.ir
+o.riscos_arm2:	^.^.arch.arm32.h.arm_core
+o.riscos_arm2:	^.^.arch.arm32.h.fpa_gen
+o.riscos_arm2:	^.^.arch.arm32.^.^.common.h.ir
+o.riscos_arm2:	^.^.arch.arm32.h.arm_core
+o.riscos_arm2:	h.riscos_arm
+o.riscos_arm2:	^.^.arch.arm32.h.arm_core
+o.riscos_arm2:	^.^.common.h.backend_caps

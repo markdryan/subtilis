@@ -1,4 +1,12 @@
+amu WimpSlot -min 1024k
+Dir <Obey$Dir>.common
+amu -f ROMakefile clean
+Dir <Obey$Dir>.frontend
+amu -f ROMakefile clean
+Dir <Obey$Dir>.arch.arm32
+amu -f ROMakefile clean
+Dir <Obey$Dir>.backends.riscos
+amu -f ROMakefile clean
 Dir <Obey$Dir>
 amu -f ROMakefile clean
-amu -f ROUnitMakefile clean
 stripdepnd

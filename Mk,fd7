@@ -1,3 +1,11 @@
-Dir <Obey$Dir>
 WimpSlot -min 1024k
-amu -f ROMakefile all THROWBACK=-throwback
+Dir <Obey$Dir>.common
+amu -f ROMakefile THROWBACK=-throwback
+Dir <Obey$Dir>.frontend
+amu -f ROMakefile THROWBACK=-throwback
+Dir <Obey$Dir>.arch.arm32
+amu -f ROMakefile THROWBACK=-throwback
+Dir <Obey$Dir>.backends.riscos
+amu -f ROMakefile THROWBACK=-throwback
+Dir <Obey$Dir>
+amu -f ROMakefile THROWBACK=-throwback
