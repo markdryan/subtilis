@@ -23,6 +23,7 @@
 #include "expression.h"
 #include "globals.h"
 #include "parser.h"
+#include "type_if.h"
 #include "variable.h"
 
 struct subtilis_parser_param_t_ {
@@ -170,7 +171,7 @@ static subtilis_exp_t *prv_unary_minus_exp(subtilis_parser_t *p,
 	e = prv_priority1(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	return subtilis_exp_unary_minus(p, e, err);
+	return subtilis_type_if_unary_minus(p, e, err);
 }
 
 static subtilis_exp_t *prv_not_exp(subtilis_parser_t *p, subtilis_token_t *t,
@@ -185,7 +186,7 @@ static subtilis_exp_t *prv_not_exp(subtilis_parser_t *p, subtilis_token_t *t,
 	e = prv_priority1(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	return subtilis_exp_not(p, e, err);
+	return subtilis_type_if_not(p, e, err);
 }
 
 static subtilis_exp_t *prv_gettime(subtilis_parser_t *p, subtilis_token_t *t,
@@ -203,7 +204,7 @@ static subtilis_exp_t *prv_gettime(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	e = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+	e = subtilis_exp_new_var(SUBTILIS_TYPE_INTEGER, reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -262,7 +263,7 @@ static subtilis_exp_t *prv_real_bracketed_exp(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	return subtilis_exp_to_real(p, e, err);
+	return subtilis_type_if_to_float64(p, e, err);
 }
 
 static subtilis_exp_t *prv_real_unary_fn(subtilis_parser_t *p,
@@ -279,7 +280,7 @@ static subtilis_exp_t *prv_real_unary_fn(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	if (e->type == SUBTILIS_EXP_CONST_REAL) {
+	if (e->type == SUBTILIS_TYPE_CONST_REAL) {
 		e2 = subtilis_exp_new_real(const_fn(e->exp.ir_op.real), err);
 	} else {
 		reg = subtilis_ir_section_add_instr2(p->current, itype,
@@ -287,7 +288,7 @@ static subtilis_exp_t *prv_real_unary_fn(subtilis_parser_t *p,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		e2 = subtilis_exp_new_var(SUBTILIS_EXP_REAL, reg, err);
+		e2 = subtilis_exp_new_var(SUBTILIS_TYPE_REAL, reg, err);
 	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -312,7 +313,7 @@ static subtilis_exp_t *prv_integer_bracketed_exp(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	return subtilis_exp_to_int(p, e, err);
+	return subtilis_type_if_to_int(p, e, err);
 }
 
 static subtilis_exp_t *prv_rad(subtilis_parser_t *p, subtilis_token_t *t,
@@ -327,13 +328,13 @@ static subtilis_exp_t *prv_rad(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	if (e->type == SUBTILIS_EXP_CONST_REAL) {
+	if (e->type == SUBTILIS_TYPE_CONST_REAL) {
 		e2 = subtilis_exp_new_real(e->exp.ir_op.real * radian, err);
 	} else {
 		e3 = subtilis_exp_new_real(radian, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		e2 = subtilis_exp_mul(p, e, e3, err);
+		e2 = subtilis_type_if_mul(p, e, e3, err);
 		e = NULL;
 	}
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -378,7 +379,7 @@ static subtilis_exp_t *prv_int(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	if (e->type == SUBTILIS_EXP_CONST_REAL) {
+	if (e->type == SUBTILIS_TYPE_CONST_REAL) {
 		e2 = subtilis_exp_new_int32(floor(e->exp.ir_op.real), err);
 	} else {
 		reg = subtilis_ir_section_add_instr2(
@@ -387,7 +388,7 @@ static subtilis_exp_t *prv_int(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		e2 = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+		e2 = subtilis_exp_new_var(SUBTILIS_TYPE_INTEGER, reg, err);
 	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -573,7 +574,7 @@ static subtilis_exp_t *prv_rnd_var(subtilis_parser_t *p, subtilis_exp_t *e,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	return subtilis_exp_new_var(SUBTILIS_EXP_REAL, result.reg, err);
+	return subtilis_exp_new_var(SUBTILIS_TYPE_REAL, result.reg, err);
 
 cleanup:
 
@@ -620,11 +621,11 @@ static subtilis_exp_t *prv_rnd(subtilis_parser_t *p, subtilis_token_t *t,
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
 
-			e = subtilis_exp_to_int(p, e, err);
+			e = subtilis_type_if_to_int(p, e, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
 
-			if (e->type == SUBTILIS_EXP_CONST_INTEGER)
+			if (e->type == SUBTILIS_TYPE_CONST_INTEGER)
 				return prv_rnd_const(p, e, err);
 			return prv_rnd_var(p, e, err);
 		}
@@ -634,7 +635,7 @@ static subtilis_exp_t *prv_rnd(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e_dup = subtilis_exp_dup(e, err);
+	e_dup = subtilis_type_if_dup(e, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -674,7 +675,7 @@ static subtilis_exp_t *prv_get(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	e = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+	e = subtilis_exp_new_var(SUBTILIS_TYPE_INTEGER, reg, err);
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
@@ -708,7 +709,7 @@ static subtilis_exp_t *prv_inkey_const(subtilis_parser_t *p,
 		else
 			itype = SUBTILIS_OP_INSTR_INKEY;
 
-		e = subtilis_exp_to_var(p, e, err);
+		e = subtilis_type_if_exp_to_var(p, e, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
@@ -725,7 +726,7 @@ static subtilis_exp_t *prv_inkey_const(subtilis_parser_t *p,
 
 	subtilis_exp_delete(e);
 
-	return subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+	return subtilis_exp_new_var(SUBTILIS_TYPE_INTEGER, reg, err);
 
 cleanup:
 
@@ -779,7 +780,7 @@ static subtilis_exp_t *prv_inkey(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	if (e->type == SUBTILIS_EXP_CONST_INTEGER)
+	if (e->type == SUBTILIS_TYPE_CONST_INTEGER)
 		return prv_inkey_const(p, t, e, err);
 
 	reg = e->exp.ir_op.reg;
@@ -814,13 +815,13 @@ static subtilis_exp_t *prv_abs(subtilis_parser_t *p, subtilis_token_t *t,
 		return NULL;
 
 	switch (e->type) {
-	case SUBTILIS_EXP_CONST_INTEGER:
+	case SUBTILIS_TYPE_CONST_INTEGER:
 		e->exp.ir_op.integer = abs(e->exp.ir_op.integer);
 		break;
-	case SUBTILIS_EXP_CONST_REAL:
+	case SUBTILIS_TYPE_CONST_REAL:
 		e->exp.ir_op.real = fabs(e->exp.ir_op.real);
 		break;
-	case SUBTILIS_EXP_INTEGER:
+	case SUBTILIS_TYPE_INTEGER:
 		op2.integer = 31;
 		reg = subtilis_ir_section_add_instr(p->current,
 						    SUBTILIS_OP_INSTR_ASRI_I32,
@@ -840,14 +841,14 @@ static subtilis_exp_t *prv_abs(subtilis_parser_t *p, subtilis_token_t *t,
 			goto cleanup;
 		e->exp.ir_op.reg = reg;
 		break;
-	case SUBTILIS_EXP_REAL:
+	case SUBTILIS_TYPE_REAL:
 		reg = subtilis_ir_section_add_instr2(
 		    p->current, SUBTILIS_OP_INSTR_ABSR, e->exp.ir_op, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
 		subtilis_exp_delete(e);
-		e = subtilis_exp_new_var(SUBTILIS_EXP_REAL, reg, err);
+		e = subtilis_exp_new_var(SUBTILIS_TYPE_REAL, reg, err);
 		break;
 	default:
 		subtilis_error_set_numeric_expected(err, "", p->l->stream->name,
@@ -1045,15 +1046,15 @@ static subtilis_exp_t *prv_priority3(subtilis_parser_t *p, subtilis_token_t *t,
 		tbuf = subtilis_token_get_text(t);
 		if (t->type == SUBTILIS_TOKEN_KEYWORD) {
 			if (!strcmp(tbuf, "DIV"))
-				exp_fn = subtilis_exp_div;
+				exp_fn = subtilis_type_if_div;
 			else if (!strcmp(tbuf, "MOD"))
-				exp_fn = subtilis_exp_mod;
+				exp_fn = subtilis_type_if_mod;
 			else
 				break;
 		} else if (!strcmp(tbuf, "*")) {
-			exp_fn = subtilis_exp_mul;
+			exp_fn = subtilis_type_if_mul;
 		} else if (!strcmp(tbuf, "/")) {
-			exp_fn = subtilis_exp_divr;
+			exp_fn = subtilis_type_if_divr;
 		} else {
 			break;
 		}
@@ -1096,7 +1097,7 @@ static subtilis_exp_t *prv_priority4(subtilis_parser_t *p, subtilis_token_t *t,
 		if (!strcmp(tbuf, "+"))
 			exp_fn = subtilis_exp_add;
 		else if (!strcmp(tbuf, "-"))
-			exp_fn = subtilis_exp_sub;
+			exp_fn = subtilis_type_if_sub;
 		else
 			break;
 		subtilis_lexer_get(p->l, t, err);
@@ -1136,9 +1137,9 @@ static subtilis_exp_t *prv_priority5(subtilis_parser_t *p, subtilis_token_t *t,
 	while (t->type == SUBTILIS_TOKEN_OPERATOR) {
 		tbuf = subtilis_token_get_text(t);
 		if (!strcmp(tbuf, "="))
-			exp_fn = subtilis_exp_eq;
+			exp_fn = subtilis_type_if_eq;
 		else if (!strcmp(tbuf, "<>"))
-			exp_fn = subtilis_exp_neq;
+			exp_fn = subtilis_type_if_neq;
 		else if (!strcmp(tbuf, ">"))
 			exp_fn = subtilis_exp_gt;
 		else if (!strcmp(tbuf, "<="))
@@ -1148,11 +1149,11 @@ static subtilis_exp_t *prv_priority5(subtilis_parser_t *p, subtilis_token_t *t,
 		else if (!strcmp(tbuf, ">="))
 			exp_fn = subtilis_exp_gte;
 		else if (!strcmp(tbuf, "<<"))
-			exp_fn = subtilis_exp_lsl;
+			exp_fn = subtilis_type_if_lsl;
 		else if (!strcmp(tbuf, ">>"))
-			exp_fn = subtilis_exp_lsr;
+			exp_fn = subtilis_type_if_lsr;
 		else if (!strcmp(tbuf, ">>>"))
-			exp_fn = subtilis_exp_asr;
+			exp_fn = subtilis_type_if_asr;
 		else
 			break;
 		subtilis_lexer_get(p->l, t, err);
@@ -1194,7 +1195,7 @@ static subtilis_exp_t *prv_priority6(subtilis_parser_t *p, subtilis_token_t *t,
 		e2 = prv_priority5(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		e1 = subtilis_exp_and(p, e1, e2, err);
+		e1 = subtilis_type_if_and(p, e1, e2, err);
 		e2 = NULL;
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
@@ -1221,9 +1222,9 @@ static subtilis_exp_t *prv_priority7(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 	while (t->type == SUBTILIS_TOKEN_KEYWORD) {
 		if (t->tok.keyword.type == SUBTILIS_KEYWORD_EOR)
-			exp_fn = subtilis_exp_eor;
+			exp_fn = subtilis_type_if_eor;
 		else if (t->tok.keyword.type == SUBTILIS_KEYWORD_OR)
-			exp_fn = subtilis_exp_or;
+			exp_fn = subtilis_type_if_or;
 		else
 			break;
 		subtilis_lexer_get(p->l, t, err);
@@ -1268,10 +1269,10 @@ static subtilis_exp_t *prv_numeric_expression(subtilis_parser_t *p,
 	e = prv_priority7(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	if ((e->type != SUBTILIS_EXP_CONST_INTEGER) &&
-	    (e->type != SUBTILIS_EXP_CONST_REAL) &&
-	    (e->type != SUBTILIS_EXP_INTEGER) &&
-	    (e->type != SUBTILIS_EXP_REAL)) {
+	if ((e->type != SUBTILIS_TYPE_CONST_INTEGER) &&
+	    (e->type != SUBTILIS_TYPE_CONST_REAL) &&
+	    (e->type != SUBTILIS_TYPE_INTEGER) &&
+	    (e->type != SUBTILIS_TYPE_REAL)) {
 		subtilis_exp_delete(e);
 		return NULL;
 	}
@@ -1289,11 +1290,11 @@ static subtilis_exp_t *prv_int_var_expression(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	e = subtilis_exp_to_int(p, e, err);
+	e = subtilis_type_if_to_int(p, e, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_to_var(p, e, err);
+	e = subtilis_type_if_exp_to_var(p, e, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1329,7 +1330,7 @@ static subtilis_exp_t *prv_assignment_operator(subtilis_parser_t *p,
 	if (at == SUBTILIS_ASSIGN_TYPE_PLUS_EQUAL)
 		e = subtilis_exp_add(p, var, e, err);
 	else
-		e = subtilis_exp_sub(p, var, e, err);
+		e = subtilis_type_if_sub(p, var, e, err);
 
 	var = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1623,7 +1624,7 @@ static subtilis_exp_t *prv_bracketed_2_int_args(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	retval = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+	retval = subtilis_exp_new_var(SUBTILIS_TYPE_INTEGER, reg, err);
 
 cleanup:
 
@@ -1678,7 +1679,7 @@ static void prv_simple_plot(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	e[0] = subtilis_exp_to_var(p, e[0], err);
+	e[0] = subtilis_type_if_exp_to_var(p, e[0], err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1801,7 +1802,7 @@ static void prv_circle(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	e[0] = subtilis_exp_to_var(p, e[0], err);
+	e[0] = subtilis_type_if_exp_to_var(p, e[0], err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1817,7 +1818,7 @@ static void prv_circle(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e[2] = subtilis_exp_to_var(p, e[2], err);
+	e[2] = subtilis_type_if_exp_to_var(p, e[2], err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1843,7 +1844,7 @@ static void prv_rectangle_outline(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	e[0] = subtilis_exp_to_var(p, e[0], err);
+	e[0] = subtilis_type_if_exp_to_var(p, e[0], err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1851,7 +1852,7 @@ static void prv_rectangle_outline(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e[1] = subtilis_exp_to_var(p, e[1], err);
+	e[1] = subtilis_type_if_exp_to_var(p, e[1], err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 	;
@@ -1860,21 +1861,21 @@ static void prv_rectangle_outline(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e[4] = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, e[2]->exp.ir_op.reg,
+	e[4] = subtilis_exp_new_var(SUBTILIS_TYPE_INTEGER, e[2]->exp.ir_op.reg,
 				    err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e[4] = subtilis_exp_unary_minus(p, e[4], err);
+	e[4] = subtilis_type_if_unary_minus(p, e[4], err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e[5] = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, e[3]->exp.ir_op.reg,
+	e[5] = subtilis_exp_new_var(SUBTILIS_TYPE_INTEGER, e[3]->exp.ir_op.reg,
 				    err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e[5] = subtilis_exp_unary_minus(p, e[5], err);
+	e[5] = subtilis_type_if_unary_minus(p, e[5], err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -2147,9 +2148,9 @@ static void prv_vdu_byte(subtilis_parser_t *p, subtilis_exp_t *e,
 {
 	subtilis_op_instr_type_t itype;
 
-	if (e->type == SUBTILIS_EXP_INTEGER) {
+	if (e->type == SUBTILIS_TYPE_INTEGER) {
 		itype = SUBTILIS_OP_INSTR_VDU;
-	} else if (e->type == SUBTILIS_EXP_CONST_INTEGER) {
+	} else if (e->type == SUBTILIS_TYPE_CONST_INTEGER) {
 		itype = SUBTILIS_OP_INSTR_VDUI;
 	} else {
 		subtilis_error_set_assertion_failed(err);
@@ -2170,7 +2171,7 @@ static void prv_vdu_2bytes(subtilis_parser_t *p, subtilis_exp_t *e,
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t op2;
 
-	if (e->type == SUBTILIS_EXP_INTEGER) {
+	if (e->type == SUBTILIS_TYPE_INTEGER) {
 		op2.integer = 0xff;
 		op1.reg = subtilis_ir_section_add_instr(
 		    p->current, SUBTILIS_OP_INSTR_ANDI_I32, e->exp.ir_op, op2,
@@ -2194,7 +2195,7 @@ static void prv_vdu_2bytes(subtilis_parser_t *p, subtilis_exp_t *e,
 		    p->current, SUBTILIS_OP_INSTR_VDU, op1, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-	} else if (e->type == SUBTILIS_EXP_CONST_INTEGER) {
+	} else if (e->type == SUBTILIS_TYPE_CONST_INTEGER) {
 		op1.integer = e->exp.ir_op.integer & 0xff;
 		subtilis_ir_section_add_instr_no_reg(
 		    p->current, SUBTILIS_OP_INSTR_VDUI, e->exp.ir_op, err);
@@ -2250,7 +2251,7 @@ static void prv_vdu_brackets(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
-		e = subtilis_exp_to_int(p, e, err);
+		e = subtilis_type_if_to_int(p, e, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
@@ -2347,7 +2348,7 @@ static void prv_vdu(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
-		e = subtilis_exp_to_int(p, e, err);
+		e = subtilis_type_if_to_int(p, e, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
@@ -2417,16 +2418,16 @@ static void prv_print(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	e = subtilis_exp_to_var(p, e, err);
+	e = subtilis_type_if_exp_to_var(p, e, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
 	switch (e->type) {
-	case SUBTILIS_EXP_INTEGER:
+	case SUBTILIS_TYPE_INTEGER:
 		subtilis_ir_section_add_instr_no_reg(
 		    p->current, SUBTILIS_OP_INSTR_PRINT_I32, e->exp.ir_op, err);
 		break;
-	case SUBTILIS_EXP_REAL:
+	case SUBTILIS_TYPE_REAL:
 		if (p->caps & SUBTILIS_BACKEND_HAVE_PRINT_FP)
 			subtilis_ir_section_add_instr_no_reg(
 			    p->current, SUBTILIS_OP_INSTR_PRINT_FP,
@@ -2676,17 +2677,17 @@ static subtilis_exp_t *prv_conditional_exp(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	e = subtilis_exp_to_int(p, e, err);
+	e = subtilis_type_if_to_int(p, e, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	if (e->type == SUBTILIS_EXP_CONST_INTEGER) {
+	if (e->type == SUBTILIS_TYPE_CONST_INTEGER) {
 		reg = subtilis_ir_section_add_instr2(
 		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, e->exp.ir_op, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		cond->reg = reg;
-	} else if (e->type == SUBTILIS_EXP_INTEGER) {
+	} else if (e->type == SUBTILIS_TYPE_INTEGER) {
 		cond->reg = e->exp.ir_op.reg;
 	} else {
 		subtilis_error_set_integer_exp_expected(err, p->l->stream->name,
@@ -2945,20 +2946,20 @@ static subtilis_step_type_t prv_compute_step_type(subtilis_parser_t *p,
 						  subtilis_error_t *err)
 {
 	switch (step->type) {
-	case SUBTILIS_EXP_CONST_INTEGER:
+	case SUBTILIS_TYPE_CONST_INTEGER:
 		if (step->exp.ir_op.integer == 0)
 			subtilis_error_set_zero_step(err, p->l->stream->name,
 						     p->l->line);
 		return step->exp.ir_op.integer < 0 ? SUBTILIS_STEP_CONST_DEC
 						   : SUBTILIS_STEP_CONST_INC;
-	case SUBTILIS_EXP_CONST_REAL:
+	case SUBTILIS_TYPE_CONST_REAL:
 		if (step->exp.ir_op.real == 0.0)
 			subtilis_error_set_zero_step(err, p->l->stream->name,
 						     p->l->line);
 		return step->exp.ir_op.real < 0.0 ? SUBTILIS_STEP_CONST_DEC
 						  : SUBTILIS_STEP_CONST_INC;
-	case SUBTILIS_EXP_INTEGER:
-	case SUBTILIS_EXP_REAL:
+	case SUBTILIS_TYPE_INTEGER:
+	case SUBTILIS_TYPE_REAL:
 		return SUBTILIS_STEP_VAR;
 	default:
 		subtilis_error_set_assertion_failed(err);
@@ -3009,7 +3010,7 @@ static void prv_for_step_real_var(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	step_dup = subtilis_exp_dup(step, err);
+	step_dup = subtilis_type_if_dup(step, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -3018,16 +3019,16 @@ static void prv_for_step_real_var(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	if (var->type != SUBTILIS_EXP_REAL) {
+	if (var->type != SUBTILIS_TYPE_REAL) {
 		subtilis_error_set_assertion_failed(err);
 		goto cleanup;
 	}
 
-	var_dup = subtilis_exp_dup(var, err);
+	var_dup = subtilis_type_if_dup(var, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	to_dup = subtilis_exp_dup(to, err);
+	to_dup = subtilis_type_if_dup(to, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -3140,12 +3141,12 @@ static void prv_for_step_int_var(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	if (var->type != SUBTILIS_EXP_INTEGER) {
+	if (var->type != SUBTILIS_TYPE_INTEGER) {
 		subtilis_error_set_assertion_failed(err);
 		goto cleanup;
 	}
 
-	sub = subtilis_exp_sub(p, to, var, err);
+	sub = subtilis_type_if_sub(p, to, var, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 	var = NULL;
@@ -3157,10 +3158,10 @@ static void prv_for_step_int_var(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	eor_var = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, eor_reg, err);
+	eor_var = subtilis_exp_new_var(SUBTILIS_TYPE_INTEGER, eor_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	eor_var_dup = subtilis_exp_dup(eor_var, err);
+	eor_var_dup = subtilis_type_if_dup(eor_var, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -3183,12 +3184,13 @@ static void prv_for_step_int_var(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	top_bit = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, step_dir_reg, err);
+	top_bit =
+	    subtilis_exp_new_var(SUBTILIS_TYPE_INTEGER, step_dir_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
 	subtilis_exp_delete(conde);
-	conde = subtilis_exp_neq(p, eor_var_dup, top_bit, err);
+	conde = subtilis_type_if_neq(p, eor_var_dup, top_bit, err);
 	eor_var_dup = NULL;
 	top_bit = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -3371,7 +3373,7 @@ static void prv_for(subtilis_parser_t *p, subtilis_token_t *t,
 		/* Takes ownership of to and step */
 
 		if (step_type == SUBTILIS_STEP_VAR) {
-			step = subtilis_exp_copy_var(p, step, err);
+			step = subtilis_type_if_copy_var(p, step, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
 			if (var_type == SUBTILIS_TYPE_INTEGER)
@@ -3502,7 +3504,7 @@ static void prv_error(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	e = subtilis_exp_to_int(p, e, err);
+	e = subtilis_type_if_to_int(p, e, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		subtilis_exp_delete(e);
 		return;
@@ -3730,16 +3732,16 @@ static void prv_set_fn_retval(subtilis_parser_t *p, subtilis_exp_t *e,
 		return;
 
 	switch (e->type) {
-	case SUBTILIS_EXP_CONST_INTEGER:
+	case SUBTILIS_TYPE_CONST_INTEGER:
 		type = SUBTILIS_OP_INSTR_MOVI_I32;
 		break;
-	case SUBTILIS_EXP_INTEGER:
+	case SUBTILIS_TYPE_INTEGER:
 		type = SUBTILIS_OP_INSTR_MOV;
 		break;
-	case SUBTILIS_EXP_CONST_REAL:
+	case SUBTILIS_TYPE_CONST_REAL:
 		type = SUBTILIS_OP_INSTR_MOVI_REAL;
 		break;
-	case SUBTILIS_EXP_REAL:
+	case SUBTILIS_TYPE_REAL:
 		type = SUBTILIS_OP_INSTR_MOVFP;
 		break;
 	default:
@@ -3902,10 +3904,10 @@ static subtilis_parser_param_t *prv_call_parameters(subtilis_parser_t *p,
 
 		tbuf = subtilis_token_get_text(t);
 
-		params[num_params].type = subtilis_exp_type(e);
-		e = subtilis_exp_to_var(p, e, err);
+		e = subtilis_type_if_exp_to_var(p, e, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
+		params[num_params].type = e->type;
 		nop = subtilis_ir_section_add_nop(p->current, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;

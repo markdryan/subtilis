@@ -26,19 +26,19 @@ void subtilis_var_assign_to_reg(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_ir_operand_t op2;
 
 	switch (e->type) {
-	case SUBTILIS_EXP_CONST_INTEGER:
+	case SUBTILIS_TYPE_CONST_INTEGER:
 		instr = SUBTILIS_OP_INSTR_MOVI_I32;
 		break;
-	case SUBTILIS_EXP_INTEGER:
+	case SUBTILIS_TYPE_INTEGER:
 		instr = SUBTILIS_OP_INSTR_MOV;
 		break;
-	case SUBTILIS_EXP_CONST_REAL:
+	case SUBTILIS_TYPE_CONST_REAL:
 		instr = SUBTILIS_OP_INSTR_MOVI_REAL;
 		break;
-	case SUBTILIS_EXP_REAL:
+	case SUBTILIS_TYPE_REAL:
 		instr = SUBTILIS_OP_INSTR_MOVFP;
 		break;
-	case SUBTILIS_EXP_STRING:
+	case SUBTILIS_TYPE_STRING:
 	default:
 		subtilis_error_set_not_supported(err, tbuf, p->l->stream->name,
 						 p->l->line);
@@ -62,42 +62,45 @@ void subtilis_var_assign_to_mem(subtilis_parser_t *p, const char *tbuf,
 	subtilis_ir_operand_t op2;
 
 	switch (e->type) {
-	case SUBTILIS_EXP_CONST_INTEGER:
+	case SUBTILIS_TYPE_CONST_INTEGER:
 		reg = subtilis_ir_section_add_instr2(
 		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, e->exp.ir_op, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		subtilis_exp_delete(e);
-		e = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, reg, err);
+		e = subtilis_exp_new_var(SUBTILIS_TYPE_INTEGER, reg, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		instr = SUBTILIS_OP_INSTR_STOREO_I32;
 		break;
-	case SUBTILIS_EXP_CONST_REAL:
+	case SUBTILIS_TYPE_CONST_REAL:
 		reg = subtilis_ir_section_add_instr2(
 		    p->current, SUBTILIS_OP_INSTR_MOVI_REAL, e->exp.ir_op, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		subtilis_exp_delete(e);
-		e = subtilis_exp_new_var(SUBTILIS_EXP_REAL, reg, err);
+		e = subtilis_exp_new_var(SUBTILIS_TYPE_REAL, reg, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		instr = SUBTILIS_OP_INSTR_STOREO_REAL;
 		break;
-	case SUBTILIS_EXP_CONST_STRING:
+	case SUBTILIS_TYPE_CONST_STRING:
 		subtilis_error_set_not_supported(err, tbuf, p->l->stream->name,
 						 p->l->line);
 		goto cleanup;
-	case SUBTILIS_EXP_INTEGER:
+	case SUBTILIS_TYPE_INTEGER:
 		instr = SUBTILIS_OP_INSTR_STOREO_I32;
 		break;
-	case SUBTILIS_EXP_REAL:
+	case SUBTILIS_TYPE_REAL:
 		instr = SUBTILIS_OP_INSTR_STOREO_REAL;
 		break;
-	case SUBTILIS_EXP_STRING:
+	case SUBTILIS_TYPE_STRING:
 		subtilis_error_set_not_supported(err, tbuf, p->l->stream->name,
 						 p->l->line);
 		goto cleanup;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
 	}
 	op2.integer = loc;
 	subtilis_ir_section_add_instr_reg(p->current, instr, e->exp.ir_op, op1,
@@ -146,7 +149,7 @@ subtilis_exp_t *subtilis_var_lookup_var(subtilis_parser_t *p, const char *tbuf,
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t op2;
 	const subtilis_symbol_t *s;
-	subtilis_exp_type_t type;
+	subtilis_type_t type;
 	subtilis_op_instr_type_t itype;
 
 	op1.reg = SUBTILIS_IR_REG_LOCAL;
@@ -162,10 +165,10 @@ subtilis_exp_t *subtilis_var_lookup_var(subtilis_parser_t *p, const char *tbuf,
 	}
 
 	if (s->t == SUBTILIS_TYPE_INTEGER) {
-		type = SUBTILIS_EXP_INTEGER;
+		type = SUBTILIS_TYPE_INTEGER;
 		itype = SUBTILIS_OP_INSTR_LOADO_I32;
 	} else if (s->t == SUBTILIS_TYPE_REAL) {
-		type = SUBTILIS_EXP_REAL;
+		type = SUBTILIS_TYPE_REAL;
 		itype = SUBTILIS_OP_INSTR_LOADO_REAL;
 	} else {
 		subtilis_error_set_assertion_failed(err);
