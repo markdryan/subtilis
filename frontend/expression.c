@@ -70,10 +70,7 @@ on_error:
 void subtilis_exp_return_default_value(subtilis_parser_t *p,
 				       subtilis_error_t *err)
 {
-	subtilis_op_instr_type_t type;
 	subtilis_ir_operand_t end_label;
-	subtilis_ir_operand_t zero_value;
-	subtilis_ir_operand_t ret_reg;
 
 	end_label.label = p->current->end_label;
 	if ((p->current == p->main) ||
@@ -83,23 +80,8 @@ void subtilis_exp_return_default_value(subtilis_parser_t *p,
 		return;
 	}
 
-	switch (p->current->type->return_type) {
-	case SUBTILIS_TYPE_REAL:
-		type = SUBTILIS_OP_INSTR_MOVI_REAL;
-		zero_value.integer = 0;
-		break;
-	case SUBTILIS_TYPE_INTEGER:
-		type = SUBTILIS_OP_INSTR_MOV;
-		zero_value.real = 0.0;
-		break;
-	default:
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
-	ret_reg.reg = p->current->ret_reg;
-	subtilis_ir_section_add_instr_no_reg2(p->current, type, ret_reg,
-					      zero_value, err);
+	subtilis_type_if_zero_reg(p, p->current->type->return_type,
+				  p->current->ret_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,

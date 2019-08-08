@@ -1452,9 +1452,7 @@ static void prv_parse_locals(subtilis_parser_t *p, subtilis_token_t *t,
 			     subtilis_error_t *err)
 {
 	const char *tbuf;
-	size_t reg_num;
-	subtilis_ir_operand_t op1;
-	subtilis_type_t type;
+	subtilis_exp_t *e;
 
 	while ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
 	       (t->tok.keyword.type == SUBTILIS_KEYWORD_LOCAL)) {
@@ -1475,30 +1473,12 @@ static void prv_parse_locals(subtilis_parser_t *p, subtilis_token_t *t,
 			return;
 		}
 
-		switch (t->tok.id_type) {
-		case SUBTILIS_TYPE_INTEGER:
-			op1.integer = 0;
-			reg_num = subtilis_ir_section_add_instr2(
-			    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			type = SUBTILIS_TYPE_INTEGER;
-			break;
-		case SUBTILIS_TYPE_REAL:
-			op1.real = 0;
-			reg_num = subtilis_ir_section_add_instr2(
-			    p->current, SUBTILIS_OP_INSTR_MOVI_REAL, op1, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			type = SUBTILIS_TYPE_REAL;
-			break;
-		default:
-			subtilis_error_set_assertion_failed(err);
+		e = subtilis_type_if_zero(p, t->tok.id_type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		}
-
-		(void)subtilis_symbol_table_insert_reg(p->local_st, tbuf, type,
-						       reg_num, err);
+		(void)subtilis_symbol_table_insert_reg(
+		    p->local_st, tbuf, e->type, e->exp.ir_op.reg, err);
+		subtilis_exp_delete(e);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 

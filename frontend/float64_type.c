@@ -404,6 +404,8 @@ static subtilis_exp_t *prv_gte_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 
 subtilis_type_if subtilis_type_const_float64 = {
     .is_const = true,
+    .zero = NULL,
+    .zero_reg = NULL,
     .exp_to_var = prv_exp_to_var_const,
     .copy_var = NULL,
     .dup = prv_dup,
@@ -430,6 +432,31 @@ subtilis_type_if subtilis_type_const_float64 = {
     .lsr = NULL,
     .asr = NULL,
 };
+
+static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	size_t reg_num;
+
+	op1.real = 0;
+	reg_num = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_REAL, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	return subtilis_exp_new_var(SUBTILIS_TYPE_REAL, reg_num, err);
+}
+
+static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
+			 subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+
+	op0.reg = reg;
+	op1.real = 0.0;
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_REAL, op0, op1, err);
+}
 
 static subtilis_exp_t *prv_copy_var(subtilis_parser_t *p, subtilis_exp_t *e,
 				    subtilis_error_t *err)
@@ -764,6 +791,8 @@ static subtilis_exp_t *prv_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 
 subtilis_type_if subtilis_type_float64 = {
     .is_const = false,
+    .zero = prv_zero,
+    .zero_reg = prv_zero_reg,
     .exp_to_var = prv_returne,
     .copy_var = prv_copy_var,
     .dup = prv_dup,

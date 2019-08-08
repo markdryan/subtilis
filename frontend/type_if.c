@@ -111,6 +111,33 @@ static subtilis_exp_t *prv_call_binary_nc_logical_fn(
 	return e;
 }
 
+subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
+				      subtilis_type_t type,
+				      subtilis_error_t *err)
+{
+	subtilis_type_if_none_t fn;
+
+	fn = prv_type_map[type]->zero;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+	return fn(p, err);
+}
+
+void subtilis_type_if_zero_reg(subtilis_parser_t *p, subtilis_type_t type,
+			       size_t reg, subtilis_error_t *err)
+{
+	subtilis_type_if_reg_t fn;
+
+	fn = prv_type_map[type]->zero_reg;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(p, reg, err);
+}
+
 subtilis_exp_t *subtilis_type_if_exp_to_var(subtilis_parser_t *p,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err)
