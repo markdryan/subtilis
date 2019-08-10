@@ -18,6 +18,7 @@
 
 #include "builtins_ir.h"
 #include "globals.h"
+#include "type_if.h"
 #include "variable.h"
 
 void subtilis_builtins_ir_inkey(subtilis_ir_section_t *current,
@@ -134,7 +135,7 @@ subtilis_exp_t *subtilis_builtins_ir_basic_rnd(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_mul(p, a, e, err);
+	e = subtilis_type_if_mul(p, a, e, err);
 	a = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -165,16 +166,16 @@ subtilis_exp_t *subtilis_builtins_ir_rnd_0(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	top_bit_dup = subtilis_exp_dup(top_bit, err);
+	top_bit_dup = subtilis_type_if_dup(top_bit, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_and(p, e, top_bit, err);
+	e = subtilis_type_if_and(p, e, top_bit, err);
 	top_bit = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_divr(p, e, top_bit_dup, err);
+	e = subtilis_type_if_divr(p, e, top_bit_dup, err);
 	top_bit_dup = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -205,7 +206,7 @@ subtilis_exp_t *subtilis_builtins_ir_rnd_1(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e_dup = subtilis_exp_dup(e, err);
+	e_dup = subtilis_type_if_dup(e, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -219,7 +220,7 @@ subtilis_exp_t *subtilis_builtins_ir_rnd_1(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_and(p, e, top_bit, err);
+	e = subtilis_type_if_and(p, e, top_bit, err);
 	top_bit = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -228,7 +229,7 @@ subtilis_exp_t *subtilis_builtins_ir_rnd_1(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_divr(p, e, top_bit, err);
+	e = subtilis_type_if_divr(p, e, top_bit, err);
 	top_bit = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -260,7 +261,7 @@ subtilis_exp_t *subtilis_builtins_ir_rnd_pos(subtilis_parser_t *p, int32_t val,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	e_dup = subtilis_exp_dup(e, err);
+	e_dup = subtilis_type_if_dup(e, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -274,7 +275,7 @@ subtilis_exp_t *subtilis_builtins_ir_rnd_pos(subtilis_parser_t *p, int32_t val,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_and(p, e, top_bit, err);
+	e = subtilis_type_if_and(p, e, top_bit, err);
 	top_bit = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -283,7 +284,7 @@ subtilis_exp_t *subtilis_builtins_ir_rnd_pos(subtilis_parser_t *p, int32_t val,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_mod(p, e, m, err);
+	e = subtilis_type_if_mod(p, e, m, err);
 	m = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -313,7 +314,7 @@ subtilis_exp_t *subtilis_builtins_ir_rnd_neg(subtilis_parser_t *p, int32_t val,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	e_dup = subtilis_exp_dup(e, err);
+	e_dup = subtilis_type_if_dup(e, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -388,7 +389,7 @@ void subtilis_builtins_ir_rnd_int(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e_dup = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER, result.reg, err);
+	e_dup = subtilis_exp_new_var(SUBTILIS_TYPE_INTEGER, result.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -411,11 +412,11 @@ void subtilis_builtins_ir_rnd_int(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e_dup = subtilis_exp_dup(e, err);
+	e_dup = subtilis_type_if_dup(e, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	m = subtilis_exp_new_var(SUBTILIS_EXP_INTEGER,
+	m = subtilis_exp_new_var(SUBTILIS_TYPE_INTEGER,
 				 SUBTILIS_IR_REG_TEMP_START, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -424,12 +425,12 @@ void subtilis_builtins_ir_rnd_int(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_and(p, e, top_bit, err);
+	e = subtilis_type_if_and(p, e, top_bit, err);
 	top_bit = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_mod(p, e, m, err);
+	e = subtilis_type_if_mod(p, e, m, err);
 	m = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;

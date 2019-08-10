@@ -20,6 +20,9 @@
 
 /* clang-format off */
 static const char *const prv_fixed_type_names[] = {
+	"integer", /* SUBTILIS_TYPE_CONST_INTEGER */
+	"real",    /* SUBTILIS_TYPE_CONST_REAL */
+	"string",    /* SUBTILIS_TYPE_CONST_STRING */
 	"real",    /* SUBTILIS_TYPE_REAL */
 	"integer", /* SUBTILIS_TYPE_INTEGER */
 	"string",  /* SUBTILIS_TYPE_STRING */

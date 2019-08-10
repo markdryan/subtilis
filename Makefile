@@ -18,7 +18,10 @@ COMMON =\
 	builtins_ir.c \
 	call.c \
 	variable.c \
-	globals.c
+	globals.c \
+	type_if.c \
+	float64_type.c \
+	int32_type.c
 
 ARM =\
 	arm_core.c \
