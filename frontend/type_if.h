@@ -52,7 +52,10 @@ struct subtilis_type_if_ {
 	subtilis_type_if_binary_t add;
 	subtilis_type_if_binary_t mul;
 	subtilis_type_if_binary_t and;
-	subtilis_type_if_binary_t or ;
+	/* clang-format off */
+	subtilis_type_if_binary_t or;
+	/* clang-format on */
+
 	subtilis_type_if_unary_t not;
 	subtilis_type_if_binary_t eor;
 	subtilis_type_if_binary_t eq;

@@ -218,7 +218,6 @@ static subtilis_exp_t *prv_eq_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 static subtilis_exp_t *prv_neq_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err)
 {
-
 	/* a2 must be const */
 
 	switch (a2->type) {
@@ -402,36 +401,39 @@ static subtilis_exp_t *prv_gte_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 	return a1;
 }
 
+/* clang-format off */
 subtilis_type_if subtilis_type_const_float64 = {
-    .is_const = true,
-    .zero = NULL,
-    .zero_reg = NULL,
-    .exp_to_var = prv_exp_to_var_const,
-    .copy_var = NULL,
-    .dup = prv_dup,
-    .to_int32 = prv_to_int32_const,
-    .to_float64 = prv_returne,
-    .unary_minus = prv_unary_minus_const,
-    .add = prv_add_const,
-    .mul = prv_mul_const,
-    .and = prv_and_const,
-    .or = prv_or_const,
-    .eor = prv_eor_const,
-    .not = prv_not_const,
-    .eq = prv_eq_const,
-    .neq = prv_neq_const,
-    .sub = prv_sub_const,
-    .div = NULL,
-    .mod = NULL,
-    .divr = prv_divr_const,
-    .gt = prv_gt_const,
-    .lte = prv_lte_const,
-    .lt = prv_lt_const,
-    .gte = prv_gte_const,
-    .lsl = NULL,
-    .lsr = NULL,
-    .asr = NULL,
+	.is_const = true,
+	.zero = NULL,
+	.zero_reg = NULL,
+	.exp_to_var = prv_exp_to_var_const,
+	.copy_var = NULL,
+	.dup = prv_dup,
+	.to_int32 = prv_to_int32_const,
+	.to_float64 = prv_returne,
+	.unary_minus = prv_unary_minus_const,
+	.add = prv_add_const,
+	.mul = prv_mul_const,
+	.and = prv_and_const,
+	.or = prv_or_const,
+	.eor = prv_eor_const,
+	.not = prv_not_const,
+	.eq = prv_eq_const,
+	.neq = prv_neq_const,
+	.sub = prv_sub_const,
+	.div = NULL,
+	.mod = NULL,
+	.divr = prv_divr_const,
+	.gt = prv_gt_const,
+	.lte = prv_lte_const,
+	.lt = prv_lt_const,
+	.gte = prv_gte_const,
+	.lsl = NULL,
+	.lsr = NULL,
+	.asr = NULL,
 };
+
+/* clang-format on */
 
 static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
 {
@@ -570,10 +572,13 @@ on_error:
 	return NULL;
 }
 
+/* clang-format off */
 static subtilis_exp_t *prv_commutative_logical(
-    subtilis_parser_t *p, subtilis_exp_t *a1, subtilis_exp_t *a2,
-    subtilis_op_instr_type_t real_var_imm,
-    subtilis_op_instr_type_t real_var_var, subtilis_error_t *err)
+	subtilis_parser_t *p, subtilis_exp_t *a1, subtilis_exp_t *a2,
+	subtilis_op_instr_type_t real_var_imm,
+	subtilis_op_instr_type_t real_var_var, subtilis_error_t *err)
+
+/* clang-format on */
 {
 	size_t reg;
 
@@ -789,33 +794,36 @@ static subtilis_exp_t *prv_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       SUBTILIS_OP_INSTR_GTE_REAL, err);
 }
 
+/* clang-format off */
 subtilis_type_if subtilis_type_float64 = {
-    .is_const = false,
-    .zero = prv_zero,
-    .zero_reg = prv_zero_reg,
-    .exp_to_var = prv_returne,
-    .copy_var = prv_copy_var,
-    .dup = prv_dup,
-    .to_int32 = prv_to_int32,
-    .to_float64 = prv_returne,
-    .unary_minus = prv_unary_minus,
-    .add = prv_add,
-    .mul = prv_mul,
-    .and = prv_and,
-    .or = prv_or,
-    .eor = prv_eor,
-    .not = prv_not,
-    .eq = prv_eq,
-    .neq = prv_neq,
-    .sub = prv_sub,
-    .div = NULL,
-    .mod = NULL,
-    .divr = prv_divr,
-    .gt = prv_gt,
-    .lte = prv_lte,
-    .lt = prv_lt,
-    .gte = prv_gte,
-    .lsl = NULL,
-    .lsr = NULL,
-    .asr = NULL,
+	.is_const = false,
+	.zero = prv_zero,
+	.zero_reg = prv_zero_reg,
+	.exp_to_var = prv_returne,
+	.copy_var = prv_copy_var,
+	.dup = prv_dup,
+	.to_int32 = prv_to_int32,
+	.to_float64 = prv_returne,
+	.unary_minus = prv_unary_minus,
+	.add = prv_add,
+	.mul = prv_mul,
+	.and = prv_and,
+	.or = prv_or,
+	.eor = prv_eor,
+	.not = prv_not,
+	.eq = prv_eq,
+	.neq = prv_neq,
+	.sub = prv_sub,
+	.div = NULL,
+	.mod = NULL,
+	.divr = prv_divr,
+	.gt = prv_gt,
+	.lte = prv_lte,
+	.lt = prv_lt,
+	.gte = prv_gte,
+	.lsl = NULL,
+	.lsr = NULL,
+	.asr = NULL,
 };
+
+/* clang-format on */

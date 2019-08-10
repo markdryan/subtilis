@@ -20,16 +20,19 @@
 #include "int32_type.h"
 #include "type_if.h"
 
+/* clang-format off */
 static subtilis_type_if *prv_type_map[] = {
-    &subtilis_type_const_float64,
-    &subtilis_type_const_int32,
-    NULL,
-    &subtilis_type_float64,
-    &subtilis_type_int32,
-    NULL,
-    NULL,
-    NULL,
+	&subtilis_type_const_float64,
+	&subtilis_type_const_int32,
+	NULL,
+	&subtilis_type_float64,
+	&subtilis_type_int32,
+	NULL,
+	NULL,
+	NULL,
 };
+
+/* clang-format on */
 
 static subtilis_exp_t *prv_call_unary_fn(subtilis_parser_t *p,
 					 subtilis_exp_t *e,
@@ -92,9 +95,12 @@ prv_call_binary_nc_fn(subtilis_parser_t *p, subtilis_exp_t *a1,
 	return fn(p, a1, a2, swapped, err);
 }
 
+/* clang-format off */
 static subtilis_exp_t *prv_call_binary_nc_logical_fn(
-    subtilis_parser_t *p, subtilis_exp_t *a1, subtilis_exp_t *a2,
-    subtilis_type_if_binary_nc_t fn, bool swapped, subtilis_error_t *err)
+	subtilis_parser_t *p, subtilis_exp_t *a1, subtilis_exp_t *a2,
+	subtilis_type_if_binary_nc_t fn, bool swapped, subtilis_error_t *err)
+
+/* clang-format on */
 {
 	subtilis_exp_t *e = fn(p, a1, a2, swapped, err);
 

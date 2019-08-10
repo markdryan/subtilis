@@ -568,7 +568,6 @@ static void prv_shift_const_var(subtilis_parser_t *p, subtilis_exp_t *a1,
 static subtilis_exp_t *prv_lsl_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err)
 {
-
 	/* a2 may not be const as we don't order the arguments */
 
 	switch (a2->type) {
@@ -599,7 +598,6 @@ on_error:
 static subtilis_exp_t *prv_lsr_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err)
 {
-
 	/* a2 may not be const as we don't order the arguments */
 
 	switch (a2->type) {
@@ -631,7 +629,6 @@ on_error:
 static subtilis_exp_t *prv_asr_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err)
 {
-
 	/* a2 may not be const as we don't order the arguments */
 
 	switch (a2->type) {
@@ -659,35 +656,38 @@ on_error:
 	return NULL;
 }
 
+/* clang-format off */
 subtilis_type_if subtilis_type_const_int32 = {
-    .is_const = true,
-    .zero = NULL,
-    .zero_reg = NULL,
-    .exp_to_var = prv_exp_to_var_const,
-    .copy_var = NULL,
-    .dup = prv_dup,
-    .to_int32 = prv_to_int32,
-    .to_float64 = prv_to_float64_const,
-    .unary_minus = prv_unary_minus_const,
-    .add = prv_add_const,
-    .mul = prv_mul_const,
-    .and = prv_and_const,
-    .or = prv_or_const,
-    .eor = prv_eor_const,
-    .not = prv_not_const,
-    .eq = prv_eq_const,
-    .neq = prv_neq_const,
-    .sub = prv_sub_const,
-    .div = prv_div_const,
-    .mod = prv_mod_const,
-    .gt = prv_gt_const,
-    .lte = prv_lte_const,
-    .lt = prv_lt_const,
-    .gte = prv_gte_const,
-    .lsl = prv_lsl_const,
-    .lsr = prv_lsr_const,
-    .asr = prv_asr_const,
+	.is_const = true,
+	.zero = NULL,
+	.zero_reg = NULL,
+	.exp_to_var = prv_exp_to_var_const,
+	.copy_var = NULL,
+	.dup = prv_dup,
+	.to_int32 = prv_to_int32,
+	.to_float64 = prv_to_float64_const,
+	.unary_minus = prv_unary_minus_const,
+	.add = prv_add_const,
+	.mul = prv_mul_const,
+	.and = prv_and_const,
+	.or = prv_or_const,
+	.eor = prv_eor_const,
+	.not = prv_not_const,
+	.eq = prv_eq_const,
+	.neq = prv_neq_const,
+	.sub = prv_sub_const,
+	.div = prv_div_const,
+	.mod = prv_mod_const,
+	.gt = prv_gt_const,
+	.lte = prv_lte_const,
+	.lt = prv_lt_const,
+	.gte = prv_gte_const,
+	.lsl = prv_lsl_const,
+	.lsr = prv_lsr_const,
+	.asr = prv_asr_const,
 };
+
+/* clang-format on */
 
 static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
 {
@@ -877,11 +877,15 @@ on_error:
 	return NULL;
 }
 
+/* clang-format off */
 static subtilis_exp_t *prv_commutative_logical(
-    subtilis_parser_t *p, subtilis_exp_t *a1, subtilis_exp_t *a2,
-    subtilis_op_instr_type_t in_var_imm, subtilis_op_instr_type_t in_var_var,
-    subtilis_op_instr_type_t real_var_imm,
-    subtilis_op_instr_type_t real_var_var, subtilis_error_t *err)
+	subtilis_parser_t *p, subtilis_exp_t *a1, subtilis_exp_t *a2,
+	subtilis_op_instr_type_t in_var_imm,
+	subtilis_op_instr_type_t in_var_var,
+	subtilis_op_instr_type_t real_var_imm,
+	subtilis_op_instr_type_t real_var_var, subtilis_error_t *err)
+
+/* clang-format on */
 {
 	size_t reg;
 
@@ -1424,32 +1428,35 @@ static subtilis_exp_t *prv_asr(subtilis_parser_t *p, subtilis_exp_t *a1,
 			 SUBTILIS_OP_INSTR_ASRI_I32, err);
 }
 
+/* clang-format off */
 subtilis_type_if subtilis_type_int32 = {
-    .is_const = false,
-    .zero = prv_zero,
-    .zero_reg = prv_zero_reg,
-    .exp_to_var = prv_exp_to_var,
-    .copy_var = prv_copy_var,
-    .dup = prv_dup,
-    .to_int32 = prv_to_int32,
-    .to_float64 = prv_to_float64,
-    .unary_minus = prv_unary_minus,
-    .add = prv_add,
-    .mul = prv_mul,
-    .and = prv_and,
-    .or = prv_or,
-    .eor = prv_eor,
-    .not = prv_not,
-    .eq = prv_eq,
-    .neq = prv_neq,
-    .sub = prv_sub,
-    .div = prv_div,
-    .mod = prv_mod,
-    .gt = prv_gt,
-    .lte = prv_lte,
-    .lt = prv_lt,
-    .gte = prv_gte,
-    .lsl = prv_lsl,
-    .lsr = prv_lsr,
-    .asr = prv_asr,
+	.is_const = false,
+	.zero = prv_zero,
+	.zero_reg = prv_zero_reg,
+	.exp_to_var = prv_exp_to_var,
+	.copy_var = prv_copy_var,
+	.dup = prv_dup,
+	.to_int32 = prv_to_int32,
+	.to_float64 = prv_to_float64,
+	.unary_minus = prv_unary_minus,
+	.add = prv_add,
+	.mul = prv_mul,
+	.and = prv_and,
+	.or = prv_or,
+	.eor = prv_eor,
+	.not = prv_not,
+	.eq = prv_eq,
+	.neq = prv_neq,
+	.sub = prv_sub,
+	.div = prv_div,
+	.mod = prv_mod,
+	.gt = prv_gt,
+	.lte = prv_lte,
+	.lt = prv_lt,
+	.gte = prv_gte,
+	.lsl = prv_lsl,
+	.lsr = prv_lsr,
+	.asr = prv_asr,
 };
+
+/* clang-format on */
