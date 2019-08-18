@@ -188,7 +188,7 @@ static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 		// Reserve 12 bytes for escape condition and old handler details
 
 		subtilis_arm_add_sub_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false,
-					 dest, op2, 4, err);
+					 dest, op2, 12, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
