@@ -28,6 +28,26 @@
 #define RISCOS_ARM_GLOBAL_ESC_HANDLER (-8)
 #define RISCOS_ARM_GLOBAL_ESC_R12 (-12)
 
+/*
+ * RiscOS memory layout
+ *
+ * Memory organisation of an application under RiscOS is as follows:
+ *
+ * TOP      |------------------|-------------------------------------------
+ *          |   Gloabals       | Memory reserved for Global variables
+ * R12      |------------------|-------------------------------------------
+ *          | Escape Condition | non zero if escape has not been handled
+ * R12-4    |------------------| -------------------------------------------
+ *          |Old Escape Handler| Address of old escape handler
+ * R12-8    |------------------| -------------------------------------------
+ *          |Old Escape R12    | Value of R12 for old escape handler
+ *R13,R12-12|------------------| -------------------------------------------
+ *          |   Stack          | Stack used for function calls and locals
+ *R13-8192  |------------------| -------------------------------------------
+ *          |   Heap           | Heap, used for strings, arrays and structures
+ * 0x8000   |------------------| -------------------------------------------
+ */
+
 static void prv_add_escape_handler(subtilis_arm_section_t *arm_s,
 				   subtilis_error_t *err)
 {
