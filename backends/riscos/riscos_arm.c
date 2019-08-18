@@ -34,7 +34,7 @@
  * Memory organisation of an application under RiscOS is as follows:
  *
  * TOP      |------------------|-------------------------------------------
- *          |   Gloabals       | Memory reserved for Global variables
+ *          |   Globals        | Memory reserved for Global variables
  * R12      |------------------|-------------------------------------------
  *          | Escape Condition | non zero if escape has not been handled
  * R12-4    |------------------| -------------------------------------------
@@ -67,6 +67,8 @@ static void prv_add_escape_handler(subtilis_arm_section_t *arm_s,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	/* I'm assuming that this call can't fail. */
 
 	/* 0x7 = R0, R1, R2 */
 	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x40, 0x7, err);
@@ -158,16 +160,58 @@ static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 	subtilis_arm_reg_t dest;
 	subtilis_arm_reg_t op1;
 	subtilis_arm_reg_t op2;
+	size_t needed;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_br_instr_t *br;
+
+	needed = globals + 8192 * 2;
+	if (arm_s->handle_escapes)
+		needed += 12;
+
+	if (needed > 0xffffffff) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
 
 	/* 0x7 = R0, R1, R2 */
 	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x10, 0x7, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	// TODO we need to check that the globals are not too big
-	// for the amount of memory we have been allocated by the OS
-
 	dest = 12;
+
+	/*
+	 * Check we have enough memory for globals + escape_handler +
+	 * 8KB of stack + 8KB of heap.  At some point we'll make this
+	 * configurable.
+	 */
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 12,
+				 0x8000, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_add_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 12, 12,
+				 (uint32_t)needed, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_cmp(arm_s, SUBTILIS_ARM_INSTR_CMP,
+			     SUBTILIS_ARM_CCODE_AL, 12, 1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_GT;
+	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
+	br->target.label = arm_s->no_cleanup_label;
+
 	op1 = 1;
 
 	/*
@@ -223,6 +267,10 @@ static void prv_add_coda(subtilis_arm_section_t *arm_s, bool handle_escapes,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
+
+	subtilis_arm_section_add_label(arm_s, arm_s->no_cleanup_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	dest = 0;
 	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 0,

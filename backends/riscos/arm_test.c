@@ -69,7 +69,7 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	//	for (size_t i = 0; i < code_size; i++) {
 	//		printf("0x%x\n",code[i]);
 	///	}
-	vm = subtilis_arm_vm_new(code, code_size, 16 * 1024, &err);
+	vm = subtilis_arm_vm_new(code, code_size, 32 * 1024, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

@@ -430,6 +430,7 @@ struct subtilis_arm_section_t_ {
 	size_t *ret_sites;
 	subtilis_type_section_t *stype;
 	bool handle_escapes;
+	size_t no_cleanup_label;
 };
 
 typedef struct subtilis_arm_section_t_ subtilis_arm_section_t;

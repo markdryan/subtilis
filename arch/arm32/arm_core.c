@@ -138,6 +138,7 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 	s->locals = locals;
 	s->op_pool = pool;
 	s->handle_escapes = handle_escapes;
+	s->no_cleanup_label = s->label_counter++;
 
 	return s;
 }
