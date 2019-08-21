@@ -1089,6 +1089,146 @@ static void prv_testesc(subitlis_vm_t *vm, subtilis_buffer_t *b,
 {
 }
 
+static bool prv_ensure_heap(subitlis_vm_t *vm)
+{
+	subtilis_vm_heap_block_t *new_heap;
+	size_t new_max;
+
+	if (vm->heap_count < vm->heap_max)
+		return true;
+
+	new_max = vm->heap_max + 1024;
+	new_heap = realloc(vm->heap, sizeof(*new_heap) * new_max);
+	if (!new_heap)
+		return false;
+	memset(new_heap + vm->heap_max * sizeof(*new_heap), 0,
+	       sizeof(*new_heap) * new_max);
+	vm->heap = new_heap;
+	vm->heap_max = new_max;
+	return true;
+}
+
+static void prv_check_heap(subitlis_vm_t *vm, subtilis_error_t *err)
+{
+	size_t i;
+
+	for (i = 0; i < vm->heap_count; i++)
+		if (vm->heap[i].count > 0) {
+			printf("Handle %zu count %zu still allocated\n", i,
+			       vm->heap[i].count);
+			subtilis_error_set_assertion_failed(err);
+		}
+}
+
+static void prv_alloc(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		      subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	void *buf;
+	size_t i;
+	size_t to_alloc = vm->regs[ops[1].reg];
+	int32_t base = vm->regs[SUBTILIS_IR_REG_GLOBAL];
+
+	for (i = 0; i < vm->heap_count && vm->heap[i].count != 0; i++)
+		;
+	if (i == vm->heap_count) {
+		if (!prv_ensure_heap(vm)) {
+			prv_sete(vm, b, ops, err);
+			vm->memory[base + vm->s->error_offset] =
+			    SUBTILIS_ERROR_CODE_OOM;
+			return;
+		}
+	}
+
+	buf = malloc(to_alloc);
+	if (!buf) {
+		prv_sete(vm, b, ops, err);
+		vm->memory[base + vm->s->error_offset] =
+		    SUBTILIS_ERROR_CODE_OOM;
+		return;
+	}
+	vm->heap[i].count = 1;
+	vm->heap[i].buf = buf;
+	vm->regs[ops[0].reg] = i;
+	if (i == vm->heap_count)
+		vm->heap_count++;
+}
+
+static void prv_realloc(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	void *new_ptr;
+	size_t block = vm->regs[ops[0].reg];
+	size_t size = vm->regs[ops[1].reg];
+	int32_t base = vm->regs[SUBTILIS_IR_REG_GLOBAL];
+
+	if (block >= vm->heap_count) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (vm->heap[block].count == 0) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	new_ptr = realloc(vm->heap[block].buf, size);
+	if (!new_ptr) {
+		prv_sete(vm, b, ops, err);
+		vm->memory[base + vm->s->error_offset] =
+		    SUBTILIS_ERROR_CODE_OOM;
+		return;
+	}
+
+	vm->heap[block].buf = new_ptr;
+
+	/*
+	 * The handle is never going to change even if the memory moves so
+	 * r2 will always be equal to r0.
+	 */
+
+	vm->regs[ops[2].reg] = vm->regs[ops[0].reg];
+}
+
+static void prv_ref(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	size_t block = vm->regs[ops[0].reg];
+
+	if (block >= vm->heap_count) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (vm->heap[block].count == 0) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	vm->heap[block].count++;
+}
+
+static void prv_deref(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		      subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	size_t block = vm->regs[ops[0].reg];
+
+	if (block >= vm->heap_count) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (vm->heap[block].count == 0) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	vm->heap[block].count--;
+	if (vm->heap[block].count == 0) {
+		free(vm->heap[block].buf);
+		vm->heap[block].buf = NULL;
+	}
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1207,6 +1347,10 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_cleare,                          /* SUBTILIS_OP_INSTR_CLEARE */
 	prv_teste,                           /* SUBTILIS_OP_INSTR_TESTE */
 	prv_testesc,                         /* SUBTILIS_OP_INSTR_TESTESC */
+	prv_alloc,                           /* SUBTILIS_OP_INSTR_ALLOC */
+	prv_realloc,                         /* SUBTILIS_OP_INSTR_REALLOC */
+	prv_ref,                             /* SUBTILIS_OP_INSTR_REF */
+	prv_deref,                           /* SUBTILIS_OP_INSTR_REF */
 };
 
 /* clang-format on */
@@ -1247,6 +1391,7 @@ void subitlis_vm_run(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
+	prv_check_heap(vm, err);
 }
 
 void subitlis_vm_delete(subitlis_vm_t *vm)

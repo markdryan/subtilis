@@ -239,6 +239,10 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"sete\n", subtilis_arm_gen_sete},
 	{"cleare\n", subtilis_arm_gen_cleare},
 	{"testesc\n", subtilis_riscos_arm_testesc},
+	{"alloc *, *\n", subtilis_riscos_arm_alloc},
+	{"realloc *, *, *\n", subtilis_riscos_arm_realloc},
+	{"ref *\n", subtilis_riscos_arm_ref},
+	{"deref *\n", subtilis_riscos_arm_deref},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

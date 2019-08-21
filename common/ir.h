@@ -1314,6 +1314,63 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_TESTESC,
+
+	/*
+	 *
+	 * alloc r0, r1
+	 *
+	 * Attempts to allocate the number of bytes stored in r1 on the heap.
+	 * A pointer to the new memory is stored returned in r0 on success.
+	 * The reference count of the block is set to 1.
+	 * If an error occurs the error flag is set and an error is written
+	 * into the error offsets for the current section.
+	 */
+
+	SUBTILIS_OP_INSTR_ALLOC,
+
+	/*
+	 *
+	 * realloc r0, r1, r2
+	 *
+	 * Attempts to increase the size of the block of memory pointed by r0
+	 * so that it contains at least r1 bytes.  If r1 is less than the
+	 * current size of the memory block this instruction does nothing.  If
+	 * the memory block cannot be resized, a new memory block is allocated
+	 * with at least r1 bytes, and the contents of the block pointed to r0
+	 * are copied into the new memory location.  A deref is performed on
+	 * the memory block pointed to by r0, and this memory will be freed
+	 * if its reference count falls to zero.  The reference count of the
+	 * new memory block are set to 1.
+	 *
+	 * Unless there is an error, r2 always points to the resized memory
+	 * block on exit.  r2 and r0 may be equal.  They will be different if
+
+	 * If an error occurs the error flag is set and an error is written
+	 * into the error offsets for the current section.
+	 */
+
+	SUBTILIS_OP_INSTR_REALLOC,
+
+	/*
+	 *
+	 * ref r0
+	 *
+	 * Increases the reference count of the block of memory pointed to by
+	 * r0.
+	 */
+
+	SUBTILIS_OP_INSTR_REF,
+
+	/*
+	 *
+	 * deref r0
+	 *
+	 * Decreases the reference count of the block of memory pointed to by
+	 * r0.  If the reference count drops to zero the memory is returned to
+	 * the heap.
+	 */
+
+	SUBTILIS_OP_INSTR_DEREF,
 } subtilis_op_instr_type_t;
 
 typedef enum {

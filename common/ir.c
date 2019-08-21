@@ -172,6 +172,10 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "cleare", SUBTILIS_OP_CLASS_NONE },
 	{ "teste", SUBTILIS_OP_CLASS_REG },
 	{ "testesc", SUBTILIS_OP_CLASS_NONE },
+	{ "alloc", SUBTILIS_OP_CLASS_REG_REG },
+	{ "realloc", SUBTILIS_OP_CLASS_REG_REG_REG },
+	{ "ref", SUBTILIS_OP_CLASS_REG },
+	{ "deref", SUBTILIS_OP_CLASS_REG },
 };
 
 /*
