@@ -23,6 +23,17 @@
 #include "../common/ir.h"
 #include "symbol_table.h"
 
+/*
+ * TODO: We need this as we only have 32 bit registers.
+ */
+
+struct subtilis_vm_heap_block_t_ {
+	size_t count;
+	void *buf;
+};
+
+typedef struct subtilis_vm_heap_block_t_ subtilis_vm_heap_block_t;
+
 struct subitlis_vm_t_ {
 	/* TODO: This type should be configurable to allow for 64 bit regs */
 	int32_t *regs;
@@ -42,6 +53,9 @@ struct subitlis_vm_t_ {
 	size_t top;
 	bool quit_flag;
 	bool error_flag;
+	subtilis_vm_heap_block_t *heap;
+	size_t heap_count;
+	size_t heap_max;
 };
 
 typedef struct subitlis_vm_t_ subitlis_vm_t;

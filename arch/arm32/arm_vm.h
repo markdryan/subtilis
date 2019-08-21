@@ -30,12 +30,22 @@ struct subtilis_arm_vm_freg_t_ {
 
 typedef struct subtilis_arm_vm_freg_t_ subtilis_arm_vm_freg_t;
 
+typedef struct subtilis_arm_free_block_t_ subtilis_arm_free_block_t;
+
+struct subtilis_arm_free_block_t_ {
+	uint32_t start;
+	uint32_t size;
+	subtilis_arm_free_block_t *next;
+};
+
 struct subtilis_arm_vm_t_ {
 	int32_t regs[16];
 	subtilis_arm_vm_freg_t fregs[8];
 	uint32_t fpa_status;
 	uint8_t *memory;
 	size_t mem_size;
+	size_t stack_size;
+	size_t heap_size;
 	size_t code_size;
 	size_t op_len;
 	bool negative_flag;
@@ -44,6 +54,8 @@ struct subtilis_arm_vm_t_ {
 	bool overflow_flag;
 	bool quit;
 	bool reverse_fpa_consts;
+	subtilis_arm_free_block_t *free_list;
+	subtilis_arm_free_block_t *used_list;
 };
 
 typedef struct subtilis_arm_vm_t_ subtilis_arm_vm_t;
