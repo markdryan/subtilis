@@ -815,10 +815,7 @@ static size_t prv_ret_gen(subitlis_vm_t *vm, subtilis_type_t call_type,
 static void prv_ret(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	subtilis_type_t type;
-
-	type.type = SUBTILIS_TYPE_VOID;
-	(void)prv_ret_gen(vm, type, b, ops, err);
+	(void)prv_ret_gen(vm, subtilis_type_void, b, ops, err);
 }
 
 static void prv_reti32(subitlis_vm_t *vm, subtilis_buffer_t *b,
@@ -826,12 +823,10 @@ static void prv_reti32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 {
 	size_t reg;
 	int32_t val;
-	subtilis_type_t type;
 
-	type.type = SUBTILIS_TYPE_INTEGER;
 	val = vm->regs[ops[0].reg];
 
-	reg = prv_ret_gen(vm, type, b, ops, err);
+	reg = prv_ret_gen(vm, subtilis_type_integer, b, ops, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -842,10 +837,8 @@ static void prv_retii32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	size_t reg;
-	subtilis_type_t type;
 
-	type.type = SUBTILIS_TYPE_INTEGER;
-	reg = prv_ret_gen(vm, type, b, ops, err);
+	reg = prv_ret_gen(vm, subtilis_type_integer, b, ops, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -857,13 +850,10 @@ static void prv_retr(subitlis_vm_t *vm, subtilis_buffer_t *b,
 {
 	size_t reg;
 	double val;
-	subtilis_type_t type;
-
-	type.type = SUBTILIS_TYPE_REAL;
 
 	val = vm->fregs[ops[0].reg];
 
-	reg = prv_ret_gen(vm, type, b, ops, err);
+	reg = prv_ret_gen(vm, subtilis_type_real, b, ops, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -874,11 +864,8 @@ static void prv_retir(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		      subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	size_t reg;
-	subtilis_type_t type;
 
-	type.type = SUBTILIS_TYPE_REAL;
-
-	reg = prv_ret_gen(vm, type, b, ops, err);
+	reg = prv_ret_gen(vm, subtilis_type_real, b, ops, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1374,23 +1361,19 @@ void subitlis_vm_run(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	subtilis_ir_operand_t *ops;
 	subtilis_vm_op_fn fn;
 	subtilis_op_instr_type_t itype;
-	subtilis_type_t type;
 
 	for (vm->pc = 0; vm->pc < vm->s->len; vm->pc++) {
 		if (!vm->s->ops[vm->pc])
 			continue;
 		if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_CALL) {
-			type.type = SUBTILIS_TYPE_VOID;
-			prv_call(vm, b, type, &vm->s->ops[vm->pc]->op.call,
-				 err);
+			prv_call(vm, b, subtilis_type_void,
+				 &vm->s->ops[vm->pc]->op.call, err);
 		} else if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_CALLI32) {
-			type.type = SUBTILIS_TYPE_INTEGER;
-			prv_call(vm, b, type, &vm->s->ops[vm->pc]->op.call,
-				 err);
+			prv_call(vm, b, subtilis_type_integer,
+				 &vm->s->ops[vm->pc]->op.call, err);
 		} else if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_CALLREAL) {
-			type.type = SUBTILIS_TYPE_REAL;
-			prv_call(vm, b, type, &vm->s->ops[vm->pc]->op.call,
-				 err);
+			prv_call(vm, b, subtilis_type_real,
+				 &vm->s->ops[vm->pc]->op.call, err);
 		} else if (vm->s->ops[vm->pc]->type != SUBTILIS_OP_INSTR) {
 			continue;
 		} else {

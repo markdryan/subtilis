@@ -57,4 +57,12 @@ const char *subtilis_type_name(subtilis_type_t typ);
 subtilis_type_section_t *
 subtilis_type_section_dup(subtilis_type_section_t *stype);
 
+extern const subtilis_type_t subtilis_type_const_real;
+extern const subtilis_type_t subtilis_type_const_integer;
+extern const subtilis_type_t subtilis_type_const_string;
+extern const subtilis_type_t subtilis_type_real;
+extern const subtilis_type_t subtilis_type_integer;
+extern const subtilis_type_t subtilis_type_string;
+extern const subtilis_type_t subtilis_type_void;
+
 #endif

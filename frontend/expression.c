@@ -309,19 +309,13 @@ subtilis_exp_t *subtilis_exp_new_var(subtilis_type_t type, unsigned int reg,
 subtilis_exp_t *subtilis_exp_new_int32_var(unsigned int reg,
 					   subtilis_error_t *err)
 {
-	subtilis_type_t type;
-
-	type.type = SUBTILIS_TYPE_INTEGER;
-	return subtilis_exp_new_var(type, reg, err);
+	return subtilis_exp_new_var(subtilis_type_integer, reg, err);
 }
 
 subtilis_exp_t *subtilis_exp_new_real_var(unsigned int reg,
 					  subtilis_error_t *err)
 {
-	subtilis_type_t type;
-
-	type.type = SUBTILIS_TYPE_REAL;
-	return subtilis_exp_new_var(type, reg, err);
+	return subtilis_exp_new_var(subtilis_type_real, reg, err);
 }
 
 subtilis_exp_t *subtilis_exp_new_int32(int32_t integer, subtilis_error_t *err)

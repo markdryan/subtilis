@@ -140,18 +140,12 @@ static int prv_test_max_id(subtilis_lexer_t *l, subtilis_token_t *t,
 
 static int prv_check_max_int_var(subtilis_lexer_t *l, subtilis_token_t *t)
 {
-	subtilis_type_t type;
-
-	type.type = SUBTILIS_TYPE_INTEGER;
-	return prv_test_max_id(l, t, type);
+	return prv_test_max_id(l, t, subtilis_type_integer);
 }
 
 static int prv_check_max_str_var(subtilis_lexer_t *l, subtilis_token_t *t)
 {
-	subtilis_type_t type;
-
-	type.type = SUBTILIS_TYPE_STRING;
-	return prv_test_max_id(l, t, type);
+	return prv_test_max_id(l, t, subtilis_type_string);
 }
 
 static int prv_check_max_real_var(subtilis_lexer_t *l, subtilis_token_t *t)
@@ -840,15 +834,13 @@ static int prv_check_vars(subtilis_lexer_t *l, subtilis_token_t *t,
 
 static int prv_check_real_vars(subtilis_lexer_t *l, subtilis_token_t *t)
 {
-	subtilis_type_t type;
-
-	type.type = SUBTILIS_TYPE_REAL;
 	const char *const expected[] = {
 	    "The",   "quick",	  "brown",     "fox",
 	    "jumps", "over",	   "the",       "lazy",
 	    "dog",   "floating_point", "PROcedure", "index001of2"};
-	return prv_check_vars(
-	    l, t, expected, sizeof(expected) / sizeof(const char *const), type);
+	return prv_check_vars(l, t, expected,
+			      sizeof(expected) / sizeof(const char *const),
+			      subtilis_type_real);
 }
 
 static int prv_test_real_vars(void)
@@ -869,15 +861,14 @@ static int prv_test_real_vars(void)
 
 static int prv_check_int_vars(subtilis_lexer_t *l, subtilis_token_t *t)
 {
-	subtilis_type_t type;
 	const char *const expected[] = {
 	    "The%",   "quick%",		 "brown%",     "fox%",
 	    "jumps%", "over%",		 "the%",       "lazy%",
 	    "dog%",   "floating_point%", "PROcedure%", "index001of2%"};
 
-	type.type = SUBTILIS_TYPE_INTEGER;
-	return prv_check_vars(
-	    l, t, expected, sizeof(expected) / sizeof(const char *const), type);
+	return prv_check_vars(l, t, expected,
+			      sizeof(expected) / sizeof(const char *const),
+			      subtilis_type_integer);
 }
 
 static int prv_test_int_vars(void)
@@ -898,15 +889,14 @@ static int prv_test_int_vars(void)
 
 static int prv_check_str_vars(subtilis_lexer_t *l, subtilis_token_t *t)
 {
-	subtilis_type_t type;
 	const char *const expected[] = {
 	    "The$",   "quick$",		 "brown$",     "fox$",
 	    "jumps$", "over$",		 "the$",       "lazy$",
 	    "dog$",   "floating_point$", "PROcedure$", "index001of2$"};
 
-	type.type = SUBTILIS_TYPE_STRING;
-	return prv_check_vars(
-	    l, t, expected, sizeof(expected) / sizeof(const char *const), type);
+	return prv_check_vars(l, t, expected,
+			      sizeof(expected) / sizeof(const char *const),
+			      subtilis_type_string);
 }
 
 static int prv_test_str_vars(void)

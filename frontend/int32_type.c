@@ -273,7 +273,6 @@ static size_t prv_div_mod_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	size_t err_reg;
 	subtilis_ir_operand_t div_mod;
 	subtilis_ir_operand_t err_offset;
-	subtilis_type_t int_type;
 	static const char idiv[] = "_idiv";
 	char *name = NULL;
 
@@ -322,9 +321,8 @@ static size_t prv_div_mod_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	args[2].reg = div_flag;
 	args[3].type = SUBTILIS_IR_REG_TYPE_INTEGER;
 	args[3].reg = err_reg;
-	int_type.type = SUBTILIS_TYPE_INTEGER;
 	e = subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_IDIV, NULL, args,
-				  int_type, 4, err);
+				  subtilis_type_integer, 4, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 	res = e->exp.ir_op.reg;
@@ -836,9 +834,7 @@ static subtilis_exp_t *prv_commutative(subtilis_parser_t *p, subtilis_exp_t *a1,
 				       subtilis_error_t *err)
 {
 	size_t reg;
-	subtilis_type_t type;
 
-	type.type = SUBTILIS_TYPE_REAL;
 	switch (a2->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		reg = subtilis_ir_section_add_instr(
@@ -848,7 +844,8 @@ static subtilis_exp_t *prv_commutative(subtilis_parser_t *p, subtilis_exp_t *a1,
 		a1->exp.ir_op.reg = reg;
 		break;
 	case SUBTILIS_TYPE_CONST_REAL:
-		prv_commutative_const_real(p, a1, a2, real_var_imm, type, err);
+		prv_commutative_const_real(p, a1, a2, real_var_imm,
+					   subtilis_type_real, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 		break;
@@ -860,7 +857,8 @@ static subtilis_exp_t *prv_commutative(subtilis_parser_t *p, subtilis_exp_t *a1,
 		a1->exp.ir_op.reg = reg;
 		break;
 	case SUBTILIS_TYPE_REAL:
-		prv_commutative_real(p, a1, a2, real_var_var, type, err);
+		prv_commutative_real(p, a1, a2, real_var_var,
+				     subtilis_type_real, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 		break;
@@ -890,9 +888,6 @@ static subtilis_exp_t *prv_commutative_logical(
 /* clang-format on */
 {
 	size_t reg;
-	subtilis_type_t type;
-
-	type.type = SUBTILIS_TYPE_INTEGER;
 
 	switch (a2->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
@@ -903,7 +898,8 @@ static subtilis_exp_t *prv_commutative_logical(
 		a1->exp.ir_op.reg = reg;
 		break;
 	case SUBTILIS_TYPE_CONST_REAL:
-		prv_commutative_const_real(p, a1, a2, real_var_imm, type, err);
+		prv_commutative_const_real(p, a1, a2, real_var_imm,
+					   subtilis_type_integer, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 		break;
@@ -915,7 +911,8 @@ static subtilis_exp_t *prv_commutative_logical(
 		a1->exp.ir_op.reg = reg;
 		break;
 	case SUBTILIS_TYPE_REAL:
-		prv_commutative_real(p, a1, a2, real_var_var, type, err);
+		prv_commutative_real(p, a1, a2, real_var_var,
+				     subtilis_type_integer, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 		break;

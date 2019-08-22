@@ -18,6 +18,21 @@
 
 #include "type.h"
 
+const subtilis_type_t subtilis_type_const_real = {SUBTILIS_TYPE_CONST_REAL};
+
+/* clang-format off */
+const subtilis_type_t subtilis_type_const_integer = {
+	SUBTILIS_TYPE_CONST_INTEGER
+};
+
+/* clang-format on */
+
+const subtilis_type_t subtilis_type_const_string = {SUBTILIS_TYPE_CONST_STRING};
+const subtilis_type_t subtilis_type_real = {SUBTILIS_TYPE_REAL};
+const subtilis_type_t subtilis_type_integer = {SUBTILIS_TYPE_INTEGER};
+const subtilis_type_t subtilis_type_string = {SUBTILIS_TYPE_STRING};
+const subtilis_type_t subtilis_type_void = {SUBTILIS_TYPE_VOID};
+
 /* clang-format off */
 static const char *const prv_fixed_type_names[] = {
 	"integer", /* SUBTILIS_TYPE_CONST_INTEGER */
