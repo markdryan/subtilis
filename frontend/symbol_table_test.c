@@ -92,6 +92,7 @@ static int prv_test(void)
 	int retval = 1;
 	subtilis_error_t err;
 	subtilis_token_t *t;
+	subtilis_type_t type;
 
 	printf("symbol_table_test");
 
@@ -111,7 +112,8 @@ static int prv_test(void)
 		goto on_error;
 	}
 
-	retval = prv_test_type(st, t, SUBTILIS_TYPE_REAL, 8, &err);
+	type.type = SUBTILIS_TYPE_REAL;
+	retval = prv_test_type(st, t, type, 8, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);
 		goto on_error;

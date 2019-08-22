@@ -24,8 +24,11 @@ static subtilis_arm_section_t *prv_create_section(subtilis_arm_op_pool_t *pool,
 	subtilis_arm_reg_t op1;
 	subtilis_arm_reg_t op2;
 	subtilis_type_section_t *stype = NULL;
+	subtilis_type_t type;
 
-	stype = subtilis_type_section_new(SUBTILIS_TYPE_VOID, 0, NULL, err);
+	type.type = SUBTILIS_TYPE_VOID;
+
+	stype = subtilis_type_section_new(type, 0, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 

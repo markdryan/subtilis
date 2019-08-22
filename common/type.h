@@ -28,7 +28,13 @@ typedef enum {
 	SUBTILIS_TYPE_STRING,
 	SUBTILIS_TYPE_VOID,
 	SUBTILIS_TYPE_MAX,
-} subtilis_type_t;
+} subtilis_type_type_t;
+
+struct subtilis_type_t_ {
+	subtilis_type_type_t type;
+};
+
+typedef struct subtilis_type_t_ subtilis_type_t;
 
 struct subtilis_type_section_t_ {
 	subtilis_type_t return_type;

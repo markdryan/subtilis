@@ -319,6 +319,7 @@ static int prv_test_encode(void)
 	subtilis_arm_prog_t *arm_p = NULL;
 	uint32_t *code = NULL;
 	subtilis_type_section_t *stype = NULL;
+	subtilis_type_t type;
 
 	printf("arm_test_encode");
 
@@ -335,7 +336,8 @@ static int prv_test_encode(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	stype = subtilis_type_section_new(SUBTILIS_TYPE_VOID, 0, NULL, &err);
+	type.type = SUBTILIS_TYPE_VOID;
+	stype = subtilis_type_section_new(type, 0, NULL, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

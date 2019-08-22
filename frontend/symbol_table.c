@@ -70,7 +70,7 @@ static subtilis_symbol_t *prv_symbol_new(size_t loc, subtilis_type_t id_type,
 	// pointers are 32 bit which they may not be.  We also need to
 	// add support for other integer types.
 
-	switch (id_type) {
+	switch (id_type.type) {
 	case SUBTILIS_TYPE_REAL:
 		sym->size = 8;
 		break;

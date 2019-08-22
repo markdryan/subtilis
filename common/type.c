@@ -52,7 +52,7 @@ subtilis_type_section_t *subtilis_type_section_new(subtilis_type_t rtype,
 	stype->fp_regs = 0;
 
 	for (i = 0; i < num_parameters; i++) {
-		if (parameters[i] == SUBTILIS_TYPE_INTEGER)
+		if (parameters[i].type == SUBTILIS_TYPE_INTEGER)
 			stype->int_regs++;
 		else
 			stype->fp_regs++;
@@ -77,7 +77,7 @@ void subtilis_type_section_delete(subtilis_type_section_t *stype)
 
 const char *subtilis_type_name(subtilis_type_t typ)
 {
-	size_t index = (size_t)typ;
+	size_t index = (size_t)typ.type;
 
 	if (index < SUBTILIS_TYPE_MAX)
 		return prv_fixed_type_names[index];

@@ -20,8 +20,8 @@
 
 /* clang-format off */
 const subtilis_builtin_t subtilis_builtin_list[] = {
-	{"_idvi", SUBTILIS_BUILTINS_IDIV, SUBTILIS_TYPE_INTEGER, 2,
-	 { SUBTILIS_TYPE_INTEGER, SUBTILIS_TYPE_INTEGER } },
+	{"_idvi", SUBTILIS_BUILTINS_IDIV, { SUBTILIS_TYPE_INTEGER }, 2,
+	 { {SUBTILIS_TYPE_INTEGER}, {SUBTILIS_TYPE_INTEGER} } },
 };
 
 /* clang-format on */

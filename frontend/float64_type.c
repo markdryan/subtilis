@@ -33,7 +33,7 @@ static subtilis_exp_t *prv_exp_to_var_const(subtilis_parser_t *p,
 	    p->current, SUBTILIS_OP_INSTR_MOVI_REAL, e->exp.ir_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
-	e2 = subtilis_exp_new_var(SUBTILIS_TYPE_REAL, reg, err);
+	e2 = subtilis_exp_new_real_var(reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 	subtilis_exp_delete(e);
@@ -55,7 +55,7 @@ static subtilis_exp_t *prv_to_int32_const(subtilis_parser_t *p,
 					  subtilis_exp_t *e,
 					  subtilis_error_t *err)
 {
-	e->type = SUBTILIS_TYPE_CONST_INTEGER;
+	e->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 	e->exp.ir_op.integer = (int32_t)e->exp.ir_op.real;
 	return e;
 }
@@ -73,11 +73,11 @@ static subtilis_exp_t *prv_add_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 {
 	/* a2 must be const */
 
-	switch (a2->type) {
+	switch (a2->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		a1->exp.ir_op.real =
 		    ((double)a2->exp.ir_op.integer) + a1->exp.ir_op.real;
-		a1->type = SUBTILIS_TYPE_CONST_REAL;
+		a1->type.type = SUBTILIS_TYPE_CONST_REAL;
 		break;
 	case SUBTILIS_TYPE_CONST_REAL:
 		a1->exp.ir_op.real += a2->exp.ir_op.real;
@@ -99,11 +99,11 @@ static subtilis_exp_t *prv_mul_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 {
 	/* a2 must be const */
 
-	switch (a2->type) {
+	switch (a2->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		a1->exp.ir_op.real =
 		    ((double)a2->exp.ir_op.integer) * a1->exp.ir_op.real;
-		a1->type = SUBTILIS_TYPE_CONST_REAL;
+		a1->type.type = SUBTILIS_TYPE_CONST_REAL;
 		break;
 	case SUBTILIS_TYPE_CONST_REAL:
 		a1->exp.ir_op.real *= a2->exp.ir_op.real;
@@ -181,7 +181,7 @@ static subtilis_exp_t *prv_eor_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 static subtilis_exp_t *prv_not_const(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err)
 {
-	e->type = SUBTILIS_TYPE_CONST_INTEGER;
+	e->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 	e->exp.ir_op.integer = ~(int32_t)e->exp.ir_op.real;
 	return e;
 }
@@ -191,17 +191,17 @@ static subtilis_exp_t *prv_eq_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 {
 	/* a2 must be const */
 
-	switch (a2->type) {
+	switch (a2->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		a1->exp.ir_op.integer =
 		    ((double)a1->exp.ir_op.integer) == a2->exp.ir_op.real ? -1
 									  : 0;
-		a1->type = SUBTILIS_TYPE_CONST_INTEGER;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 		break;
 	case SUBTILIS_TYPE_CONST_REAL:
 		a1->exp.ir_op.integer =
 		    a1->exp.ir_op.real == a2->exp.ir_op.real ? -1 : 0;
-		a1->type = SUBTILIS_TYPE_CONST_INTEGER;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 		break;
 	default:
 		subtilis_exp_delete(a1);
@@ -220,17 +220,17 @@ static subtilis_exp_t *prv_neq_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 {
 	/* a2 must be const */
 
-	switch (a2->type) {
+	switch (a2->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		a1->exp.ir_op.integer =
 		    ((double)a1->exp.ir_op.integer) != a2->exp.ir_op.real ? -1
 									  : 0;
-		a1->type = SUBTILIS_TYPE_CONST_INTEGER;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 		break;
 	case SUBTILIS_TYPE_CONST_REAL:
 		a1->exp.ir_op.integer =
 		    a1->exp.ir_op.real != a2->exp.ir_op.real ? -1 : 0;
-		a1->type = SUBTILIS_TYPE_CONST_INTEGER;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 		break;
 	default:
 		subtilis_exp_delete(a1);
@@ -250,7 +250,7 @@ static subtilis_exp_t *prv_sub_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 {
 	/* a2 must be const */
 
-	switch (a2->type) {
+	switch (a2->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		a1->exp.ir_op.real =
 		    a1->exp.ir_op.real - ((double)a2->exp.ir_op.integer);
@@ -287,17 +287,17 @@ static subtilis_exp_t *prv_gt_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 {
 	/* a2 must be const */
 
-	switch (a2->type) {
+	switch (a2->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		a1->exp.ir_op.integer =
 		    a1->exp.ir_op.real > ((double)a2->exp.ir_op.integer) ? -1
 									 : 0;
-		a1->type = SUBTILIS_TYPE_CONST_INTEGER;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 		break;
 	case SUBTILIS_TYPE_CONST_REAL:
 		a1->exp.ir_op.integer =
 		    a1->exp.ir_op.real > a2->exp.ir_op.real ? -1 : 0;
-		a1->type = SUBTILIS_TYPE_CONST_INTEGER;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 		break;
 	default:
 		subtilis_exp_delete(a1);
@@ -317,17 +317,17 @@ static subtilis_exp_t *prv_lte_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 {
 	/* a2 must be const */
 
-	switch (a2->type) {
+	switch (a2->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		a1->exp.ir_op.integer =
 		    a1->exp.ir_op.real <= ((double)a2->exp.ir_op.integer) ? -1
 									  : 0;
-		a1->type = SUBTILIS_TYPE_CONST_INTEGER;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 		break;
 	case SUBTILIS_TYPE_CONST_REAL:
 		a1->exp.ir_op.integer =
 		    a1->exp.ir_op.real <= a2->exp.ir_op.real ? -1 : 0;
-		a1->type = SUBTILIS_TYPE_CONST_INTEGER;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 		break;
 	default:
 		subtilis_exp_delete(a1);
@@ -347,17 +347,17 @@ static subtilis_exp_t *prv_lt_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 {
 	/* a2 must be const */
 
-	switch (a2->type) {
+	switch (a2->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		a1->exp.ir_op.integer =
 		    a1->exp.ir_op.real < ((double)a2->exp.ir_op.integer) ? -1
 									 : 0;
-		a1->type = SUBTILIS_TYPE_CONST_INTEGER;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 		break;
 	case SUBTILIS_TYPE_CONST_REAL:
 		a1->exp.ir_op.integer =
 		    a1->exp.ir_op.real < a2->exp.ir_op.real ? -1 : 0;
-		a1->type = SUBTILIS_TYPE_CONST_INTEGER;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 		break;
 	default:
 		subtilis_exp_delete(a1);
@@ -377,17 +377,17 @@ static subtilis_exp_t *prv_gte_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 {
 	/* a2 must be const */
 
-	switch (a2->type) {
+	switch (a2->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		a1->exp.ir_op.integer =
 		    a1->exp.ir_op.real >= ((double)a2->exp.ir_op.integer) ? -1
 									  : 0;
-		a1->type = SUBTILIS_TYPE_CONST_INTEGER;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 		break;
 	case SUBTILIS_TYPE_CONST_REAL:
 		a1->exp.ir_op.integer =
 		    a1->exp.ir_op.real >= a2->exp.ir_op.real ? -1 : 0;
-		a1->type = SUBTILIS_TYPE_CONST_INTEGER;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 		break;
 	default:
 		subtilis_exp_delete(a1);
@@ -445,7 +445,7 @@ static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
 	    p->current, SUBTILIS_OP_INSTR_MOVI_REAL, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	return subtilis_exp_new_var(SUBTILIS_TYPE_REAL, reg_num, err);
+	return subtilis_exp_new_real_var(reg_num, err);
 }
 
 static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
@@ -470,7 +470,7 @@ static subtilis_exp_t *prv_copy_var(subtilis_parser_t *p, subtilis_exp_t *e,
 	    p->current, SUBTILIS_OP_INSTR_MOVFP, e->exp.ir_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
-	e2 = subtilis_exp_new_var(SUBTILIS_TYPE_REAL, reg, err);
+	e2 = subtilis_exp_new_real_var(reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 	subtilis_exp_delete(e);
@@ -490,7 +490,7 @@ static subtilis_exp_t *prv_to_int32(subtilis_parser_t *p, subtilis_exp_t *e,
 	    p->current, SUBTILIS_OP_INSTR_MOV_FP_I32, e->exp.ir_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
-	e->type = SUBTILIS_TYPE_INTEGER;
+	e->type.type = SUBTILIS_TYPE_INTEGER;
 	e->exp.ir_op.reg = reg;
 
 	return e;
@@ -530,7 +530,7 @@ static subtilis_exp_t *prv_commutative(subtilis_parser_t *p, subtilis_exp_t *a1,
 {
 	size_t reg;
 
-	switch (a2->type) {
+	switch (a2->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		a2->exp.ir_op.real = (double)a2->exp.ir_op.integer;
 	case SUBTILIS_TYPE_CONST_REAL:
@@ -547,7 +547,7 @@ static subtilis_exp_t *prv_commutative(subtilis_parser_t *p, subtilis_exp_t *a1,
 		    err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
-		a2->type = SUBTILIS_TYPE_REAL;
+		a2->type.type = SUBTILIS_TYPE_REAL;
 		a2->exp.ir_op.reg = reg;
 	case SUBTILIS_TYPE_REAL:
 		reg = subtilis_ir_section_add_instr(p->current, real_var_var,
@@ -582,7 +582,7 @@ static subtilis_exp_t *prv_commutative_logical(
 {
 	size_t reg;
 
-	switch (a2->type) {
+	switch (a2->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		a2->exp.ir_op.real = (double)a2->exp.ir_op.integer;
 	case SUBTILIS_TYPE_CONST_REAL:
@@ -592,7 +592,7 @@ static subtilis_exp_t *prv_commutative_logical(
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 		a1->exp.ir_op.reg = reg;
-		a1->type = SUBTILIS_TYPE_INTEGER;
+		a1->type.type = SUBTILIS_TYPE_INTEGER;
 		break;
 	case SUBTILIS_TYPE_INTEGER:
 		reg = subtilis_ir_section_add_instr2(
@@ -608,7 +608,7 @@ static subtilis_exp_t *prv_commutative_logical(
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 		a1->exp.ir_op.reg = reg;
-		a1->type = SUBTILIS_TYPE_INTEGER;
+		a1->type.type = SUBTILIS_TYPE_INTEGER;
 		break;
 	default:
 		subtilis_error_set_bad_expression(err, p->l->stream->name,
@@ -717,7 +717,7 @@ static subtilis_exp_t *prv_divr(subtilis_parser_t *p, subtilis_exp_t *a1,
 	if (swapped) {
 		real_var_imm = SUBTILIS_OP_INSTR_RDIVI_REAL;
 	} else {
-		div_by_const = a2->type == SUBTILIS_TYPE_CONST_REAL;
+		div_by_const = a2->type.type == SUBTILIS_TYPE_CONST_REAL;
 		if (div_by_const && (a2->exp.ir_op.real == 0.0)) {
 			subtilis_error_set_divide_by_zero(
 			    err, p->l->stream->name, p->l->line);

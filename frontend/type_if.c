@@ -57,8 +57,8 @@ bool prv_order_expressions(subtilis_exp_t **a1, subtilis_exp_t **a2)
 	e1 = *a1;
 	e2 = *a2;
 
-	swap = !prv_type_map[e2->type]->is_const &&
-	       prv_type_map[e1->type]->is_const;
+	swap = !prv_type_map[e2->type.type]->is_const &&
+	       prv_type_map[e1->type.type]->is_const;
 	if (swap) {
 		*a1 = e2;
 		*a2 = e1;
@@ -106,10 +106,10 @@ static subtilis_exp_t *prv_call_binary_nc_logical_fn(
 
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	if (e->type == SUBTILIS_TYPE_REAL) {
-		e->type = SUBTILIS_TYPE_INTEGER;
-	} else if ((e->type != SUBTILIS_TYPE_INTEGER) &&
-		   (e->type != SUBTILIS_TYPE_CONST_INTEGER)) {
+	if (e->type.type == SUBTILIS_TYPE_REAL) {
+		e->type.type = SUBTILIS_TYPE_INTEGER;
+	} else if ((e->type.type != SUBTILIS_TYPE_INTEGER) &&
+		   (e->type.type != SUBTILIS_TYPE_CONST_INTEGER)) {
 		subtilis_error_set_assertion_failed(err);
 		subtilis_exp_delete(e);
 		e = NULL;
@@ -123,7 +123,7 @@ subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 {
 	subtilis_type_if_none_t fn;
 
-	fn = prv_type_map[type]->zero;
+	fn = prv_type_map[type.type]->zero;
 	if (!fn) {
 		subtilis_error_set_assertion_failed(err);
 		return NULL;
@@ -136,7 +136,7 @@ void subtilis_type_if_zero_reg(subtilis_parser_t *p, subtilis_type_t type,
 {
 	subtilis_type_if_reg_t fn;
 
-	fn = prv_type_map[type]->zero_reg;
+	fn = prv_type_map[type.type]->zero_reg;
 	if (!fn) {
 		subtilis_error_set_assertion_failed(err);
 		return;
@@ -148,14 +148,16 @@ subtilis_exp_t *subtilis_type_if_exp_to_var(subtilis_parser_t *p,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err)
 {
-	return prv_call_unary_fn(p, e, prv_type_map[e->type]->exp_to_var, err);
+	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->exp_to_var,
+				 err);
 }
 
 subtilis_exp_t *subtilis_type_if_copy_var(subtilis_parser_t *p,
 					  subtilis_exp_t *e,
 					  subtilis_error_t *err)
 {
-	return prv_call_unary_fn(p, e, prv_type_map[e->type]->copy_var, err);
+	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->copy_var,
+				 err);
 }
 
 subtilis_exp_t *subtilis_type_if_dup(subtilis_exp_t *e, subtilis_error_t *err)
@@ -167,7 +169,7 @@ subtilis_exp_t *subtilis_type_if_dup(subtilis_exp_t *e, subtilis_error_t *err)
 		return NULL;
 	}
 	exp->type = e->type;
-	prv_type_map[e->type]->dup(e, exp, err);
+	prv_type_map[e->type.type]->dup(e, exp, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		free(exp);
 		return NULL;
@@ -178,76 +180,86 @@ subtilis_exp_t *subtilis_type_if_dup(subtilis_exp_t *e, subtilis_error_t *err)
 subtilis_exp_t *subtilis_type_if_to_int(subtilis_parser_t *p, subtilis_exp_t *e,
 					subtilis_error_t *err)
 {
-	return prv_call_unary_fn(p, e, prv_type_map[e->type]->to_int32, err);
+	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->to_int32,
+				 err);
 }
 
 subtilis_exp_t *subtilis_type_if_to_float64(subtilis_parser_t *p,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err)
 {
-	return prv_call_unary_fn(p, e, prv_type_map[e->type]->to_float64, err);
+	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->to_float64,
+				 err);
 }
 
 subtilis_exp_t *subtilis_type_if_unary_minus(subtilis_parser_t *p,
 					     subtilis_exp_t *e,
 					     subtilis_error_t *err)
 {
-	return prv_call_unary_fn(p, e, prv_type_map[e->type]->unary_minus, err);
+	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->unary_minus,
+				 err);
 }
 
 subtilis_exp_t *subtilis_type_if_add(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err)
 {
 	(void)prv_order_expressions(&a1, &a2);
-	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type]->add, err);
+	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->add,
+				  err);
 }
 
 subtilis_exp_t *subtilis_type_if_mul(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err)
 {
 	(void)prv_order_expressions(&a1, &a2);
-	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type]->mul, err);
+	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->mul,
+				  err);
 }
 
 subtilis_exp_t *subtilis_type_if_and(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err)
 {
 	(void)prv_order_expressions(&a1, &a2);
-	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type]->and, err);
+	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->and,
+				  err);
 }
 
 subtilis_exp_t *subtilis_type_if_or(subtilis_parser_t *p, subtilis_exp_t *a1,
 				    subtilis_exp_t *a2, subtilis_error_t *err)
 {
 	(void)prv_order_expressions(&a1, &a2);
-	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type]->or, err);
+	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->or,
+				  err);
 }
 
 subtilis_exp_t *subtilis_type_if_eor(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err)
 {
 	(void)prv_order_expressions(&a1, &a2);
-	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type]->eor, err);
+	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->eor,
+				  err);
 }
 
 subtilis_exp_t *subtilis_type_if_not(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err)
 {
-	return prv_call_unary_fn(p, e, prv_type_map[e->type]->not, err);
+	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->not, err);
 }
 
 subtilis_exp_t *subtilis_type_if_eq(subtilis_parser_t *p, subtilis_exp_t *a1,
 				    subtilis_exp_t *a2, subtilis_error_t *err)
 {
 	(void)prv_order_expressions(&a1, &a2);
-	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type]->eq, err);
+	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->eq,
+				  err);
 }
 
 subtilis_exp_t *subtilis_type_if_neq(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err)
 {
 	(void)prv_order_expressions(&a1, &a2);
-	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type]->neq, err);
+	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->neq,
+				  err);
 }
 
 subtilis_exp_t *subtilis_type_if_sub(subtilis_parser_t *p, subtilis_exp_t *a1,
@@ -255,8 +267,8 @@ subtilis_exp_t *subtilis_type_if_sub(subtilis_parser_t *p, subtilis_exp_t *a1,
 {
 	bool swapped = prv_order_expressions(&a1, &a2);
 
-	return prv_call_binary_nc_fn(p, a1, a2, prv_type_map[a1->type]->sub,
-				     swapped, err);
+	return prv_call_binary_nc_fn(
+	    p, a1, a2, prv_type_map[a1->type.type]->sub, swapped, err);
 }
 
 subtilis_exp_t *subtilis_type_if_div(subtilis_parser_t *p, subtilis_exp_t *a1,
@@ -274,7 +286,8 @@ subtilis_exp_t *subtilis_type_if_div(subtilis_parser_t *p, subtilis_exp_t *a1,
 		return NULL;
 	}
 
-	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type]->div, err);
+	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->div,
+				  err);
 }
 
 subtilis_exp_t *subtilis_type_if_mod(subtilis_parser_t *p, subtilis_exp_t *a1,
@@ -292,7 +305,8 @@ subtilis_exp_t *subtilis_type_if_mod(subtilis_parser_t *p, subtilis_exp_t *a1,
 		return NULL;
 	}
 
-	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type]->mod, err);
+	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->mod,
+				  err);
 }
 
 subtilis_exp_t *subtilis_type_if_divr(subtilis_parser_t *p, subtilis_exp_t *a1,
@@ -313,8 +327,8 @@ subtilis_exp_t *subtilis_type_if_divr(subtilis_parser_t *p, subtilis_exp_t *a1,
 	}
 
 	swapped = prv_order_expressions(&a1, &a2);
-	return prv_call_binary_nc_fn(p, a1, a2, prv_type_map[a1->type]->divr,
-				     swapped, err);
+	return prv_call_binary_nc_fn(
+	    p, a1, a2, prv_type_map[a1->type.type]->divr, swapped, err);
 }
 
 subtilis_exp_t *subtilis_type_if_gt(subtilis_parser_t *p, subtilis_exp_t *a1,
@@ -323,7 +337,7 @@ subtilis_exp_t *subtilis_type_if_gt(subtilis_parser_t *p, subtilis_exp_t *a1,
 	bool swapped = prv_order_expressions(&a1, &a2);
 
 	return prv_call_binary_nc_logical_fn(
-	    p, a1, a2, prv_type_map[a1->type]->gt, swapped, err);
+	    p, a1, a2, prv_type_map[a1->type.type]->gt, swapped, err);
 }
 
 subtilis_exp_t *subtilis_type_if_lte(subtilis_parser_t *p, subtilis_exp_t *a1,
@@ -332,7 +346,7 @@ subtilis_exp_t *subtilis_type_if_lte(subtilis_parser_t *p, subtilis_exp_t *a1,
 	bool swapped = prv_order_expressions(&a1, &a2);
 
 	return prv_call_binary_nc_logical_fn(
-	    p, a1, a2, prv_type_map[a1->type]->lte, swapped, err);
+	    p, a1, a2, prv_type_map[a1->type.type]->lte, swapped, err);
 }
 
 subtilis_exp_t *subtilis_type_if_lt(subtilis_parser_t *p, subtilis_exp_t *a1,
@@ -341,7 +355,7 @@ subtilis_exp_t *subtilis_type_if_lt(subtilis_parser_t *p, subtilis_exp_t *a1,
 	bool swapped = prv_order_expressions(&a1, &a2);
 
 	return prv_call_binary_nc_logical_fn(
-	    p, a1, a2, prv_type_map[a1->type]->lt, swapped, err);
+	    p, a1, a2, prv_type_map[a1->type.type]->lt, swapped, err);
 }
 
 subtilis_exp_t *subtilis_type_if_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
@@ -350,7 +364,7 @@ subtilis_exp_t *subtilis_type_if_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 	bool swapped = prv_order_expressions(&a1, &a2);
 
 	return prv_call_binary_nc_logical_fn(
-	    p, a1, a2, prv_type_map[a1->type]->gte, swapped, err);
+	    p, a1, a2, prv_type_map[a1->type.type]->gte, swapped, err);
 }
 
 subtilis_exp_t *subtilis_type_if_lsl(subtilis_parser_t *p, subtilis_exp_t *a1,
@@ -369,7 +383,8 @@ subtilis_exp_t *subtilis_type_if_lsl(subtilis_parser_t *p, subtilis_exp_t *a1,
 		return NULL;
 	}
 
-	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type]->lsl, err);
+	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->lsl,
+				  err);
 }
 
 subtilis_exp_t *subtilis_type_if_lsr(subtilis_parser_t *p, subtilis_exp_t *a1,
@@ -388,7 +403,8 @@ subtilis_exp_t *subtilis_type_if_lsr(subtilis_parser_t *p, subtilis_exp_t *a1,
 		return NULL;
 	}
 
-	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type]->lsr, err);
+	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->lsr,
+				  err);
 }
 
 subtilis_exp_t *subtilis_type_if_asr(subtilis_parser_t *p, subtilis_exp_t *a1,
@@ -407,5 +423,6 @@ subtilis_exp_t *subtilis_type_if_asr(subtilis_parser_t *p, subtilis_exp_t *a1,
 		return NULL;
 	}
 
-	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type]->asr, err);
+	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->asr,
+				  err);
 }

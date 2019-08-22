@@ -659,7 +659,7 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	s->locals = locals;
 	p->sections[name_index] = s;
 	s->end_label = subtilis_ir_section_new_label(s);
-	switch (tp->return_type) {
+	switch (tp->return_type.type) {
 	case SUBTILIS_TYPE_VOID:
 		s->ret_reg = SIZE_MAX;
 		break;

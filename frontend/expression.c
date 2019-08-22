@@ -74,7 +74,7 @@ void subtilis_exp_return_default_value(subtilis_parser_t *p,
 
 	end_label.label = p->current->end_label;
 	if ((p->current == p->main) ||
-	    (p->current->type->return_type == SUBTILIS_TYPE_VOID)) {
+	    (p->current->type->return_type.type == SUBTILIS_TYPE_VOID)) {
 		subtilis_ir_section_add_instr_no_reg(
 		    p->current, SUBTILIS_OP_INSTR_JMP, end_label, err);
 		return;
@@ -124,7 +124,7 @@ void subtilis_exp_handle_errors(subtilis_parser_t *p, subtilis_error_t *err)
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	} else if ((p->current == p->main) ||
-		   (p->current->type->return_type == SUBTILIS_TYPE_VOID)) {
+		   (p->current->type->return_type.type == SUBTILIS_TYPE_VOID)) {
 		/*
 		 * There's no error handler so we need to return.  We can jump
 		 * straight to the exit code for the procedure as theres no
@@ -181,16 +181,16 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 	subtilis_exp_t *e = NULL;
 	subtilis_parser_call_t *call = NULL;
 
-	if (fn_type == SUBTILIS_TYPE_VOID) {
+	if (fn_type.type == SUBTILIS_TYPE_VOID) {
 		subtilis_ir_section_add_call(p->current, num_params, args, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 		args = NULL;
 	} else {
-		if (fn_type == SUBTILIS_TYPE_INTEGER)
+		if (fn_type.type == SUBTILIS_TYPE_INTEGER)
 			reg = subtilis_ir_section_add_i32_call(
 			    p->current, num_params, args, err);
-		else if (fn_type == SUBTILIS_TYPE_REAL)
+		else if (fn_type.type == SUBTILIS_TYPE_REAL)
 			reg = subtilis_ir_section_add_real_call(
 			    p->current, num_params, args, err);
 		else
@@ -253,7 +253,7 @@ subtilis_exp_t *subtilis_exp_coerce_type(subtilis_parser_t *p,
 					 subtilis_type_t type,
 					 subtilis_error_t *err)
 {
-	switch (type) {
+	switch (type.type) {
 	case SUBTILIS_TYPE_REAL:
 		e = subtilis_type_if_to_float64(p, e, err);
 		break;
@@ -277,12 +277,12 @@ static bool prv_order_expressions(subtilis_exp_t **a1, subtilis_exp_t **a2)
 	subtilis_exp_t *e1 = *a1;
 	subtilis_exp_t *e2 = *a2;
 
-	if ((e2->type == SUBTILIS_TYPE_INTEGER ||
-	     e2->type == SUBTILIS_TYPE_REAL ||
-	     e2->type == SUBTILIS_TYPE_STRING) &&
-	    (e1->type == SUBTILIS_TYPE_CONST_INTEGER ||
-	     e1->type == SUBTILIS_TYPE_CONST_REAL ||
-	     e1->type == SUBTILIS_TYPE_CONST_STRING)) {
+	if ((e2->type.type == SUBTILIS_TYPE_INTEGER ||
+	     e2->type.type == SUBTILIS_TYPE_REAL ||
+	     e2->type.type == SUBTILIS_TYPE_STRING) &&
+	    (e1->type.type == SUBTILIS_TYPE_CONST_INTEGER ||
+	     e1->type.type == SUBTILIS_TYPE_CONST_REAL ||
+	     e1->type.type == SUBTILIS_TYPE_CONST_STRING)) {
 		*a1 = e2;
 		*a2 = e1;
 		return true;
@@ -306,6 +306,24 @@ subtilis_exp_t *subtilis_exp_new_var(subtilis_type_t type, unsigned int reg,
 	return e;
 }
 
+subtilis_exp_t *subtilis_exp_new_int32_var(unsigned int reg,
+					   subtilis_error_t *err)
+{
+	subtilis_type_t type;
+
+	type.type = SUBTILIS_TYPE_INTEGER;
+	return subtilis_exp_new_var(type, reg, err);
+}
+
+subtilis_exp_t *subtilis_exp_new_real_var(unsigned int reg,
+					  subtilis_error_t *err)
+{
+	subtilis_type_t type;
+
+	type.type = SUBTILIS_TYPE_REAL;
+	return subtilis_exp_new_var(type, reg, err);
+}
+
 subtilis_exp_t *subtilis_exp_new_int32(int32_t integer, subtilis_error_t *err)
 {
 	subtilis_exp_t *e = malloc(sizeof(*e));
@@ -314,7 +332,7 @@ subtilis_exp_t *subtilis_exp_new_int32(int32_t integer, subtilis_error_t *err)
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
-	e->type = SUBTILIS_TYPE_CONST_INTEGER;
+	e->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 	e->exp.ir_op.integer = integer;
 
 	return e;
@@ -328,7 +346,7 @@ subtilis_exp_t *subtilis_exp_new_real(double real, subtilis_error_t *err)
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
-	e->type = SUBTILIS_TYPE_CONST_REAL;
+	e->type.type = SUBTILIS_TYPE_CONST_REAL;
 	e->exp.ir_op.real = real;
 
 	return e;
@@ -343,7 +361,7 @@ subtilis_exp_t *subtilis_exp_new_str(subtilis_buffer_t *str,
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
-	e->type = SUBTILIS_TYPE_CONST_STRING;
+	e->type.type = SUBTILIS_TYPE_CONST_STRING;
 	subtilis_buffer_init(&e->exp.str, str->granularity);
 	subtilis_buffer_append(&e->exp.str, str->buffer->data,
 			       subtilis_buffer_get_size(str), err);
@@ -360,7 +378,7 @@ static subtilis_exp_t *prv_subtilis_exp_add_str(subtilis_parser_t *p,
 
 	(void)prv_order_expressions(&a1, &a2);
 
-	if (a1->type == SUBTILIS_TYPE_CONST_STRING) {
+	if (a1->type.type == SUBTILIS_TYPE_CONST_STRING) {
 		len = subtilis_buffer_get_size(&a2->exp.str);
 		subtilis_buffer_remove_terminator(&a1->exp.str);
 		subtilis_buffer_append(&a1->exp.str, a2->exp.str.buffer->data,
@@ -368,7 +386,7 @@ static subtilis_exp_t *prv_subtilis_exp_add_str(subtilis_parser_t *p,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return NULL;
 		return a1;
-	} else if (a2->type == SUBTILIS_TYPE_CONST_STRING) {
+	} else if (a2->type.type == SUBTILIS_TYPE_CONST_STRING) {
 		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
@@ -380,10 +398,10 @@ static subtilis_exp_t *prv_subtilis_exp_add_str(subtilis_parser_t *p,
 subtilis_exp_t *subtilis_exp_add(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	if ((a1->type == SUBTILIS_TYPE_CONST_STRING ||
-	     a1->type == SUBTILIS_TYPE_STRING) &&
-	    (a2->type == SUBTILIS_TYPE_CONST_STRING ||
-	     a2->type == SUBTILIS_TYPE_STRING)) {
+	if ((a1->type.type == SUBTILIS_TYPE_CONST_STRING ||
+	     a1->type.type == SUBTILIS_TYPE_STRING) &&
+	    (a2->type.type == SUBTILIS_TYPE_CONST_STRING ||
+	     a2->type.type == SUBTILIS_TYPE_STRING)) {
 		return prv_subtilis_exp_add_str(p, a1, a2, err);
 	}
 
@@ -393,10 +411,10 @@ subtilis_exp_t *subtilis_exp_add(subtilis_parser_t *p, subtilis_exp_t *a1,
 subtilis_exp_t *subtilis_exp_gt(subtilis_parser_t *p, subtilis_exp_t *a1,
 				subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	if ((a1->type == SUBTILIS_TYPE_CONST_STRING ||
-	     a1->type == SUBTILIS_TYPE_STRING) &&
-	    (a2->type == SUBTILIS_TYPE_CONST_STRING ||
-	     a2->type == SUBTILIS_TYPE_STRING)) {
+	if ((a1->type.type == SUBTILIS_TYPE_CONST_STRING ||
+	     a1->type.type == SUBTILIS_TYPE_STRING) &&
+	    (a2->type.type == SUBTILIS_TYPE_CONST_STRING ||
+	     a2->type.type == SUBTILIS_TYPE_STRING)) {
 		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
@@ -407,10 +425,10 @@ subtilis_exp_t *subtilis_exp_gt(subtilis_parser_t *p, subtilis_exp_t *a1,
 subtilis_exp_t *subtilis_exp_lte(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	if ((a1->type == SUBTILIS_TYPE_CONST_STRING ||
-	     a1->type == SUBTILIS_TYPE_STRING) &&
-	    (a2->type == SUBTILIS_TYPE_CONST_STRING ||
-	     a2->type == SUBTILIS_TYPE_STRING)) {
+	if ((a1->type.type == SUBTILIS_TYPE_CONST_STRING ||
+	     a1->type.type == SUBTILIS_TYPE_STRING) &&
+	    (a2->type.type == SUBTILIS_TYPE_CONST_STRING ||
+	     a2->type.type == SUBTILIS_TYPE_STRING)) {
 		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
@@ -421,10 +439,10 @@ subtilis_exp_t *subtilis_exp_lte(subtilis_parser_t *p, subtilis_exp_t *a1,
 subtilis_exp_t *subtilis_exp_lt(subtilis_parser_t *p, subtilis_exp_t *a1,
 				subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	if ((a1->type == SUBTILIS_TYPE_CONST_STRING ||
-	     a1->type == SUBTILIS_TYPE_STRING) &&
-	    (a2->type == SUBTILIS_TYPE_CONST_STRING ||
-	     a2->type == SUBTILIS_TYPE_STRING)) {
+	if ((a1->type.type == SUBTILIS_TYPE_CONST_STRING ||
+	     a1->type.type == SUBTILIS_TYPE_STRING) &&
+	    (a2->type.type == SUBTILIS_TYPE_CONST_STRING ||
+	     a2->type.type == SUBTILIS_TYPE_STRING)) {
 		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
@@ -435,10 +453,10 @@ subtilis_exp_t *subtilis_exp_lt(subtilis_parser_t *p, subtilis_exp_t *a1,
 subtilis_exp_t *subtilis_exp_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	if ((a1->type == SUBTILIS_TYPE_CONST_STRING ||
-	     a1->type == SUBTILIS_TYPE_STRING) &&
-	    (a2->type == SUBTILIS_TYPE_CONST_STRING ||
-	     a2->type == SUBTILIS_TYPE_STRING)) {
+	if ((a1->type.type == SUBTILIS_TYPE_CONST_STRING ||
+	     a1->type.type == SUBTILIS_TYPE_STRING) &&
+	    (a2->type.type == SUBTILIS_TYPE_CONST_STRING ||
+	     a2->type.type == SUBTILIS_TYPE_STRING)) {
 		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
@@ -450,7 +468,7 @@ void subtilis_exp_delete(subtilis_exp_t *e)
 {
 	if (!e)
 		return;
-	if (e->type == SUBTILIS_TYPE_CONST_STRING)
+	if (e->type.type == SUBTILIS_TYPE_CONST_STRING)
 		subtilis_buffer_free(&e->exp.str);
 	free(e);
 }

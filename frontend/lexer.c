@@ -446,19 +446,19 @@ static void prv_validate_identifier(subtilis_lexer_t *l, subtilis_token_t *t,
 	}
 
 	if (l->index == l->buf_end) {
-		t->tok.id_type = SUBTILIS_TYPE_REAL;
+		t->tok.id_type.type = SUBTILIS_TYPE_REAL;
 	} else if (ch == '$') {
-		t->tok.id_type = SUBTILIS_TYPE_STRING;
+		t->tok.id_type.type = SUBTILIS_TYPE_STRING;
 		prv_set_next_with_err(l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	} else if (ch == '%') {
-		t->tok.id_type = SUBTILIS_TYPE_INTEGER;
+		t->tok.id_type.type = SUBTILIS_TYPE_INTEGER;
 		prv_set_next_with_err(l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	} else {
-		t->tok.id_type = SUBTILIS_TYPE_REAL;
+		t->tok.id_type.type = SUBTILIS_TYPE_REAL;
 	}
 
 	prv_check_token_buffer(l, t, err, SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
@@ -484,7 +484,7 @@ static void prv_process_call(subtilis_lexer_t *l, subtilis_token_t *t,
 		return;
 
 	if (proc) {
-		if (t->tok.id_type != SUBTILIS_TYPE_REAL) {
+		if (t->tok.id_type.type != SUBTILIS_TYPE_REAL) {
 			tbuf = subtilis_token_get_text(t);
 			subtilis_error_set_bad_proc_name(
 			    err, tbuf, l->stream->name, l->line);
@@ -492,7 +492,7 @@ static void prv_process_call(subtilis_lexer_t *l, subtilis_token_t *t,
 		}
 		t->tok.keyword.type = SUBTILIS_KEYWORD_PROC;
 		t->tok.keyword.supported = true;
-		t->tok.keyword.id_type = SUBTILIS_TYPE_VOID;
+		t->tok.keyword.id_type.type = SUBTILIS_TYPE_VOID;
 	} else {
 		t->tok.keyword.id_type = t->tok.id_type;
 		t->tok.keyword.type = SUBTILIS_KEYWORD_FN;
@@ -754,7 +754,7 @@ void subtilis_dump_token(subtilis_token_t *t)
 	else if (t->type == SUBTILIS_TOKEN_KEYWORD)
 		printf("[%d %d %s]\n", t->type, t->tok.keyword.type, tbuf);
 	else if (t->type == SUBTILIS_TOKEN_IDENTIFIER)
-		printf("[%d %d %s]\n", t->type, t->tok.id_type, tbuf);
+		printf("[%d %d %s]\n", t->type, t->tok.id_type.type, tbuf);
 	else
 		printf("[%d %s]\n", t->type, tbuf);
 }

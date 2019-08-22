@@ -25,7 +25,7 @@ void subtilis_var_assign_to_reg(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op2;
 
-	switch (e->type) {
+	switch (e->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		instr = SUBTILIS_OP_INSTR_MOVI_I32;
 		break;
@@ -61,14 +61,14 @@ void subtilis_var_assign_to_mem(subtilis_parser_t *p, const char *tbuf,
 	subtilis_op_instr_type_t instr;
 	subtilis_ir_operand_t op2;
 
-	switch (e->type) {
+	switch (e->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		reg = subtilis_ir_section_add_instr2(
 		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, e->exp.ir_op, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		subtilis_exp_delete(e);
-		e = subtilis_exp_new_var(SUBTILIS_TYPE_INTEGER, reg, err);
+		e = subtilis_exp_new_int32_var(reg, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		instr = SUBTILIS_OP_INSTR_STOREO_I32;
@@ -79,7 +79,7 @@ void subtilis_var_assign_to_mem(subtilis_parser_t *p, const char *tbuf,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		subtilis_exp_delete(e);
-		e = subtilis_exp_new_var(SUBTILIS_TYPE_REAL, reg, err);
+		e = subtilis_exp_new_real_var(reg, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		instr = SUBTILIS_OP_INSTR_STOREO_REAL;
@@ -164,11 +164,11 @@ subtilis_exp_t *subtilis_var_lookup_var(subtilis_parser_t *p, const char *tbuf,
 		op1.reg = SUBTILIS_IR_REG_GLOBAL;
 	}
 
-	if (s->t == SUBTILIS_TYPE_INTEGER) {
-		type = SUBTILIS_TYPE_INTEGER;
+	if (s->t.type == SUBTILIS_TYPE_INTEGER) {
+		type.type = SUBTILIS_TYPE_INTEGER;
 		itype = SUBTILIS_OP_INSTR_LOADO_I32;
-	} else if (s->t == SUBTILIS_TYPE_REAL) {
-		type = SUBTILIS_TYPE_REAL;
+	} else if (s->t.type == SUBTILIS_TYPE_REAL) {
+		type.type = SUBTILIS_TYPE_REAL;
 		itype = SUBTILIS_OP_INSTR_LOADO_REAL;
 	} else {
 		subtilis_error_set_assertion_failed(err);
