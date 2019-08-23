@@ -111,8 +111,8 @@ cleanup:
 }
 
 void subtilis_var_assign_hidden(subtilis_parser_t *p, const char *var_name,
-				subtilis_type_t id_type, subtilis_exp_t *e,
-				subtilis_error_t *err)
+				const subtilis_type_t *id_type,
+				subtilis_exp_t *e, subtilis_error_t *err)
 {
 	const subtilis_symbol_t *s;
 	subtilis_ir_operand_t op1;
@@ -126,7 +126,7 @@ void subtilis_var_assign_hidden(subtilis_parser_t *p, const char *var_name,
 
 	op1.reg = SUBTILIS_IR_REG_GLOBAL;
 
-	e = subtilis_exp_coerce_type(p, e, s->t, err);
+	e = subtilis_exp_coerce_type(p, e, &s->t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -184,5 +184,5 @@ subtilis_exp_t *subtilis_var_lookup_var(subtilis_parser_t *p, const char *tbuf,
 		reg = s->loc;
 	}
 
-	return subtilis_exp_new_var(type, reg, err);
+	return subtilis_exp_new_var(&type, reg, err);
 }

@@ -76,10 +76,11 @@ struct subtilis_type_if_ {
 typedef struct subtilis_type_if_ subtilis_type_if;
 
 subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
-				      subtilis_type_t type,
+				      const subtilis_type_t *type,
 				      subtilis_error_t *err);
-void subtilis_type_if_zero_reg(subtilis_parser_t *p, subtilis_type_t type,
-			       size_t reg, subtilis_error_t *err);
+void subtilis_type_if_zero_reg(subtilis_parser_t *p,
+			       const subtilis_type_t *type, size_t reg,
+			       subtilis_error_t *err);
 subtilis_exp_t *subtilis_type_if_exp_to_var(subtilis_parser_t *p,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err);

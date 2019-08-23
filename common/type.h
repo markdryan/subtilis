@@ -48,12 +48,12 @@ struct subtilis_type_section_t_ {
 typedef struct subtilis_type_section_t_ subtilis_type_section_t;
 
 /* Takes ownership of parameters */
-subtilis_type_section_t *subtilis_type_section_new(subtilis_type_t rtype,
+subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 						   size_t num_parameters,
 						   subtilis_type_t *parameters,
 						   subtilis_error_t *err);
 void subtilis_type_section_delete(subtilis_type_section_t *stype);
-const char *subtilis_type_name(subtilis_type_t typ);
+const char *subtilis_type_name(const subtilis_type_t *typ);
 subtilis_type_section_t *
 subtilis_type_section_dup(subtilis_type_section_t *stype);
 

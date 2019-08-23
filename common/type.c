@@ -46,7 +46,7 @@ static const char *const prv_fixed_type_names[] = {
 
 /* clang-format on */
 
-subtilis_type_section_t *subtilis_type_section_new(subtilis_type_t rtype,
+subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 						   size_t num_parameters,
 						   subtilis_type_t *parameters,
 						   subtilis_error_t *err)
@@ -60,7 +60,7 @@ subtilis_type_section_t *subtilis_type_section_new(subtilis_type_t rtype,
 	}
 
 	stype->ref_count = 1;
-	stype->return_type = rtype;
+	stype->return_type = *rtype;
 	stype->num_parameters = num_parameters;
 	stype->parameters = parameters;
 	stype->int_regs = 0;
@@ -90,9 +90,9 @@ void subtilis_type_section_delete(subtilis_type_section_t *stype)
 	free(stype);
 }
 
-const char *subtilis_type_name(subtilis_type_t typ)
+const char *subtilis_type_name(const subtilis_type_t *typ)
 {
-	size_t index = (size_t)typ.type;
+	size_t index = (size_t)typ->type;
 
 	if (index < SUBTILIS_TYPE_MAX)
 		return prv_fixed_type_names[index];

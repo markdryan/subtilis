@@ -28,8 +28,8 @@ void subtilis_var_assign_to_mem(subtilis_parser_t *p, const char *tbuf,
 				subtilis_ir_operand_t op1, size_t loc,
 				subtilis_exp_t *e, subtilis_error_t *err);
 void subtilis_var_assign_hidden(subtilis_parser_t *p, const char *var_name,
-				subtilis_type_t id_type, subtilis_exp_t *e,
-				subtilis_error_t *err);
+				const subtilis_type_t *id_type,
+				subtilis_exp_t *e, subtilis_error_t *err);
 subtilis_exp_t *subtilis_var_lookup_var(subtilis_parser_t *p, const char *tbuf,
 					subtilis_error_t *err);
 

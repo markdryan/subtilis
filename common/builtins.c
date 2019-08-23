@@ -41,6 +41,6 @@ subtilis_type_section_t *subtilis_builtin_ts(subtilis_builtin_type_t type,
 	}
 	for (i = 0; i < f->num_parameters; i++)
 		params[i] = f->arg_types[i];
-	return subtilis_type_section_new(f->ret_type, f->num_parameters, params,
-					 err);
+	return subtilis_type_section_new(&f->ret_type, f->num_parameters,
+					 params, err);
 }

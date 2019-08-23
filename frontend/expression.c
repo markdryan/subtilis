@@ -80,7 +80,7 @@ void subtilis_exp_return_default_value(subtilis_parser_t *p,
 		return;
 	}
 
-	subtilis_type_if_zero_reg(p, p->current->type->return_type,
+	subtilis_type_if_zero_reg(p, &p->current->type->return_type,
 				  p->current->ret_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -173,7 +173,7 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 				      subtilis_builtin_type_t ftype,
 				      subtilis_type_section_t *stype,
 				      subtilis_ir_arg_t *args,
-				      subtilis_type_t fn_type,
+				      const subtilis_type_t *fn_type,
 				      size_t num_params, subtilis_error_t *err)
 {
 	size_t reg;
@@ -181,16 +181,16 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 	subtilis_exp_t *e = NULL;
 	subtilis_parser_call_t *call = NULL;
 
-	if (fn_type.type == SUBTILIS_TYPE_VOID) {
+	if (fn_type->type == SUBTILIS_TYPE_VOID) {
 		subtilis_ir_section_add_call(p->current, num_params, args, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 		args = NULL;
 	} else {
-		if (fn_type.type == SUBTILIS_TYPE_INTEGER)
+		if (fn_type->type == SUBTILIS_TYPE_INTEGER)
 			reg = subtilis_ir_section_add_i32_call(
 			    p->current, num_params, args, err);
-		else if (fn_type.type == SUBTILIS_TYPE_REAL)
+		else if (fn_type->type == SUBTILIS_TYPE_REAL)
 			reg = subtilis_ir_section_add_real_call(
 			    p->current, num_params, args, err);
 		else
@@ -250,10 +250,10 @@ on_error:
 
 subtilis_exp_t *subtilis_exp_coerce_type(subtilis_parser_t *p,
 					 subtilis_exp_t *e,
-					 subtilis_type_t type,
+					 const subtilis_type_t *type,
 					 subtilis_error_t *err)
 {
-	switch (type.type) {
+	switch (type->type) {
 	case SUBTILIS_TYPE_REAL:
 		e = subtilis_type_if_to_float64(p, e, err);
 		break;
@@ -291,8 +291,8 @@ static bool prv_order_expressions(subtilis_exp_t **a1, subtilis_exp_t **a2)
 	return false;
 }
 
-subtilis_exp_t *subtilis_exp_new_var(subtilis_type_t type, unsigned int reg,
-				     subtilis_error_t *err)
+subtilis_exp_t *subtilis_exp_new_var(const subtilis_type_t *type,
+				     unsigned int reg, subtilis_error_t *err)
 {
 	subtilis_exp_t *e = malloc(sizeof(*e));
 
@@ -300,7 +300,7 @@ subtilis_exp_t *subtilis_exp_new_var(subtilis_type_t type, unsigned int reg,
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
-	e->type = type;
+	e->type = *type;
 	e->exp.ir_op.reg = reg;
 
 	return e;
@@ -309,13 +309,13 @@ subtilis_exp_t *subtilis_exp_new_var(subtilis_type_t type, unsigned int reg,
 subtilis_exp_t *subtilis_exp_new_int32_var(unsigned int reg,
 					   subtilis_error_t *err)
 {
-	return subtilis_exp_new_var(subtilis_type_integer, reg, err);
+	return subtilis_exp_new_var(&subtilis_type_integer, reg, err);
 }
 
 subtilis_exp_t *subtilis_exp_new_real_var(unsigned int reg,
 					  subtilis_error_t *err)
 {
-	return subtilis_exp_new_var(subtilis_type_real, reg, err);
+	return subtilis_exp_new_var(&subtilis_type_real, reg, err);
 }
 
 subtilis_exp_t *subtilis_exp_new_int32(int32_t integer, subtilis_error_t *err)

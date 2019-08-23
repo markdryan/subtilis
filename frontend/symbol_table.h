@@ -40,10 +40,11 @@ subtilis_symbol_table_t *subtilis_symbol_table_new(subtilis_error_t *err);
 void subtilis_symbol_table_delete(subtilis_symbol_table_t *st);
 const subtilis_symbol_t *
 subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
-			     subtilis_type_t id_type, subtilis_error_t *err);
+			     const subtilis_type_t *id_type,
+			     subtilis_error_t *err);
 const subtilis_symbol_t *
 subtilis_symbol_table_insert_reg(subtilis_symbol_table_t *st, const char *key,
-				 subtilis_type_t id_type, size_t reg_num,
+				 const subtilis_type_t *id_type, size_t reg_num,
 				 subtilis_error_t *err);
 bool subtilis_symbol_table_remove(subtilis_symbol_table_t *st, const char *key);
 const subtilis_symbol_t *

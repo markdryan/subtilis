@@ -55,7 +55,8 @@ void subtilis_symbol_table_delete(subtilis_symbol_table_t *st)
 	free(st);
 }
 
-static subtilis_symbol_t *prv_symbol_new(size_t loc, subtilis_type_t id_type,
+static subtilis_symbol_t *prv_symbol_new(size_t loc,
+					 const subtilis_type_t *id_type,
 					 bool is_reg, subtilis_error_t *err)
 {
 	subtilis_symbol_t *sym;
@@ -70,7 +71,7 @@ static subtilis_symbol_t *prv_symbol_new(size_t loc, subtilis_type_t id_type,
 	// pointers are 32 bit which they may not be.  We also need to
 	// add support for other integer types.
 
-	switch (id_type.type) {
+	switch (id_type->type) {
 	case SUBTILIS_TYPE_REAL:
 		sym->size = 8;
 		break;
@@ -85,7 +86,7 @@ static subtilis_symbol_t *prv_symbol_new(size_t loc, subtilis_type_t id_type,
 		subtilis_error_set_assertion_failed(err);
 		goto on_error;
 	}
-	sym->t = id_type;
+	sym->t = *id_type;
 	sym->loc = loc;
 	sym->is_reg = is_reg;
 
@@ -99,7 +100,8 @@ on_error:
 
 const subtilis_symbol_t *
 subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
-			     subtilis_type_t id_type, subtilis_error_t *err)
+			     const subtilis_type_t *id_type,
+			     subtilis_error_t *err)
 {
 	subtilis_symbol_t *sym;
 	char *key_dup = NULL;
@@ -135,7 +137,7 @@ on_error:
 
 const subtilis_symbol_t *
 subtilis_symbol_table_insert_reg(subtilis_symbol_table_t *st, const char *key,
-				 subtilis_type_t id_type, size_t reg_num,
+				 const subtilis_type_t *id_type, size_t reg_num,
 				 subtilis_error_t *err)
 {
 	subtilis_symbol_t *sym;

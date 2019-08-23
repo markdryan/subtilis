@@ -42,10 +42,10 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 				      subtilis_builtin_type_t ftype,
 				      subtilis_type_section_t *stype,
 				      subtilis_ir_arg_t *args,
-				      subtilis_type_t fn_type,
+				      const subtilis_type_t *fn_type,
 				      size_t num_params, subtilis_error_t *err);
-subtilis_exp_t *subtilis_exp_new_var(subtilis_type_t type, unsigned int reg,
-				     subtilis_error_t *err);
+subtilis_exp_t *subtilis_exp_new_var(const subtilis_type_t *type,
+				     unsigned int reg, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_int32_var(unsigned int reg,
 					   subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_real_var(unsigned int reg,
@@ -57,7 +57,7 @@ subtilis_exp_t *subtilis_exp_new_str(subtilis_buffer_t *str,
 
 subtilis_exp_t *subtilis_exp_coerce_type(subtilis_parser_t *p,
 					 subtilis_exp_t *e,
-					 subtilis_type_t type,
+					 const subtilis_type_t *type,
 					 subtilis_error_t *err);
 void subtilis_exp_handle_errors(subtilis_parser_t *p, subtilis_error_t *err);
 typedef subtilis_exp_t *(*subtilis_exp_fn_t)(subtilis_parser_t *,
