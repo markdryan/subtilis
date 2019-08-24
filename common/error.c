@@ -166,6 +166,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_RETURN_EXPECTED */
 	{"The top most error handler in a function must return a value\n"},
+
+	/* SUBTILIS_ERROR_TOO_MANY_DIMS */
+	{"Too many dimensions specified for array %s\n", 1},
 };
 
 /* clang-format on */

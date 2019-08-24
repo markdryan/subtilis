@@ -1347,6 +1347,39 @@ cleanup:
 	return NULL;
 }
 
+static const subtilis_symbol_t *prv_ensure_var(subtilis_parser_t *p,
+					       const char *tbuf,
+					       const subtilis_type_t *type,
+					       size_t *reg,
+					       subtilis_error_t *err)
+{
+	;
+	const subtilis_symbol_t *s;
+
+	s = subtilis_symbol_table_lookup(p->local_st, tbuf);
+	if (s) {
+		*reg = SUBTILIS_IR_REG_LOCAL;
+	} else {
+		s = subtilis_symbol_table_lookup(p->st, tbuf);
+		if (s) {
+			*reg = SUBTILIS_IR_REG_GLOBAL;
+		} else if (p->current == p->main) {
+			s = subtilis_symbol_table_insert(p->st, tbuf, type,
+							 err);
+			printf("Global %d\n", err->type);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return NULL;
+			*reg = SUBTILIS_IR_REG_GLOBAL;
+		} else {
+			subtilis_error_set_unknown_variable(
+			    err, tbuf, p->l->stream->name, p->l->line);
+			return NULL;
+		}
+	}
+
+	return s;
+}
+
 static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err)
 {
@@ -1445,6 +1478,184 @@ static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 		subtilis_var_assign_to_mem(p, tbuf, op1, s->loc, e, err);
 
 cleanup:
+
+	free(var_name);
+}
+
+/*
+ * Returns 0 and no error if more than max args are read.  Caller is
+ * expected to free expressions even in case of error.
+ */
+
+static size_t prv_var_bracketed_int_args(subtilis_parser_t *p,
+					 subtilis_token_t *t,
+					 subtilis_exp_t **e, size_t max,
+					 subtilis_error_t *err)
+{
+	size_t i;
+	const char *tbuf;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, "(")) {
+		subtilis_error_set_exp_expected(err, "( ", p->l->stream->name,
+						p->l->line);
+		return 0;
+	}
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	e[0] = prv_int_var_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	for (i = 1; i < max; i++) {
+		tbuf = subtilis_token_get_text(t);
+		if (t->type != SUBTILIS_TOKEN_OPERATOR) {
+			subtilis_error_set_expected(
+			    err, ",", tbuf, p->l->stream->name, p->l->line);
+			return 0;
+		}
+
+		if (!strcmp(tbuf, ")")) {
+			subtilis_lexer_get(p->l, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return 0;
+			return i;
+		}
+
+		if (strcmp(tbuf, ",")) {
+			subtilis_error_set_expected(
+			    err, ",", tbuf, p->l->stream->name, p->l->line);
+			return 0;
+		}
+
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return 0;
+
+		e[i] = prv_int_var_expression(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return 0;
+	}
+
+	/*
+	 * Too many integers in the list
+	 */
+
+	return 0;
+}
+
+static void prv_init_array_type(const subtilis_type_t *element_type,
+				subtilis_type_t *type,
+				subtilis_exp_t **e,
+				size_t dims,
+				subtilis_error_t *err)
+{
+	subtilis_type_type_t array_type;
+	size_t i;
+
+	if (dims > SUBTILIS_MAX_DIMENSIONS) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	switch (element_type->type) {
+	case SUBTILIS_TYPE_REAL:
+		array_type = SUBTILIS_TYPE_ARRAY_REAL;
+		break;
+	case SUBTILIS_TYPE_INTEGER:
+		array_type = SUBTILIS_TYPE_ARRAY_INTEGER;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	type->type = array_type;
+	type->params.array.num_dims = dims;
+
+	for (i = 0; i < dims; i++) {
+		if (e[i]->type.type == SUBTILIS_TYPE_CONST_INTEGER)
+			type->params.array.dims[i] = e[i]->exp.ir_op.integer;
+		else
+			type->params.array.dims[i] = SUBTILIS_DYNAMIC_DIMENSION;
+	}
+}
+
+static void prv_dim(subtilis_parser_t *p, subtilis_token_t *t,
+		    subtilis_error_t *err)
+{
+	const subtilis_symbol_t *s;
+	subtilis_ir_operand_t op1;
+	const char *tbuf;
+	subtilis_exp_t *e[SUBTILIS_MAX_DIMENSIONS];
+	subtilis_type_t element_type;
+	subtilis_type_t type;
+	size_t i;
+	size_t dims = 0;
+	char *var_name = NULL;
+
+	do {
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		if (t->type != SUBTILIS_TOKEN_IDENTIFIER) {
+			tbuf = subtilis_token_get_text(t);
+			subtilis_error_set_id_expected(err, tbuf,
+						       p->l->stream->name,
+						       p->l->line);
+			return;
+		}
+		tbuf = subtilis_token_get_text(t);
+		var_name = malloc(strlen(tbuf) + 1);
+		if (!var_name) {
+			subtilis_error_set_oom(err);
+			return;
+		}
+		strcpy(var_name, tbuf);
+		element_type = t->tok.id_type;
+
+		dims = prv_var_bracketed_int_args(p, t, e,
+						  SUBTILIS_MAX_DIMENSIONS, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		if (dims == 0) {
+			subtilis_error_too_many_dims(err, var_name,
+						     p->l->stream->name,
+						     p->l->line);
+			goto cleanup;
+		}
+
+		prv_init_array_type(&element_type, &type, &e[0], dims, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		s = prv_ensure_var(p, var_name, &type, &op1.reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		for (i = 0; i < SUBTILIS_MAX_DIMENSIONS; i++)
+			subtilis_exp_delete(e[i]);
+		dims = 0;
+		free(var_name);
+		var_name = NULL;
+
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		tbuf = subtilis_token_get_text(t);
+	} while (t->type == SUBTILIS_TOKEN_OPERATOR && !strcmp(tbuf, ","));
+
+cleanup:
+	for (i = 0; i < dims; i++)
+		subtilis_exp_delete(e[i]);
 
 	free(var_name);
 }
@@ -4349,7 +4560,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	prv_def, /* SUBTILIS_KEYWORD_DEF */
 	NULL, /* SUBTILIS_KEYWORD_DEG */
 	NULL, /* SUBTILIS_KEYWORD_DELETE */
-	NULL, /* SUBTILIS_KEYWORD_DIM */
+	prv_dim, /* SUBTILIS_KEYWORD_DIM */
 	NULL, /* SUBTILIS_KEYWORD_DIV */
 	prv_draw, /* SUBTILIS_KEYWORD_DRAW */
 	NULL, /* SUBTILIS_KEYWORD_EDIT */

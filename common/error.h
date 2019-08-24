@@ -70,6 +70,7 @@ typedef enum {
 	SUBTILIS_ERROR_NESTED_HANDLER,
 	SUBTILIS_ERROR_ENDPROC_IN_FN,
 	SUBTILIS_ERROR_RETURN_EXPECTED,
+	SUBTILIS_ERROR_TOO_MANY_DIMS,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -206,6 +207,8 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_return_expected(e, file, line)                          \
 	subtilis_error_set_syntax(e, SUBTILIS_ERROR_RETURN_EXPECTED, file,     \
 				  line, __FILE__, __LINE__)
+#define subtilis_error_too_many_dims(e, str, file, line)                       \
+	subtilis_error_set1(e, SUBTILIS_ERROR_TOO_MANY_DIMS, str, file, line)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,
