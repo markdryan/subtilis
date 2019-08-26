@@ -19,6 +19,7 @@
 
 #include "../common/config.h"
 #include "symbol_table.h"
+#include "type_if.h"
 
 subtilis_symbol_table_t *subtilis_symbol_table_new(subtilis_error_t *err)
 {
@@ -67,25 +68,9 @@ static subtilis_symbol_t *prv_symbol_new(size_t loc,
 		return NULL;
 	}
 
-	// TODO: There's target specific information here.  We assume
-	// pointers are 32 bit which they may not be.  We also need to
-	// add support for other integer types.
-
-	switch (id_type->type) {
-	case SUBTILIS_TYPE_REAL:
-		sym->size = 8;
-		break;
-	case SUBTILIS_TYPE_INTEGER:
-		sym->size = 4;
-		break;
-	case SUBTILIS_TYPE_STRING:
-		sym->size = 8;
-		break;
-	case SUBTILIS_TYPE_VOID:
-	default:
-		subtilis_error_set_assertion_failed(err);
+	sym->size = subtilis_type_if_size(id_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
-	}
 	sym->t = *id_type;
 	sym->loc = loc;
 	sym->is_reg = is_reg;

@@ -404,6 +404,7 @@ static subtilis_exp_t *prv_gte_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 /* clang-format off */
 subtilis_type_if subtilis_type_const_float64 = {
 	.is_const = true,
+	.size = NULL,
 	.zero = NULL,
 	.zero_reg = NULL,
 	.exp_to_var = prv_exp_to_var_const,
@@ -434,6 +435,11 @@ subtilis_type_if subtilis_type_const_float64 = {
 };
 
 /* clang-format on */
+
+static size_t prv_size(const subtilis_type_t *type, subtilis_error_t *err)
+{
+	return 8;
+}
 
 static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
 {
@@ -797,6 +803,7 @@ static subtilis_exp_t *prv_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 /* clang-format off */
 subtilis_type_if subtilis_type_float64 = {
 	.is_const = false,
+	.size = prv_size,
 	.zero = prv_zero,
 	.zero_reg = prv_zero_reg,
 	.exp_to_var = prv_returne,

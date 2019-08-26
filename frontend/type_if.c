@@ -117,6 +117,18 @@ static subtilis_exp_t *prv_call_binary_nc_logical_fn(
 	return e;
 }
 
+size_t subtilis_type_if_size(const subtilis_type_t *type, subtilis_error_t *err)
+{
+	subtilis_type_if_size_t fn;
+
+	fn = prv_type_map[type->type]->size;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+	return fn(type, err);
+}
+
 subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 				      const subtilis_type_t *type,
 				      subtilis_error_t *err)
