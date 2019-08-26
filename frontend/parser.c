@@ -1472,6 +1472,8 @@ static void prv_parse_locals(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	const char *tbuf;
 	subtilis_exp_t *e;
+	subtilis_type_t type;
+	char *var_name = NULL;
 
 	while ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
 	       (t->tok.keyword.type == SUBTILIS_KEYWORD_LOCAL)) {
@@ -1492,19 +1494,47 @@ static void prv_parse_locals(subtilis_parser_t *p, subtilis_token_t *t,
 			return;
 		}
 
-		e = subtilis_type_if_zero(p, &t->tok.id_type, err);
-		if (err->type != SUBTILIS_ERROR_OK)
+		var_name = malloc(strlen(tbuf) + 1);
+		if (!var_name) {
+			subtilis_error_set_oom(err);
 			return;
-		(void)subtilis_symbol_table_insert_reg(
-		    p->local_st, tbuf, &e->type, e->exp.ir_op.reg, err);
-		subtilis_exp_delete(e);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+		}
+		strcpy(var_name, tbuf);
+		type = t->tok.id_type;
 
 		subtilis_lexer_get(p->l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		tbuf = subtilis_token_get_text(t);
+		if (!((t->type == SUBTILIS_TOKEN_OPERATOR) &&
+		      !strcmp(tbuf, "="))) {
+			e = subtilis_type_if_zero(p, &type, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+		} else {
+			e = prv_expression(p, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+			e = subtilis_type_if_exp_to_var(p, e, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+			e = subtilis_exp_coerce_type(p, e, &type, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+		}
+		(void)subtilis_symbol_table_insert_reg(
+		    p->local_st, var_name, &type, e->exp.ir_op.reg, err);
+		subtilis_exp_delete(e);
+		free(var_name);
+		var_name = NULL;
+		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
+
+cleanup:
+
+	free(var_name);
 }
 
 static void prv_mode(subtilis_parser_t *p, subtilis_token_t *t,

@@ -40,8 +40,7 @@ const subtilis_test_case_t test_cases[] = {
 	  "PRINT g% DIV 2\n",
 	  "2\n-2\n4\n0\n"},
 	{ "mod",
-	  "LOCAL b%\n"
-	  "LET b% = 100 MOD 6\n"
+	  "LOCAL b% = 100 MOD 6\n"
 	  "LET c% = 6 MOD b%\n"
 	  "LET d% = b% MOD c%\n"
 	  "LET e% = -(c% * 10) MOD 3\n"
@@ -244,8 +243,7 @@ const subtilis_test_case_t test_cases[] = {
 	  "ENDPROC\n",
 	  "2\n"},
 	{ "local",
-	  "LOCAL i%\n"
-	  "LET i% = 5\n"
+	  "LOCAL i%= 5\n"
 	  "LET i%=i%+1\n"
 	  "PROCInci\n"
 	  "PRINT i%\n"
@@ -340,8 +338,7 @@ const subtilis_test_case_t test_cases[] = {
 	  "ENDPROC\n",
 	  "-102\n2\n"},
 	{ "fpa_logical",
-	  "LOCAL a\n"
-	  "LET a = 3.14\n"
+	  "LOCAL a = 3.14\n"
 	  "LET b = 17.6666\n"
 	  "LET c = 3.14\n"
 	  "PRINT a < b\n"

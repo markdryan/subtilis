@@ -249,6 +249,19 @@ have to deal with local variable shadowing.  Such a change would probably be
 accompanied by a short hand notation for LOCAL, :=.  It's probably worth doing
 though as writing LOCAL everywhere is a real pain.
 
+Currently the LOCAL statement can only be used to define a single variable.
+However, it can be used to initialise the variable.  Thus in Subtilis you can
+write
+
+LOCAL y% = 10 MOD 3
+
+If no initialiser is provided the variable is initialised to it's zero value,
+0 for numbers and array elements and "" for strings.  Thus the statement
+
+LOCAL x%
+
+declares a local variable, x%, and initialises it to 0.
+
 ### Function and Procedure definition
 
 The DEF keyword must be followed by a space.  So DEFPROCTest will not compile in
