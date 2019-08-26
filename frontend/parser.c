@@ -1354,6 +1354,8 @@ static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_ir_operand_t op1;
 	const subtilis_symbol_t *s;
 	subtilis_assign_type_t at;
+	subtilis_type_t type;
+	bool new_var = false;
 	char *var_name = NULL;
 	subtilis_exp_t *e = NULL;
 
@@ -1364,6 +1366,7 @@ static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 	strcpy(var_name, tbuf);
+	type = t->tok.id_type;
 	s = subtilis_symbol_table_lookup(p->local_st, tbuf);
 	if (s) {
 		op1.reg = SUBTILIS_IR_REG_LOCAL;
@@ -1372,10 +1375,15 @@ static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 		if (s) {
 			op1.reg = SUBTILIS_IR_REG_GLOBAL;
 		} else if (p->current == p->main) {
-			s = subtilis_symbol_table_insert(p->st, tbuf,
-							 &t->tok.id_type, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				goto cleanup;
+			/*
+			 * We explicitly disable statements like
+			 *
+			 * X% = X% + 1  or
+			 * X% += 1
+			 *
+			 * for the cases where X% has not been defined.
+			 */
+			new_var = true;
 			op1.reg = SUBTILIS_IR_REG_GLOBAL;
 		} else {
 			subtilis_error_set_unknown_variable(
@@ -1397,6 +1405,10 @@ static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 
 	if (!strcmp(tbuf, "=")) {
 		at = SUBTILIS_ASSIGN_TYPE_EQUAL;
+	} else if (new_var) {
+		subtilis_error_set_assignment_op_expected(
+		    err, tbuf, p->l->stream->name, p->l->line);
+		goto cleanup;
 	} else if (!strcmp(tbuf, "+=")) {
 		at = SUBTILIS_ASSIGN_TYPE_PLUS_EQUAL;
 	} else if (!strcmp(tbuf, "-=")) {
@@ -1413,9 +1425,15 @@ static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 
 	/* Ownership of e is passed to the following functions. */
 
-	e = subtilis_exp_coerce_type(p, e, &s->t, err);
+	e = subtilis_exp_coerce_type(p, e, &type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
+
+	if (new_var) {
+		s = subtilis_symbol_table_insert(p->st, var_name, &type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
 
 	e = prv_assignment_operator(p, var_name, e, at, err);
 	if (err->type != SUBTILIS_ERROR_OK)
