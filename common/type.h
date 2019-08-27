@@ -27,13 +27,12 @@ typedef enum {
 	SUBTILIS_TYPE_INTEGER,
 	SUBTILIS_TYPE_STRING,
 	SUBTILIS_TYPE_VOID,
-	SUBTILIS_TYPE_ARRAY_INTEGER,
 	SUBTILIS_TYPE_ARRAY_REAL,
+	SUBTILIS_TYPE_ARRAY_INTEGER,
 	SUBTILIS_TYPE_MAX,
 } subtilis_type_type_t;
 
 #define SUBTILIS_MAX_DIMENSIONS 10
-#define SUBTILIS_DYNAMIC_DIMENSION -1
 
 /*
  * TODO: This integer needs to be dependent on the int size of the backend
@@ -41,10 +40,9 @@ typedef enum {
 
 struct subtilis_type_array_t_ {
 	int32_t num_dims;
-	int32_t dims[SUBTILIS_MAX_DIMENSIONS];
 };
 
-typedef struct subtilis_type_array_t_  subtilis_type_array_t;
+typedef struct subtilis_type_array_t_ subtilis_type_array_t;
 
 struct subtilis_type_t_ {
 	subtilis_type_type_t type;

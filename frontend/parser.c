@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "../common/error.h"
+#include "../common/error_codes.h"
 #include "builtins_ir.h"
 #include "expression.h"
 #include "globals.h"
@@ -104,6 +105,10 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 	p->caps = caps;
 	p->level = 0;
 
+	subtilis_sizet_vector_init(&p->free_list);
+	subtilis_sizet_vector_init(&p->local_free_list);
+	subtilis_sizet_vector_init(&p->main_free_list);
+
 	return p;
 
 on_error:
@@ -128,6 +133,9 @@ void subtilis_parser_delete(subtilis_parser_t *p)
 	subtilis_ir_prog_delete(p->prog);
 	subtilis_symbol_table_delete(p->main_st);
 	subtilis_symbol_table_delete(p->st);
+	subtilis_sizet_vector_free(&p->free_list);
+	subtilis_sizet_vector_free(&p->local_free_list);
+	subtilis_sizet_vector_free(&p->main_free_list);
 	free(p);
 }
 
@@ -1347,39 +1355,6 @@ cleanup:
 	return NULL;
 }
 
-static const subtilis_symbol_t *prv_ensure_var(subtilis_parser_t *p,
-					       const char *tbuf,
-					       const subtilis_type_t *type,
-					       size_t *reg,
-					       subtilis_error_t *err)
-{
-	;
-	const subtilis_symbol_t *s;
-
-	s = subtilis_symbol_table_lookup(p->local_st, tbuf);
-	if (s) {
-		*reg = SUBTILIS_IR_REG_LOCAL;
-	} else {
-		s = subtilis_symbol_table_lookup(p->st, tbuf);
-		if (s) {
-			*reg = SUBTILIS_IR_REG_GLOBAL;
-		} else if (p->current == p->main) {
-			s = subtilis_symbol_table_insert(p->st, tbuf, type,
-							 err);
-			printf("Global %d\n", err->type);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return NULL;
-			*reg = SUBTILIS_IR_REG_GLOBAL;
-		} else {
-			subtilis_error_set_unknown_variable(
-			    err, tbuf, p->l->stream->name, p->l->line);
-			return NULL;
-		}
-	}
-
-	return s;
-}
-
 static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err)
 {
@@ -1510,7 +1485,11 @@ static size_t prv_var_bracketed_int_args(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
-	e[0] = prv_int_var_expression(p, t, err);
+	e[0] = prv_priority7(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	e[0] = subtilis_type_if_to_int(p, e[0], err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
@@ -1522,12 +1501,8 @@ static size_t prv_var_bracketed_int_args(subtilis_parser_t *p,
 			return 0;
 		}
 
-		if (!strcmp(tbuf, ")")) {
-			subtilis_lexer_get(p->l, t, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return 0;
+		if (!strcmp(tbuf, ")"))
 			return i;
-		}
 
 		if (strcmp(tbuf, ",")) {
 			subtilis_error_set_expected(
@@ -1539,7 +1514,11 @@ static size_t prv_var_bracketed_int_args(subtilis_parser_t *p,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return 0;
 
-		e[i] = prv_int_var_expression(p, t, err);
+		e[i] = prv_priority7(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return 0;
+
+		e[i] = subtilis_type_if_to_int(p, e[i], err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return 0;
 	}
@@ -1551,55 +1530,340 @@ static size_t prv_var_bracketed_int_args(subtilis_parser_t *p,
 	return 0;
 }
 
-static void prv_init_array_type(const subtilis_type_t *element_type,
-				subtilis_type_t *type,
-				subtilis_exp_t **e,
-				size_t dims,
-				subtilis_error_t *err)
+static void prv_init_array_type(subtilis_parser_t *p,
+				const subtilis_type_t *element_type,
+				subtilis_type_t *type, subtilis_exp_t **e,
+				size_t dims, subtilis_error_t *err)
 {
-	subtilis_type_type_t array_type;
-	size_t i;
-
 	if (dims > SUBTILIS_MAX_DIMENSIONS) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
-	switch (element_type->type) {
-	case SUBTILIS_TYPE_REAL:
-		array_type = SUBTILIS_TYPE_ARRAY_REAL;
-		break;
-	case SUBTILIS_TYPE_INTEGER:
-		array_type = SUBTILIS_TYPE_ARRAY_INTEGER;
-		break;
-	default:
-		subtilis_error_set_assertion_failed(err);
+	subtilis_type_if_array_of(p, element_type, type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	}
 
-	type->type = array_type;
 	type->params.array.num_dims = dims;
+}
 
-	for (i = 0; i < dims; i++) {
-		if (e[i]->type.type == SUBTILIS_TYPE_CONST_INTEGER)
-			type->params.array.dims[i] = e[i]->exp.ir_op.integer;
-		else
-			type->params.array.dims[i] = SUBTILIS_DYNAMIC_DIMENSION;
+static void prv_deallocate_arrays(subtilis_parser_t *p,
+				  subtilis_ir_operand_t load_reg,
+				  subtilis_sizet_vector_t *free_list,
+				  subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t offset;
+	subtilis_ir_operand_t zero;
+	subtilis_ir_operand_t free_label;
+	subtilis_ir_operand_t skip_label;
+
+	free_label.label = subtilis_ir_section_new_label(p->current);
+	skip_label.label = subtilis_ir_section_new_label(p->current);
+
+	for (i = 0; i < free_list->len; i++) {
+		op1.integer = (int32_t)free_list->vals[i];
+		offset.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_LOADO_I32, load_reg, op1,
+		    err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		zero.integer = 0;
+		zero.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_NEQI_I32, offset, zero, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_ir_section_add_instr_reg(p->current,
+						  SUBTILIS_OP_INSTR_JMPC, zero,
+						  free_label, skip_label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_ir_section_add_label(p->current, free_label.label,
+					      err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_ir_section_add_instr_no_reg(
+		    p->current, SUBTILIS_OP_INSTR_DEREF, offset, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_ir_section_add_label(p->current, skip_label.label,
+					      err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 	}
 }
 
-static void prv_dim(subtilis_parser_t *p, subtilis_token_t *t,
-		    subtilis_error_t *err)
+/* Consumes e */
+
+static void prv_generate_error(subtilis_parser_t *p, subtilis_exp_t *e,
+			       subtilis_error_t *err)
+{
+	subtilis_ir_operand_t target_label;
+
+	subtilis_var_assign_hidden(p, subtilis_err_hidden_var,
+				   &subtilis_type_integer, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (p->current->in_error_handler) {
+		/*
+		 * We're in an error handler. Let's set the error flag and
+		 * return the default value for the function type.
+		 */
+
+		subtilis_ir_section_add_instr_no_arg(
+		    p->current, SUBTILIS_OP_INSTR_SETE, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_exp_return_default_value(p, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else if (p->current->handler_list) {
+		/*
+		 * We're not in an error handler but one is defined.
+		 * Let's jump there.
+		 */
+
+		target_label.label = p->current->handler_list->label;
+		subtilis_ir_section_add_instr_no_reg(
+		    p->current, SUBTILIS_OP_INSTR_JMP, target_label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		/*
+		 * We're not in an error handler and none has been defined.
+		 * Let's set the error flag and return the default value.
+		 */
+
+		subtilis_ir_section_add_instr_no_arg(
+		    p->current, SUBTILIS_OP_INSTR_SETE, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_exp_return_default_value(p, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+}
+
+/* Does not consume e */
+
+static void prv_check_dynamic_dim(subtilis_parser_t *p, subtilis_exp_t *e,
+				  subtilis_error_t *err)
+{
+	subtilis_ir_operand_t error_label;
+	subtilis_ir_operand_t ok_label;
+	subtilis_exp_t *zero = NULL;
+	subtilis_exp_t *edup = NULL;
+	subtilis_exp_t *ecode = NULL;
+
+	error_label.label = subtilis_ir_section_new_label(p->current);
+	ok_label.label = subtilis_ir_section_new_label(p->current);
+
+	edup = subtilis_type_if_dup(e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	zero = subtilis_exp_new_int32(0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	edup = subtilis_type_if_lte(p, edup, zero, err);
+	zero = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  edup->exp.ir_op, error_label,
+					  ok_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, error_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	ecode = subtilis_exp_new_int32(SUBTILIS_ERROR_CODE_BAD_DIM, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_generate_error(p, ecode, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, ok_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+cleanup:
+
+	subtilis_exp_delete(edup);
+}
+
+static void prv_allocate_array(subtilis_parser_t *p, const char *var_name,
+			       subtilis_type_t *type,
+			       const subtilis_symbol_t *s, subtilis_exp_t **e,
+			       subtilis_ir_operand_t store_reg,
+			       subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op;
+	subtilis_ir_operand_t op1;
+	size_t i;
+	subtilis_sizet_vector_t *free_list;
+	subtilis_exp_t *edup;
+	subtilis_exp_t *sizee = NULL;
+	subtilis_exp_t *zero = NULL;
+	int64_t array_size = 1;
+	int32_t offset = s->loc + 8;
+
+	/*
+	 * TODO: This whole thing is 32 bit specific.  At least the pointer
+	 * needs to be platform specific although we may still keep maximum
+	 * array sizes to 32 bits.
+	 */
+
+	/* TODO:
+	 * I don't see any way to detect whether the array dimensions overflow
+	 * 32 bits. For constants we can use 64 bit integers to store the size.
+	 * This would then limit us to using 32 bits for the array size, even on
+	 * 64 bit builds (unless we resort to instrinsics) as there
+	 * are no 128 bit integers in C.  For the ARM2 backend, there is
+	 * no way to detect overflow of dynamic vars.  This could be done on
+	 * StrongARM using UMULL.  Perhaps we could execute different code on
+	 * SA here.  For now, be careful with those array bounds!
+	 */
+
+	for (i = 0; i < type->params.array.num_dims; i++) {
+		if (e[i]->type.type != SUBTILIS_TYPE_CONST_INTEGER)
+			continue;
+		if (e[i]->exp.ir_op.integer <= 0) {
+			subtilis_error_bad_dim(err, var_name,
+					       p->l->stream->name, p->l->line);
+			return;
+		}
+		array_size = array_size * e[i]->exp.ir_op.integer;
+	}
+
+	if (array_size > (int64_t)0x7ffffff) {
+		subtilis_error_bad_dim(err, var_name, p->l->stream->name,
+				       p->l->line);
+		return;
+	}
+
+	sizee = subtilis_exp_new_int32((int32_t)array_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	sizee = subtilis_type_if_exp_to_var(p, sizee, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	/* Need to compute size of array */
+
+	for (i = 0; i < type->params.array.num_dims; i++) {
+		if (e[i]->type.type != SUBTILIS_TYPE_CONST_INTEGER) {
+			prv_check_dynamic_dim(p, e[i], err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+			edup = subtilis_type_if_dup(e[i], err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+			sizee = subtilis_type_if_mul(p, sizee, edup, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+		}
+		op1.integer = offset;
+		e[i] = subtilis_type_if_exp_to_var(p, e[i], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		subtilis_ir_section_add_instr_reg(
+		    p->current, SUBTILIS_OP_INSTR_STOREO_I32, e[i]->exp.ir_op,
+		    store_reg, op1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		offset += sizeof(int32_t);
+	}
+
+	op1.integer = s->loc;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, sizee->exp.ir_op,
+	    store_reg, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	/*
+	 * We need to zero out the pointer in case alloc fails.  Our variable
+	 * has been created at this point, so the cleanup code will attempt to
+	 * free it, unless the pointer is zero.
+	 */
+
+	zero = subtilis_exp_new_int32(0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	zero = subtilis_type_if_exp_to_var(p, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.integer = s->loc + 4;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_STOREO_I32,
+					  zero->exp.ir_op, store_reg, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_ALLOC, sizee->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_handle_errors(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op, store_reg, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (store_reg.reg == SUBTILIS_IR_REG_LOCAL)
+		free_list = (p->current == p->main) ? &p->main_free_list
+						    : &p->local_free_list;
+	else
+		free_list = &p->free_list;
+
+	subtilis_sizet_vector_append(free_list, s->loc + 4, err);
+
+cleanup:
+
+	subtilis_exp_delete(zero);
+	subtilis_exp_delete(sizee);
+}
+
+static void prv_create_array(subtilis_parser_t *p, subtilis_token_t *t,
+			     bool local, subtilis_error_t *err)
 {
 	const subtilis_symbol_t *s;
-	subtilis_ir_operand_t op1;
 	const char *tbuf;
 	subtilis_exp_t *e[SUBTILIS_MAX_DIMENSIONS];
 	subtilis_type_t element_type;
 	subtilis_type_t type;
 	size_t i;
+	subtilis_ir_operand_t local_global;
 	size_t dims = 0;
 	char *var_name = NULL;
+
+	local_global.reg =
+	    local ? SUBTILIS_IR_REG_LOCAL : SUBTILIS_IR_REG_GLOBAL;
 
 	do {
 		subtilis_lexer_get(p->l, t, err);
@@ -1607,12 +1871,19 @@ static void prv_dim(subtilis_parser_t *p, subtilis_token_t *t,
 			return;
 		if (t->type != SUBTILIS_TOKEN_IDENTIFIER) {
 			tbuf = subtilis_token_get_text(t);
-			subtilis_error_set_id_expected(err, tbuf,
-						       p->l->stream->name,
-						       p->l->line);
+			subtilis_error_set_id_expected(
+			    err, tbuf, p->l->stream->name, p->l->line);
 			return;
 		}
+
 		tbuf = subtilis_token_get_text(t);
+		if (subtilis_symbol_table_lookup(p->local_st, tbuf) ||
+		    (!local && subtilis_symbol_table_lookup(p->st, tbuf))) {
+			subtilis_error_set_already_defined(
+			    err, tbuf, p->l->stream->name, p->l->line);
+			return;
+		}
+
 		var_name = malloc(strlen(tbuf) + 1);
 		if (!var_name) {
 			subtilis_error_set_oom(err);
@@ -1627,23 +1898,29 @@ static void prv_dim(subtilis_parser_t *p, subtilis_token_t *t,
 			goto cleanup;
 
 		if (dims == 0) {
-			subtilis_error_too_many_dims(err, var_name,
-						     p->l->stream->name,
-						     p->l->line);
+			subtilis_error_too_many_dims(
+			    err, var_name, p->l->stream->name, p->l->line);
 			goto cleanup;
 		}
 
-		prv_init_array_type(&element_type, &type, &e[0], dims, err);
+		prv_init_array_type(p, &element_type, &type, &e[0], dims, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		s = prv_ensure_var(p, var_name, &type, &op1.reg, err);
+		s = subtilis_symbol_table_insert(local ? p->local_st : p->st,
+						 var_name, &type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		for (i = 0; i < SUBTILIS_MAX_DIMENSIONS; i++)
+		prv_allocate_array(p, var_name, &type, s, &e[0], local_global,
+				   err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		for (i = 0; i < dims; i++)
 			subtilis_exp_delete(e[i]);
 		dims = 0;
+
 		free(var_name);
 		var_name = NULL;
 
@@ -1658,6 +1935,17 @@ cleanup:
 		subtilis_exp_delete(e[i]);
 
 	free(var_name);
+}
+
+static void prv_dim(subtilis_parser_t *p, subtilis_token_t *t,
+		    subtilis_error_t *err)
+{
+	if (p->current != p->main) {
+		subtilis_error_dim_in_proc(err, p->l->stream->name, p->l->line);
+		return;
+	}
+
+	prv_create_array(p, t, false, err);
 }
 
 static void prv_let(subtilis_parser_t *p, subtilis_token_t *t,
@@ -1693,7 +1981,13 @@ static void prv_parse_locals(subtilis_parser_t *p, subtilis_token_t *t,
 			return;
 
 		tbuf = subtilis_token_get_text(t);
-		if (t->type != SUBTILIS_TOKEN_IDENTIFIER) {
+		if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
+		    (t->tok.keyword.type == SUBTILIS_KEYWORD_DIM)) {
+			prv_create_array(p, t, true, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			continue;
+		} else if (t->type != SUBTILIS_TOKEN_IDENTIFIER) {
 			subtilis_error_set_id_expected(
 			    err, tbuf, p->l->stream->name, p->l->line);
 			return;
@@ -3731,7 +4025,6 @@ static void prv_error(subtilis_parser_t *p, subtilis_token_t *t,
 		      subtilis_error_t *err)
 {
 	subtilis_exp_t *e;
-	subtilis_ir_operand_t target_label;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -3747,51 +4040,9 @@ static void prv_error(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 
-	subtilis_var_assign_hidden(p, subtilis_err_hidden_var,
-				   &subtilis_type_integer, e, err);
+	prv_generate_error(p, e, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-
-	if (p->current->in_error_handler) {
-		/*
-		 * We're in an error handler. Let's set the error flag and
-		 * return the default value for the function type.
-		 */
-
-		subtilis_ir_section_add_instr_no_arg(
-		    p->current, SUBTILIS_OP_INSTR_SETE, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-
-		subtilis_exp_return_default_value(p, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-	} else if (p->current->handler_list) {
-		/*
-		 * We're not in an error handler but one is defined.
-		 * Let's jump there.
-		 */
-
-		target_label.label = p->current->handler_list->label;
-		subtilis_ir_section_add_instr_no_reg(
-		    p->current, SUBTILIS_OP_INSTR_JMP, target_label, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-	} else {
-		/*
-		 * We're not in an error handler and none has been defined.
-		 * Let's set the error flag and return the default value.
-		 */
-
-		subtilis_ir_section_add_instr_no_arg(
-		    p->current, SUBTILIS_OP_INSTR_SETE, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-
-		subtilis_exp_return_default_value(p, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-	}
 
 	p->current->endproc = true;
 }
@@ -4003,6 +4254,7 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_type_section_t *stype;
 	subtilis_type_t fn_type;
 	subtilis_exp_t *e;
+	subtilis_ir_operand_t var_reg;
 	size_t num_params = 0;
 	subtilis_type_t *params = NULL;
 	subtilis_symbol_table_t *local_st = NULL;
@@ -4014,6 +4266,7 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 
+	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -4078,6 +4331,11 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 					      err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
+
+		prv_deallocate_arrays(p, var_reg, &p->local_free_list, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+
 		prv_add_fn_ret(p, &fn_type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
@@ -4089,6 +4347,11 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 					      err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
+
+		prv_deallocate_arrays(p, var_reg, &p->local_free_list, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+
 		subtilis_ir_section_add_instr_no_arg(
 		    p->current, SUBTILIS_OP_INSTR_RET, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -4108,6 +4371,8 @@ on_error:
 	free(name);
 	p->local_st = p->main_st;
 	p->current = p->main;
+	subtilis_sizet_vector_free(&p->local_free_list);
+	subtilis_sizet_vector_init(&p->local_free_list);
 }
 
 static subtilis_parser_param_t *prv_call_parameters(subtilis_parser_t *p,
@@ -4326,6 +4591,7 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 		     subtilis_error_t *err)
 {
 	subtilis_exp_t *seed;
+	subtilis_ir_operand_t var_reg;
 
 	seed = subtilis_exp_new_int32(0x3fffffff, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -4360,6 +4626,16 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	subtilis_ir_section_add_label(p->current, p->current->end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
+	prv_deallocate_arrays(p, var_reg, &p->main_free_list, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	var_reg.reg = SUBTILIS_IR_REG_GLOBAL;
+	prv_deallocate_arrays(p, var_reg, &p->free_list, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

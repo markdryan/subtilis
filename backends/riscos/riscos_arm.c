@@ -1243,8 +1243,20 @@ void subtilis_riscos_arm_alloc(subtilis_ir_section_t *s, size_t start,
 	 */
 
 	reg = subtilis_arm_ir_to_arm_reg(alloc->operands[0].reg);
-	subtilis_arm_add_add_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, reg, 2, 8,
+	subtilis_arm_add_add_imm(arm_s, SUBTILIS_ARM_CCODE_VC, false, reg, 2, 8,
 				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	one = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_VS, false, one,
+				 SUBTILIS_ERROR_CODE_OOM, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
+				   SUBTILIS_ARM_CCODE_VS, one, 12,
+				   s->error_offset, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1252,8 +1264,7 @@ void subtilis_riscos_arm_alloc(subtilis_ir_section_t *s, size_t start,
 	 * Store reference count of 1 in first few bytes of new block
 	 */
 
-	one = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, one, 1,
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_VC, false, one, 1,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;

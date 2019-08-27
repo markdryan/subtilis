@@ -407,6 +407,7 @@ subtilis_type_if subtilis_type_const_float64 = {
 	.size = NULL,
 	.zero = NULL,
 	.zero_reg = NULL,
+	.array_of = NULL,
 	.exp_to_var = prv_exp_to_var_const,
 	.copy_var = NULL,
 	.dup = prv_dup,
@@ -436,10 +437,7 @@ subtilis_type_if subtilis_type_const_float64 = {
 
 /* clang-format on */
 
-static size_t prv_size(const subtilis_type_t *type, subtilis_error_t *err)
-{
-	return 8;
-}
+static size_t prv_size(const subtilis_type_t *type) { return 8; }
 
 static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
 {
@@ -464,6 +462,12 @@ static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
 	op1.real = 0.0;
 	subtilis_ir_section_add_instr_no_reg2(
 	    p->current, SUBTILIS_OP_INSTR_MOVI_REAL, op0, op1, err);
+}
+
+static void prv_array_of(const subtilis_type_t *element_type,
+			 subtilis_type_t *type)
+{
+	type->type = SUBTILIS_TYPE_ARRAY_REAL;
 }
 
 static subtilis_exp_t *prv_copy_var(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -806,6 +810,7 @@ subtilis_type_if subtilis_type_float64 = {
 	.size = prv_size,
 	.zero = prv_zero,
 	.zero_reg = prv_zero_reg,
+	.array_of = prv_array_of,
 	.exp_to_var = prv_returne,
 	.copy_var = prv_copy_var,
 	.dup = prv_dup,

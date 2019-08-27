@@ -20,9 +20,9 @@
 #include "expression.h"
 #include "parser.h"
 
-typedef size_t (*subtilis_type_if_size_t)(const subtilis_type_t *type,
-					  subtilis_error_t *err);
-
+typedef size_t (*subtilis_type_if_size_t)(const subtilis_type_t *type);
+typedef void (*subtilis_type_if_typeof_t)(const subtilis_type_t *element_type,
+					  subtilis_type_t *type);
 typedef subtilis_exp_t *(*subtilis_type_if_none_t)(subtilis_parser_t *p,
 						   subtilis_error_t *err);
 typedef void (*subtilis_type_if_reg_t)(subtilis_parser_t *p, size_t reg,
@@ -47,6 +47,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_size_t size;
 	subtilis_type_if_none_t zero;
 	subtilis_type_if_reg_t zero_reg;
+	subtilis_type_if_typeof_t array_of;
 	subtilis_type_if_unary_t exp_to_var;
 	subtilis_type_if_unary_t copy_var;
 	subtilis_type_if_dup_t dup;
@@ -87,6 +88,9 @@ subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 void subtilis_type_if_zero_reg(subtilis_parser_t *p,
 			       const subtilis_type_t *type, size_t reg,
 			       subtilis_error_t *err);
+void subtilis_type_if_array_of(subtilis_parser_t *p,
+			       const subtilis_type_t *element_type,
+			       subtilis_type_t *type, subtilis_error_t *err);
 subtilis_exp_t *subtilis_type_if_exp_to_var(subtilis_parser_t *p,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err);

@@ -14,13 +14,24 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_ERROR_CODES_H
-#define __SUBTILIS_ERROR_CODES_H
+#include "array_type.h"
 
-#define SUBTILIS_ERROR_CODE_BAD_DIM 10
-#define SUBTILIS_ERROR_CODE_OOM 11
-#define SUBTILIS_ERROR_CODE_ESCAPE 17
-#define SUBTILIS_ERROR_CODE_DIV_BY_ZERO 18
-#define SUBTILIS_ERROR_CODE_LOG_RANGE 22
+size_t subtilis_array_type_size(const subtilis_type_t *type)
+{
+	size_t size;
 
-#endif
+	/*
+	 * TODO: Size appropriately for 64 bit builds.
+	 */
+
+	/*
+	 * We need, on 32 bit builds,
+	 * 4 bytes for the pointer
+	 * 4 bytes for the size
+	 * 4 bytes for each dimension unknown at compile time.
+	 */
+
+	size = 4 + 4 + type->params.array.num_dims * 4;
+
+	return size;
+}

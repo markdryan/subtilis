@@ -16,6 +16,8 @@
 
 #include <stdlib.h>
 
+#include "array_float64_type.h"
+#include "array_int32_type.h"
 #include "float64_type.h"
 #include "int32_type.h"
 #include "type_if.h"
@@ -29,6 +31,8 @@ static subtilis_type_if *prv_type_map[] = {
 	&subtilis_type_int32,
 	NULL,
 	NULL,
+	&subtilis_type_array_float64,
+	&subtilis_type_array_int32,
 	NULL,
 };
 
@@ -126,7 +130,7 @@ size_t subtilis_type_if_size(const subtilis_type_t *type, subtilis_error_t *err)
 		subtilis_error_set_assertion_failed(err);
 		return 0;
 	}
-	return fn(type, err);
+	return fn(type);
 }
 
 subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
@@ -155,6 +159,20 @@ void subtilis_type_if_zero_reg(subtilis_parser_t *p,
 		return;
 	}
 	fn(p, reg, err);
+}
+
+void subtilis_type_if_array_of(subtilis_parser_t *p,
+			       const subtilis_type_t *element_type,
+			       subtilis_type_t *type, subtilis_error_t *err)
+{
+	subtilis_type_if_typeof_t fn;
+
+	fn = prv_type_map[element_type->type]->array_of;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(element_type, type);
 }
 
 subtilis_exp_t *subtilis_type_if_exp_to_var(subtilis_parser_t *p,

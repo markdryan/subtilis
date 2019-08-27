@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_ERROR_CODES_H
-#define __SUBTILIS_ERROR_CODES_H
+#ifndef __SUBTILIS_ARRAY_INT32_TYPE_H
+#define __SUBTILIS_ARRAY_INT32_TYPE_H
 
-#define SUBTILIS_ERROR_CODE_BAD_DIM 10
-#define SUBTILIS_ERROR_CODE_OOM 11
-#define SUBTILIS_ERROR_CODE_ESCAPE 17
-#define SUBTILIS_ERROR_CODE_DIV_BY_ZERO 18
-#define SUBTILIS_ERROR_CODE_LOG_RANGE 22
+#include "type_if.h"
+
+extern subtilis_type_if subtilis_type_array_int32;
 
 #endif

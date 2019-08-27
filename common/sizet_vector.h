@@ -14,13 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_ERROR_CODES_H
-#define __SUBTILIS_ERROR_CODES_H
+#ifndef __SUBTILIS_SIZET_VECTOR_H
+#define __SUBTILIS_SIZET_VECTOR_H
 
-#define SUBTILIS_ERROR_CODE_BAD_DIM 10
-#define SUBTILIS_ERROR_CODE_OOM 11
-#define SUBTILIS_ERROR_CODE_ESCAPE 17
-#define SUBTILIS_ERROR_CODE_DIV_BY_ZERO 18
-#define SUBTILIS_ERROR_CODE_LOG_RANGE 22
+#include "error.h"
+
+struct subtilis_sizet_vector_t_ {
+	size_t len;
+	size_t max_len;
+	size_t *vals;
+};
+
+typedef struct subtilis_sizet_vector_t_ subtilis_sizet_vector_t;
+
+void subtilis_sizet_vector_init(subtilis_sizet_vector_t *v);
+void subtilis_sizet_vector_append(subtilis_sizet_vector_t *v, size_t val,
+				  subtilis_error_t *err);
+void subtilis_sizet_vector_free(subtilis_sizet_vector_t *v);
 
 #endif

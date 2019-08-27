@@ -425,6 +425,9 @@ struct subtilis_arm_section_t_ {
 	size_t max_call_site_count;
 	subtilis_arm_call_site_t *call_sites;
 	subtilis_arm_constants_t constants;
+
+	/* TODO: replace with subtilis_sizet_vector */
+
 	size_t ret_site_count;
 	size_t max_ret_site_count;
 	size_t *ret_sites;

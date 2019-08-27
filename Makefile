@@ -21,7 +21,11 @@ COMMON =\
 	globals.c \
 	type_if.c \
 	float64_type.c \
-	int32_type.c
+	int32_type.c \
+	array_int32_type.c \
+	array_float64_type.c \
+	array_type.c \
+	sizet_vector.c
 
 ARM =\
 	arm_core.c \
