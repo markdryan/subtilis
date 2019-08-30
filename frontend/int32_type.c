@@ -48,6 +48,44 @@ static void prv_dup(subtilis_exp_t *e1, subtilis_exp_t *e2,
 	e2->exp.ir_op = e1->exp.ir_op;
 }
 
+static void prv_assign_to_reg_const(subtilis_parser_t *p, size_t reg,
+				    subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op2;
+
+	op0.reg = reg;
+	op2.integer = 0;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_MOVI_I32, op0,
+					  e->exp.ir_op, op2, err);
+	subtilis_exp_delete(e);
+}
+
+static void prv_assign_to_mem_const(subtilis_parser_t *p, size_t mem_reg,
+				    size_t loc, subtilis_exp_t *e,
+				    subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+
+	op0.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, e->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.reg = mem_reg;
+	op2.integer = (int32_t)loc;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op0, op1, op2, err);
+
+cleanup:
+
+	subtilis_exp_delete(e);
+}
+
 static subtilis_exp_t *prv_to_int32(subtilis_parser_t *p, subtilis_exp_t *e,
 				    subtilis_error_t *err)
 {
@@ -666,6 +704,9 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.exp_to_var = prv_exp_to_var_const,
 	.copy_var = NULL,
 	.dup = prv_dup,
+	.assign_reg = prv_assign_to_reg_const,
+	.assign_mem = prv_assign_to_mem_const,
+	.load_mem = NULL,
 	.to_int32 = prv_to_int32,
 	.to_float64 = prv_to_float64_const,
 	.unary_minus = prv_unary_minus_const,
@@ -750,6 +791,50 @@ on_error:
 
 	subtilis_exp_delete(e);
 	return NULL;
+}
+
+static void prv_assign_to_reg(subtilis_parser_t *p, size_t reg,
+			      subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op2;
+
+	op0.reg = reg;
+	op2.integer = 0;
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_MOV,
+					  op0, e->exp.ir_op, op2, err);
+	subtilis_exp_delete(e);
+}
+
+static void prv_assign_to_mem(subtilis_parser_t *p, size_t mem_reg, size_t loc,
+			      subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+
+	op1.reg = mem_reg;
+	op2.integer = (int32_t)loc;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_STOREO_I32,
+					  e->exp.ir_op, op1, op2, err);
+	subtilis_exp_delete(e);
+}
+
+static subtilis_exp_t *prv_load_from_mem(subtilis_parser_t *p, size_t mem_reg,
+					 size_t loc, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	size_t reg;
+
+	op1.reg = mem_reg;
+	op2.integer = (int32_t)loc;
+	reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_int32_var(reg, err);
 }
 
 static subtilis_exp_t *prv_to_float64(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -1448,6 +1533,9 @@ subtilis_type_if subtilis_type_int32 = {
 	.exp_to_var = prv_exp_to_var,
 	.copy_var = prv_copy_var,
 	.dup = prv_dup,
+	.assign_reg = prv_assign_to_reg,
+	.assign_mem = prv_assign_to_mem,
+	.load_mem = prv_load_from_mem,
 	.to_int32 = prv_to_int32,
 	.to_float64 = prv_to_float64,
 	.unary_minus = prv_unary_minus,

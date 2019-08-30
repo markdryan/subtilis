@@ -1448,9 +1448,9 @@ static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 
 	if (s->is_reg)
-		subtilis_var_assign_to_reg(p, t, tbuf, s->loc, e, err);
+		subtilis_type_if_assign_to_reg(p, s->loc, e, err);
 	else
-		subtilis_var_assign_to_mem(p, tbuf, op1, s->loc, e, err);
+		subtilis_type_if_assign_to_mem(p, op1.reg, s->loc, e, err);
 
 cleanup:
 
@@ -3449,9 +3449,9 @@ static subtilis_exp_t *prv_increment_var(subtilis_parser_t *p,
 	}
 
 	if (s->is_reg)
-		subtilis_var_assign_to_reg(p, NULL, var_name, s->loc, inc, err);
+		subtilis_type_if_assign_to_reg(p, s->loc, inc, err);
 	else
-		subtilis_var_assign_to_mem(p, var_name, op1, s->loc, inc, err);
+		subtilis_type_if_assign_to_mem(p, op1.reg, s->loc, inc, err);
 	inc = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;

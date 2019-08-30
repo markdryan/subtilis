@@ -42,6 +42,16 @@ typedef subtilis_exp_t *(*subtilis_type_if_binary_nc_t)(subtilis_parser_t *p,
 typedef void (*subtilis_type_if_dup_t)(subtilis_exp_t *e1, subtilis_exp_t *e2,
 				       subtilis_error_t *err);
 
+typedef void (*subtilis_type_if_sizet_exp_t)(subtilis_parser_t *p, size_t reg,
+					     subtilis_exp_t *e,
+					     subtilis_error_t *err);
+typedef void (*subtilis_type_if_sizet2_exp_t)(subtilis_parser_t *p, size_t reg,
+					      size_t loc, subtilis_exp_t *e,
+					      subtilis_error_t *err);
+typedef subtilis_exp_t *(*subtilis_type_if_load_t)(subtilis_parser_t *p,
+						   size_t reg, size_t loc,
+						   subtilis_error_t *err);
+
 struct subtilis_type_if_ {
 	bool is_const;
 	subtilis_type_if_size_t size;
@@ -51,6 +61,9 @@ struct subtilis_type_if_ {
 	subtilis_type_if_unary_t exp_to_var;
 	subtilis_type_if_unary_t copy_var;
 	subtilis_type_if_dup_t dup;
+	subtilis_type_if_sizet_exp_t assign_reg;
+	subtilis_type_if_sizet2_exp_t assign_mem;
+	subtilis_type_if_load_t load_mem;
 	subtilis_type_if_unary_t to_int32;
 	subtilis_type_if_unary_t to_float64;
 	subtilis_type_if_unary_t unary_minus;
@@ -98,6 +111,15 @@ subtilis_exp_t *subtilis_type_if_copy_var(subtilis_parser_t *p,
 					  subtilis_exp_t *e,
 					  subtilis_error_t *err);
 subtilis_exp_t *subtilis_type_if_dup(subtilis_exp_t *e, subtilis_error_t *err);
+void subtilis_type_if_assign_to_reg(subtilis_parser_t *p, size_t reg,
+				    subtilis_exp_t *e, subtilis_error_t *err);
+void subtilis_type_if_assign_to_mem(subtilis_parser_t *p, size_t mem_reg,
+				    size_t loc, subtilis_exp_t *e,
+				    subtilis_error_t *err);
+subtilis_exp_t *subtilis_type_if_load_from_mem(subtilis_parser_t *p,
+					       const subtilis_type_t *type,
+					       size_t mem_reg, size_t loc,
+					       subtilis_error_t *err);
 subtilis_exp_t *subtilis_type_if_to_int(subtilis_parser_t *p, subtilis_exp_t *e,
 					subtilis_error_t *err);
 subtilis_exp_t *subtilis_type_if_to_float64(subtilis_parser_t *p,

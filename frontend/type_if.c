@@ -208,6 +208,58 @@ subtilis_exp_t *subtilis_type_if_dup(subtilis_exp_t *e, subtilis_error_t *err)
 	return exp;
 }
 
+void subtilis_type_if_assign_to_reg(subtilis_parser_t *p, size_t reg,
+				    subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_type_if_sizet_exp_t fn;
+
+	fn = prv_type_map[e->type.type]->assign_reg;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(p, reg, e, err);
+}
+
+void subtilis_type_if_assign_to_mem(subtilis_parser_t *p, size_t mem_reg,
+				    size_t loc, subtilis_exp_t *e,
+				    subtilis_error_t *err)
+{
+	subtilis_type_if_sizet2_exp_t fn;
+
+	if (loc > 0x7fffffff) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	fn = prv_type_map[e->type.type]->assign_mem;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(p, mem_reg, loc, e, err);
+}
+
+subtilis_exp_t *subtilis_type_if_load_from_mem(subtilis_parser_t *p,
+					       const subtilis_type_t *type,
+					       size_t mem_reg, size_t loc,
+					       subtilis_error_t *err)
+{
+	subtilis_type_if_load_t fn;
+
+	if (loc > 0x7fffffff) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+
+	fn = prv_type_map[type->type]->load_mem;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+	return fn(p, mem_reg, loc, err);
+}
+
 subtilis_exp_t *subtilis_type_if_to_int(subtilis_parser_t *p, subtilis_exp_t *e,
 					subtilis_error_t *err)
 {
