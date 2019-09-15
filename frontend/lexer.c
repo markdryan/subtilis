@@ -477,6 +477,7 @@ static void prv_process_call(subtilis_lexer_t *l, subtilis_token_t *t,
 			     bool proc, subtilis_error_t *err)
 {
 	const char *tbuf;
+	subtilis_type_t id_type;
 
 	t->type = SUBTILIS_TOKEN_KEYWORD;
 	prv_validate_identifier(l, t, err);
@@ -494,7 +495,8 @@ static void prv_process_call(subtilis_lexer_t *l, subtilis_token_t *t,
 		t->tok.keyword.supported = true;
 		t->tok.keyword.id_type.type = SUBTILIS_TYPE_VOID;
 	} else {
-		t->tok.keyword.id_type = t->tok.id_type;
+		id_type = t->tok.id_type;
+		t->tok.keyword.id_type = id_type;
 		t->tok.keyword.type = SUBTILIS_KEYWORD_FN;
 		t->tok.keyword.supported = true;
 	}
