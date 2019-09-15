@@ -20,7 +20,9 @@
 #include "../common/ir.h"
 #include "builtins_ir.h"
 #include "expression.h"
+#include "globals.h"
 #include "type_if.h"
+#include "variable.h"
 
 static void prv_add_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 			 subtilis_error_t *err)
@@ -465,4 +467,58 @@ void subtilis_exp_delete(subtilis_exp_t *e)
 	if (e->type.type == SUBTILIS_TYPE_CONST_STRING)
 		subtilis_buffer_free(&e->exp.str);
 	free(e);
+}
+
+/* Consumes e */
+
+void subtilis_exp_generate_error(subtilis_parser_t *p, subtilis_exp_t *e,
+				 subtilis_error_t *err)
+{
+	subtilis_ir_operand_t target_label;
+
+	subtilis_var_assign_hidden(p, subtilis_err_hidden_var,
+				   &subtilis_type_integer, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (p->current->in_error_handler) {
+		/*
+		 * We're in an error handler. Let's set the error flag and
+		 * return the default value for the function type.
+		 */
+
+		subtilis_ir_section_add_instr_no_arg(
+		    p->current, SUBTILIS_OP_INSTR_SETE, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_exp_return_default_value(p, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else if (p->current->handler_list) {
+		/*
+		 * We're not in an error handler but one is defined.
+		 * Let's jump there.
+		 */
+
+		target_label.label = p->current->handler_list->label;
+		subtilis_ir_section_add_instr_no_reg(
+		    p->current, SUBTILIS_OP_INSTR_JMP, target_label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		/*
+		 * We're not in an error handler and none has been defined.
+		 * Let's set the error flag and return the default value.
+		 */
+
+		subtilis_ir_section_add_instr_no_arg(
+		    p->current, SUBTILIS_OP_INSTR_SETE, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_exp_return_default_value(p, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 }

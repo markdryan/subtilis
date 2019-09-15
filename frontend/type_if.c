@@ -133,6 +133,22 @@ size_t subtilis_type_if_size(const subtilis_type_t *type, subtilis_error_t *err)
 	return fn(type);
 }
 
+subtilis_exp_t *subtilis_type_if_data_size(subtilis_parser_t *p,
+					   const subtilis_type_t *type,
+					   subtilis_exp_t *e,
+					   subtilis_error_t *err)
+{
+	subtilis_type_if_unary_t fn = prv_type_map[type->type]->data_size;
+
+	if (!fn) {
+		subtilis_exp_delete(e);
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+
+	return fn(p, e, err);
+}
+
 subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 				      const subtilis_type_t *type,
 				      subtilis_error_t *err)
@@ -258,6 +274,48 @@ subtilis_exp_t *subtilis_type_if_load_from_mem(subtilis_parser_t *p,
 		return NULL;
 	}
 	return fn(p, mem_reg, loc, err);
+}
+
+void subtilis_type_if_indexed_write(subtilis_parser_t *p, const char *var_name,
+				    const subtilis_type_t *type, size_t mem_reg,
+				    size_t loc, subtilis_exp_t *e,
+				    subtilis_exp_t **indices,
+				    size_t index_count, subtilis_error_t *err)
+{
+	subtilis_type_if_iwrite_t fn;
+
+	if (loc > 0x7fffffff) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	fn = prv_type_map[type->type]->indexed_write;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(p, var_name, type, mem_reg, loc, e, indices, index_count, err);
+}
+
+subtilis_exp_t *
+subtilis_type_if_indexed_read(subtilis_parser_t *p, const char *var_name,
+			      const subtilis_type_t *type, size_t mem_reg,
+			      size_t loc, subtilis_exp_t **indices,
+			      size_t index_count, subtilis_error_t *err)
+{
+	subtilis_type_if_iread_t fn;
+
+	if (loc > 0x7fffffff) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+
+	fn = prv_type_map[type->type]->indexed_read;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+	return fn(p, var_name, type, mem_reg, loc, indices, index_count, err);
 }
 
 subtilis_exp_t *subtilis_type_if_to_int(subtilis_parser_t *p, subtilis_exp_t *e,

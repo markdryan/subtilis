@@ -25,6 +25,20 @@ static size_t prv_size(const subtilis_type_t *type)
 	return subtilis_array_type_size(type);
 }
 
+static subtilis_exp_t *prv_data_size(subtilis_parser_t *p, subtilis_exp_t *e,
+				     subtilis_error_t *err)
+{
+	subtilis_exp_t *two;
+
+	two = subtilis_exp_new_int32(2, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return subtilis_type_if_lsl(p, e, two, err);
+}
+
 static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
 {
 	subtilis_error_set_not_supported(err, "zero on arrays",
@@ -42,6 +56,39 @@ static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
 static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
 				      subtilis_error_t *err)
 {
+	return e;
+}
+
+static void prv_indexed_write(subtilis_parser_t *p, const char *var_name,
+			      const subtilis_type_t *type, size_t mem_reg,
+			      size_t loc, subtilis_exp_t *e,
+			      subtilis_exp_t **indices, size_t index_count,
+			      subtilis_error_t *err)
+{
+	e = subtilis_type_if_to_int(p, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_array_write(p, var_name, type, mem_reg, loc, e, indices,
+			     index_count, err);
+}
+
+static subtilis_exp_t *
+prv_indexed_read(subtilis_parser_t *p, const char *var_name,
+		 const subtilis_type_t *type, size_t mem_reg, size_t loc,
+		 subtilis_exp_t **indices, size_t index_count,
+		 subtilis_error_t *err)
+{
+	subtilis_exp_t *offset;
+	subtilis_exp_t *e;
+
+	offset = subtilis_array_index_calc(p, var_name, type, mem_reg, loc,
+					   indices, index_count, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	e = subtilis_type_if_load_from_mem(p, &subtilis_type_integer,
+					   offset->exp.ir_op.reg, 0, err);
+	subtilis_exp_delete(offset);
 	return e;
 }
 
@@ -170,6 +217,7 @@ static subtilis_exp_t *prv_asr(subtilis_parser_t *p, subtilis_exp_t *a1,
 subtilis_type_if subtilis_type_array_int32 = {
 	.is_const = false,
 	.size = prv_size,
+	.data_size = prv_data_size,
 	.zero = prv_zero,
 	.zero_reg = prv_zero_reg,
 	.exp_to_var = prv_exp_to_var,
@@ -177,6 +225,8 @@ subtilis_type_if subtilis_type_array_int32 = {
 	.dup = NULL,
 	.assign_reg = NULL,
 	.assign_mem = NULL,
+	.indexed_write = prv_indexed_write,
+	.indexed_read = prv_indexed_read,
 	.load_mem = NULL,
 	.to_int32 = NULL,
 	.to_float64 = NULL,

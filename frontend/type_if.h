@@ -52,9 +52,28 @@ typedef subtilis_exp_t *(*subtilis_type_if_load_t)(subtilis_parser_t *p,
 						   size_t reg, size_t loc,
 						   subtilis_error_t *err);
 
+/* clang-format off */
+typedef void (*subtilis_type_if_iwrite_t)(subtilis_parser_t *p,
+					  const char *var_name,
+					  const subtilis_type_t *type,
+					  size_t mem_reg, size_t loc,
+					  subtilis_exp_t *e,
+					  subtilis_exp_t **indices,
+					  size_t index_count,
+					  subtilis_error_t *err);
+typedef subtilis_exp_t *(*subtilis_type_if_iread_t)(subtilis_parser_t *p,
+						    const char *var_name,
+						    const subtilis_type_t *type,
+						    size_t mem_reg, size_t loc,
+						    subtilis_exp_t **indices,
+						    size_t index_count,
+						    subtilis_error_t *err);
+/* clang-format on */
+
 struct subtilis_type_if_ {
 	bool is_const;
 	subtilis_type_if_size_t size;
+	subtilis_type_if_unary_t data_size;
 	subtilis_type_if_none_t zero;
 	subtilis_type_if_reg_t zero_reg;
 	subtilis_type_if_typeof_t array_of;
@@ -63,6 +82,8 @@ struct subtilis_type_if_ {
 	subtilis_type_if_dup_t dup;
 	subtilis_type_if_sizet_exp_t assign_reg;
 	subtilis_type_if_sizet2_exp_t assign_mem;
+	subtilis_type_if_iwrite_t indexed_write;
+	subtilis_type_if_iread_t indexed_read;
 	subtilis_type_if_load_t load_mem;
 	subtilis_type_if_unary_t to_int32;
 	subtilis_type_if_unary_t to_float64;
@@ -95,6 +116,10 @@ typedef struct subtilis_type_if_ subtilis_type_if;
 
 size_t subtilis_type_if_size(const subtilis_type_t *type,
 			     subtilis_error_t *err);
+subtilis_exp_t *subtilis_type_if_data_size(subtilis_parser_t *p,
+					   const subtilis_type_t *type,
+					   subtilis_exp_t *e,
+					   subtilis_error_t *err);
 subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 				      const subtilis_type_t *type,
 				      subtilis_error_t *err);
@@ -116,6 +141,16 @@ void subtilis_type_if_assign_to_reg(subtilis_parser_t *p, size_t reg,
 void subtilis_type_if_assign_to_mem(subtilis_parser_t *p, size_t mem_reg,
 				    size_t loc, subtilis_exp_t *e,
 				    subtilis_error_t *err);
+void subtilis_type_if_indexed_write(subtilis_parser_t *p, const char *var_name,
+				    const subtilis_type_t *type, size_t mem_reg,
+				    size_t loc, subtilis_exp_t *e,
+				    subtilis_exp_t **indices,
+				    size_t index_count, subtilis_error_t *err);
+subtilis_exp_t *
+subtilis_type_if_indexed_read(subtilis_parser_t *p, const char *var_name,
+			      const subtilis_type_t *type, size_t mem_reg,
+			      size_t loc, subtilis_exp_t **indices,
+			      size_t index_count, subtilis_error_t *err);
 subtilis_exp_t *subtilis_type_if_load_from_mem(subtilis_parser_t *p,
 					       const subtilis_type_t *type,
 					       size_t mem_reg, size_t loc,

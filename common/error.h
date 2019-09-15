@@ -73,6 +73,8 @@ typedef enum {
 	SUBTILIS_ERROR_TOO_MANY_DIMS,
 	SUBTILIS_ERROR_DIM_IN_PROC,
 	SUBTILIS_ERROR_BAD_DIM,
+	SUBTILIS_ERROR_BAD_INDEX,
+	SUBTILIS_ERROR_BAD_INDEX_COUNT,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -216,6 +218,10 @@ void subtilis_error_init(subtilis_error_t *e);
 				  __FILE__, __LINE__)
 #define subtilis_error_bad_dim(e, str, file, line)                             \
 	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_DIM, str, file, line)
+#define subtilis_error_bad_index(e, str, file, line)                           \
+	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_INDEX, str, file, line)
+#define subtilis_error_bad_index_count(e, str, file, line)                     \
+	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_INDEX_COUNT, str, file, line)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,
