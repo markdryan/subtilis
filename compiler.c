@@ -25,6 +25,16 @@
 #include "frontend/lexer.h"
 #include "frontend/parser.h"
 
+static void prv_set_prog_size(uint32_t *code, size_t words_written,
+			      subtilis_error_t *err)
+{
+	if (words_written < 2) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	code[1] = 0x8000 + (int32_t)words_written * 4;
+}
+
 int main(int argc, char *argv[])
 {
 	subtilis_error_t err;
@@ -73,7 +83,7 @@ int main(int argc, char *argv[])
 	printf("\n\n");
 	subtilis_arm_prog_dump(arm_p);
 
-	subtilis_arm_encode(arm_p, "RunImage", &err);
+	subtilis_arm_encode(arm_p, "RunImage", prv_set_prog_size, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

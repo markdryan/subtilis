@@ -45,6 +45,8 @@
  *          |   Stack          | Stack used for function calls and locals
  *R13-8192  |------------------| -------------------------------------------
  *          |   Heap           | Heap, used for strings, arrays and structures
+ * codeend  |------------------| -------------------------------------------
+ *          |   Code           | Program code ( Heap start at 0x8004)
  * 0x8000   |------------------| -------------------------------------------
  */
 
@@ -161,7 +163,7 @@ static void prv_init_heap(subtilis_arm_section_t *arm_s, uint32_t stack_size,
 
 	/*
 	 * On entry,
-	 * R11 = 0x8000
+	 * R11 = heap start
 	 * R13 is the top of the stack
 	 */
 
@@ -199,6 +201,22 @@ static void prv_init_heap(subtilis_arm_section_t *arm_s, uint32_t stack_size,
 	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x1d, 0, err);
 }
 
+static void prv_load_heap_pointer(subtilis_arm_section_t *arm_s, size_t scratch,
+				  subtilis_error_t *err)
+{
+	size_t reg;
+
+	reg = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, reg,
+				 0x8000, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, scratch, reg, 4, err);
+}
+
 static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 			     subtilis_riscos_fp_preamble_t fp_premable,
 			     subtilis_error_t *err)
@@ -221,6 +239,26 @@ static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 		return;
 	}
 
+	/*
+	 * The second word is going to contain the start of the heap.  We can't
+	 * execute this code so we need to skip it with a mov pc, pc.
+	 */
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 15, 15,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * Just a dummy instruction to save space for the start of the heap.
+	 * We'll write the heap start in here later on when linking.
+	 */
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 15, 15,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	/* 0x7 = R0, R1, R2 */
 	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x10, 0x7, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -228,16 +266,17 @@ static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 
 	dest = 12;
 
+	/* Load heap start into R11 */
+
+	prv_load_heap_pointer(arm_s, 11, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	/*
-	 * Check we have enough memory for globals + escape_handler +
+	 * Check we have enough memory for code + globals + escape_handler +
 	 * 8KB of stack + 8KB of heap.  At some point we'll make this
 	 * configurable.
 	 */
-
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 11,
-				 0x8000, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 
 	subtilis_arm_add_add_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 12, 11,
 				 (uint32_t)needed, err);
@@ -1217,8 +1256,7 @@ void subtilis_riscos_arm_alloc(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 1, 0x8000,
-				 err);
+	prv_load_heap_pointer(arm_s, 1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1298,8 +1336,7 @@ void subtilis_riscos_arm_realloc(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 1, 0x8000,
-				 err);
+	prv_load_heap_pointer(arm_s, 1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1427,8 +1464,7 @@ void subtilis_riscos_arm_deref(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_EQ, false, 1, 0x8000,
-				 err);
+	prv_load_heap_pointer(arm_s, 1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

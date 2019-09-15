@@ -943,6 +943,7 @@ prv_claim_block(subtilis_arm_vm_t *arm_vm, uint32_t size, subtilis_error_t *err)
 
 		block->start += size;
 		block->size -= size;
+		block = new_block;
 	}
 
 	return block;
@@ -985,6 +986,8 @@ static void prv_os_heap(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 			return;
 		if (block)
 			arm_vm->regs[2] = block->start;
+		else
+			arm_vm->regs[2] = 0;
 		break;
 	case 3:
 		new_block = NULL;

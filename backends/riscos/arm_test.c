@@ -66,6 +66,15 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	/* Insert heap start */
+
+	if (code_size < 2) {
+		subtilis_error_set_assertion_failed(&err);
+		goto cleanup;
+	}
+
+	code[1] = 0x8000 + (code_size * sizeof(code));
+
 	//	for (size_t i = 0; i < code_size; i++) {
 	//		printf("0x%x\n",code[i]);
 	///	}
