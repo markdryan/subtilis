@@ -111,7 +111,7 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_prog_t *p,
 		goto fail;
 	}
 
-	vm->memory_size = st->allocated + vm->s->locals;
+	vm->memory_size = SUBTILIS_VM_HEAP_SIZE + st->allocated + vm->s->locals;
 
 	vm->memory = calloc(sizeof(uint8_t), vm->memory_size);
 	if (!vm->memory) {
@@ -121,13 +121,22 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_prog_t *p,
 
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto fail;
-	vm->regs[SUBTILIS_IR_REG_GLOBAL] = 0;
-	vm->regs[SUBTILIS_IR_REG_LOCAL] = st->allocated;
+	vm->regs[SUBTILIS_IR_REG_GLOBAL] = SUBTILIS_VM_HEAP_SIZE;
+	vm->regs[SUBTILIS_IR_REG_LOCAL] =
+	    vm->regs[SUBTILIS_IR_REG_GLOBAL] + st->allocated;
 	vm->top = vm->memory_size;
 
 	prv_compute_labels(vm, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto fail;
+
+	subtilis_vm_heap_init(&vm->heap);
+	vm->heap.free_list =
+	    subtilis_vm_heap_new_block(0, SUBTILIS_VM_HEAP_SIZE);
+	if (!vm->heap.free_list) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
 
 	return vm;
 
@@ -1089,144 +1098,107 @@ static void prv_testesc(subitlis_vm_t *vm, subtilis_buffer_t *b,
 {
 }
 
-static bool prv_ensure_heap(subitlis_vm_t *vm)
-{
-	subtilis_vm_heap_block_t *new_heap;
-	size_t new_max;
-
-	if (vm->heap_count < vm->heap_max)
-		return true;
-
-	new_max = vm->heap_max + 1024;
-	new_heap = realloc(vm->heap, sizeof(*new_heap) * new_max);
-	if (!new_heap)
-		return false;
-	memset(new_heap + vm->heap_max * sizeof(*new_heap), 0,
-	       sizeof(*new_heap) * new_max);
-	vm->heap = new_heap;
-	vm->heap_max = new_max;
-	return true;
-}
-
 static void prv_check_heap(subitlis_vm_t *vm, subtilis_error_t *err)
 {
-	size_t i;
+	subtilis_vm_heap_free_block_t *block;
 
-	for (i = 0; i < vm->heap_count; i++)
-		if (vm->heap[i].count > 0) {
-			printf("Handle %zu count %zu still allocated\n", i,
-			       vm->heap[i].count);
-			subtilis_error_set_assertion_failed(err);
-		}
+	block = vm->heap.used_list;
+	while (block) {
+		printf("block %d size %d still allocated\n", block->start,
+		       block->size);
+		subtilis_error_set_assertion_failed(err);
+		block = block->next;
+	}
 }
 
 static void prv_alloc(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		      subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	void *buf;
-	size_t i;
-	size_t to_alloc = vm->regs[ops[1].reg];
+	subtilis_vm_heap_free_block_t *block;
+	size_t to_alloc = vm->regs[ops[1].reg] + sizeof(size_t);
 	int32_t base = vm->regs[SUBTILIS_IR_REG_GLOBAL];
 
-	for (i = 0; i < vm->heap_count && vm->heap[i].count != 0; i++)
-		;
-	if (i == vm->heap_count) {
-		if (!prv_ensure_heap(vm)) {
-			prv_sete(vm, b, ops, err);
-			vm->memory[base + vm->s->error_offset] =
-			    SUBTILIS_ERROR_CODE_OOM;
-			return;
-		}
-	}
-
-	buf = malloc(to_alloc);
-	if (!buf) {
+	block = subtilis_vm_heap_claim_block(&vm->heap, to_alloc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	if (!block) {
 		prv_sete(vm, b, ops, err);
 		vm->memory[base + vm->s->error_offset] =
 		    SUBTILIS_ERROR_CODE_OOM;
+		vm->regs[ops[2].reg] = 0;
 		return;
 	}
-	vm->heap[i].count = 1;
-	vm->heap[i].buf = buf;
-	vm->regs[ops[0].reg] = i;
-	if (i == vm->heap_count)
-		vm->heap_count++;
+
+	*((size_t *)&vm->memory[block->start]) = 1;
+	vm->regs[ops[0].reg] = block->start + sizeof(size_t);
 }
 
 static void prv_realloc(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	void *new_ptr;
-	size_t block = vm->regs[ops[0].reg];
-	size_t size = vm->regs[ops[1].reg];
+	subtilis_vm_heap_free_block_t *block;
+	uint32_t old_size;
+	size_t start = vm->regs[ops[0].reg] - sizeof(size_t);
+	size_t size = vm->regs[ops[1].reg] + sizeof(size_t);
 	int32_t base = vm->regs[SUBTILIS_IR_REG_GLOBAL];
 
-	if (block >= vm->heap_count) {
-		subtilis_error_set_assertion_failed(err);
+	block =
+	    subtilis_vm_heap_realloc(&vm->heap, start, size, &old_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	}
-
-	if (vm->heap[block].count == 0) {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
-	new_ptr = realloc(vm->heap[block].buf, size);
-	if (!new_ptr) {
+	if (!block) {
 		prv_sete(vm, b, ops, err);
 		vm->memory[base + vm->s->error_offset] =
 		    SUBTILIS_ERROR_CODE_OOM;
+		vm->regs[ops[2].reg] = 0;
 		return;
 	}
 
-	vm->heap[block].buf = new_ptr;
-
-	/*
-	 * The handle is never going to change even if the memory moves so
-	 * r2 will always be equal to r0.
-	 */
-
-	vm->regs[ops[2].reg] = vm->regs[ops[0].reg];
+	memcpy(&vm->memory[block->start], &vm->memory[start], old_size);
+	vm->regs[ops[2].reg] = block->start + sizeof(size_t);
 }
 
 static void prv_ref(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	size_t block = vm->regs[ops[0].reg];
+	subtilis_vm_heap_free_block_t *block;
+	size_t *ptr;
+	size_t start = vm->regs[ops[0].reg] - sizeof(size_t);
 
-	if (block >= vm->heap_count) {
+	block = subtilis_vm_heap_find_block(&vm->heap, start);
+	if (!block) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-
-	if (vm->heap[block].count == 0) {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
-	vm->heap[block].count++;
+	ptr = (size_t *)&vm->memory[block->start];
+	*ptr = *ptr + 1;
 }
 
 static void prv_deref(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		      subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	size_t block = vm->regs[ops[0].reg];
+	subtilis_vm_heap_free_block_t *block;
+	size_t *count;
+	size_t start = vm->regs[ops[0].reg] - sizeof(size_t);
 
-	if (block >= vm->heap_count) {
+	block = subtilis_vm_heap_find_block(&vm->heap, start);
+	if (!block) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
-	if (vm->heap[block].count == 0) {
+	count = (size_t *)&vm->memory[block->start];
+	if (*count == 0) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
-	vm->heap[block].count--;
-	if (vm->heap[block].count == 0) {
-		free(vm->heap[block].buf);
-		vm->heap[block].buf = NULL;
+	if (*count > 1) {
+		*count = *count - 1;
+		return;
 	}
+
+	subtilis_vm_heap_free_block(&vm->heap, start, err);
 }
 
 /* clang-format off */
@@ -1401,6 +1373,7 @@ void subitlis_vm_delete(subitlis_vm_t *vm)
 	free(vm->labels);
 	free(vm->fregs);
 	free(vm->regs);
+	subtilis_vm_heap_free(&vm->heap);
 	free(vm->memory);
 	free(vm);
 }

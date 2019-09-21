@@ -2,7 +2,7 @@
 
 COMPONENT = common
 
-OBJS = error utils buffer ir bitset builtins string_pool type sizet_vector
+OBJS = error utils buffer ir bitset builtins string_pool type sizet_vector vm_heap
 
 CFLAGS ?= -Wxla
 

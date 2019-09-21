@@ -45,6 +45,7 @@ subtilis_arm_vm_t *subtilis_arm_vm_new(uint32_t *code, size_t code_size,
 	arm_vm->mem_size = mem_size;
 
 	arm_vm->reverse_fpa_consts = (*lower_word) == 0;
+	subtilis_vm_heap_init(&arm_vm->heap);
 
 	return arm_vm;
 
@@ -56,26 +57,10 @@ fail:
 
 void subtilis_arm_vm_delete(subtilis_arm_vm_t *vm)
 {
-	subtilis_arm_free_block_t *ptr;
-	subtilis_arm_free_block_t *next;
-
 	if (!vm)
 		return;
 
-	ptr = vm->free_list;
-	while (ptr) {
-		next = ptr->next;
-		free(ptr);
-		ptr = next;
-	}
-
-	ptr = vm->used_list;
-	while (ptr) {
-		next = ptr->next;
-		free(ptr);
-		ptr = next;
-	}
-
+	subtilis_vm_heap_free(&vm->heap);
 	free(vm->memory);
 	free(vm);
 }
@@ -889,19 +874,16 @@ static void prv_os_byte(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 	}
 }
 
-static subtilis_arm_free_block_t *
+static subtilis_vm_heap_free_block_t *
 prv_new_heap_block(subtilis_arm_vm_t *arm_vm, uint32_t start, uint32_t size)
 {
-	subtilis_arm_free_block_t *block;
+	subtilis_vm_heap_free_block_t *block;
 	uint32_t *ptr;
 
-	block = (subtilis_arm_free_block_t *)malloc(sizeof(*block));
+	block = subtilis_vm_heap_new_block(start, size);
 	if (!block)
 		return NULL;
 
-	block->start = start;
-	block->size = size;
-	block->next = NULL;
 	ptr = (uint32_t *)&arm_vm->memory[start - 0x8000];
 	ptr[0] = 0;
 	ptr[1] = 0;
@@ -909,52 +891,25 @@ prv_new_heap_block(subtilis_arm_vm_t *arm_vm, uint32_t start, uint32_t size)
 	return block;
 }
 
-static subtilis_arm_free_block_t *
+static subtilis_vm_heap_free_block_t *
 prv_claim_block(subtilis_arm_vm_t *arm_vm, uint32_t size, subtilis_error_t *err)
 {
-	subtilis_arm_free_block_t *block;
-	subtilis_arm_free_block_t *new_block;
+	subtilis_vm_heap_free_block_t *block;
 
-	new_block = NULL;
-	block = arm_vm->free_list;
-	while (block && block->size < size) {
-		new_block = block;
-		block = block->next;
-	}
-	if (!block) {
-		arm_vm->overflow_flag = true;
+	block = subtilis_vm_heap_claim_block(&arm_vm->heap, size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	}
-	if (block->size == size) {
-		if (new_block)
-			new_block->next = block->next;
-		else
-			arm_vm->free_list = block->next;
-		block->next = arm_vm->used_list;
-		arm_vm->used_list = block;
-	} else {
-		new_block = prv_new_heap_block(arm_vm, block->start, size);
-		if (!new_block) {
-			subtilis_error_set_oom(err);
-			return NULL;
-		}
-		new_block->next = arm_vm->used_list;
-		arm_vm->used_list = new_block;
 
-		block->start += size;
-		block->size -= size;
-		block = new_block;
-	}
+	if (!block)
+		arm_vm->overflow_flag = true;
 
 	return block;
 }
 
 static void prv_os_heap(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 {
-	subtilis_arm_free_block_t *block;
-	subtilis_arm_free_block_t *new_block;
-	uint32_t new_size;
-	int32_t delta;
+	subtilis_vm_heap_free_block_t *block;
+	uint32_t old_size;
 
 	/*
 	 * The world's worst implementation of malloc.
@@ -962,7 +917,7 @@ static void prv_os_heap(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 
 	switch (arm_vm->regs[0]) {
 	case 0:
-		if (arm_vm->free_list) {
+		if (arm_vm->heap.free_list) {
 			/*
 			 * Currently only allows one heap.  The compiler
 			 * will never create more than one but this could be
@@ -973,9 +928,9 @@ static void prv_os_heap(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
-		arm_vm->free_list = prv_new_heap_block(arm_vm, arm_vm->regs[1],
-						       arm_vm->regs[3]);
-		if (!arm_vm->free_list) {
+		arm_vm->heap.free_list = prv_new_heap_block(
+		    arm_vm, arm_vm->regs[1], arm_vm->regs[3]);
+		if (!arm_vm->heap.free_list) {
 			subtilis_error_set_oom(err);
 			return;
 		}
@@ -990,50 +945,20 @@ static void prv_os_heap(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 			arm_vm->regs[2] = 0;
 		break;
 	case 3:
-		new_block = NULL;
-		block = arm_vm->used_list;
-		while (block && block->start != arm_vm->regs[2]) {
-			new_block = block;
-			block = block->next;
-		}
-		if (!block) {
-			subtilis_error_set_assertion_failed(err);
-			return;
-		}
-		if (new_block)
-			new_block->next = block->next;
-		else
-			arm_vm->used_list = block->next;
-		block->next = arm_vm->free_list;
-		arm_vm->free_list = block;
-		break;
-	case 4:
-		block = arm_vm->used_list;
-		while (block && block->start != arm_vm->regs[2])
-			block = block->next;
-		if (!block) {
-			subtilis_error_set_assertion_failed(err);
-			return;
-		}
-
-		delta = arm_vm->regs[3];
-		if (delta < 0) {
-			/*
-			 * Can't be bothered implementing block shrinkage.
-			 * The compiler will never generate code that does this.
-			 */
-			subtilis_error_set_assertion_failed(err);
-			return;
-		}
-
-		new_size = block->size + (uint32_t)delta;
-		new_block = prv_claim_block(arm_vm, new_size, err);
+		subtilis_vm_heap_free_block(&arm_vm->heap, arm_vm->regs[2],
+					    err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
+		break;
+	case 4:
+		block =
+		    subtilis_vm_heap_realloc(&arm_vm->heap, arm_vm->regs[2],
+					     arm_vm->regs[3], &old_size, err);
+		if (err->type == SUBTILIS_ERROR_OK)
+			return;
 		memcpy(&arm_vm->memory[block->start - 0x8000],
-		       &arm_vm->memory[new_block->start - 0x8000], block->size);
-		block->next = arm_vm->free_list;
-		arm_vm->free_list = block;
+		       &arm_vm->memory[arm_vm->regs[2] - 0x8000], old_size);
+		arm_vm->regs[2] = block->start;
 		break;
 	default:
 		subtilis_error_set_assertion_failed(err);

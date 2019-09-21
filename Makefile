@@ -51,7 +51,8 @@ COMPILER =\
 
 INTER =\
 	inter.c \
-	vm.c
+	vm.c \
+	vm_heap.c
 
 RUNARM =\
 	runarm.c \
@@ -60,7 +61,8 @@ RUNARM =\
 	arm_core.c \
 	arm_walker.c \
 	arm_dump.c \
-	fpa.c
+	fpa.c \
+	vm_heap.c
 
 TESTS =\
 	unit_tests.c \
@@ -76,7 +78,8 @@ TESTS =\
 	arm_reg_alloc_test.c \
 	arm_disass.c \
 	fpa_test.c \
-	bitset_test.c
+	bitset_test.c \
+	vm_heap.c
 
 CFLAGS ?= -O3
 CFLAGS += -Wall -Werror -MMD
