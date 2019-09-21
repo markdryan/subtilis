@@ -1357,6 +1357,60 @@ const subtilis_test_case_t test_cases[] = {
 	 "END\n"
 	 "ENDPROC\n",
 	 "-1\n"},
+	{"array_int_simple",
+	 "LOCAL i%\n"
+	 "DIM a%(10)\n"
+	 "FOR i% = 0 TO 10\n"
+	 "    a%(i%) = i%\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 10\n"
+	 "    PRINT a%(i%)\n"
+	 "NEXT\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"},
+	{"array_double_simple",
+	 "LOCAL i\n"
+	 "DIM a(10)\n"
+	 "FOR i% = 0 TO 10\n"
+	 "    a(i%) = i% + 0.5\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 10\n"
+	 "    PRINT a(i%)\n"
+	 "NEXT\n",
+	 "0.5\n1.5\n2.5\n3.5\n4.5\n5.5\n6.5\n7.5\n8.5\n9.5\n10.5\n"},
+	{"array2D_int_const",
+	 "LOCAL i%\n"
+	 "LOCAL j%\n"
+	 "LOCAL c%\n"
+	 "DIM a%(2,2)\n"
+	 "FOR i% = 0 TO 2\n"
+	 "    FOR j% = 0 TO 2\n"
+	 "        a%(i%,j%) = c%\n"
+	 "        c% += 1\n"
+	 "    NEXT\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 2\n"
+	 "    FOR j% = 0 TO 2\n"
+	 "        PRINT a%(i%,j%)\n"
+	 "    NEXT\n"
+	 "NEXT\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n"},
+	{"array2D_int_var",
+	 "LOCAL i% = 2\n"
+	 "LOCAL j% = 2\n"
+	 "LOCAL c%\n"
+	 "DIM a%(i%, j%)\n"
+	 "FOR i% = 0 TO 2\n"
+	 "    FOR j% = 0 TO 2\n"
+	 "        a%(i%,j%) = c%\n"
+	 "        c% += 1\n"
+	 "    NEXT\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 2\n"
+	 "    FOR j% = 0 TO 2\n"
+	 "        PRINT a%(i%,j%)\n"
+	 "    NEXT\n"
+	 "NEXT\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n"},
 };
 
 /* clang-format on */
