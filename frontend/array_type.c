@@ -446,6 +446,89 @@ void subtilis_array_gen_index_error_code(subtilis_parser_t *p,
 	subtilis_exp_generate_error(p, ecode, err);
 }
 
+static void prv_check_last_index(subtilis_parser_t *p, const char *var_name,
+				 subtilis_exp_t **e,
+				 const subtilis_type_t *type, int32_t offset,
+				 size_t mem_reg, subtilis_error_t *err)
+{
+	int32_t dim_size;
+	size_t i = type->params.array.num_dims - 1;
+	subtilis_exp_t *maxe = NULL;
+
+	dim_size = type->params.array.dims[i];
+	if ((dim_size != SUBTILIS_DYNAMIC_DIMENSION) &&
+	    (e[i]->type.type == SUBTILIS_TYPE_CONST_INTEGER)) {
+		if ((e[i]->exp.ir_op.integer < 0) ||
+		    (e[i]->exp.ir_op.integer > dim_size)) {
+			subtilis_error_bad_index(
+			    err, var_name, p->l->stream->name, p->l->line);
+			return;
+		}
+	} else {
+		maxe = prv_check_dynamic_index(p, e[i], dim_size, offset,
+					       mem_reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		subtilis_exp_delete(maxe);
+	}
+}
+
+static subtilis_exp_t *prv_compute_element_address(subtilis_parser_t *p,
+						   const subtilis_type_t *type,
+						   size_t mem_reg, size_t loc,
+						   subtilis_exp_t *sizee,
+						   subtilis_error_t *err)
+{
+	subtilis_exp_t *base;
+
+	base =
+	    subtilis_type_if_load_from_mem(p, &subtilis_type_integer, mem_reg,
+					   loc + SUBTIILIS_ARRAY_DATA_OFF, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if ((sizee->type.type == SUBTILIS_TYPE_CONST_INTEGER) &&
+	    (sizee->exp.ir_op.integer == 0)) {
+		subtilis_exp_delete(sizee);
+		return base;
+	}
+
+	sizee = subtilis_type_if_data_size(p, type, sizee, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return subtilis_type_if_add(p, base, sizee, err);
+
+cleanup:
+
+	subtilis_exp_delete(base);
+
+	return NULL;
+}
+
+static subtilis_exp_t *
+prv_1d_index_calc(subtilis_parser_t *p, const char *var_name,
+		  const subtilis_type_t *type, size_t mem_reg, size_t loc,
+		  subtilis_exp_t **e, size_t index_count, subtilis_error_t *err)
+{
+	subtilis_exp_t *sizee = NULL;
+	int32_t offset = loc + SUBTIILIS_ARRAY_DIMS_OFF;
+
+	prv_check_last_index(p, var_name, e, type, offset, mem_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	sizee = subtilis_type_if_dup(e[0], err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	sizee = subtilis_type_if_exp_to_var(p, sizee, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return prv_compute_element_address(p, type, mem_reg, loc, sizee, err);
+}
+
 subtilis_exp_t *
 subtilis_array_index_calc(subtilis_parser_t *p, const char *var_name,
 			  const subtilis_type_t *type, size_t mem_reg,
@@ -455,12 +538,11 @@ subtilis_array_index_calc(subtilis_parser_t *p, const char *var_name,
 	size_t i;
 	int32_t dim_size;
 	subtilis_exp_t *one;
-	subtilis_exp_t *base = NULL;
+	int32_t offset;
 	subtilis_exp_t *sizee = NULL;
 	subtilis_exp_t *edup = NULL;
 	subtilis_exp_t *maxe = NULL;
 	int64_t array_size = 0;
-	int32_t offset = loc + SUBTIILIS_ARRAY_DIMS_OFF;
 
 	if (index_count != type->params.array.num_dims) {
 		subtilis_error_bad_index_count(err, var_name,
@@ -468,6 +550,11 @@ subtilis_array_index_calc(subtilis_parser_t *p, const char *var_name,
 		return NULL;
 	}
 
+	if (index_count == 1)
+		return prv_1d_index_calc(p, var_name, type, mem_reg, loc, e,
+					 index_count, err);
+
+	offset = loc + SUBTIILIS_ARRAY_DIMS_OFF;
 	for (i = 0; i < index_count - 1; i++) {
 		if (e[i]->type.type != SUBTILIS_TYPE_CONST_INTEGER)
 			continue;
@@ -525,21 +612,9 @@ subtilis_array_index_calc(subtilis_parser_t *p, const char *var_name,
 		offset += sizeof(int32_t);
 	}
 
-	dim_size = type->params.array.dims[i];
-	if ((dim_size != SUBTILIS_DYNAMIC_DIMENSION) &&
-	    (e[i]->type.type == SUBTILIS_TYPE_CONST_INTEGER)) {
-		if ((e[i]->exp.ir_op.integer < 0) ||
-		    (e[i]->exp.ir_op.integer > dim_size)) {
-			subtilis_error_bad_index(
-			    err, var_name, p->l->stream->name, p->l->line);
-			return NULL;
-		}
-	} else {
-		maxe = prv_check_dynamic_index(p, e[i], dim_size, offset,
-					       mem_reg, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-	}
+	prv_check_last_index(p, var_name, e, type, offset, mem_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
 	edup = subtilis_type_if_dup(e[i], err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -549,29 +624,12 @@ subtilis_array_index_calc(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	base =
-	    subtilis_type_if_load_from_mem(p, &subtilis_type_integer, mem_reg,
-					   loc + SUBTIILIS_ARRAY_DATA_OFF, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	if ((sizee->type.type == SUBTILIS_TYPE_CONST_INTEGER) &&
-	    (sizee->exp.ir_op.integer == 0)) {
-		subtilis_exp_delete(sizee);
-		return base;
-	}
-
-	sizee = subtilis_type_if_data_size(p, type, sizee, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	return subtilis_type_if_add(p, base, sizee, err);
+	return prv_compute_element_address(p, type, mem_reg, loc, sizee, err);
 
 cleanup:
 
 	subtilis_exp_delete(maxe);
 	subtilis_exp_delete(edup);
-	subtilis_exp_delete(base);
 	subtilis_exp_delete(sizee);
 
 	return NULL;
