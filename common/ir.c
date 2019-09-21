@@ -292,6 +292,7 @@ static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 	s->handler_list = NULL;
 	s->handler_offset = 0;
 	s->endproc = false;
+	s->array_access = SIZE_MAX;
 
 	return s;
 }

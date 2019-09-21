@@ -52,5 +52,7 @@ subtilis_exp_t *subtilis_array_read(subtilis_parser_t *p, const char *var_name,
 				    const subtilis_type_t *type, size_t mem_reg,
 				    size_t loc, subtilis_exp_t **indices,
 				    size_t index_count, subtilis_error_t *err);
+void subtilis_array_gen_index_error_code(subtilis_parser_t *p,
+					 subtilis_error_t *err);
 
 #endif

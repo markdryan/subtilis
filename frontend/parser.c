@@ -4226,6 +4226,10 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 		goto on_error;
 
 	subtilis_ir_merge_errors(p->current, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	subtilis_array_gen_index_error_code(p, err);
 
 on_error:
 
@@ -4508,6 +4512,10 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 
 	subtilis_ir_merge_errors(p->current, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_array_gen_index_error_code(p, err);
 }
 
 static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,

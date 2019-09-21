@@ -1475,6 +1475,7 @@ struct subtilis_ir_section_t_ {
 	int32_t error_offset; // Again this is 32 bit specific.
 	size_t end_label;
 	size_t ret_reg;
+	size_t array_access;
 };
 
 typedef struct subtilis_ir_section_t_ subtilis_ir_section_t;
