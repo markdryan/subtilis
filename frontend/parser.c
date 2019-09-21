@@ -1592,6 +1592,12 @@ static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	if (!strcmp(tbuf, "(")) {
+		if (new_var) {
+			subtilis_error_set_unknown_variable(
+			    err, var_name, p->l->stream->name, p->l->line);
+			goto cleanup;
+		}
+
 		prv_assign_array(p, t, s, op1.reg, var_name, err);
 		free(var_name);
 		return;
