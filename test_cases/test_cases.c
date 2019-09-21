@@ -1411,6 +1411,22 @@ const subtilis_test_case_t test_cases[] = {
 	 "    NEXT\n"
 	 "NEXT\n",
 	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n"},
+	{"array_bad_index_var",
+	 "ONERROR\n"
+	 "    PRINT ERR\n"
+	 "ENDERROR\n"
+	 "DIM a%(2)\n"
+	 "i%=3\n"
+	 "PRINT a%(i%)\n",
+	 "10\n"},
+	{"array2d_bad_index_var",
+	 "ONERROR\n"
+	 "    PRINT ERR\n"
+	 "ENDERROR\n"
+	 "DIM a%(2,2)\n"
+	 "i%=3\n"
+	 "PRINT a%(i%,0)\n",
+	 "10\n"},
 };
 
 /* clang-format on */
