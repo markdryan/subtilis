@@ -122,6 +122,11 @@ static void prv_dist_stran_instr(void *user_data, subtilis_arm_op_t *op,
 		}
 	}
 
+	/*
+	 * TODO: register allocator does not correctly cope with
+	 * pre-index addressing or writeback.
+	 */
+
 	if (instr->base == ud->reg_num) {
 		subtilis_error_set_walker_failed(err);
 		return;
