@@ -23,6 +23,7 @@
 
 typedef enum {
 	SUBTILIS_BUILTINS_IDIV,
+	SUBTILIS_BUILTINS_MEMSETI32,
 	SUBTILIS_BUILTINS_MAX
 } subtilis_builtin_type_t;
 

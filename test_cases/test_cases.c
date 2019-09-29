@@ -1427,6 +1427,26 @@ const subtilis_test_case_t test_cases[] = {
 	 "i%=3\n"
 	 "PRINT a%(i%,0)\n",
 	 "10\n"},
+	{"array2d_int_zero",
+	 "DIM a%(1024)\n"
+	 "FOR i% = 0 TO 1024\n"
+	 "  IF a%(i%) <> 0 THEN\n"
+	 "      PRINT 0\n"
+	 "      END\n"
+	 "  ENDIF\n"
+	 "NEXT\n"
+	 "PRINT 1\n",
+	 "1\n"},
+	{"array2d_int_real",
+	 "DIM a(1024)\n"
+	 "FOR i% = 0 TO 1024\n"
+	 "  IF a(i%) <> 0.0 THEN\n"
+	 "      PRINT 0\n"
+	 "      END\n"
+	 "  ENDIF\n"
+	 "NEXT\n"
+	 "PRINT 1\n",
+	 "1\n"},
 };
 
 /* clang-format on */

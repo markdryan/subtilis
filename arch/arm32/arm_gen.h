@@ -146,5 +146,8 @@ void subtilis_arm_gen_sete(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_cleare(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_memseti32(subtilis_ir_section_t *s,
+				subtilis_arm_section_t *arm_s,
+				subtilis_error_t *err);
 
 #endif

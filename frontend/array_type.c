@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-#include "array_type.h"
+#include <stdlib.h>
+#include <string.h>
+
 #include "../common/error_codes.h"
+#include "array_type.h"
 #include "expression.h"
 #include "type_if.h"
 
@@ -83,6 +86,39 @@ void subtilis_array_type_init(subtilis_parser_t *p,
 		else
 			type->params.array.dims[i] = SUBTILIS_DYNAMIC_DIMENSION;
 	}
+}
+
+static void prv_memset_array(subtilis_parser_t *p, size_t base_reg,
+			     size_t size_reg, size_t val_reg,
+			     subtilis_error_t *err)
+{
+	subtilis_ir_arg_t *args;
+	char *name = NULL;
+	static const char memset[] = "_memseti32";
+
+	name = malloc(sizeof(memset));
+	if (!name) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	strcpy(name, memset);
+
+	args = malloc(sizeof(*args) * 3);
+	if (!args) {
+		free(name);
+		subtilis_error_set_oom(err);
+		return;
+	}
+
+	args[0].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[0].reg = base_reg;
+	args[1].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[1].reg = size_reg;
+	args[2].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[2].reg = val_reg;
+
+	(void)subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_MEMSETI32, NULL,
+				    args, &subtilis_type_void, 3, err);
 }
 
 void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
@@ -175,6 +211,9 @@ void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op, store_reg, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
+
+	prv_memset_array(p, op.reg, sizee->exp.ir_op.reg, zero->exp.ir_op.reg,
+			 err);
 
 cleanup:
 

@@ -467,6 +467,9 @@ static void prv_add_builtin(subtilis_ir_section_t *s,
 	case SUBTILIS_BUILTINS_IDIV:
 		subtilis_arm2_idiv_add(s, arm_s, err);
 		break;
+	case SUBTILIS_BUILTINS_MEMSETI32:
+		subtilis_arm_gen_memseti32(s, arm_s, err);
+		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
 	}

@@ -663,10 +663,19 @@ static void prv_set_args(subitlis_vm_t *vm, subtilis_ir_call_t *call,
 	free(real_args_copy);
 }
 
+static void prv_memset(subitlis_vm_t *vm, subtilis_ir_call_t *call,
+		       subtilis_error_t *err)
+{
+	memset(&vm->memory[vm->regs[call->args[0].reg]],
+	       vm->regs[call->args[2].reg], vm->regs[call->args[1].reg]);
+}
+
 static void prv_handle_builtin(subitlis_vm_t *vm, subtilis_builtin_type_t ftype,
 			       subtilis_ir_call_t *call, subtilis_error_t *err)
 {
 	switch (ftype) {
+	case SUBTILIS_BUILTINS_MEMSETI32:
+		return prv_memset(vm, call, err);
 	default:
 		subtilis_error_set_assertion_failed(err);
 	}
