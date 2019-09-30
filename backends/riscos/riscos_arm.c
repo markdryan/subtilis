@@ -18,6 +18,7 @@
 
 #include "../../arch/arm32/arm2_div.h"
 #include "../../arch/arm32/arm_gen.h"
+#include "../../arch/arm32/arm_mem.h"
 #include "../../arch/arm32/arm_peephole.h"
 #include "../../arch/arm32/arm_reg_alloc.h"
 #include "../../arch/arm32/arm_sub_section.h"
@@ -468,7 +469,7 @@ static void prv_add_builtin(subtilis_ir_section_t *s,
 		subtilis_arm2_idiv_add(s, arm_s, err);
 		break;
 	case SUBTILIS_BUILTINS_MEMSETI32:
-		subtilis_arm_gen_memseti32(s, arm_s, err);
+		subtilis_arm_mem_memseti32(s, arm_s, err);
 		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
