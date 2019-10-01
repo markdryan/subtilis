@@ -19,6 +19,7 @@
 
 #include "../common/backend_caps.h"
 #include "../common/ir.h"
+#include "../common/sizet_vector.h"
 #include "call.h"
 #include "lexer.h"
 #include "symbol_table.h"
@@ -38,6 +39,9 @@ struct subtilis_parser_t_ {
 	subtilis_parser_call_t **calls;
 	int32_t error_offset;
 	bool handle_escapes;
+	subtilis_sizet_vector_t free_list;
+	subtilis_sizet_vector_t local_free_list;
+	subtilis_sizet_vector_t main_free_list;
 };
 
 typedef struct subtilis_parser_t_ subtilis_parser_t;

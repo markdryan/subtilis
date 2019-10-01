@@ -82,6 +82,14 @@ void subtilis_riscos_arm_end(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_testesc(subtilis_ir_section_t *s, size_t start,
 				 void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_alloc(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_realloc(subtilis_ir_section_t *s, size_t start,
+				 void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_ref(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_deref(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_error_t *err);
 
 #define SUBTILIS_RISCOS_ARM_CAPS 0
 

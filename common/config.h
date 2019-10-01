@@ -55,4 +55,8 @@
 #define SUBTILIS_CONFIG_SSS_GRAN 16
 #endif
 
+#ifndef SUBTILIS_CONFIG_SIZET_SIZE
+#define SUBTILIS_CONFIG_SIZET_SIZE 64
+#endif
+
 #endif

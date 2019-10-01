@@ -425,11 +425,15 @@ struct subtilis_arm_section_t_ {
 	size_t max_call_site_count;
 	subtilis_arm_call_site_t *call_sites;
 	subtilis_arm_constants_t constants;
+
+	/* TODO: replace with subtilis_sizet_vector */
+
 	size_t ret_site_count;
 	size_t max_ret_site_count;
 	size_t *ret_sites;
 	subtilis_type_section_t *stype;
 	bool handle_escapes;
+	size_t no_cleanup_label;
 };
 
 typedef struct subtilis_arm_section_t_ subtilis_arm_section_t;

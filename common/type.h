@@ -27,8 +27,33 @@ typedef enum {
 	SUBTILIS_TYPE_INTEGER,
 	SUBTILIS_TYPE_STRING,
 	SUBTILIS_TYPE_VOID,
+	SUBTILIS_TYPE_ARRAY_REAL,
+	SUBTILIS_TYPE_ARRAY_INTEGER,
 	SUBTILIS_TYPE_MAX,
-} subtilis_type_t;
+} subtilis_type_type_t;
+
+#define SUBTILIS_MAX_DIMENSIONS 10
+#define SUBTILIS_DYNAMIC_DIMENSION -1
+
+/*
+ * TODO: This integer needs to be dependent on the int size of the backend
+ */
+
+struct subtilis_type_array_t_ {
+	int32_t num_dims;
+	int32_t dims[SUBTILIS_MAX_DIMENSIONS];
+};
+
+typedef struct subtilis_type_array_t_ subtilis_type_array_t;
+
+struct subtilis_type_t_ {
+	subtilis_type_type_t type;
+	union {
+		subtilis_type_array_t array;
+	} params;
+};
+
+typedef struct subtilis_type_t_ subtilis_type_t;
 
 struct subtilis_type_section_t_ {
 	subtilis_type_t return_type;
@@ -42,13 +67,21 @@ struct subtilis_type_section_t_ {
 typedef struct subtilis_type_section_t_ subtilis_type_section_t;
 
 /* Takes ownership of parameters */
-subtilis_type_section_t *subtilis_type_section_new(subtilis_type_t rtype,
+subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 						   size_t num_parameters,
 						   subtilis_type_t *parameters,
 						   subtilis_error_t *err);
 void subtilis_type_section_delete(subtilis_type_section_t *stype);
-const char *subtilis_type_name(subtilis_type_t typ);
+const char *subtilis_type_name(const subtilis_type_t *typ);
 subtilis_type_section_t *
 subtilis_type_section_dup(subtilis_type_section_t *stype);
+
+extern const subtilis_type_t subtilis_type_const_real;
+extern const subtilis_type_t subtilis_type_const_integer;
+extern const subtilis_type_t subtilis_type_const_string;
+extern const subtilis_type_t subtilis_type_real;
+extern const subtilis_type_t subtilis_type_integer;
+extern const subtilis_type_t subtilis_type_string;
+extern const subtilis_type_t subtilis_type_void;
 
 #endif

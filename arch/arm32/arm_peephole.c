@@ -73,7 +73,8 @@ void subtilis_arm_peephole(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 		case SUBTILIS_ARM_INSTR_MOV:
 			data = &instr->operands.data;
 			if ((data->op2.type == SUBTILIS_ARM_OP2_REG) &&
-			    data->op2.op.reg == data->dest) {
+			    (data->op2.op.reg == data->dest) &&
+			    (data->dest != 15)) {
 				ptr = prv_remove_op(arm_s, ptr, op);
 				continue;
 			}

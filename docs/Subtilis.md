@@ -226,10 +226,41 @@ FOR I% = 1 TO 10
 NEXT
 ```
 
-is allowed and recommended in Subtilis.  In future, I'll probably get rid of the
-LOCAL keyword and make all variable declarations local by default which will solve
-this issue.  Anyone actually wanting a global variable would need to declare it
-in advance using a GLOBAL keyword.
+is allowed and recommended in Subtilis.
+
+The LOCAL keyword is only permitted at the start of a function or procedure.  There
+is therefore no block scope in Subtilis.  Local variables, once declared, are available
+anywhere in the function.  Needless to say, local variables, in the functions in which
+they are declared,  shadow global variables of the same name.
+
+Global variables must be defined before they are used.  BBC BASIC permits code such
+as
+
+X% += 1
+Y% = %Y + 1
+
+where neither X% or Y% have been previously defined.  While such behaviour would be
+possible in Subtilis, it has been explicitly disabled as it's very weird and also
+would requires us to zero all global variables.
+
+One change under consideration is to allow the LOCAL keyword to be used anywhere
+within a function.  This would require the introduction of block scope and we'd
+have to deal with local variable shadowing.  Such a change would probably be
+accompanied by a short hand notation for LOCAL, :=.  It's probably worth doing
+though as writing LOCAL everywhere is a real pain.
+
+Currently the LOCAL statement can only be used to define a single variable.
+However, it can be used to initialise the variable.  Thus in Subtilis you can
+write
+
+LOCAL y% = 10 MOD 3
+
+If no initialiser is provided the variable is initialised to it's zero value,
+0 for numbers and array elements and "" for strings.  Thus the statement
+
+LOCAL x%
+
+declares a local variable, x%, and initialises it to 0.
 
 ### Function and Procedure definition
 

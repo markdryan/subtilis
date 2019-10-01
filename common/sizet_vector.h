@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Mark Ryan
+ * Copyright (c) 2019 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_ARM_ENCODE_H
-#define __SUBTILIS_ARM_ENCODE_H
+#ifndef __SUBTILIS_SIZET_VECTOR_H
+#define __SUBTILIS_SIZET_VECTOR_H
 
-#include "arm_core.h"
+#include "error.h"
 
-typedef void (*subtilis_arm_encode_plat_t)(uint32_t *code, size_t words_written,
-					   subtilis_error_t *err);
+struct subtilis_sizet_vector_t_ {
+	size_t len;
+	size_t max_len;
+	size_t *vals;
+};
 
-void subtilis_arm_encode(subtilis_arm_prog_t *arm_p, const char *fname,
-			 subtilis_arm_encode_plat_t plat,
-			 subtilis_error_t *err);
-uint32_t *subtilis_arm_encode_buf(subtilis_arm_prog_t *arm_p,
-				  size_t *words_written, subtilis_error_t *err);
+typedef struct subtilis_sizet_vector_t_ subtilis_sizet_vector_t;
+
+void subtilis_sizet_vector_init(subtilis_sizet_vector_t *v);
+void subtilis_sizet_vector_append(subtilis_sizet_vector_t *v, size_t val,
+				  subtilis_error_t *err);
+void subtilis_sizet_vector_free(subtilis_sizet_vector_t *v);
 
 #endif

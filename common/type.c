@@ -18,6 +18,21 @@
 
 #include "type.h"
 
+const subtilis_type_t subtilis_type_const_real = {SUBTILIS_TYPE_CONST_REAL};
+
+/* clang-format off */
+const subtilis_type_t subtilis_type_const_integer = {
+	SUBTILIS_TYPE_CONST_INTEGER
+};
+
+/* clang-format on */
+
+const subtilis_type_t subtilis_type_const_string = {SUBTILIS_TYPE_CONST_STRING};
+const subtilis_type_t subtilis_type_real = {SUBTILIS_TYPE_REAL};
+const subtilis_type_t subtilis_type_integer = {SUBTILIS_TYPE_INTEGER};
+const subtilis_type_t subtilis_type_string = {SUBTILIS_TYPE_STRING};
+const subtilis_type_t subtilis_type_void = {SUBTILIS_TYPE_VOID};
+
 /* clang-format off */
 static const char *const prv_fixed_type_names[] = {
 	"integer", /* SUBTILIS_TYPE_CONST_INTEGER */
@@ -31,7 +46,7 @@ static const char *const prv_fixed_type_names[] = {
 
 /* clang-format on */
 
-subtilis_type_section_t *subtilis_type_section_new(subtilis_type_t rtype,
+subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 						   size_t num_parameters,
 						   subtilis_type_t *parameters,
 						   subtilis_error_t *err)
@@ -45,14 +60,14 @@ subtilis_type_section_t *subtilis_type_section_new(subtilis_type_t rtype,
 	}
 
 	stype->ref_count = 1;
-	stype->return_type = rtype;
+	stype->return_type = *rtype;
 	stype->num_parameters = num_parameters;
 	stype->parameters = parameters;
 	stype->int_regs = 0;
 	stype->fp_regs = 0;
 
 	for (i = 0; i < num_parameters; i++) {
-		if (parameters[i] == SUBTILIS_TYPE_INTEGER)
+		if (parameters[i].type == SUBTILIS_TYPE_INTEGER)
 			stype->int_regs++;
 		else
 			stype->fp_regs++;
@@ -75,9 +90,9 @@ void subtilis_type_section_delete(subtilis_type_section_t *stype)
 	free(stype);
 }
 
-const char *subtilis_type_name(subtilis_type_t typ)
+const char *subtilis_type_name(const subtilis_type_t *typ)
 {
-	size_t index = (size_t)typ;
+	size_t index = (size_t)typ->type;
 
 	if (index < SUBTILIS_TYPE_MAX)
 		return prv_fixed_type_names[index];

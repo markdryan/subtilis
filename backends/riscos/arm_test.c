@@ -66,10 +66,19 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	/* Insert heap start */
+
+	if (code_size < 2) {
+		subtilis_error_set_assertion_failed(&err);
+		goto cleanup;
+	}
+
+	code[1] = 0x8000 + (code_size * sizeof(code));
+
 	//	for (size_t i = 0; i < code_size; i++) {
 	//		printf("0x%x\n",code[i]);
 	///	}
-	vm = subtilis_arm_vm_new(code, code_size, 16 * 1024, &err);
+	vm = subtilis_arm_vm_new(code, code_size, 32 * 1024, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -84,6 +93,12 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	if (strcmp(subtilis_buffer_get_string(&b), expected)) {
 		printf("%s expected got %s\n", expected,
 		       subtilis_buffer_get_string(&b));
+		retval = 1;
+		goto cleanup;
+	}
+
+	if (vm->heap.used_list) {
+		printf("Memory Leak!!!\n");
 		retval = 1;
 		goto cleanup;
 	}
@@ -329,7 +344,7 @@ static int prv_test_encode(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	stype = subtilis_type_section_new(SUBTILIS_TYPE_VOID, 0, NULL, &err);
+	stype = subtilis_type_section_new(&subtilis_type_void, 0, NULL, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

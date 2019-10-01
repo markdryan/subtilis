@@ -77,7 +77,7 @@ static subtilis_arm_section_t *prv_mov_imm(subtilis_arm_op_pool_t *pool,
 	subtilis_arm_section_t *s = NULL;
 	subtilis_type_section_t *stype = NULL;
 
-	stype = subtilis_type_section_new(SUBTILIS_TYPE_VOID, 0, NULL, err);
+	stype = subtilis_type_section_new(&subtilis_type_void, 0, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 

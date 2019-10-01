@@ -20,8 +20,12 @@
 
 /* clang-format off */
 const subtilis_builtin_t subtilis_builtin_list[] = {
-	{"_idvi", SUBTILIS_BUILTINS_IDIV, SUBTILIS_TYPE_INTEGER, 2,
-	 { SUBTILIS_TYPE_INTEGER, SUBTILIS_TYPE_INTEGER } },
+	{"_idvi", SUBTILIS_BUILTINS_IDIV, { SUBTILIS_TYPE_INTEGER }, 2,
+	 { {SUBTILIS_TYPE_INTEGER}, {SUBTILIS_TYPE_INTEGER} } },
+	{"_memseti32", SUBTILIS_BUILTINS_MEMSETI32, { SUBTILIS_TYPE_VOID }, 3,
+	 { {SUBTILIS_TYPE_INTEGER}, {SUBTILIS_TYPE_INTEGER},
+	   {SUBTILIS_TYPE_INTEGER} } },
+
 };
 
 /* clang-format on */
@@ -41,6 +45,6 @@ subtilis_type_section_t *subtilis_builtin_ts(subtilis_builtin_type_t type,
 	}
 	for (i = 0; i < f->num_parameters; i++)
 		params[i] = f->arg_types[i];
-	return subtilis_type_section_new(f->ret_type, f->num_parameters, params,
-					 err);
+	return subtilis_type_section_new(&f->ret_type, f->num_parameters,
+					 params, err);
 }

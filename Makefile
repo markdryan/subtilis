@@ -21,7 +21,11 @@ COMMON =\
 	globals.c \
 	type_if.c \
 	float64_type.c \
-	int32_type.c
+	int32_type.c \
+	array_int32_type.c \
+	array_float64_type.c \
+	array_type.c \
+	sizet_vector.c
 
 ARM =\
 	arm_core.c \
@@ -40,14 +44,16 @@ ARM =\
 	fpa_gen.c \
 	bitset.c \
 	arm_sub_section.c \
-	arm_peephole.c
+	arm_peephole.c \
+	arm_mem.c
 
 COMPILER =\
 	compiler.c
 
 INTER =\
 	inter.c \
-	vm.c
+	vm.c \
+	vm_heap.c
 
 RUNARM =\
 	runarm.c \
@@ -56,7 +62,8 @@ RUNARM =\
 	arm_core.c \
 	arm_walker.c \
 	arm_dump.c \
-	fpa.c
+	fpa.c \
+	vm_heap.c
 
 TESTS =\
 	unit_tests.c \
@@ -72,7 +79,8 @@ TESTS =\
 	arm_reg_alloc_test.c \
 	arm_disass.c \
 	fpa_test.c \
-	bitset_test.c
+	bitset_test.c \
+	vm_heap.c
 
 CFLAGS ?= -O3
 CFLAGS += -Wall -Werror -MMD

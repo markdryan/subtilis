@@ -166,6 +166,21 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_RETURN_EXPECTED */
 	{"The top most error handler in a function must return a value\n"},
+
+	/* SUBTILIS_ERROR_TOO_MANY_DIMS */
+	{"Too many dimensions specified for array %s\n", 1},
+
+	/* SUBTILIS_ERROR_DIM_IN_PROC */
+	{"Cannot create global array in a procedure.  Use LOCAL DIM\n", 0},
+
+	/* SUBTILIS_ERROR_BAD_DIM */
+	{"Invalid dimensions specified for array %s\n", 1},
+
+	/* SUBTILIS_ERROR_BAD_INDEX */
+	{"Invalid index specified for array %s\n", 1},
+
+	/* SUBTILIS_ERROR_BAD_INDEX_COUNT */
+	{"Incorrect number of indices specified for array %s\n", 1},
 };
 
 /* clang-format on */

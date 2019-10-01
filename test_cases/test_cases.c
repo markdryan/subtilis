@@ -40,8 +40,7 @@ const subtilis_test_case_t test_cases[] = {
 	  "PRINT g% DIV 2\n",
 	  "2\n-2\n4\n0\n"},
 	{ "mod",
-	  "LOCAL b%\n"
-	  "LET b% = 100 MOD 6\n"
+	  "LOCAL b% = 100 MOD 6\n"
 	  "LET c% = 6 MOD b%\n"
 	  "LET d% = b% MOD c%\n"
 	  "LET e% = -(c% * 10) MOD 3\n"
@@ -244,8 +243,7 @@ const subtilis_test_case_t test_cases[] = {
 	  "ENDPROC\n",
 	  "2\n"},
 	{ "local",
-	  "LOCAL i%\n"
-	  "LET i% = 5\n"
+	  "LOCAL i%= 5\n"
 	  "LET i%=i%+1\n"
 	  "PROCInci\n"
 	  "PRINT i%\n"
@@ -340,8 +338,7 @@ const subtilis_test_case_t test_cases[] = {
 	  "ENDPROC\n",
 	  "-102\n2\n"},
 	{ "fpa_logical",
-	  "LOCAL a\n"
-	  "LET a = 3.14\n"
+	  "LOCAL a = 3.14\n"
 	  "LET b = 17.6666\n"
 	  "LET c = 3.14\n"
 	  "PRINT a < b\n"
@@ -1360,6 +1357,96 @@ const subtilis_test_case_t test_cases[] = {
 	 "END\n"
 	 "ENDPROC\n",
 	 "-1\n"},
+	{"array_int_simple",
+	 "LOCAL i%\n"
+	 "DIM a%(10)\n"
+	 "FOR i% = 0 TO 10\n"
+	 "    a%(i%) = i%\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 10\n"
+	 "    PRINT a%(i%)\n"
+	 "NEXT\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"},
+	{"array_double_simple",
+	 "LOCAL i\n"
+	 "DIM a(10)\n"
+	 "FOR i% = 0 TO 10\n"
+	 "    a(i%) = i% + 0.5\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 10\n"
+	 "    PRINT a(i%)\n"
+	 "NEXT\n",
+	 "0.5\n1.5\n2.5\n3.5\n4.5\n5.5\n6.5\n7.5\n8.5\n9.5\n10.5\n"},
+	{"array2D_int_const",
+	 "LOCAL i%\n"
+	 "LOCAL j%\n"
+	 "LOCAL c%\n"
+	 "DIM a%(2,2)\n"
+	 "FOR i% = 0 TO 2\n"
+	 "    FOR j% = 0 TO 2\n"
+	 "        a%(i%,j%) = c%\n"
+	 "        c% += 1\n"
+	 "    NEXT\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 2\n"
+	 "    FOR j% = 0 TO 2\n"
+	 "        PRINT a%(i%,j%)\n"
+	 "    NEXT\n"
+	 "NEXT\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n"},
+	{"array2D_int_var",
+	 "LOCAL i% = 2\n"
+	 "LOCAL j% = 2\n"
+	 "LOCAL c%\n"
+	 "DIM a%(i%, j%)\n"
+	 "FOR i% = 0 TO 2\n"
+	 "    FOR j% = 0 TO 2\n"
+	 "        a%(i%,j%) = c%\n"
+	 "        c% += 1\n"
+	 "    NEXT\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 2\n"
+	 "    FOR j% = 0 TO 2\n"
+	 "        PRINT a%(i%,j%)\n"
+	 "    NEXT\n"
+	 "NEXT\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n"},
+	{"array_bad_index_var",
+	 "ONERROR\n"
+	 "    PRINT ERR\n"
+	 "ENDERROR\n"
+	 "DIM a%(2)\n"
+	 "i%=3\n"
+	 "PRINT a%(i%)\n",
+	 "10\n"},
+	{"array2d_bad_index_var",
+	 "ONERROR\n"
+	 "    PRINT ERR\n"
+	 "ENDERROR\n"
+	 "DIM a%(2,2)\n"
+	 "i%=3\n"
+	 "PRINT a%(i%,0)\n",
+	 "10\n"},
+	{"array2d_int_zero",
+	 "DIM a%(1024)\n"
+	 "FOR i% = 0 TO 1024\n"
+	 "  IF a%(i%) <> 0 THEN\n"
+	 "      PRINT 0\n"
+	 "      END\n"
+	 "  ENDIF\n"
+	 "NEXT\n"
+	 "PRINT 1\n",
+	 "1\n"},
+	{"array2d_int_real",
+	 "DIM a(1024)\n"
+	 "FOR i% = 0 TO 1024\n"
+	 "  IF a(i%) <> 0.0 THEN\n"
+	 "      PRINT 0\n"
+	 "      END\n"
+	 "  ENDIF\n"
+	 "NEXT\n"
+	 "PRINT 1\n",
+	 "1\n"},
 };
 
 /* clang-format on */

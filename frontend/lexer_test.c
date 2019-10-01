@@ -89,7 +89,7 @@ static int prv_check_id_too_long(subtilis_lexer_t *l, subtilis_token_t *t)
 }
 
 static int prv_test_max_id(subtilis_lexer_t *l, subtilis_token_t *t,
-			   subtilis_type_t id_type)
+			   const subtilis_type_t *id_type)
 {
 	subtilis_error_t err;
 	const char *tbuf;
@@ -102,10 +102,10 @@ static int prv_test_max_id(subtilis_lexer_t *l, subtilis_token_t *t,
 	}
 
 	if ((t->type != SUBTILIS_TOKEN_IDENTIFIER) ||
-	    (t->tok.id_type != id_type)) {
+	    (t->tok.id_type.type != id_type->type)) {
 		fprintf(stderr,
 			"Unexpected token.  Expected identifier of type %d\n",
-			id_type);
+			id_type->type);
 		return 1;
 	}
 
@@ -128,10 +128,10 @@ static int prv_test_max_id(subtilis_lexer_t *l, subtilis_token_t *t,
 	}
 
 	if ((t->type != SUBTILIS_TOKEN_IDENTIFIER) ||
-	    (t->tok.id_type != id_type)) {
+	    (t->tok.id_type.type != id_type->type)) {
 		fprintf(stderr,
 			"Unexpected token.  Expected identifier of type %d\n",
-			id_type);
+			id_type->type);
 		return 1;
 	}
 
@@ -140,17 +140,17 @@ static int prv_test_max_id(subtilis_lexer_t *l, subtilis_token_t *t,
 
 static int prv_check_max_int_var(subtilis_lexer_t *l, subtilis_token_t *t)
 {
-	return prv_test_max_id(l, t, SUBTILIS_TYPE_INTEGER);
+	return prv_test_max_id(l, t, &subtilis_type_integer);
 }
 
 static int prv_check_max_str_var(subtilis_lexer_t *l, subtilis_token_t *t)
 {
-	return prv_test_max_id(l, t, SUBTILIS_TYPE_STRING);
+	return prv_test_max_id(l, t, &subtilis_type_string);
 }
 
 static int prv_check_max_real_var(subtilis_lexer_t *l, subtilis_token_t *t)
 {
-	return prv_test_max_id(l, t, SUBTILIS_TYPE_REAL);
+	return prv_test_max_id(l, t, &subtilis_type_real);
 }
 
 static int prv_test_real_var_too_long(void)
@@ -574,7 +574,9 @@ static int prv_check_fn_typed(subtilis_lexer_t *l, subtilis_token_t *t)
 {
 	subtilis_error_t err;
 	subtilis_type_t expected_types[] = {
-	    SUBTILIS_TYPE_REAL, SUBTILIS_TYPE_INTEGER, SUBTILIS_TYPE_STRING,
+	    {SUBTILIS_TYPE_REAL},
+	    {SUBTILIS_TYPE_INTEGER},
+	    {SUBTILIS_TYPE_STRING},
 	};
 	size_t i;
 
@@ -592,10 +594,11 @@ static int prv_check_fn_typed(subtilis_lexer_t *l, subtilis_token_t *t)
 			return 1;
 		}
 
-		if (t->tok.keyword.id_type != expected_types[i]) {
+		if (t->tok.keyword.id_type.type != expected_types[i].type) {
 			fprintf(stderr, "Unxpected function type. Found  %d "
 					"wanted %d\n",
-				t->tok.keyword.id_type, expected_types[i]);
+				t->tok.keyword.id_type.type,
+				expected_types[i].type);
 			return 1;
 		}
 	}
@@ -788,7 +791,7 @@ static int prv_test_real(void)
 
 static int prv_check_vars(subtilis_lexer_t *l, subtilis_token_t *t,
 			  const char *const expected[], size_t len,
-			  subtilis_type_t id_type)
+			  const subtilis_type_t *id_type)
 {
 	subtilis_error_t err;
 	int i;
@@ -808,10 +811,10 @@ static int prv_check_vars(subtilis_lexer_t *l, subtilis_token_t *t,
 			return 1;
 		}
 
-		if (t->tok.id_type != id_type) {
+		if (t->tok.id_type.type != id_type->type) {
 			fprintf(stderr,
 				"Expected variable of type %d, got %d\n",
-				id_type, t->tok.id_type);
+				id_type->type, t->tok.id_type.type);
 			return 1;
 		}
 
@@ -834,7 +837,7 @@ static int prv_check_real_vars(subtilis_lexer_t *l, subtilis_token_t *t)
 	    "dog",   "floating_point", "PROcedure", "index001of2"};
 	return prv_check_vars(l, t, expected,
 			      sizeof(expected) / sizeof(const char *const),
-			      SUBTILIS_TYPE_REAL);
+			      &subtilis_type_real);
 }
 
 static int prv_test_real_vars(void)
@@ -859,9 +862,10 @@ static int prv_check_int_vars(subtilis_lexer_t *l, subtilis_token_t *t)
 	    "The%",   "quick%",		 "brown%",     "fox%",
 	    "jumps%", "over%",		 "the%",       "lazy%",
 	    "dog%",   "floating_point%", "PROcedure%", "index001of2%"};
+
 	return prv_check_vars(l, t, expected,
 			      sizeof(expected) / sizeof(const char *const),
-			      SUBTILIS_TYPE_INTEGER);
+			      &subtilis_type_integer);
 }
 
 static int prv_test_int_vars(void)
@@ -886,9 +890,10 @@ static int prv_check_str_vars(subtilis_lexer_t *l, subtilis_token_t *t)
 	    "The$",   "quick$",		 "brown$",     "fox$",
 	    "jumps$", "over$",		 "the$",       "lazy$",
 	    "dog$",   "floating_point$", "PROcedure$", "index001of2$"};
+
 	return prv_check_vars(l, t, expected,
 			      sizeof(expected) / sizeof(const char *const),
-			      SUBTILIS_TYPE_STRING);
+			      &subtilis_type_string);
 }
 
 static int prv_test_str_vars(void)

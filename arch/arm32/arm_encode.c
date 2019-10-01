@@ -1253,7 +1253,7 @@ static void prv_encode_prog(subtilis_arm_prog_t *arm_p,
 }
 
 void subtilis_arm_encode(subtilis_arm_prog_t *arm_p, const char *fname,
-			 subtilis_error_t *err)
+			 subtilis_arm_encode_plat_t plat, subtilis_error_t *err)
 {
 	subtilis_arm_encode_ud_t ud;
 
@@ -1264,6 +1264,12 @@ void subtilis_arm_encode(subtilis_arm_prog_t *arm_p, const char *fname,
 	prv_encode_prog(arm_p, &ud, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
+
+	if (plat) {
+		plat(ud.code, ud.words_written, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
 
 	prv_write_file(&ud, fname, err);
 

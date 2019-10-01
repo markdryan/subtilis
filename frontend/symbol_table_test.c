@@ -20,7 +20,7 @@
 #include "symbol_table.h"
 
 static int prv_test_type(subtilis_symbol_table_t *st, subtilis_token_t *t,
-			 subtilis_type_t id_type, size_t exp,
+			 const subtilis_type_t *id_type, size_t exp,
 			 subtilis_error_t *err)
 {
 	size_t i;
@@ -30,7 +30,7 @@ static int prv_test_type(subtilis_symbol_table_t *st, subtilis_token_t *t,
 	size_t total = 0;
 	const char *tbuf;
 
-	t->tok.id_type = id_type;
+	t->tok.id_type = *id_type;
 
 	for (j = 0; j < 2; j++) {
 		loc = 0;
@@ -49,7 +49,7 @@ static int prv_test_type(subtilis_symbol_table_t *st, subtilis_token_t *t,
 			}
 			tbuf = subtilis_token_get_text(t);
 			s = subtilis_symbol_table_insert(st, tbuf,
-							 t->tok.id_type, err);
+							 &t->tok.id_type, err);
 			if (err->type != SUBTILIS_ERROR_OK) {
 				subtilis_error_fprintf(stderr, err, true);
 				return 1;
@@ -92,6 +92,7 @@ static int prv_test(void)
 	int retval = 1;
 	subtilis_error_t err;
 	subtilis_token_t *t;
+	subtilis_type_t type;
 
 	printf("symbol_table_test");
 
@@ -111,7 +112,8 @@ static int prv_test(void)
 		goto on_error;
 	}
 
-	retval = prv_test_type(st, t, SUBTILIS_TYPE_REAL, 8, &err);
+	type.type = SUBTILIS_TYPE_REAL;
+	retval = prv_test_type(st, t, &type, 8, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);
 		goto on_error;

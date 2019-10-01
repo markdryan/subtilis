@@ -18,6 +18,7 @@
 #define __SUBTILIS_ARM_VM_H
 
 #include "../../common/buffer.h"
+#include "../../common/vm_heap.h"
 #include "arm_core.h"
 
 struct subtilis_arm_vm_freg_t_ {
@@ -36,6 +37,8 @@ struct subtilis_arm_vm_t_ {
 	uint32_t fpa_status;
 	uint8_t *memory;
 	size_t mem_size;
+	size_t stack_size;
+	size_t heap_size;
 	size_t code_size;
 	size_t op_len;
 	bool negative_flag;
@@ -44,6 +47,7 @@ struct subtilis_arm_vm_t_ {
 	bool overflow_flag;
 	bool quit;
 	bool reverse_fpa_consts;
+	subtilis_vm_heap_t heap;
 };
 
 typedef struct subtilis_arm_vm_t_ subtilis_arm_vm_t;

@@ -45,6 +45,7 @@ subtilis_arm_vm_t *subtilis_arm_vm_new(uint32_t *code, size_t code_size,
 	arm_vm->mem_size = mem_size;
 
 	arm_vm->reverse_fpa_consts = (*lower_word) == 0;
+	subtilis_vm_heap_init(&arm_vm->heap);
 
 	return arm_vm;
 
@@ -58,6 +59,8 @@ void subtilis_arm_vm_delete(subtilis_arm_vm_t *vm)
 {
 	if (!vm)
 		return;
+
+	subtilis_vm_heap_free(&vm->heap);
 	free(vm->memory);
 	free(vm);
 }
@@ -871,6 +874,98 @@ static void prv_os_byte(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 	}
 }
 
+static subtilis_vm_heap_free_block_t *
+prv_new_heap_block(subtilis_arm_vm_t *arm_vm, uint32_t start, uint32_t size)
+{
+	subtilis_vm_heap_free_block_t *block;
+	uint32_t *ptr;
+
+	block = subtilis_vm_heap_new_block(start, size);
+	if (!block)
+		return NULL;
+
+	ptr = (uint32_t *)&arm_vm->memory[start - 0x8000];
+	ptr[0] = 0;
+	ptr[1] = 0;
+
+	return block;
+}
+
+static subtilis_vm_heap_free_block_t *
+prv_claim_block(subtilis_arm_vm_t *arm_vm, uint32_t size, subtilis_error_t *err)
+{
+	subtilis_vm_heap_free_block_t *block;
+
+	block = subtilis_vm_heap_claim_block(&arm_vm->heap, size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (!block)
+		arm_vm->overflow_flag = true;
+
+	return block;
+}
+
+static void prv_os_heap(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
+{
+	subtilis_vm_heap_free_block_t *block;
+	uint32_t old_size;
+
+	/*
+	 * The world's worst implementation of malloc.
+	 */
+
+	switch (arm_vm->regs[0]) {
+	case 0:
+		if (arm_vm->heap.free_list) {
+			/*
+			 * Currently only allows one heap.  The compiler
+			 * will never create more than one but this could be
+			 * done programmatically when SYS is supported.  Do
+			 * we care?  No.
+			 */
+
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		arm_vm->heap.free_list = prv_new_heap_block(
+		    arm_vm, arm_vm->regs[1], arm_vm->regs[3]);
+		if (!arm_vm->heap.free_list) {
+			subtilis_error_set_oom(err);
+			return;
+		}
+		break;
+	case 2:
+		block = prv_claim_block(arm_vm, arm_vm->regs[3], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		if (block)
+			arm_vm->regs[2] = block->start;
+		else
+			arm_vm->regs[2] = 0;
+		break;
+	case 3:
+		subtilis_vm_heap_free_block(&arm_vm->heap, arm_vm->regs[2],
+					    err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		break;
+	case 4:
+		block =
+		    subtilis_vm_heap_realloc(&arm_vm->heap, arm_vm->regs[2],
+					     arm_vm->regs[3], &old_size, err);
+		if (err->type == SUBTILIS_ERROR_OK)
+			return;
+		memcpy(&arm_vm->memory[block->start - 0x8000],
+		       &arm_vm->memory[arm_vm->regs[2] - 0x8000], old_size);
+		arm_vm->regs[2] = block->start;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+}
+
 static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			    subtilis_arm_swi_instr_t *op, subtilis_error_t *err)
 {
@@ -971,6 +1066,11 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		arm_vm->regs[2] = 0;
 		arm_vm->regs[3] = 0;
 		arm_vm->regs[4] = 0;
+		break;
+	case 0x1d + 0x20000:
+	case 0x1d:
+		/* OS_Heap */
+		prv_os_heap(arm_vm, err);
 		break;
 	default:
 		code = op->code;
