@@ -16,8 +16,6 @@
 
 #include "arm_mem.h"
 
-/* TODO: We can make this much more efficient */
-
 void subtilis_arm_mem_memseti32(subtilis_ir_section_t *s,
 				subtilis_arm_section_t *arm_s,
 				subtilis_error_t *err)

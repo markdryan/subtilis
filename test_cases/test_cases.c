@@ -1447,6 +1447,73 @@ const subtilis_test_case_t test_cases[] = {
 	 "NEXT\n"
 	 "PRINT 1\n",
 	 "1\n"},
+	{"array1d_int_plus_equals",
+	 "DIM a%(8)\n"
+	 "FOR i% = 0 TO 8\n"
+	 "  a%(i%) = 1\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 8\n"
+	 "  a%(i%) += i%\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 8\n"
+	 "  PRINT a%(i%)\n"
+	 "NEXT\n",
+	 "1\n2\n3\n4\n5\n6\n7\n8\n9\n"},
+	{"array1d_int_minus_equals",
+	 "DIM a%(8)\n"
+	 "FOR i% = 0 TO 8\n"
+	 "  a%(i%) = 10\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 8\n"
+	 "  a%(i%) -= i%\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 8\n"
+	 "  PRINT a%(i%)\n"
+	 "NEXT\n",
+	 "10\n9\n8\n7\n6\n5\n4\n3\n2\n"},
+	{"array1d_real_plus_equals",
+	 "DIM a(8)\n"
+	 "FOR i% = 0 TO 8\n"
+	 "  a(i%) = 1.5\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 8\n"
+	 "  a(i%) += i%\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 8\n"
+	 "  PRINT a(i%)\n"
+	 "NEXT\n",
+	 "1.5\n2.5\n3.5\n4.5\n5.5\n6.5\n7.5\n8.5\n9.5\n"},
+	{"array1d_real_minus_equals",
+	 "DIM a(8)\n"
+	 "FOR i% = 0 TO 8\n"
+	 "  a(i%) = 10.5\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 8\n"
+	 "  a(i%) -= i%\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 8\n"
+	 "  PRINT a(i%)\n"
+	 "NEXT\n",
+	 "10.5\n9.5\n8.5\n7.5\n6.5\n5.5\n4.5\n3.5\n2.5\n"},
+	{"array2d_int_plus_equals",
+	 "DIM a%(2,2)\n"
+	 "FOR i% = 0 TO 2\n"
+	 "  FOR j% = 0 TO 2\n"
+	 "    a%(i%, j%) = 1\n"
+	 "  NEXT\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 2\n"
+	 "  FOR j% = 0 TO 2\n"
+	 "    a%(i%, j%) += (i%*3) + j%\n"
+	 "  NEXT\n"
+	 "NEXT\n"
+	 "FOR i% = 0 TO 2\n"
+	 "  FOR j% = 0 TO 2\n"
+	 "    PRINT a%(i%, j%)\n"
+	 "  NEXT\n"
+	 "NEXT\n",
+	 "1\n2\n3\n4\n5\n6\n7\n8\n9\n"},
+
 };
 
 /* clang-format on */
