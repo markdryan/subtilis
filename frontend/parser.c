@@ -1504,6 +1504,7 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_exp_t *indices[SUBTILIS_MAX_DIMENSIONS];
 	subtilis_exp_t *e;
 	size_t i;
+	subtilis_assign_type_t at;
 	size_t dims = 0;
 
 	dims = prv_var_bracketed_int_args_have_b(p, t, indices,
@@ -1522,12 +1523,36 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 	}
 
+	if (!strcmp(tbuf, "=")) {
+		at = SUBTILIS_ASSIGN_TYPE_EQUAL;
+	} else if (!strcmp(tbuf, "+=")) {
+		at = SUBTILIS_ASSIGN_TYPE_PLUS_EQUAL;
+	} else if (!strcmp(tbuf, "-=")) {
+		at = SUBTILIS_ASSIGN_TYPE_MINUS_EQUAL;
+	} else {
+		subtilis_error_set_assignment_op_expected(
+		    err, tbuf, p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
 	e = prv_expression(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_type_if_indexed_write(p, var_name, &s->t, mem_reg, s->loc, e,
-				       indices, dims, err);
+	switch (at) {
+	case SUBTILIS_ASSIGN_TYPE_EQUAL:
+		subtilis_type_if_indexed_write(p, var_name, &s->t, mem_reg,
+					       s->loc, e, indices, dims, err);
+		break;
+	case SUBTILIS_ASSIGN_TYPE_PLUS_EQUAL:
+		subtilis_type_if_indexed_add(p, var_name, &s->t, mem_reg,
+					     s->loc, e, indices, dims, err);
+		break;
+	case SUBTILIS_ASSIGN_TYPE_MINUS_EQUAL:
+		subtilis_type_if_indexed_sub(p, var_name, &s->t, mem_reg,
+					     s->loc, e, indices, dims, err);
+		break;
+	}
 
 cleanup:
 

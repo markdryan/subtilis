@@ -59,37 +59,44 @@ static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
 	return e;
 }
 
-static void prv_indexed_write(subtilis_parser_t *p, const char *var_name,
-			      const subtilis_type_t *type, size_t mem_reg,
-			      size_t loc, subtilis_exp_t *e,
-			      subtilis_exp_t **indices, size_t index_count,
-			      subtilis_error_t *err)
-{
-	e = subtilis_type_if_to_float64(p, e, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-	subtilis_array_write(p, var_name, type, mem_reg, loc, e, indices,
-			     index_count, err);
-}
-
 static subtilis_exp_t *
 prv_indexed_read(subtilis_parser_t *p, const char *var_name,
 		 const subtilis_type_t *type, size_t mem_reg, size_t loc,
 		 subtilis_exp_t **indices, size_t index_count,
 		 subtilis_error_t *err)
 {
-	subtilis_exp_t *offset;
-	subtilis_exp_t *e;
+	return subtilis_array_read(p, var_name, type, &subtilis_type_real,
+				   mem_reg, loc, indices, index_count, err);
+}
 
-	offset = subtilis_array_index_calc(p, var_name, type, mem_reg, loc,
-					   indices, index_count, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return NULL;
+static void prv_indexed_write(subtilis_parser_t *p, const char *var_name,
+			      const subtilis_type_t *type, size_t mem_reg,
+			      size_t loc, subtilis_exp_t *e,
+			      subtilis_exp_t **indices, size_t index_count,
+			      subtilis_error_t *err)
+{
+	subtilis_array_write(p, var_name, type, &subtilis_type_real, mem_reg,
+			     loc, e, indices, index_count, err);
+}
 
-	e = subtilis_type_if_load_from_mem(p, &subtilis_type_real,
-					   offset->exp.ir_op.reg, 0, err);
-	subtilis_exp_delete(offset);
-	return e;
+static void prv_indexed_add(subtilis_parser_t *p, const char *var_name,
+			    const subtilis_type_t *type, size_t mem_reg,
+			    size_t loc, subtilis_exp_t *e,
+			    subtilis_exp_t **indices, size_t index_count,
+			    subtilis_error_t *err)
+{
+	subtilis_array_add(p, var_name, type, &subtilis_type_real, mem_reg, loc,
+			   e, indices, index_count, err);
+}
+
+static void prv_indexed_sub(subtilis_parser_t *p, const char *var_name,
+			    const subtilis_type_t *type, size_t mem_reg,
+			    size_t loc, subtilis_exp_t *e,
+			    subtilis_exp_t **indices, size_t index_count,
+			    subtilis_error_t *err)
+{
+	subtilis_array_sub(p, var_name, type, &subtilis_type_real, mem_reg, loc,
+			   e, indices, index_count, err);
 }
 
 static subtilis_exp_t *prv_unary_minus(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -226,6 +233,8 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.assign_reg = NULL,
 	.assign_mem = NULL,
 	.indexed_write = prv_indexed_write,
+	.indexed_add = prv_indexed_add,
+	.indexed_sub = prv_indexed_sub,
 	.indexed_read = prv_indexed_read,
 	.load_mem = NULL,
 	.to_int32 = NULL,

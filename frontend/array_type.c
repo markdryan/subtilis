@@ -675,7 +675,8 @@ cleanup:
 }
 
 void subtilis_array_write(subtilis_parser_t *p, const char *var_name,
-			  const subtilis_type_t *type, size_t mem_reg,
+			  const subtilis_type_t *type,
+			  const subtilis_type_t *el_type, size_t mem_reg,
 			  size_t loc, subtilis_exp_t *e,
 			  subtilis_exp_t **indices, size_t index_count,
 			  subtilis_error_t *err)
@@ -687,6 +688,10 @@ void subtilis_array_write(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	e = subtilis_exp_coerce_type(p, e, el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	subtilis_type_if_assign_to_mem(p, offset->exp.ir_op.reg, 0, e, err);
 	e = NULL;
 
@@ -694,4 +699,91 @@ cleanup:
 
 	subtilis_exp_delete(offset);
 	subtilis_exp_delete(e);
+}
+
+subtilis_exp_t *subtilis_array_read(subtilis_parser_t *p, const char *var_name,
+				    const subtilis_type_t *type,
+				    const subtilis_type_t *el_type,
+				    size_t mem_reg, size_t loc,
+				    subtilis_exp_t **indices,
+				    size_t index_count, subtilis_error_t *err)
+{
+	subtilis_exp_t *offset;
+	subtilis_exp_t *e;
+
+	offset = subtilis_array_index_calc(p, var_name, type, mem_reg, loc,
+					   indices, index_count, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	e = subtilis_type_if_load_from_mem(p, el_type, offset->exp.ir_op.reg, 0,
+					   err);
+	subtilis_exp_delete(offset);
+	return e;
+}
+
+void subtilis_array_add(subtilis_parser_t *p, const char *var_name,
+			const subtilis_type_t *type,
+			const subtilis_type_t *el_type, size_t mem_reg,
+			size_t loc, subtilis_exp_t *e, subtilis_exp_t **indices,
+			size_t index_count, subtilis_error_t *err)
+{
+	subtilis_exp_t *offset;
+	subtilis_exp_t *cur_val;
+
+	offset = subtilis_array_index_calc(p, var_name, type, mem_reg, loc,
+					   indices, index_count, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	cur_val = subtilis_type_if_load_from_mem(p, el_type,
+						 offset->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_type_if_add(p, cur_val, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_coerce_type(p, e, el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_type_if_assign_to_mem(p, offset->exp.ir_op.reg, 0, e, err);
+
+cleanup:
+	subtilis_exp_delete(offset);
+}
+
+void subtilis_array_sub(subtilis_parser_t *p, const char *var_name,
+			const subtilis_type_t *type,
+			const subtilis_type_t *el_type, size_t mem_reg,
+			size_t loc, subtilis_exp_t *e, subtilis_exp_t **indices,
+			size_t index_count, subtilis_error_t *err)
+{
+	subtilis_exp_t *offset;
+	subtilis_exp_t *cur_val;
+
+	offset = subtilis_array_index_calc(p, var_name, type, mem_reg, loc,
+					   indices, index_count, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	cur_val = subtilis_type_if_load_from_mem(p, el_type,
+						 offset->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_type_if_sub(p, cur_val, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_coerce_type(p, e, el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_type_if_assign_to_mem(p, offset->exp.ir_op.reg, 0, e, err);
+
+cleanup:
+	subtilis_exp_delete(offset);
 }

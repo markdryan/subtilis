@@ -83,6 +83,8 @@ struct subtilis_type_if_ {
 	subtilis_type_if_sizet_exp_t assign_reg;
 	subtilis_type_if_sizet2_exp_t assign_mem;
 	subtilis_type_if_iwrite_t indexed_write;
+	subtilis_type_if_iwrite_t indexed_add;
+	subtilis_type_if_iwrite_t indexed_sub;
 	subtilis_type_if_iread_t indexed_read;
 	subtilis_type_if_load_t load_mem;
 	subtilis_type_if_unary_t to_int32;
@@ -146,6 +148,16 @@ void subtilis_type_if_indexed_write(subtilis_parser_t *p, const char *var_name,
 				    size_t loc, subtilis_exp_t *e,
 				    subtilis_exp_t **indices,
 				    size_t index_count, subtilis_error_t *err);
+void subtilis_type_if_indexed_add(subtilis_parser_t *p, const char *var_name,
+				  const subtilis_type_t *type, size_t mem_reg,
+				  size_t loc, subtilis_exp_t *e,
+				  subtilis_exp_t **indices, size_t index_count,
+				  subtilis_error_t *err);
+void subtilis_type_if_indexed_sub(subtilis_parser_t *p, const char *var_name,
+				  const subtilis_type_t *type, size_t mem_reg,
+				  size_t loc, subtilis_exp_t *e,
+				  subtilis_exp_t **indices, size_t index_count,
+				  subtilis_error_t *err);
 subtilis_exp_t *
 subtilis_type_if_indexed_read(subtilis_parser_t *p, const char *var_name,
 			      const subtilis_type_t *type, size_t mem_reg,
