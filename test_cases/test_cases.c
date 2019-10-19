@@ -1513,7 +1513,54 @@ const subtilis_test_case_t test_cases[] = {
 	 "  NEXT\n"
 	 "NEXT\n",
 	 "1\n2\n3\n4\n5\n6\n7\n8\n9\n"},
-
+	{"for_array_int_var",
+	 "DIM a%(2)\n"
+	 "FOR a%(0) = 0 TO 10\n"
+	 "  PRINT a%(0)\n"
+	 "NEXT\n"
+	 "PRINT a%(0)\n"
+	 "PRINT a%(1)\n"
+	 "PRINT a%(2)\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n0\n0\n"},
+	{"for_array_real_var",
+	 "DIM a(2)\n"
+	 "FOR a(0) = 0.5 TO 10.5\n"
+	 "  PRINT a(0)\n"
+	 "NEXT\n"
+	 "PRINT a(0)\n"
+	 "PRINT a(1)\n"
+	 "PRINT a(2)\n",
+	 "0.5\n1.5\n2.5\n3.5\n4.5\n5.5\n6.5\n7.5\n8.5\n9.5\n10.5\n11.5\n0\n0\n"
+	},
+	{"for_array_int_var_step",
+	 "DIM a%(2)\n"
+	 "FOR a%(0) = 0 TO 10 STEP 2\n"
+	 "  PRINT a%(0)\n"
+	 "NEXT\n"
+	 "PRINT a%(0)\n"
+	 "PRINT a%(1)\n"
+	 "PRINT a%(2)\n",
+	 "0\n2\n4\n6\n8\n10\n12\n0\n0\n"},
+	{"for_array_real_var",
+	 "DIM a(2)\n"
+	 "FOR a(0) = 0.5 TO 10.5 STEP 2\n"
+	 "  PRINT a(0)\n"
+	 "NEXT\n"
+	 "PRINT a(0)\n"
+	 "PRINT a(1)\n"
+	 "PRINT a(2)\n",
+	 "0.5\n2.5\n4.5\n6.5\n8.5\n10.5\n12.5\n0\n0\n"
+	},
+	{"for_array_int_var_step_var",
+	 "LOCAL step% = 2\n"
+	 "DIM a%(2)\n"
+	 "FOR a%(0) = 0 TO 10 STEP step%\n"
+	 "  PRINT a%(0)\n"
+	 "NEXT\n"
+	 "PRINT a%(0)\n"
+	 "PRINT a%(1)\n"
+	 "PRINT a%(2)\n",
+	 "0\n2\n4\n6\n8\n10\n12\n0\n0\n"},
 };
 
 /* clang-format on */

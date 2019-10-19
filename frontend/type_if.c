@@ -191,6 +191,21 @@ void subtilis_type_if_array_of(subtilis_parser_t *p,
 	fn(element_type, type);
 }
 
+void subtilis_type_if_element_type(subtilis_parser_t *p,
+				   const subtilis_type_t *type,
+				   subtilis_type_t *element_type,
+				   subtilis_error_t *err)
+{
+	subtilis_type_if_typeof_t fn;
+
+	fn = prv_type_map[type->type]->element_type;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(type, element_type);
+}
+
 subtilis_exp_t *subtilis_type_if_exp_to_var(subtilis_parser_t *p,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err)
