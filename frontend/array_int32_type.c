@@ -53,6 +53,12 @@ static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
 					 p->l->stream->name, p->l->line);
 }
 
+static void prv_element_type(const subtilis_type_t *type,
+			     subtilis_type_t *element_type)
+{
+	element_type->type = SUBTILIS_TYPE_INTEGER;
+}
+
 static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
 				      subtilis_error_t *err)
 {
@@ -227,6 +233,8 @@ subtilis_type_if subtilis_type_array_int32 = {
 	.data_size = prv_data_size,
 	.zero = prv_zero,
 	.zero_reg = prv_zero_reg,
+	.array_of = NULL,
+	.element_type = prv_element_type,
 	.exp_to_var = prv_exp_to_var,
 	.copy_var = NULL,
 	.dup = NULL,
