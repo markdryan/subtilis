@@ -118,17 +118,12 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	"jmpc r_1, label_1, *\n"
 	"label_1",
 		 subtilis_fpa_gen_if_gte},
-	{"teste r_1\n"
-	"jmpc r_1, *, label_1\n"
-	"label_1",
-		 subtilis_arm_gen_if_err},
-	{"teste r_1\n"
-	"jmpc r_1, label_1, *\n"
-	"label_1",
-		 subtilis_arm_gen_if_err_rev},
 	{"jmpc *, label_1, *\n"
 	 "label_1\n",
 	 subtilis_arm_gen_jmpc},
+	{"jmpc *, *, label_1\n"
+	 "label_1\n",
+	 subtilis_arm_gen_jmpc_rev},
 	{"jmpc *, *, *\n", subtilis_arm_gen_jmpc_no_label},
 	{"call\n", subtilis_arm_gen_call},
 	{"calli32\n", subtilis_arm_gen_calli32},
@@ -236,8 +231,6 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"point *, *, *\n", subtilis_riscos_arm_point},
 	{"tint *, *, *\n", subtilis_riscos_arm_tint},
 	{"end\n", subtilis_riscos_arm_end},
-	{"sete\n", subtilis_arm_gen_sete},
-	{"cleare\n", subtilis_arm_gen_cleare},
 	{"testesc\n", subtilis_riscos_arm_testesc},
 	{"alloc *, *\n", subtilis_riscos_arm_alloc},
 	{"realloc *, *, *\n", subtilis_riscos_arm_realloc},

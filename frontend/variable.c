@@ -16,6 +16,7 @@
 
 #include "variable.h"
 #include "expression.h"
+#include "globals.h"
 #include "type_if.h"
 
 void subtilis_var_assign_hidden(subtilis_parser_t *p, const char *var_name,
@@ -74,4 +75,17 @@ subtilis_exp_t *subtilis_var_lookup_var(subtilis_parser_t *p, const char *tbuf,
 	} else {
 		return subtilis_exp_new_var(&s->t, s->loc, err);
 	}
+}
+
+void subtilis_var_set_eflag(subtilis_parser_t *p, bool value,
+			    subtilis_error_t *err)
+{
+	subtilis_exp_t *ecode;
+
+	ecode = subtilis_exp_new_int32(value ? -1 : 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_var_assign_hidden(p, subtilis_eflag_hidden_var,
+				   &subtilis_type_integer, ecode, err);
 }

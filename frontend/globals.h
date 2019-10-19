@@ -18,6 +18,7 @@
 #define __SUBTILIS_GLOBALS_H__
 
 extern const char *subtilis_rnd_hidden_var;
+extern const char *subtilis_eflag_hidden_var;
 extern const char *subtilis_err_hidden_var;
 
 #endif

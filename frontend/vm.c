@@ -252,7 +252,7 @@ static void prv_divide_by_zero(subitlis_vm_t *vm, int32_t code)
 {
 	int32_t base = vm->regs[SUBTILIS_IR_REG_GLOBAL];
 
-	vm->error_flag = true;
+	vm->memory[base + vm->s->eflag_offset] = -1;
 	vm->memory[base + vm->s->error_offset] = code;
 }
 
@@ -1084,24 +1084,6 @@ static void prv_end(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->quit_flag = true;
 }
 
-static void prv_sete(subitlis_vm_t *vm, subtilis_buffer_t *b,
-		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
-{
-	vm->error_flag = true;
-}
-
-static void prv_cleare(subitlis_vm_t *vm, subtilis_buffer_t *b,
-		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
-{
-	vm->error_flag = false;
-}
-
-static void prv_teste(subitlis_vm_t *vm, subtilis_buffer_t *b,
-		      subtilis_ir_operand_t *ops, subtilis_error_t *err)
-{
-	vm->regs[ops[0].reg] = vm->error_flag ? -1 : 0;
-}
-
 static void prv_testesc(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -1131,7 +1113,7 @@ static void prv_alloc(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	if (!block) {
-		prv_sete(vm, b, ops, err);
+		vm->memory[base + vm->s->eflag_offset] = -1;
 		vm->memory[base + vm->s->error_offset] =
 		    SUBTILIS_ERROR_CODE_OOM;
 		vm->regs[ops[2].reg] = 0;
@@ -1156,7 +1138,7 @@ static void prv_realloc(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	if (!block) {
-		prv_sete(vm, b, ops, err);
+		vm->memory[base + vm->s->eflag_offset] = -1;
 		vm->memory[base + vm->s->error_offset] =
 		    SUBTILIS_ERROR_CODE_OOM;
 		vm->regs[ops[2].reg] = 0;
@@ -1324,9 +1306,6 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_point,                           /* SUBTILIS_OP_INSTR_POINT */
 	prv_tint,                            /* SUBTILIS_OP_INSTR_TINT */
 	prv_end,                             /* SUBTILIS_OP_INSTR_END */
-	prv_sete,                            /* SUBTILIS_OP_INSTR_SETE */
-	prv_cleare,                          /* SUBTILIS_OP_INSTR_CLEARE */
-	prv_teste,                           /* SUBTILIS_OP_INSTR_TESTE */
 	prv_testesc,                         /* SUBTILIS_OP_INSTR_TESTESC */
 	prv_alloc,                           /* SUBTILIS_OP_INSTR_ALLOC */
 	prv_realloc,                         /* SUBTILIS_OP_INSTR_REALLOC */

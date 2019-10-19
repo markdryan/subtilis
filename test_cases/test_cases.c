@@ -1561,6 +1561,24 @@ const subtilis_test_case_t test_cases[] = {
 	 "PRINT a%(1)\n"
 	 "PRINT a%(2)\n",
 	 "0\n2\n4\n6\n8\n10\n12\n0\n0\n"},
+	{"array_dim_oom",
+	 "ONERROR\n"
+	 "PRINT ERR\n"
+	 "ENDERROR\n"
+	 "DIM a%(10000000)\n"
+	 "PRINT 1\n",
+	 "11\n"},
+	{"array_local_dim_oom",
+	 "ONERROR\n"
+	 "PRINT ERR\n"
+	 "ENDERROR\n"
+	 "PROCAlloc\n"
+	 "PRINT 2\n"
+	 "DEF PROCAlloc\n"
+	 "LOCAL DIM a%(10000000)\n"
+	 "PRINT 1\n"
+	 "ENDPROC\n",
+	 "11\n"},
 };
 
 /* clang-format on */

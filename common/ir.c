@@ -168,9 +168,6 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "point", SUBTILIS_OP_CLASS_REG_REG_REG },
 	{ "tint", SUBTILIS_OP_CLASS_REG_REG_REG },
 	{ "end", SUBTILIS_OP_CLASS_NONE },
-	{ "sete", SUBTILIS_OP_CLASS_NONE },
-	{ "cleare", SUBTILIS_OP_CLASS_NONE },
-	{ "teste", SUBTILIS_OP_CLASS_REG },
 	{ "testesc", SUBTILIS_OP_CLASS_NONE },
 	{ "alloc", SUBTILIS_OP_CLASS_REG_REG },
 	{ "realloc", SUBTILIS_OP_CLASS_REG_REG_REG },
@@ -608,8 +605,8 @@ cleanup:
 subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	subtilis_ir_prog_t *p, const char *name, size_t locals,
 	subtilis_type_section_t *tp, subtilis_builtin_type_t ftype,
-	const char *file, size_t line, int32_t error_offset,
-	subtilis_error_t *err)
+	const char *file, size_t line, int32_t eflag_offset,
+	int32_t error_offset, subtilis_error_t *err)
 
 /* clang-format on */
 {
@@ -622,6 +619,7 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	s->eflag_offset = eflag_offset;
 	s->error_offset = error_offset;
 	s->reg_counter += tp->int_regs;
 	s->freg_counter += tp->fp_regs;
