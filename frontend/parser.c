@@ -1560,6 +1560,60 @@ cleanup:
 		subtilis_exp_delete(indices[i]);
 }
 
+static char *
+prv_lookup_assignment_var(subtilis_parser_t *p, subtilis_token_t *t,
+			  subtilis_type_t *id_type, const subtilis_symbol_t **s,
+			  size_t *mem_reg, bool *new_var, subtilis_error_t *err)
+{
+	const char *tbuf;
+	char *var_name = NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	var_name = malloc(strlen(tbuf) + 1);
+	if (!var_name) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+	strcpy(var_name, tbuf);
+	*id_type = t->tok.id_type;
+	*s = subtilis_symbol_table_lookup(p->local_st, tbuf);
+	if (*s) {
+		*mem_reg = SUBTILIS_IR_REG_LOCAL;
+	} else {
+		*s = subtilis_symbol_table_lookup(p->st, tbuf);
+		if (*s) {
+			*mem_reg = SUBTILIS_IR_REG_GLOBAL;
+		} else if (p->current == p->main) {
+			/*
+			 * We explicitly disable statements like
+			 *
+			 * X% = X% + 1  or
+			 * X% += 1
+			 *
+			 * for the cases where X% has not been defined.
+			 */
+			*new_var = true;
+			*mem_reg = SUBTILIS_IR_REG_GLOBAL;
+		} else {
+			subtilis_error_set_unknown_variable(
+			    err, tbuf, p->l->stream->name, p->l->line);
+			goto cleanup;
+		}
+	}
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return var_name;
+
+cleanup:
+
+	free(var_name);
+
+	return NULL;
+}
+
 static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err)
 {
@@ -1572,40 +1626,8 @@ static void prv_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	char *var_name = NULL;
 	subtilis_exp_t *e = NULL;
 
-	tbuf = subtilis_token_get_text(t);
-	var_name = malloc(strlen(tbuf) + 1);
-	if (!var_name) {
-		subtilis_error_set_oom(err);
-		return;
-	}
-	strcpy(var_name, tbuf);
-	type = t->tok.id_type;
-	s = subtilis_symbol_table_lookup(p->local_st, tbuf);
-	if (s) {
-		op1.reg = SUBTILIS_IR_REG_LOCAL;
-	} else {
-		s = subtilis_symbol_table_lookup(p->st, tbuf);
-		if (s) {
-			op1.reg = SUBTILIS_IR_REG_GLOBAL;
-		} else if (p->current == p->main) {
-			/*
-			 * We explicitly disable statements like
-			 *
-			 * X% = X% + 1  or
-			 * X% += 1
-			 *
-			 * for the cases where X% has not been defined.
-			 */
-			new_var = true;
-			op1.reg = SUBTILIS_IR_REG_GLOBAL;
-		} else {
-			subtilis_error_set_unknown_variable(
-			    err, tbuf, p->l->stream->name, p->l->line);
-			goto cleanup;
-		}
-	}
-
-	subtilis_lexer_get(p->l, t, err);
+	var_name =
+	    prv_lookup_assignment_var(p, t, &type, &s, &op1.reg, &new_var, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -3451,40 +3473,8 @@ static void prv_for_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	char *var_name = NULL;
 	subtilis_exp_t *e = NULL;
 
-	tbuf = subtilis_token_get_text(t);
-	var_name = malloc(strlen(tbuf) + 1);
-	if (!var_name) {
-		subtilis_error_set_oom(err);
-		return;
-	}
-	strcpy(var_name, tbuf);
-	type = t->tok.id_type;
-	s = subtilis_symbol_table_lookup(p->local_st, tbuf);
-	if (s) {
-		op1.reg = SUBTILIS_IR_REG_LOCAL;
-	} else {
-		s = subtilis_symbol_table_lookup(p->st, tbuf);
-		if (s) {
-			op1.reg = SUBTILIS_IR_REG_GLOBAL;
-		} else if (p->current == p->main) {
-			/*
-			 * We explicitly disable statements like
-			 *
-			 * X% = X% + 1  or
-			 * X% += 1
-			 *
-			 * for the cases where X% has not been defined.
-			 */
-			new_var = true;
-			op1.reg = SUBTILIS_IR_REG_GLOBAL;
-		} else {
-			subtilis_error_set_unknown_variable(
-			    err, tbuf, p->l->stream->name, p->l->line);
-			goto cleanup;
-		}
-	}
-
-	subtilis_lexer_get(p->l, t, err);
+	var_name =
+	    prv_lookup_assignment_var(p, t, &type, &s, &op1.reg, &new_var, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
