@@ -92,6 +92,18 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
+	/*
+	 * We pre-seed the symbol table here to ensure that these variables
+	 * have offsets 0 and 0 + sizeof(INT).
+	 */
+
+	s = subtilis_symbol_table_insert(p->st, subtilis_eflag_hidden_var,
+					 &subtilis_type_integer, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	p->eflag_offset = (int32_t)s->loc;
+	p->error_offset = s->size;
 	s = subtilis_symbol_table_insert(p->st, subtilis_err_hidden_var,
 					 &subtilis_type_integer, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -99,7 +111,7 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 
 	p->current = subtilis_ir_prog_section_new(
 	    p->prog, SUBTILIS_MAIN_FN, 0, stype, SUBTILIS_BUILTINS_MAX,
-	    l->stream->name, l->line, (int32_t)s->loc, err);
+	    l->stream->name, l->line, p->eflag_offset, p->error_offset, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 	stype = NULL;
@@ -4003,8 +4015,7 @@ static void prv_onerror(subtilis_parser_t *p, subtilis_token_t *t,
 	 * handler may appear to have failed when they return.
 	 */
 
-	subtilis_ir_section_add_instr_no_arg(p->current,
-					     SUBTILIS_OP_INSTR_CLEARE, err);
+	subtilis_var_set_eflag(p, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -4026,8 +4037,7 @@ static void prv_onerror(subtilis_parser_t *p, subtilis_token_t *t,
 	if (!p->current->endproc) {
 		if (!p->current->handler_list) {
 			if (p->current != p->main) {
-				subtilis_ir_section_add_instr_no_arg(
-				    p->current, SUBTILIS_OP_INSTR_SETE, err);
+				subtilis_var_set_eflag(p, true, err);
 				if (err->type != SUBTILIS_ERROR_OK)
 					return;
 			}
@@ -4335,7 +4345,8 @@ static void prv_def(subtilis_parser_t *p, subtilis_token_t *t,
 
 	p->current = subtilis_ir_prog_section_new(
 	    p->prog, name, p->local_st->allocated, stype, SUBTILIS_BUILTINS_MAX,
-	    p->l->stream->name, p->l->line, p->error_offset, err);
+	    p->l->stream->name, p->l->line, p->eflag_offset, p->error_offset,
+	    err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		subtilis_type_section_delete(stype);
 		goto on_error;
@@ -4639,6 +4650,15 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 
 	subtilis_var_assign_hidden(p, subtilis_rnd_hidden_var,
+				   &subtilis_type_integer, seed, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	seed = subtilis_exp_new_int32(0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_var_assign_hidden(p, subtilis_eflag_hidden_var,
 				   &subtilis_type_integer, seed, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;

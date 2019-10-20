@@ -48,7 +48,6 @@ struct subitlis_vm_t_ {
 	size_t max_labels;
 	size_t top;
 	bool quit_flag;
-	bool error_flag;
 	subtilis_vm_heap_t heap;
 };
 

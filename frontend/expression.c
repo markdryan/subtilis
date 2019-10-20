@@ -54,7 +54,8 @@ static void prv_add_builtin(subtilis_parser_t *p, char *name,
 		goto on_error;
 
 	(void)subtilis_ir_prog_section_new(p->prog, name, 0, ts, ftype,
-					   "builtin", 0, p->error_offset, err);
+					   "builtin", 0, p->eflag_offset,
+					   p->error_offset, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
 			goto on_error;
@@ -95,19 +96,22 @@ void subtilis_exp_handle_errors(subtilis_parser_t *p, subtilis_error_t *err)
 	subtilis_ir_operand_t error_label;
 	subtilis_ir_operand_t ok_label;
 	subtilis_ir_operand_t op1;
+	subtilis_exp_t *ecode;
 
 	if (p->current->in_error_handler) {
 		/*
 		 * We're in an error handler.  We ignore any error and continue.
 		 */
 
-		subtilis_ir_section_add_instr_no_arg(
-		    p->current, SUBTILIS_OP_INSTR_CLEARE, err);
+		subtilis_var_set_eflag(p, false, err);
 		return;
 	}
 
-	op1.reg = subtilis_ir_section_add_instr1(p->current,
-						 SUBTILIS_OP_INSTR_TESTE, err);
+	ecode = subtilis_var_lookup_var(p, subtilis_eflag_hidden_var, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	op1.reg = ecode->exp.ir_op.reg;
+	subtilis_exp_delete(ecode);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -487,8 +491,7 @@ void subtilis_exp_generate_error(subtilis_parser_t *p, subtilis_exp_t *e,
 		 * return the default value for the function type.
 		 */
 
-		subtilis_ir_section_add_instr_no_arg(
-		    p->current, SUBTILIS_OP_INSTR_SETE, err);
+		subtilis_var_set_eflag(p, true, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
@@ -512,8 +515,7 @@ void subtilis_exp_generate_error(subtilis_parser_t *p, subtilis_exp_t *e,
 		 * Let's set the error flag and return the default value.
 		 */
 
-		subtilis_ir_section_add_instr_no_arg(
-		    p->current, SUBTILIS_OP_INSTR_SETE, err);
+		subtilis_var_set_eflag(p, true, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 

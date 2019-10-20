@@ -24,7 +24,7 @@ void subtilis_sizet_vector_init(subtilis_sizet_vector_t *v)
 	v->len = 0;
 	v->max_len = 0;
 	v->vals = NULL;
-};
+}
 
 void subtilis_sizet_vector_append(subtilis_sizet_vector_t *v, size_t val,
 				  subtilis_error_t *err)

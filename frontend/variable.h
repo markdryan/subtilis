@@ -26,5 +26,7 @@ void subtilis_var_assign_hidden(subtilis_parser_t *p, const char *var_name,
 				subtilis_exp_t *e, subtilis_error_t *err);
 subtilis_exp_t *subtilis_var_lookup_var(subtilis_parser_t *p, const char *tbuf,
 					subtilis_error_t *err);
+void subtilis_var_set_eflag(subtilis_parser_t *p, bool value,
+			    subtilis_error_t *err);
 
 #endif

@@ -1277,34 +1277,6 @@ typedef enum {
 
 	/*
 	 *
-	 * sete
-	 *
-	 * Sets the error flag.  The error flag is a backend specific
-	 * value.
-	 */
-
-	SUBTILIS_OP_INSTR_SETE,
-
-	/*
-	 *
-	 * cleare
-	 *
-	 * Clears the error flag
-	 */
-
-	SUBTILIS_OP_INSTR_CLEARE,
-
-	/*
-	 *
-	 * teste R0
-	 *
-	 * Sets R0 to -1 if the error flag is set, 0 otherwise
-	 */
-
-	SUBTILIS_OP_INSTR_TESTE,
-
-	/*
-	 *
 	 * testesc
 	 *
 	 * Checks the system escape condition is set.  If it is, the the error
@@ -1472,6 +1444,7 @@ struct subtilis_ir_section_t_ {
 	subtilis_handler_list_t *handler_list;
 	size_t handler_offset;
 	bool endproc;
+	int32_t eflag_offset; // Again this is 32 bit specific.
 	int32_t error_offset; // Again this is 32 bit specific.
 	size_t end_label;
 	size_t ret_reg;
@@ -1556,8 +1529,8 @@ subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err,
 subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	subtilis_ir_prog_t *p, const char *name, size_t locals,
 	subtilis_type_section_t *tp, subtilis_builtin_type_t ftype,
-	const char *file, size_t line, int32_t error_offset,
-	subtilis_error_t *err);
+	const char *file, size_t line, int32_t eflag_offset,
+	int32_t error_offset, subtilis_error_t *err);
 
 /* clang-format on */
 subtilis_ir_section_t *subtilis_ir_prog_find_section(subtilis_ir_prog_t *p,

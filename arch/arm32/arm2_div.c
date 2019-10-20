@@ -17,13 +17,14 @@
 #include "arm2_div.h"
 #include "../../common/error_codes.h"
 
-static const size_t r;		 /* R0 */
-static const size_t d = 1;       /* R1 */
-static const size_t mod = 2;     /* R2 */
-static const size_t err_reg = 3; /* R3 */
-static const size_t t = 4;       /* R4 */
-static const size_t q = 5;       /* R5 */
-static const size_t sign = 6;    /* R6 */
+static const size_t r;		   /* R0 */
+static const size_t d = 1;	 /* R1 */
+static const size_t mod = 2;       /* R2 */
+static const size_t eflag_reg = 3; /* R3 */
+static const size_t t = 4;	 /* R4 */
+static const size_t q = 5;	 /* R5 */
+static const size_t sign = 6;      /* R6 */
+static const size_t err_reg = 7;   /* R3 */
 
 static void prv_add_rsa_group(subtilis_ir_section_t *s,
 			      subtilis_arm_section_t *arm_s, size_t i,
@@ -108,6 +109,13 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	subtilis_arm_data_instr_t *mov;
 	subtilis_arm_br_instr_t *br;
 	subtilis_arm_stran_instr_t *str;
+
+	/* Load err offset */
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, err_reg, 13, -4, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	op2_reg.type = SUBTILIS_ARM_OP2_REG;
 	op2_reg_shift.type = SUBTILIS_ARM_OP2_SHIFTED;
@@ -520,25 +528,24 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	str->write_back = false;
 	str->subtract = false;
 
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, -1,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
-				 SUBTILIS_ARM_CCODE_AL, dest, 1 << 31, err);
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_STR, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-
-	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
-				 SUBTILIS_ARM_CCODE_VC, dest, 1 << 31, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_arm_add_mvn_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, 0,
-				 err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+	str = &instr->operands.stran;
+	str->ccode = SUBTILIS_ARM_CCODE_AL;
+	str->dest = dest;
+	str->base = 12;
+	str->offset.type = SUBTILIS_ARM_OP2_REG;
+	str->offset.op.reg = eflag_reg;
+	str->pre_indexed = true;
+	str->write_back = false;
+	str->subtract = false;
 
 	dest = 15;
 	op1 = 14;

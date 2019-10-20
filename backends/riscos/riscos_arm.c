@@ -1229,18 +1229,8 @@ void subtilis_riscos_arm_testesc(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0,
-				 SUBTILIS_ERROR_CODE_ESCAPE, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
-				   SUBTILIS_ARM_CCODE_AL, 0, 12,
-				   s->error_offset, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_arm_gen_sete(s, start, user_data, err);
+	subtilis_arm_gen_sete(arm_s, s, SUBTILIS_ARM_CCODE_AL, 0,
+			      SUBTILIS_ERROR_CODE_ESCAPE, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1291,14 +1281,8 @@ void subtilis_riscos_arm_alloc(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	one = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_VS, false, one,
-				 SUBTILIS_ERROR_CODE_OOM, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
-				   SUBTILIS_ARM_CCODE_VS, one, 12,
-				   s->error_offset, err);
+	subtilis_arm_gen_sete(arm_s, s, SUBTILIS_ARM_CCODE_VS, one,
+			      SUBTILIS_ERROR_CODE_OOM, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
