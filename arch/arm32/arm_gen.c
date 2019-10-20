@@ -1063,3 +1063,25 @@ void subtilis_arm_gen_asrii32(subtilis_ir_section_t *s, size_t start,
 {
 	prv_gen_shift_i32(s, start, user_data, SUBTILIS_ARM_SHIFT_ASR, err);
 }
+
+void subtilis_arm_gen_sete(subtilis_arm_section_t *arm_s,
+			   subtilis_ir_section_t *s,
+			   subtilis_arm_ccode_type_t ccode, size_t reg,
+			   int32_t error_code, subtilis_error_t *err)
+{
+	subtilis_arm_add_mov_imm(arm_s, ccode, false, reg, -1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR, ccode, reg,
+				   12, s->eflag_offset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_imm(arm_s, ccode, false, reg, error_code, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR, ccode, reg,
+				   12, s->error_offset, err);
+}

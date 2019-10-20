@@ -147,5 +147,8 @@ void subtilis_arm_gen_asrii32(subtilis_ir_section_t *s, size_t start,
 void subtilis_arm_gen_memseti32(subtilis_ir_section_t *s,
 				subtilis_arm_section_t *arm_s,
 				subtilis_error_t *err);
-
+void subtilis_arm_gen_sete(subtilis_arm_section_t *arm_s,
+			   subtilis_ir_section_t *s,
+			   subtilis_arm_ccode_type_t ccode, size_t reg,
+			   int32_t error_code, subtilis_error_t *err);
 #endif
