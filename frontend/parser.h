@@ -52,5 +52,7 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 				       subtilis_error_t *err);
 void subtilis_parse(subtilis_parser_t *p, subtilis_error_t *err);
 void subtilis_parser_delete(subtilis_parser_t *p);
+void subtilis_parser_statement(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err);
 
 #endif

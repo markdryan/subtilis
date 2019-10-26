@@ -2,7 +2,8 @@
 
 COMPONENT = frontend
 
-OBJS = builtins_ir call expression globals hash_table keywords lexer parser stream symbol_table symbol_table_test variable type_if float64_type int32_type array_float64_type array_int32_type array_type
+OBJS = builtins_ir call expression globals hash_table keywords lexer parser stream symbol_table symbol_table_test variable type_if float64_type int32_type array_float64_type array_int32_type array_type parser_array parser_call parser_compound parser_exp parser_math parser_error parser_graphics parser_input parser_rnd
+
 
 CFLAGS ?= -Wxla
 
