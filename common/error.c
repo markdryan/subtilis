@@ -181,6 +181,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_BAD_INDEX_COUNT */
 	{"Incorrect number of indices specified for array %s\n", 1},
+
+	/* SUBTILIS_ERROR_NOT_ARRAY */
+	{"%s is not an array\n", 1},
 };
 
 /* clang-format on */
