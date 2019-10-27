@@ -30,6 +30,7 @@
 #include "parser_compound.h"
 #include "parser_error.h"
 #include "parser_exp.h"
+#include "parser_graphics.h"
 #include "type_if.h"
 #include "variable.h"
 
@@ -427,500 +428,6 @@ static void prv_let(subtilis_parser_t *p, subtilis_token_t *t,
 	prv_assignment(p, t, err);
 }
 
-static void prv_mode(subtilis_parser_t *p, subtilis_token_t *t,
-		     subtilis_error_t *err)
-{
-	subtilis_exp_t *e;
-
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	e = subtilis_parser_int_var_expression(p, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_ir_section_add_instr_no_reg(
-	    p->current, SUBTILIS_OP_INSTR_MODE_I32, e->exp.ir_op, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_exp_handle_errors(p, err);
-
-cleanup:
-
-	subtilis_exp_delete(e);
-}
-
-static void prv_plot(subtilis_parser_t *p, subtilis_token_t *t,
-		     subtilis_error_t *err)
-{
-	size_t i;
-	subtilis_exp_t *e[3];
-
-	memset(&e, 0, sizeof(e));
-
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_parser_statement_int_args(p, t, e, 3, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_PLOT,
-					  e[0]->exp.ir_op, e[1]->exp.ir_op,
-					  e[2]->exp.ir_op, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_exp_handle_errors(p, err);
-
-cleanup:
-	for (i = 0; i < 3; i++)
-		subtilis_exp_delete(e[i]);
-}
-
-static void prv_simple_plot(subtilis_parser_t *p, subtilis_token_t *t,
-			    int32_t plot_code, subtilis_error_t *err)
-{
-	size_t i;
-	subtilis_exp_t *e[3];
-
-	memset(&e, 0, sizeof(e));
-
-	subtilis_parser_statement_int_args(p, t, &e[1], 2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	e[0] = subtilis_exp_new_int32(plot_code, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	e[0] = subtilis_type_if_exp_to_var(p, e[0], err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_PLOT,
-					  e[0]->exp.ir_op, e[1]->exp.ir_op,
-					  e[2]->exp.ir_op, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_exp_handle_errors(p, err);
-
-cleanup:
-	for (i = 0; i < 3; i++)
-		subtilis_exp_delete(e[i]);
-}
-
-static void prv_move_draw(subtilis_parser_t *p, subtilis_token_t *t,
-			  int32_t plot_code, subtilis_error_t *err)
-{
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-	if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
-	    (t->tok.keyword.type == SUBTILIS_KEYWORD_BY)) {
-		plot_code -= 4;
-		subtilis_lexer_get(p->l, t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-	}
-
-	prv_simple_plot(p, t, plot_code, err);
-}
-
-static void prv_move(subtilis_parser_t *p, subtilis_token_t *t,
-		     subtilis_error_t *err)
-{
-	prv_move_draw(p, t, 4, err);
-}
-
-static void prv_fill(subtilis_parser_t *p, subtilis_token_t *t,
-		     subtilis_error_t *err)
-{
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	prv_simple_plot(p, t, 133, err);
-}
-
-static void prv_line(subtilis_parser_t *p, subtilis_token_t *t,
-		     subtilis_error_t *err)
-{
-	const char *tbuf;
-
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	prv_simple_plot(p, t, 4, err);
-
-	tbuf = subtilis_token_get_text(t);
-	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
-		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
-					    p->l->line);
-		return;
-	}
-
-	if (strcmp(tbuf, ",")) {
-		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
-					    p->l->line);
-		return;
-	}
-
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	prv_simple_plot(p, t, 5, err);
-}
-
-static void prv_circle(subtilis_parser_t *p, subtilis_token_t *t,
-		       subtilis_error_t *err)
-{
-	const char *tbuf;
-	subtilis_exp_t *e[3];
-	size_t i;
-	int32_t plot_code = 145;
-
-	memset(&e, 0, sizeof(e));
-
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-	if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
-	    (t->tok.keyword.type == SUBTILIS_KEYWORD_FILL)) {
-		plot_code = 153;
-		subtilis_lexer_get(p->l, t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-	}
-
-	prv_simple_plot(p, t, 4, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	tbuf = subtilis_token_get_text(t);
-	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
-		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
-					    p->l->line);
-		return;
-	}
-
-	if (strcmp(tbuf, ",")) {
-		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
-					    p->l->line);
-		return;
-	}
-
-	e[0] = subtilis_exp_new_int32(plot_code, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	e[0] = subtilis_type_if_exp_to_var(p, e[0], err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	e[1] = subtilis_parser_int_var_expression(p, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	e[2] = subtilis_exp_new_int32(0, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	e[2] = subtilis_type_if_exp_to_var(p, e[2], err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_PLOT,
-					  e[0]->exp.ir_op, e[1]->exp.ir_op,
-					  e[2]->exp.ir_op, err);
-
-cleanup:
-
-	for (i = 0; i < 3; i++)
-		subtilis_exp_delete(e[i]);
-}
-
-static void prv_rectangle_outline(subtilis_parser_t *p, subtilis_token_t *t,
-				  subtilis_error_t *err)
-{
-	size_t i;
-	subtilis_exp_t *e[6];
-
-	memset(&e, 0, sizeof(e));
-
-	e[0] = subtilis_exp_new_int32(1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	e[0] = subtilis_type_if_exp_to_var(p, e[0], err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	e[1] = subtilis_exp_new_int32(0, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	e[1] = subtilis_type_if_exp_to_var(p, e[1], err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-	;
-
-	subtilis_parser_statement_int_args(p, t, &e[2], 2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	e[4] = subtilis_exp_new_int32_var(e[2]->exp.ir_op.reg, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	e[4] = subtilis_type_if_unary_minus(p, e[4], err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	e[5] = subtilis_exp_new_int32_var(e[3]->exp.ir_op.reg, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	e[5] = subtilis_type_if_unary_minus(p, e[5], err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_PLOT,
-					  e[0]->exp.ir_op, e[2]->exp.ir_op,
-					  e[1]->exp.ir_op, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_PLOT,
-					  e[0]->exp.ir_op, e[1]->exp.ir_op,
-					  e[3]->exp.ir_op, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_PLOT,
-					  e[0]->exp.ir_op, e[4]->exp.ir_op,
-					  e[1]->exp.ir_op, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_PLOT,
-					  e[0]->exp.ir_op, e[1]->exp.ir_op,
-					  e[5]->exp.ir_op, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-cleanup:
-
-	for (i = 0; i < 6; i++)
-		subtilis_exp_delete(e[i]);
-}
-
-static void prv_rectangle(subtilis_parser_t *p, subtilis_token_t *t,
-			  subtilis_error_t *err)
-{
-	const char *tbuf;
-	bool fill = false;
-
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-	if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
-	    (t->tok.keyword.type == SUBTILIS_KEYWORD_FILL)) {
-		subtilis_lexer_get(p->l, t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-		fill = true;
-	}
-
-	prv_simple_plot(p, t, 4, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	tbuf = subtilis_token_get_text(t);
-	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
-		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
-					    p->l->line);
-		return;
-	}
-
-	if (strcmp(tbuf, ",")) {
-		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
-					    p->l->line);
-		return;
-	}
-
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	if (fill)
-		prv_simple_plot(p, t, 97, err);
-	else
-		prv_rectangle_outline(p, t, err);
-}
-
-static void prv_draw(subtilis_parser_t *p, subtilis_token_t *t,
-		     subtilis_error_t *err)
-{
-	prv_move_draw(p, t, 5, err);
-}
-
-static void prv_point(subtilis_parser_t *p, subtilis_token_t *t,
-		      subtilis_error_t *err)
-{
-	int32_t plot_code = 69;
-
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/*
-	 * TODO: Implement POINT TO, once I figure out how
-	 */
-
-	if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
-	    (t->tok.keyword.type == SUBTILIS_KEYWORD_BY)) {
-		plot_code -= 4;
-		subtilis_lexer_get(p->l, t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-	}
-
-	prv_simple_plot(p, t, plot_code, err);
-}
-
-static void prv_gcol(subtilis_parser_t *p, subtilis_token_t *t,
-		     subtilis_error_t *err)
-{
-	size_t i;
-	subtilis_exp_t *e[2];
-	subtilis_ir_operand_t op2;
-
-	memset(&e, 0, sizeof(e));
-	memset(&op2, 0, sizeof(op2));
-
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_parser_statement_int_args(p, t, e, 2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_GCOL,
-					  e[0]->exp.ir_op, e[1]->exp.ir_op, op2,
-					  err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_exp_handle_errors(p, err);
-
-cleanup:
-	for (i = 0; i < 2; i++)
-		subtilis_exp_delete(e[i]);
-}
-
-static void prv_origin(subtilis_parser_t *p, subtilis_token_t *t,
-		       subtilis_error_t *err)
-{
-	size_t i;
-	subtilis_exp_t *e[2];
-	subtilis_ir_operand_t op2;
-
-	memset(&e, 0, sizeof(e));
-	memset(&op2, 0, sizeof(op2));
-
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_parser_statement_int_args(p, t, e, 2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_ORIGIN,
-					  e[0]->exp.ir_op, e[1]->exp.ir_op, op2,
-					  err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_exp_handle_errors(p, err);
-
-cleanup:
-	for (i = 0; i < 2; i++)
-		subtilis_exp_delete(e[i]);
-}
-
-static void prv_cls(subtilis_parser_t *p, subtilis_token_t *t,
-		    subtilis_error_t *err)
-{
-	subtilis_ir_section_add_instr_no_arg(p->current, SUBTILIS_OP_INSTR_CLS,
-					     err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_exp_handle_errors(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_lexer_get(p->l, t, err);
-}
-
-static void prv_clg(subtilis_parser_t *p, subtilis_token_t *t,
-		    subtilis_error_t *err)
-{
-	subtilis_ir_section_add_instr_no_arg(p->current, SUBTILIS_OP_INSTR_CLG,
-					     err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_exp_handle_errors(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_lexer_get(p->l, t, err);
-}
-
-static void prv_on(subtilis_parser_t *p, subtilis_token_t *t,
-		   subtilis_error_t *err)
-{
-	subtilis_ir_section_add_instr_no_arg(p->current, SUBTILIS_OP_INSTR_ON,
-					     err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_exp_handle_errors(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_lexer_get(p->l, t, err);
-}
-
-static void prv_off(subtilis_parser_t *p, subtilis_token_t *t,
-		    subtilis_error_t *err)
-{
-	subtilis_ir_section_add_instr_no_arg(p->current, SUBTILIS_OP_INSTR_OFF,
-					     err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_exp_handle_errors(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_lexer_get(p->l, t, err);
-}
-
 static void prv_end(subtilis_parser_t *p, subtilis_token_t *t,
 		    subtilis_error_t *err)
 {
@@ -942,21 +449,6 @@ static void prv_end(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 
 	p->current->endproc = true;
-}
-
-static void prv_wait(subtilis_parser_t *p, subtilis_token_t *t,
-		     subtilis_error_t *err)
-{
-	subtilis_ir_section_add_instr_no_arg(p->current, SUBTILIS_OP_INSTR_WAIT,
-					     err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_exp_handle_errors(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_lexer_get(p->l, t, err);
 }
 
 static void prv_vdu_byte(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -2624,11 +2116,11 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_CASE */
 	NULL, /* SUBTILIS_KEYWORD_CHAIN */
 	NULL, /* SUBTILIS_KEYWORD_CHR_STR */
-	prv_circle, /* SUBTILIS_KEYWORD_CIRCLE */
+	subtilis_parser_circle, /* SUBTILIS_KEYWORD_CIRCLE */
 	NULL, /* SUBTILIS_KEYWORD_CLEAR */
-	prv_clg, /* SUBTILIS_KEYWORD_CLG */
+	subtilis_parser_clg, /* SUBTILIS_KEYWORD_CLG */
 	NULL, /* SUBTILIS_KEYWORD_CLOSE_HASH */
-	prv_cls, /* SUBTILIS_KEYWORD_CLS */
+	subtilis_parser_cls, /* SUBTILIS_KEYWORD_CLS */
 	NULL, /* SUBTILIS_KEYWORD_COLOR */
 	NULL, /* SUBTILIS_KEYWORD_COLOUR */
 	NULL, /* SUBTILIS_KEYWORD_COS */
@@ -2640,7 +2132,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_DELETE */
 	prv_dim, /* SUBTILIS_KEYWORD_DIM */
 	NULL, /* SUBTILIS_KEYWORD_DIV */
-	prv_draw, /* SUBTILIS_KEYWORD_DRAW */
+	subtilis_parser_draw, /* SUBTILIS_KEYWORD_DRAW */
 	NULL, /* SUBTILIS_KEYWORD_EDIT */
 	NULL, /* SUBTILIS_KEYWORD_ELLIPSE */
 	NULL, /* SUBTILIS_KEYWORD_ELSE */
@@ -2659,10 +2151,10 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_EXP */
 	NULL, /* SUBTILIS_KEYWORD_EXT_HASH */
 	NULL, /* SUBTILIS_KEYWORD_FALSE */
-	prv_fill, /* SUBTILIS_KEYWORD_FILL */
+	subtilis_parser_fill, /* SUBTILIS_KEYWORD_FILL */
 	NULL, /* SUBTILIS_KEYWORD_FN */
 	prv_for, /* SUBTILIS_KEYWORD_FOR */
-	prv_gcol, /* SUBTILIS_KEYWORD_GCOL */
+	subtilis_parser_gcol, /* SUBTILIS_KEYWORD_GCOL */
 	NULL, /* SUBTILIS_KEYWORD_GET */
 	NULL, /* SUBTILIS_KEYWORD_GET_STR */
 	NULL, /* SUBTILIS_KEYWORD_GET_STR_HASH */
@@ -2682,7 +2174,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_LEN */
 	prv_let, /* SUBTILIS_KEYWORD_LET */
 	NULL, /* SUBTILIS_KEYWORD_LIBRARY */
-	prv_line, /* SUBTILIS_KEYWORD_LINE */
+	subtilis_parser_line, /* SUBTILIS_KEYWORD_LINE */
 	NULL, /* SUBTILIS_KEYWORD_LIST */
 	NULL, /* SUBTILIS_KEYWORD_LISTO */
 	NULL, /* SUBTILIS_KEYWORD_LN */
@@ -2693,29 +2185,29 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_LVAR */
 	NULL, /* SUBTILIS_KEYWORD_MID_STR */
 	NULL, /* SUBTILIS_KEYWORD_MOD */
-	prv_mode, /* SUBTILIS_KEYWORD_MODE */
+	subtilis_parser_mode, /* SUBTILIS_KEYWORD_MODE */
 	NULL, /* SUBTILIS_KEYWORD_MOUSE */
-	prv_move, /* SUBTILIS_KEYWORD_MOVE */
+	subtilis_parser_move, /* SUBTILIS_KEYWORD_MOVE */
 	NULL, /* SUBTILIS_KEYWORD_NEW */
 	NULL, /* SUBTILIS_KEYWORD_NEXT */
 	NULL, /* SUBTILIS_KEYWORD_NOT */
 	NULL, /* SUBTILIS_KEYWORD_OF */
-	prv_off, /* SUBTILIS_KEYWORD_OFF */
+	subtilis_parser_off, /* SUBTILIS_KEYWORD_OFF */
 	NULL, /* SUBTILIS_KEYWORD_OLD */
-	prv_on, /* SUBTILIS_KEYWORD_ON */
+	subtilis_parser_on, /* SUBTILIS_KEYWORD_ON */
 	prv_onerror, /* SUBTILIS_KEYWORD_ONERROR */
 	NULL, /* SUBTILIS_KEYWORD_OPENIN */
 	NULL, /* SUBTILIS_KEYWORD_OPENOUT */
 	NULL, /* SUBTILIS_KEYWORD_OPENUP */
 	NULL, /* SUBTILIS_KEYWORD_OR */
-	prv_origin, /* SUBTILIS_KEYWORD_ORIGIN */
+	subtilis_parser_origin, /* SUBTILIS_KEYWORD_ORIGIN */
 	NULL, /* SUBTILIS_KEYWORD_OSCLI */
 	NULL, /* SUBTILIS_KEYWORD_OTHERWISE */
 	NULL, /* SUBTILIS_KEYWORD_OVERLAY */
 	NULL, /* SUBTILIS_KEYWORD_PAGE */
 	NULL, /* SUBTILIS_KEYWORD_PI */
-	prv_plot, /* SUBTILIS_KEYWORD_PLOT */
-	prv_point, /* SUBTILIS_KEYWORD_POINT */
+	subtilis_parser_plot, /* SUBTILIS_KEYWORD_PLOT */
+	subtilis_parser_point, /* SUBTILIS_KEYWORD_POINT */
 	NULL, /* SUBTILIS_KEYWORD_POS */
 	prv_print, /* SUBTILIS_KEYWORD_PRINT */
 	NULL, /* SUBTILIS_KEYWORD_PRINT_HASH */
@@ -2724,7 +2216,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_QUIT */
 	NULL, /* SUBTILIS_KEYWORD_RAD */
 	NULL, /* SUBTILIS_KEYWORD_READ */
-	prv_rectangle, /* SUBTILIS_KEYWORD_RECTANGLE */
+	subtilis_parser_rectangle, /* SUBTILIS_KEYWORD_RECTANGLE */
 	NULL, /* SUBTILIS_KEYWORD_REM */
 	NULL, /* SUBTILIS_KEYWORD_RENUMBER */
 	prv_repeat, /* SUBTILIS_KEYWORD_REPEAT */
@@ -2770,7 +2262,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	prv_vdu, /* SUBTILIS_KEYWORD_VDU */
 	NULL, /* SUBTILIS_KEYWORD_VOICES */
 	NULL, /* SUBTILIS_KEYWORD_VPOS */
-	prv_wait, /* SUBTILIS_KEYWORD_WAIT */
+	subtilis_parser_wait, /* SUBTILIS_KEYWORD_WAIT */
 	NULL, /* SUBTILIS_KEYWORD_WHEN */
 	prv_while, /* SUBTILIS_KEYWORD_WHILE */
 	NULL, /* SUBTILIS_KEYWORD_WIDTH */

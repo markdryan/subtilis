@@ -26,5 +26,39 @@ subtilis_exp_t *subtilis_parser_get_point(subtilis_parser_t *p,
 subtilis_exp_t *subtilis_parser_get_tint(subtilis_parser_t *p,
 					 subtilis_token_t *t,
 					 subtilis_error_t *err);
+void subtilis_parser_mode(subtilis_parser_t *p, subtilis_token_t *t,
+			  subtilis_error_t *err);
+void subtilis_parser_plot(subtilis_parser_t *p, subtilis_token_t *t,
+			  subtilis_error_t *err);
+void subtilis_parser_wait(subtilis_parser_t *p, subtilis_token_t *t,
+			  subtilis_error_t *err);
+void subtilis_parser_move(subtilis_parser_t *p, subtilis_token_t *t,
+			  subtilis_error_t *err);
+void subtilis_parser_fill(subtilis_parser_t *p, subtilis_token_t *t,
+			  subtilis_error_t *err);
+void subtilis_parser_line(subtilis_parser_t *p, subtilis_token_t *t,
+			  subtilis_error_t *err);
+void subtilis_parser_circle(subtilis_parser_t *p, subtilis_token_t *t,
+			    subtilis_error_t *err);
+void subtilis_parser_rectangle(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err);
+void subtilis_parser_draw(subtilis_parser_t *p, subtilis_token_t *t,
+			  subtilis_error_t *err);
+void subtilis_parser_point(subtilis_parser_t *p, subtilis_token_t *t,
+			   subtilis_error_t *err);
+void subtilis_parser_point(subtilis_parser_t *p, subtilis_token_t *t,
+			   subtilis_error_t *err);
+void subtilis_parser_gcol(subtilis_parser_t *p, subtilis_token_t *t,
+			  subtilis_error_t *err);
+void subtilis_parser_origin(subtilis_parser_t *p, subtilis_token_t *t,
+			    subtilis_error_t *err);
+void subtilis_parser_cls(subtilis_parser_t *p, subtilis_token_t *t,
+			 subtilis_error_t *err);
+void subtilis_parser_clg(subtilis_parser_t *p, subtilis_token_t *t,
+			 subtilis_error_t *err);
+void subtilis_parser_on(subtilis_parser_t *p, subtilis_token_t *t,
+			subtilis_error_t *err);
+void subtilis_parser_off(subtilis_parser_t *p, subtilis_token_t *t,
+			 subtilis_error_t *err);
 
 #endif
