@@ -9,6 +9,7 @@ COMMON =\
 	buffer.c \
 	parser.c \
 	parser_array.c \
+	parser_assignment.c \
 	parser_call.c \
 	parser_compound.c \
 	parser_exp.c \
