@@ -263,3 +263,21 @@ cleanup:
 
 	free(var_name);
 }
+
+void subtilis_parser_let(subtilis_parser_t *p, subtilis_token_t *t,
+			 subtilis_error_t *err)
+{
+	const char *tbuf;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	if (t->type != SUBTILIS_TOKEN_IDENTIFIER) {
+		tbuf = subtilis_token_get_text(t);
+		subtilis_error_set_id_expected(err, tbuf, p->l->stream->name,
+					       p->l->line);
+		return;
+	}
+
+	subtilis_parser_assignment(p, t, err);
+}

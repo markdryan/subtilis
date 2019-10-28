@@ -151,24 +151,6 @@ static void prv_dim(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_parser_create_array(p, t, false, err);
 }
 
-static void prv_let(subtilis_parser_t *p, subtilis_token_t *t,
-		    subtilis_error_t *err)
-{
-	const char *tbuf;
-
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-	if (t->type != SUBTILIS_TOKEN_IDENTIFIER) {
-		tbuf = subtilis_token_get_text(t);
-		subtilis_error_set_id_expected(err, tbuf, p->l->stream->name,
-					       p->l->line);
-		return;
-	}
-
-	subtilis_parser_assignment(p, t, err);
-}
-
 static void prv_end(subtilis_parser_t *p, subtilis_token_t *t,
 		    subtilis_error_t *err)
 {
@@ -614,7 +596,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_INT */
 	NULL, /* SUBTILIS_KEYWORD_LEFT_STR */
 	NULL, /* SUBTILIS_KEYWORD_LEN */
-	prv_let, /* SUBTILIS_KEYWORD_LET */
+	subtilis_parser_let, /* SUBTILIS_KEYWORD_LET */
 	NULL, /* SUBTILIS_KEYWORD_LIBRARY */
 	subtilis_parser_line, /* SUBTILIS_KEYWORD_LINE */
 	NULL, /* SUBTILIS_KEYWORD_LIST */

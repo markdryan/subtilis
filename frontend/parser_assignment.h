@@ -29,5 +29,7 @@ char *subtilis_parser_lookup_assignment_var(subtilis_parser_t *p,
 
 void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 				subtilis_error_t *err);
+void subtilis_parser_let(subtilis_parser_t *p, subtilis_token_t *t,
+			 subtilis_error_t *err);
 
 #endif
