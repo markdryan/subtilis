@@ -365,137 +365,6 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_array_gen_index_error_code(p, err);
 }
 
-static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
-			   subtilis_error_t *err)
-{
-	size_t index;
-	size_t call_index;
-	size_t i;
-	subtilis_type_section_t *st;
-	const char *expected_typname;
-	const char *got_typname;
-	size_t new_reg;
-	subtilis_op_instr_type_t itype;
-	subtilis_ir_reg_type_t reg_type;
-	subtilis_ir_call_t *call_site;
-	subtilis_type_section_t *ct = call->call_type;
-
-	if (!subtilis_string_pool_find(p->prog->string_pool, call->name,
-				       &index)) {
-		if (!ct)
-			subtilis_error_set_assertion_failed(err);
-		else if (ct->return_type.type == SUBTILIS_TYPE_VOID)
-			subtilis_error_set_unknown_procedure(
-			    err, call->name, p->l->stream->name, call->line);
-		else
-			subtilis_error_set_unknown_function(
-			    err, call->name, p->l->stream->name, call->line);
-		return;
-	}
-
-	/* We need to fix up the call site of procedures call in an error
-	 * handler.
-	 */
-
-	call_index = call->index;
-	if (call->in_error_handler)
-		call_index += call->s->handler_offset;
-
-	/*
-	 * If the call has no type section that it is not a real function.
-	 * It's an operator that is being implemented as a function call
-	 * as the underlying CPU doesn't have an instruction that maps
-	 * nicely onto the operator, e.g., DIV on ARM.  In these cases
-	 * there's no need to perform the type checks as the parser has
-	 * already done them.
-	 */
-
-	/*
-	 * This assumes that builtins don't require any type promotions.
-	 */
-
-	if (!ct) {
-		call->s->ops[call_index]->op.call.proc_id = index;
-		return;
-	}
-
-	st = p->prog->sections[index]->type;
-
-	if ((st->return_type.type == SUBTILIS_TYPE_VOID) &&
-	    (ct->return_type.type != SUBTILIS_TYPE_VOID)) {
-		subtilis_error_set_procedure_expected(
-		    err, call->name, p->l->stream->name, call->line);
-		return;
-	} else if ((st->return_type.type != SUBTILIS_TYPE_VOID) &&
-		   (ct->return_type.type == SUBTILIS_TYPE_VOID)) {
-		subtilis_error_set_function_expected(
-		    err, call->name, p->l->stream->name, call->line);
-		return;
-	}
-
-	if (st->num_parameters != ct->num_parameters) {
-		subtilis_error_set_bad_arg_count(
-		    err, ct->num_parameters, st->num_parameters,
-		    p->l->stream->name, call->line);
-		return;
-	}
-
-	call_site = &call->s->ops[call_index]->op.call;
-	for (i = 0; i < st->num_parameters; i++) {
-		if (st->parameters[i].type == ct->parameters[i].type)
-			continue;
-
-		if ((st->parameters[i].type == SUBTILIS_TYPE_REAL) &&
-		    (ct->parameters[i].type == SUBTILIS_TYPE_INTEGER)) {
-			itype = SUBTILIS_OP_INSTR_MOV_I32_FP;
-			reg_type = SUBTILIS_IR_REG_TYPE_REAL;
-		} else if ((st->parameters[i].type == SUBTILIS_TYPE_INTEGER) &&
-			   (ct->parameters[i].type == SUBTILIS_TYPE_REAL)) {
-			itype = SUBTILIS_OP_INSTR_MOV_FP_I32;
-			reg_type = SUBTILIS_IR_REG_TYPE_INTEGER;
-		} else {
-			expected_typname =
-			    subtilis_type_name(&st->parameters[i]);
-			got_typname = subtilis_type_name(&ct->parameters[i]);
-			subtilis_error_set_bad_arg_type(
-			    err, i + 1, expected_typname, got_typname,
-			    p->l->stream->name, call->line, __FILE__, __LINE__);
-			return;
-		}
-
-		switch (call->s->ops[call_index]->type) {
-		case SUBTILIS_OP_CALL:
-		case SUBTILIS_OP_CALLI32:
-		case SUBTILIS_OP_CALLREAL:
-			break;
-		default:
-			subtilis_error_set_assertion_failed(err);
-			return;
-		}
-
-		new_reg = subtilis_ir_section_promote_nop(
-		    call->s, call_site->args[i].nop, itype,
-		    call_site->args[i].reg, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-		call_site->args[i].reg = new_reg;
-		call_site->args[i].type = reg_type;
-	}
-
-	call_site->proc_id = index;
-}
-
-static void prv_check_calls(subtilis_parser_t *p, subtilis_error_t *err)
-{
-	size_t i;
-
-	for (i = 0; i < p->num_calls; i++) {
-		prv_check_call(p, p->calls[i], err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-	}
-}
-
 void subtilis_parse(subtilis_parser_t *p, subtilis_error_t *err)
 {
 	subtilis_token_t *t = NULL;
@@ -508,7 +377,7 @@ void subtilis_parse(subtilis_parser_t *p, subtilis_error_t *err)
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	prv_check_calls(p, err);
+	subtilis_parser_check_calls(p, err);
 
 cleanup:
 
