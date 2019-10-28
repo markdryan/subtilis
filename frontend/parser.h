@@ -54,5 +54,8 @@ void subtilis_parse(subtilis_parser_t *p, subtilis_error_t *err);
 void subtilis_parser_delete(subtilis_parser_t *p);
 void subtilis_parser_statement(subtilis_parser_t *p, subtilis_token_t *t,
 			       subtilis_error_t *err);
+subtilis_keyword_type_t subtilis_parser_if_compound(subtilis_parser_t *p,
+						    subtilis_token_t *t,
+						    subtilis_error_t *err);
 
 #endif

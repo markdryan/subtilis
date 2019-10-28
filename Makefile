@@ -12,7 +12,9 @@ COMMON =\
 	parser_assignment.c \
 	parser_call.c \
 	parser_compound.c \
+	parser_cond.c \
 	parser_exp.c \
+	parser_loops.c \
 	parser_math.c \
 	parser_error.c \
 	parser_graphics.c \
