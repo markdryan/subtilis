@@ -306,7 +306,8 @@ void subtilis_type_if_indexed_write(subtilis_parser_t *p, const char *var_name,
 
 	fn = prv_type_map[type->type]->indexed_write;
 	if (!fn) {
-		subtilis_error_set_assertion_failed(err);
+		subtilis_error_not_array(err, var_name, p->l->stream->name,
+					 p->l->line);
 		return;
 	}
 	fn(p, var_name, type, mem_reg, loc, e, indices, index_count, err);
@@ -327,7 +328,8 @@ void subtilis_type_if_indexed_add(subtilis_parser_t *p, const char *var_name,
 
 	fn = prv_type_map[type->type]->indexed_add;
 	if (!fn) {
-		subtilis_error_set_assertion_failed(err);
+		subtilis_error_not_array(err, var_name, p->l->stream->name,
+					 p->l->line);
 		return;
 	}
 	fn(p, var_name, type, mem_reg, loc, e, indices, index_count, err);
@@ -348,7 +350,8 @@ void subtilis_type_if_indexed_sub(subtilis_parser_t *p, const char *var_name,
 
 	fn = prv_type_map[type->type]->indexed_sub;
 	if (!fn) {
-		subtilis_error_set_assertion_failed(err);
+		subtilis_error_not_array(err, var_name, p->l->stream->name,
+					 p->l->line);
 		return;
 	}
 	fn(p, var_name, type, mem_reg, loc, e, indices, index_count, err);
@@ -369,7 +372,8 @@ subtilis_type_if_indexed_read(subtilis_parser_t *p, const char *var_name,
 
 	fn = prv_type_map[type->type]->indexed_read;
 	if (!fn) {
-		subtilis_error_set_assertion_failed(err);
+		subtilis_error_not_array(err, var_name, p->l->stream->name,
+					 p->l->line);
 		return NULL;
 	}
 	return fn(p, var_name, type, mem_reg, loc, indices, index_count, err);
