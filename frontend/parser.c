@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "../common/error.h"
-#include "../common/error_codes.h"
 #include "array_type.h"
-#include "builtins_ir.h"
-#include "expression.h"
 #include "globals.h"
 #include "parser.h"
 #include "parser_array.h"
@@ -31,11 +26,9 @@
 #include "parser_compound.h"
 #include "parser_cond.h"
 #include "parser_error.h"
-#include "parser_exp.h"
 #include "parser_graphics.h"
 #include "parser_loops.h"
 #include "parser_output.h"
-#include "type_if.h"
 #include "variable.h"
 
 #define SUBTILIS_MAIN_FN "subtilis_main"
