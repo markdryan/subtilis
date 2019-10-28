@@ -26,5 +26,7 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 			 subtilis_error_t *err);
 void subtilis_parser_return(subtilis_parser_t *p, subtilis_token_t *t,
 			    subtilis_error_t *err);
+void subtilis_parser_endproc(subtilis_parser_t *p, subtilis_token_t *t,
+			     subtilis_error_t *err);
 
 #endif

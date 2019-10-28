@@ -615,3 +615,30 @@ void subtilis_parser_return(subtilis_parser_t *p, subtilis_token_t *t,
 
 	p->current->endproc = true;
 }
+
+void subtilis_parser_endproc(subtilis_parser_t *p, subtilis_token_t *t,
+			     subtilis_error_t *err)
+{
+	subtilis_ir_operand_t end_label;
+
+	if (p->current == p->main) {
+		subtilis_error_set_proc_in_main(err, p->l->stream->name,
+						p->l->line);
+		return;
+	}
+
+	if (p->current->type->return_type.type != SUBTILIS_TYPE_VOID) {
+		subtilis_error_set_proc_in_fn(err, p->l->stream->name,
+					      p->l->line);
+		return;
+	}
+
+	p->current->endproc = true;
+	end_label.label = p->current->end_label;
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_lexer_get(p->l, t, err);
+}
