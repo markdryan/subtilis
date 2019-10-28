@@ -24,5 +24,9 @@ subtilis_exp_t *subtilis_parser_get_err(subtilis_parser_t *p,
 					subtilis_token_t *t,
 					subtilis_error_t *err);
 void subtilis_parser_handle_escape(subtilis_parser_t *p, subtilis_error_t *err);
+void subtilis_parser_onerror(subtilis_parser_t *p, subtilis_token_t *t,
+			     subtilis_error_t *err);
+void subtilis_parser_error(subtilis_parser_t *p, subtilis_token_t *t,
+			   subtilis_error_t *err);
 
 #endif
