@@ -504,6 +504,166 @@ When an error is propegated from a function, the return value of that function
 is set to the default value for the type.  This is sort of irrelvant as that
 value cannot be accessed by the program.
 
+### Arrays
+
+Arrays variables can be declared in two different ways in Subtilis.
+
+1. Using the DIM keyword as in BBC Basic
+2. Using an array reference
+
+Unlike BBC Basic, arrays are always reference types in Subtilis.  In BBC Basic
+arrays behave like value types in some cases and reference types (when passed to
+procedures) in other cases.  In Subtilis arrays are always reference types.  When
+you delcare an array with the DIM statement two separate things happen. You allocate
+space on the heap to store the array and you initialise a reference to that array
+which can be used to refer to it there after.
+
+The DIM keyword works in mostly the same way as it does in BBC Basic with the exception that
+arrays are currently limited to a maximum of 10 dimensions, an arbitrarily chosen limit, which may change.
+Arrays can be declared inside functions but they need to be delcared local and must currently appear
+at the top of the function or procedure.
+
+For example,
+
+```
+DEF PROCAlloc
+    DIM a%(10000000)
+
+    PRINT 1
+ENDPROC
+```
+
+will not compile.  The reason is that new global variables cannot be created inside a function
+or a procedure  (that isn't the main function).
+
+You need to write
+
+```
+DEF PROCAlloc
+    LOCAL DIM a%(10000000)
+
+    PRINT 1
+ENDPROC
+```
+
+An array's type includes the following pieces of information.
+
+1. The type of the elements it stores.
+2. The number of dimensions.  This is fixed at compile time.
+3. The size of each dimensions.
+
+Dimension sizes may or may not be known at compile time.  It's better if they are as this
+allows the compiler to do more checking at compile time, rather than runtime.  Currently,
+the statement DIM a%(b%, c%) will create a two dimensional array whose dimensions are dynamic,
+and not known at compile time.
+
+Array references are simply defined using the normal variable creation mechanism.  The names
+of array reference variables must conform to a specific pattern.  You have an identifier,
+followed by a type symbol (except for reals) followed by opening and closing round brackets,
+e.g.,
+
+a%() or f()
+
+The name of the reference only contains partial type information.  We can tell that it is an
+array and what the underlying element type is but not how many dimensions that array has, or
+what the sizes of the array may be.  This information is associated with the reference when
+it is first created.  By default an array reference assumes the type of its source.
+
+For example,
+
+```
+DIM a%(10, 10)
+b%() = a%()
+```
+
+In this example we create a new array reference b%().  The type of this variable is a reference
+to a two dimensional integer array of dimensions 10 and 10.  The example also shows how to
+take a reference to an array that has already been declared.  The reference is formed from the
+array's name followed by opening and closing round brackets, e.g., a%().
+
+Any attempt to assign an array of other dimensions to b% would fail, e.g.,
+
+```
+DIM c%(10, 20)
+b%() = c%()
+```
+
+would result in a compile error.
+
+It is however possible to explicitly define the dimensions of a reference when it is created.
+This can be done by specifying a constant number of dimensions followed by an optional number of
+constants, one for each dimension.  Specifying a dimension of 0, will result in the dimension
+being treated as a dynamic dimension.
+
+For example,
+
+```
+DIM a%(10, 10)
+DIM c%(10, 20)
+b%(2, 10, 0) = a%()
+b%() = c%()
+```
+
+would generate no compile errors as the second dimension of the array refernce is dynamic and
+is not known until run-time.  It is not necessary to specify values for all the dimensions.
+The compiler will assume that any dimensions for which values are not specified are dynamic,
+for example,
+
+```
+DIM a%(10, 10)
+DIM c%(10, 20)
+DIM d%(100, 20)
+b%(2) = a%()
+b%() = c%()
+b%() = d%()
+```
+
+The array reference b% is a two dimensional integer array reference with two dynamic dimensions.
+
+It is an error to specify dimensions for an array reference that has already been created, e.g.,
+
+```
+b%(2) = a%()
+b%(2) = a%()
+```
+
+The second assignment statement will result in an error.
+
+All arrays are currently allocated on the heap and are reference counted.  This is likely to
+change at some point in the future once we have escape analysis, but for the time being
+there's a small overhead in declaring arrays.
+
+Arrays can be passed to functions and procedures and returned from functions.  The syntax of array
+parameter declaration is similar to that of array reference declaration with the exception that
+the number of dimensions is not optional, for example.
+
+```
+DEF FNDouble%(1)(a%(1))
+   LOCAL i%
+   FOR i% = 0 TO DIM(a%(1))
+     a%(i%) += a%(i%)
+   NEXT
+<-a%()
+```
+
+That may look a bit weird but that's how it currently works.  The dimension of that array can
+be specified as well so that it is known at compile time, e.g.,
+
+```
+DEF FNDouble%(1,10)(a%(1,10))
+```
+
+which looks even weirder.  You've got to put the return type information somewhere.
+
+When the function is invoked the dimensions are not specified in the same way that they are not
+specified when an array reference is used.  For example,
+
+```
+DIM a%(10)
+b%() = FNDouble%()(a%())
+PRINT FNDouble%()(b%())(1)
+```
+
 
 ## Current Issues with the Grammar
 
@@ -560,7 +720,6 @@ will be implemented at some point.
 Here's a list of other language features that are currently not implemented but which will be at some point
 
 * The @% variable
-* Arrays
 * Strings
 * File Handling
 * CASE OF
