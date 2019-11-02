@@ -126,12 +126,10 @@ cleanup:
 		subtilis_exp_delete(indices[i]);
 }
 
-char *subtilis_parser_lookup_assignment_var(subtilis_parser_t *p,
-					    subtilis_token_t *t,
-					    subtilis_type_t *id_type,
-					    const subtilis_symbol_t **s,
-					    size_t *mem_reg, bool *new_var,
-					    subtilis_error_t *err)
+char *subtilis_parser_lookup_assignment_var(
+    subtilis_parser_t *p, subtilis_token_t *t, subtilis_type_t *id_type,
+    const subtilis_symbol_t **s, size_t *mem_reg, bool *new_var,
+    bool new_local_ok, subtilis_error_t *err)
 {
 	const char *tbuf;
 	char *var_name = NULL;
@@ -151,6 +149,9 @@ char *subtilis_parser_lookup_assignment_var(subtilis_parser_t *p,
 		*s = subtilis_symbol_table_lookup(p->st, tbuf);
 		if (*s) {
 			*mem_reg = SUBTILIS_IR_REG_GLOBAL;
+		} else if (new_local_ok) {
+			*new_var = true;
+			*mem_reg = SUBTILIS_IR_REG_LOCAL;
 		} else if (p->current == p->main) {
 			/*
 			 * We explicitly disable statements like
@@ -162,6 +163,12 @@ char *subtilis_parser_lookup_assignment_var(subtilis_parser_t *p,
 			 */
 			*new_var = true;
 			*mem_reg = SUBTILIS_IR_REG_GLOBAL;
+			if (p->level != 0) {
+				subtilis_error_variable_bad_level(
+				    err, var_name, p->l->stream->name,
+				    p->l->line);
+				goto cleanup;
+			}
 		} else {
 			subtilis_error_set_unknown_variable(
 			    err, tbuf, p->l->stream->name, p->l->line);
@@ -195,7 +202,7 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_exp_t *e = NULL;
 
 	var_name = subtilis_parser_lookup_assignment_var(
-	    p, t, &type, &s, &op1.reg, &new_var, err);
+	    p, t, &type, &s, &op1.reg, &new_var, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

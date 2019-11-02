@@ -322,15 +322,12 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_parser_locals(p, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-	p->main->locals = p->main_st->allocated;
 	while (t->type != SUBTILIS_TOKEN_EOF) {
 		subtilis_parser_statement(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
+	p->main->locals = p->main_st->allocated;
 
 	subtilis_ir_section_add_label(p->current, p->current->end_label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -465,7 +462,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_LISTO */
 	NULL, /* SUBTILIS_KEYWORD_LN */
 	NULL, /* SUBTILIS_KEYWORD_LOAD */
-	NULL, /* SUBTILIS_KEYWORD_LOCAL */
+	subtilis_parser_local, /* SUBTILIS_KEYWORD_LOCAL */
 	NULL, /* SUBTILIS_KEYWORD_LOG */
 	NULL, /* SUBTILIS_KEYWORD_LOMEM */
 	NULL, /* SUBTILIS_KEYWORD_LVAR */

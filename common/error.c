@@ -184,6 +184,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_NOT_ARRAY */
 	{"%s is not an array\n", 1},
+
+	/* SUBTILIS_ERROR_VARIABLE_BAD_LEVEL */
+	{"global variable %s must be declared at the top level\n", 1},
 };
 
 /* clang-format on */

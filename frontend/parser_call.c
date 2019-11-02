@@ -492,17 +492,13 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 	params = NULL;
 
 	p->current = subtilis_ir_prog_section_new(
-	    p->prog, name, p->local_st->allocated, stype, SUBTILIS_BUILTINS_MAX,
+	    p->prog, name, 0, stype, SUBTILIS_BUILTINS_MAX,
 	    p->l->stream->name, p->l->line, p->eflag_offset, p->error_offset,
 	    err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		subtilis_type_section_delete(stype);
 		goto on_error;
 	}
-
-	subtilis_parser_locals(p, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto on_error;
 
 	subtilis_parser_handle_escape(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -565,6 +561,10 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 		goto on_error;
 
 	subtilis_array_gen_index_error_code(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	p->current->locals = p->local_st->allocated;
 
 on_error:
 

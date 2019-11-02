@@ -168,6 +168,12 @@ void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
 			goto cleanup;
 		}
 
+		if (!local && (p->level != 0)) {
+			subtilis_error_variable_bad_level(
+			    err, var_name, p->l->stream->name, p->l->line);
+			goto cleanup;
+		}
+
 		subtilis_array_type_init(p, &element_type, &type, &e[0], dims,
 					 err);
 		if (err->type != SUBTILIS_ERROR_OK)

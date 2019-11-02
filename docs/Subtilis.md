@@ -164,9 +164,14 @@ works just as well.  Again note the lack of an END statement.
 ### Local and Global Variables
 
 When a new variable is defined using var = or LET var = and that variable has not
-been declared LOCAL, a new global variable is created.  However, global variables
-can only be created in the main procedure.  They can be modified once created inside
-other procedures.  So for example,
+been declared LOCAL, the compiler will try to create a new global variable.  However,
+Subtilis is much more restrictive than BBC Basic when creating global variables.
+Global variables can only be created at the top level of the main procedure.  So although
+they can be read from and written to anywhere in the program, they cannot be declared,
+i.e., defined for the first time, in a user defined function or procedure or in a 
+compound statement such as IF.
+
+So for example,
 
 ```
 X% = 10
@@ -187,12 +192,21 @@ DEF PROCSet
 ENDPROC
 ```
 
-will not.  This is done on purpose to prevent users from accidentally declaring a
-global variable when they really want a local variable.  You almost always want a
-local variable in Subtilis as local variables are assigned to registers where as
-global variables are not.  Operations involving local variables are consequently,
-much faster than the equivalent operations involving global variables.  One side
-affect of this limitation can be noted when using the FOR statement inside a function.
+and
+
+```
+REPEAT
+    X% = 1
+UNTIL TRUE
+```
+
+will not.  While this is quite restrictive, it shouldn't be too much of a problem
+as you almost always want a local variable when programming in Subtilis.  Not
+only are local variables necessary to isolate the various different parts of
+your program, they are also assigned to registers where as global variables are
+not.  Operations involving local variables are consequently, much faster than
+the equivalent operations involving global variables.  One side effect of these
+limitations can be noted when using the FOR statement inside a procedure.
 For example,
 
 ```
@@ -215,7 +229,18 @@ DEF PROCFor
 ENDPROC
 ```
 
-which will be much faster and will generate less code.
+or 
+
+```
+DEF PROCFor
+    FOR LOCAL I% = 1 TO 10
+        PRINT I%
+    NEXT
+ENDPROC
+```
+
+which will be much faster, will generate less code and won't interfere with
+other parts of your code.
 
 LOCAL variables can be created inside the main function, so code like this,
 
@@ -228,20 +253,20 @@ NEXT
 
 is allowed and recommended in Subtilis.
 
-The LOCAL keyword is only permitted at the start of a function or procedure.  There
-is therefore no block scope in Subtilis.  Local variables, once declared, are available
-anywhere in the function.  Needless to say, local variables, in the functions in which
-they are declared,  shadow global variables of the same name.
+The LOCAL keyword can be used anywhere inside a function or procedure.  Local variables,
+once declared, are available anywhere in the function.  Needless to say, local variables,
+in the functions in which they are declared,  shadow global variables of the same name.
 
-Global variables must be defined before they are used.  BBC BASIC permits code such
+Variables must be defined before they are used.  BBC BASIC permits code such
 as
 
 X% += 1
 Y% = %Y + 1
 
 where neither X% or Y% have been previously defined.  While such behaviour would be
-possible in Subtilis, it has been explicitly disabled as it's very weird and also
-would requires us to zero all global variables.
+possible in Subtilis, it has been explicitly disabled as it's very weird.
+
+On the other hand
 
 One change under consideration is to allow the LOCAL keyword to be used anywhere
 within a function.  This would require the introduction of block scope and we'd
