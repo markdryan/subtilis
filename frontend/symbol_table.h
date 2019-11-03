@@ -25,6 +25,7 @@
 struct subtilis_symbol_t_ {
 	size_t loc;
 	subtilis_type_t t;
+	const char *key; // owned by hash table
 	size_t size;
 	bool is_reg;
 };
@@ -34,7 +35,7 @@ typedef struct subtilis_symbol_t_ subtilis_symbol_t;
 struct subtilis_symbol_level_t_ {
 	size_t size;
 	size_t max_size;
-	const char **symbols;
+	const subtilis_symbol_t **symbols;
 };
 
 typedef struct subtilis_symbol_level_t_ subtilis_symbol_level_t;

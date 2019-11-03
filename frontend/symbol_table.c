@@ -64,7 +64,7 @@ static void prv_ensure_symbol_level(subtilis_symbol_table_t *st,
 {
 	size_t new_size;
 	subtilis_symbol_level_t *level = &st->levels[st->level];
-	const char **new_symbols;
+	const subtilis_symbol_t **new_symbols;
 
 	if (level->size < level->max_size)
 		return;
@@ -103,12 +103,12 @@ void subtilis_symbol_table_level_down(subtilis_symbol_table_t *st,
 
 	level = &st->levels[st->level];
 	for (i = 0; i < level->size; i++)
-		subtilis_symbol_table_remove(st, level->symbols[i]);
+		subtilis_symbol_table_remove(st, level->symbols[i]->key);
 	level->size = 0;
 	st->level--;
 }
 
-static subtilis_symbol_t *prv_symbol_new(size_t loc,
+static subtilis_symbol_t *prv_symbol_new(const char *key, size_t loc,
 					 const subtilis_type_t *id_type,
 					 bool is_reg, subtilis_error_t *err)
 {
@@ -123,6 +123,7 @@ static subtilis_symbol_t *prv_symbol_new(size_t loc,
 	sym->size = subtilis_type_if_size(id_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
+	sym->key = key;
 	sym->t = *id_type;
 	sym->loc = loc;
 	sym->is_reg = is_reg;
@@ -154,14 +155,14 @@ subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 	}
 	(void)strcpy(key_dup, key);
 
-	sym = prv_symbol_new(st->allocated, id_type, false, err);
+	sym = prv_symbol_new(key_dup, st->allocated, id_type, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
 	prv_ensure_symbol_level(st, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
-	st->levels[st->level].symbols[st->levels[st->level].size++] = key_dup;
+	st->levels[st->level].symbols[st->levels[st->level].size++] = sym;
 
 	(void)subtilis_hashtable_insert(st->h, key_dup, sym, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -198,14 +199,14 @@ subtilis_symbol_table_insert_reg(subtilis_symbol_table_t *st, const char *key,
 	}
 	(void)strcpy(key_dup, key);
 
-	sym = prv_symbol_new(reg_num, id_type, true, err);
+	sym = prv_symbol_new(key_dup, reg_num, id_type, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
 	prv_ensure_symbol_level(st, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
-	st->levels[st->level].symbols[st->levels[st->level].size++] = key_dup;
+	st->levels[st->level].symbols[st->levels[st->level].size++] = sym;
 
 	(void)subtilis_hashtable_insert(st->h, key_dup, sym, err);
 	if (err->type != SUBTILIS_ERROR_OK)
