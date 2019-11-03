@@ -91,6 +91,10 @@ void subtilis_parser_onerror(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	subtilis_symbol_table_level_up(p->local_st, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	p->level++;
 	start = p->l->line;
 	while (t->type != SUBTILIS_TOKEN_EOF) {
@@ -132,6 +136,9 @@ void subtilis_parser_onerror(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 
 	p->level--;
+	subtilis_symbol_table_level_down(p->local_st, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 	p->current->endproc = false;
 
 	subtilis_lexer_get(p->l, t, err);

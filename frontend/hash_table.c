@@ -158,7 +158,7 @@ bool subtilis_hashtable_remove(subtilis_hashtable_t *h, const void *k)
 	if (h->free_key)
 		h->free_key(n->key);
 	if (h->free_value)
-		h->free_value(n->key);
+		h->free_value(n->value);
 	if (old_n)
 		old_n->next = n->next;
 	else

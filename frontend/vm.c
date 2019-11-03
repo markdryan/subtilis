@@ -111,7 +111,8 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_prog_t *p,
 		goto fail;
 	}
 
-	vm->memory_size = SUBTILIS_VM_HEAP_SIZE + st->allocated + vm->s->locals;
+	vm->memory_size =
+	    SUBTILIS_VM_HEAP_SIZE + st->max_allocated + vm->s->locals;
 
 	vm->memory = calloc(sizeof(uint8_t), vm->memory_size);
 	if (!vm->memory) {
@@ -123,7 +124,7 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_prog_t *p,
 		goto fail;
 	vm->regs[SUBTILIS_IR_REG_GLOBAL] = SUBTILIS_VM_HEAP_SIZE;
 	vm->regs[SUBTILIS_IR_REG_LOCAL] =
-	    vm->regs[SUBTILIS_IR_REG_GLOBAL] + st->allocated;
+	    vm->regs[SUBTILIS_IR_REG_GLOBAL] + st->max_allocated;
 	vm->top = vm->memory_size;
 
 	prv_compute_labels(vm, err);

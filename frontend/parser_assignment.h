@@ -20,10 +20,15 @@
 #include "expression.h"
 #include "parser.h"
 
-char *subtilis_parser_lookup_assignment_var(
-    subtilis_parser_t *p, subtilis_token_t *t, subtilis_type_t *id_type,
-    const subtilis_symbol_t **s, size_t *mem_reg, bool *new_var,
-    bool new_local_ok, subtilis_error_t *err);
+/* clang-format off */
+char *subtilis_parser_lookup_assignment_var(subtilis_parser_t *p,
+					    subtilis_token_t *t,
+					    subtilis_type_t *id_type,
+					    const subtilis_symbol_t **s,
+					    size_t *mem_reg, bool *new_var,
+					    bool new_local_ok,
+					    subtilis_error_t *err);
+/* clang-format on */
 
 void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 				subtilis_error_t *err);

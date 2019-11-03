@@ -420,7 +420,6 @@ static void prv_fn_compound(subtilis_parser_t *p, subtilis_token_t *t,
 	unsigned int start;
 	const char *tbuf;
 
-	p->level++;
 	start = p->l->line;
 	while (t->type != SUBTILIS_TOKEN_EOF) {
 		tbuf = subtilis_token_get_text(t);
@@ -437,7 +436,6 @@ static void prv_fn_compound(subtilis_parser_t *p, subtilis_token_t *t,
 		subtilis_error_set_compund_not_term(err, p->l->stream->name,
 						    start);
 	//	p->current->endproc = false;
-	p->level--;
 	p->current->handler_list =
 	    subtilis_handler_list_truncate(p->current->handler_list, p->level);
 }
@@ -492,9 +490,8 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 	params = NULL;
 
 	p->current = subtilis_ir_prog_section_new(
-	    p->prog, name, 0, stype, SUBTILIS_BUILTINS_MAX,
-	    p->l->stream->name, p->l->line, p->eflag_offset, p->error_offset,
-	    err);
+	    p->prog, name, 0, stype, SUBTILIS_BUILTINS_MAX, p->l->stream->name,
+	    p->l->line, p->eflag_offset, p->error_offset, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		subtilis_type_section_delete(stype);
 		goto on_error;
@@ -505,10 +502,24 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 		goto on_error;
 
 	if (fn_type.type != SUBTILIS_TYPE_VOID) {
+		subtilis_symbol_table_level_up(p->local_st, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+		p->level++;
+
 		prv_fn_compound(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+
 		e = subtilis_parser_expression(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
+
+		subtilis_symbol_table_level_down(p->local_st, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+
+		p->level--;
 
 		/* Ownership of e is passed to add_fn_ret */
 
@@ -564,7 +575,7 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	p->current->locals = p->local_st->allocated;
+	p->current->locals = p->local_st->max_allocated;
 
 on_error:
 

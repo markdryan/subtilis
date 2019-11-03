@@ -99,6 +99,10 @@ void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	unsigned int start;
 
+	subtilis_symbol_table_level_up(p->local_st, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	p->level++;
 	start = p->l->line;
 	while (t->type != SUBTILIS_TOKEN_EOF) {
@@ -122,6 +126,9 @@ void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 	    (end_key != SUBTILIS_KEYWORD_ENDPROC))
 		p->current->endproc = false;
 	p->level--;
+	subtilis_symbol_table_level_down(p->local_st, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 	p->current->handler_list =
 	    subtilis_handler_list_truncate(p->current->handler_list, p->level);
 }

@@ -216,6 +216,9 @@ subtilis_keyword_type_t subtilis_parser_if_compound(subtilis_parser_t *p,
 	subtilis_keyword_type_t key_type = SUBTILIS_KEYWORD_MAX;
 	unsigned int start;
 
+	subtilis_symbol_table_level_up(p->local_st, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return key_type;
 	p->level++;
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -274,6 +277,9 @@ subtilis_keyword_type_t subtilis_parser_if_compound(subtilis_parser_t *p,
 
 	p->current->endproc = false;
 	p->level--;
+	subtilis_symbol_table_level_down(p->local_st, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return key_type;
 	p->current->handler_list =
 	    subtilis_handler_list_truncate(p->current->handler_list, p->level);
 	return key_type;
@@ -327,7 +333,7 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
-	p->main->locals = p->main_st->allocated;
+	p->main->locals = p->main_st->max_allocated;
 
 	subtilis_ir_section_add_label(p->current, p->current->end_label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
