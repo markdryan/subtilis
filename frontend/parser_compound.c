@@ -98,6 +98,7 @@ void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 			      subtilis_error_t *err)
 {
 	unsigned int start;
+	subtilis_ir_operand_t var_reg;
 
 	subtilis_symbol_table_level_up(p->local_st, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -107,11 +108,8 @@ void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 	start = p->l->line;
 	while (t->type != SUBTILIS_TOKEN_EOF) {
 		if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
-		    (t->tok.keyword.type == end_key)) {
-			if ((end_key != SUBTILIS_KEYWORD_ENDPROC) ||
-			    (p->level == 1))
-				break;
-		}
+		    (t->tok.keyword.type == end_key))
+			break;
 		subtilis_parser_statement(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
@@ -125,6 +123,13 @@ void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 	    (end_key != SUBTILIS_KEYWORD_UNTIL) &&
 	    (end_key != SUBTILIS_KEYWORD_ENDPROC))
 		p->current->endproc = false;
+
+	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
+	subtilis_parser_deallocate_arrays(p, var_reg, p->local_st, p->level,
+					  err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	p->level--;
 	subtilis_symbol_table_level_down(p->local_st, err);
 	if (err->type != SUBTILIS_ERROR_OK)

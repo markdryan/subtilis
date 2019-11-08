@@ -29,6 +29,6 @@ void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
 				  bool local, subtilis_error_t *err);
 void subtilis_parser_deallocate_arrays(subtilis_parser_t *p,
 				       subtilis_ir_operand_t load_reg,
-				       subtilis_sizet_vector_t *free_list,
-				       subtilis_error_t *err);
+				       subtilis_symbol_table_t *st,
+				       size_t level, subtilis_error_t *err);
 #endif

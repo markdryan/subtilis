@@ -19,6 +19,8 @@
 #include <string.h>
 
 #include "globals.h"
+#include "parser_array.h"
+#include "parser_call.h"
 #include "parser_error.h"
 #include "parser_exp.h"
 #include "type_if.h"
@@ -64,6 +66,7 @@ void subtilis_parser_onerror(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_ir_operand_t handler_label;
 	subtilis_ir_operand_t target_label;
 	unsigned int start;
+	subtilis_ir_operand_t var_reg;
 
 	if (p->current->in_error_handler) {
 		subtilis_error_set_nested_handler(err, p->l->stream->name,
@@ -109,6 +112,12 @@ void subtilis_parser_onerror(subtilis_parser_t *p, subtilis_token_t *t,
 	if (t->type == SUBTILIS_TOKEN_EOF)
 		subtilis_error_set_compund_not_term(err, p->l->stream->name,
 						    start);
+
+	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
+	subtilis_parser_deallocate_arrays(p, var_reg, p->local_st, p->level,
+					  err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
 	if (!p->current->endproc) {
 		if (!p->current->handler_list) {

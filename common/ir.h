@@ -1270,7 +1270,8 @@ typedef enum {
 	 *
 	 * end
 	 *
-	 * Causes the execution of the program to end successfully
+	 * Causes the execution of the program to end successfully and
+	 * immediately.
 	 */
 
 	SUBTILIS_OP_INSTR_END,
@@ -1447,6 +1448,7 @@ struct subtilis_ir_section_t_ {
 	int32_t eflag_offset; // Again this is 32 bit specific.
 	int32_t error_offset; // Again this is 32 bit specific.
 	size_t end_label;
+	size_t nofree_label; // Only used in the main function
 	size_t ret_reg;
 	size_t array_access;
 };
