@@ -216,7 +216,11 @@ void subtilis_parser_deallocate_arrays(subtilis_parser_t *p,
 		    (s->t.type != SUBTILIS_TYPE_ARRAY_INTEGER))
 			continue;
 
-		subtlis_array_type_deallocate(p, s->loc, load_reg, err);
+		if (p->level == 0)
+			subtlis_array_type_deallocate(p, s->loc, load_reg, err);
+		else
+			subtlis_array_type_deallocate_nc(p, s->loc, load_reg,
+							 err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}

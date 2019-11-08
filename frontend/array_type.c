@@ -221,6 +221,25 @@ cleanup:
 	subtilis_exp_delete(sizee);
 }
 
+void subtlis_array_type_deallocate_nc(subtilis_parser_t *p, size_t loc,
+				      subtilis_ir_operand_t load_reg,
+				      subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t offset;
+
+	op1.integer = (int32_t)loc + SUBTIILIS_ARRAY_DATA_OFF;
+	offset.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, load_reg, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_DEREF, offset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+}
+
 void subtlis_array_type_deallocate(subtilis_parser_t *p, size_t loc,
 				   subtilis_ir_operand_t load_reg,
 				   subtilis_error_t *err)
