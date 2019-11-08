@@ -108,7 +108,7 @@ static subtilis_error_desc_t prv_errors[] = {
 	{"%s expected, found %s .\n", 2},
 
 	/* SUBTILIS_COMPOUND_NOT_TERM */
-	{"Compund statement not terminated.\n", 0},
+	{"Compound statement not terminated.\n", 0},
 
 	/* SUBTILIS_ERROR_WALKER_FAILED */
 	{"Walker failed.\n", 0},

@@ -163,8 +163,8 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_expected(e, exp, found, file, line)                 \
 	subtilis_error_set2(e, SUBTILIS_ERROR_EXPECTED, exp, found, file, line)
 #define subtilis_error_set_compund_not_term(e, file, line)                     \
-	subtilis_error_set_basic(e, SUBTILIS_ERROR_COMPOUND_NOT_TERM, file,    \
-				 line)
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_COMPOUND_NOT_TERM, file,   \
+				  line, __FILE__, __LINE__)
 #define subtilis_error_set_walker_failed(e)                                    \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_WALKER_FAILED, __FILE__,    \
 				 __LINE__)
