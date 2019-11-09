@@ -1344,6 +1344,25 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_DEREF,
+
+	/*
+	 *
+	 * push r0
+	 *
+	 * Pushes the 32 bit value in r0 onto the stack.
+	 */
+
+	SUBTILIS_OP_INSTR_PUSH_I32,
+
+	/*
+	 *
+	 * pop r0
+	 *
+	 * Pops a 32 bit value from the top of the stack into r0
+	 */
+
+	SUBTILIS_OP_INSTR_POP_I32,
+
 } subtilis_op_instr_type_t;
 
 typedef enum {
@@ -1451,6 +1470,7 @@ struct subtilis_ir_section_t_ {
 	size_t nofree_label; // Only used in the main function
 	size_t ret_reg;
 	size_t array_access;
+	size_t cleanup_stack;
 };
 
 typedef struct subtilis_ir_section_t_ subtilis_ir_section_t;

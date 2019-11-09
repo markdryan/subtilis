@@ -191,14 +191,14 @@
  * |                  |     Area reserved for storing local data, i.e.,
  * |                  |     local variables that are too large to fit
  * |  Local data      |     into a virtual register e.g., a string or
- * |                  |     an array.  Not currently used.
+ * |                  |     an array.
  * |                  |
  * |----------------- |     -------------------------------------------  <- R11
  *
  * On entry to a function or procedure R11 and R13 point to the bottom
  * of the stack frame.  R13 may change during the lifetime of the function
  * call if stack space is needed for temporary storage, e.g., for calling
- * SWIs.
+ * SWIs, or local heap objects are placed on the cleanup stack.
  */
 
 /*
@@ -655,6 +655,10 @@ static void prv_insert_spill_code_store(subtilis_arm_section_t *arm_s,
 				break;
 
 		if (i == int_regs->max_regs) {
+			/*
+			 * TODO: Don't think this code has ever been tested.
+			 */
+
 			subtilis_arm_insert_push(arm_s, current,
 						 SUBTILIS_ARM_CCODE_AL, 0, err);
 			if (err->type != SUBTILIS_ERROR_OK)

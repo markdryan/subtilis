@@ -1064,6 +1064,28 @@ void subtilis_arm_gen_asrii32(subtilis_ir_section_t *s, size_t start,
 	prv_gen_shift_i32(s, start, user_data, SUBTILIS_ARM_SHIFT_ASR, err);
 }
 
+void subtilis_arm_gen_pushi32(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *ir_op = &s->ops[start]->op.instr;
+
+	dest = subtilis_arm_ir_to_arm_reg(ir_op->operands[0].reg);
+	subtilis_arm_add_push(arm_s, SUBTILIS_ARM_CCODE_AL, dest, err);
+}
+
+void subtilis_arm_gen_popi32(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *ir_op = &s->ops[start]->op.instr;
+
+	dest = subtilis_arm_ir_to_arm_reg(ir_op->operands[0].reg);
+	subtilis_arm_add_pop(arm_s, SUBTILIS_ARM_CCODE_AL, dest, err);
+}
+
 void subtilis_arm_gen_sete(subtilis_arm_section_t *arm_s,
 			   subtilis_ir_section_t *s,
 			   subtilis_arm_ccode_type_t ccode, size_t reg,

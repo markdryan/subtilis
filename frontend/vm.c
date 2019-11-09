@@ -1193,6 +1193,30 @@ static void prv_deref(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	subtilis_vm_heap_free_block(&vm->heap, start, err);
 }
 
+static void prv_pushi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int32_t *ptr;
+
+	prv_reserve_stack(vm, 4, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	ptr = (int32_t*) &vm->memory[vm->top];
+	*ptr = vm->regs[ops[0].reg];
+	vm->top += 4;
+}
+
+static void prv_popi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int32_t *ptr;
+
+	vm->top -= 4;
+	ptr = (int32_t*) &vm->memory[vm->top];
+	vm->regs[ops[0].reg] = *ptr;
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1312,6 +1336,8 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_realloc,                         /* SUBTILIS_OP_INSTR_REALLOC */
 	prv_ref,                             /* SUBTILIS_OP_INSTR_REF */
 	prv_deref,                           /* SUBTILIS_OP_INSTR_REF */
+	prv_pushi32,                         /* SUBTILIS_OP_INSTR_PUSH_I32 */
+	prv_popi32,                          /* SUBTILIS_OP_INSTR_POP_I32 */
 };
 
 /* clang-format on */
