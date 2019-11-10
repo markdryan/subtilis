@@ -254,25 +254,20 @@ NEXT
 is allowed and recommended in Subtilis.
 
 The LOCAL keyword can be used anywhere inside a function or procedure.  Local variables,
-once declared, are available anywhere in the function.  Needless to say, local variables,
-in the functions in which they are declared,  shadow global variables of the same name.
+are scoped.  Local variables defined in a block are only avaialable within that block.
+Local variables defined at the top level of a function or a procedure are available
+in all subsequent blocks in that function or procedure.  Local variables shadow global
+variables of the same name but they do not shadow local variables.  It is an error to
+attempt to redefine an existing local variable in a nested compound statement.
 
 Variables must be defined before they are used.  BBC BASIC permits code such
 as
 
 X% += 1
-Y% = %Y + 1
+Y% = Y% + 1
 
 where neither X% or Y% have been previously defined.  While such behaviour would be
 possible in Subtilis, it has been explicitly disabled as it's very weird.
-
-On the other hand
-
-One change under consideration is to allow the LOCAL keyword to be used anywhere
-within a function.  This would require the introduction of block scope and we'd
-have to deal with local variable shadowing.  Such a change would probably be
-accompanied by a short hand notation for LOCAL, :=.  It's probably worth doing
-though as writing LOCAL everywhere is a real pain.
 
 Currently the LOCAL statement can only be used to define a single variable.
 However, it can be used to initialise the variable.  Thus in Subtilis you can
