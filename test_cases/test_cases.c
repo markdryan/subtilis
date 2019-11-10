@@ -1671,6 +1671,22 @@ const subtilis_test_case_t test_cases[] = {
 	 "<-0\n",
 	 "0\n"
 	},
+	{"error_deref",
+	 "ONERROR\n"
+	 "  PRINT ERR\n"
+	 "ENDERROR\n"
+	 "PROCP\n"
+	 "DEF PROCP\n"
+	 "  LOCAL DIM a%(10)\n"
+	 "  IF TRUE THEN\n"
+	 "    LOCAL DIM b%(10)\n"
+	 "    REPEAT\n"
+	 "      LOCAL DIM c%(10)\n"
+	 "      ERROR 1\n"
+	 "    UNTIL TRUE\n"
+	 "  ENDIF\n"
+	 "ENDPROC\n",
+	 "1\n"},
 };
 
 /* clang-format on */

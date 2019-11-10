@@ -293,6 +293,8 @@ static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 	s->endproc = false;
 	s->array_access = SIZE_MAX;
 	s->cleanup_stack = SIZE_MAX;
+	s->cleanup_stack_nop = SIZE_MAX;
+	s->cleanup_stack_reg = s->reg_counter++;
 
 	return s;
 }

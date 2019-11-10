@@ -1202,18 +1202,18 @@ static void prv_pushi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	ptr = (int32_t*) &vm->memory[vm->top];
+	ptr = (int32_t *)&vm->memory[vm->top];
 	*ptr = vm->regs[ops[0].reg];
 	vm->top += 4;
 }
 
 static void prv_popi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
-			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	int32_t *ptr;
 
 	vm->top -= 4;
-	ptr = (int32_t*) &vm->memory[vm->top];
+	ptr = (int32_t *)&vm->memory[vm->top];
 	vm->regs[ops[0].reg] = *ptr;
 }
 

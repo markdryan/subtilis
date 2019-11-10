@@ -1471,6 +1471,8 @@ struct subtilis_ir_section_t_ {
 	size_t ret_reg;
 	size_t array_access;
 	size_t cleanup_stack;
+	size_t cleanup_stack_nop;
+	size_t cleanup_stack_reg;
 };
 
 typedef struct subtilis_ir_section_t_ subtilis_ir_section_t;

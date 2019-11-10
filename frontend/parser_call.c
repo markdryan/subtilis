@@ -525,6 +525,11 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
+	p->current->cleanup_stack_nop =
+	    subtilis_ir_section_add_nop(p->current, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
 	if (fn_type.type != SUBTILIS_TYPE_VOID) {
 		prv_fn_compound(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -548,10 +553,9 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 
-		subtilis_parser_deallocate_arrays(p, var_reg, p->local_st,
-						  p->level, err);
+		subtilis_parser_unwind(p, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+			goto on_error;
 
 		prv_add_fn_ret(p, &fn_type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -566,10 +570,9 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 
-		subtilis_parser_deallocate_arrays(p, var_reg, p->local_st,
-						  p->level, err);
+		subtilis_parser_unwind(p, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+			goto on_error;
 
 		subtilis_ir_section_add_instr_no_arg(
 		    p->current, SUBTILIS_OP_INSTR_RET, err);
@@ -603,17 +606,42 @@ on_error:
 
 void subtilis_parser_unwind(subtilis_parser_t *p, subtilis_error_t *err)
 {
-	subtilis_ir_operand_t var_reg;
-	size_t i;
+	subtilis_ir_operand_t start_label;
+	subtilis_ir_operand_t start_inner_label;
+	subtilis_ir_operand_t end_label;
+	subtilis_ir_operand_t counter;
 
-	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
+	if (p->current->cleanup_stack == SIZE_MAX)
+		return;
 
-	for (i = p->level; i >= 1; i--) {
-		subtilis_parser_deallocate_arrays(p, var_reg, p->local_st,
-						  p->level, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-	}
+	start_label.label = subtilis_ir_section_new_label(p->current);
+	start_inner_label.label = subtilis_ir_section_new_label(p->current);
+	end_label.label = subtilis_ir_section_new_label(p->current);
+	counter.reg = p->current->cleanup_stack;
+
+	subtilis_ir_section_add_label(p->current, start_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  counter, start_inner_label, end_label,
+					  err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_ir_section_add_label(p->current, start_inner_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtlis_array_type_pop_and_deref(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     start_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, end_label.label, err);
 }
 
 void subtilis_parser_return(subtilis_parser_t *p, subtilis_token_t *t,
@@ -646,10 +674,6 @@ void subtilis_parser_return(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_parser_unwind(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
 	end_label.label = p->current->end_label;
 	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
 					     end_label, err);
@@ -675,10 +699,6 @@ void subtilis_parser_endproc(subtilis_parser_t *p, subtilis_token_t *t,
 					      p->l->line);
 		return;
 	}
-
-	subtilis_parser_unwind(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 
 	p->current->endproc = true;
 	end_label.label = p->current->end_label;

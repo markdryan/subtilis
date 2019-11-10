@@ -102,9 +102,8 @@ void subtilis_symbol_table_level_down(subtilis_symbol_table_t *st,
 	}
 
 	level = &st->levels[st->level];
-	for (i = 0; i < level->size; i++) {
+	for (i = 0; i < level->size; i++)
 		subtilis_symbol_table_remove(st, level->symbols[i]->key);
-	}
 	free(level->symbols);
 	level->size = 0;
 	st->level--;

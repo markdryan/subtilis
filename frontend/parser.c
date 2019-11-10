@@ -296,7 +296,6 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 		     subtilis_error_t *err)
 {
 	subtilis_exp_t *seed;
-	subtilis_ir_operand_t var_reg;
 
 	seed = subtilis_exp_new_int32(0x3fffffff, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -329,6 +328,11 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	p->current->cleanup_stack_nop =
+	    subtilis_ir_section_add_nop(p->current, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	while (t->type != SUBTILIS_TOKEN_EOF) {
 		subtilis_parser_statement(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -340,13 +344,7 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
-	subtilis_parser_deallocate_arrays(p, var_reg, p->local_st, 0, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	var_reg.reg = SUBTILIS_IR_REG_GLOBAL;
-	subtilis_parser_deallocate_arrays(p, var_reg, p->st, 0, err);
+	subtilis_parser_unwind(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
