@@ -471,7 +471,6 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_type_section_t *stype;
 	subtilis_type_t fn_type;
 	subtilis_exp_t *e;
-	subtilis_ir_operand_t var_reg;
 	size_t num_params = 0;
 	subtilis_type_t *params = NULL;
 	subtilis_symbol_table_t *local_st = NULL;
@@ -483,7 +482,6 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 
-	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
