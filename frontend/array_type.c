@@ -232,7 +232,7 @@ void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 	op2.integer = 1;
 	dest.reg = p->current->cleanup_stack;
 	op2.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_ADD_I32, dest, op2, err);
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, dest, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -288,7 +288,7 @@ void subtlis_array_type_pop_and_deref(subtilis_parser_t *p,
 	op2.integer = 1;
 	dest.reg = p->current->cleanup_stack;
 	op2.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_SUB_I32, dest, op2, err);
+	    p->current, SUBTILIS_OP_INSTR_SUBI_I32, dest, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
