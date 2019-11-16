@@ -20,24 +20,42 @@
 #include "hash_table.h"
 #include "lexer.h"
 
+#define SUBTILIS_SYMBOL_MAX_LEVELS 32
+
 struct subtilis_symbol_t_ {
 	size_t loc;
 	subtilis_type_t t;
+	const char *key; // owned by hash table
 	size_t size;
 	bool is_reg;
 };
 
 typedef struct subtilis_symbol_t_ subtilis_symbol_t;
 
+struct subtilis_symbol_level_t_ {
+	size_t size;
+	size_t max_size;
+	const subtilis_symbol_t **symbols;
+};
+
+typedef struct subtilis_symbol_level_t_ subtilis_symbol_level_t;
+
 struct subtilis_symbol_table_t_ {
+	subtilis_symbol_level_t levels[SUBTILIS_SYMBOL_MAX_LEVELS];
 	subtilis_hashtable_t *h;
 	size_t allocated;
+	size_t max_allocated;
+	size_t level;
 };
 
 typedef struct subtilis_symbol_table_t_ subtilis_symbol_table_t;
 
 subtilis_symbol_table_t *subtilis_symbol_table_new(subtilis_error_t *err);
 void subtilis_symbol_table_delete(subtilis_symbol_table_t *st);
+void subtilis_symbol_table_level_up(subtilis_symbol_table_t *st,
+				    subtilis_error_t *err);
+void subtilis_symbol_table_level_down(subtilis_symbol_table_t *st,
+				      subtilis_error_t *err);
 const subtilis_symbol_t *
 subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 			     const subtilis_type_t *id_type,

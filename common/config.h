@@ -59,4 +59,8 @@
 #define SUBTILIS_CONFIG_SIZET_SIZE 64
 #endif
 
+#ifndef SUBTILIS_CONFIG_LEVELS_GRAN
+#define SUBTILIS_CONFIG_LEVELS_GRAN 32
+#endif
+
 #endif

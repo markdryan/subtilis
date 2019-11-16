@@ -1061,18 +1061,55 @@ void subtilis_arm_add_stran_imm(subtilis_arm_section_t *s,
 	stran->subtract = subtract;
 }
 
+void subtilis_arm_add_push(subtilis_arm_section_t *s,
+			   subtilis_arm_ccode_type_t ccode, size_t reg_num,
+			   subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_stran_instr_t *stran;
+
+	instr = subtilis_arm_section_add_instr(s, SUBTILIS_ARM_INSTR_STR, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	stran = &instr->operands.stran;
+	stran->ccode = ccode;
+	stran->dest = reg_num;
+	stran->base = 13;
+	stran->offset.type = SUBTILIS_ARM_OP2_I32;
+	stran->offset.op.integer = 4;
+	stran->pre_indexed = true;
+	stran->write_back = true;
+	stran->subtract = true;
+}
+
+void subtilis_arm_add_pop(subtilis_arm_section_t *s,
+			  subtilis_arm_ccode_type_t ccode, size_t reg_num,
+			  subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_stran_instr_t *stran;
+
+	instr = subtilis_arm_section_add_instr(s, SUBTILIS_ARM_INSTR_LDR, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	stran = &instr->operands.stran;
+	stran->ccode = ccode;
+	stran->dest = reg_num;
+	stran->base = 13;
+	stran->offset.type = SUBTILIS_ARM_OP2_I32;
+	stran->offset.op.integer = 4;
+	stran->pre_indexed = false;
+	stran->write_back = true;
+	stran->subtract = false;
+}
+
 void subtilis_arm_insert_push(subtilis_arm_section_t *s,
 			      subtilis_arm_op_t *current,
 			      subtilis_arm_ccode_type_t ccode, size_t reg_num,
 			      subtilis_error_t *err)
 {
-	subtilis_arm_reg_t dest;
-	subtilis_arm_reg_t base;
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_stran_instr_t *stran;
-
-	dest = 0;
-	base = 13;
 
 	instr = subtilis_arm_section_insert_instr(s, current,
 						  SUBTILIS_ARM_INSTR_STR, err);
@@ -1080,13 +1117,13 @@ void subtilis_arm_insert_push(subtilis_arm_section_t *s,
 		return;
 	stran = &instr->operands.stran;
 	stran->ccode = ccode;
-	stran->dest = dest;
-	stran->base = base;
+	stran->dest = reg_num;
+	stran->base = 13;
 	stran->offset.type = SUBTILIS_ARM_OP2_I32;
-	stran->offset.op.integer = -4;
-	stran->pre_indexed = false;
+	stran->offset.op.integer = 4;
+	stran->pre_indexed = true;
 	stran->write_back = true;
-	stran->subtract = false;
+	stran->subtract = true;
 }
 
 void subtilis_arm_insert_pop(subtilis_arm_section_t *s,
@@ -1094,13 +1131,8 @@ void subtilis_arm_insert_pop(subtilis_arm_section_t *s,
 			     subtilis_arm_ccode_type_t ccode, size_t reg_num,
 			     subtilis_error_t *err)
 {
-	subtilis_arm_reg_t dest;
-	subtilis_arm_reg_t base;
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_stran_instr_t *stran;
-
-	dest = 0;
-	base = 13;
 
 	instr = subtilis_arm_section_insert_instr(s, current,
 						  SUBTILIS_ARM_INSTR_LDR, err);
@@ -1108,8 +1140,8 @@ void subtilis_arm_insert_pop(subtilis_arm_section_t *s,
 		return;
 	stran = &instr->operands.stran;
 	stran->ccode = ccode;
-	stran->dest = dest;
-	stran->base = base;
+	stran->dest = reg_num;
+	stran->base = 13;
 	stran->offset.type = SUBTILIS_ARM_OP2_I32;
 	stran->offset.op.integer = 4;
 	stran->pre_indexed = false;

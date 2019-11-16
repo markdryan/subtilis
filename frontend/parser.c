@@ -94,10 +94,6 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 	p->caps = caps;
 	p->level = 0;
 
-	subtilis_sizet_vector_init(&p->free_list);
-	subtilis_sizet_vector_init(&p->local_free_list);
-	subtilis_sizet_vector_init(&p->main_free_list);
-
 	return p;
 
 on_error:
@@ -122,9 +118,6 @@ void subtilis_parser_delete(subtilis_parser_t *p)
 	subtilis_ir_prog_delete(p->prog);
 	subtilis_symbol_table_delete(p->main_st);
 	subtilis_symbol_table_delete(p->st);
-	subtilis_sizet_vector_free(&p->free_list);
-	subtilis_sizet_vector_free(&p->local_free_list);
-	subtilis_sizet_vector_free(&p->main_free_list);
 	free(p);
 }
 
@@ -153,7 +146,7 @@ static void prv_end(subtilis_parser_t *p, subtilis_token_t *t,
 		subtilis_ir_section_add_instr_no_arg(
 		    p->current, SUBTILIS_OP_INSTR_END, err);
 	} else {
-		end_label.label = p->current->end_label;
+		end_label.label = p->current->nofree_label;
 		subtilis_ir_section_add_instr_no_reg(
 		    p->current, SUBTILIS_OP_INSTR_JMP, end_label, err);
 	}
@@ -213,9 +206,13 @@ subtilis_keyword_type_t subtilis_parser_if_compound(subtilis_parser_t *p,
 {
 	const char *tbuf;
 	subtilis_keyword_fn fn;
+	subtilis_ir_operand_t var_reg;
 	subtilis_keyword_type_t key_type = SUBTILIS_KEYWORD_MAX;
 	unsigned int start;
 
+	subtilis_symbol_table_level_up(p->local_st, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return key_type;
 	p->level++;
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -273,7 +270,17 @@ subtilis_keyword_type_t subtilis_parser_if_compound(subtilis_parser_t *p,
 						    start);
 
 	p->current->endproc = false;
+
+	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
+	subtilis_parser_deallocate_arrays(p, var_reg, p->local_st, p->level,
+					  err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return key_type;
+
 	p->level--;
+	subtilis_symbol_table_level_down(p->local_st, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return key_type;
 	p->current->handler_list =
 	    subtilis_handler_list_truncate(p->current->handler_list, p->level);
 	return key_type;
@@ -289,7 +296,6 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 		     subtilis_error_t *err)
 {
 	subtilis_exp_t *seed;
-	subtilis_ir_operand_t var_reg;
 
 	seed = subtilis_exp_new_int32(0x3fffffff, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -322,27 +328,28 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_parser_locals(p, t, err);
+	p->current->cleanup_stack_nop =
+	    subtilis_ir_section_add_nop(p->current, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	p->main->locals = p->main_st->allocated;
+
 	while (t->type != SUBTILIS_TOKEN_EOF) {
 		subtilis_parser_statement(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
+	p->main->locals = p->main_st->max_allocated;
 
 	subtilis_ir_section_add_label(p->current, p->current->end_label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
-	subtilis_parser_deallocate_arrays(p, var_reg, &p->main_free_list, err);
+	subtilis_parser_unwind(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	var_reg.reg = SUBTILIS_IR_REG_GLOBAL;
-	subtilis_parser_deallocate_arrays(p, var_reg, &p->free_list, err);
+	subtilis_ir_section_add_label(p->current, p->current->nofree_label,
+				      err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -465,7 +472,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_LISTO */
 	NULL, /* SUBTILIS_KEYWORD_LN */
 	NULL, /* SUBTILIS_KEYWORD_LOAD */
-	NULL, /* SUBTILIS_KEYWORD_LOCAL */
+	subtilis_parser_local, /* SUBTILIS_KEYWORD_LOCAL */
 	NULL, /* SUBTILIS_KEYWORD_LOG */
 	NULL, /* SUBTILIS_KEYWORD_LOMEM */
 	NULL, /* SUBTILIS_KEYWORD_LVAR */

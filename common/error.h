@@ -76,6 +76,7 @@ typedef enum {
 	SUBTILIS_ERROR_BAD_INDEX,
 	SUBTILIS_ERROR_BAD_INDEX_COUNT,
 	SUBTILIS_ERROR_NOT_ARRAY,
+	SUBTILIS_ERROR_VARIABLE_BAD_LEVEL,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -162,8 +163,8 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_expected(e, exp, found, file, line)                 \
 	subtilis_error_set2(e, SUBTILIS_ERROR_EXPECTED, exp, found, file, line)
 #define subtilis_error_set_compund_not_term(e, file, line)                     \
-	subtilis_error_set_basic(e, SUBTILIS_ERROR_COMPOUND_NOT_TERM, file,    \
-				 line)
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_COMPOUND_NOT_TERM, file,   \
+				  line, __FILE__, __LINE__)
 #define subtilis_error_set_walker_failed(e)                                    \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_WALKER_FAILED, __FILE__,    \
 				 __LINE__)
@@ -225,6 +226,9 @@ void subtilis_error_init(subtilis_error_t *e);
 	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_INDEX_COUNT, str, file, line)
 #define subtilis_error_not_array(e, str, file, line)                           \
 	subtilis_error_set1(e, SUBTILIS_ERROR_NOT_ARRAY, str, file, line)
+#define subtilis_error_variable_bad_level(e, str, file, line)                  \
+	subtilis_error_set1(e, SUBTILIS_ERROR_VARIABLE_BAD_LEVEL, str, file,   \
+			    line)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,

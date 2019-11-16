@@ -164,9 +164,14 @@ works just as well.  Again note the lack of an END statement.
 ### Local and Global Variables
 
 When a new variable is defined using var = or LET var = and that variable has not
-been declared LOCAL, a new global variable is created.  However, global variables
-can only be created in the main procedure.  They can be modified once created inside
-other procedures.  So for example,
+been declared LOCAL, the compiler will try to create a new global variable.  However,
+Subtilis is much more restrictive than BBC Basic when creating global variables.
+Global variables can only be created at the top level of the main procedure.  So although
+they can be read from and written to anywhere in the program, they cannot be declared,
+i.e., defined for the first time, in a user defined function or procedure or in a 
+compound statement such as IF.
+
+So for example,
 
 ```
 X% = 10
@@ -187,12 +192,21 @@ DEF PROCSet
 ENDPROC
 ```
 
-will not.  This is done on purpose to prevent users from accidentally declaring a
-global variable when they really want a local variable.  You almost always want a
-local variable in Subtilis as local variables are assigned to registers where as
-global variables are not.  Operations involving local variables are consequently,
-much faster than the equivalent operations involving global variables.  One side
-affect of this limitation can be noted when using the FOR statement inside a function.
+and
+
+```
+REPEAT
+    X% = 1
+UNTIL TRUE
+```
+
+will not.  While this is quite restrictive, it shouldn't be too much of a problem
+as you almost always want a local variable when programming in Subtilis.  Not
+only are local variables necessary to isolate the various different parts of
+your program, they are also assigned to registers where as global variables are
+not.  Operations involving local variables are consequently, much faster than
+the equivalent operations involving global variables.  One side effect of these
+limitations can be noted when using the FOR statement inside a procedure.
 For example,
 
 ```
@@ -215,7 +229,18 @@ DEF PROCFor
 ENDPROC
 ```
 
-which will be much faster and will generate less code.
+or 
+
+```
+DEF PROCFor
+    FOR LOCAL I% = 1 TO 10
+        PRINT I%
+    NEXT
+ENDPROC
+```
+
+which will be much faster, will generate less code and won't interfere with
+other parts of your code.
 
 LOCAL variables can be created inside the main function, so code like this,
 
@@ -228,26 +253,21 @@ NEXT
 
 is allowed and recommended in Subtilis.
 
-The LOCAL keyword is only permitted at the start of a function or procedure.  There
-is therefore no block scope in Subtilis.  Local variables, once declared, are available
-anywhere in the function.  Needless to say, local variables, in the functions in which
-they are declared,  shadow global variables of the same name.
+The LOCAL keyword can be used anywhere inside a function or procedure.  Local variables,
+are scoped.  Local variables defined in a block are only avaialable within that block.
+Local variables defined at the top level of a function or a procedure are available
+in all subsequent blocks in that function or procedure.  Local variables shadow global
+variables of the same name but they do not shadow local variables.  It is an error to
+attempt to redefine an existing local variable in a nested compound statement.
 
-Global variables must be defined before they are used.  BBC BASIC permits code such
+Variables must be defined before they are used.  BBC BASIC permits code such
 as
 
 X% += 1
-Y% = %Y + 1
+Y% = Y% + 1
 
 where neither X% or Y% have been previously defined.  While such behaviour would be
-possible in Subtilis, it has been explicitly disabled as it's very weird and also
-would requires us to zero all global variables.
-
-One change under consideration is to allow the LOCAL keyword to be used anywhere
-within a function.  This would require the introduction of block scope and we'd
-have to deal with local variable shadowing.  Such a change would probably be
-accompanied by a short hand notation for LOCAL, :=.  It's probably worth doing
-though as writing LOCAL everywhere is a real pain.
+possible in Subtilis, it has been explicitly disabled as it's very weird.
 
 Currently the LOCAL statement can only be used to define a single variable.
 However, it can be used to initialise the variable.  Thus in Subtilis you can
@@ -504,6 +524,166 @@ When an error is propegated from a function, the return value of that function
 is set to the default value for the type.  This is sort of irrelvant as that
 value cannot be accessed by the program.
 
+### Arrays
+
+Arrays variables can be declared in two different ways in Subtilis.
+
+1. Using the DIM keyword as in BBC Basic
+2. Using an array reference
+
+Unlike BBC Basic, arrays are always reference types in Subtilis.  In BBC Basic
+arrays behave like value types in some cases and reference types (when passed to
+procedures) in other cases.  In Subtilis arrays are always reference types.  When
+you delcare an array with the DIM statement two separate things happen. You allocate
+space on the heap to store the array and you initialise a reference to that array
+which can be used to refer to it there after.
+
+The DIM keyword works in mostly the same way as it does in BBC Basic with the exception that
+arrays are currently limited to a maximum of 10 dimensions, an arbitrarily chosen limit, which may change.
+Arrays can be declared inside functions but they need to be delcared local and must currently appear
+at the top of the function or procedure.
+
+For example,
+
+```
+DEF PROCAlloc
+    DIM a%(10000000)
+
+    PRINT 1
+ENDPROC
+```
+
+will not compile.  The reason is that new global variables cannot be created inside a function
+or a procedure  (that isn't the main function).
+
+You need to write
+
+```
+DEF PROCAlloc
+    LOCAL DIM a%(10000000)
+
+    PRINT 1
+ENDPROC
+```
+
+An array's type includes the following pieces of information.
+
+1. The type of the elements it stores.
+2. The number of dimensions.  This is fixed at compile time.
+3. The size of each dimensions.
+
+Dimension sizes may or may not be known at compile time.  It's better if they are as this
+allows the compiler to do more checking at compile time, rather than runtime.  Currently,
+the statement DIM a%(b%, c%) will create a two dimensional array whose dimensions are dynamic,
+and not known at compile time.
+
+Array references are simply defined using the normal variable creation mechanism.  The names
+of array reference variables must conform to a specific pattern.  You have an identifier,
+followed by a type symbol (except for reals) followed by opening and closing round brackets,
+e.g.,
+
+a%() or f()
+
+The name of the reference only contains partial type information.  We can tell that it is an
+array and what the underlying element type is but not how many dimensions that array has, or
+what the sizes of the array may be.  This information is associated with the reference when
+it is first created.  By default an array reference assumes the type of its source.
+
+For example,
+
+```
+DIM a%(10, 10)
+b%() = a%()
+```
+
+In this example we create a new array reference b%().  The type of this variable is a reference
+to a two dimensional integer array of dimensions 10 and 10.  The example also shows how to
+take a reference to an array that has already been declared.  The reference is formed from the
+array's name followed by opening and closing round brackets, e.g., a%().
+
+Any attempt to assign an array of other dimensions to b% would fail, e.g.,
+
+```
+DIM c%(10, 20)
+b%() = c%()
+```
+
+would result in a compile error.
+
+It is however possible to explicitly define the dimensions of a reference when it is created.
+This can be done by specifying a constant number of dimensions followed by an optional number of
+constants, one for each dimension.  Specifying a dimension of 0, will result in the dimension
+being treated as a dynamic dimension.
+
+For example,
+
+```
+DIM a%(10, 10)
+DIM c%(10, 20)
+b%(2, 10, 0) = a%()
+b%() = c%()
+```
+
+would generate no compile errors as the second dimension of the array refernce is dynamic and
+is not known until run-time.  It is not necessary to specify values for all the dimensions.
+The compiler will assume that any dimensions for which values are not specified are dynamic,
+for example,
+
+```
+DIM a%(10, 10)
+DIM c%(10, 20)
+DIM d%(100, 20)
+b%(2) = a%()
+b%() = c%()
+b%() = d%()
+```
+
+The array reference b% is a two dimensional integer array reference with two dynamic dimensions.
+
+It is an error to specify dimensions for an array reference that has already been created, e.g.,
+
+```
+b%(2) = a%()
+b%(2) = a%()
+```
+
+The second assignment statement will result in an error.
+
+All arrays are currently allocated on the heap and are reference counted.  This is likely to
+change at some point in the future once we have escape analysis, but for the time being
+there's a small overhead in declaring arrays.
+
+Arrays can be passed to functions and procedures and returned from functions.  The syntax of array
+parameter declaration is similar to that of array reference declaration with the exception that
+the number of dimensions is not optional, for example.
+
+```
+DEF FNDouble%(1)(a%(1))
+   LOCAL i%
+   FOR i% = 0 TO DIM(a%(1))
+     a%(i%) += a%(i%)
+   NEXT
+<-a%()
+```
+
+That may look a bit weird but that's how it currently works.  The dimension of that array can
+be specified as well so that it is known at compile time, e.g.,
+
+```
+DEF FNDouble%(1,10)(a%(1,10))
+```
+
+which looks even weirder.  You've got to put the return type information somewhere.
+
+When the function is invoked the dimensions are not specified in the same way that they are not
+specified when an array reference is used.  For example,
+
+```
+DIM a%(10)
+b%() = FNDouble%()(a%())
+PRINT FNDouble%()(b%())(1)
+```
+
 
 ## Current Issues with the Grammar
 
@@ -560,7 +740,6 @@ will be implemented at some point.
 Here's a list of other language features that are currently not implemented but which will be at some point
 
 * The @% variable
-* Arrays
 * Strings
 * File Handling
 * CASE OF

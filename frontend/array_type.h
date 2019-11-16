@@ -31,9 +31,8 @@ void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 				 subtilis_exp_t **e,
 				 subtilis_ir_operand_t store_reg,
 				 subtilis_error_t *err);
-void subtlis_array_type_deallocate(subtilis_parser_t *p, size_t loc,
-				   subtilis_ir_operand_t load_reg,
-				   subtilis_error_t *err);
+void subtlis_array_type_pop_and_deref(subtilis_parser_t *p,
+				      subtilis_error_t *err);
 subtilis_exp_t *subtilis_array_size_calc(subtilis_parser_t *p,
 					 const char *var_name,
 					 subtilis_exp_t **e, size_t index_count,

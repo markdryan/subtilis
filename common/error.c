@@ -108,13 +108,13 @@ static subtilis_error_desc_t prv_errors[] = {
 	{"%s expected, found %s .\n", 2},
 
 	/* SUBTILIS_COMPOUND_NOT_TERM */
-	{"Compund statement not terminated.\n", 0},
+	{"Compound statement not terminated.\n", 0},
 
 	/* SUBTILIS_ERROR_WALKER_FAILED */
 	{"Walker failed.\n", 0},
 
 	/* SUBTILIS_ERROR_ALREADY_DEFINED */
-	{"Already defined.\n", 0},
+	{"%s has already been defined.\n", 1},
 
 	/* SUBTILIS_ERROR_NESTED_PROCEDURE */
 	{"Nested procedures or functions are not allowed.\n", 0},
@@ -184,6 +184,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_NOT_ARRAY */
 	{"%s is not an array\n", 1},
+
+	/* SUBTILIS_ERROR_VARIABLE_BAD_LEVEL */
+	{"global variable %s must be declared at the top level\n", 1},
 };
 
 /* clang-format on */

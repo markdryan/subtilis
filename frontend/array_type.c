@@ -129,7 +129,10 @@ void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 {
 	subtilis_ir_operand_t op;
 	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t dest;
 	size_t i;
+	subtilis_ir_inst_t *instr;
 	subtilis_exp_t *sizee = NULL;
 	subtilis_exp_t *zero = NULL;
 	int32_t offset;
@@ -161,24 +164,11 @@ void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 		offset += sizeof(int32_t);
 	}
 
-	/*
-	 * We need to zero out the pointer in case alloc fails.  Our variable
-	 * has been created at this point, so the cleanup code will attempt to
-	 * free it, unless the pointer is zero.
-	 */
-
 	zero = subtilis_exp_new_int32(0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
 	zero = subtilis_type_if_exp_to_var(p, zero, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	op1.integer = loc + SUBTIILIS_ARRAY_DATA_OFF;
-	subtilis_ir_section_add_instr_reg(p->current,
-					  SUBTILIS_OP_INSTR_STOREO_I32,
-					  zero->exp.ir_op, store_reg, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -207,6 +197,51 @@ void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_PUSH_I32, op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	/*
+	 * This piece is a bit weird.  At the start of the procedure we insert
+	 * a NOP.  If we encounter at least one array (local or global) we
+	 * replace this nop with a mov instruction that initialises the
+	 * cleanup_stack counter to 0.  If there are no arrays delcared in the
+	 * procedure, the nop will be removed when we generate code for the
+	 * target architecture.
+	 */
+
+	if (p->current->cleanup_stack == SIZE_MAX) {
+		instr =
+		    &p->current->ops[p->current->cleanup_stack_nop]->op.instr;
+		p->current->cleanup_stack = p->current->cleanup_stack_reg;
+		instr->type = SUBTILIS_OP_INSTR_MOVI_I32;
+		instr->operands[0].reg = p->current->cleanup_stack;
+		instr->operands[1].integer = 0;
+	}
+
+	/*
+	 * TODO: The part of the register allocator that preserves
+	 * live registers between basic blocks can't handle the case
+	 * when an instruction uses the same register for both source
+	 * and destination.  Ultimately, all that code is going to
+	 * dissapear when we have a global register allocator, so for
+	 * now we're just going to live with it.
+	 */
+
+	op2.integer = 1;
+	dest.reg = p->current->cleanup_stack;
+	op2.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, dest, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      dest, op2, err);
+
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	subtilis_ir_section_add_instr_reg(
 	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op, store_reg, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -221,46 +256,44 @@ cleanup:
 	subtilis_exp_delete(sizee);
 }
 
-void subtlis_array_type_deallocate(subtilis_parser_t *p, size_t loc,
-				   subtilis_ir_operand_t load_reg,
-				   subtilis_error_t *err)
+void subtlis_array_type_pop_and_deref(subtilis_parser_t *p,
+				      subtilis_error_t *err)
 {
-	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t offset;
-	subtilis_ir_operand_t zero;
-	subtilis_ir_operand_t free_label;
-	subtilis_ir_operand_t skip_label;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t dest;
 
-	free_label.label = subtilis_ir_section_new_label(p->current);
-	skip_label.label = subtilis_ir_section_new_label(p->current);
-
-	op1.integer = (int32_t)loc + SUBTIILIS_ARRAY_DATA_OFF;
-	offset.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, load_reg, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	zero.integer = 0;
-	zero.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_NEQI_I32, offset, zero, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
-					  zero, free_label, skip_label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_ir_section_add_label(p->current, free_label.label, err);
+	offset.reg = subtilis_ir_section_add_instr1(
+	    p->current, SUBTILIS_OP_INSTR_POP_I32, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	subtilis_ir_section_add_instr_no_reg(
 	    p->current, SUBTILIS_OP_INSTR_DEREF, offset, err);
+
+	if (p->current->cleanup_stack == SIZE_MAX) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	/*
+	 * TODO: The part of the register allocator that preserves
+	 * live registers between basic blocks can't handle the case
+	 * when an instruction uses the same register for both source
+	 * and destination.  Ultimately, all that code is going to dissapear
+	 * when we have a global register allocator, so for now we're just
+	 * going to live with it.
+	 */
+
+	op2.integer = 1;
+	dest.reg = p->current->cleanup_stack;
+	op2.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_SUBI_I32, dest, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_ir_section_add_label(p->current, skip_label.label, err);
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      dest, op2, err);
 }
 
 /* Does not consume e.  Does consume  max_dim */

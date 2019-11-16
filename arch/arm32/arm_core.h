@@ -578,6 +578,12 @@ void subtilis_arm_add_stran_imm(subtilis_arm_section_t *s,
 				subtilis_arm_reg_t dest,
 				subtilis_arm_reg_t base, int32_t offset,
 				subtilis_error_t *err);
+void subtilis_arm_add_push(subtilis_arm_section_t *arm_s,
+			   subtilis_arm_ccode_type_t ccode, size_t reg_num,
+			   subtilis_error_t *err);
+void subtilis_arm_add_pop(subtilis_arm_section_t *arm_s,
+			  subtilis_arm_ccode_type_t ccode, size_t reg_num,
+			  subtilis_error_t *err);
 void subtilis_arm_insert_push(subtilis_arm_section_t *arm_s,
 			      subtilis_arm_op_t *current,
 			      subtilis_arm_ccode_type_t ccode, size_t reg_num,

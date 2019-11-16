@@ -99,19 +99,7 @@ static void prv_allocate_array(subtilis_parser_t *p, const char *var_name,
 			       subtilis_ir_operand_t store_reg,
 			       subtilis_error_t *err)
 {
-	subtilis_sizet_vector_t *free_list;
-
 	subtlis_array_type_allocate(p, var_name, type, loc, e, store_reg, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	if (store_reg.reg == SUBTILIS_IR_REG_LOCAL)
-		free_list = (p->current == p->main) ? &p->main_free_list
-						    : &p->local_free_list;
-	else
-		free_list = &p->free_list;
-
-	subtilis_sizet_vector_append(free_list, loc, err);
 }
 
 void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
@@ -168,6 +156,12 @@ void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
 			goto cleanup;
 		}
 
+		if (!local && (p->level != 0)) {
+			subtilis_error_variable_bad_level(
+			    err, var_name, p->l->stream->name, p->l->line);
+			goto cleanup;
+		}
+
 		subtilis_array_type_init(p, &element_type, &type, &e[0], dims,
 					 err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -205,14 +199,24 @@ cleanup:
 
 void subtilis_parser_deallocate_arrays(subtilis_parser_t *p,
 				       subtilis_ir_operand_t load_reg,
-				       subtilis_sizet_vector_t *free_list,
-				       subtilis_error_t *err)
+				       subtilis_symbol_table_t *st,
+				       size_t level, subtilis_error_t *err)
 {
 	size_t i;
+	const subtilis_symbol_t *s;
+	subtilis_symbol_level_t *l = &st->levels[level];
 
-	for (i = 0; i < free_list->len; i++) {
-		subtlis_array_type_deallocate(p, free_list->vals[i], load_reg,
-					      err);
+	/*
+	 * TODO: This whole thing needs to be more generic when we have more
+	 * heap based types, e.g., strings.
+	 */
+	for (i = 0; i < l->size; i++) {
+		s = l->symbols[i];
+		if ((s->t.type != SUBTILIS_TYPE_ARRAY_REAL) &&
+		    (s->t.type != SUBTILIS_TYPE_ARRAY_INTEGER))
+			continue;
+
+		subtlis_array_type_pop_and_deref(p, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}

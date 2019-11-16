@@ -56,7 +56,7 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 
 	arm_p = subtilis_riscos_generate(
 	    pool, p->prog, riscos_arm2_rules, riscos_arm2_rules_count,
-	    p->st->allocated, subtilis_fpa_gen_preamble, &err);
+	    p->st->max_allocated, subtilis_fpa_gen_preamble, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

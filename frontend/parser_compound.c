@@ -23,76 +23,70 @@
 #include "parser_exp.h"
 #include "type_if.h"
 
-void subtilis_parser_locals(subtilis_parser_t *p, subtilis_token_t *t,
-			    subtilis_error_t *err)
+void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
+			   subtilis_error_t *err)
 {
 	const char *tbuf;
 	subtilis_exp_t *e;
 	subtilis_type_t type;
 	char *var_name = NULL;
 
-	while ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
-	       (t->tok.keyword.type == SUBTILIS_KEYWORD_LOCAL)) {
-		subtilis_lexer_get(p->l, t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
-		tbuf = subtilis_token_get_text(t);
-		if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
-		    (t->tok.keyword.type == SUBTILIS_KEYWORD_DIM)) {
-			subtilis_parser_create_array(p, t, true, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			continue;
-		} else if (t->type != SUBTILIS_TOKEN_IDENTIFIER) {
-			subtilis_error_set_id_expected(
-			    err, tbuf, p->l->stream->name, p->l->line);
-			return;
-		}
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
+	    (t->tok.keyword.type == SUBTILIS_KEYWORD_DIM)) {
+		subtilis_parser_create_array(p, t, true, err);
+		return;
+	} else if (t->type != SUBTILIS_TOKEN_IDENTIFIER) {
+		subtilis_error_set_id_expected(err, tbuf, p->l->stream->name,
+					       p->l->line);
+		return;
+	}
 
-		if (subtilis_symbol_table_lookup(p->local_st, tbuf)) {
-			subtilis_error_set_already_defined(
-			    err, tbuf, p->l->stream->name, p->l->line);
-			return;
-		}
+	if (subtilis_symbol_table_lookup(p->local_st, tbuf)) {
+		subtilis_error_set_already_defined(
+		    err, tbuf, p->l->stream->name, p->l->line);
+		return;
+	}
 
-		var_name = malloc(strlen(tbuf) + 1);
-		if (!var_name) {
-			subtilis_error_set_oom(err);
-			return;
-		}
-		strcpy(var_name, tbuf);
-		type = t->tok.id_type;
+	var_name = malloc(strlen(tbuf) + 1);
+	if (!var_name) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	strcpy(var_name, tbuf);
+	type = t->tok.id_type;
 
-		subtilis_lexer_get(p->l, t, err);
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	tbuf = subtilis_token_get_text(t);
+	if (!((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "="))) {
+		e = subtilis_type_if_zero(p, &type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-
-		tbuf = subtilis_token_get_text(t);
-		if (!((t->type == SUBTILIS_TOKEN_OPERATOR) &&
-		      !strcmp(tbuf, "="))) {
-			e = subtilis_type_if_zero(p, &type, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				goto cleanup;
-		} else {
-			e = subtilis_parser_expression(p, t, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				goto cleanup;
-			e = subtilis_type_if_exp_to_var(p, e, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				goto cleanup;
-			e = subtilis_exp_coerce_type(p, e, &type, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				goto cleanup;
-		}
-		(void)subtilis_symbol_table_insert_reg(
-		    p->local_st, var_name, &type, e->exp.ir_op.reg, err);
-		subtilis_exp_delete(e);
-		free(var_name);
-		var_name = NULL;
+	} else {
+		e = subtilis_parser_expression(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+			goto cleanup;
+		e = subtilis_type_if_exp_to_var(p, e, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		e = subtilis_exp_coerce_type(p, e, &type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
 	}
+	(void)subtilis_symbol_table_insert_reg(p->local_st, var_name, &type,
+					       e->exp.ir_op.reg, err);
+	subtilis_exp_delete(e);
+	free(var_name);
+	var_name = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 cleanup:
 
@@ -104,16 +98,18 @@ void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 			      subtilis_error_t *err)
 {
 	unsigned int start;
+	subtilis_ir_operand_t var_reg;
+
+	subtilis_symbol_table_level_up(p->local_st, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	p->level++;
 	start = p->l->line;
 	while (t->type != SUBTILIS_TOKEN_EOF) {
 		if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
-		    (t->tok.keyword.type == end_key)) {
-			if ((end_key != SUBTILIS_KEYWORD_ENDPROC) ||
-			    (p->level == 1))
-				break;
-		}
+		    (t->tok.keyword.type == end_key))
+			break;
 		subtilis_parser_statement(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
@@ -127,7 +123,17 @@ void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 	    (end_key != SUBTILIS_KEYWORD_UNTIL) &&
 	    (end_key != SUBTILIS_KEYWORD_ENDPROC))
 		p->current->endproc = false;
+
+	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
+	subtilis_parser_deallocate_arrays(p, var_reg, p->local_st, p->level,
+					  err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	p->level--;
+	subtilis_symbol_table_level_down(p->local_st, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 	p->current->handler_list =
 	    subtilis_handler_list_truncate(p->current->handler_list, p->level);
 }

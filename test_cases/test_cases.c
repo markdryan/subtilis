@@ -734,6 +734,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "1\n3\n5\n7\n9\n10\n8\n6\n4\n2\n0\n"},
 	{"for_step_real_const",
 	 "LOCAL A\n"
+	 "LOCAL A%\n"
 	 "FOR A = 1 TO 10 STEP 2\n"
 	 "A%=A\n"
 	 "PRINT A%\n"
@@ -761,6 +762,7 @@ const subtilis_test_case_t test_cases[] = {
 	{"for_step_real_var",
 	 "LOCAL S\n"
 	 "LOCAL A\n"
+	 "LOCAL A%\n"
 	 "S = 1.5\n"
 	 "FOR A = 0 TO 10 STEP S\n"
 	 "A% = A\n"
@@ -1497,6 +1499,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "10.5\n9.5\n8.5\n7.5\n6.5\n5.5\n4.5\n3.5\n2.5\n"},
 	{"array2d_int_plus_equals",
 	 "DIM a%(2,2)\n"
+	 "LOCAL i%\n"
+	 "LOCAL j%\n"
 	 "FOR i% = 0 TO 2\n"
 	 "  FOR j% = 0 TO 2\n"
 	 "    a%(i%, j%) = 1\n"
@@ -1579,6 +1583,110 @@ const subtilis_test_case_t test_cases[] = {
 	 "PRINT 1\n"
 	 "ENDPROC\n",
 	 "11\n"},
+	{"global_deref",
+	 "DIM c(100)\n",
+	 ""
+	},
+	{"local_deref",
+	 "LOCAL DIM c(100)\n",
+	 ""
+	},
+	{"local_if_deref",
+	 "IF TRUE THEN\n"
+	 "    LOCAL DIM c(100)\n"
+	 "ENDIF",
+	 ""
+	},
+	{"local_loop_deref",
+	 "FOR I% = 0 TO 3\n"
+	 "    LOCAL DIM c(100)\n"
+	 "NEXT",
+	 ""
+	},
+	{"local_proc_deref",
+	 "PROCP\n"
+	 "DEF PROCP\n"
+	 "  LOCAL DIM c(100)\n"
+	 "ENDPROC\n",
+	 ""
+	},
+	{"local_if_fn_deref",
+	 "PRINT FNF\n"
+	 "DEF FNF\n"
+	 "  IF TRUE THEN\n"
+	 "    LOCAL DIM c(100)\n"
+	 "  ENDIF"
+	 "<-0\n",
+	 "0\n"
+	},
+	{"local_proc_nested_deref",
+	 "PROCP\n"
+	 "DEF PROCP\n"
+	 "  LOCAL DIM a(10)\n"
+	 "    REPEAT\n"
+	 "        LOCAL DIM b(10)\n"
+	 "        IF TRUE THEN\n"
+	 "            LOCAL DIM c(10)\n"
+	 "        ENDIF\n"
+	 "    UNTIL TRUE\n"
+	 "ENDPROC\n",
+	 ""
+	},
+	{"local_on_error_deref",
+	 "ONERROR\n"
+	 "    LOCAL DIM c(100)\n"
+	 "ENDERROR\n"
+	 "ERROR 1\n",
+	 ""
+	},
+	{"local_proc_on_error_deref",
+	 "PROCP\n"
+	 "DEF PROCP\n"
+	 "    ONERROR\n"
+	 "         LOCAL DIM c(100)\n"
+	 "    ENDERROR\n"
+	 "    ERROR 1\n"
+	 "ENDPROC\n",
+	 ""
+	},
+	{"local_proc_return_deref",
+	 "PROCP\n"
+	 "DEF PROCP\n"
+	 "    LOCAL DIM c(100)\n"
+	 "    IF TRUE THEN\n"
+	 "         LOCAL DIM d(10)\n"
+	 "         ENDPROC\n"
+	 "    ENDIF\n"
+	 "ENDPROC\n",
+	 ""
+	},
+	{"local_proc_return_deref",
+	 "PRINT FNF\n"
+	 "DEF FNF\n"
+	 "    LOCAL DIM c(100)\n"
+	 "    IF TRUE THEN\n"
+	 "         LOCAL DIM d(10)\n"
+	 "         <-0\n"
+	 "    ENDIF\n"
+	 "<-0\n",
+	 "0\n"
+	},
+	{"error_deref",
+	 "ONERROR\n"
+	 "  PRINT ERR\n"
+	 "ENDERROR\n"
+	 "PROCP\n"
+	 "DEF PROCP\n"
+	 "  LOCAL DIM a%(10)\n"
+	 "  IF TRUE THEN\n"
+	 "    LOCAL DIM b%(10)\n"
+	 "    REPEAT\n"
+	 "      LOCAL DIM c%(10)\n"
+	 "      ERROR 1\n"
+	 "    UNTIL TRUE\n"
+	 "  ENDIF\n"
+	 "ENDPROC\n",
+	 "1\n"},
 };
 
 /* clang-format on */

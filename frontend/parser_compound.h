@@ -20,8 +20,8 @@
 #include "expression.h"
 #include "parser.h"
 
-void subtilis_parser_locals(subtilis_parser_t *p, subtilis_token_t *t,
-			    subtilis_error_t *err);
+void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
+			   subtilis_error_t *err);
 void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 			      subtilis_keyword_type_t end_key,
 			      subtilis_error_t *err);

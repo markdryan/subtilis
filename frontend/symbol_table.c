@@ -32,13 +32,15 @@ subtilis_symbol_table_t *subtilis_symbol_table_new(subtilis_error_t *err)
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	st = malloc(sizeof(*st));
+	st = calloc(sizeof(*st), 1);
 	if (!st) {
 		subtilis_error_set_oom(err);
 		goto on_error;
 	}
 	st->h = h;
 	st->allocated = 0;
+	st->max_allocated = 0;
+	st->level = 0;
 
 	return st;
 
@@ -52,11 +54,62 @@ void subtilis_symbol_table_delete(subtilis_symbol_table_t *st)
 {
 	if (!st)
 		return;
+	free(st->levels[0].symbols);
 	subtilis_hashtable_delete(st->h);
 	free(st);
 }
 
-static subtilis_symbol_t *prv_symbol_new(size_t loc,
+static void prv_ensure_symbol_level(subtilis_symbol_table_t *st,
+				    subtilis_error_t *err)
+{
+	size_t new_size;
+	subtilis_symbol_level_t *level = &st->levels[st->level];
+	const subtilis_symbol_t **new_symbols;
+
+	if (level->size < level->max_size)
+		return;
+
+	new_size = level->size + SUBTILIS_SYMBOL_MAX_LEVELS;
+	new_symbols = realloc(level->symbols, new_size * sizeof(*new_symbols));
+	if (!new_symbols) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	level->symbols = new_symbols;
+	level->max_size = new_size;
+}
+
+void subtilis_symbol_table_level_up(subtilis_symbol_table_t *st,
+				    subtilis_error_t *err)
+{
+	if (st->level >= SUBTILIS_SYMBOL_MAX_LEVELS) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	st->level++;
+}
+
+void subtilis_symbol_table_level_down(subtilis_symbol_table_t *st,
+				      subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_symbol_level_t *level;
+
+	if (st->level == 0) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	level = &st->levels[st->level];
+	for (i = 0; i < level->size; i++)
+		subtilis_symbol_table_remove(st, level->symbols[i]->key);
+	free(level->symbols);
+	level->size = 0;
+	st->level--;
+}
+
+static subtilis_symbol_t *prv_symbol_new(const char *key, size_t loc,
 					 const subtilis_type_t *id_type,
 					 bool is_reg, subtilis_error_t *err)
 {
@@ -71,6 +124,7 @@ static subtilis_symbol_t *prv_symbol_new(size_t loc,
 	sym->size = subtilis_type_if_size(id_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
+	sym->key = key;
 	sym->t = *id_type;
 	sym->loc = loc;
 	sym->is_reg = is_reg;
@@ -102,15 +156,22 @@ subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 	}
 	(void)strcpy(key_dup, key);
 
-	sym = prv_symbol_new(st->allocated, id_type, false, err);
+	sym = prv_symbol_new(key_dup, st->allocated, id_type, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
+
+	prv_ensure_symbol_level(st, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+	st->levels[st->level].symbols[st->levels[st->level].size++] = sym;
 
 	(void)subtilis_hashtable_insert(st->h, key_dup, sym, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
 	st->allocated += sym->size;
+	if (st->allocated > st->max_allocated)
+		st->max_allocated = st->allocated;
 
 	return sym;
 
@@ -139,9 +200,14 @@ subtilis_symbol_table_insert_reg(subtilis_symbol_table_t *st, const char *key,
 	}
 	(void)strcpy(key_dup, key);
 
-	sym = prv_symbol_new(reg_num, id_type, true, err);
+	sym = prv_symbol_new(key_dup, reg_num, id_type, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
+
+	prv_ensure_symbol_level(st, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+	st->levels[st->level].symbols[st->levels[st->level].size++] = sym;
 
 	(void)subtilis_hashtable_insert(st->h, key_dup, sym, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -168,6 +234,9 @@ subtilis_symbol_table_lookup(subtilis_symbol_table_t *st, const char *key)
 
 void subtilis_symbol_table_reset(subtilis_symbol_table_t *st)
 {
+	st->levels[0].size = 0;
 	subtilis_hashtable_reset(st->h);
 	st->allocated = 0;
+	st->max_allocated = 0;
+	st->level = 0;
 }

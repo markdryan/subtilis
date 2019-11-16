@@ -173,6 +173,8 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "realloc", SUBTILIS_OP_CLASS_REG_REG_REG },
 	{ "ref", SUBTILIS_OP_CLASS_REG },
 	{ "deref", SUBTILIS_OP_CLASS_REG },
+	{ "pushi32", SUBTILIS_OP_CLASS_REG },
+	{ "popi32", SUBTILIS_OP_CLASS_REG },
 };
 
 /*
@@ -290,6 +292,9 @@ static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 	s->handler_offset = 0;
 	s->endproc = false;
 	s->array_access = SIZE_MAX;
+	s->cleanup_stack = SIZE_MAX;
+	s->cleanup_stack_nop = SIZE_MAX;
+	s->cleanup_stack_reg = s->reg_counter++;
 
 	return s;
 }
@@ -658,6 +663,7 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	s->locals = locals;
 	p->sections[name_index] = s;
 	s->end_label = subtilis_ir_section_new_label(s);
+	s->nofree_label = subtilis_ir_section_new_label(s);
 	switch (tp->return_type.type) {
 	case SUBTILIS_TYPE_VOID:
 		s->ret_reg = SIZE_MAX;
