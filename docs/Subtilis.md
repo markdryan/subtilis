@@ -37,6 +37,20 @@ cleanup code and for handling errors, there are better ways to do these sort of
 things today, e.g, ON ERROR or something like Go's defer statement.  Subtilis will
 probably get a defer statement at some point in the future.
 
+### Subtilis permits lower case keywords
+
+Keywords can be either upper or lower case in Subtilis.  Mixed case identifiers
+are always treated like normal identifiers.  For example,
+
+```
+for FoR = 0 TO 10
+  PRINT FoR
+next
+```
+
+Here FoR is treated as an identifier and not a keyword and so the program compiles
+without issue, although it looks a bit odd.
+
 ### Newlines are not part of the grammar
 
 BBC BASIC uses newlines to terminate statements, e.g.,

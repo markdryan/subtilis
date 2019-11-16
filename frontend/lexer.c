@@ -425,40 +425,48 @@ static int prv_compare_keyword(const void *a, const void *b)
 }
 
 static void prv_validate_identifier(subtilis_lexer_t *l, subtilis_token_t *t,
-				    subtilis_error_t *err)
+				    char ch, subtilis_error_t *err)
 {
-	char ch;
+	if (ch == 0) {
+		for (;;) {
+			prv_ensure_input(l, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			if (l->index == l->buf_end)
+				break;
 
-	for (;;) {
-		prv_ensure_input(l, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-		if (l->index == l->buf_end)
-			break;
+			ch = l->buffer[l->index];
+			if (!((ch >= 'A' && ch <= 'Z') ||
+			      (ch >= 'a' && ch <= 'z') ||
+			      (ch >= '0' && ch <= '9') || (ch == '_')))
+				break;
+			prv_set_next_with_err(l, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		}
 
-		ch = l->buffer[l->index];
-		if (!((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
-		      (ch >= '0' && ch <= '9') || (ch == '_')))
-			break;
-		prv_set_next_with_err(l, t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-	}
-
-	if (l->index == l->buf_end) {
-		t->tok.id_type.type = SUBTILIS_TYPE_REAL;
-	} else if (ch == '$') {
-		t->tok.id_type.type = SUBTILIS_TYPE_STRING;
-		prv_set_next_with_err(l, t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-	} else if (ch == '%') {
-		t->tok.id_type.type = SUBTILIS_TYPE_INTEGER;
-		prv_set_next_with_err(l, t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+		if (l->index == l->buf_end) {
+			t->tok.id_type.type = SUBTILIS_TYPE_REAL;
+		} else if (ch == '$') {
+			t->tok.id_type.type = SUBTILIS_TYPE_STRING;
+			prv_set_next_with_err(l, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		} else if (ch == '%') {
+			t->tok.id_type.type = SUBTILIS_TYPE_INTEGER;
+			prv_set_next_with_err(l, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		} else {
+			t->tok.id_type.type = SUBTILIS_TYPE_REAL;
+		}
 	} else {
-		t->tok.id_type.type = SUBTILIS_TYPE_REAL;
+		if (ch == '$')
+			t->tok.id_type.type = SUBTILIS_TYPE_STRING;
+		else if (ch == '%')
+			t->tok.id_type.type = SUBTILIS_TYPE_INTEGER;
+		else
+			t->tok.id_type.type = SUBTILIS_TYPE_REAL;
 	}
 
 	prv_check_token_buffer(l, t, err, SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
@@ -470,17 +478,17 @@ static void prv_process_identifier(subtilis_lexer_t *l, subtilis_token_t *t,
 				   subtilis_error_t *err)
 {
 	prv_set_first(l, t, SUBTILIS_TOKEN_IDENTIFIER);
-	prv_validate_identifier(l, t, err);
+	prv_validate_identifier(l, t, 0, err);
 }
 
 static void prv_process_call(subtilis_lexer_t *l, subtilis_token_t *t,
-			     bool proc, subtilis_error_t *err)
+			     bool proc, char ch, subtilis_error_t *err)
 {
 	const char *tbuf;
 	subtilis_type_t id_type;
 
 	t->type = SUBTILIS_TOKEN_KEYWORD;
-	prv_validate_identifier(l, t, err);
+	prv_validate_identifier(l, t, ch, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -523,7 +531,7 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 			break;
 
 		ch = l->buffer[l->index];
-		if (!(ch >= 'A' && ch <= 'Z'))
+		if (!((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')))
 			break;
 		prv_set_next_with_err(l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -573,7 +581,9 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 		possible_fn = strncmp(tbuf, "FN", 2) == 0;
 		if (possible_proc || possible_fn) {
 			subtilis_buffer_remove_terminator(&t->buf);
-			prv_process_call(l, t, possible_proc, err);
+			if (ch != '$')
+				ch = 0;
+			prv_process_call(l, t, possible_proc, ch, err);
 			return;
 		}
 	}
@@ -596,7 +606,9 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 	subtilis_buffer_remove_terminator(&t->buf);
 	if (possible_id) {
 		t->type = SUBTILIS_TOKEN_IDENTIFIER;
-		prv_validate_identifier(l, t, err);
+		if (ch != '$')
+			ch = 0;
+		prv_validate_identifier(l, t, ch, err);
 		return;
 	}
 
@@ -674,7 +686,7 @@ static void prv_process_token(subtilis_lexer_t *l, subtilis_token_t *t,
 		return;
 	}
 
-	if (ch >= 'A' && ch <= 'Z') {
+	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
 		prv_process_keyword(l, ch, t, err);
 		return;
 	}
