@@ -1556,9 +1556,9 @@ const subtilis_test_case_t test_cases[] = {
 	 "0.5\n2.5\n4.5\n6.5\n8.5\n10.5\n12.5\n0\n0\n"
 	},
 	{"for_array_int_var_step_var",
-	 "LOCAL step% = 2\n"
+	 "LOCAL st% = 2\n"
 	 "DIM a%(2)\n"
-	 "FOR a%(0) = 0 TO 10 STEP step%\n"
+	 "FOR a%(0) = 0 TO 10 STEP st%\n"
 	 "  PRINT a%(0)\n"
 	 "NEXT\n"
 	 "PRINT a%(0)\n"
