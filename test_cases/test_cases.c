@@ -1687,6 +1687,25 @@ const subtilis_test_case_t test_cases[] = {
 	 "  ENDIF\n"
 	 "ENDPROC\n",
 	 "1\n"},
+	{"global_shadow",
+	 "x% = 1\n"
+	 "if true then\n"
+	 "  x% := 2\n"
+	 "  print x%\n"
+	 "endif\n"
+	 "print x%\n",
+	 "2\n1\n"
+	},
+	{"for_global_shadow",
+	 "i% = 0\n"
+	 "if true then\n"
+	 "  for i% := 0 to 10\n"
+	 "    print i%\n"
+	 "  next\n"
+	 "endif\n"
+	 "print i%\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n0\n"
+	}
 };
 
 /* clang-format on */

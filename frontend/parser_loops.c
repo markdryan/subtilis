@@ -190,20 +190,13 @@ static void prv_for_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_ir_operand_t op1;
 	const subtilis_symbol_t *s;
 	subtilis_type_t type;
-	bool new_var = false;
+	bool new_global = false;
 	char *var_name = NULL;
 	subtilis_exp_t *e = NULL;
 
-	var_name = subtilis_parser_lookup_assignment_var(
-	    p, t, &type, &s, &op1.reg, &new_var, new_local, err);
+	var_name = subtilis_parser_get_assignment_var(p, t, &type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-
-	if (new_local && !new_var) {
-		subtilis_error_set_already_defined(
-		    err, var_name, p->l->stream->name, p->l->line);
-		return;
-	}
 
 	tbuf = subtilis_token_get_text(t);
 	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
@@ -213,7 +206,12 @@ static void prv_for_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	if (!strcmp(tbuf, "(")) {
-		if (new_var) {
+		subtilis_parser_lookup_assignment_var(
+		    p, t, var_name, &s, &op1.reg, &new_global, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		if (new_global) {
 			subtilis_error_set_unknown_variable(
 			    err, var_name, p->l->stream->name, p->l->line);
 			goto cleanup;
@@ -222,24 +220,48 @@ static void prv_for_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 		prv_for_assign_array(p, var_name, t, s, op1.reg, for_ctx, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-	} else if (!new_local) {
-		if (new_var) {
-			s = subtilis_symbol_table_insert(p->st, var_name, &type,
-							 err);
+	} else {
+		if (!strcmp(tbuf, ":=")) {
+			if (new_local) {
+				subtilis_error_set_expected(err, "=", tbuf,
+							    p->l->stream->name,
+							    p->l->line);
+				goto cleanup;
+			}
+			new_local = true;
+		}
+
+		if (!new_local) {
+			subtilis_parser_lookup_assignment_var(
+			    p, t, var_name, &s, &op1.reg, &new_global, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
+
+			if (new_global) {
+				s = subtilis_symbol_table_insert(
+				    p->st, var_name, &type, err);
+				if (err->type != SUBTILIS_ERROR_OK)
+					goto cleanup;
+			}
+			for_ctx->is_reg = s->is_reg;
+			for_ctx->type = s->t;
+			for_ctx->reg = op1.reg;
+			for_ctx->loc = s->loc;
+		} else {
+			if (subtilis_symbol_table_lookup(p->local_st,
+							 var_name)) {
+				subtilis_error_set_already_defined(
+				    err, var_name, p->l->stream->name,
+				    p->l->line);
+				return;
+			}
+
+			for_ctx->is_reg = true;
+			for_ctx->type = type;
 		}
-		for_ctx->is_reg = s->is_reg;
-		for_ctx->type = s->t;
-		for_ctx->reg = op1.reg;
-		for_ctx->loc = s->loc;
-	} else {
-		for_ctx->is_reg = true;
-		for_ctx->type = type;
-		for_ctx->reg = op1.reg;
 	}
 
-	if (strcmp(tbuf, "=")) {
+	if (strcmp(tbuf, "=") && strcmp(tbuf, ":=")) {
 		subtilis_error_set_assignment_op_expected(
 		    err, tbuf, p->l->stream->name, p->l->line);
 		goto cleanup;
@@ -262,6 +284,7 @@ static void prv_for_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 		for_ctx->loc = e->exp.ir_op.reg;
 		(void)subtilis_symbol_table_insert_reg(
 		    p->local_st, var_name, &type, for_ctx->loc, err);
+		subtilis_exp_delete(e);
 	} else if (for_ctx->is_reg) {
 		subtilis_type_if_assign_to_reg(p, for_ctx->loc, e, err);
 	} else {

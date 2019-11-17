@@ -921,8 +921,7 @@ static int prv_check_operators(subtilis_lexer_t *l, subtilis_token_t *t)
 	const char *const expected[] = {
 	    "<", "<<", ">",  ">>", ">>>", ">=", "<=", "+=", "-=",
 	    "+", "-",  "<>", "^",  "(",   ")",  "/",  "|",  "?",
-	    ":", ";",  ",",  "[",  "]",   "~",  "*",  "$",
-	};
+	    ";", ",",  "[",  "]",  "~",   "*",  "$",  ":="};
 
 	subtilis_error_init(&err);
 	for (i = 0; i < sizeof(expected) / sizeof(const char *); i++) {
@@ -955,8 +954,8 @@ static int prv_test_operators(void)
 	size_t i;
 	int res = 0;
 	const char *str =
-	    "< << > >> >>> >= <= += -= + - <> ^ ( ) / | ? : ; , [ ] ~"
-	    " * $";
+	    "< << > >> >>> >= <= += -= + - <> ^ ( ) / | ? ; , [ ] ~"
+	    " * $ :=";
 
 	printf("lexer_operators");
 	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)

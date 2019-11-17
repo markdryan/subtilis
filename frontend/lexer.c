@@ -157,9 +157,9 @@ static bool prv_is_whitespace(char c)
 /* TODO: This needs to be a bit mask or something */
 static bool prv_is_simple_operator(char c)
 {
-	return c == '/' || c == '*' || c == '(' || c == ')' || c == ':' ||
-	       c == '=' || c == ',' || c == ';' || c == '^' || c == '[' ||
-	       c == ']' || c == '|' || c == '~' || c == '?' || c == '$';
+	return c == '/' || c == '*' || c == '(' || c == ')' || c == '=' ||
+	       c == ',' || c == ';' || c == '^' || c == '[' || c == ']' ||
+	       c == '|' || c == '~' || c == '?' || c == '$';
 }
 
 static bool prv_is_separator(char c)
@@ -656,7 +656,7 @@ static void prv_process_token(subtilis_lexer_t *l, subtilis_token_t *t,
 		return;
 	}
 
-	if (ch == '<' || ch == '>' || ch == '+' || ch == '-') {
+	if (ch == '<' || ch == '>' || ch == '+' || ch == '-' || ch == ':') {
 		prv_process_complex_operator(l, t, err);
 		return;
 	}
