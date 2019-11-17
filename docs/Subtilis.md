@@ -311,7 +311,7 @@ Subtilis introduces the ':=' operator which creates a new local variable and
 assigns a value to that variable.
 
 ```
-x% = 1
+x% := 1
 ```
 
 is equivalent to writing
