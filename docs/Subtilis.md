@@ -254,7 +254,10 @@ ENDPROC
 ```
 
 which will be much faster, will generate less code and won't interfere with
-other parts of your code.
+other parts of your code.  Note the programs in the two examples above
+are equivalent.  In both cases the local variable I% is declared in the
+outermost scope of the procedure, i.e., is accessible outside of the FOR
+loop.
 
 LOCAL variables can be created inside the main function, so code like this,
 
@@ -277,8 +280,10 @@ attempt to redefine an existing local variable in a nested compound statement.
 Variables must be defined before they are used.  BBC BASIC permits code such
 as
 
+```
 X% += 1
 Y% = Y% + 1
+```
 
 where neither X% or Y% have been previously defined.  While such behaviour would be
 possible in Subtilis, it has been explicitly disabled as it's very weird.
@@ -287,14 +292,42 @@ Currently the LOCAL statement can only be used to define a single variable.
 However, it can be used to initialise the variable.  Thus in Subtilis you can
 write
 
+```
 LOCAL y% = 10 MOD 3
+```
 
 If no initialiser is provided the variable is initialised to it's zero value,
 0 for numbers and array elements and "" for strings.  Thus the statement
 
+```
 LOCAL x%
+```
 
 declares a local variable, x%, and initialises it to 0.
+
+### The := assignment operator
+
+Subtilis introduces the ':=' operator which creates a new local variable and
+assigns a value to that variable.
+
+```
+x% = 1
+```
+
+is equivalent to writing
+
+```
+LOCAL x% = 1
+```
+
+only more concise.  As with the LOCAL keyword, the ':=' operator can be
+used inside a FOR loop to declare a local, e.g.,
+
+```
+FOR i% := 0 TO 10
+NEXT
+```
+
 
 ### Function and Procedure definition
 
