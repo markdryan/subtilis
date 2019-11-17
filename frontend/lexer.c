@@ -28,6 +28,8 @@ typedef enum {
 	SUBTILIS_TOKEN_END_RETURN,
 } subtilis_token_end_t;
 
+static void prv_skip_line(subtilis_lexer_t *l, subtilis_error_t *err);
+
 typedef subtilis_token_end_t (*token_end_t)(subtilis_lexer_t *,
 					    subtilis_token_t *, char ch,
 					    subtilis_error_t *);
@@ -510,7 +512,7 @@ static void prv_process_call(subtilis_lexer_t *l, subtilis_token_t *t,
 	}
 }
 
-static void prv_process_keyword(subtilis_lexer_t *l, char ch,
+static bool prv_process_keyword(subtilis_lexer_t *l, char ch,
 				subtilis_token_t *t, subtilis_error_t *err)
 {
 	subtilis_keyword_t *kw;
@@ -526,7 +528,7 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 	for (;;) {
 		prv_ensure_input(l, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+			return false;
 		if (l->index == l->buf_end)
 			break;
 
@@ -535,29 +537,29 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 			break;
 		prv_set_next_with_err(l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+			return false;
 	}
 
 	if (l->index < l->buf_end) {
 		if (ch == '$') {
 			prv_set_next_with_err(l, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
-				return;
+				return false;
 			prv_ensure_input(l, err);
 			if (err->type != SUBTILIS_ERROR_OK)
-				return;
+				return false;
 			if ((l->index < l->buf_end) &&
 			    (l->buffer[l->index] == '#')) {
 				possible_id = false;
 				prv_set_next_with_err(l, t, err);
 				if (err->type != SUBTILIS_ERROR_OK)
-					return;
+					return false;
 			}
 		} else if (ch == '#') {
 			possible_id = false;
 			prv_set_next_with_err(l, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
-				return;
+				return false;
 		}
 	}
 
@@ -574,7 +576,7 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 
 	tbuf = subtilis_token_get_text_with_err(t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		return false;
 
 	if (possible_id) {
 		possible_proc = strncmp(tbuf, "PROC", 4) == 0;
@@ -584,7 +586,7 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 			if (ch != '$')
 				ch = 0;
 			prv_process_call(l, t, possible_proc, ch, err);
-			return;
+			return false;
 		}
 	}
 
@@ -597,10 +599,17 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 		    sizeof(subtilis_keyword_t), prv_compare_keyword);
 
 	if (kw) {
+		if (kw->type == SUBTILIS_KEYWORD_REM) {
+			prv_skip_line(l, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return false;
+			return true;
+		}
+
 		t->type = SUBTILIS_TOKEN_KEYWORD;
 		t->tok.keyword.type = kw->type;
 		t->tok.keyword.supported = kw->supported;
-		return;
+		return false;
 	}
 
 	subtilis_buffer_remove_terminator(&t->buf);
@@ -609,16 +618,18 @@ static void prv_process_keyword(subtilis_lexer_t *l, char ch,
 		if (ch != '$')
 			ch = 0;
 		prv_validate_identifier(l, t, ch, err);
-		return;
+		return false;
 	}
 
 	/* It's an invalid token */
 
 	prv_check_token_buffer(l, t, err, SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		return false;
 	tbuf = subtilis_token_get_text(t);
 	subtilis_error_set_unknown_token(err, tbuf, l->stream->name, l->line);
+
+	return false;
 }
 
 static void prv_process_unknown(subtilis_lexer_t *l, char ch,
@@ -646,58 +657,61 @@ static void prv_process_unknown(subtilis_lexer_t *l, char ch,
 	subtilis_error_set_unknown_token(err, tbuf, l->stream->name, l->line);
 }
 
-static void prv_process_token(subtilis_lexer_t *l, subtilis_token_t *t,
+static bool prv_process_token(subtilis_lexer_t *l, subtilis_token_t *t,
 			      subtilis_error_t *err)
 {
 	char ch = l->buffer[l->index];
 
 	if (prv_is_simple_operator(ch)) {
 		prv_set_first(l, t, SUBTILIS_TOKEN_OPERATOR);
-		return;
+		return false;
 	}
 
 	if (ch == '<' || ch == '>' || ch == '+' || ch == '-' || ch == ':') {
 		prv_process_complex_operator(l, t, err);
-		return;
+		return false;
 	}
 
 	if (ch == '"') {
 		prv_process_string(l, t, err);
-		return;
+		return false;
 	}
 
 	if (ch >= '0' && ch <= '9') {
 		prv_process_decimal(l, t, err);
-		return;
+		return false;
 	}
 
 	if (ch == '&') {
 		prv_process_hexadecimal(l, t, err);
-		return;
+		return false;
 	}
 
 	if (ch == '%') {
 		prv_process_binary(l, t, err);
-		return;
+		return false;
 	}
 
 	if (ch == '.') {
 		prv_process_float(l, t, err);
-		return;
+		return false;
 	}
 
 	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
-		prv_process_keyword(l, ch, t, err);
-		return;
+		if (prv_process_keyword(l, ch, t, err))
+			return true;
+		return false;
 	}
 
 	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
 	    (ch == '_')) {
 		prv_process_identifier(l, t, err);
-		return;
+		return false;
 	}
 
 	prv_process_unknown(l, ch, t, err);
+
+	return false;
 }
 
 static void prv_skip_white(subtilis_lexer_t *l, subtilis_error_t *err)
@@ -717,6 +731,23 @@ static void prv_skip_white(subtilis_lexer_t *l, subtilis_error_t *err)
 		if (l->index == l->buf_end)
 			return;
 	} while (prv_is_whitespace(l->buffer[l->index]));
+}
+
+static void prv_skip_line(subtilis_lexer_t *l, subtilis_error_t *err)
+{
+	do {
+		while (l->index < l->buf_end && l->buffer[l->index] != '\n')
+			l->index++;
+
+		prv_ensure_input(l, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (l->index == l->buf_end)
+			return;
+	} while (l->buffer[l->index] != '\n');
+	l->index++;
+	l->line++;
 }
 
 subtilis_token_t *subtilis_token_new(subtilis_error_t *err)
@@ -776,12 +807,17 @@ void subtilis_dump_token(subtilis_token_t *t)
 void subtilis_lexer_get(subtilis_lexer_t *l, subtilis_token_t *t,
 			subtilis_error_t *err)
 {
-	prv_reinit_token(t);
-	prv_skip_white(l, err);
-	if ((err->type != SUBTILIS_ERROR_OK) || (l->index == l->buf_end))
-		return;
-	prv_process_token(l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+	bool rem;
+
+	do {
+		prv_reinit_token(t);
+		prv_skip_white(l, err);
+		if ((err->type != SUBTILIS_ERROR_OK) ||
+		    (l->index == l->buf_end))
+			return;
+		rem = prv_process_token(l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} while (rem);
 	subtilis_buffer_zero_terminate(&t->buf, err);
 }
