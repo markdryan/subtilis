@@ -1705,6 +1705,15 @@ const subtilis_test_case_t test_cases[] = {
 	 "endif\n"
 	 "print i%\n",
 	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n0\n"
+	},
+	{"rem",
+	 "rem Copyright Mark Ryan (c) 2019\n"
+	 "rem\n"
+	 "for i% := 0 to 10 REM Loop 10 times\n"
+	 "  print i%\n"
+	 "next\n"
+	 "rem the end\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
 	}
 };
 

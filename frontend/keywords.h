@@ -166,6 +166,10 @@ struct _subtilis_keyword_t {
 
 typedef struct _subtilis_keyword_t subtilis_keyword_t;
 
+/*
+ * PROC and FN are upper case only.
+ */
+
 #define SUBTILIS_KEYWORD_TOKENS ((SUBTILIS_KEYWORD_MAX * 2) - 2)
 
 extern const subtilis_keyword_t subtilis_keywords_list[SUBTILIS_KEYWORD_TOKENS];

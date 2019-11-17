@@ -587,8 +587,7 @@ which can be used to refer to it there after.
 
 The DIM keyword works in mostly the same way as it does in BBC Basic with the exception that
 arrays are currently limited to a maximum of 10 dimensions, an arbitrarily chosen limit, which may change.
-Arrays can be declared inside functions but they need to be delcared local and must currently appear
-at the top of the function or procedure.
+Arrays can be declared inside functions but they need to be delcared local.
 
 For example,
 

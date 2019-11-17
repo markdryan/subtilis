@@ -358,7 +358,10 @@ static int prv_check_keywords(subtilis_lexer_t *l, subtilis_token_t *t)
 
 	subtilis_error_init(&err);
 
-	for (i = 0; i < SUBTILIS_KEYWORD_MAX; i++) {
+	for (i = 0; i < SUBTILIS_KEYWORD_TOKENS; i++) {
+		if (subtilis_keywords_list[i].type == SUBTILIS_KEYWORD_REM)
+			continue;
+
 		subtilis_lexer_get(l, t, &err);
 		if (err.type != SUBTILIS_ERROR_OK) {
 			subtilis_error_fprintf(stderr, &err, true);
@@ -403,7 +406,9 @@ static int prv_test_keywords(void)
 
 	subtilis_error_init(&err);
 	subtilis_buffer_init(&buf, 4096);
-	for (j = 0; j < SUBTILIS_KEYWORD_MAX; j++) {
+	for (j = 0; j < SUBTILIS_KEYWORD_TOKENS; j++) {
+		if (subtilis_keywords_list[j].type == SUBTILIS_KEYWORD_REM)
+			continue;
 		subtilis_buffer_append(&buf, subtilis_keywords_list[j].str,
 				       strlen(subtilis_keywords_list[j].str),
 				       &err);
