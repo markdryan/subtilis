@@ -312,6 +312,23 @@ subtilis_exp_t *subtilis_exp_new_var(const subtilis_type_t *type,
 	return e;
 }
 
+subtilis_exp_t *subtilis_exp_new_var_block(const subtilis_type_t *type,
+					   unsigned int mem_reg, size_t offset,
+					   subtilis_error_t *err)
+{
+	subtilis_exp_t *e = malloc(sizeof(*e));
+
+	if (!e) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+	e->type = *type;
+	e->exp.ir_op.reg = offset;
+	e->mem_reg = mem_reg;
+
+	return e;
+}
+
 subtilis_exp_t *subtilis_exp_new_int32_var(unsigned int reg,
 					   subtilis_error_t *err)
 {

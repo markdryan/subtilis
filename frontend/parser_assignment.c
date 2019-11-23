@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "parser_array.h"
 #include "parser_assignment.h"
 #include "parser_exp.h"
 #include "type_if.h"
@@ -91,9 +92,9 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 
 	if (!strcmp(tbuf, "=")) {
 		at = SUBTILIS_ASSIGN_TYPE_EQUAL;
-	} else if (!strcmp(tbuf, "+=")) {
+	} else if (!strcmp(tbuf, "+=") && (dims > 0)) {
 		at = SUBTILIS_ASSIGN_TYPE_PLUS_EQUAL;
-	} else if (!strcmp(tbuf, "-=")) {
+	} else if (!strcmp(tbuf, "-=") && (dims > 0)) {
 		at = SUBTILIS_ASSIGN_TYPE_MINUS_EQUAL;
 	} else {
 		subtilis_error_set_assignment_op_expected(
@@ -107,8 +108,14 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 
 	switch (at) {
 	case SUBTILIS_ASSIGN_TYPE_EQUAL:
-		subtilis_type_if_indexed_write(p, var_name, &s->t, mem_reg,
-					       s->loc, e, indices, dims, err);
+		if (dims == 0)
+			/* We're assigning an array reference */
+			subtilis_parser_array_assign_reference(p, mem_reg, s, e,
+							       err);
+		else
+			subtilis_type_if_indexed_write(p, var_name, &s->t,
+						       mem_reg, s->loc, e,
+						       indices, dims, err);
 		break;
 	case SUBTILIS_ASSIGN_TYPE_PLUS_EQUAL:
 		subtilis_type_if_indexed_add(p, var_name, &s->t, mem_reg,

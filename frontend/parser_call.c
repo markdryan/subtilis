@@ -630,7 +630,7 @@ void subtilis_parser_unwind(subtilis_parser_t *p, subtilis_error_t *err)
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtlis_array_type_pop_and_deref(p, err);
+	subtilis_array_type_pop_and_deref(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

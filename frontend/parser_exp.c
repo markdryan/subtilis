@@ -749,6 +749,12 @@ size_t subtilis_var_bracketed_int_args_have_b(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
+	if (t->type == SUBTILIS_TOKEN_OPERATOR) {
+		tbuf = subtilis_token_get_text(t);
+		if (!strcmp(tbuf, ")"))
+			return 0;
+	}
+
 	e[0] = subtilis_parser_priority7(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;

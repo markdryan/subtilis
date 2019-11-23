@@ -303,6 +303,27 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"VDU [30\n",
 	SUBTILIS_ERROR_EXPECTED
 	},
+	{
+	"array_assign_mismatch",
+	"DIM a%(1)\n"
+	"DIM b%(1,1)\n"
+	"a%() = b%()\n",
+	SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH
+	},
+	{
+	"array_assign_mismatch2",
+	"DIM a%(1)\n"
+	"DIM b(1)\n"
+	"a%() = b()\n",
+	SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH
+	},
+	{
+	"array_plus_assign",
+	"DIM a%(1)\n"
+	"DIM b%(1)\n"
+	"a%() += b()\n",
+	SUBTILIS_ERROR_ASSIGNMENT_OP_EXPECTED
+	},
 };
 
 /* clang-format on */

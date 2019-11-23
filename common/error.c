@@ -190,6 +190,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_BAD_ERROR */
 	{"Bad error, expected %s got %s\n", 2},
+
+	/* SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH */
+	{"Arrays are not compatible\n", 0},
 };
 
 /* clang-format on */
