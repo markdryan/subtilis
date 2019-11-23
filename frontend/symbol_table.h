@@ -53,7 +53,7 @@ typedef struct subtilis_symbol_table_t_ subtilis_symbol_table_t;
 subtilis_symbol_table_t *subtilis_symbol_table_new(subtilis_error_t *err);
 void subtilis_symbol_table_delete(subtilis_symbol_table_t *st);
 void subtilis_symbol_table_level_up(subtilis_symbol_table_t *st,
-				    subtilis_error_t *err);
+				    subtilis_lexer_t *l, subtilis_error_t *err);
 void subtilis_symbol_table_level_down(subtilis_symbol_table_t *st,
 				      subtilis_error_t *err);
 const subtilis_symbol_t *

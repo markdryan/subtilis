@@ -798,7 +798,6 @@ Here's a list of other language features that are currently not implemented but 
 There are also some enhancements that will need to be added to the language to make it
 more palatable to the modern programmer.
 
-* Lower case keywords
 * Structures
 * Functions and procedures as first class types
 * Closures
@@ -814,12 +813,3 @@ The tooling is very basic and needs a huge amount of work
 * There's no optimizer
 * No assembler
 * The compiler is too slow.  It takes 13 seconds to compile a very simple program on the A3000 (8 Mhz ARM2).
-
-## Source code structure
-
-The source code structure is very weird right now with all the code placed in the top level directory.
-The reason for this is that there are some BASIC programs that copy the code to and from RiscOS machines
-over NFS.  When the code is copied to the RiscOS machines it is copied in a way that is pleasing to the
-RiscOS C compilers, e.g., all the C files are placed in a folder called C.  Changing the layout of the
-source code would require changes to these BASIC files.  It's going to happen at some point but it hasn't
-happened yet.

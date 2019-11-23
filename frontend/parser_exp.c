@@ -668,6 +668,7 @@ subtilis_exp_t *subtilis_parser_bracketed_exp_internal(subtilis_parser_t *p,
 		return NULL;
 	tbuf = subtilis_token_get_text(t);
 	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ")")) {
+		subtilis_exp_delete(e);
 		subtilis_error_set_right_bkt_expected(
 		    err, tbuf, p->l->stream->name, p->l->line);
 		return NULL;

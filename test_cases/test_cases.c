@@ -1714,7 +1714,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "next\n"
 	 "rem the end\n",
 	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
-	}
+	},
 };
 
 /* clang-format on */

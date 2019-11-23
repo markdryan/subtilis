@@ -18,6 +18,7 @@
 
 #include "parser_test.h"
 
+#include "../test_cases/bad_test_cases.h"
 #include "../test_cases/test_cases.h"
 #include "lexer.h"
 #include "parser.h"
@@ -25,7 +26,8 @@
 
 int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 			int (*fn)(subtilis_lexer_t *, subtilis_parser_t *,
-				  const char *expected),
+				  subtilis_error_type_t, const char *expected),
+			subtilis_error_type_t expected_err,
 			const char *expected)
 {
 	subtilis_stream_t s;
@@ -49,7 +51,7 @@ int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	retval = fn(l, p, expected);
+	retval = fn(l, p, expected_err, expected);
 
 	printf(": [%s]\n", retval ? "FAIL" : "OK");
 
@@ -68,47 +70,23 @@ fail:
 	return 1;
 }
 
-static int prv_check_for_error(subtilis_parser_t *p,
-			       subtilis_error_type_t err_type)
+static void prv_check_for_error(subtilis_lexer_t *l,
+				subtilis_error_type_t expected_err,
+				subtilis_error_t *err)
 {
-	subtilis_error_t err;
+	if (expected_err == SUBTILIS_ERROR_OK)
+		return;
 
-	subtilis_error_init(&err);
-	subtilis_parse(p, &err);
-	if (err.type != err_type) {
-		fprintf(stderr, "Expected err %d, got %d\n", err_type,
-			err.type);
-		subtilis_error_fprintf(stderr, &err, true);
-		return 1;
+	if (expected_err != err->type) {
+		subtilis_error_set_bad_error(err, expected_err, err->type,
+					     l->stream->name, l->line);
+		return;
 	}
-
-	return 0;
+	subtilis_error_init(err);
 }
-
-static int prv_check_not_keyword(subtilis_lexer_t *l, subtilis_parser_t *p,
-				 const char *expected)
-{
-	return prv_check_for_error(p, SUBTILIS_ERROR_KEYWORD_EXPECTED);
-}
-
-/*
- * static int prv_check_parse_ok(subtilis_lexer_t *l, subtilis_parser_t *p,
- *			      const char *expected)
- * {
- *	subtilis_error_t err;
- *
- *	subtilis_error_init(&err);
- *	subtilis_parse(p, &err);
- *	if (err.type != SUBTILIS_ERROR_OK) {
- *		subtilis_error_fprintf(stderr, &err, true);
- *		return 1;
- *	}
- *
- *	return 0;
- *}
- */
 
 static int prv_check_eval_res(subtilis_lexer_t *l, subtilis_parser_t *p,
+			      subtilis_error_type_t expected_err,
 			      const char *expected)
 {
 	subtilis_buffer_t b;
@@ -121,20 +99,32 @@ static int prv_check_eval_res(subtilis_lexer_t *l, subtilis_parser_t *p,
 	subtilis_buffer_init(&b, 1024);
 
 	subtilis_parse(p, &err);
+	prv_check_for_error(l, expected_err, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);
+		goto cleanup;
+	} else if (expected_err != SUBTILIS_ERROR_OK) {
+		retval = 0;
 		goto cleanup;
 	}
 
 	vm = subitlis_vm_new(p->prog, p->st, &err);
+	prv_check_for_error(l, expected_err, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);
+		goto cleanup;
+	} else if (expected_err != SUBTILIS_ERROR_OK) {
+		retval = 0;
 		goto cleanup;
 	}
 
 	subitlis_vm_run(vm, &b, &err);
+	prv_check_for_error(l, expected_err, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);
+		goto cleanup;
+	} else if (expected_err != SUBTILIS_ERROR_OK) {
+		retval = 0;
 		goto cleanup;
 	}
 
@@ -168,7 +158,8 @@ static int prv_test_let(void)
 
 	printf("parser_let");
 	return parser_test_wrapper(let_test, SUBTILIS_BACKEND_INTER_CAPS,
-				   prv_check_eval_res, "119\n");
+				   prv_check_eval_res, SUBTILIS_ERROR_OK,
+				   "119\n");
 }
 
 static int prv_test_expressions(void)
@@ -180,7 +171,23 @@ static int prv_test_expressions(void)
 		printf("parser_%s", test_cases[i].name);
 		retval |= parser_test_wrapper(
 		    test_cases[i].source, SUBTILIS_BACKEND_INTER_CAPS,
-		    prv_check_eval_res, test_cases[i].result);
+		    prv_check_eval_res, SUBTILIS_ERROR_OK,
+		    test_cases[i].result);
+	}
+
+	return retval;
+}
+
+static int prv_test_bad_cases(void)
+{
+	size_t i;
+	int retval = 0;
+
+	for (i = 0; i < SUBTILIS_BAD_TEST_CASE_ID_MAX; i++) {
+		printf("parser_bad_%s", bad_test_cases[i].name);
+		retval |= parser_test_wrapper(
+		    bad_test_cases[i].source, SUBTILIS_BACKEND_INTER_CAPS,
+		    prv_check_eval_res, bad_test_cases[i].err, "");
 	}
 
 	return retval;
@@ -189,45 +196,19 @@ static int prv_test_expressions(void)
 static int prv_test_print(void)
 {
 	printf("parser_print");
-	return parser_test_wrapper("PRINT (10 * 3 * 3 + 1) DIV 2",
-				   SUBTILIS_BACKEND_INTER_CAPS,
-				   prv_check_eval_res, "45\n");
-}
-
-static int prv_test_not_keyword(void)
-{
-	printf("parser_not_keyword");
-	return parser_test_wrapper("+", SUBTILIS_BACKEND_INTER_CAPS,
-				   prv_check_not_keyword, NULL);
-}
-
-static int prv_check_unknown_procedure(subtilis_lexer_t *l,
-				       subtilis_parser_t *p,
-				       const char *expected)
-{
-	return prv_check_for_error(p, SUBTILIS_ERROR_UNKNOWN_PROCEDURE);
-}
-
-static int prv_test_unknown_procedure(void)
-{
-	const char *test = "PROCmissing\n\n"
-			   "DEF PROCmiss\n"
-			   "ENDPROC\n";
-
-	printf("parser_unknown_procedure");
-	return parser_test_wrapper(test, SUBTILIS_BACKEND_INTER_CAPS,
-				   prv_check_unknown_procedure, NULL);
+	return parser_test_wrapper(
+	    "PRINT (10 * 3 * 3 + 1) DIV 2", SUBTILIS_BACKEND_INTER_CAPS,
+	    prv_check_eval_res, SUBTILIS_ERROR_OK, "45\n");
 }
 
 int parser_test(void)
 {
 	int failure = 0;
 
-	failure |= prv_test_not_keyword();
 	failure |= prv_test_let();
 	failure |= prv_test_print();
 	failure |= prv_test_expressions();
-	failure |= prv_test_unknown_procedure();
+	failure |= prv_test_bad_cases();
 
 	return failure;
 }

@@ -28,6 +28,7 @@
 #include "riscos_arm2.h"
 
 static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
+			    subtilis_error_type_t expected_err,
 			    const char *expected)
 {
 	subtilis_error_t err;
@@ -128,9 +129,9 @@ static int prv_test_examples(void)
 	for (i = 0; i < SUBTILIS_TEST_CASE_ID_MAX; i++) {
 		test = &test_cases[i];
 		printf("arm_%s", test->name);
-		pass =
-		    parser_test_wrapper(test->source, SUBTILIS_RISCOS_ARM_CAPS,
-					prv_test_example, test->result);
+		pass = parser_test_wrapper(
+		    test->source, SUBTILIS_RISCOS_ARM_CAPS, prv_test_example,
+		    SUBTILIS_ERROR_OK, test->result);
 		ret |= pass;
 	}
 

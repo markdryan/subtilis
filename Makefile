@@ -86,6 +86,7 @@ TESTS =\
 	vm.c \
 	ir_test.c \
 	test_cases.c \
+	bad_test_cases.c \
 	arm_core_test.c \
 	arm_vm.c \
 	arm_test.c \

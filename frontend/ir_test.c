@@ -370,6 +370,7 @@ static void prv_matched_8(subtilis_ir_section_t *s, size_t start,
 }
 
 static int prv_check_matcher(subtilis_lexer_t *l, subtilis_parser_t *p,
+			     subtilis_error_type_t expected_err,
 			     const char *expected)
 {
 	ir_test_matcher_data_t data;
@@ -441,7 +442,7 @@ static int prv_test_matcher(void)
 
 	printf("ir_test_matcher");
 	return parser_test_wrapper(source, SUBTILIS_BACKEND_INTER_CAPS,
-				   prv_check_matcher, NULL);
+				   prv_check_matcher, SUBTILIS_ERROR_OK, NULL);
 }
 
 int ir_test(void)

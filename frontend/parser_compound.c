@@ -100,7 +100,7 @@ void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 	unsigned int start;
 	subtilis_ir_operand_t var_reg;
 
-	subtilis_symbol_table_level_up(p->local_st, err);
+	subtilis_symbol_table_level_up(p->local_st, p->l, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

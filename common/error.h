@@ -77,6 +77,8 @@ typedef enum {
 	SUBTILIS_ERROR_BAD_INDEX_COUNT,
 	SUBTILIS_ERROR_NOT_ARRAY,
 	SUBTILIS_ERROR_VARIABLE_BAD_LEVEL,
+	SUBTILIS_ERROR_BAD_ERROR,
+	SUBTILIS_ERROR_TOO_MANY_BLOCKS,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -229,6 +231,12 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_variable_bad_level(e, str, file, line)                  \
 	subtilis_error_set1(e, SUBTILIS_ERROR_VARIABLE_BAD_LEVEL, str, file,   \
 			    line)
+#define subtilis_error_set_bad_error(e, num1, num2, file, line)                \
+	subtilis_error_set_int(e, SUBTILIS_ERROR_BAD_ERROR, num1, num2, file,  \
+			       line, __FILE__, __LINE__)
+#define subtilis_error_set_too_many_blocks(e, file, line)                      \
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_TOO_MANY_BLOCKS, file,     \
+				  line, __FILE__, __LINE__)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,
