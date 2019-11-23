@@ -253,7 +253,7 @@ static void prv_for_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 				subtilis_error_set_already_defined(
 				    err, var_name, p->l->stream->name,
 				    p->l->line);
-				return;
+				goto cleanup;
 			}
 
 			for_ctx->is_reg = true;

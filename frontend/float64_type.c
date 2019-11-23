@@ -333,6 +333,8 @@ static subtilis_exp_t *prv_divr_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 	if (a2->exp.ir_op.real == 0) {
 		subtilis_error_set_divide_by_zero(err, p->l->stream->name,
 						  p->l->line);
+		subtilis_exp_delete(a2);
+		subtilis_exp_delete(a1);
 		return NULL;
 	}
 
