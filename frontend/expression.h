@@ -32,6 +32,7 @@ typedef union subtilis_exp_operand_t_ subtilis_exp_operand_t;
 struct subtilis_exp_t_ {
 	subtilis_type_t type;
 	subtilis_exp_operand_t exp;
+	size_t mem_reg;
 };
 
 typedef struct subtilis_exp_t_ subtilis_exp_t;
@@ -46,6 +47,9 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 				      size_t num_params, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_var(const subtilis_type_t *type,
 				     unsigned int reg, subtilis_error_t *err);
+subtilis_exp_t *subtilis_exp_new_var_block(const subtilis_type_t *type,
+					   unsigned int mem_reg, size_t offset,
+					   subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_int32_var(unsigned int reg,
 					   subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_real_var(unsigned int reg,

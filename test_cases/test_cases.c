@@ -1715,6 +1715,45 @@ const subtilis_test_case_t test_cases[] = {
 	 "rem the end\n",
 	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
 	},
+	{"array_global_assign",
+	 "dim a%(10)\n"
+	 "dim b%(10)\n"
+	 "for i% := 0 to 10\n"
+	 "  a%(i%) = i%\n"
+	 "next\n"
+	 "b%() = a%()\n"
+	 "for i% = 0 to 10\n"
+	 "  print b%(i%)\n"
+	 "next\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
+	},
+	{"array_local_assign",
+	 "local dim a%(10)\n"
+	 "local dim b%(10)\n"
+	 "for i% := 0 to 10\n"
+	 "  a%(i%) = i%\n"
+	 "next\n"
+	 "b%() = a%()\n"
+	 "for i% = 0 to 10\n"
+	 "  print b%(i%)\n"
+	 "next\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
+	},
+	{"array_global_local_assign",
+	 "dim b%(10)\n"
+	 "PROCAssign\n"
+	 "DEF PROCAssign\n"
+	 "  local dim a%(10)\n"
+	 "  for i% := 0 to 10\n"
+	 "    a%(i%) = i%\n"
+	 "  next\n"
+	 "  b%() = a%()\n"
+	 "ENDPROC\n"
+	 "for i% = 0 to 10\n"
+	 "  print b%(i%)\n"
+	 "next\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
+	},
 };
 
 /* clang-format on */

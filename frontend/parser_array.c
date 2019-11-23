@@ -56,8 +56,12 @@ subtilis_exp_t *subtils_parser_read_array(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_type_if_indexed_read(p, var_name, &s->t, mem_reg, s->loc,
-					  indices, dims, err);
+	if (dims == 0)
+		/* What we have here is an array reference. */
+		e = subtilis_exp_new_var_block(&s->t, mem_reg, s->loc, err);
+	else
+		e = subtilis_type_if_indexed_read(p, var_name, &s->t, mem_reg,
+						  s->loc, indices, dims, err);
 
 cleanup:
 
@@ -100,6 +104,24 @@ static void prv_allocate_array(subtilis_parser_t *p, const char *var_name,
 			       subtilis_error_t *err)
 {
 	subtlis_array_type_allocate(p, var_name, type, loc, e, store_reg, err);
+}
+
+void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
+					    size_t mem_reg,
+					    const subtilis_symbol_t *s,
+					    subtilis_exp_t *e,
+					    subtilis_error_t *err)
+{
+	subtilis_array_type_match(p, &s->t, &e->type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_array_type_assign_ref(p, mem_reg, s->loc, e->mem_reg,
+				       e->exp.ir_op.reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(e);
 }
 
 void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
@@ -216,7 +238,7 @@ void subtilis_parser_deallocate_arrays(subtilis_parser_t *p,
 		    (s->t.type != SUBTILIS_TYPE_ARRAY_INTEGER))
 			continue;
 
-		subtlis_array_type_pop_and_deref(p, err);
+		subtilis_array_type_pop_and_deref(p, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}

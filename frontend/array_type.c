@@ -197,8 +197,14 @@ void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	op2.integer = loc;
+	op2.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, store_reg, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	subtilis_ir_section_add_instr_no_reg(
-	    p->current, SUBTILIS_OP_INSTR_PUSH_I32, op, err);
+	    p->current, SUBTILIS_OP_INSTR_PUSH_I32, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -256,8 +262,124 @@ cleanup:
 	subtilis_exp_delete(sizee);
 }
 
-void subtlis_array_type_pop_and_deref(subtilis_parser_t *p,
-				      subtilis_error_t *err)
+/*
+ * t1 is the target array.  If it has a dynamic dim that's treated as a match.
+ */
+
+void subtilis_array_type_match(subtilis_parser_t *p, const subtilis_type_t *t1,
+			       const subtilis_type_t *t2, subtilis_error_t *err)
+{
+	size_t i;
+
+	if (t1->type != t2->type) {
+		subtilis_error_set_array_type_mismatch(err, p->l->stream->name,
+						       p->l->line);
+		return;
+	}
+
+	if (t1->params.array.num_dims != t2->params.array.num_dims) {
+		subtilis_error_set_array_type_mismatch(err, p->l->stream->name,
+						       p->l->line);
+		return;
+	}
+
+	for (i = 0; i < t1->params.array.num_dims; i++) {
+		if (t1->params.array.dims[i] == -1)
+			continue;
+		if (t1->params.array.dims[i] != t2->params.array.dims[i]) {
+			subtilis_error_set_array_type_mismatch(
+			    err, p->l->stream->name, p->l->line);
+			return;
+		}
+	}
+}
+
+void subtilis_array_type_assign_ref(subtilis_parser_t *p, size_t dest_mem_reg,
+				    size_t dest_loc, size_t source_mem_reg,
+				    size_t source_loc, subtilis_error_t *err)
+{
+	size_t dest_reg;
+	size_t source_reg;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+
+	op0.reg = dest_mem_reg;
+	op1.integer = dest_loc + SUBTIILIS_ARRAY_DATA_OFF;
+
+	dest_reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op0.reg = dest_reg;
+	subtilis_ir_section_add_instr_no_reg(p->current,
+					     SUBTILIS_OP_INSTR_DEREF, op0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op0.reg = source_mem_reg;
+	op1.integer = source_loc + SUBTIILIS_ARRAY_DATA_OFF;
+
+	source_reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op0.reg = source_reg;
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_REF,
+					     op0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.reg = dest_mem_reg;
+	op2.integer = dest_loc + SUBTIILIS_ARRAY_DATA_OFF;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op0, op1, op2, err);
+}
+
+void subtilis_array_type_deref(subtilis_parser_t *p, size_t mem_reg, size_t loc,
+			       subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+
+	op0.reg = mem_reg;
+	op1.integer = loc + SUBTIILIS_ARRAY_DATA_OFF;
+
+	reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op0.reg = reg;
+	subtilis_ir_section_add_instr_no_reg(p->current,
+					     SUBTILIS_OP_INSTR_DEREF, op0, err);
+}
+
+void subtilis_array_type_ref(subtilis_parser_t *p, size_t mem_reg, size_t loc,
+			     subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+
+	op0.reg = mem_reg;
+	op1.integer = loc + SUBTIILIS_ARRAY_DATA_OFF;
+
+	reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op0.reg = reg;
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_REF,
+					     op0, err);
+}
+
+void subtilis_array_type_pop_and_deref(subtilis_parser_t *p,
+				       subtilis_error_t *err)
 {
 	subtilis_ir_operand_t offset;
 	subtilis_ir_operand_t op2;
@@ -265,6 +387,12 @@ void subtlis_array_type_pop_and_deref(subtilis_parser_t *p,
 
 	offset.reg = subtilis_ir_section_add_instr1(
 	    p->current, SUBTILIS_OP_INSTR_POP_I32, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.integer = SUBTIILIS_ARRAY_DATA_OFF;
+	offset.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, offset, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
