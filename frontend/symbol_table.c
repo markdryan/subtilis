@@ -80,10 +80,11 @@ static void prv_ensure_symbol_level(subtilis_symbol_table_t *st,
 }
 
 void subtilis_symbol_table_level_up(subtilis_symbol_table_t *st,
-				    subtilis_error_t *err)
+				    subtilis_lexer_t *l, subtilis_error_t *err)
 {
 	if (st->level >= SUBTILIS_SYMBOL_MAX_LEVELS) {
-		subtilis_error_set_assertion_failed(err);
+		subtilis_error_set_too_many_blocks(err, l->stream->name,
+						   l->line);
 		return;
 	}
 

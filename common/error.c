@@ -187,6 +187,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_VARIABLE_BAD_LEVEL */
 	{"global variable %s must be declared at the top level\n", 1},
+
+	/* SUBTILIS_ERROR_BAD_ERROR */
+	{"Bad error, expected %s got %s\n", 2},
 };
 
 /* clang-format on */

@@ -94,7 +94,7 @@ void subtilis_parser_onerror(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_symbol_table_level_up(p->local_st, err);
+	subtilis_symbol_table_level_up(p->local_st, p->l, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

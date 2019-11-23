@@ -22,7 +22,8 @@
 int parser_test(void);
 int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 			int (*fn)(subtilis_lexer_t *, subtilis_parser_t *,
-				  const char *expected),
+				  subtilis_error_type_t, const char *expected),
+			subtilis_error_type_t expected_err,
 			const char *expected);
 
 #endif

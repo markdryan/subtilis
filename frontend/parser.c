@@ -210,7 +210,7 @@ subtilis_keyword_type_t subtilis_parser_if_compound(subtilis_parser_t *p,
 	subtilis_keyword_type_t key_type = SUBTILIS_KEYWORD_MAX;
 	unsigned int start;
 
-	subtilis_symbol_table_level_up(p->local_st, err);
+	subtilis_symbol_table_level_up(p->local_st, p->l, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return key_type;
 	p->level++;
