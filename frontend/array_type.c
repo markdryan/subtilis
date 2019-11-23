@@ -295,11 +295,10 @@ void subtilis_array_type_match(subtilis_parser_t *p, const subtilis_type_t *t1,
 }
 
 void subtilis_array_type_assign_ref(subtilis_parser_t *p, size_t dest_mem_reg,
-				    size_t dest_loc, size_t source_mem_reg,
-				    size_t source_loc, subtilis_error_t *err)
+				    size_t dest_loc, size_t source_reg,
+				    subtilis_error_t *err)
 {
 	size_t dest_reg;
-	size_t source_reg;
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t op2;
@@ -318,8 +317,8 @@ void subtilis_array_type_assign_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	op0.reg = source_mem_reg;
-	op1.integer = source_loc + SUBTIILIS_ARRAY_DATA_OFF;
+	op0.reg = source_reg;
+	op1.integer = SUBTIILIS_ARRAY_DATA_OFF;
 
 	source_reg = subtilis_ir_section_add_instr(
 	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);

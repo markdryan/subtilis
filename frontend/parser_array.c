@@ -58,7 +58,7 @@ subtilis_exp_t *subtils_parser_read_array(subtilis_parser_t *p,
 
 	if (dims == 0)
 		/* What we have here is an array reference. */
-		e = subtilis_exp_new_var_block(&s->t, mem_reg, s->loc, err);
+		e = subtilis_exp_new_var_block(p, &s->t, mem_reg, s->loc, err);
 	else
 		e = subtilis_type_if_indexed_read(p, var_name, &s->t, mem_reg,
 						  s->loc, indices, dims, err);
@@ -116,8 +116,8 @@ void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_array_type_assign_ref(p, mem_reg, s->loc, e->mem_reg,
-				       e->exp.ir_op.reg, err);
+	subtilis_array_type_assign_ref(p, mem_reg, s->loc, e->exp.ir_op.reg,
+				       err);
 
 cleanup:
 

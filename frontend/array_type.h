@@ -35,8 +35,8 @@ void subtilis_array_type_match(subtilis_parser_t *p, const subtilis_type_t *t1,
 			       const subtilis_type_t *t2,
 			       subtilis_error_t *err);
 void subtilis_array_type_assign_ref(subtilis_parser_t *p, size_t dest_mem_reg,
-				    size_t dest_loc, size_t source_mem_reg,
-				    size_t source_loc, subtilis_error_t *err);
+				    size_t dest_loc, size_t source_reg,
+				    subtilis_error_t *err);
 void subtilis_array_type_deref(subtilis_parser_t *p, size_t mem_reg, size_t loc,
 			       subtilis_error_t *err);
 void subtilis_array_type_ref(subtilis_parser_t *p, size_t mem_reg, size_t loc,
