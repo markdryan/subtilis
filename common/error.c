@@ -191,8 +191,14 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_BAD_ERROR */
 	{"Bad error, expected %s got %s\n", 2},
 
+	/* SUBTILIS_ERROR_TOO_MANY_BLOCKS */
+	{"Too many blocks\n", 0},
+
 	/* SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH */
 	{"Arrays are not compatible\n", 0},
+
+	/* SUBTILIS_ERROR_CONST_INTEGER_EXPECTED */
+	{"Constant integer expected\n", 0},
 };
 
 /* clang-format on */

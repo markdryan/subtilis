@@ -262,6 +262,60 @@ cleanup:
 	subtilis_exp_delete(sizee);
 }
 
+void subtlis_array_type_copy_ref(subtilis_parser_t *p, const subtilis_type_t *t,
+				 subtilis_ir_operand_t dest_reg,
+				 size_t dest_offset,
+				 subtilis_ir_operand_t source_reg,
+				 size_t source_offset, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t soffset;
+	subtilis_ir_operand_t doffset;
+	subtilis_ir_operand_t data;
+	size_t i;
+	size_t ints_to_copy = 2 + (t->params.array.num_dims);
+
+	soffset.integer = SUBTIILIS_ARRAY_SIZE_OFF + source_offset;
+	doffset.integer = SUBTIILIS_ARRAY_SIZE_OFF + dest_offset;
+
+	if (doffset.integer > 0) {
+		data.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_ADDI_I32, dest_reg, doffset,
+		    err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		data = dest_reg;
+	}
+
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_PUSH_I32, data, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	for (i = 0; i < ints_to_copy; i++) {
+		data.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_LOADO_I32, source_reg,
+		    soffset, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		subtilis_ir_section_add_instr_reg(p->current,
+						  SUBTILIS_OP_INSTR_STOREO_I32,
+						  data, dest_reg, doffset, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (soffset.integer ==
+		    source_offset + SUBTIILIS_ARRAY_DATA_OFF) {
+			subtilis_ir_section_add_instr_no_reg(
+			    p->current, SUBTILIS_OP_INSTR_REF, data, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		}
+		soffset.integer += sizeof(int32_t);
+		doffset.integer += sizeof(int32_t);
+	}
+}
+
 /*
  * t1 is the target array.  If it has a dynamic dim that's treated as a match.
  */
@@ -295,11 +349,10 @@ void subtilis_array_type_match(subtilis_parser_t *p, const subtilis_type_t *t1,
 }
 
 void subtilis_array_type_assign_ref(subtilis_parser_t *p, size_t dest_mem_reg,
-				    size_t dest_loc, size_t source_mem_reg,
-				    size_t source_loc, subtilis_error_t *err)
+				    size_t dest_loc, size_t source_reg,
+				    subtilis_error_t *err)
 {
 	size_t dest_reg;
-	size_t source_reg;
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t op2;
@@ -318,8 +371,8 @@ void subtilis_array_type_assign_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	op0.reg = source_mem_reg;
-	op1.integer = source_loc + SUBTIILIS_ARRAY_DATA_OFF;
+	op0.reg = source_reg;
+	op1.integer = SUBTIILIS_ARRAY_DATA_OFF;
 
 	source_reg = subtilis_ir_section_add_instr(
 	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);

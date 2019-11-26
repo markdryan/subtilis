@@ -312,10 +312,13 @@ subtilis_exp_t *subtilis_exp_new_var(const subtilis_type_t *type,
 	return e;
 }
 
-subtilis_exp_t *subtilis_exp_new_var_block(const subtilis_type_t *type,
+subtilis_exp_t *subtilis_exp_new_var_block(subtilis_parser_t *p,
+					   const subtilis_type_t *type,
 					   unsigned int mem_reg, size_t offset,
 					   subtilis_error_t *err)
 {
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
 	subtilis_exp_t *e = malloc(sizeof(*e));
 
 	if (!e) {
@@ -323,10 +326,20 @@ subtilis_exp_t *subtilis_exp_new_var_block(const subtilis_type_t *type,
 		return NULL;
 	}
 	e->type = *type;
-	e->exp.ir_op.reg = offset;
-	e->mem_reg = mem_reg;
+	op0.reg = mem_reg;
+	op1.integer = offset;
+	e->exp.ir_op.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
 
 	return e;
+
+on_error:
+
+	subtilis_exp_delete(e);
+
+	return NULL;
 }
 
 subtilis_exp_t *subtilis_exp_new_int32_var(unsigned int reg,

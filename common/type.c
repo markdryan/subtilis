@@ -42,6 +42,8 @@ static const char *const prv_fixed_type_names[] = {
 	"integer", /* SUBTILIS_TYPE_INTEGER */
 	"string",  /* SUBTILIS_TYPE_STRING */
 	"void",    /* SUBTILIS_TYPE_VOID */
+	"array of reals", /* SUBTILIS_TYPE_ARRAY_REAL */
+	"array of ints", /* SUBTILIS_TYPE_ARRAY_INTEGER */
 };
 
 /* clang-format on */
@@ -67,10 +69,19 @@ subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 	stype->fp_regs = 0;
 
 	for (i = 0; i < num_parameters; i++) {
-		if (parameters[i].type == SUBTILIS_TYPE_INTEGER)
+		switch (parameters[i].type) {
+		case SUBTILIS_TYPE_INTEGER:
+		case SUBTILIS_TYPE_ARRAY_REAL:
+		case SUBTILIS_TYPE_ARRAY_INTEGER:
 			stype->int_regs++;
-		else
+			break;
+		case SUBTILIS_TYPE_REAL:
 			stype->fp_regs++;
+			break;
+		default:
+			subtilis_error_set_assertion_failed(err);
+			break;
+		}
 	}
 
 	return stype;
