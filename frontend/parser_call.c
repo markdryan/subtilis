@@ -311,8 +311,8 @@ prv_process_param(subtilis_parser_t *p, subtilis_token_t *t,
 		reg_num = SUBTILIS_IR_REG_TEMP_START + *num_iparams;
 		*num_iparams += 1;
 
-		*symbol = subtilis_symbol_table_block_param(
-		    p->local_st, var_name, &ptype, reg_num, err);
+		*symbol = subtilis_symbol_table_insert(p->local_st, var_name,
+						       &ptype, err);
 	} else {
 		switch (ttype) {
 		case SUBTILIS_TYPE_INTEGER:
