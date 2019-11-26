@@ -1840,6 +1840,19 @@ const subtilis_test_case_t test_cases[] = {
 	 "endproc\n",
 	 "65\n",
 	},
+	{"array_global_arg",
+	 "dim a%(10)\n"
+	 "for i% := 0 to 10\n"
+	 "  a%(i%) = i%\n"
+	 "next\n"
+	 "PROCArr(a%())\n"
+	 "def PROCArr(b%(1))\n"
+	 "for i% := 0 to 10\n"
+	 "    print b%(i%)\n"
+	 "next\n"
+	 "endproc\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
+	},
 };
 
 /* clang-format on */

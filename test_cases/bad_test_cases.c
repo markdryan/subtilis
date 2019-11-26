@@ -324,6 +324,20 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"a%() += b()\n",
 	SUBTILIS_ERROR_ASSIGNMENT_OP_EXPECTED
 	},
+	{
+	"array_bad_arg_int",
+	"PROCArr(1)\n"
+	"def PROCArr(a%(1))\n"
+	"endproc\n",
+	SUBTILIS_ERROR_BAD_ARG_TYPE
+	},
+	{
+	"array_bad_arg_int",
+	"PROCArr(1.0)\n"
+	"def PROCArr(a%(1))\n"
+	"endproc\n",
+	SUBTILIS_ERROR_BAD_ARG_TYPE
+	},
 };
 
 /* clang-format on */
