@@ -28,6 +28,7 @@ struct subtilis_symbol_t_ {
 	const char *key; // owned by hash table
 	size_t size;
 	bool is_reg;
+	size_t source_reg;
 };
 
 typedef struct subtilis_symbol_t_ subtilis_symbol_t;
@@ -64,6 +65,10 @@ const subtilis_symbol_t *
 subtilis_symbol_table_insert_reg(subtilis_symbol_table_t *st, const char *key,
 				 const subtilis_type_t *id_type, size_t reg_num,
 				 subtilis_error_t *err);
+const subtilis_symbol_t *
+subtilis_symbol_table_block_param(subtilis_symbol_table_t *st, const char *key,
+				  const subtilis_type_t *id_type,
+				  size_t source_num, subtilis_error_t *err);
 bool subtilis_symbol_table_remove(subtilis_symbol_table_t *st, const char *key);
 const subtilis_symbol_t *
 subtilis_symbol_table_lookup(subtilis_symbol_table_t *st, const char *key);

@@ -1754,6 +1754,92 @@ const subtilis_test_case_t test_cases[] = {
 	 "next\n",
 	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
 	},
+	{"array_int_arg",
+	 "local dim a%(10)\n"
+	 "for i% := 0 to 10\n"
+	 "  a%(i%) = i%\n"
+	 "next\n"
+	 "PROCArr(a%())\n"
+	 "def PROCArr(b%(1))\n"
+	 "for i% := 0 to 10\n"
+	 "    print b%(i%)\n"
+	 "next\n"
+	 "endproc\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
+	},
+	{"array_two_int_arg",
+	 "local dim a%(10)\n"
+	 "local dim b%(10)\n"
+	 "for i% := 0 to 10\n"
+	 "  a%(i%) = i%\n"
+	 "  b%(i%) = i% * 2\n"
+	 "next\n"
+	 "PROCSum(a%(), b%())\n"
+	 "def PROCSum(c%(1), d%(1))\n"
+	 "for i% := 0 to 10\n"
+	 "print c%(i%) + d%(i%)\n"
+	 "next\n"
+	 "endproc\n",
+	 "0\n3\n6\n9\n12\n15\n18\n21\n24\n27\n30\n"
+	},
+	{"array_int_arg_fifth",
+	 "local dim a%(10)\n"
+	 "for i% := 0 to 10\n"
+	 "  a%(i%) = i%\n"
+	 "next\n"
+	 "PROCArr(1,2,3,4,a%())\n"
+	 "def PROCArr(a%, b%, c%, d%, e%(1))\n"
+	 "num% := a% + b% + c% + d%\n"
+	 "for i% := 0 to 10\n"
+	 "    num% += e%(i%)\n"
+	 "next\n"
+	 "print num%\n"
+	 "endproc\n",
+	 "65\n",
+	},
+	{"array_real_arg",
+	 "local dim a(10)\n"
+	 "for i% := 0 to 10\n"
+	 "  a(i%) = i%\n"
+	 "next\n"
+	 "PROCArr(a())\n"
+	 "def PROCArr(b(1))\n"
+	 "for i% := 0 to 10\n"
+	 "    print b(i%)\n"
+	 "next\n"
+	 "endproc\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
+	},
+	{"array_two_real_arg",
+	 "local dim a(10)\n"
+	 "local dim b(10)\n"
+	 "for i% := 0 to 10\n"
+	 "  a(i%) = i%\n"
+	 "  b(i%) = i% * 2\n"
+	 "next\n"
+	 "PROCSum(a(), b())\n"
+	 "def PROCSum(c(1), d(1))\n"
+	 "for i% := 0 to 10\n"
+	 "print c(i%) + d(i%)\n"
+	 "next\n"
+	 "endproc\n",
+	 "0\n3\n6\n9\n12\n15\n18\n21\n24\n27\n30\n"
+	},
+	{"array_real_arg_fifth",
+	 "local dim a(10)\n"
+	 "for i% := 0 to 10\n"
+	 "  a(i%) = i%\n"
+	 "next\n"
+	 "PROCArr(1,2,3,4,a())\n"
+	 "def PROCArr(a%, b%, c%, d%, e(1))\n"
+	 "num% := a% + b% + c% + d%\n"
+	 "for i% := 0 to 10\n"
+	 "    num% += e(i%)\n"
+	 "next\n"
+	 "print num%\n"
+	 "endproc\n",
+	 "65\n",
+	},
 };
 
 /* clang-format on */

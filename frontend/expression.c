@@ -329,7 +329,7 @@ subtilis_exp_t *subtilis_exp_new_var_block(subtilis_parser_t *p,
 	op0.reg = mem_reg;
 	op1.integer = offset;
 	e->exp.ir_op.reg = subtilis_ir_section_add_instr(
-		p->current, SUBTILIS_OP_INSTR_ADDI_I32, op0, op1, err);
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, op0, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 

@@ -223,6 +223,25 @@ on_error:
 	return NULL;
 }
 
+const subtilis_symbol_t *
+subtilis_symbol_table_block_param(subtilis_symbol_table_t *st, const char *key,
+				  const subtilis_type_t *type,
+				  size_t source_num, subtilis_error_t *err)
+{
+	subtilis_symbol_t *s;
+
+	/* I know, but we know it's not const */
+
+	s = (subtilis_symbol_t *)subtilis_symbol_table_insert(st, key, type,
+							      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	s->source_reg = source_num;
+
+	return s;
+}
+
 bool subtilis_symbol_table_remove(subtilis_symbol_table_t *st, const char *key)
 {
 	return subtilis_hashtable_remove(st->h, key);

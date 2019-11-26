@@ -826,8 +826,6 @@ static size_t prv_ret_gen(subitlis_vm_t *vm, const subtilis_type_t *call_type,
 	memcpy(&vm->labels[0], &vm->memory[vm->top],
 	       vm->s->label_counter * sizeof(*vm->labels));
 
-	vm->regs[SUBTILIS_IR_REG_LOCAL] = vm->top - cs->locals;
-
 	return reg;
 }
 

@@ -31,6 +31,11 @@ void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 				 subtilis_exp_t **e,
 				 subtilis_ir_operand_t store_reg,
 				 subtilis_error_t *err);
+void subtlis_array_type_copy_ref(subtilis_parser_t *p, const subtilis_type_t *t,
+				 subtilis_ir_operand_t dest_reg,
+				 size_t dest_offset,
+				 subtilis_ir_operand_t source_reg,
+				 size_t source_offset, subtilis_error_t *err);
 void subtilis_array_type_match(subtilis_parser_t *p, const subtilis_type_t *t1,
 			       const subtilis_type_t *t2,
 			       subtilis_error_t *err);
