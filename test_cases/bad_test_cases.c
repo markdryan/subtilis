@@ -338,6 +338,13 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"endproc\n",
 	SUBTILIS_ERROR_BAD_ARG_TYPE
 	},
+	{
+	"array_bad_fn_bad_assign",
+	"a%() = FNArr%\n"
+	"def FNArr%\n"
+	"<-0\n",
+	SUBTILIS_ERROR_UNKNOWN_VARIABLE
+	},
 };
 
 /* clang-format on */
