@@ -36,5 +36,7 @@ void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
 					    const subtilis_symbol_t *s,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err);
-
+subtilis_exp_t *subtilis_parser_get_dim(subtilis_parser_t *p,
+					subtilis_token_t *t,
+					subtilis_error_t *err);
 #endif

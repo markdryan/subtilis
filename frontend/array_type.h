@@ -80,7 +80,12 @@ void subtilis_array_sub(subtilis_parser_t *p, const char *var_name,
 			size_t loc, subtilis_exp_t *e, subtilis_exp_t **indices,
 			size_t index_count, subtilis_error_t *err);
 
+subtilis_ir_operand_t subtilis_array_type_error_label(subtilis_parser_t *p);
 void subtilis_array_gen_index_error_code(subtilis_parser_t *p,
 					 subtilis_error_t *err);
+
+subtilis_exp_t *subtilis_array_get_dim(subtilis_parser_t *p,
+				       subtilis_exp_t **indices, size_t dims,
+				       subtilis_error_t *err);
 
 #endif
