@@ -234,6 +234,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return subtilis_parser_get_tint(p, t, err);
 		case SUBTILIS_KEYWORD_ERR:
 			return subtilis_parser_get_err(p, t, err);
+		case SUBTILIS_KEYWORD_DIM:
+			return subtilis_parser_get_dim(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "Unexpected keyword in expression",
@@ -737,13 +739,16 @@ subtilis_exp_t *subtilis_parser_real_bracketed_exp(subtilis_parser_t *p,
 	return subtilis_type_if_to_float64(p, e, err);
 }
 
-size_t subtilis_var_bracketed_int_args_have_b(subtilis_parser_t *p,
-					      subtilis_token_t *t,
-					      subtilis_exp_t **e, size_t max,
-					      subtilis_error_t *err)
+static size_t prv_bracketed_args_have_b(subtilis_parser_t *p,
+					subtilis_token_t *t, subtilis_exp_t **e,
+					size_t max,
+					subtilis_type_if_unary_t conv,
+					subtilis_error_t *err)
 {
 	size_t i;
 	const char *tbuf;
+
+	memset(e, 0, sizeof(*e) * max);
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -759,16 +764,18 @@ size_t subtilis_var_bracketed_int_args_have_b(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
-	e[0] = subtilis_type_if_to_int(p, e[0], err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return 0;
+	if (conv) {
+		e[0] = conv(p, e[0], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+	}
 
 	for (i = 1; i < max; i++) {
 		tbuf = subtilis_token_get_text(t);
 		if (t->type != SUBTILIS_TOKEN_OPERATOR) {
 			subtilis_error_set_expected(
 			    err, ",", tbuf, p->l->stream->name, p->l->line);
-			return 0;
+			goto on_error;
 		}
 
 		if (!strcmp(tbuf, ")"))
@@ -777,25 +784,56 @@ size_t subtilis_var_bracketed_int_args_have_b(subtilis_parser_t *p,
 		if (strcmp(tbuf, ",")) {
 			subtilis_error_set_expected(
 			    err, ",", tbuf, p->l->stream->name, p->l->line);
-			return 0;
+			goto on_error;
 		}
 
 		subtilis_lexer_get(p->l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return 0;
+			goto on_error;
 
 		e[i] = subtilis_parser_priority7(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return 0;
+			goto on_error;
 
-		e[i] = subtilis_type_if_to_int(p, e[i], err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return 0;
+		if (conv) {
+			e[i] = conv(p, e[i], err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto on_error;
+		}
 	}
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, ")"))
+		return i;
 
 	/*
 	 * Too many integers in the list
 	 */
 
+	subtilis_error_set_right_bkt_expected(err, tbuf, p->l->stream->name,
+					      p->l->line);
+
+on_error:
+
+	for (i = 0; i < max && e[i]; i++)
+		subtilis_exp_delete(e[i]);
+
 	return 0;
+}
+
+size_t subtilis_var_bracketed_int_args_have_b(subtilis_parser_t *p,
+					      subtilis_token_t *t,
+					      subtilis_exp_t **e, size_t max,
+					      subtilis_error_t *err)
+{
+	return prv_bracketed_args_have_b(p, t, e, max, subtilis_type_if_to_int,
+					 err);
+}
+
+size_t subtilis_var_bracketed_args_have_b(subtilis_parser_t *p,
+					  subtilis_token_t *t,
+					  subtilis_exp_t **e, size_t max,
+					  subtilis_error_t *err)
+{
+	return prv_bracketed_args_have_b(p, t, e, max, NULL, err);
 }

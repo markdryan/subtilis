@@ -480,7 +480,7 @@ void subtilis_array_type_pop_and_deref(subtilis_parser_t *p,
 /* Does not consume e.  Does consume  max_dim */
 
 static void prv_check_dynamic_dim(subtilis_parser_t *p, subtilis_exp_t *e,
-				  subtilis_exp_t *max_dim,
+				  int32_t lower_bound, subtilis_exp_t *max_dim,
 				  subtilis_error_t *err)
 {
 	subtilis_ir_operand_t error_label;
@@ -489,13 +489,7 @@ static void prv_check_dynamic_dim(subtilis_parser_t *p, subtilis_exp_t *e,
 	subtilis_exp_t *edup = NULL;
 	subtilis_exp_t *maxe = NULL;
 
-	if (p->current->array_access == SIZE_MAX) {
-		error_label.label = subtilis_ir_section_new_label(p->current);
-		p->current->array_access = error_label.label;
-	} else {
-		error_label.label = p->current->array_access;
-	}
-
+	error_label = subtilis_array_type_error_label(p);
 	ok_label.label = subtilis_ir_section_new_label(p->current);
 
 	edup = subtilis_type_if_dup(e, err);
@@ -508,7 +502,7 @@ static void prv_check_dynamic_dim(subtilis_parser_t *p, subtilis_exp_t *e,
 			return;
 	}
 
-	zero = subtilis_exp_new_int32(0, err);
+	zero = subtilis_exp_new_int32(lower_bound, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -604,7 +598,7 @@ subtilis_exp_t *subtilis_array_size_calc(subtilis_parser_t *p,
 
 		for (i = 0; i < index_count; i++) {
 			if (e[i]->type.type != SUBTILIS_TYPE_CONST_INTEGER) {
-				prv_check_dynamic_dim(p, e[i], NULL, err);
+				prv_check_dynamic_dim(p, e[i], 0, NULL, err);
 				if (err->type != SUBTILIS_ERROR_OK)
 					goto cleanup;
 				edup = subtilis_type_if_dup(e[i], err);
@@ -664,7 +658,7 @@ static subtilis_exp_t *prv_check_dynamic_index(subtilis_parser_t *p,
 	maxe_dup = subtilis_type_if_dup(maxe, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	prv_check_dynamic_dim(p, e, maxe_dup, err);
+	prv_check_dynamic_dim(p, e, 0, maxe_dup, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -675,6 +669,28 @@ cleanup:
 	subtilis_exp_delete(maxe);
 
 	return NULL;
+}
+
+/*
+ * Functions that use arrays will typically contain a lot of error checks and
+ * each of these checks can lead to code being called that generates an error.
+ * We don't want to duplicate that code for each error, so we create the error
+ * generation code once per function when it's first needed and retain the label
+ * in the section so it can jumped to when needed.
+ */
+
+subtilis_ir_operand_t subtilis_array_type_error_label(subtilis_parser_t *p)
+{
+	subtilis_ir_operand_t error_label;
+
+	if (p->current->array_access == SIZE_MAX) {
+		error_label.label = subtilis_ir_section_new_label(p->current);
+		p->current->array_access = error_label.label;
+	} else {
+		error_label.label = p->current->array_access;
+	}
+
+	return error_label;
 }
 
 void subtilis_array_gen_index_error_code(subtilis_parser_t *p,
@@ -1000,4 +1016,102 @@ void subtilis_array_sub(subtilis_parser_t *p, const char *var_name,
 
 cleanup:
 	subtilis_exp_delete(offset);
+}
+
+static void prv_check_dimension_num(subtilis_parser_t *p, subtilis_exp_t *e,
+				    int32_t max_dims, subtilis_error_t *err)
+{
+	subtilis_exp_t *limit = NULL;
+
+	limit = subtilis_exp_new_int32(max_dims, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_check_dynamic_dim(p, e, 1, limit, err);
+}
+
+subtilis_exp_t *subtilis_array_get_dim(subtilis_parser_t *p,
+				       subtilis_exp_t **indices, size_t dims,
+				       subtilis_error_t *err)
+{
+	int32_t requested_dim;
+	size_t i;
+	int32_t dim_index;
+	size_t num_dims;
+	subtilis_ir_operand_t op;
+	subtilis_exp_t *e = NULL;
+
+	/*
+	 * This is unfortunate as DIM(a()) may generate one add instruction
+	 * for the array reference even though we don't actually need it.
+	 * Hopefully, the optimiser will be able to get rid of it.
+	 */
+
+	num_dims = indices[0]->type.params.array.num_dims;
+	if (dims == 1) {
+		e = subtilis_exp_new_int32(num_dims, err);
+	} else if (dims == 2) {
+		indices[1] = subtilis_type_if_to_int(p, indices[1], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		if (indices[1]->type.type == SUBTILIS_TYPE_CONST_INTEGER) {
+			if ((indices[1]->exp.ir_op.integer <= 0) ||
+			    (indices[1]->exp.ir_op.integer > num_dims)) {
+				subtilis_error_bad_index(
+				    err, "dim", p->l->stream->name, p->l->line);
+				goto cleanup;
+			}
+			dim_index = indices[1]->exp.ir_op.integer - 1;
+			requested_dim =
+			    indices[0]->type.params.array.dims[dim_index];
+			if (requested_dim != SUBTILIS_DYNAMIC_DIMENSION) {
+				e = subtilis_exp_new_int32(requested_dim, err);
+			} else {
+				e = subtilis_type_if_load_from_mem(
+				    p, &subtilis_type_integer,
+				    indices[0]->exp.ir_op.reg,
+				    SUBTIILIS_ARRAY_DIMS_OFF +
+					(sizeof(int32_t) * dim_index),
+				    err);
+			}
+		} else {
+			prv_check_dimension_num(p, indices[1], num_dims, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+
+			op.integer = 1;
+			indices[1]->exp.ir_op.reg =
+			    subtilis_ir_section_add_instr(
+				p->current, SUBTILIS_OP_INSTR_SUBI_I32,
+				indices[1]->exp.ir_op, op, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+			/* TODO This is int32 specific */
+			op.integer = 2;
+			indices[1]->exp.ir_op.reg =
+			    subtilis_ir_section_add_instr(
+				p->current, SUBTILIS_OP_INSTR_LSLI_I32,
+				indices[1]->exp.ir_op, op, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+			op.reg = subtilis_ir_section_add_instr(
+			    p->current, SUBTILIS_OP_INSTR_ADD_I32,
+			    indices[0]->exp.ir_op, indices[1]->exp.ir_op, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+			e = subtilis_type_if_load_from_mem(
+			    p, &subtilis_type_integer, op.reg,
+			    SUBTIILIS_ARRAY_DIMS_OFF, err);
+		}
+	} else {
+		subtilis_error_bad_index_count(err, "dim", p->l->stream->name,
+					       p->l->line);
+	}
+
+cleanup:
+
+	for (i = 0; i < dims; i++)
+		subtilis_exp_delete(indices[i]);
+
+	return e;
 }

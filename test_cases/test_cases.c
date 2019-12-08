@@ -1853,6 +1853,36 @@ const subtilis_test_case_t test_cases[] = {
 	 "endproc\n",
 	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
 	},
+	{"array_constant_dim",
+	 "local dim a%(2,4,6)\n"
+	 "print dim(a%())\n"
+	 "print dim(a%(), 3)\n",
+	 "3\n6\n",
+	},
+	{"array_dynamic_dim",
+	 "local d% = 3\n"
+	 "local dim a%(2,4,6)\n"
+	 "print dim(a%(), d%)\n",
+	 "6\n",
+	},
+	{"array_dynamic_dim_zero",
+	 "onerror\n"
+	 "  print err\n"
+	 "enderror\n"
+	 "local d%\n"
+	 "local dim a%(2,4,6)\n"
+	 "print dim(a%(), d%)\n",
+	 "10\n",
+	},
+	{"array_bad_dynamic_dim",
+	 "onerror\n"
+	 "  print err\n"
+	 "enderror\n"
+	 "d% := 4\n"
+	 "local dim a%(2,4,6)\n"
+	 "print dim(a%(), d%)\n",
+	 "10\n",
+	},
 };
 
 /* clang-format on */

@@ -345,6 +345,30 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"<-0\n",
 	SUBTILIS_ERROR_UNKNOWN_VARIABLE
 	},
+	{
+	"array_dim_too_many_args",
+	"DIM a%(10)\n"
+	"print dim(a%(),1,2)\n",
+	SUBTILIS_ERROR_RIGHT_BKT_EXPECTED,
+	},
+	{
+	"array_dim_no_args",
+	"DIM a%(10)\n"
+	"print dim()\n",
+	SUBTILIS_ERROR_EXP_EXPECTED,
+	},
+	{
+	"array_dim_zero_arg",
+	"DIM a%(10)\n"
+	"print dim(a%(),0)\n",
+	SUBTILIS_ERROR_BAD_INDEX,
+	},
+	{
+	"array_dim_arg_too_big",
+	"DIM a%(10)\n"
+	"print dim(a%(),11)\n",
+	SUBTILIS_ERROR_BAD_INDEX,
+	},
 };
 
 /* clang-format on */

@@ -62,5 +62,9 @@ size_t subtilis_var_bracketed_int_args_have_b(subtilis_parser_t *p,
 					      subtilis_token_t *t,
 					      subtilis_exp_t **e, size_t max,
 					      subtilis_error_t *err);
+size_t subtilis_var_bracketed_args_have_b(subtilis_parser_t *p,
+					  subtilis_token_t *t,
+					  subtilis_exp_t **e, size_t max,
+					  subtilis_error_t *err);
 
 #endif
