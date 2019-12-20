@@ -34,6 +34,7 @@ typedef enum {
 
 #define SUBTILIS_MAX_DIMENSIONS 10
 #define SUBTILIS_DYNAMIC_DIMENSION -1
+#define SUBTILIS_MAX_ARGS 32
 
 /*
  * TODO: This integer needs to be dependent on the int size of the backend
@@ -72,6 +73,7 @@ subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 						   subtilis_type_t *parameters,
 						   subtilis_error_t *err);
 void subtilis_type_section_delete(subtilis_type_section_t *stype);
+bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b);
 const char *subtilis_type_name(const subtilis_type_t *typ);
 subtilis_type_section_t *
 subtilis_type_section_dup(subtilis_type_section_t *stype);

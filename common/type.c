@@ -48,6 +48,37 @@ static const char *const prv_fixed_type_names[] = {
 
 /* clang-format on */
 
+static bool prv_array_type_match(const subtilis_type_t *t1,
+				 const subtilis_type_t *t2)
+{
+	size_t i;
+
+	if (t1->params.array.num_dims != t2->params.array.num_dims)
+		return false;
+
+	for (i = 0; i < t1->params.array.num_dims; i++) {
+		if (t1->params.array.dims[i] == -1)
+			continue;
+		if (t1->params.array.dims[i] != t2->params.array.dims[i])
+			return false;
+	}
+
+	return true;
+}
+
+bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b)
+{
+	if (a->type != b->type)
+		return false;
+	switch (a->type) {
+	case SUBTILIS_TYPE_ARRAY_REAL:
+	case SUBTILIS_TYPE_ARRAY_INTEGER:
+		return prv_array_type_match(a, b);
+	default:
+		return true;
+	}
+}
+
 subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 						   size_t num_parameters,
 						   subtilis_type_t *parameters,

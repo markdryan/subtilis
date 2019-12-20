@@ -348,14 +348,17 @@ void subtilis_array_type_match(subtilis_parser_t *p, const subtilis_type_t *t1,
 	}
 }
 
-void subtilis_array_type_assign_ref(subtilis_parser_t *p, size_t dest_mem_reg,
-				    size_t dest_loc, size_t source_reg,
-				    subtilis_error_t *err)
+void subtilis_array_type_assign_ref(subtilis_parser_t *p,
+				    const subtilis_type_array_t *dest_type,
+				    size_t dest_mem_reg, size_t dest_loc,
+				    size_t source_reg, subtilis_error_t *err)
 {
+	size_t i;
 	size_t dest_reg;
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t op2;
+	size_t copy_reg;
 
 	op0.reg = dest_mem_reg;
 	op1.integer = dest_loc + SUBTIILIS_ARRAY_DATA_OFF;
@@ -374,12 +377,12 @@ void subtilis_array_type_assign_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 	op0.reg = source_reg;
 	op1.integer = SUBTIILIS_ARRAY_DATA_OFF;
 
-	source_reg = subtilis_ir_section_add_instr(
+	copy_reg = subtilis_ir_section_add_instr(
 	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	op0.reg = source_reg;
+	op0.reg = copy_reg;
 	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_REF,
 					     op0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -389,6 +392,30 @@ void subtilis_array_type_assign_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 	op2.integer = dest_loc + SUBTIILIS_ARRAY_DATA_OFF;
 	subtilis_ir_section_add_instr_reg(
 	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op0, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	for (i = 0; i < dest_type->num_dims; i++) {
+		if (dest_type->dims[i] != SUBTILIS_DYNAMIC_DIMENSION)
+			continue;
+
+		op0.reg = source_reg;
+		op1.integer = SUBTIILIS_ARRAY_DIMS_OFF + (i * sizeof(int32_t));
+		copy_reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		op0.reg = copy_reg;
+		op1.reg = dest_mem_reg;
+		op2.integer =
+		    dest_loc + SUBTIILIS_ARRAY_DIMS_OFF + (i * sizeof(int32_t));
+		subtilis_ir_section_add_instr_reg(p->current,
+						  SUBTILIS_OP_INSTR_STOREO_I32,
+						  op0, op1, op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 }
 
 void subtilis_array_type_deref(subtilis_parser_t *p, size_t mem_reg, size_t loc,

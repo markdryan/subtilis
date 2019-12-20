@@ -661,7 +661,6 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	}
 	s->type = tp;
 	s->locals = locals;
-	p->sections[name_index] = s;
 	s->end_label = subtilis_ir_section_new_label(s);
 	s->nofree_label = subtilis_ir_section_new_label(s);
 	switch (tp->return_type.type) {
@@ -672,12 +671,16 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(
 		s->ret_reg = s->freg_counter++;
 		break;
 	case SUBTILIS_TYPE_INTEGER:
+	case SUBTILIS_TYPE_ARRAY_REAL:
+	case SUBTILIS_TYPE_ARRAY_INTEGER:
 		s->ret_reg = s->reg_counter++;
 		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
 		goto cleanup;
 	}
+
+	p->sections[name_index] = s;
 
 	return s;
 

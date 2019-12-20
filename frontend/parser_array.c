@@ -112,12 +112,14 @@ void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err)
 {
-	subtilis_array_type_match(p, &s->t, &e->type, err);
-	if (err->type != SUBTILIS_ERROR_OK)
+	if (!subtilis_type_eq(&s->t, &e->type)) {
+		subtilis_error_set_array_type_mismatch(err, p->l->stream->name,
+						       p->l->line);
 		goto cleanup;
+	}
 
-	subtilis_array_type_assign_ref(p, mem_reg, s->loc, e->exp.ir_op.reg,
-				       err);
+	subtilis_array_type_assign_ref(p, &s->t.params.array, mem_reg, s->loc,
+				       e->exp.ir_op.reg, err);
 
 cleanup:
 

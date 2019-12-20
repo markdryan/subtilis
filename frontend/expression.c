@@ -193,7 +193,9 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 			goto on_error;
 		args = NULL;
 	} else {
-		if (fn_type->type == SUBTILIS_TYPE_INTEGER)
+		if ((fn_type->type == SUBTILIS_TYPE_INTEGER) ||
+		    (fn_type->type == SUBTILIS_TYPE_ARRAY_REAL) ||
+		    (fn_type->type == SUBTILIS_TYPE_ARRAY_INTEGER))
 			reg = subtilis_ir_section_add_i32_call(
 			    p->current, num_params, args, err);
 		else if (fn_type->type == SUBTILIS_TYPE_REAL)
@@ -259,6 +261,9 @@ subtilis_exp_t *subtilis_exp_coerce_type(subtilis_parser_t *p,
 					 const subtilis_type_t *type,
 					 subtilis_error_t *err)
 {
+	if (subtilis_type_eq(type, &e->type))
+		return e;
+
 	switch (type->type) {
 	case SUBTILIS_TYPE_REAL:
 		e = subtilis_type_if_to_float64(p, e, err);
