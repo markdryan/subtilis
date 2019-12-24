@@ -184,6 +184,22 @@ on_error:
 }
 
 const subtilis_symbol_t *
+subtilis_symbol_table_insert_tmp(subtilis_symbol_table_t *st,
+				 const subtilis_type_t *id_type,
+				 subtilis_error_t *err)
+{
+	char buf[64];
+
+	/*
+	 * Subtilis identifiers cannot start with a number so there'll be no
+	 * clash here.
+	 */
+
+	sprintf(buf, "%zu", st->tmp_count++);
+	return subtilis_symbol_table_insert(st, buf, id_type, err);
+}
+
+const subtilis_symbol_t *
 subtilis_symbol_table_insert_reg(subtilis_symbol_table_t *st, const char *key,
 				 const subtilis_type_t *id_type, size_t reg_num,
 				 subtilis_error_t *err)

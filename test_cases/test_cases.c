@@ -1883,6 +1883,43 @@ const subtilis_test_case_t test_cases[] = {
 	 "print dim(a%(), d%)\n",
 	 "10\n",
 	},
+	{"array_return_fn",
+	 "a() = FNArr(1)()\n"
+	 "for i% = 0 to dim(a(),1)\n"
+	 "  print a(i%)\n"
+	 "next\n"
+	 "\n"
+	 "def FNArr(1)\n"
+	 "  local dim a(10)\n"
+	 "  for i% := 0 to 10\n"
+	 "    a(i%) = i%\n"
+	 "  next\n"
+	 "<- a()\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
+	},
+	{"array_assign_ref",
+	 "dim a%(10,10)\n"
+	 "b%() := a%()\n"
+	 "print dim(b%())\n"
+	 "print dim(b%(), 1)\n",
+	 "2\n10\n",
+	},
+	{"array_return_fn",
+	 "c% := 10\n"
+	 "dim a(c%)\n"
+	 "a() = FNArr(1)()\n"
+	 "for i% = 0 to dim(a(),1)\n"
+	 "  print a(i%)\n"
+	 "next\n"
+	 "\n"
+	 "def FNArr(1)\n"
+	 "  local dim a(10)\n"
+	 "  for i% := 0 to 10\n"
+	 "    a(i%) = i%\n"
+	 "  next\n"
+	 "<- a()\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
+	},
 };
 
 /* clang-format on */

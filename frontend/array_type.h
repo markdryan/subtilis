@@ -31,11 +31,18 @@ void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 				 subtilis_exp_t **e,
 				 subtilis_ir_operand_t store_reg,
 				 subtilis_error_t *err);
-void subtlis_array_type_copy_ref(subtilis_parser_t *p, const subtilis_type_t *t,
-				 subtilis_ir_operand_t dest_reg,
-				 size_t dest_offset,
-				 subtilis_ir_operand_t source_reg,
-				 size_t source_offset, subtilis_error_t *err);
+void subtlis_array_type_copy_param_ref(subtilis_parser_t *p,
+				       const subtilis_type_t *t,
+				       subtilis_ir_operand_t dest_reg,
+				       size_t dest_offset,
+				       subtilis_ir_operand_t source_reg,
+				       size_t source_offset,
+				       subtilis_error_t *err);
+void subtlis_array_type_create_tmp_ref(subtilis_parser_t *p,
+				       const subtilis_type_t *t,
+				       subtilis_ir_operand_t dest_reg,
+				       subtilis_ir_operand_t source_reg,
+				       subtilis_error_t *err);
 void subtilis_array_type_match(subtilis_parser_t *p, const subtilis_type_t *t1,
 			       const subtilis_type_t *t2,
 			       subtilis_error_t *err);
@@ -80,7 +87,9 @@ void subtilis_array_sub(subtilis_parser_t *p, const char *var_name,
 			const subtilis_type_t *el_type, size_t mem_reg,
 			size_t loc, subtilis_exp_t *e, subtilis_exp_t **indices,
 			size_t index_count, subtilis_error_t *err);
-
+void subtilis_array_type_create_ref(subtilis_parser_t *p, const char *var_name,
+				    const subtilis_symbol_t *s, size_t mem_reg,
+				    subtilis_exp_t *e, subtilis_error_t *err);
 subtilis_ir_operand_t subtilis_array_type_error_label(subtilis_parser_t *p);
 void subtilis_array_gen_index_error_code(subtilis_parser_t *p,
 					 subtilis_error_t *err);

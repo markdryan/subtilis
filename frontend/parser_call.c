@@ -679,8 +679,8 @@ static size_t prv_init_block_variables(subtilis_parser_t *p,
 		}
 		blocks++;
 		source_op.reg = source_reg++;
-		subtlis_array_type_copy_ref(p, t, dest_op, symbols[i]->loc,
-					    source_op, 0, err);
+		subtlis_array_type_copy_param_ref(
+		    p, t, dest_op, symbols[i]->loc, source_op, 0, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return false;
 	}

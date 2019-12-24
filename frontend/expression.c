@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "../common/ir.h"
+#include "array_type.h"
 #include "builtins_ir.h"
 #include "expression.h"
 #include "globals.h"
@@ -167,6 +168,36 @@ void subtilis_exp_handle_errors(subtilis_parser_t *p, subtilis_error_t *err)
 	subtilis_ir_section_add_label(p->current, ok_label.label, err);
 }
 
+static size_t prv_create_tmp_ref(subtilis_parser_t *p, size_t reg,
+				 const subtilis_type_t *fn_type,
+				 subtilis_error_t *err)
+{
+	const subtilis_symbol_t *s;
+	subtilis_ir_operand_t dest;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t source;
+
+	s = subtilis_symbol_table_insert_tmp(p->local_st, fn_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+	dest.reg = SUBTILIS_IR_REG_LOCAL;
+	op2.integer = s->loc;
+
+	if (s->loc > 0) {
+		dest.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_ADDI_I32, dest, op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return 0;
+	}
+
+	source.reg = reg;
+	subtlis_array_type_create_tmp_ref(p, fn_type, dest, source, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	return dest.reg;
+}
+
 /*
  * Takes ownership of name and args and stype. stype may be NULL if we're
  * calling a builtin function that's actually used to implement an operator
@@ -224,6 +255,14 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 	subtilis_exp_handle_errors(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
+
+	if ((fn_type->type == SUBTILIS_TYPE_ARRAY_REAL) ||
+	    (fn_type->type == SUBTILIS_TYPE_ARRAY_INTEGER)) {
+		reg = prv_create_tmp_ref(p, reg, fn_type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+		e->exp.ir_op.reg = reg;
+	}
 
 	if (ftype != SUBTILIS_BUILTINS_MAX) {
 		prv_add_builtin(p, name, ftype, err);

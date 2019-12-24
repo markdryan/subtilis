@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "parser_array.h"
+#include "parser_assignment.h"
 #include "parser_call.h"
 #include "parser_compound.h"
 #include "parser_exp.h"
@@ -70,13 +71,7 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 	} else {
-		e = subtilis_parser_expression(p, t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-		e = subtilis_type_if_exp_to_var(p, e, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-		e = subtilis_exp_coerce_type(p, e, &type, err);
+		e = subtilis_parser_assign_local(p, t, var_name, &type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 	}
