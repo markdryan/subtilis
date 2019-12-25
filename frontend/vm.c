@@ -754,8 +754,9 @@ static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		*((int32_t *)&vm->memory[vm->top]) = call->reg;
 		vm->top += 4;
 	}
-	vm->regs[SUBTILIS_IR_REG_LOCAL] = vm->top;
 	prv_set_args(vm, call, err);
+	vm->regs[SUBTILIS_IR_REG_LOCAL] = vm->top;
+
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
