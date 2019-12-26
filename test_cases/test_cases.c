@@ -1968,6 +1968,18 @@ const subtilis_test_case_t test_cases[] = {
 	 "<- a()\n",
 	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
 	},
+	{"array_double_ref",
+	  "local dim a%(10)\n"
+	  "for i% = 0 to 10\n"
+	  "  a%(i%) = i%\n"
+	  "next\n"
+	  "b%() = a%()\n"
+	  "c%() = b%()\n"
+	  "for i% = 0 to 10\n"
+	  "  print c%(i%)\n"
+	  "next\n",
+	  "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
+	},
 };
 
 /* clang-format on */
