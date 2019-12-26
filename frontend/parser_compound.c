@@ -18,10 +18,48 @@
 #include <string.h>
 
 #include "parser_array.h"
+#include "parser_assignment.h"
 #include "parser_call.h"
 #include "parser_compound.h"
 #include "parser_exp.h"
 #include "type_if.h"
+
+static void prv_local_array_ref(subtilis_parser_t *p, subtilis_token_t *t,
+				const char *var_name, subtilis_type_t *type,
+				subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_exp_t *e;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+	if (!((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, ")"))) {
+		subtilis_error_set_right_bkt_expected(
+		    err, tbuf, p->l->stream->name, p->l->line);
+		return;
+	}
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+
+	if (!((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "="))) {
+		subtilis_error_set_exp_expected(err, "= ", p->l->stream->name,
+						p->l->line);
+		return;
+	}
+
+	e = subtilis_parser_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_parser_create_array_ref(p, var_name, type, e, true, err);
+}
 
 void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err)
@@ -65,18 +103,18 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 
 	tbuf = subtilis_token_get_text(t);
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "(")) {
+		prv_local_array_ref(p, t, var_name, &type, err);
+		free(var_name);
+		return;
+	}
+
 	if (!((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "="))) {
 		e = subtilis_type_if_zero(p, &type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 	} else {
-		e = subtilis_parser_expression(p, t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-		e = subtilis_type_if_exp_to_var(p, e, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-		e = subtilis_exp_coerce_type(p, e, &type, err);
+		e = subtilis_parser_assign_local(p, t, var_name, &type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 	}

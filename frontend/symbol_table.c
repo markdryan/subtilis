@@ -184,6 +184,75 @@ on_error:
 }
 
 const subtilis_symbol_t *
+subtilis_symbol_table_insert_tmp(subtilis_symbol_table_t *st,
+				 const subtilis_type_t *id_type,
+				 char **tmp_name, subtilis_error_t *err)
+{
+	const subtilis_symbol_t *s;
+	char *name;
+	char buf[64];
+
+	/*
+	 * Subtilis identifiers cannot start with a number so there'll be no
+	 * clash here.
+	 */
+
+	sprintf(buf, "%zu", st->tmp_count++);
+	name = malloc(strlen(buf) + 1);
+	if (!name) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+	strcpy(name, buf);
+
+	s = subtilis_symbol_table_insert(st, buf, id_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	*tmp_name = name;
+
+	return s;
+}
+
+/* clang-format off */
+const subtilis_symbol_t *subtilis_symbol_table_promote_tmp(
+	subtilis_symbol_table_t *st, const subtilis_type_t *id_type,
+	const char *tmp_name, const char *new_name, subtilis_error_t *err)
+/* clang-format on */
+
+{
+	subtilis_symbol_t *s;
+	char *name = NULL;
+
+	s = subtilis_hashtable_extract(st->h, tmp_name);
+	if (!s) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+
+	if (!subtilis_type_eq(id_type, &s->t)) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+
+	name = malloc(strlen(new_name) + 1);
+	if (!name) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+	strcpy(name, new_name);
+	s->key = name;
+
+	(void)subtilis_hashtable_insert(st->h, name, s, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		free(s);
+		free(name);
+		return NULL;
+	}
+
+	return s;
+}
+
+const subtilis_symbol_t *
 subtilis_symbol_table_insert_reg(subtilis_symbol_table_t *st, const char *key,
 				 const subtilis_type_t *id_type, size_t reg_num,
 				 subtilis_error_t *err)

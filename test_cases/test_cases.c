@@ -1883,6 +1883,103 @@ const subtilis_test_case_t test_cases[] = {
 	 "print dim(a%(), d%)\n",
 	 "10\n",
 	},
+	{"array_return_ref_fn",
+	 "a() = FNArr(1)()\n"
+	 "for i% = 0 to dim(a(),1)\n"
+	 "  print a(i%)\n"
+	 "next\n"
+	 "\n"
+	 "def FNArr(1)\n"
+	 "  local dim a(10)\n"
+	 "  for i% := 0 to 10\n"
+	 "    a(i%) = i%\n"
+	 "  next\n"
+	 "<- a()\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
+	},
+	{"array_assign_ref",
+	 "dim a%(10,10)\n"
+	 "b%() := a%()\n"
+	 "print dim(b%())\n"
+	 "print dim(b%(), 1)\n",
+	 "2\n10\n",
+	},
+	{"array_return_fn",
+	 "c% := 10\n"
+	 "dim a(c%)\n"
+	 "a() = FNArr(1)()\n"
+	 "for i% = 0 to dim(a(),1)\n"
+	 "  print a(i%)\n"
+	 "next\n"
+	 "\n"
+	 "def FNArr(1)\n"
+	 "  local dim a(10)\n"
+	 "  for i% := 0 to 10\n"
+	 "    a(i%) = i%\n"
+	 "  next\n"
+	 "<- a()\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
+	},
+	{"array_temporaries",
+	 "a%() := FNAddArray%(1)(FNFillA%(1)(), FNFillB%(1)())\n"
+	 "for i% := 0 to 10\n"
+	 "print a%(i%)\n"
+	 "next\n"
+	 "def FNFillA%(1)\n"
+	 "local dim a%(10)\n"
+	 "for i% := 0 to 10\n"
+	 "a%(i%) = i%\n"
+	 "next\n"
+	 "<-a%()\n"
+	 "def FNFillB%(1)\n"
+	 "local dim a%(10)\n"
+	 "for i% := 0 to 10\n"
+	 "a%(i%) = i% * 2\n"
+	 "next\n"
+	 "<-a%()\n"
+	 "def FNAddArray%(1)(a%(1), b%(1))\n"
+	 "local dim c%(10)\n"
+	 "for i% := 0 to dim(a%(),1)\n"
+	 "c%(i%) = a%(i%) + b%(i%)\n"
+	 "next\n"
+	 "<-c%()\n",
+	 "0\n3\n6\n9\n12\n15\n18\n21\n24\n27\n30\n"
+	},
+	{"array_assign_local_ref",
+	 "dim a%(10,10)\n"
+	 "local b%() = a%()\n"
+	 "print dim(b%())\n"
+	 "print dim(b%(), 1)\n",
+	 "2\n10\n",
+	},
+	{"array_local_return_fn",
+	 "c% := 10\n"
+	 "dim a(c%)\n"
+	 "local a() = FNArr(1)()\n"
+	 "for i% = 0 to dim(a(),1)\n"
+	 "  print a(i%)\n"
+	 "next\n"
+	 "\n"
+	 "def FNArr(1)\n"
+	 "  local dim a(10)\n"
+	 "  for i% := 0 to 10\n"
+	 "    a(i%) = i%\n"
+	 "  next\n"
+	 "<- a()\n",
+	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
+	},
+	{"array_double_ref",
+	  "local dim a%(10)\n"
+	  "for i% = 0 to 10\n"
+	  "  a%(i%) = i%\n"
+	  "next\n"
+	  "b%() = a%()\n"
+	  "c%() = b%()\n"
+	  "for i% = 0 to 10\n"
+	  "  print c%(i%)\n"
+	  "next\n",
+	  "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
+	},
 };
 
 /* clang-format on */

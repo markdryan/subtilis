@@ -49,8 +49,13 @@ static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
 static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
 			 subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "zero reg on arrays",
-					 p->l->stream->name, p->l->line);
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+
+	op0.reg = reg;
+	op1.integer = 0;
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op0, op1, err);
 }
 
 static void prv_element_type(const subtilis_type_t *type,

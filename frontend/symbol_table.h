@@ -46,6 +46,7 @@ struct subtilis_symbol_table_t_ {
 	size_t allocated;
 	size_t max_allocated;
 	size_t level;
+	size_t tmp_count;
 };
 
 typedef struct subtilis_symbol_table_t_ subtilis_symbol_table_t;
@@ -60,6 +61,16 @@ const subtilis_symbol_t *
 subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 			     const subtilis_type_t *id_type,
 			     subtilis_error_t *err);
+const subtilis_symbol_t *
+subtilis_symbol_table_insert_tmp(subtilis_symbol_table_t *st,
+				 const subtilis_type_t *id_type,
+				 char **tmp_name, subtilis_error_t *err);
+/* clang-format off */
+const subtilis_symbol_t *subtilis_symbol_table_promote_tmp(
+	subtilis_symbol_table_t *st, const subtilis_type_t *id_type,
+	const char *tmp_name, const char *new_name, subtilis_error_t *err);
+/* clang-format on */
+
 const subtilis_symbol_t *
 subtilis_symbol_table_insert_reg(subtilis_symbol_table_t *st, const char *key,
 				 const subtilis_type_t *id_type, size_t reg_num,

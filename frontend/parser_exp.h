@@ -53,10 +53,6 @@ subtilis_exp_t *subtilis_parser_integer_bracketed_exp(subtilis_parser_t *p,
 subtilis_exp_t *subtilis_parser_real_bracketed_exp(subtilis_parser_t *p,
 						   subtilis_token_t *t,
 						   subtilis_error_t *err);
-/*
- * Returns 0 and no error if more than max args are read.  Caller is
- * expected to free expressions even in case of error.
- */
 
 size_t subtilis_var_bracketed_int_args_have_b(subtilis_parser_t *p,
 					      subtilis_token_t *t,

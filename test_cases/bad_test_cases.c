@@ -343,7 +343,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"a%() = FNArr%\n"
 	"def FNArr%\n"
 	"<-0\n",
-	SUBTILIS_ERROR_UNKNOWN_VARIABLE
+	SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH
 	},
 	{
 	"array_dim_too_many_args",
