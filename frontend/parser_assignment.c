@@ -65,10 +65,11 @@ cleanup:
 	return NULL;
 }
 
-static void prv_create_array_ref(subtilis_parser_t *p, const char *var_name,
-				 const subtilis_type_t *id_type,
-				 subtilis_exp_t *e, bool local,
-				 subtilis_error_t *err)
+void subtilis_parser_create_array_ref(subtilis_parser_t *p,
+				      const char *var_name,
+				      const subtilis_type_t *id_type,
+				      subtilis_exp_t *e, bool local,
+				      subtilis_error_t *err)
 {
 	subtilis_type_t type;
 	const subtilis_symbol_t *s;
@@ -154,7 +155,8 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 		if (at != SUBTILIS_ASSIGN_TYPE_CREATE_EQUAL)
 			goto cleanup;
 		subtilis_error_init(err);
-		prv_create_array_ref(p, var_name, id_type, e, true, err);
+		subtilis_parser_create_array_ref(p, var_name, id_type, e, true,
+						 err);
 		return;
 	} else if (err->type != SUBTILIS_ERROR_OK) {
 		goto cleanup;
@@ -164,7 +166,8 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 			    err, var_name, p->l->stream->name, p->l->line);
 			goto cleanup;
 		}
-		prv_create_array_ref(p, var_name, id_type, e, false, err);
+		subtilis_parser_create_array_ref(p, var_name, id_type, e, false,
+						 err);
 		return;
 	}
 
