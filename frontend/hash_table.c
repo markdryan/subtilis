@@ -167,7 +167,37 @@ bool subtilis_hashtable_remove(subtilis_hashtable_t *h, const void *k)
 
 	h->elements--;
 
-	return n;
+	return true;
+}
+
+void *subtilis_hashtable_extract(subtilis_hashtable_t *h, const void *k)
+{
+	subtilis_hashtable_node_t *n;
+	void *retval;
+	subtilis_hashtable_node_t *old_n = NULL;
+	size_t hash = h->hash_func(h, k);
+
+	n = h->buckets[hash];
+	while (n && !h->equal_func(k, n->key)) {
+		old_n = n;
+		n = n->next;
+	}
+
+	if (!n)
+		return NULL;
+
+	retval = n->value;
+	if (h->free_key)
+		h->free_key(n->key);
+	if (old_n)
+		old_n->next = n->next;
+	else
+		h->buckets[hash] = n->next;
+	free(n);
+
+	h->elements--;
+
+	return retval;
 }
 
 void subtilis_hashtable_reset(subtilis_hashtable_t *h)

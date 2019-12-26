@@ -85,6 +85,20 @@ void subtilis_parser_create_array_ref(subtilis_parser_t *p,
 	}
 	type = e->type;
 
+	/*
+	 * If the expression is a temporary variable and we're assigning to
+	 * a local variable, we can simply just promote the temporary to a
+	 * full local variable and avoid copying the data.
+	 */
+
+	if (local && e->temporary) {
+		(void)subtilis_symbol_table_promote_tmp(
+		    p->local_st, &e->type, e->temporary, var_name, err);
+
+		subtilis_exp_delete(e);
+		return;
+	}
+
 	s = subtilis_symbol_table_insert(local ? p->local_st : p->st, var_name,
 					 &type, err);
 	if (err->type != SUBTILIS_ERROR_OK)

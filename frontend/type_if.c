@@ -224,13 +224,10 @@ subtilis_exp_t *subtilis_type_if_copy_var(subtilis_parser_t *p,
 
 subtilis_exp_t *subtilis_type_if_dup(subtilis_exp_t *e, subtilis_error_t *err)
 {
-	subtilis_exp_t *exp = malloc(sizeof(*exp));
+	subtilis_exp_t *exp = subtilis_exp_new_empty(&e->type, err);
 
-	if (!exp) {
-		subtilis_error_set_oom(err);
+	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	}
-	exp->type = e->type;
 	prv_type_map[e->type.type]->dup(e, exp, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		free(exp);

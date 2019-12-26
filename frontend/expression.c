@@ -170,14 +170,15 @@ void subtilis_exp_handle_errors(subtilis_parser_t *p, subtilis_error_t *err)
 
 static size_t prv_create_tmp_ref(subtilis_parser_t *p, size_t reg,
 				 const subtilis_type_t *fn_type,
-				 subtilis_error_t *err)
+				 char **tmp_name, subtilis_error_t *err)
 {
 	const subtilis_symbol_t *s;
 	subtilis_ir_operand_t dest;
 	subtilis_ir_operand_t op2;
 	subtilis_ir_operand_t source;
+	char *name;
 
-	s = subtilis_symbol_table_insert_tmp(p->local_st, fn_type, err);
+	s = subtilis_symbol_table_insert_tmp(p->local_st, fn_type, &name, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 	dest.reg = SUBTILIS_IR_REG_LOCAL;
@@ -187,15 +188,21 @@ static size_t prv_create_tmp_ref(subtilis_parser_t *p, size_t reg,
 		dest.reg = subtilis_ir_section_add_instr(
 		    p->current, SUBTILIS_OP_INSTR_ADDI_I32, dest, op2, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return 0;
+			goto on_error;
 	}
 
 	source.reg = reg;
 	subtlis_array_type_create_tmp_ref(p, fn_type, dest, source, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return 0;
+		goto on_error;
 
+	*tmp_name = name;
 	return dest.reg;
+
+on_error:
+
+	free(name);
+	return 0;
 }
 
 /*
@@ -217,6 +224,7 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 	size_t call_site;
 	subtilis_exp_t *e = NULL;
 	subtilis_parser_call_t *call = NULL;
+	char *tmp_name;
 
 	if (fn_type->type == SUBTILIS_TYPE_VOID) {
 		subtilis_ir_section_add_call(p->current, num_params, args, err);
@@ -258,10 +266,11 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 
 	if ((fn_type->type == SUBTILIS_TYPE_ARRAY_REAL) ||
 	    (fn_type->type == SUBTILIS_TYPE_ARRAY_INTEGER)) {
-		reg = prv_create_tmp_ref(p, reg, fn_type, err);
+		reg = prv_create_tmp_ref(p, reg, fn_type, &tmp_name, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 		e->exp.ir_op.reg = reg;
+		e->temporary = tmp_name;
 	}
 
 	if (ftype != SUBTILIS_BUILTINS_MAX) {
@@ -341,8 +350,8 @@ static bool prv_order_expressions(subtilis_exp_t **a1, subtilis_exp_t **a2)
 	return false;
 }
 
-subtilis_exp_t *subtilis_exp_new_var(const subtilis_type_t *type,
-				     unsigned int reg, subtilis_error_t *err)
+subtilis_exp_t *subtilis_exp_new_empty(const subtilis_type_t *type,
+				       subtilis_error_t *err)
 {
 	subtilis_exp_t *e = malloc(sizeof(*e));
 
@@ -351,8 +360,20 @@ subtilis_exp_t *subtilis_exp_new_var(const subtilis_type_t *type,
 		return NULL;
 	}
 	e->type = *type;
-	e->exp.ir_op.reg = reg;
+	e->temporary = NULL;
 
+	return e;
+}
+
+subtilis_exp_t *subtilis_exp_new_var(const subtilis_type_t *type,
+				     unsigned int reg, subtilis_error_t *err)
+{
+	subtilis_exp_t *e = subtilis_exp_new_empty(type, err);
+
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	e->exp.ir_op.reg = reg;
 	return e;
 }
 
@@ -370,6 +391,7 @@ subtilis_exp_t *subtilis_exp_new_var_block(subtilis_parser_t *p,
 		return NULL;
 	}
 	e->type = *type;
+	e->temporary = NULL;
 	op0.reg = mem_reg;
 	op1.integer = offset;
 	e->exp.ir_op.reg = subtilis_ir_section_add_instr(
@@ -408,6 +430,7 @@ subtilis_exp_t *subtilis_exp_new_int32(int32_t integer, subtilis_error_t *err)
 	}
 	e->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 	e->exp.ir_op.integer = integer;
+	e->temporary = NULL;
 
 	return e;
 }
@@ -422,6 +445,7 @@ subtilis_exp_t *subtilis_exp_new_real(double real, subtilis_error_t *err)
 	}
 	e->type.type = SUBTILIS_TYPE_CONST_REAL;
 	e->exp.ir_op.real = real;
+	e->temporary = NULL;
 
 	return e;
 }
@@ -436,6 +460,7 @@ subtilis_exp_t *subtilis_exp_new_str(subtilis_buffer_t *str,
 		return NULL;
 	}
 	e->type.type = SUBTILIS_TYPE_CONST_STRING;
+	e->temporary = NULL;
 	subtilis_buffer_init(&e->exp.str, str->granularity);
 	subtilis_buffer_append(&e->exp.str, str->buffer->data,
 			       subtilis_buffer_get_size(str), err);
@@ -544,6 +569,7 @@ void subtilis_exp_delete(subtilis_exp_t *e)
 		return;
 	if (e->type.type == SUBTILIS_TYPE_CONST_STRING)
 		subtilis_buffer_free(&e->exp.str);
+	free(e->temporary);
 	free(e);
 }
 
