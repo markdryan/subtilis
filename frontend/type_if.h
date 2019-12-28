@@ -113,6 +113,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_binary_t lsl;
 	subtilis_type_if_binary_t lsr;
 	subtilis_type_if_binary_t asr;
+	subtilis_type_if_unary_t abs;
 };
 
 typedef struct subtilis_type_if_ subtilis_type_if;
@@ -440,5 +441,12 @@ subtilis_exp_t *subtilis_type_if_lsr(subtilis_parser_t *p, subtilis_exp_t *a1,
 
 subtilis_exp_t *subtilis_type_if_asr(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err);
+
+/*
+ * Returns the absolute value of expression e.
+ */
+
+subtilis_exp_t *subtilis_type_if_abs(subtilis_parser_t *p, subtilis_exp_t *e,
+				     subtilis_error_t *err);
 
 #endif

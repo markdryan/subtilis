@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <math.h>
+
 #include "float64_type.h"
 
 static subtilis_exp_t *prv_returne(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -463,6 +465,14 @@ static subtilis_exp_t *prv_gte_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 	return a1;
 }
 
+static subtilis_exp_t *prv_abs_const(subtilis_parser_t *p, subtilis_exp_t *e,
+				     subtilis_error_t *err)
+{
+	e->exp.ir_op.real = fabs(e->exp.ir_op.real);
+
+	return e;
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_const_float64 = {
 	.is_const = true,
@@ -504,6 +514,7 @@ subtilis_type_if subtilis_type_const_float64 = {
 	.lsl = NULL,
 	.lsr = NULL,
 	.asr = NULL,
+	.abs = prv_abs_const,
 };
 
 /* clang-format on */
@@ -902,6 +913,23 @@ static subtilis_exp_t *prv_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       SUBTILIS_OP_INSTR_GTE_REAL, err);
 }
 
+static subtilis_exp_t *prv_abs(subtilis_parser_t *p, subtilis_exp_t *e,
+			       subtilis_error_t *err)
+{
+	size_t reg;
+
+	reg = subtilis_ir_section_add_instr2(p->current, SUBTILIS_OP_INSTR_ABSR,
+					     e->exp.ir_op, err);
+	subtilis_exp_delete(e);
+
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	e = subtilis_exp_new_real_var(reg, err);
+
+	return e;
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_float64 = {
 	.is_const = false,
@@ -943,6 +971,7 @@ subtilis_type_if subtilis_type_float64 = {
 	.lsl = NULL,
 	.lsr = NULL,
 	.asr = NULL,
+	.abs = prv_abs,
 };
 
 /* clang-format on */

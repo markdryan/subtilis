@@ -231,6 +231,14 @@ static subtilis_exp_t *prv_asr(subtilis_parser_t *p, subtilis_exp_t *a1,
 	return NULL;
 }
 
+static subtilis_exp_t *prv_abs(subtilis_parser_t *p, subtilis_exp_t *e,
+			       subtilis_error_t *err)
+{
+	subtilis_error_set_not_supported(err, "ABS on arrays",
+					 p->l->stream->name, p->l->line);
+	return NULL;
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_array_float64 = {
 	.is_const = false,
@@ -271,6 +279,7 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.lsl = prv_lsl,
 	.lsr = prv_lsr,
 	.asr = prv_asr,
+	.abs = prv_abs,
 };
 
 /* clang-format on */
