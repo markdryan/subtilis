@@ -1980,6 +1980,28 @@ const subtilis_test_case_t test_cases[] = {
 	  "next\n",
 	  "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
 	},
+	{"sgn",
+	 "print SGN(11)\n"
+	 "print SGN(0)\n"
+	 "print SGN(-11)\n"
+	 "a% := 11\n"
+	 "b% := 0\n"
+	 "c% := -111\n"
+	 "print(sgn(a%))\n"
+	 "print(sgn(b%))\n"
+	 "print(sgn(c%))\n"
+	 "\n"
+	 "print SGN(11.0)\n"
+	 "print SGN(0.0)\n"
+	 "print SGN(-11.0)\n"
+	 "a := 11.0\n"
+	 "b := 0.0\n"
+	 "c := -111.0\n"
+	 "print(sgn(a))\n"
+	 "print(sgn(b))\n"
+	 "print(sgn(c))\n",
+	 "1\n0\n-1\n1\n0\n-1\n1\n0\n-1\n1\n0\n-1\n",
+	},
 };
 
 /* clang-format on */

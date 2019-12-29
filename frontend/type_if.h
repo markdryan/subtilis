@@ -114,6 +114,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_binary_t lsr;
 	subtilis_type_if_binary_t asr;
 	subtilis_type_if_unary_t abs;
+	subtilis_type_if_unary_t sgn;
 };
 
 typedef struct subtilis_type_if_ subtilis_type_if;
@@ -447,6 +448,13 @@ subtilis_exp_t *subtilis_type_if_asr(subtilis_parser_t *p, subtilis_exp_t *a1,
  */
 
 subtilis_exp_t *subtilis_type_if_abs(subtilis_parser_t *p, subtilis_exp_t *e,
+				     subtilis_error_t *err);
+
+/*
+ * Returns -1 if e is < 0, 0 if e = 0 and 1 if e > 0.
+ */
+
+subtilis_exp_t *subtilis_type_if_sgn(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err);
 
 #endif

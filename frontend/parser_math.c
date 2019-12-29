@@ -215,7 +215,17 @@ subtilis_exp_t *subtilis_parser_abs(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	e = subtilis_type_if_abs(p, e, err);
+	return subtilis_type_if_abs(p, e, err);
+}
 
-	return e;
+subtilis_exp_t *subtilis_parser_sgn(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+
+	e = subtilis_parser_bracketed_exp(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_type_if_sgn(p, e, err);
 }
