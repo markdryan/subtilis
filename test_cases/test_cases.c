@@ -2008,6 +2008,21 @@ const subtilis_test_case_t test_cases[] = {
 	 "print b%(1,3)\n",
 	 "0\n",
 	},
+	{"nested_blocks",
+	 "if true then\n"
+	 "  if true then\n"
+	 "    a% := 1\n"
+	 "    print a%\n"
+	 "  endif\n"
+	 "endif\n"
+	 "if true then\n"
+	 "  if true then\n"
+	 "    a% := 1\n"
+	 "    print a%\n"
+	 "  endif\n"
+	 "endif\n",
+	 "1\n1\n",
+	},
 };
 
 /* clang-format on */

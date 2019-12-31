@@ -52,9 +52,12 @@ on_error:
 
 void subtilis_symbol_table_delete(subtilis_symbol_table_t *st)
 {
+	size_t i;
+
 	if (!st)
 		return;
-	free(st->levels[0].symbols);
+	for (i = 0; i < SUBTILIS_SYMBOL_MAX_LEVELS; i++)
+		free(st->levels[i].symbols);
 	subtilis_hashtable_delete(st->h);
 	free(st);
 }
@@ -105,8 +108,6 @@ void subtilis_symbol_table_level_down(subtilis_symbol_table_t *st,
 	level = &st->levels[st->level];
 	for (i = 0; i < level->size; i++)
 		subtilis_symbol_table_remove(st, level->symbols[i]->key);
-	free(level->symbols);
-	level->symbols = NULL;
 	level->size = 0;
 	st->level--;
 }
