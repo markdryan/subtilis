@@ -16,7 +16,6 @@
 
 #include <string.h>
 
-#include "builtins_ir.h"
 #include "parser_exp.h"
 #include "parser_output.h"
 #include "type_if.h"
@@ -266,28 +265,6 @@ cleanup:
 	subtilis_exp_delete(e);
 }
 
-static void prv_print_fp(subtilis_parser_t *p, size_t reg,
-			 subtilis_error_t *err)
-{
-	subtilis_ir_section_t *fn;
-
-	fn = subtilis_builtins_ir_add_1_arg_real(p, "_print_fp",
-						 &subtilis_type_void, err);
-	if (err->type != SUBTILIS_ERROR_OK) {
-		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
-			return;
-		subtilis_error_init(err);
-	} else {
-		subtilis_builtins_ir_print_fp(p, fn, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-	}
-
-	(void)subtilis_parser_call_1_arg_fn(p, "_print_fp", reg,
-					    SUBTILIS_IR_REG_TYPE_REAL,
-					    &subtilis_type_void, err);
-}
-
 void subtilis_parser_print(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err)
 {
@@ -299,37 +276,20 @@ void subtilis_parser_print(subtilis_parser_t *p, subtilis_token_t *t,
 
 	e = subtilis_type_if_exp_to_var(p, e, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		return;
 
-	switch (e->type.type) {
-	case SUBTILIS_TYPE_INTEGER:
-		subtilis_ir_section_add_instr_no_reg(
-		    p->current, SUBTILIS_OP_INSTR_PRINT_I32, e->exp.ir_op, err);
-		break;
-	case SUBTILIS_TYPE_REAL:
-		if (p->caps & SUBTILIS_BACKEND_HAVE_PRINT_FP)
-			subtilis_ir_section_add_instr_no_reg(
-			    p->current, SUBTILIS_OP_INSTR_PRINT_FP,
-			    e->exp.ir_op, err);
-		else
-			prv_print_fp(p, e->exp.ir_op.reg, err);
-		break;
-	default:
-		subtilis_error_set_assertion_failed(err);
-		goto cleanup;
-	}
+	subtilis_type_if_print(p, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	subtilis_exp_handle_errors(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		return;
 
 	subtilis_ir_section_add_instr_no_arg(p->current,
 					     SUBTILIS_OP_INSTR_PRINT_NL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		return;
 
 	subtilis_exp_handle_errors(p, err);
-
-cleanup:
-	subtilis_exp_delete(e);
 }

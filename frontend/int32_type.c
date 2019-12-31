@@ -766,6 +766,7 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.asr = prv_asr_const,
 	.abs = prv_abs_const,
 	.sgn = prv_sgn_const,
+	.print = NULL,
 };
 
 /* clang-format on */
@@ -1665,6 +1666,14 @@ static subtilis_exp_t *prv_call(subtilis_parser_t *p,
 	return subtilis_exp_new_var(type, reg, err);
 }
 
+static void prv_print(subtilis_parser_t *p, subtilis_exp_t *e,
+		      subtilis_error_t *err)
+{
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_PRINT_I32, e->exp.ir_op, err);
+	subtilis_exp_delete(e);
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_int32 = {
 	.is_const = false,
@@ -1708,6 +1717,7 @@ subtilis_type_if subtilis_type_int32 = {
 	.abs = prv_abs,
 	.sgn = prv_sgn,
 	.call = prv_call,
+	.print = prv_print,
 };
 
 /* clang-format on */

@@ -16,7 +16,9 @@
 
 #include <math.h>
 
+#include "builtins_ir.h"
 #include "float64_type.h"
+#include "parser_exp.h"
 
 static subtilis_exp_t *prv_returne(subtilis_parser_t *p, subtilis_exp_t *e,
 				   subtilis_error_t *err)
@@ -1020,6 +1022,40 @@ static subtilis_exp_t *prv_call(subtilis_parser_t *p,
 	return subtilis_exp_new_var(type, reg, err);
 }
 
+static void prv_print_fp(subtilis_parser_t *p, size_t reg,
+			 subtilis_error_t *err)
+{
+	subtilis_ir_section_t *fn;
+
+	fn = subtilis_builtins_ir_add_1_arg_real(p, "_print_fp",
+						 &subtilis_type_void, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
+			return;
+		subtilis_error_init(err);
+	} else {
+		subtilis_builtins_ir_print_fp(p, fn, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	(void)subtilis_parser_call_1_arg_fn(p, "_print_fp", reg,
+					    SUBTILIS_IR_REG_TYPE_REAL,
+					    &subtilis_type_void, err);
+}
+
+static void prv_print(subtilis_parser_t *p, subtilis_exp_t *e,
+		      subtilis_error_t *err)
+{
+	if (p->caps & SUBTILIS_BACKEND_HAVE_PRINT_FP)
+		subtilis_ir_section_add_instr_no_reg(
+		    p->current, SUBTILIS_OP_INSTR_PRINT_FP, e->exp.ir_op, err);
+	else
+		prv_print_fp(p, e->exp.ir_op.reg, err);
+
+	subtilis_exp_delete(e);
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_float64 = {
 	.is_const = false,
@@ -1064,6 +1100,7 @@ subtilis_type_if subtilis_type_float64 = {
 	.abs = prv_abs,
 	.sgn = prv_sgn,
 	.call = prv_call,
+	.print = prv_print,
 };
 
 /* clang-format on */

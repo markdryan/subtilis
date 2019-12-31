@@ -51,7 +51,6 @@ typedef void (*subtilis_type_if_sizet2_exp_t)(subtilis_parser_t *p, size_t reg,
 typedef subtilis_exp_t *(*subtilis_type_if_load_t)(subtilis_parser_t *p,
 						   size_t reg, size_t loc,
 						   subtilis_error_t *err);
-
 /* clang-format off */
 typedef void (*subtilis_type_if_iwrite_t)(subtilis_parser_t *p,
 					  const char *var_name,
@@ -75,6 +74,10 @@ typedef subtilis_exp_t *(*subtilis_type_if_call_t)(subtilis_parser_t *p,
 						   subtilis_error_t *err);
 
 /* clang-format on */
+
+typedef void (*subtilis_type_if_print_t)(subtilis_parser_t *p,
+					 subtilis_exp_t *e,
+					 subtilis_error_t *err);
 
 struct subtilis_type_if_ {
 	bool is_const;
@@ -122,6 +125,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_unary_t abs;
 	subtilis_type_if_unary_t sgn;
 	subtilis_type_if_call_t call;
+	subtilis_type_if_print_t print;
 };
 
 typedef struct subtilis_type_if_ subtilis_type_if;
@@ -475,5 +479,12 @@ subtilis_exp_t *subtilis_type_if_call(subtilis_parser_t *p,
 				      const subtilis_type_t *type,
 				      subtilis_ir_arg_t *args, size_t num_args,
 				      subtilis_error_t *err);
+
+/*
+ * Prints the register expression e to the current output device.
+ */
+
+void subtilis_type_if_print(subtilis_parser_t *p, subtilis_exp_t *e,
+			    subtilis_error_t *err);
 
 #endif

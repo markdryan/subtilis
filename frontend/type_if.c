@@ -652,3 +652,17 @@ subtilis_exp_t *subtilis_type_if_call(subtilis_parser_t *p,
 	}
 	return fn(p, type, args, num_args, err);
 }
+
+void subtilis_type_if_print(subtilis_parser_t *p, subtilis_exp_t *e,
+			    subtilis_error_t *err)
+{
+	subtilis_type_if_print_t fn;
+
+	fn = prv_type_map[e->type.type]->print;
+	if (!fn) {
+		subtilis_exp_delete(e);
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(p, e, err);
+}
