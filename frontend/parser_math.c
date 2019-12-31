@@ -210,60 +210,22 @@ subtilis_exp_t *subtilis_parser_abs(subtilis_parser_t *p, subtilis_token_t *t,
 				    subtilis_error_t *err)
 {
 	subtilis_exp_t *e;
-	size_t reg;
-	subtilis_ir_operand_t op1;
-	subtilis_ir_operand_t op2;
 
 	e = subtilis_parser_bracketed_exp(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	switch (e->type.type) {
-	case SUBTILIS_TYPE_CONST_INTEGER:
-		e->exp.ir_op.integer = abs(e->exp.ir_op.integer);
-		break;
-	case SUBTILIS_TYPE_CONST_REAL:
-		e->exp.ir_op.real = fabs(e->exp.ir_op.real);
-		break;
-	case SUBTILIS_TYPE_INTEGER:
-		op2.integer = 31;
-		reg = subtilis_ir_section_add_instr(p->current,
-						    SUBTILIS_OP_INSTR_ASRI_I32,
-						    e->exp.ir_op, op2, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-		op2.reg = reg;
-		reg = subtilis_ir_section_add_instr(p->current,
-						    SUBTILIS_OP_INSTR_ADD_I32,
-						    e->exp.ir_op, op2, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-		op1.reg = reg;
-		reg = subtilis_ir_section_add_instr(
-		    p->current, SUBTILIS_OP_INSTR_EOR_I32, op1, op2, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-		e->exp.ir_op.reg = reg;
-		break;
-	case SUBTILIS_TYPE_REAL:
-		reg = subtilis_ir_section_add_instr2(
-		    p->current, SUBTILIS_OP_INSTR_ABSR, e->exp.ir_op, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
+	return subtilis_type_if_abs(p, e, err);
+}
 
-		subtilis_exp_delete(e);
-		e = subtilis_exp_new_real_var(reg, err);
-		break;
-	default:
-		subtilis_error_set_numeric_expected(err, "", p->l->stream->name,
-						    p->l->line);
-		goto cleanup;
-	}
+subtilis_exp_t *subtilis_parser_sgn(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
 
-	return e;
+	e = subtilis_parser_bracketed_exp(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
 
-cleanup:
-
-	subtilis_exp_delete(e);
-	return NULL;
+	return subtilis_type_if_sgn(p, e, err);
 }

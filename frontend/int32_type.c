@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -704,6 +705,25 @@ on_error:
 	return NULL;
 }
 
+static subtilis_exp_t *prv_abs_const(subtilis_parser_t *p, subtilis_exp_t *e,
+				     subtilis_error_t *err)
+{
+	e->exp.ir_op.integer = abs(e->exp.ir_op.integer);
+
+	return e;
+}
+
+static subtilis_exp_t *prv_sgn_const(subtilis_parser_t *p, subtilis_exp_t *e,
+				     subtilis_error_t *err)
+{
+	if (e->exp.ir_op.integer < 0)
+		e->exp.ir_op.integer = -1;
+	else if (e->exp.ir_op.integer > 0)
+		e->exp.ir_op.integer = 1;
+
+	return e;
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_const_int32 = {
 	.is_const = true,
@@ -744,6 +764,8 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.lsl = prv_lsl_const,
 	.lsr = prv_lsr_const,
 	.asr = prv_asr_const,
+	.abs = prv_abs_const,
+	.sgn = prv_sgn_const,
 };
 
 /* clang-format on */
@@ -1539,6 +1561,96 @@ static subtilis_exp_t *prv_asr(subtilis_parser_t *p, subtilis_exp_t *a1,
 			 SUBTILIS_OP_INSTR_ASRI_I32, err);
 }
 
+static subtilis_exp_t *prv_abs(subtilis_parser_t *p, subtilis_exp_t *e,
+			       subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+
+	op2.integer = 31;
+	reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ASRI_I32, e->exp.ir_op, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	op2.reg = reg;
+	reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, e->exp.ir_op, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	op1.reg = reg;
+	reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_EOR_I32, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	e->exp.ir_op.reg = reg;
+
+	return e;
+
+cleanup:
+
+	subtilis_exp_delete(e);
+
+	return NULL;
+}
+
+static subtilis_exp_t *prv_sgn(subtilis_parser_t *p, subtilis_exp_t *e,
+			       subtilis_error_t *err)
+{
+	subtilis_ir_operand_t less_zero;
+	subtilis_ir_operand_t gte_zero;
+	size_t reg;
+	size_t reg2;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+
+	less_zero.label = subtilis_ir_section_new_label(p->current);
+	gte_zero.label = subtilis_ir_section_new_label(p->current);
+
+	op2.integer = 0;
+	reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LTI_I32, e->exp.ir_op, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.reg = reg;
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  op1, less_zero, gte_zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, gte_zero.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	reg2 = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_GTI_I32, e->exp.ir_op, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e->exp.ir_op.reg = reg2;
+	e = prv_abs(p, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_assign_to_reg(p, reg, e, err);
+	e = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, less_zero.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return subtilis_exp_new_int32_var(reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(e);
+
+	return NULL;
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_int32 = {
 	.is_const = false,
@@ -1579,6 +1691,8 @@ subtilis_type_if subtilis_type_int32 = {
 	.lsl = prv_lsl,
 	.lsr = prv_lsr,
 	.asr = prv_asr,
+	.abs = prv_abs,
+	.sgn = prv_sgn,
 };
 
 /* clang-format on */

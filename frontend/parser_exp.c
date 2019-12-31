@@ -222,6 +222,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return subtilis_parser_rad(p, t, err);
 		case SUBTILIS_KEYWORD_ABS:
 			return subtilis_parser_abs(p, t, err);
+		case SUBTILIS_KEYWORD_SGN:
+			return subtilis_parser_sgn(p, t, err);
 		case SUBTILIS_KEYWORD_PI:
 			return subtilis_parser_pi(p, t, err);
 		case SUBTILIS_KEYWORD_GET:
@@ -282,9 +284,9 @@ static subtilis_exp_t *prv_priority3(subtilis_parser_t *p, subtilis_token_t *t,
 	       (t->type == SUBTILIS_TOKEN_KEYWORD)) {
 		tbuf = subtilis_token_get_text(t);
 		if (t->type == SUBTILIS_TOKEN_KEYWORD) {
-			if (!strcmp(tbuf, "DIV"))
+			if (t->tok.keyword.type == SUBTILIS_KEYWORD_DIV)
 				exp_fn = subtilis_type_if_div;
-			else if (!strcmp(tbuf, "MOD"))
+			else if (t->tok.keyword.type == SUBTILIS_KEYWORD_MOD)
 				exp_fn = subtilis_type_if_mod;
 			else
 				break;

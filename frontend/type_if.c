@@ -625,3 +625,15 @@ subtilis_exp_t *subtilis_type_if_asr(subtilis_parser_t *p, subtilis_exp_t *a1,
 	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->asr,
 				  err);
 }
+
+subtilis_exp_t *subtilis_type_if_abs(subtilis_parser_t *p, subtilis_exp_t *e,
+				     subtilis_error_t *err)
+{
+	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->abs, err);
+}
+
+subtilis_exp_t *subtilis_type_if_sgn(subtilis_parser_t *p, subtilis_exp_t *e,
+				     subtilis_error_t *err)
+{
+	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->sgn, err);
+}

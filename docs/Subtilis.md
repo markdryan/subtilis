@@ -639,7 +639,7 @@ For example,
 
 ```
 DIM a%(10, 10)
-b%() = a%()
+b%() := a%()
 ```
 
 In this example we create a new array reference b%().  The type of this variable is a reference
@@ -655,6 +655,11 @@ b%() = c%()
 ```
 
 would result in a compile error.
+
+*The following three paragrapghs describe functionality that is not yet
+ implemented. It is not currently possible to explicitly specify the dimensions
+ of an array reference.  We probably want to be able to do this, particularly to
+ be able to create a reference that has all dynamic dimensions.*
 
 It is however possible to explicitly define the dimensions of a reference when it is created.
 This can be done by specifying a constant number of dimensions followed by an optional number of
@@ -712,8 +717,12 @@ DEF FNDouble%(1)(a%(1))
 <-a%()
 ```
 
-That may look a bit weird but that's how it currently works.  The dimension of that array can
-be specified as well so that it is known at compile time, e.g.,
+That may look a bit weird but that's how it currently works.
+
+* Note this is not currently supported.  You can't specify explicit dimension
+  sizes for either the arguments or the return types of a function. *
+
+The dimension of that array can be specified as well so that it is known at compile time, e.g.,
 
 ```
 DEF FNDouble%(1,10)(a%(1,10))
@@ -721,15 +730,12 @@ DEF FNDouble%(1,10)(a%(1,10))
 
 which looks even weirder.  You've got to put the return type information somewhere.
 
-When the function is invoked the dimensions are not specified in the same way that they are not
-specified when an array reference is used.  For example,
+When the function is invoked the number of dimensions of the return type must also be specified.  For example,
 
 ```
 DIM a%(10)
-b%() = FNDouble%()(a%())
-PRINT FNDouble%()(b%())(1)
+b%() = FNDouble%(1)(a%())
 ```
-
 
 ## Current Issues with the Grammar
 
@@ -773,6 +779,44 @@ on the other hand will print out a floating point variable, e.g, 10.0.
 
 This is all very broken and will have to change.  We'll probably end up with RND returning
 floating point numbers and RND% returning integers.
+
+### Zero argument functions that return arrays
+
+Functions and procedures with zero arguments can be currently invoked with and
+without round brackets, e.g., the following two statements are both valid.
+
+```
+PROCDo
+PROCDo()
+```
+
+There's one exception however.  The round brackets are mandatory for no argument
+functions that return arrays, e.g.,
+
+```
+a%() := FNArr(1)()
+def FNArr(1)
+   dim a%(10)
+<-a%()
+```
+
+This is a little inconsistent but going forward we will probably make the round
+brackets mandatory for all function calls.  Once we implement functions and
+procedures as first class types we will need a way to distinguish between
+function calls and function pointers.
+
+### Temporary arrays cannot be indexed
+
+There's no technical reason that this isn't supported apart from the fact that
+it would make the code hard to read, but it's not currently possible to directly
+index an array returned from a function.  It needs to be assigned to an array or
+an array reference first.  So the follow code,
+
+```
+PRINT FNDouble%(1)(b%())(1)
+```
+
+will not compile, and to be honest, the langauge is all the better for this restriction.
 
 ## Unimplemented Language Features
 
