@@ -924,9 +924,9 @@ subtilis_array_index_calc(subtilis_parser_t *p, const char *var_name,
 	for (i = 0; i < index_count - 1; i++) {
 		if (e[i]->type.type != SUBTILIS_TYPE_CONST_INTEGER)
 			continue;
+		dim_size = type->params.array.dims[i];
 		if (dim_size == SUBTILIS_DYNAMIC_DIMENSION)
 			continue;
-		dim_size = type->params.array.dims[i];
 		if ((e[i]->exp.ir_op.integer < 0) ||
 		    (e[i]->exp.ir_op.integer > dim_size)) {
 			subtilis_error_bad_index(

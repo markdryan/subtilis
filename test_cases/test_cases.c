@@ -2002,6 +2002,12 @@ const subtilis_test_case_t test_cases[] = {
 	 "print(sgn(c))\n",
 	 "1\n0\n-1\n1\n0\n-1\n1\n0\n-1\n1\n0\n-1\n",
 	},
+	{"array_dim_mixed",
+	 "a% := 3\n"
+	 "local dim b%(a%,3)\n"
+	 "print b%(1,3)\n",
+	 "0\n",
+	},
 };
 
 /* clang-format on */
