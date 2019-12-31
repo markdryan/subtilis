@@ -239,6 +239,20 @@ static subtilis_exp_t *prv_abs(subtilis_parser_t *p, subtilis_exp_t *e,
 	return NULL;
 }
 
+static subtilis_exp_t *prv_call(subtilis_parser_t *p,
+				const subtilis_type_t *type,
+				subtilis_ir_arg_t *args, size_t num_args,
+				subtilis_error_t *err)
+{
+	size_t reg;
+
+	reg = subtilis_ir_section_add_i32_call(p->current, num_args, args, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_var(type, reg, err);
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_array_float64 = {
 	.is_const = false,
@@ -280,6 +294,7 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.lsr = prv_lsr,
 	.asr = prv_asr,
 	.abs = prv_abs,
+	.call = prv_call,
 };
 
 /* clang-format on */

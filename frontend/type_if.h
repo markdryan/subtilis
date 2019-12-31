@@ -68,6 +68,12 @@ typedef subtilis_exp_t *(*subtilis_type_if_iread_t)(subtilis_parser_t *p,
 						    subtilis_exp_t **indices,
 						    size_t index_count,
 						    subtilis_error_t *err);
+typedef subtilis_exp_t *(*subtilis_type_if_call_t)(subtilis_parser_t *p,
+						   const subtilis_type_t *type,
+						   subtilis_ir_arg_t *args,
+						   size_t num_args,
+						   subtilis_error_t *err);
+
 /* clang-format on */
 
 struct subtilis_type_if_ {
@@ -115,6 +121,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_binary_t asr;
 	subtilis_type_if_unary_t abs;
 	subtilis_type_if_unary_t sgn;
+	subtilis_type_if_call_t call;
 };
 
 typedef struct subtilis_type_if_ subtilis_type_if;
@@ -456,5 +463,17 @@ subtilis_exp_t *subtilis_type_if_abs(subtilis_parser_t *p, subtilis_exp_t *e,
 
 subtilis_exp_t *subtilis_type_if_sgn(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err);
+
+/*
+ * Generates a call instruction for a function that returns a value of type
+ * type.  A register of the appropriate type is returned.  This register will
+ * hold either the return value or a reference to the return value.  Ownership
+ * of args is transferred to the call on success.
+ */
+
+subtilis_exp_t *subtilis_type_if_call(subtilis_parser_t *p,
+				      const subtilis_type_t *type,
+				      subtilis_ir_arg_t *args, size_t num_args,
+				      subtilis_error_t *err);
 
 #endif

@@ -637,3 +637,18 @@ subtilis_exp_t *subtilis_type_if_sgn(subtilis_parser_t *p, subtilis_exp_t *e,
 {
 	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->sgn, err);
 }
+
+subtilis_exp_t *subtilis_type_if_call(subtilis_parser_t *p,
+				      const subtilis_type_t *type,
+				      subtilis_ir_arg_t *args, size_t num_args,
+				      subtilis_error_t *err)
+{
+	subtilis_type_if_call_t fn;
+
+	fn = prv_type_map[type->type]->call;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+	return fn(p, type, args, num_args, err);
+}
