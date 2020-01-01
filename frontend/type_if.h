@@ -81,6 +81,7 @@ typedef void (*subtilis_type_if_print_t)(subtilis_parser_t *p,
 
 struct subtilis_type_if_ {
 	bool is_const;
+	bool is_numeric;
 	subtilis_type_if_size_t size;
 	subtilis_type_if_unary_t data_size;
 	subtilis_type_if_none_t zero;
@@ -486,5 +487,11 @@ subtilis_exp_t *subtilis_type_if_call(subtilis_parser_t *p,
 
 void subtilis_type_if_print(subtilis_parser_t *p, subtilis_exp_t *e,
 			    subtilis_error_t *err);
+
+/*
+ * Returns true if the given type is a numeric type.
+ */
+
+bool subtilis_type_if_is_numeric(const subtilis_type_t *type);
 
 #endif

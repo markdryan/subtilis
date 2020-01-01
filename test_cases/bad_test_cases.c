@@ -369,6 +369,13 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"print dim(a%(),11)\n",
 	SUBTILIS_ERROR_BAD_INDEX,
 	},
+	{
+	"for_not_numeric",
+	"local dim a%(10)\n"
+	"for i% := 0 to a%()\n"
+	"next\n",
+	SUBTILIS_ERROR_NUMERIC_EXP_EXPECTED,
+	}
 };
 
 /* clang-format on */

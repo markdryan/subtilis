@@ -81,6 +81,7 @@ typedef enum {
 	SUBTILIS_ERROR_TOO_MANY_BLOCKS,
 	SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH,
 	SUBTILIS_ERROR_CONST_INTEGER_EXPECTED,
+	SUBTILIS_ERROR_NUMERIC_EXP_EXPECTED,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -244,6 +245,9 @@ void subtilis_error_init(subtilis_error_t *e);
 				  line, __FILE__, __LINE__)
 #define subtilis_error_set_const_integer_expected(e, file, line)               \
 	subtilis_error_set_syntax(e, SUBTILIS_ERROR_CONST_INTEGER_EXPECTED,    \
+				  file, line, __FILE__, __LINE__)
+#define subtilis_error_set_numeric_exp_expected(e, file, line)                 \
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_NUMERIC_EXP_EXPECTED,      \
 				  file, line, __FILE__, __LINE__)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,

@@ -493,6 +493,7 @@ static subtilis_exp_t *prv_sgn_const(subtilis_parser_t *p, subtilis_exp_t *e,
 /* clang-format off */
 subtilis_type_if subtilis_type_const_float64 = {
 	.is_const = true,
+	.is_numeric = true,
 	.size = NULL,
 	.data_size = NULL,
 	.zero = NULL,
@@ -1059,6 +1060,7 @@ static void prv_print(subtilis_parser_t *p, subtilis_exp_t *e,
 /* clang-format off */
 subtilis_type_if subtilis_type_float64 = {
 	.is_const = false,
+	.is_numeric = true,
 	.size = prv_size,
 	.data_size = NULL,
 	.zero = prv_zero,

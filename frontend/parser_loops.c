@@ -38,11 +38,9 @@ static subtilis_exp_t *prv_numeric_expression(subtilis_parser_t *p,
 	e = subtilis_parser_priority7(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	if ((e->type.type != SUBTILIS_TYPE_CONST_INTEGER) &&
-	    (e->type.type != SUBTILIS_TYPE_CONST_REAL) &&
-	    (e->type.type != SUBTILIS_TYPE_INTEGER) &&
-	    (e->type.type != SUBTILIS_TYPE_REAL)) {
-		subtilis_exp_delete(e);
+	if (!subtilis_type_if_is_numeric(&e->type)) {
+		subtilis_error_set_numeric_exp_expected(err, p->l->stream->name,
+							p->l->line);
 		return NULL;
 	}
 
