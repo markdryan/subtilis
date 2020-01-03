@@ -20,6 +20,12 @@
 
 #include "int32_type.h"
 
+static subtilis_exp_t *prv_zero_const(subtilis_parser_t *p,
+				      subtilis_error_t *err)
+{
+	return subtilis_exp_new_int32(0, err);
+}
+
 static subtilis_exp_t *prv_exp_to_var_const(subtilis_parser_t *p,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err)
@@ -730,7 +736,7 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.is_numeric = true,
 	.size = NULL,
 	.data_size = NULL,
-	.zero = NULL,
+	.zero = prv_zero_const,
 	.zero_reg = NULL,
 	.array_of = NULL,
 	.element_type = NULL,

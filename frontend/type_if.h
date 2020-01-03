@@ -489,6 +489,12 @@ void subtilis_type_if_print(subtilis_parser_t *p, subtilis_exp_t *e,
 			    subtilis_error_t *err);
 
 /*
+ * Returns true if the given type is const.
+ */
+
+bool subtilis_type_if_is_const(const subtilis_type_t *type);
+
+/*
  * Returns true if the given type is a numeric type.
  */
 

@@ -667,6 +667,11 @@ void subtilis_type_if_print(subtilis_parser_t *p, subtilis_exp_t *e,
 	fn(p, e, err);
 }
 
+bool subtilis_type_if_is_const(const subtilis_type_t *type)
+{
+	return prv_type_map[type->type]->is_const;
+}
+
 bool subtilis_type_if_is_numeric(const subtilis_type_t *type)
 {
 	return prv_type_map[type->type]->is_numeric;

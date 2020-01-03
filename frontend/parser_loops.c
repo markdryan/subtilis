@@ -58,26 +58,69 @@ static subtilis_step_type_t prv_compute_step_type(subtilis_parser_t *p,
 						  subtilis_exp_t *step,
 						  subtilis_error_t *err)
 {
-	switch (step->type.type) {
-	case SUBTILIS_TYPE_CONST_INTEGER:
-		if (step->exp.ir_op.integer == 0)
-			subtilis_error_set_zero_step(err, p->l->stream->name,
-						     p->l->line);
-		return step->exp.ir_op.integer < 0 ? SUBTILIS_STEP_CONST_DEC
-						   : SUBTILIS_STEP_CONST_INC;
-	case SUBTILIS_TYPE_CONST_REAL:
-		if (step->exp.ir_op.real == 0.0)
-			subtilis_error_set_zero_step(err, p->l->stream->name,
-						     p->l->line);
-		return step->exp.ir_op.real < 0.0 ? SUBTILIS_STEP_CONST_DEC
-						  : SUBTILIS_STEP_CONST_INC;
-	case SUBTILIS_TYPE_INTEGER:
-	case SUBTILIS_TYPE_REAL:
-		return SUBTILIS_STEP_VAR;
-	default:
-		subtilis_error_set_assertion_failed(err);
-		break;
+	subtilis_step_type_t retval;
+	subtilis_exp_t *e = NULL;
+	subtilis_exp_t *step_dup = NULL;
+
+	if (!subtilis_type_if_is_numeric(&step->type)) {
+		subtilis_error_set_numeric_exp_expected(err, p->l->stream->name,
+							p->l->line);
+		return SUBTILIS_STEP_MAX;
 	}
+
+	if (!subtilis_type_if_is_const(&step->type))
+		return SUBTILIS_STEP_VAR;
+
+	e = subtilis_type_if_zero(p, &step->type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SUBTILIS_STEP_MAX;
+
+	step_dup = subtilis_type_if_dup(step, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	e = subtilis_type_if_eq(p, step_dup, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	if (!subtilis_type_if_is_const(&e->type)) {
+		subtilis_error_set_assertion_failed(err);
+		goto on_error;
+	}
+
+	if (e->exp.ir_op.integer == -1) {
+		subtilis_error_set_zero_step(err, p->l->stream->name,
+					     p->l->line);
+		goto on_error;
+	}
+
+	subtilis_exp_delete(e);
+	e = subtilis_type_if_zero(p, &step->type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	step_dup = subtilis_type_if_dup(step, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	e = subtilis_type_if_lt(p, step_dup, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	if (!subtilis_type_if_is_const(&e->type)) {
+		subtilis_error_set_assertion_failed(err);
+		goto on_error;
+	}
+
+	retval = (e->exp.ir_op.integer == -1) ? SUBTILIS_STEP_CONST_DEC
+					      : SUBTILIS_STEP_CONST_INC;
+	subtilis_exp_delete(e);
+
+	return retval;
+
+on_error:
+
+	subtilis_exp_delete(e);
 
 	return SUBTILIS_STEP_MAX;
 }
@@ -677,8 +720,7 @@ void subtilis_parser_for(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	var_type = t->tok.id_type;
-	if ((var_type.type != SUBTILIS_TYPE_REAL) &&
-	    (var_type.type != SUBTILIS_TYPE_INTEGER)) {
+	if (!subtilis_type_if_is_numeric(&var_type)) {
 		subtilis_error_set_numeric_expected(
 		    err, tbuf, p->l->stream->name, p->l->line);
 		return;
