@@ -155,7 +155,7 @@ static subtilis_exp_t *prv_increment_var(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_coerce_type(p, e, &for_ctx->type, err);
+	e = subtilis_type_if_coerce_type(p, e, &for_ctx->type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -314,7 +314,7 @@ static void prv_for_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 
 	/* Ownership of e is passed to the following functions. */
 
-	e = subtilis_exp_coerce_type(p, e, &for_ctx->type, err);
+	e = subtilis_type_if_coerce_type(p, e, &for_ctx->type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

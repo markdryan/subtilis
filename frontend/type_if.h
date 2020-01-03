@@ -73,6 +73,11 @@ typedef subtilis_exp_t *(*subtilis_type_if_call_t)(subtilis_parser_t *p,
 						   size_t num_args,
 						   subtilis_error_t *err);
 
+typedef subtilis_exp_t *(*subtilis_type_if_coerce_t)(
+	subtilis_parser_t *p, subtilis_exp_t *e,
+	const subtilis_type_t *type,
+	subtilis_error_t *err);
+
 /* clang-format on */
 
 typedef void (*subtilis_type_if_print_t)(subtilis_parser_t *p,
@@ -101,6 +106,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_load_t load_mem;
 	subtilis_type_if_unary_t to_int32;
 	subtilis_type_if_unary_t to_float64;
+	subtilis_type_if_coerce_t coerce;
 	subtilis_type_if_unary_t unary_minus;
 	subtilis_type_if_binary_t add;
 	subtilis_type_if_binary_t mul;
@@ -295,14 +301,18 @@ subtilis_exp_t *subtilis_type_if_load_from_mem(subtilis_parser_t *p,
 					       subtilis_error_t *err);
 
 /*
- * Converts a scalar type to an int.
+ * Converts a scalar type to an int.  The constant status of e is
+ * perseved.  So if e is a constant double, a constant integer expression,
+ * is returned.
  */
 
 subtilis_exp_t *subtilis_type_if_to_int(subtilis_parser_t *p, subtilis_exp_t *e,
 					subtilis_error_t *err);
 
 /*
- * Converts a scalar type to a float64.
+ * Converts a scalar type to a float64.  The constant status of e is
+ * perseved.  So if e is a constant integer, a constant double expression,
+ * is returned.
  */
 
 subtilis_exp_t *subtilis_type_if_to_float64(subtilis_parser_t *p,
@@ -506,5 +516,14 @@ bool subtilis_type_if_is_numeric(const subtilis_type_t *type);
  */
 
 bool subtilis_type_if_is_integer(const subtilis_type_t *type);
+
+/*
+ * Converts expression e to type type, if possible.
+ */
+
+subtilis_exp_t *subtilis_type_if_coerce_type(subtilis_parser_t *p,
+					     subtilis_exp_t *e,
+					     const subtilis_type_t *type,
+					     subtilis_error_t *err);
 
 #endif

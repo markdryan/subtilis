@@ -62,10 +62,6 @@ subtilis_exp_t *subtilis_exp_new_real(double real, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_str(subtilis_buffer_t *str,
 				     subtilis_error_t *err);
 
-subtilis_exp_t *subtilis_exp_coerce_type(subtilis_parser_t *p,
-					 subtilis_exp_t *e,
-					 const subtilis_type_t *type,
-					 subtilis_error_t *err);
 void subtilis_exp_handle_errors(subtilis_parser_t *p, subtilis_error_t *err);
 typedef subtilis_exp_t *(*subtilis_exp_fn_t)(subtilis_parser_t *,
 					     subtilis_exp_t *, subtilis_exp_t *,

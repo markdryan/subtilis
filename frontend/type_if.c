@@ -681,3 +681,25 @@ bool subtilis_type_if_is_integer(const subtilis_type_t *type)
 {
 	return prv_type_map[type->type]->is_integer;
 }
+
+subtilis_exp_t *subtilis_type_if_coerce_type(subtilis_parser_t *p,
+					     subtilis_exp_t *e,
+					     const subtilis_type_t *type,
+					     subtilis_error_t *err)
+{
+	subtilis_type_if_coerce_t fn;
+
+	if (subtilis_type_eq(type, &e->type))
+		return e;
+
+	fn = prv_type_map[e->type.type]->coerce;
+	if (!fn) {
+		subtilis_exp_delete(e);
+		subtilis_error_set_bad_conversion(
+		    err, subtilis_type_name(&e->type), subtilis_type_name(type),
+		    p->l->stream->name, p->l->line);
+		return NULL;
+	}
+
+	return fn(p, e, type, err);
+}

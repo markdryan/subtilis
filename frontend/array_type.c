@@ -1015,7 +1015,7 @@ void subtilis_array_write(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_coerce_type(p, e, el_type, err);
+	e = subtilis_type_if_coerce_type(p, e, el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1072,7 +1072,7 @@ void subtilis_array_add(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_coerce_type(p, e, el_type, err);
+	e = subtilis_type_if_coerce_type(p, e, el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1105,7 +1105,7 @@ void subtilis_array_sub(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_coerce_type(p, e, el_type, err);
+	e = subtilis_type_if_coerce_type(p, e, el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

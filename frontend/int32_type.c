@@ -108,6 +108,38 @@ static subtilis_exp_t *prv_to_float64_const(subtilis_parser_t *p,
 	return e;
 }
 
+static subtilis_exp_t *prv_coerce_type_const(subtilis_parser_t *p,
+					     subtilis_exp_t *e,
+					     const subtilis_type_t *type,
+					     subtilis_error_t *err)
+{
+	switch (type->type) {
+	case SUBTILIS_TYPE_CONST_REAL:
+		e->type.type = SUBTILIS_TYPE_CONST_REAL;
+		e->exp.ir_op.real = (double)e->exp.ir_op.integer;
+		break;
+	case SUBTILIS_TYPE_CONST_INTEGER:
+		break;
+	case SUBTILIS_TYPE_REAL:
+		e = subtilis_type_if_exp_to_var(p, e, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+		e = subtilis_type_if_to_float64(p, e, err);
+		break;
+	case SUBTILIS_TYPE_INTEGER:
+		e = subtilis_type_if_exp_to_var(p, e, err);
+		break;
+	default:
+		subtilis_error_set_bad_conversion(
+		    err, subtilis_type_name(&e->type), subtilis_type_name(type),
+		    p->l->stream->name, p->l->line);
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return e;
+}
+
 static subtilis_exp_t *prv_unary_minus_const(subtilis_parser_t *p,
 					     subtilis_exp_t *e,
 					     subtilis_error_t *err)
@@ -753,6 +785,7 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.load_mem = NULL,
 	.to_int32 = prv_to_int32,
 	.to_float64 = prv_to_float64_const,
+	.coerce = prv_coerce_type_const,
 	.unary_minus = prv_unary_minus_const,
 	.add = prv_add_const,
 	.mul = prv_mul_const,
@@ -902,6 +935,35 @@ on_error:
 
 	subtilis_exp_delete(e);
 	return NULL;
+}
+
+static subtilis_exp_t *prv_coerce_type(subtilis_parser_t *p, subtilis_exp_t *e,
+				       const subtilis_type_t *type,
+				       subtilis_error_t *err)
+{
+	switch (type->type) {
+	case SUBTILIS_TYPE_CONST_REAL:
+		e->type.type = SUBTILIS_TYPE_CONST_INTEGER;
+		e->exp.ir_op.integer = (int32_t)e->exp.ir_op.real;
+		e = subtilis_type_if_exp_to_var(p, e, err);
+		break;
+	case SUBTILIS_TYPE_CONST_INTEGER:
+		e = subtilis_type_if_exp_to_var(p, e, err);
+		break;
+	case SUBTILIS_TYPE_REAL:
+		e = subtilis_type_if_to_float64(p, e, err);
+		break;
+	case SUBTILIS_TYPE_INTEGER:
+		break;
+	default:
+		subtilis_error_set_bad_conversion(
+		    err, subtilis_type_name(&e->type), subtilis_type_name(type),
+		    p->l->stream->name, p->l->line);
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return e;
 }
 
 static subtilis_exp_t *prv_unary_minus(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -1705,6 +1767,7 @@ subtilis_type_if subtilis_type_int32 = {
 	.load_mem = prv_load_from_mem,
 	.to_int32 = prv_to_int32,
 	.to_float64 = prv_to_float64,
+	.coerce = prv_coerce_type,
 	.unary_minus = prv_unary_minus,
 	.add = prv_add,
 	.mul = prv_mul,

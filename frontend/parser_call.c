@@ -536,7 +536,7 @@ static void prv_set_fn_retval(subtilis_parser_t *p, subtilis_exp_t *e,
 
 	/* Ownership of e is passed to prv_coerce_type */
 
-	e = subtilis_exp_coerce_type(p, e, fn_type, err);
+	e = subtilis_type_if_coerce_type(p, e, fn_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

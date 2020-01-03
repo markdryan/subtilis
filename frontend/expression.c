@@ -288,29 +288,6 @@ on_error:
 	return NULL;
 }
 
-subtilis_exp_t *subtilis_exp_coerce_type(subtilis_parser_t *p,
-					 subtilis_exp_t *e,
-					 const subtilis_type_t *type,
-					 subtilis_error_t *err)
-{
-	if (subtilis_type_eq(type, &e->type))
-		return e;
-
-	switch (type->type) {
-	case SUBTILIS_TYPE_REAL:
-		e = subtilis_type_if_to_float64(p, e, err);
-		break;
-	case SUBTILIS_TYPE_INTEGER:
-		e = subtilis_type_if_to_int(p, e, err);
-		break;
-	default:
-		subtilis_error_set_assertion_failed(err);
-		subtilis_exp_delete(e);
-		e = NULL;
-	}
-	return e;
-}
-
 /* Swap the arguments if necessary to ensure that the constant comes last
  * Returns true if arguments have been swapped.
  */
