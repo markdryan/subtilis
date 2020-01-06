@@ -230,6 +230,9 @@ subtilis_exp_t *subtilis_parser_assign_local(subtilis_parser_t *p,
 	e = subtilis_parser_expression(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
+	e = subtilis_type_if_copy_var(p, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
 	e = subtilis_type_if_exp_to_var(p, e, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;

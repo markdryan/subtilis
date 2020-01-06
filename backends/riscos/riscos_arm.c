@@ -889,6 +889,8 @@ void subtilis_riscos_arm_get(subtilis_ir_section_t *s, size_t start,
 void subtilis_riscos_arm_get_to(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err)
 {
+	size_t label;
+	subtilis_arm_br_instr_t *br;
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_data_instr_t *datai;
 	subtilis_arm_section_t *arm_s = user_data;
@@ -904,7 +906,7 @@ void subtilis_riscos_arm_get_to(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	subtilis_arm_add_data_imm(arm_s, SUBTILIS_ARM_INSTR_AND,
-				  SUBTILIS_ARM_CCODE_GE, false, 1, op1, 0xff,
+				  SUBTILIS_ARM_CCODE_AL, false, 1, op1, 0xff,
 				  err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -920,7 +922,7 @@ void subtilis_riscos_arm_get_to(subtilis_ir_section_t *s, size_t start,
 		return;
 	datai = &instr->operands.data;
 	datai->status = false;
-	datai->ccode = SUBTILIS_ARM_CCODE_GE;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
 	datai->dest = 2;
 	datai->op1 = 2;
 	datai->op2.type = SUBTILIS_ARM_OP2_SHIFTED;
@@ -935,8 +937,33 @@ void subtilis_riscos_arm_get_to(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_VC, false, dest, 1,
+	label = arm_s->label_counter++;
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_VS;
+	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
+	br->target.label = label;
+
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_AL, 2, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_EQ, false, dest, 1,
 				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mvn_imm(arm_s, SUBTILIS_ARM_CCODE_NE, false, dest, 0,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_section_add_label(arm_s, label, err);
 }
 
 void subtilis_riscos_arm_inkey(subtilis_ir_section_t *s, size_t start,

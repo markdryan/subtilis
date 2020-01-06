@@ -230,8 +230,9 @@ subtilis_exp_t *subtilis_type_if_exp_to_var(subtilis_parser_t *p,
 					    subtilis_error_t *err);
 
 /*
- * Returns a copy of the register expression e.  Only used in for loops
- * for the step variable.
+ * Returns a copy of the register expression e.  Used in for loops
+ * for the step variable, and when initialising a new local scalar
+ * variable from an existing variable.
  */
 
 subtilis_exp_t *subtilis_type_if_copy_var(subtilis_parser_t *p,

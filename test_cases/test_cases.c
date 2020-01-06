@@ -2023,6 +2023,13 @@ const subtilis_test_case_t test_cases[] = {
 	 "endif\n",
 	 "1\n1\n",
 	},
+	{"local_initialise_from_local",
+	 "q := 512\n"
+	 "f := q\n"
+	 "f += 1\n"
+	 "print q\n",
+	 "512\n",
+	}
 };
 
 /* clang-format on */
