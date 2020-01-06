@@ -375,7 +375,15 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"for i% := 0 to a%()\n"
 	"next\n",
 	SUBTILIS_ERROR_NUMERIC_EXP_EXPECTED,
-	}
+	},
+	{
+	"array_arg_dim_mismatch",
+	"dim b%(1,1)\n"
+	"PROCArr(b%())\n"
+	"def PROCArr(a%(1))\n"
+	"endproc\n",
+	SUBTILIS_ERROR_BAD_ARG_TYPE
+	},
 };
 
 /* clang-format on */

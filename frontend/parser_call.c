@@ -935,7 +935,7 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 
 	call_site = &call->s->ops[call_index]->op.call;
 	for (i = 0; i < st->num_parameters; i++) {
-		if (st->parameters[i].type == ct->parameters[i].type)
+		if (subtilis_type_eq(&st->parameters[i], &ct->parameters[i]))
 			continue;
 
 		if ((st->parameters[i].type == SUBTILIS_TYPE_REAL) &&
