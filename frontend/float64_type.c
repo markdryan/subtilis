@@ -539,6 +539,7 @@ subtilis_type_if subtilis_type_const_float64 = {
 	.is_const = true,
 	.is_numeric = true,
 	.is_integer = false,
+	.param_type = SUBTILIS_IR_REG_TYPE_REAL,
 	.size = NULL,
 	.data_size = NULL,
 	.zero = prv_zero_const,
@@ -581,6 +582,9 @@ subtilis_type_if subtilis_type_const_float64 = {
 	.asr = NULL,
 	.abs = prv_abs_const,
 	.sgn = prv_sgn_const,
+	.call = NULL,
+	.ret = NULL,
+	.print = NULL,
 };
 
 /* clang-format on */
@@ -1099,6 +1103,15 @@ static subtilis_exp_t *prv_call(subtilis_parser_t *p,
 	return subtilis_exp_new_var(type, reg, err);
 }
 
+static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t ret_reg;
+
+	ret_reg.reg = reg;
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_RET_REAL, ret_reg, err);
+}
+
 static void prv_print_fp(subtilis_parser_t *p, size_t reg,
 			 subtilis_error_t *err)
 {
@@ -1138,6 +1151,7 @@ subtilis_type_if subtilis_type_float64 = {
 	.is_const = false,
 	.is_numeric = true,
 	.is_integer = false,
+	.param_type = SUBTILIS_IR_REG_TYPE_REAL,
 	.size = prv_size,
 	.data_size = NULL,
 	.zero = prv_zero,
@@ -1181,6 +1195,7 @@ subtilis_type_if subtilis_type_float64 = {
 	.abs = prv_abs,
 	.sgn = prv_sgn,
 	.call = prv_call,
+	.ret = prv_ret,
 	.print = prv_print,
 };
 

@@ -17,6 +17,7 @@
 #ifndef __SUBTILIS_TYPE_IF_H
 #define __SUBTILIS_TYPE_IF_H
 
+#include "../common/ir.h"
 #include "expression.h"
 #include "parser.h"
 
@@ -88,6 +89,7 @@ struct subtilis_type_if_ {
 	bool is_const;
 	bool is_numeric;
 	bool is_integer;
+	subtilis_ir_reg_type_t param_type;
 	subtilis_type_if_size_t size;
 	subtilis_type_if_unary_t data_size;
 	subtilis_type_if_none_t zero;
@@ -135,6 +137,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_unary_t abs;
 	subtilis_type_if_unary_t sgn;
 	subtilis_type_if_call_t call;
+	subtilis_type_if_reg_t ret;
 	subtilis_type_if_print_t print;
 };
 
@@ -244,7 +247,7 @@ subtilis_exp_t *subtilis_type_if_dup(subtilis_exp_t *e, subtilis_error_t *err);
 
 /*
  * Assigns the value in expression e to the given register of the appropriate
- * type.  Only implemented for scalar types.
+ * type.  If e represents a reference type, e's reference is incremented.
  */
 
 void subtilis_type_if_assign_to_reg(subtilis_parser_t *p, size_t reg,
@@ -512,6 +515,14 @@ subtilis_exp_t *subtilis_type_if_call(subtilis_parser_t *p,
 				      subtilis_error_t *err);
 
 /*
+ * Generate a return instruction for a type of type that returns that
+ * value in register reg.
+ */
+
+void subtilis_type_if_ret(subtilis_parser_t *p, const subtilis_type_t *type,
+			  size_t reg, subtilis_error_t *err);
+
+/*
  * Prints the register expression e to the current output device.
  */
 
@@ -544,5 +555,12 @@ subtilis_exp_t *subtilis_type_if_coerce_type(subtilis_parser_t *p,
 					     subtilis_exp_t *e,
 					     const subtilis_type_t *type,
 					     subtilis_error_t *err);
+
+/*
+ * Returns the type of register used to pass a parameter of type type to
+ * functions and procedures.
+ */
+
+subtilis_ir_reg_type_t subtilis_type_if_reg_type(const subtilis_type_t *type);
 
 #endif

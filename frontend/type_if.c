@@ -681,6 +681,19 @@ subtilis_exp_t *subtilis_type_if_call(subtilis_parser_t *p,
 	return fn(p, type, args, num_args, err);
 }
 
+void subtilis_type_if_ret(subtilis_parser_t *p, const subtilis_type_t *type,
+			  size_t reg, subtilis_error_t *err)
+{
+	subtilis_type_if_reg_t fn;
+
+	fn = prv_type_map[type->type]->ret;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(p, reg, err);
+}
+
 void subtilis_type_if_print(subtilis_parser_t *p, subtilis_exp_t *e,
 			    subtilis_error_t *err)
 {
@@ -730,4 +743,9 @@ subtilis_exp_t *subtilis_type_if_coerce_type(subtilis_parser_t *p,
 	}
 
 	return fn(p, e, type, err);
+}
+
+subtilis_ir_reg_type_t subtilis_type_if_reg_type(const subtilis_type_t *type)
+{
+	return prv_type_map[type->type]->param_type;
 }

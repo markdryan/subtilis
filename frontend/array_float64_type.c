@@ -253,11 +253,21 @@ static subtilis_exp_t *prv_call(subtilis_parser_t *p,
 	return subtilis_exp_new_var(type, reg, err);
 }
 
+static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t ret_reg;
+
+	ret_reg.reg = reg;
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_RET_I32, ret_reg, err);
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_array_float64 = {
 	.is_const = false,
 	.is_numeric = false,
 	.is_integer = false,
+	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = prv_size,
 	.data_size = prv_data_size,
 	.zero = prv_zero,
@@ -267,7 +277,7 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.exp_to_var = prv_exp_to_var,
 	.copy_var = NULL,
 	.dup = NULL,
-	.assign_reg = NULL,
+	.assign_reg = subtilis_array_type_assign_to_reg,
 	.assign_mem = NULL,
 	.indexed_write = prv_indexed_write,
 	.indexed_add = prv_indexed_add,
@@ -297,6 +307,7 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.asr = prv_asr,
 	.abs = prv_abs,
 	.call = prv_call,
+	.ret = prv_ret,
 };
 
 /* clang-format on */
