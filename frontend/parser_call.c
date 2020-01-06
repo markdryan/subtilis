@@ -582,11 +582,11 @@ static size_t prv_init_block_variables(subtilis_parser_t *p,
 	dest_op.reg = SUBTILIS_IR_REG_LOCAL;
 	for (i = 0; i < stype->num_parameters; i++) {
 		t = &stype->parameters[i];
-		if (t->type == SUBTILIS_TYPE_INTEGER) {
-			source_reg++;
-			continue;
-		} else if ((t->type != SUBTILIS_TYPE_ARRAY_REAL) &&
-			   (t->type != SUBTILIS_TYPE_ARRAY_INTEGER)) {
+		if ((t->type != SUBTILIS_TYPE_ARRAY_REAL) &&
+		    (t->type != SUBTILIS_TYPE_ARRAY_INTEGER)) {
+			if (subtilis_type_if_reg_type(t) ==
+			    SUBTILIS_IR_REG_TYPE_INTEGER)
+				source_reg++;
 			continue;
 		}
 		blocks++;
@@ -594,7 +594,7 @@ static size_t prv_init_block_variables(subtilis_parser_t *p,
 		subtlis_array_type_copy_param_ref(
 		    p, t, dest_op, symbols[i]->loc, source_op, 0, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return false;
+			return 0;
 	}
 
 	return blocks;
@@ -934,9 +934,27 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 	}
 
 	call_site = &call->s->ops[call_index]->op.call;
+	switch (call->s->ops[call_index]->type) {
+	case SUBTILIS_OP_CALL:
+	case SUBTILIS_OP_CALLI32:
+	case SUBTILIS_OP_CALLREAL:
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
 	for (i = 0; i < st->num_parameters; i++) {
 		if (subtilis_type_eq(&st->parameters[i], &ct->parameters[i]))
 			continue;
+
+		/*
+		 * TODO.  Haven't bothered to make this code generic as it will
+		 * probably all dissapear when we have multi file subtilis
+		 * programs.  We'll need to do two passes of the source and
+		 * so there will be no need to promote anything as we'll always
+		 * know the parameter types in advance.
+		 */
 
 		if ((st->parameters[i].type == SUBTILIS_TYPE_REAL) &&
 		    (ct->parameters[i].type == SUBTILIS_TYPE_INTEGER)) {
@@ -953,16 +971,6 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 			subtilis_error_set_bad_arg_type(
 			    err, i + 1, expected_typname, got_typname,
 			    p->l->stream->name, call->line, __FILE__, __LINE__);
-			return;
-		}
-
-		switch (call->s->ops[call_index]->type) {
-		case SUBTILIS_OP_CALL:
-		case SUBTILIS_OP_CALLI32:
-		case SUBTILIS_OP_CALLREAL:
-			break;
-		default:
-			subtilis_error_set_assertion_failed(err);
 			return;
 		}
 
