@@ -75,13 +75,13 @@ static void prv_vdu_2bytes(subtilis_parser_t *p, subtilis_exp_t *e,
 	} else if (e->type.type == SUBTILIS_TYPE_CONST_INTEGER) {
 		op1.integer = e->exp.ir_op.integer & 0xff;
 		subtilis_ir_section_add_instr_no_reg(
-		    p->current, SUBTILIS_OP_INSTR_VDUI, e->exp.ir_op, err);
+		    p->current, SUBTILIS_OP_INSTR_VDUI, op1, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		subtilis_exp_handle_errors(p, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		op1.integer = e->exp.ir_op.integer >> 8;
+		op1.integer = (e->exp.ir_op.integer >> 8) & 0xff;
 		subtilis_ir_section_add_instr_no_reg(
 		    p->current, SUBTILIS_OP_INSTR_VDUI, op1, err);
 	} else {
