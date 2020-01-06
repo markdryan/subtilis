@@ -67,6 +67,12 @@ static void prv_dup(subtilis_exp_t *e1, subtilis_exp_t *e2,
 	e2->exp.ir_op = e1->exp.ir_op;
 }
 
+static subtilis_exp_t *prv_copy_const(subtilis_parser_t *p, subtilis_exp_t *e,
+				      subtilis_error_t *err)
+{
+	return e;
+}
+
 static void prv_assign_to_reg_const(subtilis_parser_t *p, size_t reg,
 				    subtilis_exp_t *e, subtilis_error_t *err)
 {
@@ -548,7 +554,7 @@ subtilis_type_if subtilis_type_const_float64 = {
 	.array_of = NULL,
 	.element_type = NULL,
 	.exp_to_var = prv_exp_to_var_const,
-	.copy_var = NULL,
+	.copy_var = prv_copy_const,
 	.dup = prv_dup,
 	.assign_reg = prv_assign_to_reg_const,
 	.assign_mem = prv_assign_to_mem_const,
