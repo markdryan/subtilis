@@ -528,6 +528,23 @@ void subtilis_array_type_ref(subtilis_parser_t *p, size_t mem_reg, size_t loc,
 					     op0, err);
 }
 
+void subtilis_array_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
+				       subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op2;
+
+	op0.reg = reg;
+	op2.integer = 0;
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_MOV,
+					  op0, e->exp.ir_op, op2, err);
+	subtilis_exp_delete(e);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_array_type_ref(p, reg, 0, err);
+}
+
 void subtilis_array_type_pop_and_deref(subtilis_parser_t *p,
 				       subtilis_error_t *err)
 {
@@ -1015,7 +1032,7 @@ void subtilis_array_write(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_coerce_type(p, e, el_type, err);
+	e = subtilis_type_if_coerce_type(p, e, el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1072,7 +1089,7 @@ void subtilis_array_add(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_coerce_type(p, e, el_type, err);
+	e = subtilis_type_if_coerce_type(p, e, el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1105,7 +1122,7 @@ void subtilis_array_sub(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_coerce_type(p, e, el_type, err);
+	e = subtilis_type_if_coerce_type(p, e, el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

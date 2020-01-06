@@ -226,30 +226,13 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 	subtilis_parser_call_t *call = NULL;
 	char *tmp_name;
 
-	if (fn_type->type == SUBTILIS_TYPE_VOID) {
+	if (fn_type->type == SUBTILIS_TYPE_VOID)
 		subtilis_ir_section_add_call(p->current, num_params, args, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto on_error;
-		args = NULL;
-	} else {
-		if ((fn_type->type == SUBTILIS_TYPE_INTEGER) ||
-		    (fn_type->type == SUBTILIS_TYPE_ARRAY_REAL) ||
-		    (fn_type->type == SUBTILIS_TYPE_ARRAY_INTEGER))
-			reg = subtilis_ir_section_add_i32_call(
-			    p->current, num_params, args, err);
-		else if (fn_type->type == SUBTILIS_TYPE_REAL)
-			reg = subtilis_ir_section_add_real_call(
-			    p->current, num_params, args, err);
-		else
-			subtilis_error_set_assertion_failed(err);
-
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto on_error;
-		args = NULL;
-		e = subtilis_exp_new_var(fn_type, reg, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto on_error;
-	}
+	else
+		e = subtilis_type_if_call(p, fn_type, args, num_params, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+	args = NULL;
 
 	/* For calls made inside handlers we will add the offset from the start
 	 * of the handler section and fix it up later on when checking the
@@ -266,7 +249,8 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 
 	if ((fn_type->type == SUBTILIS_TYPE_ARRAY_REAL) ||
 	    (fn_type->type == SUBTILIS_TYPE_ARRAY_INTEGER)) {
-		reg = prv_create_tmp_ref(p, reg, fn_type, &tmp_name, err);
+		reg = prv_create_tmp_ref(p, e->exp.ir_op.reg, fn_type,
+					 &tmp_name, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 		e->exp.ir_op.reg = reg;
@@ -302,29 +286,6 @@ on_error:
 	free(name);
 
 	return NULL;
-}
-
-subtilis_exp_t *subtilis_exp_coerce_type(subtilis_parser_t *p,
-					 subtilis_exp_t *e,
-					 const subtilis_type_t *type,
-					 subtilis_error_t *err)
-{
-	if (subtilis_type_eq(type, &e->type))
-		return e;
-
-	switch (type->type) {
-	case SUBTILIS_TYPE_REAL:
-		e = subtilis_type_if_to_float64(p, e, err);
-		break;
-	case SUBTILIS_TYPE_INTEGER:
-		e = subtilis_type_if_to_int(p, e, err);
-		break;
-	default:
-		subtilis_error_set_assertion_failed(err);
-		subtilis_exp_delete(e);
-		e = NULL;
-	}
-	return e;
 }
 
 /* Swap the arguments if necessary to ensure that the constant comes last

@@ -20,6 +20,24 @@
 
 #include "int32_type.h"
 
+static subtilis_exp_t *prv_zero_const(subtilis_parser_t *p,
+				      subtilis_error_t *err)
+{
+	return subtilis_exp_new_int32(0, err);
+}
+
+static subtilis_exp_t *prv_top_bit_const(subtilis_parser_t *p,
+					 subtilis_error_t *err)
+{
+	return subtilis_exp_new_int32((int32_t)0x80000000, err);
+}
+
+static void prv_const_of(const subtilis_type_t *type,
+			 subtilis_type_t *const_type)
+{
+	const_type->type = SUBTILIS_TYPE_CONST_INTEGER;
+}
+
 static subtilis_exp_t *prv_exp_to_var_const(subtilis_parser_t *p,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err)
@@ -99,6 +117,38 @@ static subtilis_exp_t *prv_to_float64_const(subtilis_parser_t *p,
 {
 	e->type.type = SUBTILIS_TYPE_CONST_REAL;
 	e->exp.ir_op.real = (double)e->exp.ir_op.integer;
+	return e;
+}
+
+static subtilis_exp_t *prv_coerce_type_const(subtilis_parser_t *p,
+					     subtilis_exp_t *e,
+					     const subtilis_type_t *type,
+					     subtilis_error_t *err)
+{
+	switch (type->type) {
+	case SUBTILIS_TYPE_CONST_REAL:
+		e->type.type = SUBTILIS_TYPE_CONST_REAL;
+		e->exp.ir_op.real = (double)e->exp.ir_op.integer;
+		break;
+	case SUBTILIS_TYPE_CONST_INTEGER:
+		break;
+	case SUBTILIS_TYPE_REAL:
+		e = subtilis_type_if_exp_to_var(p, e, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+		e = subtilis_type_if_to_float64(p, e, err);
+		break;
+	case SUBTILIS_TYPE_INTEGER:
+		e = subtilis_type_if_exp_to_var(p, e, err);
+		break;
+	default:
+		subtilis_error_set_bad_conversion(
+		    err, subtilis_type_name(&e->type), subtilis_type_name(type),
+		    p->l->stream->name, p->l->line);
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
 	return e;
 }
 
@@ -727,10 +777,15 @@ static subtilis_exp_t *prv_sgn_const(subtilis_parser_t *p, subtilis_exp_t *e,
 /* clang-format off */
 subtilis_type_if subtilis_type_const_int32 = {
 	.is_const = true,
+	.is_numeric = true,
+	.is_integer = true,
+	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = NULL,
 	.data_size = NULL,
-	.zero = NULL,
+	.zero = prv_zero_const,
+	.top_bit = prv_top_bit_const,
 	.zero_reg = NULL,
+	.const_of = prv_const_of,
 	.array_of = NULL,
 	.element_type = NULL,
 	.exp_to_var = prv_exp_to_var_const,
@@ -745,6 +800,7 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.load_mem = NULL,
 	.to_int32 = prv_to_int32,
 	.to_float64 = prv_to_float64_const,
+	.coerce = prv_coerce_type_const,
 	.unary_minus = prv_unary_minus_const,
 	.add = prv_add_const,
 	.mul = prv_mul_const,
@@ -766,6 +822,9 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.asr = prv_asr_const,
 	.abs = prv_abs_const,
 	.sgn = prv_sgn_const,
+	.call = NULL,
+	.ret = NULL,
+	.print = NULL,
 };
 
 /* clang-format on */
@@ -778,6 +837,19 @@ static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
 	size_t reg_num;
 
 	op1.integer = 0;
+	reg_num = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	return subtilis_exp_new_int32_var(reg_num, err);
+}
+
+static subtilis_exp_t *prv_top_bit(subtilis_parser_t *p, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	size_t reg_num;
+
+	op1.integer = (int32_t)0x80000000;
 	reg_num = subtilis_ir_section_add_instr2(
 	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -893,6 +965,35 @@ on_error:
 
 	subtilis_exp_delete(e);
 	return NULL;
+}
+
+static subtilis_exp_t *prv_coerce_type(subtilis_parser_t *p, subtilis_exp_t *e,
+				       const subtilis_type_t *type,
+				       subtilis_error_t *err)
+{
+	switch (type->type) {
+	case SUBTILIS_TYPE_CONST_REAL:
+		e->type.type = SUBTILIS_TYPE_CONST_INTEGER;
+		e->exp.ir_op.integer = (int32_t)e->exp.ir_op.real;
+		e = subtilis_type_if_exp_to_var(p, e, err);
+		break;
+	case SUBTILIS_TYPE_CONST_INTEGER:
+		e = subtilis_type_if_exp_to_var(p, e, err);
+		break;
+	case SUBTILIS_TYPE_REAL:
+		e = subtilis_type_if_to_float64(p, e, err);
+		break;
+	case SUBTILIS_TYPE_INTEGER:
+		break;
+	default:
+		subtilis_error_set_bad_conversion(
+		    err, subtilis_type_name(&e->type), subtilis_type_name(type),
+		    p->l->stream->name, p->l->line);
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return e;
 }
 
 static subtilis_exp_t *prv_unary_minus(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -1651,13 +1752,49 @@ cleanup:
 	return NULL;
 }
 
+static subtilis_exp_t *prv_call(subtilis_parser_t *p,
+				const subtilis_type_t *type,
+				subtilis_ir_arg_t *args, size_t num_args,
+				subtilis_error_t *err)
+{
+	size_t reg;
+
+	reg = subtilis_ir_section_add_i32_call(p->current, num_args, args, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_var(type, reg, err);
+}
+
+static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t ret_reg;
+
+	ret_reg.reg = reg;
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_RET_I32, ret_reg, err);
+}
+
+static void prv_print(subtilis_parser_t *p, subtilis_exp_t *e,
+		      subtilis_error_t *err)
+{
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_PRINT_I32, e->exp.ir_op, err);
+	subtilis_exp_delete(e);
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_int32 = {
 	.is_const = false,
+	.is_numeric = true,
+	.is_integer = true,
+	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = prv_size,
 	.data_size = NULL,
 	.zero = prv_zero,
+	.top_bit = prv_top_bit,
 	.zero_reg = prv_zero_reg,
+	.const_of = prv_const_of,
 	.array_of = prv_array_of,
 	.element_type = NULL,
 	.exp_to_var = prv_exp_to_var,
@@ -1672,6 +1809,7 @@ subtilis_type_if subtilis_type_int32 = {
 	.load_mem = prv_load_from_mem,
 	.to_int32 = prv_to_int32,
 	.to_float64 = prv_to_float64,
+	.coerce = prv_coerce_type,
 	.unary_minus = prv_unary_minus,
 	.add = prv_add,
 	.mul = prv_mul,
@@ -1693,6 +1831,9 @@ subtilis_type_if subtilis_type_int32 = {
 	.asr = prv_asr,
 	.abs = prv_abs,
 	.sgn = prv_sgn,
+	.call = prv_call,
+	.ret = prv_ret,
+	.print = prv_print,
 };
 
 /* clang-format on */

@@ -163,6 +163,20 @@ subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 	return fn(p, err);
 }
 
+subtilis_exp_t *subtilis_type_if_top_bit(subtilis_parser_t *p,
+					 const subtilis_type_t *type,
+					 subtilis_error_t *err)
+{
+	subtilis_type_if_none_t fn;
+
+	fn = prv_type_map[type->type]->top_bit;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+	return fn(p, err);
+}
+
 void subtilis_type_if_zero_reg(subtilis_parser_t *p,
 			       const subtilis_type_t *type, size_t reg,
 			       subtilis_error_t *err)
@@ -189,6 +203,20 @@ void subtilis_type_if_array_of(subtilis_parser_t *p,
 		return;
 	}
 	fn(element_type, type);
+}
+
+void subtilis_type_if_const_of(const subtilis_type_t *type,
+			       subtilis_type_t *const_type,
+			       subtilis_error_t *err)
+{
+	subtilis_type_if_typeof_t fn;
+
+	fn = prv_type_map[type->type]->const_of;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(type, const_type);
 }
 
 void subtilis_type_if_element_type(subtilis_parser_t *p,
@@ -636,4 +664,88 @@ subtilis_exp_t *subtilis_type_if_sgn(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err)
 {
 	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->sgn, err);
+}
+
+subtilis_exp_t *subtilis_type_if_call(subtilis_parser_t *p,
+				      const subtilis_type_t *type,
+				      subtilis_ir_arg_t *args, size_t num_args,
+				      subtilis_error_t *err)
+{
+	subtilis_type_if_call_t fn;
+
+	fn = prv_type_map[type->type]->call;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+	return fn(p, type, args, num_args, err);
+}
+
+void subtilis_type_if_ret(subtilis_parser_t *p, const subtilis_type_t *type,
+			  size_t reg, subtilis_error_t *err)
+{
+	subtilis_type_if_reg_t fn;
+
+	fn = prv_type_map[type->type]->ret;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(p, reg, err);
+}
+
+void subtilis_type_if_print(subtilis_parser_t *p, subtilis_exp_t *e,
+			    subtilis_error_t *err)
+{
+	subtilis_type_if_print_t fn;
+
+	fn = prv_type_map[e->type.type]->print;
+	if (!fn) {
+		subtilis_exp_delete(e);
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(p, e, err);
+}
+
+bool subtilis_type_if_is_const(const subtilis_type_t *type)
+{
+	return prv_type_map[type->type]->is_const;
+}
+
+bool subtilis_type_if_is_numeric(const subtilis_type_t *type)
+{
+	return prv_type_map[type->type]->is_numeric;
+}
+
+bool subtilis_type_if_is_integer(const subtilis_type_t *type)
+{
+	return prv_type_map[type->type]->is_integer;
+}
+
+subtilis_exp_t *subtilis_type_if_coerce_type(subtilis_parser_t *p,
+					     subtilis_exp_t *e,
+					     const subtilis_type_t *type,
+					     subtilis_error_t *err)
+{
+	subtilis_type_if_coerce_t fn;
+
+	if (subtilis_type_eq(type, &e->type))
+		return e;
+
+	fn = prv_type_map[e->type.type]->coerce;
+	if (!fn) {
+		subtilis_exp_delete(e);
+		subtilis_error_set_bad_conversion(
+		    err, subtilis_type_name(&e->type), subtilis_type_name(type),
+		    p->l->stream->name, p->l->line);
+		return NULL;
+	}
+
+	return fn(p, e, type, err);
+}
+
+subtilis_ir_reg_type_t subtilis_type_if_reg_type(const subtilis_type_t *type)
+{
+	return prv_type_map[type->type]->param_type;
 }

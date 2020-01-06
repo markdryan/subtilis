@@ -17,6 +17,7 @@
 #ifndef __SUBTILIS_TYPE_IF_H
 #define __SUBTILIS_TYPE_IF_H
 
+#include "../common/ir.h"
 #include "expression.h"
 #include "parser.h"
 
@@ -51,7 +52,6 @@ typedef void (*subtilis_type_if_sizet2_exp_t)(subtilis_parser_t *p, size_t reg,
 typedef subtilis_exp_t *(*subtilis_type_if_load_t)(subtilis_parser_t *p,
 						   size_t reg, size_t loc,
 						   subtilis_error_t *err);
-
 /* clang-format off */
 typedef void (*subtilis_type_if_iwrite_t)(subtilis_parser_t *p,
 					  const char *var_name,
@@ -68,14 +68,34 @@ typedef subtilis_exp_t *(*subtilis_type_if_iread_t)(subtilis_parser_t *p,
 						    subtilis_exp_t **indices,
 						    size_t index_count,
 						    subtilis_error_t *err);
+typedef subtilis_exp_t *(*subtilis_type_if_call_t)(subtilis_parser_t *p,
+						   const subtilis_type_t *type,
+						   subtilis_ir_arg_t *args,
+						   size_t num_args,
+						   subtilis_error_t *err);
+
+typedef subtilis_exp_t *(*subtilis_type_if_coerce_t)(
+	subtilis_parser_t *p, subtilis_exp_t *e,
+	const subtilis_type_t *type,
+	subtilis_error_t *err);
+
 /* clang-format on */
+
+typedef void (*subtilis_type_if_print_t)(subtilis_parser_t *p,
+					 subtilis_exp_t *e,
+					 subtilis_error_t *err);
 
 struct subtilis_type_if_ {
 	bool is_const;
+	bool is_numeric;
+	bool is_integer;
+	subtilis_ir_reg_type_t param_type;
 	subtilis_type_if_size_t size;
 	subtilis_type_if_unary_t data_size;
 	subtilis_type_if_none_t zero;
+	subtilis_type_if_none_t top_bit;
 	subtilis_type_if_reg_t zero_reg;
+	subtilis_type_if_typeof_t const_of;
 	subtilis_type_if_typeof_t array_of;
 	subtilis_type_if_typeof_t element_type;
 	subtilis_type_if_unary_t exp_to_var;
@@ -90,6 +110,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_load_t load_mem;
 	subtilis_type_if_unary_t to_int32;
 	subtilis_type_if_unary_t to_float64;
+	subtilis_type_if_coerce_t coerce;
 	subtilis_type_if_unary_t unary_minus;
 	subtilis_type_if_binary_t add;
 	subtilis_type_if_binary_t mul;
@@ -115,6 +136,9 @@ struct subtilis_type_if_ {
 	subtilis_type_if_binary_t asr;
 	subtilis_type_if_unary_t abs;
 	subtilis_type_if_unary_t sgn;
+	subtilis_type_if_call_t call;
+	subtilis_type_if_reg_t ret;
+	subtilis_type_if_print_t print;
 };
 
 typedef struct subtilis_type_if_ subtilis_type_if;
@@ -150,6 +174,15 @@ subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 				      subtilis_error_t *err);
 
 /*
+ * Only defined for integer types.  Returns an expression containing an
+ * integer of the appropriate type with its top bit (its sign bit) set.
+ */
+
+subtilis_exp_t *subtilis_type_if_top_bit(subtilis_parser_t *p,
+					 const subtilis_type_t *type,
+					 subtilis_error_t *err);
+
+/*
  * Initialises a register of the correct type to its zero value.  For
  * example, for a 32 bit integer this function would generate a
  * movii32 reg, 0.  For reference types we treat the register as an
@@ -158,6 +191,14 @@ subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 
 void subtilis_type_if_zero_reg(subtilis_parser_t *p,
 			       const subtilis_type_t *type, size_t reg,
+			       subtilis_error_t *err);
+
+/*
+ * Returns the const type of a type
+ */
+
+void subtilis_type_if_const_of(const subtilis_type_t *type,
+			       subtilis_type_t *const_type,
 			       subtilis_error_t *err);
 
 /*
@@ -206,7 +247,7 @@ subtilis_exp_t *subtilis_type_if_dup(subtilis_exp_t *e, subtilis_error_t *err);
 
 /*
  * Assigns the value in expression e to the given register of the appropriate
- * type.  Only implemented for scalar types.
+ * type.  If e represents a reference type, e's reference is incremented.
  */
 
 void subtilis_type_if_assign_to_reg(subtilis_parser_t *p, size_t reg,
@@ -282,14 +323,18 @@ subtilis_exp_t *subtilis_type_if_load_from_mem(subtilis_parser_t *p,
 					       subtilis_error_t *err);
 
 /*
- * Converts a scalar type to an int.
+ * Converts a scalar type to an int.  The constant status of e is
+ * perseved.  So if e is a constant double, a constant integer expression,
+ * is returned.
  */
 
 subtilis_exp_t *subtilis_type_if_to_int(subtilis_parser_t *p, subtilis_exp_t *e,
 					subtilis_error_t *err);
 
 /*
- * Converts a scalar type to a float64.
+ * Converts a scalar type to a float64.  The constant status of e is
+ * perseved.  So if e is a constant integer, a constant double expression,
+ * is returned.
  */
 
 subtilis_exp_t *subtilis_type_if_to_float64(subtilis_parser_t *p,
@@ -456,5 +501,66 @@ subtilis_exp_t *subtilis_type_if_abs(subtilis_parser_t *p, subtilis_exp_t *e,
 
 subtilis_exp_t *subtilis_type_if_sgn(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err);
+
+/*
+ * Generates a call instruction for a function that returns a value of type
+ * type.  A register of the appropriate type is returned.  This register will
+ * hold either the return value or a reference to the return value.  Ownership
+ * of args is transferred to the call on success.
+ */
+
+subtilis_exp_t *subtilis_type_if_call(subtilis_parser_t *p,
+				      const subtilis_type_t *type,
+				      subtilis_ir_arg_t *args, size_t num_args,
+				      subtilis_error_t *err);
+
+/*
+ * Generate a return instruction for a type of type that returns that
+ * value in register reg.
+ */
+
+void subtilis_type_if_ret(subtilis_parser_t *p, const subtilis_type_t *type,
+			  size_t reg, subtilis_error_t *err);
+
+/*
+ * Prints the register expression e to the current output device.
+ */
+
+void subtilis_type_if_print(subtilis_parser_t *p, subtilis_exp_t *e,
+			    subtilis_error_t *err);
+
+/*
+ * Returns true if the given type is const.
+ */
+
+bool subtilis_type_if_is_const(const subtilis_type_t *type);
+
+/*
+ * Returns true if the given type is a numeric type.
+ */
+
+bool subtilis_type_if_is_numeric(const subtilis_type_t *type);
+
+/*
+ * Returns true if the given type is an integer of some kind.
+ */
+
+bool subtilis_type_if_is_integer(const subtilis_type_t *type);
+
+/*
+ * Converts expression e to type type, if possible.
+ */
+
+subtilis_exp_t *subtilis_type_if_coerce_type(subtilis_parser_t *p,
+					     subtilis_exp_t *e,
+					     const subtilis_type_t *type,
+					     subtilis_error_t *err);
+
+/*
+ * Returns the type of register used to pass a parameter of type type to
+ * functions and procedures.
+ */
+
+subtilis_ir_reg_type_t subtilis_type_if_reg_type(const subtilis_type_t *type);
 
 #endif

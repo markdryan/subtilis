@@ -199,6 +199,12 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_CONST_INTEGER_EXPECTED */
 	{"Constant integer expected\n", 0},
+
+	/* SUBTILIS_ERROR_NUMERIC_EXP_EXPECTED */
+	{"Numeric expression expected\n", 0},
+
+	/* SUBTILIS_ERROR_BAD_CONVERSION, */
+	{"Unable to convert from %s to %s\n", 2},
 };
 
 /* clang-format on */

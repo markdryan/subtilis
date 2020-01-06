@@ -35,7 +35,7 @@ void subtilis_var_assign_hidden(subtilis_parser_t *p, const char *var_name,
 
 	op1.reg = SUBTILIS_IR_REG_GLOBAL;
 
-	e = subtilis_exp_coerce_type(p, e, &s->t, err);
+	e = subtilis_type_if_coerce_type(p, e, &s->t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

@@ -38,11 +38,10 @@ static subtilis_exp_t *prv_numeric_expression(subtilis_parser_t *p,
 	e = subtilis_parser_priority7(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	if ((e->type.type != SUBTILIS_TYPE_CONST_INTEGER) &&
-	    (e->type.type != SUBTILIS_TYPE_CONST_REAL) &&
-	    (e->type.type != SUBTILIS_TYPE_INTEGER) &&
-	    (e->type.type != SUBTILIS_TYPE_REAL)) {
+	if (!subtilis_type_if_is_numeric(&e->type)) {
 		subtilis_exp_delete(e);
+		subtilis_error_set_numeric_exp_expected(err, p->l->stream->name,
+							p->l->line);
 		return NULL;
 	}
 
@@ -60,26 +59,69 @@ static subtilis_step_type_t prv_compute_step_type(subtilis_parser_t *p,
 						  subtilis_exp_t *step,
 						  subtilis_error_t *err)
 {
-	switch (step->type.type) {
-	case SUBTILIS_TYPE_CONST_INTEGER:
-		if (step->exp.ir_op.integer == 0)
-			subtilis_error_set_zero_step(err, p->l->stream->name,
-						     p->l->line);
-		return step->exp.ir_op.integer < 0 ? SUBTILIS_STEP_CONST_DEC
-						   : SUBTILIS_STEP_CONST_INC;
-	case SUBTILIS_TYPE_CONST_REAL:
-		if (step->exp.ir_op.real == 0.0)
-			subtilis_error_set_zero_step(err, p->l->stream->name,
-						     p->l->line);
-		return step->exp.ir_op.real < 0.0 ? SUBTILIS_STEP_CONST_DEC
-						  : SUBTILIS_STEP_CONST_INC;
-	case SUBTILIS_TYPE_INTEGER:
-	case SUBTILIS_TYPE_REAL:
-		return SUBTILIS_STEP_VAR;
-	default:
-		subtilis_error_set_assertion_failed(err);
-		break;
+	subtilis_step_type_t retval;
+	subtilis_exp_t *e = NULL;
+	subtilis_exp_t *step_dup = NULL;
+
+	if (!subtilis_type_if_is_numeric(&step->type)) {
+		subtilis_error_set_numeric_exp_expected(err, p->l->stream->name,
+							p->l->line);
+		return SUBTILIS_STEP_MAX;
 	}
+
+	if (!subtilis_type_if_is_const(&step->type))
+		return SUBTILIS_STEP_VAR;
+
+	e = subtilis_type_if_zero(p, &step->type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SUBTILIS_STEP_MAX;
+
+	step_dup = subtilis_type_if_dup(step, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	e = subtilis_type_if_eq(p, step_dup, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	if (!subtilis_type_if_is_const(&e->type)) {
+		subtilis_error_set_assertion_failed(err);
+		goto on_error;
+	}
+
+	if (e->exp.ir_op.integer == -1) {
+		subtilis_error_set_zero_step(err, p->l->stream->name,
+					     p->l->line);
+		goto on_error;
+	}
+
+	subtilis_exp_delete(e);
+	e = subtilis_type_if_zero(p, &step->type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	step_dup = subtilis_type_if_dup(step, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	e = subtilis_type_if_lt(p, step_dup, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	if (!subtilis_type_if_is_const(&e->type)) {
+		subtilis_error_set_assertion_failed(err);
+		goto on_error;
+	}
+
+	retval = (e->exp.ir_op.integer == -1) ? SUBTILIS_STEP_CONST_DEC
+					      : SUBTILIS_STEP_CONST_INC;
+	subtilis_exp_delete(e);
+
+	return retval;
+
+on_error:
+
+	subtilis_exp_delete(e);
 
 	return SUBTILIS_STEP_MAX;
 }
@@ -114,7 +156,7 @@ static subtilis_exp_t *prv_increment_var(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_exp_coerce_type(p, e, &for_ctx->type, err);
+	e = subtilis_type_if_coerce_type(p, e, &for_ctx->type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -273,7 +315,7 @@ static void prv_for_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 
 	/* Ownership of e is passed to the following functions. */
 
-	e = subtilis_exp_coerce_type(p, e, &for_ctx->type, err);
+	e = subtilis_type_if_coerce_type(p, e, &for_ctx->type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -318,10 +360,10 @@ static void prv_for_loop_start(subtilis_parser_t *p, subtilis_token_t *t,
 	true_label->reg = subtilis_ir_section_new_label(p->current);
 }
 
-static void prv_for_step_real_var(subtilis_parser_t *p, subtilis_token_t *t,
-				  subtilis_exp_t *to, subtilis_exp_t *step,
-				  subtilis_for_context_t *for_ctx,
-				  subtilis_error_t *err)
+static void prv_for_step_generic_var(subtilis_parser_t *p, subtilis_token_t *t,
+				     subtilis_exp_t *to, subtilis_exp_t *step,
+				     subtilis_for_context_t *for_ctx,
+				     subtilis_error_t *err)
 {
 	subtilis_ir_operand_t start_label;
 	subtilis_ir_operand_t true_label;
@@ -348,7 +390,7 @@ static void prv_for_step_real_var(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	if (var->type.type != SUBTILIS_TYPE_REAL) {
+	if (!subtilis_type_if_is_numeric(&var->type)) {
 		subtilis_error_set_assertion_failed(err);
 		goto cleanup;
 	}
@@ -361,7 +403,7 @@ static void prv_for_step_real_var(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	zero = subtilis_exp_new_int32(0, err);
+	zero = subtilis_type_if_zero(p, &step_dup->type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -440,25 +482,39 @@ static void prv_for_step_int_var(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_ir_operand_t start_label;
 	subtilis_ir_operand_t true_label;
 	subtilis_ir_operand_t final_label;
-	subtilis_ir_operand_t op2;
-	size_t eor_reg;
-	size_t step_dir_reg = SIZE_MAX;
+	subtilis_type_t step_type_const;
+	subtilis_exp_t *step_dir = NULL;
+	subtilis_exp_t *step_dup = NULL;
 	subtilis_exp_t *conde = NULL;
 	subtilis_exp_t *var = NULL;
 	subtilis_exp_t *eor_var = NULL;
 	subtilis_exp_t *eor_var_dup = NULL;
 	subtilis_exp_t *zero = NULL;
 	subtilis_exp_t *sub = NULL;
-	subtilis_exp_t *top_bit = NULL;
 
 	/*
 	 * TODO: Add a runtime check for step variable of 0.
 	 * and generate an error.
 	 */
 
-	op2.integer = (int32_t)0x80000000;
-	step_dir_reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_ANDI_I32, step->exp.ir_op, op2, err);
+	step = subtilis_type_if_coerce_type(p, step, &for_ctx->type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	step_dup = subtilis_type_if_dup(step, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_type_if_const_of(&step->type, &step_type_const, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	step_dir = subtilis_type_if_top_bit(p, &step_type_const, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	step_dir = subtilis_type_if_and(p, step_dup, step_dir, err);
+	step_dup = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -471,7 +527,7 @@ static void prv_for_step_int_var(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	if (var->type.type != SUBTILIS_TYPE_INTEGER) {
+	if (!subtilis_type_if_is_integer(&var->type)) {
 		subtilis_error_set_assertion_failed(err);
 		goto cleanup;
 	}
@@ -482,20 +538,21 @@ static void prv_for_step_int_var(subtilis_parser_t *p, subtilis_token_t *t,
 	var = NULL;
 	to = NULL;
 
-	op2.reg = step_dir_reg;
-	eor_reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_EOR_I32, sub->exp.ir_op, op2, err);
+	step_dup = subtilis_type_if_dup(step_dir, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	eor_var = subtilis_exp_new_int32_var(eor_reg, err);
+	eor_var = subtilis_type_if_eor(p, sub, step_dup, err);
+	step_dup = NULL;
+	sub = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
+
 	eor_var_dup = subtilis_type_if_dup(eor_var, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	zero = subtilis_exp_new_int32(0, err);
+	zero = subtilis_type_if_zero(p, &step_type_const, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 	conde = subtilis_exp_lt(p, eor_var, zero, err);
@@ -514,14 +571,10 @@ static void prv_for_step_int_var(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	top_bit = subtilis_exp_new_int32_var(step_dir_reg, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
 	subtilis_exp_delete(conde);
-	conde = subtilis_type_if_neq(p, eor_var_dup, top_bit, err);
+	conde = subtilis_type_if_neq(p, eor_var_dup, step_dir, err);
 	eor_var_dup = NULL;
-	top_bit = NULL;
+	step_dir = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -542,6 +595,8 @@ cleanup:
 	subtilis_exp_delete(conde);
 	subtilis_exp_delete(var);
 	subtilis_exp_delete(to);
+	subtilis_exp_delete(step_dir);
+	subtilis_exp_delete(step_dup);
 	subtilis_exp_delete(step);
 }
 
@@ -679,8 +734,7 @@ void subtilis_parser_for(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	var_type = t->tok.id_type;
-	if ((var_type.type != SUBTILIS_TYPE_REAL) &&
-	    (var_type.type != SUBTILIS_TYPE_INTEGER)) {
+	if (!subtilis_type_if_is_numeric(&var_type)) {
 		subtilis_error_set_numeric_expected(
 		    err, tbuf, p->l->stream->name, p->l->line);
 		return;
@@ -724,12 +778,12 @@ void subtilis_parser_for(subtilis_parser_t *p, subtilis_token_t *t,
 			step = subtilis_type_if_copy_var(p, step, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
-			if (var_type.type == SUBTILIS_TYPE_INTEGER)
+			if (subtilis_type_if_is_integer(&var_type))
 				prv_for_step_int_var(p, t, to, step, &for_ctx,
 						     err);
 			else
-				prv_for_step_real_var(p, t, to, step, &for_ctx,
-						      err);
+				prv_for_step_generic_var(p, t, to, step,
+							 &for_ctx, err);
 		} else {
 			prv_for_step_const(p, t, to, step, step_type, &for_ctx,
 					   err);
