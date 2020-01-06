@@ -26,6 +26,18 @@ static subtilis_exp_t *prv_zero_const(subtilis_parser_t *p,
 	return subtilis_exp_new_int32(0, err);
 }
 
+static subtilis_exp_t *prv_top_bit_const(subtilis_parser_t *p,
+					 subtilis_error_t *err)
+{
+	return subtilis_exp_new_int32((int32_t)0x80000000, err);
+}
+
+static void prv_const_of(const subtilis_type_t *type,
+			 subtilis_type_t *const_type)
+{
+	const_type->type = SUBTILIS_TYPE_CONST_INTEGER;
+}
+
 static subtilis_exp_t *prv_exp_to_var_const(subtilis_parser_t *p,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err)
@@ -770,7 +782,9 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.size = NULL,
 	.data_size = NULL,
 	.zero = prv_zero_const,
+	.top_bit = prv_top_bit_const,
 	.zero_reg = NULL,
+	.const_of = prv_const_of,
 	.array_of = NULL,
 	.element_type = NULL,
 	.exp_to_var = prv_exp_to_var_const,
@@ -820,6 +834,19 @@ static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
 	size_t reg_num;
 
 	op1.integer = 0;
+	reg_num = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	return subtilis_exp_new_int32_var(reg_num, err);
+}
+
+static subtilis_exp_t *prv_top_bit(subtilis_parser_t *p, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	size_t reg_num;
+
+	op1.integer = (int32_t)0x80000000;
 	reg_num = subtilis_ir_section_add_instr2(
 	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1752,7 +1779,9 @@ subtilis_type_if subtilis_type_int32 = {
 	.size = prv_size,
 	.data_size = NULL,
 	.zero = prv_zero,
+	.top_bit = prv_top_bit,
 	.zero_reg = prv_zero_reg,
+	.const_of = prv_const_of,
 	.array_of = prv_array_of,
 	.element_type = NULL,
 	.exp_to_var = prv_exp_to_var,

@@ -26,6 +26,12 @@ static subtilis_exp_t *prv_zero_const(subtilis_parser_t *p,
 	return subtilis_exp_new_real(0.0, err);
 }
 
+static void prv_const_of(const subtilis_type_t *type,
+			 subtilis_type_t *const_type)
+{
+	const_type->type = SUBTILIS_TYPE_CONST_REAL;
+}
+
 static subtilis_exp_t *prv_returne(subtilis_parser_t *p, subtilis_exp_t *e,
 				   subtilis_error_t *err)
 {
@@ -537,6 +543,7 @@ subtilis_type_if subtilis_type_const_float64 = {
 	.data_size = NULL,
 	.zero = prv_zero_const,
 	.zero_reg = NULL,
+	.const_of = prv_const_of,
 	.array_of = NULL,
 	.element_type = NULL,
 	.exp_to_var = prv_exp_to_var_const,
@@ -1135,6 +1142,7 @@ subtilis_type_if subtilis_type_float64 = {
 	.data_size = NULL,
 	.zero = prv_zero,
 	.zero_reg = prv_zero_reg,
+	.const_of = prv_const_of,
 	.array_of = prv_array_of,
 	.element_type = NULL,
 	.exp_to_var = prv_returne,

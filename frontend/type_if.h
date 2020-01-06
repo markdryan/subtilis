@@ -91,7 +91,9 @@ struct subtilis_type_if_ {
 	subtilis_type_if_size_t size;
 	subtilis_type_if_unary_t data_size;
 	subtilis_type_if_none_t zero;
+	subtilis_type_if_none_t top_bit;
 	subtilis_type_if_reg_t zero_reg;
+	subtilis_type_if_typeof_t const_of;
 	subtilis_type_if_typeof_t array_of;
 	subtilis_type_if_typeof_t element_type;
 	subtilis_type_if_unary_t exp_to_var;
@@ -169,6 +171,15 @@ subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 				      subtilis_error_t *err);
 
 /*
+ * Only defined for integer types.  Returns an expression containing an
+ * integer of the appropriate type with its top bit (its sign bit) set.
+ */
+
+subtilis_exp_t *subtilis_type_if_top_bit(subtilis_parser_t *p,
+					 const subtilis_type_t *type,
+					 subtilis_error_t *err);
+
+/*
  * Initialises a register of the correct type to its zero value.  For
  * example, for a 32 bit integer this function would generate a
  * movii32 reg, 0.  For reference types we treat the register as an
@@ -177,6 +188,14 @@ subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 
 void subtilis_type_if_zero_reg(subtilis_parser_t *p,
 			       const subtilis_type_t *type, size_t reg,
+			       subtilis_error_t *err);
+
+/*
+ * Returns the const type of a type
+ */
+
+void subtilis_type_if_const_of(const subtilis_type_t *type,
+			       subtilis_type_t *const_type,
 			       subtilis_error_t *err);
 
 /*
