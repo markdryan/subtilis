@@ -294,7 +294,7 @@ static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 	s->array_access = SIZE_MAX;
 	s->cleanup_stack = SIZE_MAX;
 	s->cleanup_stack_nop = SIZE_MAX;
-	s->cleanup_stack_reg = s->reg_counter++;
+	s->cleanup_stack_reg = SIZE_MAX;
 
 	return s;
 }
@@ -627,6 +627,7 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	s->eflag_offset = eflag_offset;
 	s->error_offset = error_offset;
 	s->reg_counter += tp->int_regs;
+	s->cleanup_stack_reg = s->reg_counter++;
 	s->freg_counter += tp->fp_regs;
 	s->ftype = ftype;
 

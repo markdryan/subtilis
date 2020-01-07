@@ -2029,7 +2029,14 @@ const subtilis_test_case_t test_cases[] = {
 	 "f += 1\n"
 	 "print q\n",
 	 "512\n",
-	}
+	},
+	{"fn_local_array",
+	 "PRINT FNLocal%(7)\n"
+	 "def FNLocal%(n%)\n"
+	 "  local dim c%(10)\n"
+	 "<-n%\n",
+	 "7\n"
+	},
 };
 
 /* clang-format on */
