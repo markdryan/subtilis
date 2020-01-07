@@ -719,8 +719,8 @@ DEF FNDouble%(1)(a%(1))
 
 That may look a bit weird but that's how it currently works.
 
-* Note this is not currently supported.  You can't specify explicit dimension
-  sizes for either the arguments or the return types of a function. *
+*Note the following feature is not currently supported.  You can't specify explicit dimension
+sizes for either the arguments or the return types of a function.*
 
 The dimension of that array can be specified as well so that it is known at compile time, e.g.,
 
