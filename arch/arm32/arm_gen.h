@@ -148,6 +148,8 @@ void subtilis_arm_gen_pushi32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_popi32(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_lca(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_memseti32(subtilis_ir_section_t *s,
 				subtilis_arm_section_t *arm_s,
 				subtilis_error_t *err);

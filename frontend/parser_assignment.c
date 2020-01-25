@@ -189,8 +189,8 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 	case SUBTILIS_ASSIGN_TYPE_EQUAL:
 		if (dims == 0)
 			/* We're assigning an array reference */
-			subtilis_parser_array_assign_reference(p, op1.reg, s, e,
-							       err);
+			subtilis_parser_array_assign_reference(p, t, op1.reg, s,
+							       e, err);
 		else
 			subtilis_type_if_indexed_write(p, var_name, &s->t,
 						       op1.reg, s->loc, e,

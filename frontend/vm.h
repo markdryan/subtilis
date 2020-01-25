@@ -49,6 +49,8 @@ struct subitlis_vm_t_ {
 	size_t top;
 	bool quit_flag;
 	subtilis_vm_heap_t heap;
+	size_t *constants;
+	size_t max_constants;
 };
 
 typedef struct subitlis_vm_t_ subitlis_vm_t;

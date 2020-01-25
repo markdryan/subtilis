@@ -246,6 +246,7 @@ void subtilis_arm_section_add_ret_site(subtilis_arm_section_t *s, size_t op,
 subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 					   subtilis_arm_op_pool_t *op_pool,
 					   subtilis_string_pool_t *string_pool,
+					   subtilis_constant_pool_t *cnst_pool,
 					   bool handle_escapes,
 					   subtilis_error_t *err)
 {
@@ -268,6 +269,7 @@ subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 	arm_p->max_sections = max_sections;
 	arm_p->op_pool = op_pool;
 	arm_p->string_pool = subtilis_string_pool_clone(string_pool);
+	arm_p->constant_pool = subtilis_constant_pool_clone(cnst_pool);
 
 	/* Slightly weird but on ARM FPA the words of a double are big endian */
 	arm_p->reverse_fpa_consts = (*lower_word) == 0;
@@ -318,6 +320,7 @@ void subtilis_arm_prog_delete(subtilis_arm_prog_t *prog)
 			subtilis_arm_section_delete(prog->sections[i]);
 		free(prog->sections);
 	}
+	subtilis_constant_pool_delete(prog->constant_pool);
 	subtilis_string_pool_delete(prog->string_pool);
 	free(prog);
 }
@@ -438,7 +441,8 @@ void subtilis_arm_section_insert_label(subtilis_arm_section_t *s, size_t label,
 }
 
 static void prv_add_ui32_constant(subtilis_arm_section_t *s, size_t label,
-				  uint32_t num, subtilis_error_t *err)
+				  uint32_t num, bool link_time,
+				  subtilis_error_t *err)
 {
 	subtilis_arm_ui32_constant_t *c;
 	subtilis_arm_ui32_constant_t *new_constants;
@@ -459,6 +463,7 @@ static void prv_add_ui32_constant(subtilis_arm_section_t *s, size_t label,
 	c = &s->constants.ui32[s->constants.ui32_count++];
 	c->integer = num;
 	c->label = label;
+	c->link_time = link_time;
 }
 
 subtilis_arm_instr_t *
@@ -654,7 +659,7 @@ static size_t prv_add_data_imm_ldr(subtilis_arm_section_t *s,
 		label = s->constants.ui32[i].label;
 	} else {
 		label = s->label_counter++;
-		prv_add_ui32_constant(s, label, (uint32_t)op2, err);
+		prv_add_ui32_constant(s, label, (uint32_t)op2, false, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return 0;
 	}
@@ -680,7 +685,7 @@ size_t subtilis_arm_insert_data_imm_ldr(subtilis_arm_section_t *s,
 	subtilis_arm_instr_t *instr;
 	size_t label = s->label_counter++;
 
-	prv_add_ui32_constant(s, label, (uint32_t)op2, err);
+	prv_add_ui32_constant(s, label, (uint32_t)op2, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 
@@ -693,6 +698,31 @@ size_t subtilis_arm_insert_data_imm_ldr(subtilis_arm_section_t *s,
 	ldrc->ccode = ccode;
 	ldrc->dest = dest;
 	ldrc->label = label;
+	return label;
+}
+
+size_t subtilis_add_explicit_ldr(subtilis_arm_section_t *s,
+				 subtilis_arm_ccode_type_t ccode,
+				 subtilis_arm_reg_t dest, int32_t op2,
+				 bool link_time, subtilis_error_t *err)
+{
+	subtilis_arm_ldrc_instr_t *ldrc;
+	subtilis_arm_instr_t *instr;
+	size_t label = s->label_counter++;
+
+	prv_add_ui32_constant(s, label, (uint32_t)op2, link_time, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	instr = subtilis_arm_section_add_instr(s, SUBTILIS_ARM_INSTR_LDRC, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	ldrc = &instr->operands.ldrc;
+	ldrc->ccode = ccode;
+	ldrc->dest = dest;
+	ldrc->label = label;
+
 	return label;
 }
 

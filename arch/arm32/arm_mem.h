@@ -23,5 +23,8 @@
 void subtilis_arm_mem_memseti32(subtilis_ir_section_t *s,
 				subtilis_arm_section_t *arm_s,
 				subtilis_error_t *err);
+void subtilis_arm_mem_memcpy(subtilis_ir_section_t *s,
+			     subtilis_arm_section_t *arm_s,
+			     subtilis_error_t *err);
 
 #endif

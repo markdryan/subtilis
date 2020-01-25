@@ -20,6 +20,8 @@
 #include "float64_type.h"
 #include "parser_exp.h"
 
+static size_t prv_size(const subtilis_type_t *type) { return 8; }
+
 static subtilis_exp_t *prv_zero_const(subtilis_parser_t *p,
 				      subtilis_error_t *err)
 {
@@ -546,7 +548,7 @@ subtilis_type_if subtilis_type_const_float64 = {
 	.is_numeric = true,
 	.is_integer = false,
 	.param_type = SUBTILIS_IR_REG_TYPE_REAL,
-	.size = NULL,
+	.size = prv_size,
 	.data_size = NULL,
 	.zero = prv_zero_const,
 	.zero_reg = NULL,
@@ -594,8 +596,6 @@ subtilis_type_if subtilis_type_const_float64 = {
 };
 
 /* clang-format on */
-
-static size_t prv_size(const subtilis_type_t *type) { return 8; }
 
 static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
 {

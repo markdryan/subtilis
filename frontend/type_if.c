@@ -252,11 +252,17 @@ subtilis_exp_t *subtilis_type_if_copy_var(subtilis_parser_t *p,
 
 subtilis_exp_t *subtilis_type_if_dup(subtilis_exp_t *e, subtilis_error_t *err)
 {
+	subtilis_type_if_dup_t fn;
 	subtilis_exp_t *exp = subtilis_exp_new_empty(&e->type, err);
 
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	prv_type_map[e->type.type]->dup(e, exp, err);
+	fn = prv_type_map[e->type.type]->dup;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+	fn(e, exp, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		free(exp);
 		return NULL;

@@ -175,6 +175,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "deref", SUBTILIS_OP_CLASS_REG },
 	{ "pushi32", SUBTILIS_OP_CLASS_REG },
 	{ "popi32", SUBTILIS_OP_CLASS_REG },
+	{ "lca", SUBTILIS_OP_CLASS_REG_I32 },
 };
 
 /*
@@ -595,6 +596,10 @@ subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	p->constant_pool = subtilis_constant_pool_new(err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	p->handle_escapes = handle_escapes;
 
 	return p;
@@ -719,6 +724,10 @@ void subtilis_ir_prog_dump(subtilis_ir_prog_t *p)
 
 	printf("String Pool\n----------------\n\n");
 	subtilis_string_pool_dump(p->string_pool);
+	printf("\n");
+
+	printf("Constant Pool\n----------------\n\n");
+	subtilis_constant_pool_dump(p->constant_pool);
 }
 
 void subtilis_ir_prog_delete(subtilis_ir_prog_t *p)
@@ -733,6 +742,7 @@ void subtilis_ir_prog_delete(subtilis_ir_prog_t *p)
 	free(p->sections);
 
 	subtilis_string_pool_delete(p->string_pool);
+	subtilis_constant_pool_delete(p->constant_pool);
 	free(p);
 }
 

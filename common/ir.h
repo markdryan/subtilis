@@ -21,6 +21,7 @@
 
 #include "buffer.h"
 #include "builtins.h"
+#include "constant_pool.h"
 #include "error.h"
 #include "string_pool.h"
 #include "type.h"
@@ -1363,6 +1364,16 @@ typedef enum {
 
 	SUBTILIS_OP_INSTR_POP_I32,
 
+	/*
+	 *
+	 * lca r0, id
+	 *
+	 * Loads the address of a constant identified by an int32 id,
+	 * which is local to the source file, into r0.
+	 */
+
+	SUBTILIS_OP_INSTR_LCA,
+
 } subtilis_op_instr_type_t;
 
 typedef enum {
@@ -1483,6 +1494,7 @@ struct subtilis_ir_prog_t_ {
 	size_t max_sections;
 	subtilis_string_pool_t *string_pool;
 	bool handle_escapes;
+	subtilis_constant_pool_t *constant_pool;
 };
 
 typedef struct subtilis_ir_prog_t_ subtilis_ir_prog_t;

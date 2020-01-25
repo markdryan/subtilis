@@ -25,6 +25,7 @@ COMMON =\
 	ir.c \
 	hash_table.c \
 	symbol_table.c \
+	constant_pool.c \
 	string_pool.c \
 	type.c \
 	builtins.c \

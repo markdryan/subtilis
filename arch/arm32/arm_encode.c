@@ -142,15 +142,19 @@ static void prv_reset_pool_state(subtilis_arm_encode_ud_t *ud)
 	ud->ldrc_int = SIZE_MAX;
 }
 
-static void prv_ensure_code(subtilis_arm_encode_ud_t *ud, subtilis_error_t *err)
+static void prv_ensure_code_size(subtilis_arm_encode_ud_t *ud, size_t words,
+				 subtilis_error_t *err)
 {
 	size_t new_max_words;
 	uint32_t *new_code;
 
-	if (ud->words_written < ud->max_words)
+	if (ud->words_written + words < ud->max_words)
 		return;
 
-	new_max_words = SUBTILIS_ENCODER_CODE_GRAN + ud->max_words;
+	if (words < SUBTILIS_ENCODER_CODE_GRAN)
+		new_max_words = SUBTILIS_ENCODER_CODE_GRAN + ud->max_words;
+	else
+		new_max_words = words + ud->max_words;
 	new_code = realloc(ud->code, new_max_words);
 	if (!new_code) {
 		subtilis_error_set_oom(err);
@@ -159,6 +163,11 @@ static void prv_ensure_code(subtilis_arm_encode_ud_t *ud, subtilis_error_t *err)
 
 	ud->max_words = new_max_words;
 	ud->code = new_code;
+}
+
+static void prv_ensure_code(subtilis_arm_encode_ud_t *ud, subtilis_error_t *err)
+{
+	prv_ensure_code_size(ud, 1, err);
 }
 
 static void prv_encode_label(void *user_data, subtilis_arm_op_t *op,
@@ -228,6 +237,7 @@ static void prv_flush_constants(subtilis_arm_encode_ud_t *ud,
 	size_t j;
 	subtilis_arm_encode_const_t *cnst;
 	uint32_t *real_ptr;
+	int32_t constant_index;
 	subtilis_arm_section_t *arm_s = ud->arm_s;
 
 	for (i = 0; i < ud->const_count; i++) {
@@ -243,11 +253,22 @@ static void prv_flush_constants(subtilis_arm_encode_ud_t *ud,
 				subtilis_error_set_assertion_failed(err);
 				return;
 			}
+
 			prv_ensure_code(ud, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-			ud->code[ud->words_written++] =
-			    arm_s->constants.ui32[j].integer;
+			if (arm_s->constants.ui32[j].link_time) {
+				constant_index =
+				    arm_s->constants.ui32[j].integer;
+				subtilis_arm_link_constant_add(
+				    ud->link, cnst->code_index,
+				    ud->words_written, constant_index, err);
+				ud->code[ud->words_written] = 0xffff;
+			} else {
+				ud->code[ud->words_written] =
+				    arm_s->constants.ui32[j].integer;
+			}
+			ud->words_written++;
 			break;
 		case SUBTILIS_ARM_ENCODE_BP_LDRF:
 			for (j = 0; j < arm_s->constants.real_count; j++)
@@ -1234,11 +1255,34 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 	prv_apply_back_patches(ud, err);
 }
 
+static void prv_copy_constant_to_buf(subtilis_arm_prog_t *arm_p,
+				     subtilis_arm_encode_ud_t *ud,
+				     subtilis_constant_data_t *data)
+{
+	size_t i;
+	uint32_t *word;
+	size_t ptr;
+
+	if (data->dbl && arm_p->reverse_fpa_consts) {
+		ptr = ud->words_written;
+		for (i = 0; i < data->data_size / sizeof(double); i++) {
+			word = (uint32_t *)&data->data[i * sizeof(double)];
+			ud->code[ptr++] = word[1];
+			ud->code[ptr++] = word[0];
+		}
+	} else {
+		memcpy(&ud->code[ud->words_written], data->data,
+		       data->data_size);
+	}
+}
+
 static void prv_encode_prog(subtilis_arm_prog_t *arm_p,
 			    subtilis_arm_encode_ud_t *ud, subtilis_error_t *err)
 {
 	subtilis_arm_section_t *arm_s;
 	size_t i;
+	size_t size_in_words;
+	size_t *const_locations = NULL;
 
 	for (i = 0; i < arm_p->num_sections; i++) {
 		arm_s = arm_p->sections[i];
@@ -1249,7 +1293,31 @@ static void prv_encode_prog(subtilis_arm_prog_t *arm_p,
 			return;
 	}
 
-	subtilis_arm_link_link(ud->link, ud->code, ud->words_written, err);
+	/* Let's write the constants arrays and strings */
+
+	if (arm_p->constant_pool->size > 0) {
+		const_locations = malloc(arm_p->constant_pool->size *
+					 sizeof(*const_locations));
+		if (!const_locations) {
+			subtilis_error_set_oom(err);
+			return;
+		}
+		for (i = 0; i < arm_p->constant_pool->size; i++) {
+			size_in_words =
+			    arm_p->constant_pool->data[i].data_size >> 2;
+			prv_ensure_code_size(ud, size_in_words, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			const_locations[i] = ud->words_written;
+			prv_copy_constant_to_buf(
+			    arm_p, ud, &arm_p->constant_pool->data[i]);
+			ud->words_written += size_in_words;
+		}
+	}
+
+	subtilis_arm_link_link(ud->link, ud->code, ud->words_written,
+			       const_locations, arm_p->constant_pool->size,
+			       err);
 }
 
 void subtilis_arm_encode(subtilis_arm_prog_t *arm_p, const char *fname,
