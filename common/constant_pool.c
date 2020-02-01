@@ -53,7 +53,7 @@ void subtilis_constant_pool_delete(subtilis_constant_pool_t *pool)
 
 	for (i = 0; i < pool->size; i++)
 		free(pool->data[i].data);
-
+	free(pool->data);
 	free(pool);
 }
 
