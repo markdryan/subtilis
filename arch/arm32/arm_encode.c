@@ -1307,7 +1307,7 @@ static void prv_encode_prog(subtilis_arm_prog_t *arm_p,
 			    arm_p->constant_pool->data[i].data_size >> 2;
 			prv_ensure_code_size(ud, size_in_words, err);
 			if (err->type != SUBTILIS_ERROR_OK)
-				return;
+				goto cleanup;
 			const_locations[i] = ud->words_written;
 			prv_copy_constant_to_buf(
 			    arm_p, ud, &arm_p->constant_pool->data[i]);
@@ -1318,6 +1318,10 @@ static void prv_encode_prog(subtilis_arm_prog_t *arm_p,
 	subtilis_arm_link_link(ud->link, ud->code, ud->words_written,
 			       const_locations, arm_p->constant_pool->size,
 			       err);
+
+cleanup:
+
+	free(const_locations);
 }
 
 void subtilis_arm_encode(subtilis_arm_prog_t *arm_p, const char *fname,
