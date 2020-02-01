@@ -2037,6 +2037,121 @@ const subtilis_test_case_t test_cases[] = {
 	 "<-n%\n",
 	 "7\n"
 	},
+	{
+	"dyn_array_1d_too_many_initialisers",
+	"a% = 5\n"
+	"dim b%(a%)\n"
+	"onerror print err enderror\n"
+	"b%() = 0, 1, 2, 3, 4, 5, 6\n",
+	"10\n"
+	},
+	{
+	"dyn_array_2d_too_many_initialisers",
+	"a% = 2\n"
+	"b% = 2\n"
+	"dim c%(a%, b%)\n"
+	"onerror print err enderror\n"
+	"c%() = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9\n",
+	"10\n"
+	},
+	{
+	"array_1_initialisers",
+	"dim a%(4)\n"
+	"a%() = 1, 2, 3, 4, 5\n"
+	"print a%(0)\n"
+	"print a%(1)\n"
+	"print a%(2)\n"
+	"print a%(3)\n"
+	"print a%(4)\n",
+	"1\n2\n3\n4\n5\n"
+	},
+	{
+	"array_3d_initialisers",
+	"dim a%(1,1,1)\n"
+	"a%() = 1, 2, 3, 4, 5, 6, 7, 8\n"
+	"print a%(0,0,0)\n"
+	"print a%(0,0,1)\n"
+	"print a%(0,1,0)\n"
+	"print a%(0,1,1)\n"
+	"print a%(1,0,0)\n"
+	"print a%(1,0,1)\n"
+	"print a%(1,1,0)\n"
+	"print a%(1,1,1)\n",
+	"1\n2\n3\n4\n5\n6\n7\n8\n"
+	},
+	{
+	"dyn_array_1d_initialisers",
+	"b% := 10\n"
+	"dim a%(b%)\n"
+	"a%() = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11\n"
+	"for i% := 0 to 10 print a%(i%) next\n",
+	"1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n"
+	},
+	{
+	"array_1d_dbl_initialisers",
+	"dim a(4)\n"
+	"a() = 1, 2, 3, 4, 5\n"
+	"print a(0)\n"
+	"print a(1)\n"
+	"print a(2)\n"
+	"print a(3)\n"
+	"print a(4)\n",
+	"1\n2\n3\n4\n5\n"
+	},
+	{
+	"dyn_array_1d_dbl_initialisers",
+	"b% := 10\n"
+	"dim a(b%)\n"
+	"a() = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11\n"
+	"for i% := 0 to 10 print a(i%) next\n",
+	"1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n"
+	},
+	{
+	"const_array_3d_initialisers",
+	"dim a%(1,4,3)\n"
+	"a%() = 1, 2, 3, 4,\n"
+	"5, 6, 7, 8,\n"
+	"9, 10, 11, 12,\n"
+	"13, 14, 15, 16,\n"
+	"17, 18, 19, 20,\n"
+	"21, 22, 23, 24,\n"
+	"25, 26, 27, 28,\n"
+	"29, 30, 31, 32,\n"
+	"33, 34, 35, 36,\n"
+	"27, 38, 39, 40\n"
+	"\n"
+	"for i% := 0 to dim(a%(),1)\n"
+	"  for j% := 0 to dim(a%(),2)\n"
+	"    for k% := 0 to dim(a%(),3)\n"
+	"      print a%(i%, j%, k%)\n"
+	"    next\n"
+	"  next\n"
+	"next\n",
+	"1\n2\n3\n4\n"
+	"5\n6\n7\n8\n"
+	"9\n10\n11\n12\n"
+	"13\n14\n15\n16\n"
+	"17\n18\n19\n20\n"
+	"21\n22\n23\n24\n"
+	"25\n26\n27\n28\n"
+	"29\n30\n31\n32\n"
+	"33\n34\n35\n36\n"
+	"27\n38\n39\n40\n"
+	},
+	{
+	"array_3d_mixed_initialisers",
+	"b% := 1\n"
+	"dim a%(b%,b%,b%)\n"
+	"a%() = 1, 2, 3, 4, 5, 6, 7, 8\n"
+	"for i% := 0 to dim(a%(), 1)\n"
+	"  for j% := 0 to  dim(a%(), 2)\n"
+	"    for k% := 0 to dim(a%(), 3)\n"
+	"      print a%(i%, j%, k%)\n"
+	"    next\n"
+	"  next\n"
+	"next\n",
+	"1\n2\n3\n4\n5\n6\n7\n8\n"
+	},
 };
 
 /* clang-format on */
