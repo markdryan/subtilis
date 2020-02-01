@@ -325,6 +325,7 @@ static int prv_test_encode(void)
 	int retval = 1;
 	subtilis_arm_op_pool_t *op_pool = NULL;
 	subtilis_string_pool_t *string_pool = NULL;
+	subtilis_constant_pool_t *const_pool = NULL;
 	subtilis_arm_section_t *arm_s = NULL;
 	subtilis_arm_prog_t *arm_p = NULL;
 	uint32_t *code = NULL;
@@ -341,7 +342,12 @@ static int prv_test_encode(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_p = subtilis_arm_prog_new(1, op_pool, string_pool, false, &err);
+	const_pool = subtilis_constant_pool_new(&err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	arm_p = subtilis_arm_prog_new(1, op_pool, string_pool, const_pool,
+				      false, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -382,6 +388,7 @@ cleanup:
 	free(code);
 	subtilis_arm_prog_delete(arm_p);
 	subtilis_type_section_delete(stype);
+	subtilis_constant_pool_delete(const_pool);
 	subtilis_string_pool_delete(string_pool);
 	subtilis_arm_op_pool_delete(op_pool);
 

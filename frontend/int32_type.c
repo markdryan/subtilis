@@ -20,6 +20,8 @@
 
 #include "int32_type.h"
 
+static size_t prv_size(const subtilis_type_t *type) { return 4; }
+
 static subtilis_exp_t *prv_zero_const(subtilis_parser_t *p,
 				      subtilis_error_t *err)
 {
@@ -786,7 +788,7 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.is_numeric = true,
 	.is_integer = true,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
-	.size = NULL,
+	.size = prv_size,
 	.data_size = NULL,
 	.zero = prv_zero_const,
 	.top_bit = prv_top_bit_const,
@@ -834,8 +836,6 @@ subtilis_type_if subtilis_type_const_int32 = {
 };
 
 /* clang-format on */
-
-static size_t prv_size(const subtilis_type_t *type) { return 4; }
 
 static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
 {

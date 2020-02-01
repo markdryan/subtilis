@@ -63,6 +63,31 @@ void subtilis_arm_link_add(subtilis_arm_link_t *link, size_t offset,
 	link->externals[link->num_externals++] = offset;
 }
 
+void subtilis_arm_link_constant_add(subtilis_arm_link_t *link,
+				    size_t code_index, size_t constant_offset,
+				    size_t constant_index,
+				    subtilis_error_t *err)
+{
+	size_t new_max;
+	subtilis_arm_link_constant_t *new_constants;
+
+	if (link->num_constants == link->max_constants) {
+		new_max = link->num_constants + SUBTILIS_CONFIG_PROC_GRAN;
+		new_constants = realloc(link->constants,
+					new_max * sizeof(*link->constants));
+		if (!new_constants) {
+			subtilis_error_set_oom(err);
+			return;
+		}
+		link->constants = new_constants;
+		link->max_constants = new_max;
+	}
+
+	link->constants[link->num_constants].index = constant_index;
+	link->constants[link->num_constants].constant_offset = constant_offset;
+	link->constants[link->num_constants++].code_index = code_index;
+}
+
 void subtilis_arm_link_section(subtilis_arm_link_t *link, size_t num,
 			       size_t offset)
 {
@@ -70,11 +95,13 @@ void subtilis_arm_link_section(subtilis_arm_link_t *link, size_t num,
 }
 
 void subtilis_arm_link_link(subtilis_arm_link_t *link, uint32_t *buf,
-			    size_t buf_size, subtilis_error_t *err)
+			    size_t buf_size, const size_t *raw_constants,
+			    size_t num_raw_constants, subtilis_error_t *err)
 {
 	size_t i;
 	size_t si;
 	size_t index;
+	subtilis_arm_link_constant_t *cnst;
 
 	for (i = 0; i < link->num_externals; i++) {
 		index = link->externals[i];
@@ -95,6 +122,22 @@ void subtilis_arm_link_link(subtilis_arm_link_t *link, uint32_t *buf,
 		buf[index] &= 0xff000000;
 		buf[index] |= (link->sections[si] - (index + 2)) & 0xffffff;
 	}
+
+	for (i = 0; i < link->num_constants; i++) {
+		cnst = &link->constants[i];
+		if (cnst->constant_offset >= buf_size) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		if (cnst->index >= num_raw_constants) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		buf[cnst->constant_offset] =
+		    (raw_constants[cnst->index] - cnst->code_index) * 4;
+		/* Adjust for PC relative addressing. */
+		buf[cnst->constant_offset] -= 12;
+	}
 }
 
 void subtilis_arm_link_delete(subtilis_arm_link_t *link)
@@ -102,6 +145,7 @@ void subtilis_arm_link_delete(subtilis_arm_link_t *link)
 	if (!link)
 		return;
 
+	free(link->constants);
 	free(link->externals);
 	free(link->sections);
 	free(link);

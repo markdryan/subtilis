@@ -1086,6 +1086,36 @@ void subtilis_arm_gen_popi32(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_add_pop(arm_s, SUBTILIS_ARM_CCODE_AL, dest, err);
 }
 
+void subtilis_arm_gen_lca(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_instr_t *add;
+	subtilis_arm_data_instr_t *datai;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *ir_op = &s->ops[start]->op.instr;
+
+	dest = subtilis_arm_ir_to_arm_reg(ir_op->operands[0].reg);
+
+	(void)subtilis_add_explicit_ldr(arm_s, SUBTILIS_ARM_CCODE_AL, dest,
+					ir_op->operands[1].integer, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	add =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_ADD, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai = &add->operands.data;
+	datai->status = false;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->dest = dest;
+	datai->op1 = 15;
+	datai->op2.type = SUBTILIS_ARM_OP2_REG;
+	datai->op2.op.reg = dest;
+}
+
 void subtilis_arm_gen_sete(subtilis_arm_section_t *arm_s,
 			   subtilis_ir_section_t *s,
 			   subtilis_arm_ccode_type_t ccode, size_t reg,

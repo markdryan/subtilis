@@ -121,6 +121,50 @@ static void prv_memset_array(subtilis_parser_t *p, size_t base_reg,
 				    args, &subtilis_type_void, 3, err);
 }
 
+void subtilis_array_type_memcpy(subtilis_parser_t *p, size_t mem_reg,
+				size_t loc, size_t src_reg, size_t size_reg,
+				subtilis_error_t *err)
+{
+	size_t dest_reg;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_arg_t *args;
+	char *name = NULL;
+	static const char memcpy[] = "_memcpy";
+
+	op0.reg = mem_reg;
+	op1.integer = loc + SUBTIILIS_ARRAY_DATA_OFF;
+
+	dest_reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	name = malloc(sizeof(memcpy));
+	if (!name) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	strcpy(name, memcpy);
+
+	args = malloc(sizeof(*args) * 3);
+	if (!args) {
+		free(name);
+		subtilis_error_set_oom(err);
+		return;
+	}
+
+	args[0].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[0].reg = dest_reg;
+	args[1].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[1].reg = src_reg;
+	args[2].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[2].reg = size_reg;
+
+	(void)subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_MEMCPY, NULL,
+				    args, &subtilis_type_void, 3, err);
+}
+
 static void prv_ensure_cleanup_stack(subtilis_parser_t *p,
 				     subtilis_error_t *err)
 {
@@ -741,19 +785,15 @@ cleanup:
 	return NULL;
 }
 
-/* Does not consume e. */
-
-static subtilis_exp_t *prv_check_dynamic_index(subtilis_parser_t *p,
-					       subtilis_exp_t *e,
-					       int32_t dim_size, int32_t offset,
-					       size_t mem_reg,
-					       subtilis_error_t *err)
+static subtilis_exp_t *prv_get_dynamic_dim_size(subtilis_parser_t *p,
+						int32_t dim_size,
+						int32_t offset, size_t mem_reg,
+						subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
 	size_t reg;
 	subtilis_exp_t *maxe = NULL;
-	subtilis_exp_t *maxe_dup = NULL;
 
 	if (dim_size == SUBTILIS_DYNAMIC_DIMENSION) {
 		op0.reg = mem_reg;
@@ -766,6 +806,22 @@ static subtilis_exp_t *prv_check_dynamic_index(subtilis_parser_t *p,
 	} else {
 		maxe = subtilis_exp_new_int32(dim_size, err);
 	}
+
+	return maxe;
+}
+
+/* Does not consume e. */
+
+static subtilis_exp_t *prv_check_dynamic_index(subtilis_parser_t *p,
+					       subtilis_exp_t *e,
+					       int32_t dim_size, int32_t offset,
+					       size_t mem_reg,
+					       subtilis_error_t *err)
+{
+	subtilis_exp_t *maxe;
+	subtilis_exp_t *maxe_dup = NULL;
+
+	maxe = prv_get_dynamic_dim_size(p, dim_size, offset, mem_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -912,20 +968,84 @@ prv_1d_index_calc(subtilis_parser_t *p, const char *var_name,
 	return prv_compute_element_address(p, type, mem_reg, loc, sizee, err);
 }
 
+static int64_t prv_check_constant_dims(subtilis_parser_t *p, subtilis_exp_t **e,
+				       size_t index_count, const char *var_name,
+				       const subtilis_type_t *type,
+				       int *dyn_start, int32_t *block_size,
+				       subtilis_error_t *err)
+{
+	int i;
+	int j;
+	int32_t dim_size;
+	int64_t prod;
+	int32_t bsize = 1;
+	int dstart = index_count - 1;
+	int64_t array_size = 0;
+
+	for (i = index_count - 1; i >= 0; i--) {
+		if (e[i]->type.type != SUBTILIS_TYPE_CONST_INTEGER)
+			break;
+		dim_size = type->params.array.dims[i];
+		if (dim_size == SUBTILIS_DYNAMIC_DIMENSION)
+			break;
+
+		if ((e[i]->exp.ir_op.integer < 0) ||
+		    (e[i]->exp.ir_op.integer > dim_size)) {
+			subtilis_error_bad_index(
+			    err, var_name, p->l->stream->name, p->l->line);
+			return 0;
+		}
+		dstart--;
+	}
+
+	*dyn_start = dstart;
+
+	/*
+	 * i now stores the last dimension (working backwards) where the
+	 * index and the dimension are both known at compile time.
+	 */
+
+	i++;
+	for (j = i; j < index_count; j++) {
+		dim_size = type->params.array.dims[j] + 1;
+		bsize *= dim_size;
+	}
+
+	*block_size = bsize;
+
+	for (; i < index_count - 1; i++) {
+		prod = e[i]->exp.ir_op.integer;
+		for (j = i + 1; j < index_count; j++) {
+			dim_size = type->params.array.dims[j] + 1;
+			prod *= dim_size;
+		}
+
+		array_size += prod;
+	}
+
+	return array_size;
+}
+
 subtilis_exp_t *
 subtilis_array_index_calc(subtilis_parser_t *p, const char *var_name,
 			  const subtilis_type_t *type, size_t mem_reg,
 			  size_t loc, subtilis_exp_t **e, size_t index_count,
 			  subtilis_error_t *err)
 {
-	size_t i;
+	int i;
+	int dyn_start;
 	int32_t dim_size;
+	size_t last_index;
+	int32_t block_size;
 	subtilis_exp_t *one;
 	int32_t offset;
+	int32_t last_offset;
+	subtilis_exp_t *blocke = NULL;
 	subtilis_exp_t *sizee = NULL;
 	subtilis_exp_t *edup = NULL;
 	subtilis_exp_t *maxe = NULL;
-	int64_t array_size = 0;
+	subtilis_exp_t *blocke_dup = NULL;
+	int64_t array_size;
 
 	if (index_count != type->params.array.num_dims) {
 		subtilis_error_bad_index_count(err, var_name,
@@ -938,20 +1058,28 @@ subtilis_array_index_calc(subtilis_parser_t *p, const char *var_name,
 					 index_count, err);
 
 	offset = loc + SUBTIILIS_ARRAY_DIMS_OFF;
-	for (i = 0; i < index_count - 1; i++) {
-		if (e[i]->type.type != SUBTILIS_TYPE_CONST_INTEGER)
-			continue;
-		dim_size = type->params.array.dims[i];
-		if (dim_size == SUBTILIS_DYNAMIC_DIMENSION)
-			continue;
-		if ((e[i]->exp.ir_op.integer < 0) ||
-		    (e[i]->exp.ir_op.integer > dim_size)) {
-			subtilis_error_bad_index(
-			    err, var_name, p->l->stream->name, p->l->line);
-			return NULL;
-		}
-		array_size += (dim_size + 1) * e[i]->exp.ir_op.integer;
-	}
+
+	/*
+	 * First we compute the constant part of the array indexing.  This can
+	 * all be done at compile time if both the indexes and the dimensions
+	 * are known to the compiler.  We start with the final index and work
+	 * our way toward the first index.  Two sizes are returned here.
+	 *
+	 * array_size - the offset in elements from the beginning of the
+	 * array we know we need to skip.  This does not include the offset
+	 * of the last index, which is added later.
+	 *
+	 * block_size - the cummulative product elements of all the trailing
+	 * dimensions that we've processed.
+	 * dyn_start - contains the first index that could not be processed
+	 * at compile time.  If dyn_start == indxex_count -1 none of the indices
+	 * could be processed at compile time.
+	 */
+
+	array_size = prv_check_constant_dims(p, e, index_count, var_name, type,
+					     &dyn_start, &block_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
 
 	sizee = subtilis_exp_new_int32((int32_t)array_size, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -961,13 +1089,43 @@ subtilis_array_index_calc(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	/* Need to compute offset array */
+	last_index = index_count - 1;
+	last_offset = offset + (sizeof(int32_t) * last_index);
+	if (dyn_start == index_count - 1) {
+		/*
+		 * none of the indices could be processed at compile
+		 * time, which means we don't know the block_size for
+		 * the last element which the loop below needs.  So we
+		 * need to compute it.
+		 */
 
-	for (i = 0; i < index_count - 1; i++) {
+		dim_size = type->params.array.dims[last_index];
+		maxe = prv_get_dynamic_dim_size(p, dim_size, last_offset,
+						mem_reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		one = subtilis_exp_new_int32(1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		blocke = subtilis_type_if_add(p, maxe, one, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		dyn_start--;
+	} else {
+		blocke = subtilis_exp_new_int32(block_size, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	offset += (sizeof(int32_t) * dyn_start);
+
+	/* Need to compute  the dynamic portion of the offset array */
+
+	for (i = dyn_start; i >= 0; i--) {
 		dim_size = type->params.array.dims[i];
-		if ((dim_size != SUBTILIS_DYNAMIC_DIMENSION) &&
-		    (e[i]->type.type == SUBTILIS_TYPE_CONST_INTEGER))
-			continue;
 
 		maxe = prv_check_dynamic_index(p, e[i], dim_size, offset,
 					       mem_reg, err);
@@ -983,7 +1141,13 @@ subtilis_array_index_calc(subtilis_parser_t *p, const char *var_name,
 		one = NULL;
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		edup = subtilis_type_if_mul(p, maxe, edup, err);
+		blocke_dup = subtilis_type_if_dup(blocke, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		edup = subtilis_type_if_mul(p, blocke_dup, edup, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		blocke = subtilis_type_if_mul(p, blocke, maxe, err);
 		maxe = NULL;
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
@@ -992,16 +1156,25 @@ subtilis_array_index_calc(subtilis_parser_t *p, const char *var_name,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		offset += sizeof(int32_t);
+		offset -= sizeof(int32_t);
 	}
 
-	prv_check_last_index(p, var_name, e, type, offset, mem_reg, err);
+	subtilis_exp_delete(blocke);
+
+	/*
+	 * Check and add the offset for the final index.  If it's constant and
+	 * the last dimension is constant we'll have already checked it but hey
+	 * hum.
+	 */
+
+	prv_check_last_index(p, var_name, e, type, last_offset, mem_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	edup = subtilis_type_if_dup(e[i], err);
+	edup = subtilis_type_if_dup(e[index_count - 1], err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
+
 	sizee = subtilis_type_if_add(p, edup, sizee, err);
 	edup = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1011,6 +1184,7 @@ subtilis_array_index_calc(subtilis_parser_t *p, const char *var_name,
 
 cleanup:
 
+	subtilis_exp_delete(blocke);
 	subtilis_exp_delete(maxe);
 	subtilis_exp_delete(edup);
 	subtilis_exp_delete(sizee);
@@ -1228,4 +1402,13 @@ cleanup:
 		subtilis_exp_delete(indices[i]);
 
 	return e;
+}
+
+subtilis_exp_t *subtilis_array_type_dynamic_size(subtilis_parser_t *p,
+						 size_t mem_reg, size_t loc,
+						 subtilis_error_t *err)
+{
+	return subtilis_type_if_load_from_mem(
+	    p, &subtilis_type_integer, mem_reg, loc + SUBTIILIS_ARRAY_SIZE_OFF,
+	    err);
 }

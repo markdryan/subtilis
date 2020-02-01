@@ -384,6 +384,25 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"endproc\n",
 	SUBTILIS_ERROR_BAD_ARG_TYPE
 	},
+	{
+	"array_1d_too_many_initialisers",
+	"dim b%(5)\n"
+	"b%() = 0, 1, 2, 3, 4, 5, 6\n",
+	SUBTILIS_ERROR_BAD_ELEMENT_COUNT
+	},
+	{
+	"array_2d_too_many_initialisers",
+	"dim b%(2,2)\n"
+	"b%() = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9\n",
+	SUBTILIS_ERROR_BAD_ELEMENT_COUNT
+	},
+	{
+	"array_var_initialiser",
+	"dim b%(5)\n"
+	"a% := 2\n"
+	"b%() = 0, 1, a%, 3, 4, 5, 6\n",
+	SUBTILIS_ERROR_CONST_EXPRESSION_EXPECTED,
+	},
 };
 
 /* clang-format on */

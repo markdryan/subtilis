@@ -398,6 +398,9 @@ static void prv_add_builtin(subtilis_ir_section_t *s,
 	case SUBTILIS_BUILTINS_MEMSETI32:
 		subtilis_arm_mem_memseti32(s, arm_s, err);
 		break;
+	case SUBTILIS_BUILTINS_MEMCPY:
+		subtilis_arm_mem_memcpy(s, arm_s, err);
+		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
 	}
@@ -507,8 +510,9 @@ subtilis_riscos_generate(
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_p = subtilis_arm_prog_new(p->num_sections + 2, op_pool,
-				      p->string_pool, p->handle_escapes, err);
+	arm_p =
+	    subtilis_arm_prog_new(p->num_sections + 2, op_pool, p->string_pool,
+				  p->constant_pool, p->handle_escapes, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

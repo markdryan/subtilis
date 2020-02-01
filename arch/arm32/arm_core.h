@@ -376,6 +376,7 @@ typedef struct subtilis_arm_op_pool_t_ subtilis_arm_op_pool_t;
 struct subtilis_arm_ui32_constant_t_ {
 	uint32_t integer;
 	size_t label;
+	bool link_time;
 };
 
 typedef struct subtilis_arm_ui32_constant_t_ subtilis_arm_ui32_constant_t;
@@ -443,6 +444,7 @@ struct subtilis_arm_prog_t_ {
 	size_t num_sections;
 	size_t max_sections;
 	subtilis_string_pool_t *string_pool;
+	subtilis_constant_pool_t *constant_pool;
 	subtilis_arm_op_pool_t *op_pool;
 	bool reverse_fpa_consts;
 	bool handle_escapes;
@@ -475,6 +477,7 @@ void subtilis_arm_section_delete(subtilis_arm_section_t *s);
 subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 					   subtilis_arm_op_pool_t *op_pool,
 					   subtilis_string_pool_t *string_pool,
+					   subtilis_constant_pool_t *cnst_pool,
 					   bool handle_escapes,
 					   subtilis_error_t *err);
 /* clang-format off */
@@ -528,6 +531,10 @@ bool subtilis_arm_encode_lvl2_imm(int32_t num, uint32_t *encoded1,
 				  uint32_t *encoded2);
 subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg);
 subtilis_arm_reg_t subtilis_arm_ir_to_freg(size_t ir_reg);
+size_t subtilis_add_explicit_ldr(subtilis_arm_section_t *s,
+				 subtilis_arm_ccode_type_t ccode,
+				 subtilis_arm_reg_t dest, int32_t op2,
+				 bool link_time, subtilis_error_t *err);
 size_t subtilis_add_data_imm_ldr_datai(subtilis_arm_section_t *s,
 				       subtilis_arm_instr_type_t itype,
 				       subtilis_arm_ccode_type_t ccode,

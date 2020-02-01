@@ -1088,14 +1088,31 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	arm_vm->regs[15] += 4;
 }
 
+static size_t prv_write_multiple_reg(subtilis_arm_vm_t *arm_vm,
+				     subtilis_arm_mtran_instr_t *op, int i,
+				     size_t addr, int after, int before,
+				     subtilis_error_t *err)
+{
+	if (((1 << i) & op->reg_list) == 0)
+		return addr;
+	addr += before;
+	if (addr + 4 > arm_vm->mem_size) {
+		subtilis_error_set_assertion_failed(err);
+		return -1;
+	}
+	*((int32_t *)&arm_vm->memory[addr]) = arm_vm->regs[i];
+	return addr + after;
+}
+
 static void prv_process_stm(subtilis_arm_vm_t *arm_vm,
 			    subtilis_arm_mtran_instr_t *op,
 			    subtilis_error_t *err)
 {
 	size_t addr;
-	size_t i;
+	int i;
 	int after = 0;
 	int before = 0;
+	bool increment = false;
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
@@ -1106,6 +1123,7 @@ static void prv_process_stm(subtilis_arm_vm_t *arm_vm,
 	switch (op->type) {
 	case SUBTILIS_ARM_MTRAN_FA:
 	case SUBTILIS_ARM_MTRAN_IB:
+		increment = true;
 		before = 4;
 		break;
 	case SUBTILIS_ARM_MTRAN_FD:
@@ -1114,6 +1132,7 @@ static void prv_process_stm(subtilis_arm_vm_t *arm_vm,
 		break;
 	case SUBTILIS_ARM_MTRAN_EA:
 	case SUBTILIS_ARM_MTRAN_IA:
+		increment = true;
 		after = 4;
 		break;
 	case SUBTILIS_ARM_MTRAN_ED:
@@ -1122,22 +1141,42 @@ static void prv_process_stm(subtilis_arm_vm_t *arm_vm,
 		break;
 	}
 
-	for (i = 0; i < 15; i++) {
-		if (((1 << i) & op->reg_list) == 0)
-			continue;
-		addr += before;
-		if (addr + 4 > arm_vm->mem_size) {
-			subtilis_error_set_assertion_failed(err);
-			return;
+	if (increment) {
+		for (i = 0; i < 15; i++) {
+			addr = prv_write_multiple_reg(arm_vm, op, i, addr,
+						      after, before, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
 		}
-		*((int32_t *)&arm_vm->memory[addr]) = arm_vm->regs[i];
-		addr += after;
+	} else {
+		for (i = 14; i >= 0; i--) {
+			addr = prv_write_multiple_reg(arm_vm, op, i, addr,
+						      after, before, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		}
 	}
 
 	if (op->write_back)
 		arm_vm->regs[op->op0] = addr + 0x8000;
 
 	arm_vm->regs[15] += 4;
+}
+
+static size_t prv_read_multiple_reg(subtilis_arm_vm_t *arm_vm,
+				    subtilis_arm_mtran_instr_t *op, int i,
+				    size_t addr, int after, int before,
+				    subtilis_error_t *err)
+{
+	if (((1 << i) & op->reg_list) == 0)
+		return addr;
+	addr += before;
+	if (addr + 4 > arm_vm->mem_size) {
+		subtilis_error_set_assertion_failed(err);
+		return -1;
+	}
+	arm_vm->regs[i] = *((int32_t *)&arm_vm->memory[addr]);
+	return addr + after;
 }
 
 static void prv_process_ldm(subtilis_arm_vm_t *arm_vm,
@@ -1148,6 +1187,7 @@ static void prv_process_ldm(subtilis_arm_vm_t *arm_vm,
 	int i;
 	int after = 0;
 	int before = 0;
+	bool increment = false;
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
@@ -1158,11 +1198,12 @@ static void prv_process_ldm(subtilis_arm_vm_t *arm_vm,
 
 	switch (op->type) {
 	case SUBTILIS_ARM_MTRAN_FA:
-	case SUBTILIS_ARM_MTRAN_IB:
+	case SUBTILIS_ARM_MTRAN_DA:
 		after = -4;
 		break;
 	case SUBTILIS_ARM_MTRAN_FD:
 	case SUBTILIS_ARM_MTRAN_IA:
+		increment = true;
 		after = 4;
 		break;
 	case SUBTILIS_ARM_MTRAN_EA:
@@ -1170,21 +1211,26 @@ static void prv_process_ldm(subtilis_arm_vm_t *arm_vm,
 		before = -4;
 		break;
 	case SUBTILIS_ARM_MTRAN_ED:
-	case SUBTILIS_ARM_MTRAN_DA:
+	case SUBTILIS_ARM_MTRAN_IB:
+		increment = true;
 		before = 4;
 		break;
 	}
 
-	for (i = 14; i >= 0; i--) {
-		if (((1 << i) & op->reg_list) == 0)
-			continue;
-		addr += before;
-		if (addr + 4 > arm_vm->mem_size) {
-			subtilis_error_set_assertion_failed(err);
-			return;
+	if (!increment) {
+		for (i = 14; i >= 0; i--) {
+			addr = prv_read_multiple_reg(arm_vm, op, i, addr, after,
+						     before, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
 		}
-		arm_vm->regs[i] = *((int32_t *)&arm_vm->memory[addr]);
-		addr += after;
+	} else {
+		for (i = 0; i < 15; i++) {
+			addr = prv_read_multiple_reg(arm_vm, op, i, addr, after,
+						     before, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		}
 	}
 
 	if (op->write_back)

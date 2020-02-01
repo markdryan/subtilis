@@ -101,4 +101,11 @@ subtilis_exp_t *subtilis_array_get_dim(subtilis_parser_t *p,
 				       subtilis_exp_t **indices, size_t dims,
 				       subtilis_error_t *err);
 
+void subtilis_array_type_memcpy(subtilis_parser_t *p, size_t mem_reg,
+				size_t loc, size_t src_reg, size_t size_reg,
+				subtilis_error_t *err);
+subtilis_exp_t *subtilis_array_type_dynamic_size(subtilis_parser_t *p,
+						 size_t mem_reg, size_t loc,
+						 subtilis_error_t *err);
+
 #endif
