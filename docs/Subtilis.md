@@ -737,6 +737,26 @@ DIM a%(10)
 b%() = FNDouble%(1)(a%())
 ```
 
+### Array initialisers
+
+Array initialisers are supported but with one restriction.  The values in the
+initialiser list must be constants.  So,
+
+```
+dim a%(4)
+a%() = 1, 2, 3, 4, 5
+```
+
+works fine, where as,
+
+```
+dim a%(4)
+b% := 2
+a%() = 1, b%, 3, 4, 5
+```
+
+will not compile.
+
 ## Current Issues with the Grammar
 
 ### Function like keywords returning integer values
