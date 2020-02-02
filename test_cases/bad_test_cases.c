@@ -403,6 +403,12 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"b%() = 0, 1, a%, 3, 4, 5, 6\n",
 	SUBTILIS_ERROR_CONST_EXPRESSION_EXPECTED,
 	},
+	{
+	"array_get_dim_not_array",
+	"dim a%(10)\n"
+	"print dim(a%)\n",
+	SUBTILIS_ERROR_NOT_ARRAY,
+	}
 };
 
 /* clang-format on */

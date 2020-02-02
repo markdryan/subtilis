@@ -450,12 +450,9 @@ subtilis_exp_t *subtilis_parser_get_dim(subtilis_parser_t *p,
 					subtilis_token_t *t,
 					subtilis_error_t *err)
 {
-	const size_t max_args = 2;
-	subtilis_exp_t *indices[max_args];
 	const char *tbuf;
-	size_t i;
-	size_t dims = 0;
-	subtilis_exp_t *e = NULL;
+	subtilis_exp_t *dim = NULL;
+	subtilis_exp_t *ar = NULL;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -468,25 +465,49 @@ subtilis_exp_t *subtilis_parser_get_dim(subtilis_parser_t *p,
 		goto cleanup;
 	}
 
-	dims = subtilis_var_bracketed_args_have_b(p, t, indices, max_args, err);
-	if (err->type != SUBTILIS_ERROR_OK)
+	ar = subtilis_parser_expression(p, t, err);
+	if (err->type == SUBTILIS_ERROR_NUMERIC_EXPECTED) {
+		subtilis_error_not_array(err, "First argument to dim",
+					 p->l->stream->name, p->l->line);
 		goto cleanup;
-
-	if (dims == 0) {
-		subtilis_error_set_exp_expected(err, "array reference",
-						p->l->stream->name, p->l->line);
+	} else if (err->type != SUBTILIS_ERROR_OK) {
 		goto cleanup;
 	}
 
-	if ((indices[0]->type.type != SUBTILIS_TYPE_ARRAY_REAL) &&
-	    (indices[0]->type.type != SUBTILIS_TYPE_ARRAY_INTEGER)) {
+	if ((ar->type.type != SUBTILIS_TYPE_ARRAY_REAL) &&
+	    (ar->type.type != SUBTILIS_TYPE_ARRAY_INTEGER)) {
 		subtilis_error_not_array(err, "First argument to dim",
 					 p->l->stream->name, p->l->line);
 		goto cleanup;
 	}
 
-	e = subtilis_array_get_dim(p, indices, dims, err);
-	dims = 0;
+	tbuf = subtilis_token_get_text(t);
+	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
+		subtilis_error_set_expected(err, ") or ,", tbuf,
+					    p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
+	if (!strcmp(tbuf, ",")) {
+		dim = subtilis_parser_expression(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		dim = subtilis_type_if_to_int(p, dim, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		tbuf = subtilis_token_get_text(t);
+	}
+
+	if (strcmp(tbuf, ")")) {
+		subtilis_error_set_right_bkt_expected(
+		    err, tbuf, p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
+	ar = subtilis_array_get_dim(p, ar, dim, err);
+	dim = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -494,13 +515,12 @@ subtilis_exp_t *subtilis_parser_get_dim(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	return e;
+	return ar;
 
 cleanup:
 
-	subtilis_exp_delete(e);
-	for (i = 0; i < dims; i++)
-		subtilis_exp_delete(indices[i]);
+	subtilis_exp_delete(ar);
+	subtilis_exp_delete(dim);
 
 	return NULL;
 }
