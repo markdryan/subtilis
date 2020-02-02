@@ -97,8 +97,8 @@ subtilis_ir_operand_t subtilis_array_type_error_label(subtilis_parser_t *p);
 void subtilis_array_gen_index_error_code(subtilis_parser_t *p,
 					 subtilis_error_t *err);
 
-subtilis_exp_t *subtilis_array_get_dim(subtilis_parser_t *p,
-				       subtilis_exp_t **indices, size_t dims,
+subtilis_exp_t *subtilis_array_get_dim(subtilis_parser_t *p, subtilis_exp_t *ar,
+				       subtilis_exp_t *dim,
 				       subtilis_error_t *err);
 
 void subtilis_array_type_memcpy(subtilis_parser_t *p, size_t mem_reg,

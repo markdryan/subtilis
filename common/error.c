@@ -140,11 +140,11 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_BAD_ARG_TYPE */
 	{"Argument %s of wrong type : %s\n", 2},
 
-	/* SUBTILIS_ERROR_NUMERIC_EXPECTED */
-	{"%s must be a numeric variable\n", 1},
-
 	/* SUBTILIS_ERROR_ZERO_STEP */
 	{"step must not be zero\n"},
+
+	/* SUBTILIS_ERROR_NUMERIC_EXPECTED */
+	{"%s must be a numeric variable\n", 1},
 
 	/* SUBTILIS_ERROR_ENDPROC_IN_MAIN */
 	{"ENDPROC is not allowed in the main function\n"},

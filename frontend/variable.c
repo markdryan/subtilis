@@ -69,6 +69,12 @@ subtilis_exp_t *subtilis_var_lookup_var(subtilis_parser_t *p, const char *tbuf,
 		reg = SUBTILIS_IR_REG_GLOBAL;
 	}
 
+	if (!subtilis_type_if_is_numeric(&s->t)) {
+		subtilis_error_set_numeric_expected(
+		    err, tbuf, p->l->stream->name, p->l->line);
+		return NULL;
+	}
+
 	if (!s->is_reg) {
 		return subtilis_type_if_load_from_mem(p, &s->t, reg, s->loc,
 						      err);
