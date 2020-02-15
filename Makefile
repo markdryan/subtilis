@@ -39,7 +39,10 @@ COMMON =\
 	array_int32_type.c \
 	array_float64_type.c \
 	array_type.c \
-	sizet_vector.c
+	sizet_vector.c \
+	string_type_if.c \
+	string_type.c \
+	reference_type.c
 
 ARM =\
 	arm_core.c \

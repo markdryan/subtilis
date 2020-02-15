@@ -20,6 +20,7 @@
 #include "../common/error_codes.h"
 #include "array_type.h"
 #include "expression.h"
+#include "reference_type.h"
 #include "type_if.h"
 
 /*
@@ -37,8 +38,8 @@
  *  ----------------------------------
  */
 
-#define SUBTIILIS_ARRAY_SIZE_OFF 0
-#define SUBTIILIS_ARRAY_DATA_OFF 4
+#define SUBTIILIS_ARRAY_SIZE_OFF SUBTIILIS_REFERENCE_SIZE_OFF
+#define SUBTIILIS_ARRAY_DATA_OFF SUBTIILIS_REFERENCE_DATA_OFF
 #define SUBTIILIS_ARRAY_DIMS_OFF 8
 
 size_t subtilis_array_type_size(const subtilis_type_t *type)
@@ -468,44 +469,13 @@ void subtilis_array_type_assign_ref(subtilis_parser_t *p,
 				    size_t source_reg, subtilis_error_t *err)
 {
 	size_t i;
-	size_t dest_reg;
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t op2;
 	size_t copy_reg;
 
-	op0.reg = dest_mem_reg;
-	op1.integer = dest_loc + SUBTIILIS_ARRAY_DATA_OFF;
-
-	dest_reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	op0.reg = dest_reg;
-	subtilis_ir_section_add_instr_no_reg(p->current,
-					     SUBTILIS_OP_INSTR_DEREF, op0, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	op0.reg = source_reg;
-	op1.integer = SUBTIILIS_ARRAY_DATA_OFF;
-
-	copy_reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	op0.reg = copy_reg;
-	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_REF,
-					     op0, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	op1.reg = dest_mem_reg;
-	op2.integer = dest_loc + SUBTIILIS_ARRAY_DATA_OFF;
-	subtilis_ir_section_add_instr_reg(
-	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op0, op1, op2, err);
+	subtilis_reference_type_assign_ref(p, dest_mem_reg, dest_loc,
+					   source_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

@@ -20,6 +20,7 @@
 #include "array_int32_type.h"
 #include "float64_type.h"
 #include "int32_type.h"
+#include "string_type_if.h"
 #include "type_if.h"
 
 /* clang-format off */
@@ -29,7 +30,7 @@ static subtilis_type_if *prv_type_map[] = {
 	NULL,
 	&subtilis_type_float64,
 	&subtilis_type_int32,
-	NULL,
+	&subtilis_type_if_string,
 	NULL,
 	&subtilis_type_array_float64,
 	&subtilis_type_array_int32,
@@ -161,6 +162,36 @@ subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 		return NULL;
 	}
 	return fn(p, err);
+}
+
+void subtilis_type_if_zero_ref(subtilis_parser_t *p,
+			       const subtilis_type_t *type,
+			       size_t mem_reg, size_t loc,
+			       subtilis_error_t *err)
+{
+	subtilis_type_if_zeroref_t fn;
+
+	fn = prv_type_map[type->type]->zero_ref;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	return fn(p, type, mem_reg, loc, err);
+}
+
+void subtilis_type_if_init_ref(subtilis_parser_t *p,
+			       const subtilis_type_t *type,
+			       size_t mem_reg, size_t loc,
+			       subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_type_if_initref_t fn;
+
+	fn = prv_type_map[type->type]->init_ref;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	return fn(p, type, mem_reg, loc, e, err);
 }
 
 subtilis_exp_t *subtilis_type_if_top_bit(subtilis_parser_t *p,

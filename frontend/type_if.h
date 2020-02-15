@@ -26,6 +26,15 @@ typedef void (*subtilis_type_if_typeof_t)(const subtilis_type_t *element_type,
 					  subtilis_type_t *type);
 typedef subtilis_exp_t *(*subtilis_type_if_none_t)(subtilis_parser_t *p,
 						   subtilis_error_t *err);
+typedef void (*subtilis_type_if_zeroref_t)(subtilis_parser_t *p,
+					   const subtilis_type_t *type,
+					  size_t mem_reg, size_t loc,
+					  subtilis_error_t *err);
+typedef void (*subtilis_type_if_initref_t)(subtilis_parser_t *p,
+					   const subtilis_type_t *type,
+					   size_t mem_reg, size_t loc,
+					   subtilis_exp_t *e,
+					   subtilis_error_t *err);
 typedef void (*subtilis_type_if_reg_t)(subtilis_parser_t *p, size_t reg,
 				       subtilis_error_t *err);
 typedef subtilis_exp_t *(*subtilis_type_if_unary_t)(subtilis_parser_t *p,
@@ -93,6 +102,8 @@ struct subtilis_type_if_ {
 	subtilis_type_if_size_t size;
 	subtilis_type_if_unary_t data_size;
 	subtilis_type_if_none_t zero;
+	subtilis_type_if_zeroref_t zero_ref;
+	subtilis_type_if_initref_t init_ref;
 	subtilis_type_if_none_t top_bit;
 	subtilis_type_if_reg_t zero_reg;
 	subtilis_type_if_typeof_t const_of;
@@ -172,6 +183,26 @@ subtilis_exp_t *subtilis_type_if_data_size(subtilis_parser_t *p,
 subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 				      const subtilis_type_t *type,
 				      subtilis_error_t *err);
+
+/*
+ * Initialises a reference type identified by the mem_reg and loc parameters
+ * to its zero value.
+ */
+
+void subtilis_type_if_zero_ref(subtilis_parser_t *p,
+			       const subtilis_type_t *type,
+			       size_t mem_reg, size_t loc,
+			       subtilis_error_t *err);
+
+/*
+ * Initialises a reference type identified by the mem_reg and loc parameters
+ * to the value contained in e.
+ */
+
+void subtilis_type_if_init_ref(subtilis_parser_t *p,
+			       const subtilis_type_t *type,
+			       size_t mem_reg, size_t loc,
+			       subtilis_exp_t *e, subtilis_error_t *err);
 
 /*
  * Only defined for integer types.  Returns an expression containing an
