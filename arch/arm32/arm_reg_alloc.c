@@ -92,7 +92,7 @@
  * we only need to call prv_allocate and not prv_ensure.  The reason is
  * that we're replacing the value in the virtual register and so it will
  * no longer be used.  We don't need to load its spilled value from the stack,
- * as there not needed and they shouldn't be there anyway.
+ * as it's not needed and shouldn't be there anyway.
  *
  * How do we know which is the best physical register to spill when all
  * physical registers are claimed and we need to allocate a new floating
@@ -107,12 +107,12 @@
  * to find a physical register for a floating register and all the physical
  * registers are already taken, we look through the next array of the
  * appropriate register class and choose the register that has the largest
- * distance, i.e., the one t furthest away from the current instruction.
+ * distance, i.e., the one furthest away from the current instruction.
  * We also use the distance calculation to determine when registers are no
  * longer needed.  After a physical register has been used by an instruction
  * it can be returned to the pool of free physical registers if its distance
  * is -1.  We do this for both source and destination registers although
- * strictly speaking the code generator shouldn't be assigned values to
+ * strictly speaking the code generator shouldn't be assigning values to
  * registers that are not then used ( although currently it does ).
  *
  * There's one subtelty here and that's one instruction, SWI, implicitly uses
@@ -806,7 +806,13 @@ static void prv_allocate_fixed(subtilis_arm_reg_ud_t *ud,
 	size_t assigned;
 
 	assigned = regs->phys_to_virt[*reg];
-	if (assigned != INT_MAX) {
+
+	/*
+	 * If the fixed register is already assigned to itself there's
+	 * no need to spill it.
+	 */
+
+	if (assigned != INT_MAX && assigned != *reg) {
 		prv_spill_reg(ud, current, assigned, int_regs, regs, *reg, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
@@ -1296,13 +1302,25 @@ static void prv_alloc_swi_instr(void *user_data, subtilis_arm_op_t *op,
 				subtilis_error_t *err)
 {
 	size_t i;
+	int dist;
 	subtilis_arm_reg_t reg;
 	subtilis_arm_reg_ud_t *ud = user_data;
 
 	/* SWIs can only use the first 10 regs */
 
 	for (i = 0; i < 10; i++) {
-		if ((1 << i) & instr->reg_mask) {
+		if ((1 << i) & instr->reg_read_mask) {
+			reg = i;
+			prv_ensure(ud, op, ud->int_regs, ud->int_regs, &reg,
+				   err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			dist = prv_calculate_dist(ud, reg, op,
+						  &ud->int_dist_walker);
+			if (dist == -1)
+				ud->int_regs->phys_to_virt[reg] = INT_MAX;
+			ud->int_regs->next[reg] = dist;
+		} else if ((1 << i) & instr->reg_write_mask) {
 			reg = i;
 			prv_allocate_dest(ud, op, &reg, err);
 			if (err->type != SUBTILIS_ERROR_OK)

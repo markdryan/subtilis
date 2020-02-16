@@ -179,7 +179,12 @@ static void prv_dist_swi_instr(void *user_data, subtilis_arm_op_t *op,
 
 	/* SWIs can only use the first 10 regs */
 
-	if ((ud->reg_num < 10) && (1 << ud->reg_num) & instr->reg_mask) {
+	if ((ud->reg_num < 10) && (1 << ud->reg_num) & instr->reg_read_mask) {
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
+	if ((ud->reg_num < 10) && (1 << ud->reg_num) & instr->reg_write_mask) {
 		ud->last_used = -1;
 		subtilis_error_set_walker_failed(err);
 		return;
