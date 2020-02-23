@@ -2152,6 +2152,31 @@ const subtilis_test_case_t test_cases[] = {
 	"next\n",
 	"1\n2\n3\n4\n5\n6\n7\n8\n"
 	},
+	{
+	"reg_alloc_swi",
+	"x% := 640\n"
+	"y% := 512\n"
+	"a% := 768\n"
+	"b% := 768\n"
+	"v% := 32\n"
+	"w% := 24\n"
+	"c% := 16\n"
+	"d% := -28\n"
+	"dim e%(7)\n"
+	"if x% > 1280 or x% < 0 then v% = -v% endif\n"
+	"if y% > 1024 or y% < 0 then w% = -w% endif\n"
+	"a% += c%\n"
+	"b% += d%\n"
+	"print x%\n"
+	"print y%\n"
+	"print a%\n"
+	"print b%\n"
+	"print v%\n"
+	"print w%\n"
+	"print c%\n"
+	"print d%\n",
+	"640\n512\n784\n740\n32\n24\n16\n-28\n",
+	}
 };
 
 /* clang-format on */

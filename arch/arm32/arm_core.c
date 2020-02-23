@@ -982,7 +982,8 @@ void subtilis_arm_add_data_imm(subtilis_arm_section_t *s,
 
 void subtilis_arm_add_swi(subtilis_arm_section_t *s,
 			  subtilis_arm_ccode_type_t ccode, size_t code,
-			  uint32_t reg_mask, subtilis_error_t *err)
+			  uint32_t read_mask, uint32_t write_mask,
+			  subtilis_error_t *err)
 {
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_swi_instr_t *swi;
@@ -994,7 +995,8 @@ void subtilis_arm_add_swi(subtilis_arm_section_t *s,
 	swi = &instr->operands.swi;
 	swi->ccode = ccode;
 	swi->code = code;
-	swi->reg_mask = reg_mask;
+	swi->reg_read_mask = read_mask;
+	swi->reg_write_mask = write_mask;
 }
 
 void subtilis_arm_add_movmvn_reg(subtilis_arm_section_t *s,

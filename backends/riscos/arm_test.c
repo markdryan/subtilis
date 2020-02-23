@@ -204,7 +204,7 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 		return;
 
 	/* SWICS &DC */
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_CS, 0xdc, 0, err);
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_CS, 0xdc, 0, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
