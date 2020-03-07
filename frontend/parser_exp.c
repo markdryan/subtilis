@@ -135,6 +135,11 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 
 	tbuf = subtilis_token_get_text(t);
 	switch (t->type) {
+	case SUBTILIS_TOKEN_STRING:
+		e = subtilis_exp_new_str(&t->buf, err);
+		if (!e)
+			goto cleanup;
+		break;
 	case SUBTILIS_TOKEN_INTEGER:
 		e = subtilis_exp_new_int32(t->tok.integer, err);
 		if (!e)

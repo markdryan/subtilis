@@ -20,6 +20,7 @@
 #include "array_type.h"
 #include "parser_array.h"
 #include "parser_exp.h"
+#include "reference_type.h"
 #include "type_if.h"
 
 subtilis_exp_t *subtils_parser_read_array(subtilis_parser_t *p,
@@ -300,8 +301,8 @@ static void prv_parse_initialiser(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_array_type_memcpy(p, mem_reg, s->loc, reg,
-				   sizee->exp.ir_op.reg, err);
+	subtilis_reference_type_memcpy(p, mem_reg, s->loc, reg,
+				       sizee->exp.ir_op.reg, err);
 
 cleanup:
 	subtilis_exp_delete(sizee);
@@ -440,7 +441,7 @@ void subtilis_parser_deallocate_arrays(subtilis_parser_t *p,
 		    (s->t.type != SUBTILIS_TYPE_ARRAY_INTEGER))
 			continue;
 
-		subtilis_array_type_pop_and_deref(p, err);
+		subtilis_reference_type_pop_and_deref(p, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}

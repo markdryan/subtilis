@@ -122,103 +122,6 @@ static void prv_memset_array(subtilis_parser_t *p, size_t base_reg,
 				    args, &subtilis_type_void, 3, err);
 }
 
-void subtilis_array_type_memcpy(subtilis_parser_t *p, size_t mem_reg,
-				size_t loc, size_t src_reg, size_t size_reg,
-				subtilis_error_t *err)
-{
-	size_t dest_reg;
-	subtilis_ir_operand_t op0;
-	subtilis_ir_operand_t op1;
-	subtilis_ir_arg_t *args;
-	char *name = NULL;
-	static const char memcpy[] = "_memcpy";
-
-	op0.reg = mem_reg;
-	op1.integer = loc + SUBTIILIS_ARRAY_DATA_OFF;
-
-	dest_reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	name = malloc(sizeof(memcpy));
-	if (!name) {
-		subtilis_error_set_oom(err);
-		return;
-	}
-	strcpy(name, memcpy);
-
-	args = malloc(sizeof(*args) * 3);
-	if (!args) {
-		free(name);
-		subtilis_error_set_oom(err);
-		return;
-	}
-
-	args[0].type = SUBTILIS_IR_REG_TYPE_INTEGER;
-	args[0].reg = dest_reg;
-	args[1].type = SUBTILIS_IR_REG_TYPE_INTEGER;
-	args[1].reg = src_reg;
-	args[2].type = SUBTILIS_IR_REG_TYPE_INTEGER;
-	args[2].reg = size_reg;
-
-	(void)subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_MEMCPY, NULL,
-				    args, &subtilis_type_void, 3, err);
-}
-
-static void prv_ensure_cleanup_stack(subtilis_parser_t *p,
-				     subtilis_error_t *err)
-{
-	subtilis_ir_inst_t *instr;
-
-	/*
-	 * This piece is a bit weird.  At the start of the procedure we insert
-	 * a NOP.  If we encounter at least one array (local or global) we
-	 * replace this nop with a mov instruction that initialises the
-	 * cleanup_stack counter to 0.  If there are no arrays delcared in the
-	 * procedure, the nop will be removed when we generate code for the
-	 * target architecture.
-	 */
-
-	if (p->current->cleanup_stack == SIZE_MAX) {
-		instr =
-		    &p->current->ops[p->current->cleanup_stack_nop]->op.instr;
-		p->current->cleanup_stack = p->current->cleanup_stack_reg;
-		instr->type = SUBTILIS_OP_INSTR_MOVI_I32;
-		instr->operands[0].reg = p->current->cleanup_stack;
-		instr->operands[1].integer = 0;
-	}
-}
-
-static void prv_inc_cleanup_stack(subtilis_parser_t *p, subtilis_error_t *err)
-{
-	subtilis_ir_operand_t op2;
-	subtilis_ir_operand_t dest;
-
-	prv_ensure_cleanup_stack(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/*
-	 * TODO: The part of the register allocator that preserves
-	 * live registers between basic blocks can't handle the case
-	 * when an instruction uses the same register for both source
-	 * and destination.  Ultimately, all that code is going to
-	 * dissapear when we have a global register allocator, so for
-	 * now we're just going to live with it.
-	 */
-
-	op2.integer = 1;
-	dest.reg = p->current->cleanup_stack;
-	op2.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, dest, op2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
-					      dest, op2, err);
-}
-
 void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 				 subtilis_type_t *type, size_t loc,
 				 subtilis_exp_t **e,
@@ -227,7 +130,6 @@ void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 {
 	subtilis_ir_operand_t op;
 	subtilis_ir_operand_t op1;
-	subtilis_ir_operand_t op2;
 	size_t i;
 	subtilis_exp_t *sizee = NULL;
 	subtilis_exp_t *zero = NULL;
@@ -276,40 +178,8 @@ void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	op1.integer = loc + SUBTIILIS_ARRAY_SIZE_OFF;
-	subtilis_ir_section_add_instr_reg(
-	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, sizee->exp.ir_op,
-	    store_reg, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	op1.integer = loc + SUBTIILIS_ARRAY_DATA_OFF;
-	op.reg = subtilis_ir_section_add_instr2(
-	    p->current, SUBTILIS_OP_INSTR_ALLOC, sizee->exp.ir_op, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_exp_handle_errors(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	op2.integer = loc;
-	op2.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, store_reg, op2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_no_reg(
-	    p->current, SUBTILIS_OP_INSTR_PUSH_I32, op2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	prv_inc_cleanup_stack(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_reg(
-	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op, store_reg, op1, err);
+	op.reg = subtilis_reference_type_alloc(p, loc, store_reg.reg,
+					       sizee->exp.ir_op.reg, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -411,7 +281,7 @@ void subtilis_array_type_create_ref(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	prv_inc_cleanup_stack(p, err);
+	subtilis_reference_inc_cleanup_stack(p, err);
 
 cleanup:
 
@@ -428,7 +298,7 @@ void subtlis_array_type_create_tmp_ref(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	prv_inc_cleanup_stack(p, err);
+	subtilis_reference_inc_cleanup_stack(p, err);
 }
 
 /*
@@ -502,26 +372,6 @@ void subtilis_array_type_assign_ref(subtilis_parser_t *p,
 	}
 }
 
-void subtilis_array_type_deref(subtilis_parser_t *p, size_t mem_reg, size_t loc,
-			       subtilis_error_t *err)
-{
-	size_t reg;
-	subtilis_ir_operand_t op0;
-	subtilis_ir_operand_t op1;
-
-	op0.reg = mem_reg;
-	op1.integer = loc + SUBTIILIS_ARRAY_DATA_OFF;
-
-	reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	op0.reg = reg;
-	subtilis_ir_section_add_instr_no_reg(p->current,
-					     SUBTILIS_OP_INSTR_DEREF, op0, err);
-}
-
 void subtilis_array_type_ref(subtilis_parser_t *p, size_t mem_reg, size_t loc,
 			     subtilis_error_t *err)
 {
@@ -557,52 +407,6 @@ void subtilis_array_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
 		return;
 
 	subtilis_array_type_ref(p, reg, 0, err);
-}
-
-void subtilis_array_type_pop_and_deref(subtilis_parser_t *p,
-				       subtilis_error_t *err)
-{
-	subtilis_ir_operand_t offset;
-	subtilis_ir_operand_t op2;
-	subtilis_ir_operand_t dest;
-
-	offset.reg = subtilis_ir_section_add_instr1(
-	    p->current, SUBTILIS_OP_INSTR_POP_I32, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	op2.integer = SUBTIILIS_ARRAY_DATA_OFF;
-	offset.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, offset, op2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_ir_section_add_instr_no_reg(
-	    p->current, SUBTILIS_OP_INSTR_DEREF, offset, err);
-
-	if (p->current->cleanup_stack == SIZE_MAX) {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
-	/*
-	 * TODO: The part of the register allocator that preserves
-	 * live registers between basic blocks can't handle the case
-	 * when an instruction uses the same register for both source
-	 * and destination.  Ultimately, all that code is going to dissapear
-	 * when we have a global register allocator, so for now we're just
-	 * going to live with it.
-	 */
-
-	op2.integer = 1;
-	dest.reg = p->current->cleanup_stack;
-	op2.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_SUBI_I32, dest, op2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
-					      dest, op2, err);
 }
 
 /* Does not consume e.  Does consume  max_dim */

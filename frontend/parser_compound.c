@@ -111,22 +111,21 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 
-	value_present = (t->type == SUBTILIS_TOKEN_OPERATOR) &&
-		!strcmp(tbuf, "=");
+	value_present =
+	    (t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "=");
 	if (subtilis_type_if_is_numeric(&type)) {
 		if (!value_present) {
 			e = subtilis_type_if_zero(p, &type, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
 		} else {
-			e = subtilis_parser_assign_local(p, t, var_name, &type,
-							 err);
+			e = subtilis_parser_assign_local_num(p, t, var_name,
+							     &type, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
 		}
-		(void)subtilis_symbol_table_insert_reg(p->local_st, var_name,
-						       &type, e->exp.ir_op.reg,
-						       err);
+		(void)subtilis_symbol_table_insert_reg(
+		    p->local_st, var_name, &type, e->exp.ir_op.reg, err);
 	} else {
 		s = subtilis_symbol_table_insert(p->local_st, var_name, &type,
 						 err);
@@ -134,16 +133,14 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 			goto cleanup;
 
 		if (!value_present) {
-			subtilis_type_if_zero_ref(p, &type,
-						  SUBTILIS_IR_REG_LOCAL, s->loc,
-						  err);
+			subtilis_type_if_zero_ref(
+			    p, &type, SUBTILIS_IR_REG_LOCAL, s->loc, err);
 		} else {
 			e = subtilis_parser_expression(p, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
-			subtilis_type_if_init_ref(p, &type,
-						  SUBTILIS_IR_REG_LOCAL, s->loc,
-						  e, err);
+			subtilis_type_if_new_ref(
+			    p, &type, SUBTILIS_IR_REG_LOCAL, s->loc, e, err);
 			e = NULL;
 		}
 	}

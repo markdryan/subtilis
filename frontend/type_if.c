@@ -165,9 +165,8 @@ subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 }
 
 void subtilis_type_if_zero_ref(subtilis_parser_t *p,
-			       const subtilis_type_t *type,
-			       size_t mem_reg, size_t loc,
-			       subtilis_error_t *err)
+			       const subtilis_type_t *type, size_t mem_reg,
+			       size_t loc, subtilis_error_t *err)
 {
 	subtilis_type_if_zeroref_t fn;
 
@@ -179,14 +178,28 @@ void subtilis_type_if_zero_ref(subtilis_parser_t *p,
 	return fn(p, type, mem_reg, loc, err);
 }
 
-void subtilis_type_if_init_ref(subtilis_parser_t *p,
-			       const subtilis_type_t *type,
-			       size_t mem_reg, size_t loc,
-			       subtilis_exp_t *e, subtilis_error_t *err)
+void subtilis_type_if_new_ref(subtilis_parser_t *p, const subtilis_type_t *type,
+			      size_t mem_reg, size_t loc, subtilis_exp_t *e,
+			      subtilis_error_t *err)
 {
 	subtilis_type_if_initref_t fn;
 
-	fn = prv_type_map[type->type]->init_ref;
+	fn = prv_type_map[type->type]->new_ref;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	return fn(p, type, mem_reg, loc, e, err);
+}
+
+void subtilis_type_if_assign_ref(subtilis_parser_t *p,
+				 const subtilis_type_t *type, size_t mem_reg,
+				 size_t loc, subtilis_exp_t *e,
+				 subtilis_error_t *err)
+{
+	subtilis_type_if_initref_t fn;
+
+	fn = prv_type_map[type->type]->assign_ref;
 	if (!fn) {
 		subtilis_error_set_assertion_failed(err);
 		return;

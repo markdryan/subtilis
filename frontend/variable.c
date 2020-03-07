@@ -77,7 +77,7 @@ subtilis_exp_t *subtilis_var_lookup_var(subtilis_parser_t *p, const char *tbuf,
 		} else {
 			return subtilis_exp_new_var(&s->t, s->loc, err);
 		}
-	} else {
+	} else if (s->t.type == SUBTILIS_TYPE_STRING) {
 		/*
 		 * We have a reference type.  We return a pointer to it.
 		 */
@@ -86,6 +86,14 @@ subtilis_exp_t *subtilis_var_lookup_var(subtilis_parser_t *p, const char *tbuf,
 			return NULL;
 		return subtilis_exp_new_var(&s->t, reg, err);
 	}
+
+	/*
+	 * TODO: Not great but will do for now.
+	 */
+
+	subtilis_error_set_numeric_expected(err, tbuf, p->l->stream->name,
+					    p->l->line);
+	return NULL;
 }
 
 void subtilis_var_set_eflag(subtilis_parser_t *p, bool value,

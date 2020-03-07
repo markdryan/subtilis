@@ -25,6 +25,7 @@
 #include "parser_compound.h"
 #include "parser_error.h"
 #include "parser_exp.h"
+#include "reference_type.h"
 #include "type_if.h"
 
 struct subtilis_parser_param_t_ {
@@ -780,7 +781,7 @@ void subtilis_parser_unwind(subtilis_parser_t *p, subtilis_error_t *err)
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_array_type_pop_and_deref(p, err);
+	subtilis_reference_type_pop_and_deref(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

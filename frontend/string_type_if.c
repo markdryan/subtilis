@@ -17,9 +17,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "string_type_if.h"
 #include "string_type.h"
-
+#include "string_type_if.h"
 
 static subtilis_exp_t *prv_data_size(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err)
@@ -37,7 +36,8 @@ subtilis_type_if subtilis_type_if_string = {
 	.data_size = prv_data_size,
 	.zero = NULL,
 	.zero_ref = subtilis_string_type_zero_ref,
-	.init_ref = subtilis_string_type_init_ref,
+	.new_ref = subtilis_string_type_new_ref,
+	.assign_ref = subtilis_string_type_assign_ref,
 	.zero_reg = NULL,
 	.array_of = NULL,
 	.element_type = NULL,

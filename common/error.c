@@ -211,6 +211,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_CONST_EXPRESSION_EXPECTED */
 	{"Constant expression expected\n", 0},
+
+	/* SUBTILIS_ERROR_STRING_EXPECTED */
+	{"String expected\n", 0},
 };
 
 /* clang-format on */
