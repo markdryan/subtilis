@@ -2176,7 +2176,27 @@ const subtilis_test_case_t test_cases[] = {
 	"print c%\n"
 	"print d%\n",
 	"640\n512\n784\n740\n32\n24\n16\n-28\n",
-	}
+	},
+	{
+	"string_basic",
+	"print \"hello world\"\n"
+	"local a$ = \"from BASIC\"\n"
+	"print a$\n"
+	"print \"\"\n"
+	"c$ := a$\n"
+	"print c$\n"
+	"a$ = \"new value for a$\"\n"
+	"print a$\n"
+	"local d$\n"
+	"a$ = d$\n"
+	"print a$\n"
+	"glob$ = \"Hello global\"\n"
+	"print glob$\n"
+	"glob$ = d$\n"
+	"print glob$\n",
+	"hello world\nfrom BASIC\n\nfrom BASIC\nnew value for a$\n\n"
+	"Hello global\n\n"
+	},
 };
 
 /* clang-format on */

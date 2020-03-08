@@ -209,6 +209,7 @@ struct subtilis_arm_stran_instr_t_ {
 	bool pre_indexed;
 	bool write_back;
 	bool subtract;
+	bool byte;
 };
 
 typedef struct subtilis_arm_stran_instr_t_ subtilis_arm_stran_instr_t;

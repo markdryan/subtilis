@@ -193,6 +193,8 @@ static void prv_dump_stran_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
+	if (instr->byte)
+		printf("B");
 	printf(" R%zu", instr->dest);
 	if (instr->pre_indexed) {
 		printf(", [R%zu, %s", instr->base, sub);

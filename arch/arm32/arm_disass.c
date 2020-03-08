@@ -154,12 +154,6 @@ static void prv_decode_stran(subtilis_arm_instr_t *instr, uint32_t encoded,
 {
 	subtilis_arm_stran_instr_t *stran = &instr->operands.stran;
 
-	/* Byte access not yet supported. */
-	if (encoded & (1 << 22)) {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
 	if (encoded & (1 << 20))
 		instr->type = SUBTILIS_ARM_INSTR_LDR;
 	else
@@ -167,6 +161,7 @@ static void prv_decode_stran(subtilis_arm_instr_t *instr, uint32_t encoded,
 
 	stran->ccode = (subtilis_arm_ccode_type_t)(encoded >> 28);
 	stran->pre_indexed = (encoded & (1 << 24)) != 0;
+	stran->byte = (encoded & (1 << 22)) != 0;
 	stran->write_back = (encoded & (1 << 21)) != 0;
 	stran->subtract = (encoded & (1 << 23)) == 0;
 	stran->dest = (encoded >> 12) & 0x0f;

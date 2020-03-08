@@ -27,7 +27,7 @@
 static subtilis_type_if *prv_type_map[] = {
 	&subtilis_type_const_float64,
 	&subtilis_type_const_int32,
-	NULL,
+	&subtilis_type_if_const_string,
 	&subtilis_type_float64,
 	&subtilis_type_int32,
 	&subtilis_type_if_string,

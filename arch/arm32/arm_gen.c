@@ -712,6 +712,7 @@ static void prv_stack_args(subtilis_arm_section_t *arm_s,
 		stran->pre_indexed = true;
 		stran->write_back = false;
 		stran->subtract = true;
+		stran->byte = false;
 		int_args_left--;
 	}
 

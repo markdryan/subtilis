@@ -815,7 +815,10 @@ static void prv_process_ldr(subtilis_arm_vm_t *arm_vm,
 	addr = prv_compute_stran_addr(arm_vm, op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	arm_vm->regs[op->dest] = *((int32_t *)&arm_vm->memory[addr]);
+	if (op->byte)
+		arm_vm->regs[op->dest] = *((uint8_t *)&arm_vm->memory[addr]);
+	else
+		arm_vm->regs[op->dest] = *((int32_t *)&arm_vm->memory[addr]);
 	arm_vm->regs[15] += 4;
 }
 
@@ -833,7 +836,11 @@ static void prv_process_str(subtilis_arm_vm_t *arm_vm,
 	addr = prv_compute_stran_addr(arm_vm, op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	*((int32_t *)&arm_vm->memory[addr]) = arm_vm->regs[op->dest];
+	if (op->byte)
+		*((uint8_t *)&arm_vm->memory[addr]) =
+		    arm_vm->regs[op->dest] & 255;
+	else
+		*((int32_t *)&arm_vm->memory[addr]) = arm_vm->regs[op->dest];
 	arm_vm->regs[15] += 4;
 }
 
@@ -1031,6 +1038,17 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		arm_vm->regs[0] += strlen((const char *)addr) + 1;
+		break;
+	case 0x46:
+	case 0x46 + 0x20000:
+		/* OS_WriteN */
+		addr = prv_get_vm_address(arm_vm, arm_vm->regs[0],
+					  arm_vm->regs[1], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		subtilis_buffer_append(b, addr, arm_vm->regs[1], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 		break;
 	case 0x3 + 0x20000:
 	case 0x3:

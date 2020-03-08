@@ -381,7 +381,7 @@ void subtilis_reference_type_deref(subtilis_parser_t *p, size_t mem_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	op2.integer = SUBTIILIS_REFERENCE_DATA_OFF;
+	op2.integer = loc + SUBTIILIS_REFERENCE_DATA_OFF;
 	offset.reg = subtilis_ir_section_add_instr(
 	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, offset, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)

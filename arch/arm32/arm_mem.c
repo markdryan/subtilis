@@ -135,6 +135,7 @@ void subtilis_arm_mem_memseti32(subtilis_ir_section_t *s,
 	stran->pre_indexed = false;
 	stran->write_back = true;
 	stran->subtract = false;
+	stran->byte = false;
 
 	instr =
 	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
@@ -165,6 +166,7 @@ void subtilis_arm_mem_memcpy(subtilis_ir_section_t *s,
 	const size_t val = 3;
 	const size_t stm_end_reg = 10;
 	const size_t end_reg = 11;
+	const size_t words_reg = 9;
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_stran_instr_t *stran;
 	subtilis_arm_br_instr_t *br;
@@ -172,6 +174,7 @@ void subtilis_arm_mem_memcpy(subtilis_ir_section_t *s,
 	size_t end_label = arm_s->label_counter++;
 	size_t start_label = arm_s->label_counter++;
 	size_t start_small_label = arm_s->label_counter++;
+	size_t start_tiny_label = arm_s->label_counter++;
 
 	instr =
 	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_ADD, err);
@@ -243,6 +246,82 @@ void subtilis_arm_mem_memcpy(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_BIC, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai = &instr->operands.data;
+	datai->status = false;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->dest = words_reg;
+	datai->op1 = end_reg;
+	datai->op2.type = SUBTILIS_ARM_OP2_I32;
+	datai->op2.op.integer = 3;
+
+	subtilis_arm_add_cmp(arm_s, SUBTILIS_ARM_INSTR_CMP,
+			     SUBTILIS_ARM_CCODE_AL, dest_reg, words_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_GE;
+	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
+	br->target.label = start_tiny_label;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_LDR, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	stran = &instr->operands.stran;
+	stran->ccode = SUBTILIS_ARM_CCODE_AL;
+	stran->dest = val;
+	stran->base = src_reg;
+	stran->offset.type = SUBTILIS_ARM_OP2_I32;
+	stran->offset.op.integer = 4;
+	stran->pre_indexed = false;
+	stran->write_back = true;
+	stran->subtract = false;
+	stran->byte = false;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_STR, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	stran = &instr->operands.stran;
+	stran->ccode = SUBTILIS_ARM_CCODE_AL;
+	stran->dest = val;
+	stran->base = dest_reg;
+	stran->offset.type = SUBTILIS_ARM_OP2_I32;
+	stran->offset.op.integer = 4;
+	stran->pre_indexed = false;
+	stran->write_back = true;
+	stran->subtract = false;
+	stran->byte = false;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_AL;
+	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
+	br->target.label = start_small_label;
+
+	subtilis_arm_section_add_label(arm_s, start_tiny_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	subtilis_arm_add_cmp(arm_s, SUBTILIS_ARM_INSTR_CMP,
 			     SUBTILIS_ARM_CCODE_AL, dest_reg, end_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -269,10 +348,11 @@ void subtilis_arm_mem_memcpy(subtilis_ir_section_t *s,
 	stran->dest = val;
 	stran->base = src_reg;
 	stran->offset.type = SUBTILIS_ARM_OP2_I32;
-	stran->offset.op.integer = 4;
+	stran->offset.op.integer = 1;
 	stran->pre_indexed = false;
 	stran->write_back = true;
 	stran->subtract = false;
+	stran->byte = true;
 
 	instr =
 	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_STR, err);
@@ -284,10 +364,11 @@ void subtilis_arm_mem_memcpy(subtilis_ir_section_t *s,
 	stran->dest = val;
 	stran->base = dest_reg;
 	stran->offset.type = SUBTILIS_ARM_OP2_I32;
-	stran->offset.op.integer = 4;
+	stran->offset.op.integer = 1;
 	stran->pre_indexed = false;
 	stran->write_back = true;
 	stran->subtract = false;
+	stran->byte = true;
 
 	instr =
 	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
@@ -298,7 +379,7 @@ void subtilis_arm_mem_memcpy(subtilis_ir_section_t *s,
 	br->ccode = SUBTILIS_ARM_CCODE_AL;
 	br->link = false;
 	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
-	br->target.label = start_small_label;
+	br->target.label = start_tiny_label;
 
 	subtilis_arm_section_add_label(arm_s, end_label, err);
 	if (err->type != SUBTILIS_ERROR_OK)

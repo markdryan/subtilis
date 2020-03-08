@@ -170,6 +170,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"loadoi32 *, *, *", subtilis_arm_gen_loadoi32},
 	{"label_1", subtilis_arm_gen_label},
 	{"printi32 *\n", subtilis_riscos_arm_printi},
+	{"printstr *, *\n", subtilis_riscos_arm_printstr},
 	{"printnl\n", subtilis_riscos_arm_printnl},
 	{"jmp *\n", subtilis_arm_gen_jump},
 	{"andii32 *, *, *\n", subtilis_arm_gen_andii32},

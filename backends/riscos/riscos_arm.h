@@ -39,6 +39,8 @@ subtilis_riscos_generate(
 
 void subtilis_riscos_arm_printi(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_printstr(subtilis_ir_section_t *s, size_t start,
+				  void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_printnl(subtilis_ir_section_t *s, size_t start,
 				 void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_modei32(subtilis_ir_section_t *s, size_t start,

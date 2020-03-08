@@ -400,6 +400,14 @@ typedef enum {
 	SUBTILIS_OP_INSTR_PRINT_FP,
 
 	/*
+	 * printstr r0, r1
+	 *
+	 * Prints r1 bytes from the string pointed to by r0.
+	 */
+
+	SUBTILIS_OP_INSTR_PRINT_STR,
+
+	/*
 	 * printnl
 	 *
 	 * Prints a newline character to the output stream.

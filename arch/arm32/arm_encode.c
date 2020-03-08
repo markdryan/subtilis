@@ -638,6 +638,8 @@ static void prv_encode_stran_instr(void *user_data, subtilis_arm_op_t *op,
 	if (instr->pre_indexed)
 		word |= 1 << 24;
 
+	if (instr->byte)
+		word |= 1 << 22;
 	if (instr->write_back)
 		word |= 1 << 21;
 	if (!instr->subtract)
@@ -824,6 +826,7 @@ static void prv_encode_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	stran.pre_indexed = true;
 	stran.write_back = false;
 	stran.subtract = false;
+	stran.byte = false;
 	prv_encode_stran_instr(user_data, op, SUBTILIS_ARM_INSTR_LDR, &stran,
 			       err);
 }
@@ -1262,6 +1265,8 @@ static void prv_copy_constant_to_buf(subtilis_arm_prog_t *arm_p,
 	size_t i;
 	uint32_t *word;
 	size_t ptr;
+	size_t null_bytes_needed;
+	uint8_t *bptr;
 
 	if (data->dbl && arm_p->reverse_fpa_consts) {
 		ptr = ud->words_written;
@@ -1273,6 +1278,13 @@ static void prv_copy_constant_to_buf(subtilis_arm_prog_t *arm_p,
 	} else {
 		memcpy(&ud->code[ud->words_written], data->data,
 		       data->data_size);
+		if (data->data_size & 3) {
+			null_bytes_needed = 4 - (data->data_size & 3);
+			bptr = ((uint8_t *)(&ud->code[ud->words_written])) +
+			       data->data_size;
+			for (i = 0; i < null_bytes_needed; i++)
+				*bptr++ = 0;
+		}
 	}
 }
 
@@ -1281,6 +1293,7 @@ static void prv_encode_prog(subtilis_arm_prog_t *arm_p,
 {
 	subtilis_arm_section_t *arm_s;
 	size_t i;
+	size_t size_in_bytes;
 	size_t size_in_words;
 	size_t *const_locations = NULL;
 
@@ -1303,8 +1316,10 @@ static void prv_encode_prog(subtilis_arm_prog_t *arm_p,
 			return;
 		}
 		for (i = 0; i < arm_p->constant_pool->size; i++) {
-			size_in_words =
-			    arm_p->constant_pool->data[i].data_size >> 2;
+			size_in_bytes = arm_p->constant_pool->data[i].data_size;
+			size_in_words = size_in_bytes >> 2;
+			if (size_in_bytes > size_in_words << 2)
+				size_in_words++;
 			prv_ensure_code_size(ud, size_in_words, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;

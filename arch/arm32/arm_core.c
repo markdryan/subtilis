@@ -1090,6 +1090,7 @@ void subtilis_arm_add_stran_imm(subtilis_arm_section_t *s,
 	stran->offset = op2;
 	stran->pre_indexed = true;
 	stran->write_back = false;
+	stran->byte = false;
 	stran->subtract = subtract;
 }
 
@@ -1112,6 +1113,7 @@ void subtilis_arm_add_push(subtilis_arm_section_t *s,
 	stran->pre_indexed = true;
 	stran->write_back = true;
 	stran->subtract = true;
+	stran->byte = false;
 }
 
 void subtilis_arm_add_pop(subtilis_arm_section_t *s,
@@ -1133,6 +1135,7 @@ void subtilis_arm_add_pop(subtilis_arm_section_t *s,
 	stran->pre_indexed = false;
 	stran->write_back = true;
 	stran->subtract = false;
+	stran->byte = false;
 }
 
 void subtilis_arm_insert_push(subtilis_arm_section_t *s,
@@ -1156,6 +1159,7 @@ void subtilis_arm_insert_push(subtilis_arm_section_t *s,
 	stran->pre_indexed = true;
 	stran->write_back = true;
 	stran->subtract = true;
+	stran->byte = false;
 }
 
 void subtilis_arm_insert_pop(subtilis_arm_section_t *s,
@@ -1179,6 +1183,7 @@ void subtilis_arm_insert_pop(subtilis_arm_section_t *s,
 	stran->pre_indexed = false;
 	stran->write_back = true;
 	stran->subtract = false;
+	stran->byte = false;
 }
 
 /* clang-format off */
@@ -1214,6 +1219,7 @@ void subtilis_arm_insert_stran_spill_imm(subtilis_arm_section_t *s,
 	stran->pre_indexed = true;
 	stran->write_back = false;
 	stran->subtract = false;
+	stran->byte = false;
 }
 
 void subtilis_arm_insert_stran_imm(subtilis_arm_section_t *s,
@@ -1253,6 +1259,7 @@ void subtilis_arm_insert_stran_imm(subtilis_arm_section_t *s,
 	stran->pre_indexed = true;
 	stran->write_back = false;
 	stran->subtract = subtract;
+	stran->byte = false;
 }
 
 void subtilis_arm_add_cmp_imm(subtilis_arm_section_t *s,
