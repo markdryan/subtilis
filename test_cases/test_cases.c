@@ -2197,6 +2197,13 @@ const subtilis_test_case_t test_cases[] = {
 	"hello world\nfrom BASIC\n\nfrom BASIC\nnew value for a$\n\n"
 	"Hello global\n\n"
 	},
+	{
+	"print_semi_colon",
+	"print \"hello\";\n"
+	"print 1;\n"
+	"print 2\n",
+	"hello12\n"
+	},
 };
 
 /* clang-format on */

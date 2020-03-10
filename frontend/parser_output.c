@@ -268,6 +268,7 @@ cleanup:
 void subtilis_parser_print(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err)
 {
+	const char *tbuf;
 	subtilis_exp_t *e = NULL;
 
 	e = subtilis_parser_expression(p, t, err);
@@ -288,8 +289,13 @@ void subtilis_parser_print(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_ir_section_add_instr_no_arg(p->current,
-					     SUBTILIS_OP_INSTR_PRINT_NL, err);
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && (!strcmp(tbuf, ";")))
+		subtilis_lexer_get(p->l, t, err);
+	else
+		subtilis_ir_section_add_instr_no_arg(
+		    p->current, SUBTILIS_OP_INSTR_PRINT_NL, err);
+
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
