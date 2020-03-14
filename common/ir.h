@@ -299,6 +299,17 @@ typedef enum {
 	SUBTILIS_OP_INSTR_LOAD_REAL,
 
 	/*
+	 * storeoi8 r0, r1, #off
+	 *
+	 * Stores the least significant byte of register a into the
+	 * memory location defined by the sum of a register and a constant.
+	 *
+	 * [r1 + #off] = r0 & 0xff
+	 */
+
+	SUBTILIS_OP_INSTR_STOREO_I8,
+
+	/*
 	 * storeoi32 r0, r1, #off
 	 *
 	 * Stores a 32 bit integer stored in a register into the

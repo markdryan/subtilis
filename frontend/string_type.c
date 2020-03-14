@@ -159,6 +159,49 @@ cleanup:
 	subtilis_exp_delete(sizee);
 }
 
+void subtilis_string_type_new_ref_from_char(subtilis_parser_t *p,
+					    size_t mem_reg, size_t loc,
+					    subtilis_exp_t *e,
+					    subtilis_error_t *err)
+{
+	size_t dest_reg;
+	subtilis_ir_operand_t dest_op;
+	subtilis_ir_operand_t zero_op;
+	subtilis_exp_t *sizee = NULL;
+
+	e = subtilis_type_if_to_int(p, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	e = subtilis_type_if_exp_to_var(p, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	sizee = subtilis_exp_new_int32(1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	sizee = subtilis_type_if_exp_to_var(p, sizee, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	dest_reg = subtilis_reference_type_alloc(
+	    p, loc, mem_reg, sizee->exp.ir_op.reg, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	dest_op.reg = dest_reg;
+	zero_op.integer = 0;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_STOREO_I8,
+					  e->exp.ir_op, dest_op, zero_op, err);
+
+cleanup:
+
+	subtilis_exp_delete(sizee);
+	subtilis_exp_delete(e);
+}
+
 void subtilis_string_type_new_ref(subtilis_parser_t *p,
 				  const subtilis_type_t *type, size_t mem_reg,
 				  size_t loc, subtilis_exp_t *e,

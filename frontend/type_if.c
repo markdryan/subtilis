@@ -457,6 +457,12 @@ subtilis_type_if_indexed_read(subtilis_parser_t *p, const char *var_name,
 subtilis_exp_t *subtilis_type_if_to_int(subtilis_parser_t *p, subtilis_exp_t *e,
 					subtilis_error_t *err)
 {
+	if (!prv_type_map[e->type.type]->to_int32) {
+		subtilis_error_set_integer_expected(
+		    err, subtilis_type_name(&e->type), p->l->stream->name,
+		    p->l->line);
+		return NULL;
+	}
 	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->to_int32,
 				 err);
 }

@@ -199,7 +199,8 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 
 	/* LDRCS R0, [R2, #16] */
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
-				   SUBTILIS_ARM_CCODE_CS, dest, op1, 16, err);
+				   SUBTILIS_ARM_CCODE_CS, dest, op1, 16, false,
+				   err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

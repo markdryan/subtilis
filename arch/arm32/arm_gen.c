@@ -185,7 +185,7 @@ void subtilis_arm_gen_subi32(subtilis_ir_section_t *s, size_t start,
 
 static void prv_stran_instr(subtilis_arm_instr_type_t itype,
 			    subtilis_ir_section_t *s, size_t start,
-			    void *user_data, subtilis_error_t *err)
+			    void *user_data, bool byte, subtilis_error_t *err)
 {
 	subtilis_arm_section_t *arm_s = user_data;
 	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
@@ -196,19 +196,27 @@ static void prv_stran_instr(subtilis_arm_instr_type_t itype,
 	dest = subtilis_arm_ir_to_arm_reg(instr->operands[0].reg);
 	base = subtilis_arm_ir_to_arm_reg(instr->operands[1].reg);
 	subtilis_arm_add_stran_imm(arm_s, itype, SUBTILIS_ARM_CCODE_AL, dest,
-				   base, offset, err);
+				   base, offset, byte, err);
+}
+
+void subtilis_arm_gen_storeoi8(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_error_t *err)
+{
+	prv_stran_instr(SUBTILIS_ARM_INSTR_STR, s, start, user_data, true, err);
 }
 
 void subtilis_arm_gen_storeoi32(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err)
 {
-	prv_stran_instr(SUBTILIS_ARM_INSTR_STR, s, start, user_data, err);
+	prv_stran_instr(SUBTILIS_ARM_INSTR_STR, s, start, user_data, false,
+			err);
 }
 
 void subtilis_arm_gen_loadoi32(subtilis_ir_section_t *s, size_t start,
 			       void *user_data, subtilis_error_t *err)
 {
-	prv_stran_instr(SUBTILIS_ARM_INSTR_LDR, s, start, user_data, err);
+	prv_stran_instr(SUBTILIS_ARM_INSTR_LDR, s, start, user_data, false,
+			err);
 }
 
 void subtilis_arm_gen_label(subtilis_ir_section_t *s, size_t start,
@@ -1127,7 +1135,7 @@ void subtilis_arm_gen_sete(subtilis_arm_section_t *arm_s,
 		return;
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR, ccode, reg,
-				   12, s->eflag_offset, err);
+				   12, s->eflag_offset, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1136,5 +1144,5 @@ void subtilis_arm_gen_sete(subtilis_arm_section_t *arm_s,
 		return;
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR, ccode, reg,
-				   12, s->error_offset, err);
+				   12, s->error_offset, false, err);
 }

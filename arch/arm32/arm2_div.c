@@ -113,7 +113,8 @@ void subtilis_arm2_idiv_add(subtilis_ir_section_t *s,
 	/* Load err offset */
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
-				   SUBTILIS_ARM_CCODE_AL, err_reg, 13, -4, err);
+				   SUBTILIS_ARM_CCODE_AL, err_reg, 13, -4,
+				   false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

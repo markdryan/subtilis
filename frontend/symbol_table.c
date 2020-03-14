@@ -190,7 +190,7 @@ subtilis_symbol_table_insert_tmp(subtilis_symbol_table_t *st,
 				 char **tmp_name, subtilis_error_t *err)
 {
 	const subtilis_symbol_t *s;
-	char *name;
+	char *name = NULL;
 	char buf[64];
 
 	/*
@@ -199,17 +199,23 @@ subtilis_symbol_table_insert_tmp(subtilis_symbol_table_t *st,
 	 */
 
 	sprintf(buf, "%zu", st->tmp_count++);
-	name = malloc(strlen(buf) + 1);
-	if (!name) {
-		subtilis_error_set_oom(err);
-		return NULL;
+	if (tmp_name) {
+		name = malloc(strlen(buf) + 1);
+		if (!name) {
+			subtilis_error_set_oom(err);
+			return NULL;
+		}
+		strcpy(name, buf);
 	}
-	strcpy(name, buf);
 
 	s = subtilis_symbol_table_insert(st, buf, id_type, err);
-	if (err->type != SUBTILIS_ERROR_OK)
+	if (err->type != SUBTILIS_ERROR_OK) {
+		free(name);
 		return NULL;
-	*tmp_name = name;
+	}
+
+	if (tmp_name)
+		*tmp_name = name;
 
 	return s;
 }

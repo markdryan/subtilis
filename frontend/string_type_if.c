@@ -17,8 +17,44 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "reference_type.h"
 #include "string_type.h"
 #include "string_type_if.h"
+#include "symbol_table.h"
+
+static subtilis_exp_t *prv_exp_to_var_const(subtilis_parser_t *p,
+					    subtilis_exp_t *e,
+					    subtilis_error_t *err)
+{
+	size_t reg;
+	const subtilis_symbol_t *s;
+	subtilis_type_t type;
+
+	type.type = SUBTILIS_TYPE_STRING;
+
+	s = subtilis_symbol_table_insert_tmp(p->local_st, &type, NULL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_string_type_new_ref(p, &e->type, SUBTILIS_IR_REG_LOCAL, s->loc,
+				     e, err);
+	e = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	reg = subtilis_reference_get_pointer(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					     err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_var(&s->t, reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(e);
+
+	return NULL;
+}
 
 /* clang-format off */
 subtilis_type_if subtilis_type_if_const_string = {
@@ -35,7 +71,7 @@ subtilis_type_if subtilis_type_if_const_string = {
 	.zero_reg = NULL,
 	.array_of = NULL,
 	.element_type = NULL,
-	.exp_to_var = NULL,
+	.exp_to_var = prv_exp_to_var_const,
 	.copy_var = NULL,
 	.dup = NULL,
 	.assign_reg = NULL,

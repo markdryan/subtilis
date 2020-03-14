@@ -1057,7 +1057,7 @@ void subtilis_arm_add_stran_imm(subtilis_arm_section_t *s,
 				subtilis_arm_ccode_type_t ccode,
 				subtilis_arm_reg_t dest,
 				subtilis_arm_reg_t base, int32_t offset,
-				subtilis_error_t *err)
+				bool byte, subtilis_error_t *err)
 {
 	subtilis_arm_op2_t op2;
 	subtilis_arm_instr_t *instr;
@@ -1090,7 +1090,7 @@ void subtilis_arm_add_stran_imm(subtilis_arm_section_t *s,
 	stran->offset = op2;
 	stran->pre_indexed = true;
 	stran->write_back = false;
-	stran->byte = false;
+	stran->byte = byte;
 	stran->subtract = subtract;
 }
 

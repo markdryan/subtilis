@@ -77,6 +77,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "loador", SUBTILIS_OP_CLASS_FREG_REG_I32},
 	{ "loadi32", SUBTILIS_OP_CLASS_REG_REG},
 	{ "loadr", SUBTILIS_OP_CLASS_REG_REG},
+	{ "storeoi8", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "storeoi32", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "storeor", SUBTILIS_OP_CLASS_FREG_REG_I32},
 	{ "storei32", SUBTILIS_OP_CLASS_REG_REG},

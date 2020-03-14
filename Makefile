@@ -20,6 +20,7 @@ COMMON =\
 	parser_graphics.c \
 	parser_input.c \
 	parser_output.c \
+	parser_string.c \
 	parser_rnd.c \
 	expression.c \
 	ir.c \

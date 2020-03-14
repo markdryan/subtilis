@@ -38,6 +38,8 @@ void subtilis_arm_gen_subi32(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_muli32(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_storeoi8(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_storeoi32(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_loadoi32(subtilis_ir_section_t *s, size_t start,

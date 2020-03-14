@@ -2204,6 +2204,14 @@ const subtilis_test_case_t test_cases[] = {
 	"print 2\n",
 	"hello12\n"
 	},
+	{"chr$",
+	 "print chr$(33)\n"
+	 "a% := 33\n"
+	 "print chr$(a%)\n"
+	 "a = 33\n"
+	 "print chr$(a)\n",
+	 "!\n!\n!\n"
+	},
 };
 
 /* clang-format on */

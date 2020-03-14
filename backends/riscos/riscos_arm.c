@@ -81,13 +81,13 @@ static void prv_add_escape_handler(subtilis_arm_section_t *arm_s,
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
 				   SUBTILIS_ARM_CCODE_AL, 1, 12,
-				   RISCOS_ARM_GLOBAL_ESC_HANDLER, err);
+				   RISCOS_ARM_GLOBAL_ESC_HANDLER, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
 				   SUBTILIS_ARM_CCODE_AL, 2, 12,
-				   RISCOS_ARM_GLOBAL_ESC_R12, err);
+				   RISCOS_ARM_GLOBAL_ESC_R12, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -121,7 +121,7 @@ static void prv_add_escape_handler(subtilis_arm_section_t *arm_s,
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
 				   SUBTILIS_ARM_CCODE_AL, 0, 12,
-				   RISCOS_ARM_GLOBAL_ESC_FLAG, err);
+				   RISCOS_ARM_GLOBAL_ESC_FLAG, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -143,13 +143,13 @@ static void prv_remove_escape_handler(subtilis_arm_section_t *arm_s,
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
 				   SUBTILIS_ARM_CCODE_AL, 1, 12,
-				   RISCOS_ARM_GLOBAL_ESC_HANDLER, err);
+				   RISCOS_ARM_GLOBAL_ESC_HANDLER, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
 				   SUBTILIS_ARM_CCODE_AL, 2, 12,
-				   RISCOS_ARM_GLOBAL_ESC_R12, err);
+				   RISCOS_ARM_GLOBAL_ESC_R12, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -219,7 +219,8 @@ static void prv_load_heap_pointer(subtilis_arm_section_t *arm_s, size_t scratch,
 		return;
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
-				   SUBTILIS_ARM_CCODE_AL, scratch, reg, 4, err);
+				   SUBTILIS_ARM_CCODE_AL, scratch, reg, 4,
+				   false, err);
 }
 
 static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
@@ -335,9 +336,9 @@ static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
-		subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
-					   SUBTILIS_ARM_CCODE_AL, 1, 12,
-					   RISCOS_ARM_GLOBAL_ESC_FLAG, err);
+		subtilis_arm_add_stran_imm(
+		    arm_s, SUBTILIS_ARM_INSTR_STR, SUBTILIS_ARM_CCODE_AL, 1, 12,
+		    RISCOS_ARM_GLOBAL_ESC_FLAG, false, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		prv_add_escape_handler(arm_s, err);
@@ -864,7 +865,8 @@ void subtilis_riscos_arm_gettime(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
-				   SUBTILIS_ARM_CCODE_VC, dest, 1, 0, err);
+				   SUBTILIS_ARM_CCODE_VC, dest, 1, 0, false,
+				   err);
 }
 
 void subtilis_riscos_arm_cls(subtilis_ir_section_t *s, size_t start,
@@ -1210,7 +1212,7 @@ void subtilis_riscos_arm_testesc(subtilis_ir_section_t *s, size_t start,
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
 				   SUBTILIS_ARM_CCODE_AL, 0, 12,
-				   RISCOS_ARM_GLOBAL_ESC_FLAG, err);
+				   RISCOS_ARM_GLOBAL_ESC_FLAG, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1239,7 +1241,7 @@ void subtilis_riscos_arm_testesc(subtilis_ir_section_t *s, size_t start,
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
 				   SUBTILIS_ARM_CCODE_AL, 0, 12,
-				   RISCOS_ARM_GLOBAL_ESC_FLAG, err);
+				   RISCOS_ARM_GLOBAL_ESC_FLAG, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1327,7 +1329,8 @@ void subtilis_riscos_arm_alloc(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
-				   SUBTILIS_ARM_CCODE_VC, one, 2, 0, err);
+				   SUBTILIS_ARM_CCODE_VC, one, 2, 0, false,
+				   err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1336,7 +1339,7 @@ void subtilis_riscos_arm_alloc(subtilis_ir_section_t *s, size_t start,
 	 */
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
-				   SUBTILIS_ARM_CCODE_VC, 3, 2, 4, err);
+				   SUBTILIS_ARM_CCODE_VC, 3, 2, 4, false, err);
 }
 
 void subtilis_riscos_arm_realloc(subtilis_ir_section_t *s, size_t start,
@@ -1374,7 +1377,8 @@ void subtilis_riscos_arm_realloc(subtilis_ir_section_t *s, size_t start,
 	 */
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
-				   SUBTILIS_ARM_CCODE_VC, 3, block, 4, err);
+				   SUBTILIS_ARM_CCODE_VC, 3, block, 4, false,
+				   err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1414,7 +1418,8 @@ void subtilis_riscos_arm_realloc(subtilis_ir_section_t *s, size_t start,
 	 */
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
-				   SUBTILIS_ARM_CCODE_VC, new_size, 2, 4, err);
+				   SUBTILIS_ARM_CCODE_VC, new_size, 2, 4, false,
+				   err);
 }
 
 void subtilis_riscos_arm_ref(subtilis_ir_section_t *s, size_t start,
@@ -1434,7 +1439,7 @@ void subtilis_riscos_arm_ref(subtilis_ir_section_t *s, size_t start,
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
 				   SUBTILIS_ARM_CCODE_AL, count, block, -8,
-				   err);
+				   false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1445,7 +1450,7 @@ void subtilis_riscos_arm_ref(subtilis_ir_section_t *s, size_t start,
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
 				   SUBTILIS_ARM_CCODE_AL, count, block, -8,
-				   err);
+				   false, err);
 }
 
 void subtilis_riscos_arm_deref(subtilis_ir_section_t *s, size_t start,
@@ -1471,7 +1476,8 @@ void subtilis_riscos_arm_deref(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
-				   SUBTILIS_ARM_CCODE_AL, count, block, 0, err);
+				   SUBTILIS_ARM_CCODE_AL, count, block, 0,
+				   false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1498,5 +1504,6 @@ void subtilis_riscos_arm_deref(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
-				   SUBTILIS_ARM_CCODE_NE, count, block, 0, err);
+				   SUBTILIS_ARM_CCODE_NE, count, block, 0,
+				   false, err);
 }
