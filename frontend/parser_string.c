@@ -74,3 +74,27 @@ cleanup:
 
 	return NULL;
 }
+
+subtilis_exp_t *subtilis_parser_asc(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+
+	e = subtilis_parser_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_string_type_asc(p, e, err);
+}
+
+subtilis_exp_t *subtilis_parser_len(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+
+	e = subtilis_parser_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_string_type_len(p, e, err);
+}

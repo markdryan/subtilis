@@ -168,6 +168,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"subi32 *, *, *", subtilis_arm_gen_subi32},
 	{"storeoi8 *, *, *", subtilis_arm_gen_storeoi8},
 	{"storeoi32 *, *, *", subtilis_arm_gen_storeoi32},
+	{"loadoi8 *, *, *", subtilis_arm_gen_loadoi8},
 	{"loadoi32 *, *, *", subtilis_arm_gen_loadoi32},
 	{"label_1", subtilis_arm_gen_label},
 	{"printi32 *\n", subtilis_riscos_arm_printi},

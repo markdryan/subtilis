@@ -73,6 +73,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "mulir", SUBTILIS_OP_CLASS_FREG_FREG_REAL},
 	{ "divii32", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "divir", SUBTILIS_OP_CLASS_FREG_FREG_REAL},
+	{ "loadoi8", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "loadoi32", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "loador", SUBTILIS_OP_CLASS_FREG_REG_I32},
 	{ "loadi32", SUBTILIS_OP_CLASS_REG_REG},

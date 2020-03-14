@@ -253,6 +253,18 @@ typedef enum {
 	SUBTILIS_OP_INSTR_DIVI_REAL,
 
 	/*
+	 * loadoi8 r0, r1, #off
+	 *
+	 * Loads an 8 bit integer from a memory location formed by
+	 * the sum of the contents of a register and a constant into another
+	 * register.
+	 *
+	 * r0 = [r1 + #off]
+	 */
+
+	SUBTILIS_OP_INSTR_LOADO_I8,
+
+	/*
 	 * loadoi32 r0, r1, #off
 	 *
 	 * Loads a 32 bit integer from a memory location formed by

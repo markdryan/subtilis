@@ -212,6 +212,12 @@ void subtilis_arm_gen_storeoi32(subtilis_ir_section_t *s, size_t start,
 			err);
 }
 
+void subtilis_arm_gen_loadoi8(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	prv_stran_instr(SUBTILIS_ARM_INSTR_LDR, s, start, user_data, true, err);
+}
+
 void subtilis_arm_gen_loadoi32(subtilis_ir_section_t *s, size_t start,
 			       void *user_data, subtilis_error_t *err)
 {

@@ -2212,6 +2212,24 @@ const subtilis_test_case_t test_cases[] = {
 	 "print chr$(a)\n",
 	 "!\n!\n!\n"
 	},
+	{"asc",
+	 "print asc(\"01\")\n"
+	 "a$ = \"01\"\n"
+	 "print asc(a$)\n"
+	 "b$ := \"\"\n"
+	 "print asc(\"\")\n"
+	 "print asc(b$)\n",
+	 "48\n48\n-1\n-1\n"
+	},
+	{"len",
+	 "print len(\"Hello world\")\n"
+	 "print len(\"\")\n"
+	 "a$ = \"01\"\n"
+	 "b$ := \"\"\n"
+	 "print len(b$)\n"
+	 "print len(a$)\n",
+	 "11\n0\n0\n2\n"
+	},
 };
 
 /* clang-format on */

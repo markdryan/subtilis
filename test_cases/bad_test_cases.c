@@ -408,6 +408,21 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"dim a%(10)\n"
 	"print dim(a%)\n",
 	SUBTILIS_ERROR_NOT_ARRAY,
+	},
+	{
+	"chr$",
+	"print chr$(\"Hello\")\n",
+	SUBTILIS_ERROR_INTEGER_EXPECTED,
+	},
+	{
+	"asc",
+	"print asc(1)\n",
+	SUBTILIS_ERROR_STRING_EXPECTED,
+	},
+	{
+	"len",
+	"print asc(1.0)\n",
+	SUBTILIS_ERROR_STRING_EXPECTED,
 	}
 };
 

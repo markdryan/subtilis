@@ -254,6 +254,133 @@ cleanup:
 	subtilis_exp_delete(e);
 }
 
+subtilis_exp_t *subtilis_string_type_len(subtilis_parser_t *p,
+					 subtilis_exp_t *e,
+					 subtilis_error_t *err)
+{
+	subtilis_ir_operand_t offset;
+	size_t size;
+	int32_t bytes;
+	subtilis_exp_t *len = NULL;
+
+	switch (e->type.type) {
+	case SUBTILIS_TYPE_STRING:
+		offset.integer = SUBTIILIS_STRING_SIZE_OFF;
+		size = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_LOADO_I32, e->exp.ir_op,
+		    offset, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		len = subtilis_exp_new_int32_var(size, err);
+		break;
+	case SUBTILIS_TYPE_CONST_STRING:
+		bytes = (int32_t)subtilis_buffer_get_size(&e->exp.str);
+		if (bytes > 0)
+			bytes--;
+		len = subtilis_exp_new_int32(bytes, err);
+		break;
+	default:
+		subtilis_error_set_string_expected(err, p->l->stream->name,
+						   p->l->line);
+		break;
+	}
+
+cleanup:
+
+	subtilis_exp_delete(e);
+
+	return len;
+}
+
+static subtilis_exp_t *prv_asc_var(subtilis_parser_t *p,
+				   subtilis_ir_operand_t str,
+				   subtilis_error_t *err)
+{
+	subtilis_ir_operand_t size;
+	subtilis_ir_operand_t data_reg;
+	subtilis_ir_operand_t byte_reg;
+	subtilis_ir_operand_t zero;
+	subtilis_ir_operand_t neg1;
+	subtilis_ir_operand_t gtzero;
+	subtilis_ir_operand_t offset;
+
+	offset.integer = SUBTIILIS_STRING_SIZE_OFF;
+	size.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, str, offset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	zero.label = subtilis_ir_section_new_label(p->current);
+	gtzero.label = subtilis_ir_section_new_label(p->current);
+
+	neg1.integer = -1;
+	byte_reg.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, neg1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  size, gtzero, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_label(p->current, gtzero.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	offset.integer = SUBTIILIS_STRING_DATA_OFF;
+	data_reg.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, str, offset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	offset.integer = 0;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_LOADO_I8, byte_reg,
+					  data_reg, offset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_label(p->current, zero.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_int32_var(byte_reg.reg, err);
+}
+
+subtilis_exp_t *subtilis_string_type_asc(subtilis_parser_t *p,
+					 subtilis_exp_t *e,
+					 subtilis_error_t *err)
+{
+	int32_t byte;
+	int32_t bytes;
+	size_t start;
+	subtilis_exp_t *retval = NULL;
+
+	switch (e->type.type) {
+	case SUBTILIS_TYPE_STRING:
+		retval = prv_asc_var(p, e->exp.ir_op, err);
+		break;
+	case SUBTILIS_TYPE_CONST_STRING:
+		bytes = (int32_t)subtilis_buffer_get_size(&e->exp.str);
+		if (bytes <= 1) {
+			byte = -1;
+		} else {
+			start = e->exp.str.buffer->start;
+			byte = e->exp.str.buffer->data[start];
+		}
+		retval = subtilis_exp_new_int32(byte, err);
+		break;
+	default:
+		subtilis_error_set_string_expected(err, p->l->stream->name,
+						   p->l->line);
+		break;
+	}
+
+	subtilis_exp_delete(e);
+
+	return retval;
+}
+
 void subtilis_string_type_print(subtilis_parser_t *p, subtilis_exp_t *e,
 				subtilis_error_t *err)
 {

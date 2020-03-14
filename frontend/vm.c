@@ -256,6 +256,15 @@ static void prv_storeor(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	memcpy(dst, &vm->fregs[ops[0].reg], sizeof(double));
 }
 
+static void prv_loadoi8(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int32_t base = vm->regs[ops[1].reg];
+	uint8_t *src = &vm->memory[base + ops[2].integer];
+
+	vm->regs[ops[0].reg] = *src;
+}
+
 static void prv_loadoi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			 subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -1284,6 +1293,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_mulir,                           /* SUBTILIS_OP_INSTR_MULI_REAL */
 	prv_divii32,                         /* SUBTILIS_OP_INSTR_DIVI_I32 */
 	prv_divir,                           /* SUBTILIS_OP_INSTR_DIVI_REAL */
+	prv_loadoi8,                         /* SUBTILIS_OP_INSTR_LOADO_I8 */
 	prv_loadoi32,                        /* SUBTILIS_OP_INSTR_LOADO_I32 */
 	prv_loador,                          /* SUBTILIS_OP_INSTR_LOADO_REAL */
 	NULL,                                /* SUBTILIS_OP_INSTR_LOAD_I32 */

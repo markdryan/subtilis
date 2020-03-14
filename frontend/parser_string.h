@@ -22,5 +22,8 @@
 subtilis_exp_t *subtilis_parser_chrstr(subtilis_parser_t *p,
 				       subtilis_token_t *t,
 				       subtilis_error_t *err);
-
+subtilis_exp_t *subtilis_parser_asc(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_len(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_error_t *err);
 #endif
