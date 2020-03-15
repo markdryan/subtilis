@@ -95,6 +95,7 @@ static void prv_sss_link_map_insert(subtilis_arm_subsections_t *sss,
 static void prv_add_link(subtilis_arm_ss_t *ss, subtilis_arm_section_t *arm_s,
 			 size_t ptr, size_t label, subtilis_error_t *err)
 {
+	subtilis_arm_ss_link_t *first_link;
 	subtilis_arm_ss_link_t *link;
 	subtilis_arm_op_t *from;
 	subtilis_regs_used_virt_t regs_used;
@@ -117,16 +118,39 @@ static void prv_add_link(subtilis_arm_ss_t *ss, subtilis_arm_section_t *arm_s,
 	subtilis_bitset_init(&link->int_save);
 	subtilis_bitset_init(&link->real_save);
 
-	from = &arm_s->op_pool->ops[ss->start];
-	subtilis_arm_regs_used_before_from_tov(arm_s, from, to, max_int_regs,
-					       max_real_regs, &regs_used, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+	/*
+	 * If the basic block has two links, the block essentially ends with
+	 * conditional branch.  This branch will be followed by a label but
+	 * this label doesn't affect the inputs of outputs.  Thus the inputs
+	 * and outputs for both links will be identical.  There's no need to
+	 * compute them twice, particularly as this is one of the most expensive
+	 * parts of the compilation.
+	 */
+
+	if (ss->num_links == 1) {
+		from = &arm_s->op_pool->ops[ss->start];
+		subtilis_arm_regs_used_before_from_tov(
+		    arm_s, from, to, max_int_regs, max_real_regs, &regs_used,
+		    err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		subtilis_bitset_claim(&link->int_outputs, &regs_used.int_regs);
+		subtilis_bitset_claim(&link->real_outputs,
+				      &regs_used.real_regs);
+	} else {
+		first_link = &ss->links[0];
+		subtilis_bitset_or(&link->int_outputs, &first_link->int_outputs,
+				   err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		subtilis_bitset_or(&link->real_outputs,
+				   &first_link->real_outputs, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
 
 	link->link = label;
 	link->op = ptr;
-	subtilis_bitset_claim(&link->int_outputs, &regs_used.int_regs);
-	subtilis_bitset_claim(&link->real_outputs, &regs_used.real_regs);
 
 cleanup:
 
