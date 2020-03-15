@@ -271,7 +271,19 @@ void subtilis_parser_print(subtilis_parser_t *p, subtilis_token_t *t,
 	const char *tbuf;
 	subtilis_exp_t *e = NULL;
 
-	e = subtilis_parser_expression(p, t, err);
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
+	    (t->tok.keyword.type == SUBTILIS_KEYWORD_TAB)) {
+		subtilis_parser_bracketed_2_int_args_void(
+		    p, t, SUBTILIS_OP_INSTR_AT, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	e = subtilis_parser_priority7(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

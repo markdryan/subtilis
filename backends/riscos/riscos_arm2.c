@@ -242,6 +242,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"pushi32 *\n", subtilis_arm_gen_pushi32},
 	{"popi32 *\n", subtilis_arm_gen_popi32},
 	{"lca *, *\n", subtilis_arm_gen_lca},
+	{"at *, *\n", subtilis_riscos_arm_at},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

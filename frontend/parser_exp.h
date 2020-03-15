@@ -44,6 +44,10 @@ subtilis_exp_t *
 subtilis_parser_bracketed_2_int_args(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_op_instr_type_t itype,
 				     subtilis_error_t *err);
+void subtilis_parser_bracketed_2_int_args_void(subtilis_parser_t *p,
+					       subtilis_token_t *t,
+					       subtilis_op_instr_type_t itype,
+					       subtilis_error_t *err);
 subtilis_exp_t *subtilis_parser_bracketed_exp(subtilis_parser_t *p,
 					      subtilis_token_t *t,
 					      subtilis_error_t *err);

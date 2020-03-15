@@ -672,6 +672,26 @@ cleanup:
 	return retval;
 }
 
+void subtilis_parser_bracketed_2_int_args_void(subtilis_parser_t *p,
+					       subtilis_token_t *t,
+					       subtilis_op_instr_type_t itype,
+					       subtilis_error_t *err)
+{
+	subtilis_exp_t *e[2];
+
+	memset(&e, 0, sizeof(e));
+
+	prv_bracketed_int_args(p, t, e, 2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, itype, e[0]->exp.ir_op, e[1]->exp.ir_op, err);
+
+	subtilis_exp_delete(e[0]);
+	subtilis_exp_delete(e[1]);
+}
+
 subtilis_exp_t *subtilis_parser_bracketed_exp_internal(subtilis_parser_t *p,
 						       subtilis_token_t *t,
 						       subtilis_error_t *err)

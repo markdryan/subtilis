@@ -179,6 +179,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "pushi32", SUBTILIS_OP_CLASS_REG },
 	{ "popi32", SUBTILIS_OP_CLASS_REG },
 	{ "lca", SUBTILIS_OP_CLASS_REG_I32 },
+	{ "at", SUBTILIS_OP_CLASS_REG_REG },
 };
 
 /*

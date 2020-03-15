@@ -1405,6 +1405,16 @@ typedef enum {
 
 	SUBTILIS_OP_INSTR_LCA,
 
+	/*
+	 *
+	 * at r0, r1
+	 *
+	 * Moves the text cursor to the x and y coordinates specified by r0 and
+	 * r1 which represent the x and y coordinates respectively.
+	 */
+
+	SUBTILIS_OP_INSTR_AT,
+
 } subtilis_op_instr_type_t;
 
 typedef enum {

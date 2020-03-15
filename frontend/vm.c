@@ -1399,6 +1399,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_pushi32,                         /* SUBTILIS_OP_INSTR_PUSH_I32 */
 	prv_popi32,                          /* SUBTILIS_OP_INSTR_POP_I32 */
 	prv_lca,                             /* SUBTILIS_OP_INSTR_LCA_I32 */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_AT */
 };
 
 /* clang-format on */
