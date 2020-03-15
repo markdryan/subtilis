@@ -313,3 +313,32 @@ void subtilis_parser_print(subtilis_parser_t *p, subtilis_token_t *t,
 
 	subtilis_exp_handle_errors(p, err);
 }
+
+static subtilis_exp_t *prv_pos(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_op_instr_type_t itype,
+			       subtilis_error_t *err)
+{
+	size_t reg;
+
+	reg = subtilis_ir_section_add_instr1(p->current, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_int32_var(reg, err);
+}
+
+subtilis_exp_t *subtilis_parser_pos(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_error_t *err)
+{
+	return prv_pos(p, t, SUBTILIS_OP_INSTR_POS, err);
+}
+
+subtilis_exp_t *subtilis_parser_vpos(subtilis_parser_t *p, subtilis_token_t *t,
+				     subtilis_error_t *err)
+{
+	return prv_pos(p, t, SUBTILIS_OP_INSTR_VPOS, err);
+}

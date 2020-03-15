@@ -727,6 +727,44 @@ void subtilis_riscos_arm_plot(subtilis_ir_section_t *s, size_t start,
 			     err);
 }
 
+static void prv_pos(subtilis_ir_section_t *s, size_t start, void *user_data,
+		    size_t src_reg, subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *pos = &s->ops[start]->op.instr;
+	subtilis_arm_reg_t dest;
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 134,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/* OS_Byte */
+	/* read_mask = 1 = r0  */
+	/* write_mask = 6 = r1, r2 */
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x6 + 0x20000, 1, 6,
+			     err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	dest = subtilis_arm_ir_to_arm_reg(pos->operands[0].reg);
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest,
+				 src_reg, err);
+}
+
+void subtilis_riscos_arm_pos(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	prv_pos(s, start, user_data, 1, err);
+}
+
+void subtilis_riscos_arm_vpos(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	prv_pos(s, start, user_data, 2, err);
+}
+
 void subtilis_riscos_arm_at(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_error_t *err)
 {
@@ -734,7 +772,7 @@ void subtilis_riscos_arm_at(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_reg_t op2;
 	subtilis_arm_section_t *arm_s = user_data;
 	subtilis_ir_inst_t *at = &s->ops[start]->op.instr;
-	const size_t os_tab = 256 + 31;
+	const size_t os_tab = 256 + 31 + 0x20000;
 
 	/* vdu 31 */
 	/* read_mask = 0 */

@@ -1274,6 +1274,12 @@ static void prv_lca(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = vm->constants[ops[1].integer];
 }
 
+static void prv_pos(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = 0;
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1400,6 +1406,8 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_popi32,                          /* SUBTILIS_OP_INSTR_POP_I32 */
 	prv_lca,                             /* SUBTILIS_OP_INSTR_LCA_I32 */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_AT */
+	prv_pos,                             /* SUBTILIS_OP_INSTR_POS */
+	prv_pos,                             /* SUBTILIS_OP_INSTR_VPOS */
 };
 
 /* clang-format on */

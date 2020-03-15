@@ -24,5 +24,9 @@ void subtilis_parser_vdu(subtilis_parser_t *p, subtilis_token_t *t,
 			 subtilis_error_t *err);
 void subtilis_parser_print(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_pos(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_vpos(subtilis_parser_t *p, subtilis_token_t *t,
+				     subtilis_error_t *err);
 
 #endif

@@ -1415,6 +1415,23 @@ typedef enum {
 
 	SUBTILIS_OP_INSTR_AT,
 
+	/*
+	 *
+	 * pos r0
+	 *
+	 * Writes the x coordinate of the text cursor to r0
+	 */
+
+	SUBTILIS_OP_INSTR_POS,
+
+	/*
+	 *
+	 * vpos r0
+	 *
+	 * Writes the y coordinate of the text cursor to r0
+	 */
+
+	SUBTILIS_OP_INSTR_VPOS,
 } subtilis_op_instr_type_t;
 
 typedef enum {
