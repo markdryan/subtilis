@@ -155,7 +155,7 @@ static void prv_ensure_code_size(subtilis_arm_encode_ud_t *ud, size_t words,
 		new_max_words = SUBTILIS_ENCODER_CODE_GRAN + ud->max_words;
 	else
 		new_max_words = words + ud->max_words;
-	new_code = realloc(ud->code, new_max_words);
+	new_code = realloc(ud->code, new_max_words * sizeof(*new_code));
 	if (!new_code) {
 		subtilis_error_set_oom(err);
 		return;
