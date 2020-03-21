@@ -876,6 +876,10 @@ static void prv_os_byte(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 	case 129:
 		prv_inkey(arm_vm, err);
 		break;
+	case 134: // pos, vpos
+		arm_vm->regs[1] = 0;
+		arm_vm->regs[2] = 0;
+		break;
 	default:
 		break;
 	}

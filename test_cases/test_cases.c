@@ -2230,6 +2230,20 @@ const subtilis_test_case_t test_cases[] = {
 	 "print len(a$)\n",
 	 "11\n0\n0\n2\n"
 	},
+	{"spc",
+	 "print spc(10) \"Hello world\"\n"
+	 "a% := 10\n"
+	 "print spc(a%) \"Hello world\"\n",
+	 "          Hello world\n"
+	 "          Hello world\n",
+	},
+	{"tab_one_arg",
+	 "print tab(10) \"Hello world\"\n"
+	 "a% := 10\n"
+	 "print spc(a%) \"Hello world\"\n",
+	 "          Hello world\n"
+	 "          Hello world\n",
+	},
 };
 
 /* clang-format on */
