@@ -54,7 +54,8 @@ void subtilis_parser_mode(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_exp_handle_errors(p, err);
+	if (!p->settings.ignore_graphics_errors)
+		subtilis_exp_handle_errors(p, err);
 
 cleanup:
 
@@ -83,7 +84,8 @@ void subtilis_parser_plot(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_exp_handle_errors(p, err);
+	if (!p->settings.ignore_graphics_errors)
+		subtilis_exp_handle_errors(p, err);
 
 cleanup:
 	for (i = 0; i < 3; i++)
@@ -98,9 +100,11 @@ void subtilis_parser_wait(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_exp_handle_errors(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+	if (!p->settings.ignore_graphics_errors) {
+		subtilis_exp_handle_errors(p, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 
 	subtilis_lexer_get(p->l, t, err);
 }
@@ -131,7 +135,8 @@ static void prv_simple_plot(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_exp_handle_errors(p, err);
+	if (!p->settings.ignore_graphics_errors)
+		subtilis_exp_handle_errors(p, err);
 
 cleanup:
 	for (i = 0; i < 3; i++)
@@ -447,7 +452,8 @@ void subtilis_parser_gcol(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_exp_handle_errors(p, err);
+	if (!p->settings.ignore_graphics_errors)
+		subtilis_exp_handle_errors(p, err);
 
 cleanup:
 	for (i = 0; i < 2; i++)
@@ -478,7 +484,8 @@ void subtilis_parser_origin(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_exp_handle_errors(p, err);
+	if (!p->settings.ignore_graphics_errors)
+		subtilis_exp_handle_errors(p, err);
 
 cleanup:
 	for (i = 0; i < 2; i++)
@@ -493,9 +500,11 @@ void subtilis_parser_cls(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_exp_handle_errors(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+	if (!p->settings.ignore_graphics_errors) {
+		subtilis_exp_handle_errors(p, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 
 	subtilis_lexer_get(p->l, t, err);
 }
@@ -508,9 +517,11 @@ void subtilis_parser_clg(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_exp_handle_errors(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+	if (!p->settings.ignore_graphics_errors) {
+		subtilis_exp_handle_errors(p, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 
 	subtilis_lexer_get(p->l, t, err);
 }
@@ -523,9 +534,11 @@ void subtilis_parser_on(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_exp_handle_errors(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+	if (!p->settings.ignore_graphics_errors) {
+		subtilis_exp_handle_errors(p, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 
 	subtilis_lexer_get(p->l, t, err);
 }
@@ -538,9 +551,11 @@ void subtilis_parser_off(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_exp_handle_errors(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+	if (!p->settings.ignore_graphics_errors) {
+		subtilis_exp_handle_errors(p, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 
 	subtilis_lexer_get(p->l, t, err);
 }

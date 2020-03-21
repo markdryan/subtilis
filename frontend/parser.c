@@ -47,6 +47,7 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 	}
 
 	p->settings.handle_escapes = true;
+	p->settings.ignore_graphics_errors = true;
 
 	p->st = subtilis_symbol_table_new(err);
 	if (err->type != SUBTILIS_ERROR_OK)

@@ -39,7 +39,8 @@ static void prv_vdu_byte(subtilis_parser_t *p, subtilis_exp_t *e,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_exp_handle_errors(p, err);
+	if (!p->settings.ignore_graphics_errors)
+		subtilis_exp_handle_errors(p, err);
 }
 
 static void prv_vdu_2bytes(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -59,9 +60,11 @@ static void prv_vdu_2bytes(subtilis_parser_t *p, subtilis_exp_t *e,
 		    p->current, SUBTILIS_OP_INSTR_VDU, op1, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		subtilis_exp_handle_errors(p, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+		if (!p->settings.ignore_graphics_errors) {
+			subtilis_exp_handle_errors(p, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		}
 		op2.integer = 8;
 		op1.reg = subtilis_ir_section_add_instr(
 		    p->current, SUBTILIS_OP_INSTR_LSRI_I32, e->exp.ir_op, op2,
@@ -78,9 +81,11 @@ static void prv_vdu_2bytes(subtilis_parser_t *p, subtilis_exp_t *e,
 		    p->current, SUBTILIS_OP_INSTR_VDUI, op1, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		subtilis_exp_handle_errors(p, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+		if (!p->settings.ignore_graphics_errors) {
+			subtilis_exp_handle_errors(p, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		}
 		op1.integer = (e->exp.ir_op.integer >> 8) & 0xff;
 		subtilis_ir_section_add_instr_no_reg(
 		    p->current, SUBTILIS_OP_INSTR_VDUI, op1, err);
@@ -88,7 +93,8 @@ static void prv_vdu_2bytes(subtilis_parser_t *p, subtilis_exp_t *e,
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-	subtilis_exp_handle_errors(p, err);
+	if (!p->settings.ignore_graphics_errors)
+		subtilis_exp_handle_errors(p, err);
 }
 
 static void prv_vdu_1byte9zeros(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -107,9 +113,11 @@ static void prv_vdu_1byte9zeros(subtilis_parser_t *p, subtilis_exp_t *e,
 		    p->current, SUBTILIS_OP_INSTR_VDUI, op1, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		subtilis_exp_handle_errors(p, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+		if (!p->settings.ignore_graphics_errors) {
+			subtilis_exp_handle_errors(p, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		}
 	}
 }
 
@@ -531,9 +539,11 @@ void subtilis_parser_print(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_exp_handle_errors(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+	if (!p->settings.ignore_graphics_errors) {
+		subtilis_exp_handle_errors(p, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 
 	tbuf = subtilis_token_get_text(t);
 	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && (!strcmp(tbuf, ";")))
@@ -545,7 +555,8 @@ void subtilis_parser_print(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_exp_handle_errors(p, err);
+	if (!p->settings.ignore_graphics_errors)
+		subtilis_exp_handle_errors(p, err);
 }
 
 static subtilis_exp_t *prv_pos(subtilis_parser_t *p, subtilis_token_t *t,
