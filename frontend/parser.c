@@ -46,7 +46,7 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 		goto on_error;
 	}
 
-	p->handle_escapes = true;
+	p->settings.handle_escapes = true;
 
 	p->st = subtilis_symbol_table_new(err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -57,7 +57,7 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 		goto on_error;
 	p->local_st = p->main_st;
 
-	p->prog = subtilis_ir_prog_new(err, p->handle_escapes);
+	p->prog = subtilis_ir_prog_new(&p->settings, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 

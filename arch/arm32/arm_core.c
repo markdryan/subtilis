@@ -118,7 +118,7 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 						 size_t freg_counter,
 						 size_t label_counter,
 						 size_t locals,
-						 bool handle_escapes,
+						 const subtilis_settings_t *set,
 						 subtilis_error_t *err)
 /* clang-format on */
 
@@ -137,7 +137,7 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 	s->last_op = SIZE_MAX;
 	s->locals = locals;
 	s->op_pool = pool;
-	s->handle_escapes = handle_escapes;
+	s->settings = set;
 	s->no_cleanup_label = s->label_counter++;
 
 	return s;
@@ -247,7 +247,7 @@ subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 					   subtilis_arm_op_pool_t *op_pool,
 					   subtilis_string_pool_t *string_pool,
 					   subtilis_constant_pool_t *cnst_pool,
-					   bool handle_escapes,
+					   const subtilis_settings_t *settings,
 					   subtilis_error_t *err)
 {
 	double dummy_float = 1.0;
@@ -273,7 +273,7 @@ subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 
 	/* Slightly weird but on ARM FPA the words of a double are big endian */
 	arm_p->reverse_fpa_consts = (*lower_word) == 0;
-	arm_p->handle_escapes = handle_escapes;
+	arm_p->settings = settings;
 
 	return arm_p;
 
@@ -300,7 +300,7 @@ subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 
 	arm_s = subtilis_arm_section_new(prog->op_pool, stype, reg_counter,
 					 freg_counter, label_counter, locals,
-					 prog->handle_escapes, err);
+					 prog->settings, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 

@@ -587,8 +587,8 @@ size_t subtilis_ir_section_promote_nop(subtilis_ir_section_t *s, size_t nop,
 	return instr->operands[0].reg;
 }
 
-subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err,
-					 bool handle_escapes)
+subtilis_ir_prog_t *subtilis_ir_prog_new(const subtilis_settings_t *settings,
+					 subtilis_error_t *err)
 {
 	subtilis_ir_prog_t *p;
 
@@ -606,7 +606,7 @@ subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	p->handle_escapes = handle_escapes;
+	p->settings = settings;
 
 	return p;
 

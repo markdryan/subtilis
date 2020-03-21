@@ -237,7 +237,7 @@ static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 	const uint32_t min_heap_size = 8192;
 
 	needed = globals + stack_size + min_heap_size;
-	if (arm_s->handle_escapes)
+	if (arm_s->settings->handle_escapes)
 		needed += 12;
 
 	if (needed > 0xffffffff) {
@@ -323,7 +323,7 @@ static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 	dest = 13;
 	op2 = 12;
 
-	if (arm_s->handle_escapes) {
+	if (arm_s->settings->handle_escapes) {
 		// Reserve 12 bytes for escape condition and old handler details
 
 		subtilis_arm_add_sub_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false,
@@ -521,7 +521,7 @@ subtilis_riscos_generate(
 
 	arm_p =
 	    subtilis_arm_prog_new(p->num_sections + 2, op_pool, p->string_pool,
-				  p->constant_pool, p->handle_escapes, err);
+				  p->constant_pool, p->settings, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1284,7 +1284,7 @@ void subtilis_riscos_arm_end(subtilis_ir_section_t *s, size_t start,
 {
 	subtilis_arm_section_t *arm_s = user_data;
 
-	prv_add_coda(arm_s, arm_s->handle_escapes, err);
+	prv_add_coda(arm_s, arm_s->settings->handle_escapes, err);
 }
 
 void subtilis_riscos_arm_testesc(subtilis_ir_section_t *s, size_t start,

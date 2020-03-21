@@ -49,7 +49,7 @@ void subtilis_parser_handle_escape(subtilis_parser_t *p, subtilis_error_t *err)
 {
 	/* Let's not test for escape in an error handler. */
 
-	if (!p->handle_escapes || p->current->in_error_handler)
+	if (!p->settings.handle_escapes || p->current->in_error_handler)
 		return;
 
 	subtilis_ir_section_add_instr_no_arg(p->current,

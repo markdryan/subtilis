@@ -23,6 +23,7 @@
 #include "builtins.h"
 #include "constant_pool.h"
 #include "error.h"
+#include "settings.h"
 #include "string_pool.h"
 #include "type.h"
 
@@ -1551,7 +1552,7 @@ struct subtilis_ir_prog_t_ {
 	size_t num_sections;
 	size_t max_sections;
 	subtilis_string_pool_t *string_pool;
-	bool handle_escapes;
+	const subtilis_settings_t *settings;
 	subtilis_constant_pool_t *constant_pool;
 };
 
@@ -1617,8 +1618,8 @@ subtilis_handler_list_t *
 subtilis_handler_list_update(subtilis_handler_list_t *list, size_t level,
 			     size_t label, subtilis_error_t *err);
 
-subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err,
-					 bool handle_escapes);
+subtilis_ir_prog_t *subtilis_ir_prog_new(const subtilis_settings_t *settings,
+					 subtilis_error_t *err);
 /* clang-format off */
 subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	subtilis_ir_prog_t *p, const char *name, size_t locals,
