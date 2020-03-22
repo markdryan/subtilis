@@ -102,6 +102,7 @@ subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 	for (i = 0; i < num_parameters; i++) {
 		switch (parameters[i].type) {
 		case SUBTILIS_TYPE_INTEGER:
+		case SUBTILIS_TYPE_STRING:
 		case SUBTILIS_TYPE_ARRAY_REAL:
 		case SUBTILIS_TYPE_ARRAY_INTEGER:
 			stype->int_regs++;

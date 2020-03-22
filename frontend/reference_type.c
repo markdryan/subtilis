@@ -80,6 +80,40 @@ void subtilis_reference_type_init_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 		subtilis_ir_section_add_label(p->current, zero.label, err);
 }
 
+/*
+ * This function is called when initialising string parameters of a function
+ * and a procedure.  As we're only setting up the procedure at this point
+ * we don't want to use the normal reference copying parameters as the
+ * cleanup stack isn't yet set up.
+ */
+
+void subtilis_reference_type_copy_ref(subtilis_parser_t *p, size_t dest_mem_reg,
+				      size_t dest_loc, size_t source_reg,
+				      subtilis_error_t *err)
+{
+	subtilis_ir_operand_t store_op;
+	subtilis_ir_operand_t op2;
+
+	subtilis_reference_type_init_ref(p, dest_mem_reg, dest_loc, source_reg,
+					 false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	store_op.reg = dest_mem_reg;
+	if (dest_loc > 0) {
+		op2.integer = dest_loc;
+		op2.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_ADDI_I32, store_op, op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		op2.reg = dest_mem_reg;
+	}
+
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_PUSH_I32, op2, err);
+}
+
 void subtilis_reference_type_push_reference(subtilis_parser_t *p, size_t reg,
 					    size_t loc, subtilis_error_t *err)
 {

@@ -2244,6 +2244,15 @@ const subtilis_test_case_t test_cases[] = {
 	 "          Hello world\n"
 	 "          Hello world\n",
 	},
+	{"string_args",
+	 "a$ := \"hello\"\n"
+	 "PROCmark(a$, \" world\")\n"
+	 "DEF PROCmark(b$, c$)\n"
+	 "print b$;\n"
+	 "print c$\n"
+	 "ENDPROC\n",
+	 "hello world\n",
+	},
 };
 
 /* clang-format on */
