@@ -35,9 +35,9 @@ const subtilis_type_t subtilis_type_void = {SUBTILIS_TYPE_VOID};
 
 /* clang-format off */
 static const char *const prv_fixed_type_names[] = {
-	"integer", /* SUBTILIS_TYPE_CONST_INTEGER */
-	"real",    /* SUBTILIS_TYPE_CONST_REAL */
-	"string",    /* SUBTILIS_TYPE_CONST_STRING */
+	"const integer", /* SUBTILIS_TYPE_CONST_INTEGER */
+	"const real",    /* SUBTILIS_TYPE_CONST_REAL */
+	"const string",    /* SUBTILIS_TYPE_CONST_STRING */
 	"real",    /* SUBTILIS_TYPE_REAL */
 	"integer", /* SUBTILIS_TYPE_INTEGER */
 	"string",  /* SUBTILIS_TYPE_STRING */
@@ -74,6 +74,8 @@ bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b)
 	case SUBTILIS_TYPE_ARRAY_REAL:
 	case SUBTILIS_TYPE_ARRAY_INTEGER:
 		return prv_array_type_match(a, b);
+	case SUBTILIS_TYPE_STRING:
+		return b->type == b->type;
 	default:
 		return true;
 	}

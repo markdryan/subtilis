@@ -2253,6 +2253,16 @@ const subtilis_test_case_t test_cases[] = {
 	 "ENDPROC\n",
 	 "hello world\n",
 	},
+	{"fn_string",
+	 "print FNHello$;\n"
+	 "print FNWorld$\n"
+	 "DEF FNHello$\n"
+	 "<-\"hello\"\n"
+	 "DEF FNWorld$\n"
+	 "a$ := \" world\"\n"
+	 "<-a$\n",
+	 "hello world\n",
+	},
 };
 
 /* clang-format on */

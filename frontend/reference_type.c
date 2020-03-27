@@ -114,6 +114,73 @@ void subtilis_reference_type_copy_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 	    p->current, SUBTILIS_OP_INSTR_PUSH_I32, op2, err);
 }
 
+void subtilis_reference_type_ref(subtilis_parser_t *p, size_t mem_reg,
+				 size_t loc, bool check_size,
+				 subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t size;
+	subtilis_ir_operand_t zero;
+	subtilis_ir_operand_t gtzero;
+
+	op0.reg = mem_reg;
+	if (check_size) {
+		op1.integer = loc + SUBTIILIS_REFERENCE_SIZE_OFF;
+		size.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		zero.label = subtilis_ir_section_new_label(p->current);
+		gtzero.label = subtilis_ir_section_new_label(p->current);
+		subtilis_ir_section_add_instr_reg(p->current,
+						  SUBTILIS_OP_INSTR_JMPC, size,
+						  gtzero, zero, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		subtilis_ir_section_add_label(p->current, gtzero.label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	op1.integer = loc + SUBTIILIS_REFERENCE_DATA_OFF;
+	op0.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_REF,
+					     op0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (check_size)
+		subtilis_ir_section_add_label(p->current, zero.label, err);
+}
+
+/*
+ * Used when returning reference types from functions.  Here we just want to
+ * copy the pointer to the reference type into the integer register used to
+ * return a value from the function and potentially ref it.
+ */
+
+void subtilis_reference_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
+					   subtilis_exp_t *e, bool check_size,
+					   subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+
+	op0.reg = reg;
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      op0, e->exp.ir_op, err);
+	subtilis_exp_delete(e);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_reference_type_ref(p, reg, 0, check_size, err);
+}
+
 void subtilis_reference_type_push_reference(subtilis_parser_t *p, size_t reg,
 					    size_t loc, subtilis_error_t *err)
 {

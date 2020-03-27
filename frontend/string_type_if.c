@@ -56,6 +56,22 @@ cleanup:
 	return NULL;
 }
 
+static subtilis_exp_t *prv_coerce_type_const(subtilis_parser_t *p,
+					     subtilis_exp_t *e,
+					     const subtilis_type_t *type,
+					     subtilis_error_t *err)
+{
+	if (type->type != SUBTILIS_TYPE_STRING) {
+		subtilis_error_set_bad_conversion(
+		    err, subtilis_type_name(&e->type), subtilis_type_name(type),
+		    p->l->stream->name, p->l->line);
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return prv_exp_to_var_const(p, e, err);
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_if_const_string = {
 	.is_const = true,
@@ -83,6 +99,7 @@ subtilis_type_if subtilis_type_if_const_string = {
 	.load_mem = NULL,
 	.to_int32 = NULL,
 	.to_float64 = NULL,
+	.coerce = prv_coerce_type_const,
 	.unary_minus = NULL,
 	.add = NULL,
 	.mul = NULL,
@@ -122,6 +139,41 @@ static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
 	return e;
 }
 
+static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
+			 subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+
+	op0.reg = reg;
+	op1.integer = 0;
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op0, op1, err);
+}
+
+static subtilis_exp_t *prv_call(subtilis_parser_t *p,
+				const subtilis_type_t *type,
+				subtilis_ir_arg_t *args, size_t num_args,
+				subtilis_error_t *err)
+{
+	size_t reg;
+
+	reg = subtilis_ir_section_add_i32_call(p->current, num_args, args, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_var(type, reg, err);
+}
+
+static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t ret_reg;
+
+	ret_reg.reg = reg;
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_RET_I32, ret_reg, err);
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_if_string = {
 	.is_const = false,
@@ -134,13 +186,13 @@ subtilis_type_if subtilis_type_if_string = {
 	.zero_ref = subtilis_string_type_zero_ref,
 	.new_ref = subtilis_string_type_new_ref,
 	.assign_ref = subtilis_string_type_assign_ref,
-	.zero_reg = NULL,
+	.zero_reg = prv_zero_reg,
 	.array_of = NULL,
 	.element_type = NULL,
 	.exp_to_var = prv_exp_to_var,
 	.copy_var = NULL,
 	.dup = NULL,
-	.assign_reg = NULL,
+	.assign_reg = subtilis_string_type_assign_to_reg,
 	.assign_mem = NULL,
 	.indexed_write = NULL,
 	.indexed_add = NULL,
@@ -169,8 +221,8 @@ subtilis_type_if subtilis_type_if_string = {
 	.lsr = NULL,
 	.asr = NULL,
 	.abs = NULL,
-	.call = NULL,
-	.ret = NULL,
+	.call = prv_call,
+	.ret = prv_ret,
 	.print = subtilis_string_type_print,
 };
 

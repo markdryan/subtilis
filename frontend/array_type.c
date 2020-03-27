@@ -372,41 +372,10 @@ void subtilis_array_type_assign_ref(subtilis_parser_t *p,
 	}
 }
 
-void subtilis_array_type_ref(subtilis_parser_t *p, size_t mem_reg, size_t loc,
-			     subtilis_error_t *err)
-{
-	size_t reg;
-	subtilis_ir_operand_t op0;
-	subtilis_ir_operand_t op1;
-
-	op0.reg = mem_reg;
-	op1.integer = loc + SUBTIILIS_ARRAY_DATA_OFF;
-
-	reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	op0.reg = reg;
-	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_REF,
-					     op0, err);
-}
-
 void subtilis_array_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
 				       subtilis_exp_t *e, subtilis_error_t *err)
 {
-	subtilis_ir_operand_t op0;
-	subtilis_ir_operand_t op2;
-
-	op0.reg = reg;
-	op2.integer = 0;
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_MOV,
-					  op0, e->exp.ir_op, op2, err);
-	subtilis_exp_delete(e);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_array_type_ref(p, reg, 0, err);
+	subtilis_reference_type_assign_to_reg(p, reg, e, false, err);
 }
 
 /* Does not consume e.  Does consume  max_dim */

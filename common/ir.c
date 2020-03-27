@@ -685,6 +685,7 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	case SUBTILIS_TYPE_INTEGER:
 	case SUBTILIS_TYPE_ARRAY_REAL:
 	case SUBTILIS_TYPE_ARRAY_INTEGER:
+	case SUBTILIS_TYPE_STRING:
 		s->ret_reg = s->reg_counter++;
 		break;
 	default:

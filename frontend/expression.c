@@ -247,8 +247,8 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	if ((fn_type->type == SUBTILIS_TYPE_ARRAY_REAL) ||
-	    (fn_type->type == SUBTILIS_TYPE_ARRAY_INTEGER)) {
+	if (fn_type->type != SUBTILIS_TYPE_VOID &&
+	    !subtilis_type_if_is_numeric(fn_type)) {
 		reg = prv_create_tmp_ref(p, e->exp.ir_op.reg, fn_type,
 					 &tmp_name, err);
 		if (err->type != SUBTILIS_ERROR_OK)

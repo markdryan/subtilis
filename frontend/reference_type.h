@@ -17,6 +17,7 @@
 #ifndef __SUBTILIS_REFERENCE_TYPE_H
 #define __SUBTILIS_REFERENCE_TYPE_H
 
+#include "expression.h"
 #include "parser.h"
 
 #define SUBTIILIS_REFERENCE_SIZE_OFF 0
@@ -35,6 +36,12 @@ void subtilis_reference_type_assign_ref(subtilis_parser_t *p,
 					size_t dest_mem_reg, size_t dest_loc,
 					size_t source_reg,
 					subtilis_error_t *err);
+void subtilis_reference_type_ref(subtilis_parser_t *p, size_t mem_reg,
+				 size_t loc, bool check_size,
+				 subtilis_error_t *err);
+void subtilis_reference_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
+					   subtilis_exp_t *e, bool check_size,
+					   subtilis_error_t *err);
 size_t subtilis_reference_get_pointer(subtilis_parser_t *p, size_t reg,
 				      size_t offset, subtilis_error_t *err);
 void subtilis_reference_type_memcpy(subtilis_parser_t *p, size_t mem_reg,

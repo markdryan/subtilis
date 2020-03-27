@@ -254,6 +254,13 @@ cleanup:
 	subtilis_exp_delete(e);
 }
 
+void subtilis_string_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
+					subtilis_exp_t *e,
+					subtilis_error_t *err)
+{
+	subtilis_reference_type_assign_to_reg(p, reg, e, true, err);
+}
+
 subtilis_exp_t *subtilis_string_type_len(subtilis_parser_t *p,
 					 subtilis_exp_t *e,
 					 subtilis_error_t *err)
