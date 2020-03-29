@@ -44,6 +44,7 @@ static const char *const prv_fixed_type_names[] = {
 	"void",    /* SUBTILIS_TYPE_VOID */
 	"array of reals", /* SUBTILIS_TYPE_ARRAY_REAL */
 	"array of ints", /* SUBTILIS_TYPE_ARRAY_INTEGER */
+	"array of strings", /* SUBTILIS_TYPE_ARRAY_STRING */
 };
 
 /* clang-format on */

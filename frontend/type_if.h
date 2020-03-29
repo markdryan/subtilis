@@ -296,7 +296,7 @@ void subtilis_type_if_assign_to_reg(subtilis_parser_t *p, size_t reg,
 
 /*
  * Assigns the value in expression e to the memory location represented by
- * mem_reg and offset loc.  Only implemented for scalar types.
+ * mem_reg and offset loc.  Not implemented for arrays.
  */
 
 void subtilis_type_if_assign_to_mem(subtilis_parser_t *p, size_t mem_reg,
@@ -355,7 +355,7 @@ subtilis_type_if_indexed_read(subtilis_parser_t *p, const char *var_name,
 
 /*
  * Returns the scalar value stored in the memory location represented by
- * mem_reg and offset loc.  Only implemented for scalar types.
+ * mem_reg and offset loc.  Not implemented for arrays.
  */
 
 subtilis_exp_t *subtilis_type_if_load_from_mem(subtilis_parser_t *p,

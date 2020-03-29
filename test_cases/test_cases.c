@@ -2263,6 +2263,18 @@ const subtilis_test_case_t test_cases[] = {
 	 "<-a$\n",
 	 "hello world\n",
 	},
+	{"string_array",
+	 "dim a$(10)\n"
+	 "a$() = \"Mark\", \"you\", \"really\", \"are\", \"very\", \"cool\","
+	 "\"and\", \"have\", \"written\", \"a\", \"great compiler\"\n"
+	 "a$(5) = \"old\"\n"
+	 "for i% = 0 to 9\n"
+	 "  print a$(i%);\n"
+	 "  print \" \";\n"
+	 "next\n"
+	 "print a$(i%)\n",
+	 "Mark you really are very old and have written a great compiler\n"
+	},
 };
 
 /* clang-format on */

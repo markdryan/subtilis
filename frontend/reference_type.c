@@ -265,19 +265,26 @@ size_t subtilis_reference_get_pointer(subtilis_parser_t *p, size_t reg,
 	return dest;
 }
 
+size_t subtilis_reference_get_data(subtilis_parser_t *p, size_t reg, size_t loc,
+				   subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+
+	op0.reg = reg;
+	op1.integer = loc + SUBTIILIS_REFERENCE_DATA_OFF;
+
+	return subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
+}
+
 void subtilis_reference_type_memcpy(subtilis_parser_t *p, size_t mem_reg,
 				    size_t loc, size_t src_reg, size_t size_reg,
 				    subtilis_error_t *err)
 {
 	size_t dest_reg;
-	subtilis_ir_operand_t op0;
-	subtilis_ir_operand_t op1;
 
-	op0.reg = mem_reg;
-	op1.integer = loc + SUBTIILIS_REFERENCE_DATA_OFF;
-
-	dest_reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
+	dest_reg = subtilis_reference_get_data(p, mem_reg, loc, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

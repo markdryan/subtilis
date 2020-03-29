@@ -423,7 +423,19 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"len",
 	"print asc(1.0)\n",
 	SUBTILIS_ERROR_STRING_EXPECTED,
-	}
+	},
+	{
+	"string_array_mismatch",
+	"dim a$(10)\n"
+	"a$() = 1, 2, 3\n",
+	SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH,
+	},
+	{
+	"int_array_mismatch",
+	"dim a%(10)\n"
+	"a%() = \"hello\", \"world\"n",
+	SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH,
+	},
 };
 
 /* clang-format on */

@@ -44,6 +44,8 @@ void subtilis_reference_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
 					   subtilis_error_t *err);
 size_t subtilis_reference_get_pointer(subtilis_parser_t *p, size_t reg,
 				      size_t offset, subtilis_error_t *err);
+size_t subtilis_reference_get_data(subtilis_parser_t *p, size_t reg,
+				   size_t offset, subtilis_error_t *err);
 void subtilis_reference_type_memcpy(subtilis_parser_t *p, size_t mem_reg,
 				    size_t loc, size_t src_reg, size_t size_reg,
 				    subtilis_error_t *err);

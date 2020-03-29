@@ -72,6 +72,23 @@ static subtilis_exp_t *prv_coerce_type_const(subtilis_parser_t *p,
 	return prv_exp_to_var_const(p, e, err);
 }
 
+static void prv_assign_to_mem_const(subtilis_parser_t *p, size_t mem_reg,
+				    size_t loc, subtilis_exp_t *e,
+				    subtilis_error_t *err)
+{
+	subtilis_string_type_assign_ref(p, &subtilis_type_const_string, mem_reg,
+					loc, e, err);
+}
+
+static void prv_dup_const(subtilis_exp_t *e1, subtilis_exp_t *e2,
+			  subtilis_error_t *err)
+{
+	subtilis_buffer_init(&e2->exp.str, e1->exp.str.granularity);
+	subtilis_buffer_append(&e2->exp.str,
+			       subtilis_buffer_get_string(&e1->exp.str),
+			       subtilis_buffer_get_size(&e1->exp.str), err);
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_if_const_string = {
 	.is_const = true,
@@ -89,9 +106,9 @@ subtilis_type_if subtilis_type_if_const_string = {
 	.element_type = NULL,
 	.exp_to_var = prv_exp_to_var_const,
 	.copy_var = NULL,
-	.dup = NULL,
+	.dup = prv_dup_const,
 	.assign_reg = NULL,
-	.assign_mem = NULL,
+	.assign_mem = prv_assign_to_mem_const,
 	.indexed_write = NULL,
 	.indexed_add = NULL,
 	.indexed_sub = NULL,
@@ -174,6 +191,35 @@ static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
 	    p->current, SUBTILIS_OP_INSTR_RET_I32, ret_reg, err);
 }
 
+static void prv_array_of(const subtilis_type_t *element_type,
+			 subtilis_type_t *type)
+{
+	type->type = SUBTILIS_TYPE_ARRAY_STRING;
+}
+
+static subtilis_exp_t *prv_load_from_mem(subtilis_parser_t *p, size_t mem_reg,
+					 size_t loc, subtilis_error_t *err)
+{
+	size_t reg;
+
+	if (loc > 0) {
+		reg = subtilis_reference_get_pointer(p, mem_reg, loc, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+	} else {
+		reg = mem_reg;
+	}
+
+	return subtilis_exp_new_var(&subtilis_type_string, reg, err);
+}
+
+static void prv_assign_to_mem(subtilis_parser_t *p, size_t mem_reg, size_t loc,
+			      subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_string_type_assign_ref(p, &subtilis_type_string, mem_reg, loc,
+					e, err);
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_if_string = {
 	.is_const = false,
@@ -187,18 +233,18 @@ subtilis_type_if subtilis_type_if_string = {
 	.new_ref = subtilis_string_type_new_ref,
 	.assign_ref = subtilis_string_type_assign_ref,
 	.zero_reg = prv_zero_reg,
-	.array_of = NULL,
+	.array_of = prv_array_of,
 	.element_type = NULL,
 	.exp_to_var = prv_exp_to_var,
 	.copy_var = NULL,
 	.dup = NULL,
 	.assign_reg = subtilis_string_type_assign_to_reg,
-	.assign_mem = NULL,
+	.assign_mem = prv_assign_to_mem,
 	.indexed_write = NULL,
 	.indexed_add = NULL,
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
-	.load_mem = NULL,
+	.load_mem = prv_load_from_mem,
 	.to_int32 = NULL,
 	.to_float64 = NULL,
 	.unary_minus = NULL,
