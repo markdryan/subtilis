@@ -1724,3 +1724,30 @@ void subtilis_riscos_arm_deref(subtilis_ir_section_t *s, size_t start,
 				   SUBTILIS_ARM_CCODE_NE, count, block, 0,
 				   false, err);
 }
+
+void subtilis_riscos_arm_getref(subtilis_ir_section_t *s, size_t start,
+				void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t count;
+	subtilis_arm_reg_t ptr;
+	subtilis_arm_reg_t block;
+	subtilis_ir_inst_t *getref = &s->ops[start]->op.instr;
+	subtilis_arm_section_t *arm_s = user_data;
+
+	count = subtilis_arm_ir_to_arm_reg(getref->operands[0].reg);
+	ptr = subtilis_arm_ir_to_arm_reg(getref->operands[1].reg);
+	block = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+
+	/*
+	 * Subtract 8 from the memory address provided by program
+	 */
+
+	subtilis_arm_add_sub_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, block,
+				 ptr, 8, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, count, block, 0,
+				   false, err);
+}

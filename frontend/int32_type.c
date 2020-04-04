@@ -836,6 +836,7 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.call = NULL,
 	.ret = NULL,
 	.print = NULL,
+	.destructor = NULL,
 };
 
 /* clang-format on */
@@ -1846,6 +1847,7 @@ subtilis_type_if subtilis_type_int32 = {
 	.call = prv_call,
 	.ret = prv_ret,
 	.print = prv_print,
+	.destructor = NULL,
 };
 
 /* clang-format on */

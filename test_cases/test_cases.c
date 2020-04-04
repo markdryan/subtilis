@@ -2275,6 +2275,53 @@ const subtilis_test_case_t test_cases[] = {
 	 "print a$(i%)\n",
 	 "Mark you really are very old and have written a great compiler\n"
 	},
+	{"string_array_fn",
+	 "a$() := FNMark$(1)()\n"
+	 "dim ab%(1)\n"
+	 "for i% = 0 to 9\n"
+	 "  print a$(i%);\n"
+	 "  print \" \";\n"
+	 "next\n"
+	 "print a$(i%)\n"
+	 "DEF FNMark$(1)\n"
+	 "local dim a$(10)\n"
+	 "a$() = \"Mark\", \"you\", \"really\", \"are\", \"very\", \"cool\","
+	 "\"and\", \"have\", \"written\", \"a\", \"great compiler\"\n"
+	 "a$(5) = \"old\"\n"
+	 "<-a$()\n",
+	 "Mark you really are very old and have written a great compiler\n"
+	},
+	{"string_array_fn2",
+	 "a$() := FNHello$(1)()\n"
+	 "for i% := 0 to 10\n"
+	 "  print a$(i%)\n"
+	 "next\n"
+	 "DEF FNHello$(1)\n"
+	 "    local dim a$(10)\n"
+	 "    for i% := 0 to 10\n"
+	 "      a$(i%) = \"hello\"\n"
+	 "    next\n"
+	 "    b$() := a$()\n"
+	 "<-b$()\n",
+	 "hello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\n"
+	 "hello\nhello\n",
+	},
+	{"string_array_fn3",
+	 "a$() = FNHello$(1)()\n"
+	 "for i% = 0 to 10\n"
+	 "print a$(i%)\n"
+	 "next\n"
+	 "\n"
+	 "def FNHello$(1)\n"
+	 "local dim a$(10)\n"
+	 "hello$ := \"hello\"\n"
+	 "for i% := 0 to 10\n"
+	 "a$(i%) = hello$\n"
+	 "next\n"
+	 "<-a$()\n",
+	 "hello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\n"
+	 "hello\nhello\n",
+	}
 };
 
 /* clang-format on */

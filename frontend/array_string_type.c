@@ -19,6 +19,7 @@
 
 #include "array_string_type.h"
 #include "array_type.h"
+#include "string_type.h"
 
 static size_t prv_size(const subtilis_type_t *type)
 {
@@ -28,15 +29,16 @@ static size_t prv_size(const subtilis_type_t *type)
 static subtilis_exp_t *prv_data_size(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err)
 {
-	subtilis_exp_t *three;
+	subtilis_exp_t *sizee;
+	size_t string_size = subtilis_string_type_size(&subtilis_type_string);
 
-	three = subtilis_exp_new_int32(3, err);
+	sizee = subtilis_exp_new_int32(string_size, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		subtilis_exp_delete(e);
 		return NULL;
 	}
 
-	return subtilis_type_if_lsl(p, e, three, err);
+	return subtilis_type_if_mul(p, e, sizee, err);
 }
 
 static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
@@ -262,6 +264,8 @@ static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
 	    p->current, SUBTILIS_OP_INSTR_RET_I32, ret_reg, err);
 }
 
+static size_t prv_destructor(const subtilis_type_t *type) { return 1; }
+
 /* clang-format off */
 subtilis_type_if subtilis_type_array_string = {
 	.is_const = false,
@@ -311,6 +315,7 @@ subtilis_type_if subtilis_type_array_string = {
 	.abs = prv_abs,
 	.call = prv_call,
 	.ret = prv_ret,
+	.destructor = prv_destructor,
 };
 
 /* clang-format on */

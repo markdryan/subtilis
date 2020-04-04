@@ -239,6 +239,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"realloc *, *, *\n", subtilis_riscos_arm_realloc},
 	{"ref *\n", subtilis_riscos_arm_ref},
 	{"deref *\n", subtilis_riscos_arm_deref},
+	{"getref *, *\n", subtilis_riscos_arm_getref},
 	{"pushi32 *\n", subtilis_arm_gen_pushi32},
 	{"popi32 *\n", subtilis_arm_gen_popi32},
 	{"lca *, *\n", subtilis_arm_gen_lca},

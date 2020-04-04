@@ -366,9 +366,11 @@ static void prv_parse_string_initialiser(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_string_type_new_ref(p, &subtilis_type_const_string, data_reg,
-				     ptr, e, err);
+	subtilis_string_type_new_owned_ref_from_const(p, data_reg, ptr, e, err);
 	e = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	ptr = element_size;
 
 	tbuf = subtilis_token_get_text(t);
@@ -401,9 +403,11 @@ static void prv_parse_string_initialiser(subtilis_parser_t *p,
 				goto cleanup;
 		}
 
-		subtilis_string_type_new_ref(p, &subtilis_type_const_string,
-					     data_reg, ptr, e, err);
+		subtilis_string_type_new_owned_ref_from_const(p, data_reg, ptr,
+							      e, err);
 		e = NULL;
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
 
 		entries++;
 		ptr += element_size;
@@ -555,8 +559,7 @@ void subtilis_parser_deallocate_arrays(subtilis_parser_t *p,
 	 */
 	for (i = 0; i < l->size; i++) {
 		s = l->symbols[i];
-		if ((s->t.type != SUBTILIS_TYPE_ARRAY_REAL) &&
-		    (s->t.type != SUBTILIS_TYPE_ARRAY_INTEGER))
+		if (subtilis_type_if_is_numeric(&s->t))
 			continue;
 
 		subtilis_reference_type_pop_and_deref(p, err);

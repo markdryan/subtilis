@@ -20,8 +20,14 @@
 #include "expression.h"
 #include "parser.h"
 
+/*
+ * TODO: These offsets are platform specific.
+ */
+
 #define SUBTIILIS_REFERENCE_SIZE_OFF 0
 #define SUBTIILIS_REFERENCE_DATA_OFF 4
+#define SUBTIILIS_REFERENCE_DESTRUCTOR_OFF 8
+#define SUBTIILIS_REFERENCE_SIZE 12
 
 void subtilis_reference_type_init_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 				      size_t dest_loc, size_t source_reg,
@@ -54,7 +60,8 @@ void subtilis_reference_type_memcpy_dest(subtilis_parser_t *p, size_t dest_reg,
 					 subtilis_error_t *err);
 void subtilis_reference_inc_cleanup_stack(subtilis_parser_t *p,
 					  subtilis_error_t *err);
-size_t subtilis_reference_type_alloc(subtilis_parser_t *p, size_t loc,
+size_t subtilis_reference_type_alloc(subtilis_parser_t *p,
+				     const subtilis_type_t *type, size_t loc,
 				     size_t store_reg, size_t size_reg,
 				     bool push, subtilis_error_t *err);
 void subtilis_reference_type_push_reference(subtilis_parser_t *p, size_t reg,
@@ -62,7 +69,6 @@ void subtilis_reference_type_push_reference(subtilis_parser_t *p, size_t reg,
 void subtilis_reference_type_pop_and_deref(subtilis_parser_t *p,
 					   subtilis_error_t *err);
 void subtilis_reference_type_deref(subtilis_parser_t *p, size_t mem_reg,
-				   size_t loc, bool check,
-				   subtilis_error_t *err);
+				   size_t loc, subtilis_error_t *err);
 
 #endif

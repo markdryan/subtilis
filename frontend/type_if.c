@@ -808,3 +808,14 @@ subtilis_ir_reg_type_t subtilis_type_if_reg_type(const subtilis_type_t *type)
 {
 	return prv_type_map[type->type]->param_type;
 }
+
+size_t subtilis_type_if_destructor(const subtilis_type_t *type)
+{
+	subtilis_type_if_size_t fn;
+
+	fn = prv_type_map[type->type]->destructor;
+	if (!fn)
+		return 0;
+
+	return fn(type);
+}

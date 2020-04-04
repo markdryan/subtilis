@@ -32,7 +32,9 @@
  *  ----------------------------------
  * | Pointer to Data   |           4 |
  *  ----------------------------------
- * | Size of DIM 1     |           8 |
+ * | Destructor        |           8 |
+ *  ----------------------------------
+ * | Size of DIM 1     |          12 |
  *  ----------------------------------
  * | Size of DIM n     | 4 * n * 4   |
  *  ----------------------------------
@@ -40,7 +42,8 @@
 
 #define SUBTIILIS_ARRAY_SIZE_OFF SUBTIILIS_REFERENCE_SIZE_OFF
 #define SUBTIILIS_ARRAY_DATA_OFF SUBTIILIS_REFERENCE_DATA_OFF
-#define SUBTIILIS_ARRAY_DIMS_OFF 8
+#define SUBTIILIS_ARRAY_DESTRUCTOR_OFF SUBTIILIS_REFERENCE_DESTRUCTOR_OFF
+#define SUBTIILIS_ARRAY_DIMS_OFF (SUBTIILIS_REFERENCE_DESTRUCTOR_OFF + 4)
 
 size_t subtilis_array_type_size(const subtilis_type_t *type)
 {
@@ -54,10 +57,11 @@ size_t subtilis_array_type_size(const subtilis_type_t *type)
 	 * We need, on 32 bit builds,
 	 * 4 bytes for the pointer
 	 * 4 bytes for the size
+	 * 4 bytes for the destructor
 	 * 4 bytes for each dimension unknown at compile time.
 	 */
 
-	size = 4 + 4 + type->params.array.num_dims * 4;
+	size = SUBTIILIS_REFERENCE_SIZE + type->params.array.num_dims * 4;
 
 	return size;
 }
@@ -178,7 +182,7 @@ void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	op.reg = subtilis_reference_type_alloc(p, loc, store_reg.reg,
+	op.reg = subtilis_reference_type_alloc(p, type, loc, store_reg.reg,
 					       sizee->exp.ir_op.reg, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -204,7 +208,10 @@ static void prv_copy_ref_base(subtilis_parser_t *p, const subtilis_type_t *t,
 	subtilis_ir_operand_t ref_start;
 	subtilis_ir_operand_t data;
 	size_t i;
-	size_t ints_to_copy = 2 + (t->params.array.num_dims);
+
+	/* TODO: This is platform specific */
+
+	size_t ints_to_copy = 3 + (t->params.array.num_dims);
 
 	soffset.integer = SUBTIILIS_ARRAY_SIZE_OFF + source_offset;
 	doffset.integer = SUBTIILIS_ARRAY_SIZE_OFF + dest_offset;
@@ -1144,4 +1151,69 @@ subtilis_exp_t *subtilis_array_type_dynamic_size(subtilis_parser_t *p,
 	return subtilis_type_if_load_from_mem(
 	    p, &subtilis_type_integer, mem_reg, loc + SUBTIILIS_ARRAY_SIZE_OFF,
 	    err);
+}
+
+void subtilis_array_type_deref_els(subtilis_parser_t *p, size_t data_reg,
+				   size_t size_reg, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t data_end;
+	subtilis_ir_operand_t counter;
+	subtilis_ir_operand_t counter2;
+	subtilis_ir_operand_t conde;
+	subtilis_ir_operand_t start;
+	subtilis_ir_operand_t end;
+
+	start.label = subtilis_ir_section_new_label(p->current);
+	end.label = subtilis_ir_section_new_label(p->current);
+
+	/* size_reg must be > 0 */
+
+	op0.reg = data_reg;
+	counter.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOV, op0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.reg = size_reg;
+	data_end.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, counter, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, start.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_reference_type_deref(p, counter.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.integer = subtilis_type_if_size(&subtilis_type_string, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	counter2.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, counter, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      counter, counter2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	conde.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LT_I32, counter, data_end, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  conde, start, end, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, end.label, err);
 }

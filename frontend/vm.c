@@ -1244,6 +1244,27 @@ static void prv_deref(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	subtilis_vm_heap_free_block(&vm->heap, start, err);
 }
 
+static void prv_getref(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	subtilis_vm_heap_free_block_t *block;
+	size_t *count;
+	size_t start = vm->regs[ops[1].reg] - sizeof(size_t);
+
+	block = subtilis_vm_heap_find_block(&vm->heap, start);
+	if (!block) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	count = (size_t *)&vm->memory[block->start];
+	if (*count == 0) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	vm->regs[ops[0].reg] = (int32_t)*count;
+}
+
 static void prv_pushi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -1401,7 +1422,8 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_alloc,                           /* SUBTILIS_OP_INSTR_ALLOC */
 	prv_realloc,                         /* SUBTILIS_OP_INSTR_REALLOC */
 	prv_ref,                             /* SUBTILIS_OP_INSTR_REF */
-	prv_deref,                           /* SUBTILIS_OP_INSTR_REF */
+	prv_deref,                           /* SUBTILIS_OP_INSTR_DEREF */
+	prv_getref,                          /* SUBTILIS_OP_INSTR_GETREF */
 	prv_pushi32,                         /* SUBTILIS_OP_INSTR_PUSH_I32 */
 	prv_popi32,                          /* SUBTILIS_OP_INSTR_POP_I32 */
 	prv_lca,                             /* SUBTILIS_OP_INSTR_LCA_I32 */

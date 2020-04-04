@@ -30,10 +30,13 @@
  *  ----------------------------------
  * | Pointer to Data   |           4 |
  *  ----------------------------------
+ * | Destructor        |           8 |
+ *  ----------------------------------
  */
 
 #define SUBTIILIS_STRING_SIZE_OFF SUBTIILIS_REFERENCE_SIZE_OFF
 #define SUBTIILIS_STRING_DATA_OFF SUBTIILIS_REFERENCE_DATA_OFF
+#define SUBTIILIS_STRING_DESTRUCTOR_OFF SUBTIILIS_REFERENCE_DESTRUCTOR_OFF
 
 static size_t prv_add_string_constant(subtilis_parser_t *p, const char *str,
 				      size_t len, subtilis_error_t *err)
@@ -73,9 +76,10 @@ size_t subtilis_string_type_size(const subtilis_type_t *type)
 	 * We need, on 32 bit builds,
 	 * 4 bytes for the pointer
 	 * 4 bytes for the size
+	 * 4 bytes for the destructor
 	 */
 
-	size = sizeof(int32_t) + sizeof(int32_t);
+	size = SUBTIILIS_REFERENCE_SIZE;
 
 	return size;
 }
@@ -146,8 +150,9 @@ static void prv_init_string_from_const(subtilis_parser_t *p, size_t mem_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	dest_reg = subtilis_reference_type_alloc(
-	    p, loc, mem_reg, sizee->exp.ir_op.reg, push, err);
+	dest_reg = subtilis_reference_type_alloc(p, &subtilis_type_string, loc,
+						 mem_reg, sizee->exp.ir_op.reg,
+						 push, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -185,8 +190,9 @@ void subtilis_string_type_new_ref_from_char(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	dest_reg = subtilis_reference_type_alloc(
-	    p, loc, mem_reg, sizee->exp.ir_op.reg, true, err);
+	dest_reg = subtilis_reference_type_alloc(p, &subtilis_type_string, loc,
+						 mem_reg, sizee->exp.ir_op.reg,
+						 true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -199,6 +205,21 @@ void subtilis_string_type_new_ref_from_char(subtilis_parser_t *p,
 cleanup:
 
 	subtilis_exp_delete(sizee);
+	subtilis_exp_delete(e);
+}
+
+/*
+ * Used to initialise a string variable from a constant.  The string
+ * variable is owned by some container and so does not need to be
+ * pushed.
+ */
+
+void subtilis_string_type_new_owned_ref_from_const(subtilis_parser_t *p,
+						   size_t mem_reg, size_t loc,
+						   subtilis_exp_t *e,
+						   subtilis_error_t *err)
+{
+	prv_init_string_from_const(p, mem_reg, loc, &e->exp.str, false, err);
 	subtilis_exp_delete(e);
 }
 
@@ -230,7 +251,7 @@ void subtilis_string_type_assign_ref(subtilis_parser_t *p,
 				     size_t mem_reg, size_t loc,
 				     subtilis_exp_t *e, subtilis_error_t *err)
 {
-	subtilis_reference_type_deref(p, mem_reg, loc, true, err);
+	subtilis_reference_type_deref(p, mem_reg, loc, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

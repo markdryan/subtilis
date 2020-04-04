@@ -151,13 +151,14 @@ struct subtilis_type_if_ {
 	subtilis_type_if_call_t call;
 	subtilis_type_if_reg_t ret;
 	subtilis_type_if_print_t print;
+	subtilis_type_if_size_t destructor;
 };
 
 typedef struct subtilis_type_if_ subtilis_type_if;
 
 /*
  * Returns the size of the type in bytes.  For reference types
- * this is the size of the reference, e.g., 12 bytes for a one
+ * this is the size of the reference, e.g., 16 bytes for a one
  * dimensional array on 32 bit bit builds.
  */
 
@@ -603,5 +604,11 @@ subtilis_exp_t *subtilis_type_if_coerce_type(subtilis_parser_t *p,
  */
 
 subtilis_ir_reg_type_t subtilis_type_if_reg_type(const subtilis_type_t *type);
+
+/*
+ * Returns the destructor of a reference type.  0 if no destructor is needed.
+ */
+
+size_t subtilis_type_if_destructor(const subtilis_type_t *type);
 
 #endif

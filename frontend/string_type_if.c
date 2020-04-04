@@ -140,6 +140,7 @@ subtilis_type_if subtilis_type_if_const_string = {
 	.call = NULL,
 	.ret = NULL,
 	.print = subtilis_string_type_print_const,
+	.destructor = NULL,
 };
 
 /* clang-format on */
@@ -270,6 +271,7 @@ subtilis_type_if subtilis_type_if_string = {
 	.call = prv_call,
 	.ret = prv_ret,
 	.print = subtilis_string_type_print,
+	.destructor = NULL,
 };
 
 /* clang-format on */

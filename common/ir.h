@@ -1393,6 +1393,15 @@ typedef enum {
 
 	/*
 	 *
+	 * getref r0, r1
+	 *
+	 * Stores the reference count of the object pointed to by r1 in r0.
+	 */
+
+	SUBTILIS_OP_INSTR_GETREF,
+
+	/*
+	 *
 	 * push r0
 	 *
 	 * Pushes the 32 bit value in r0 onto the stack.

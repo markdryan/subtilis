@@ -102,4 +102,7 @@ subtilis_exp_t *subtilis_array_type_dynamic_size(subtilis_parser_t *p,
 						 size_t mem_reg, size_t loc,
 						 subtilis_error_t *err);
 
+void subtilis_array_type_deref_els(subtilis_parser_t *p, size_t data_reg,
+				   size_t size_reg, subtilis_error_t *err);
+
 #endif

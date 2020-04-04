@@ -311,6 +311,7 @@ subtilis_type_if subtilis_type_array_int32 = {
 	.abs = prv_abs,
 	.call = prv_call,
 	.ret = prv_ret,
+	.destructor = NULL,
 };
 
 /* clang-format on */
