@@ -23,6 +23,7 @@
 #include "parser_call.h"
 #include "parser_error.h"
 #include "parser_exp.h"
+#include "reference_type.h"
 #include "type_if.h"
 #include "variable.h"
 
@@ -114,8 +115,8 @@ void subtilis_parser_onerror(subtilis_parser_t *p, subtilis_token_t *t,
 						    start);
 
 	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
-	subtilis_parser_deallocate_arrays(p, var_reg, p->local_st, p->level,
-					  err);
+	subtilis_reference_deallocate_refs(p, var_reg, p->local_st, p->level,
+					   err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

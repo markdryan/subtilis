@@ -197,8 +197,10 @@ void subtilis_reference_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
 	subtilis_reference_type_ref(p, reg, 0, check_size, err);
 }
 
-void subtilis_reference_type_push_reference(subtilis_parser_t *p, size_t reg,
-					    size_t loc, subtilis_error_t *err)
+void subtilis_reference_type_push_reference(subtilis_parser_t *p,
+					    const subtilis_type_t *type,
+					    size_t reg, size_t loc,
+					    subtilis_error_t *err)
 {
 	subtilis_ir_operand_t store_op;
 	subtilis_ir_operand_t op2;
@@ -220,19 +222,22 @@ void subtilis_reference_type_push_reference(subtilis_parser_t *p, size_t reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_reference_inc_cleanup_stack(p, err);
+	subtilis_reference_inc_cleanup_stack(p, type, err);
 }
 
-void subtilis_reference_type_new_ref(subtilis_parser_t *p, size_t dest_mem_reg,
-				     size_t dest_loc, size_t source_reg,
-				     bool check_size, subtilis_error_t *err)
+void subtilis_reference_type_new_ref(subtilis_parser_t *p,
+				     const subtilis_type_t *type,
+				     size_t dest_mem_reg, size_t dest_loc,
+				     size_t source_reg, bool check_size,
+				     subtilis_error_t *err)
 {
 	subtilis_reference_type_init_ref(p, dest_mem_reg, dest_loc, source_reg,
 					 check_size, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_reference_type_push_reference(p, dest_mem_reg, dest_loc, err);
+	subtilis_reference_type_push_reference(p, type, dest_mem_reg, dest_loc,
+					       err);
 }
 
 void subtilis_reference_type_assign_ref(subtilis_parser_t *p,
@@ -342,6 +347,7 @@ void subtilis_reference_type_memcpy_dest(subtilis_parser_t *p, size_t dest_reg,
 }
 
 static void prv_ensure_cleanup_stack(subtilis_parser_t *p,
+				     bool destructor_needed,
 				     subtilis_error_t *err)
 {
 	subtilis_ir_inst_t *instr;
@@ -363,15 +369,26 @@ static void prv_ensure_cleanup_stack(subtilis_parser_t *p,
 		instr->operands[0].reg = p->current->cleanup_stack;
 		instr->operands[1].integer = 0;
 	}
+
+	/*
+	 * Extra cleanup code is needed at the end of the function if the
+	 * function contains a variable that has a destructor, e.g., an
+	 * array of strings.  We only want to add this code if necessary.
+	 */
+
+	p->current->destructor_needed =
+	    p->current->destructor_needed || destructor_needed;
 }
 
 void subtilis_reference_inc_cleanup_stack(subtilis_parser_t *p,
+					  const subtilis_type_t *type,
 					  subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op2;
 	subtilis_ir_operand_t dest;
 
-	prv_ensure_cleanup_stack(p, err);
+	prv_ensure_cleanup_stack(p, subtilis_type_if_destructor(type) != 0,
+				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -427,7 +444,8 @@ size_t subtilis_reference_type_alloc(subtilis_parser_t *p,
 		return SIZE_MAX;
 
 	if (push) {
-		subtilis_reference_type_push_reference(p, store_reg, loc, err);
+		subtilis_reference_type_push_reference(p, type, store_reg, loc,
+						       err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return SIZE_MAX;
 	}
@@ -549,6 +567,7 @@ static void prv_deref(subtilis_parser_t *p, size_t mem_reg, size_t loc,
 }
 
 void subtilis_reference_type_pop_and_deref(subtilis_parser_t *p,
+					   bool ref_of_ref,
 					   subtilis_error_t *err)
 {
 	size_t reg;
@@ -560,7 +579,7 @@ void subtilis_reference_type_pop_and_deref(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	prv_deref(p, reg, 0, true, err);
+	prv_deref(p, reg, 0, ref_of_ref, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -593,4 +612,26 @@ void subtilis_reference_type_deref(subtilis_parser_t *p, size_t mem_reg,
 				   size_t loc, subtilis_error_t *err)
 {
 	prv_deref(p, mem_reg, loc, false, err);
+}
+
+void subtilis_reference_deallocate_refs(subtilis_parser_t *p,
+					subtilis_ir_operand_t load_reg,
+					subtilis_symbol_table_t *st,
+					size_t level, subtilis_error_t *err)
+{
+	size_t i;
+	bool ref_of_ref;
+	const subtilis_symbol_t *s;
+	subtilis_symbol_level_t *l = &st->levels[level];
+
+	for (i = 0; i < l->size; i++) {
+		s = l->symbols[i];
+		if (subtilis_type_if_is_numeric(&s->t))
+			continue;
+
+		ref_of_ref = !(subtilis_type_if_destructor(&s->t) == 0);
+		subtilis_reference_type_pop_and_deref(p, ref_of_ref, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 }

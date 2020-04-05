@@ -288,7 +288,7 @@ void subtilis_array_type_create_ref(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_reference_inc_cleanup_stack(p, err);
+	subtilis_reference_inc_cleanup_stack(p, &s->t, err);
 
 cleanup:
 
@@ -305,7 +305,7 @@ void subtlis_array_type_create_tmp_ref(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_reference_inc_cleanup_stack(p, err);
+	subtilis_reference_inc_cleanup_stack(p, t, err);
 }
 
 /*

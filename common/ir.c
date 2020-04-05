@@ -303,6 +303,7 @@ static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 	s->cleanup_stack = SIZE_MAX;
 	s->cleanup_stack_nop = SIZE_MAX;
 	s->cleanup_stack_reg = SIZE_MAX;
+	s->destructor_needed = false;
 
 	return s;
 }

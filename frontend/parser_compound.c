@@ -22,6 +22,7 @@
 #include "parser_call.h"
 #include "parser_compound.h"
 #include "parser_exp.h"
+#include "reference_type.h"
 #include "type_if.h"
 
 static void prv_local_array_ref(subtilis_parser_t *p, subtilis_token_t *t,
@@ -183,8 +184,8 @@ void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 		p->current->endproc = false;
 
 	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
-	subtilis_parser_deallocate_arrays(p, var_reg, p->local_st, p->level,
-					  err);
+	subtilis_reference_deallocate_refs(p, var_reg, p->local_st, p->level,
+					   err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

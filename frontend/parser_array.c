@@ -544,30 +544,6 @@ cleanup:
 	free(var_name);
 }
 
-void subtilis_parser_deallocate_arrays(subtilis_parser_t *p,
-				       subtilis_ir_operand_t load_reg,
-				       subtilis_symbol_table_t *st,
-				       size_t level, subtilis_error_t *err)
-{
-	size_t i;
-	const subtilis_symbol_t *s;
-	subtilis_symbol_level_t *l = &st->levels[level];
-
-	/*
-	 * TODO: This whole thing needs to be more generic when we have more
-	 * heap based types, e.g., strings.
-	 */
-	for (i = 0; i < l->size; i++) {
-		s = l->symbols[i];
-		if (subtilis_type_if_is_numeric(&s->t))
-			continue;
-
-		subtilis_reference_type_pop_and_deref(p, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-	}
-}
-
 subtilis_exp_t *subtilis_parser_get_dim(subtilis_parser_t *p,
 					subtilis_token_t *t,
 					subtilis_error_t *err)

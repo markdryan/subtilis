@@ -1574,6 +1574,7 @@ struct subtilis_ir_section_t_ {
 	size_t cleanup_stack;
 	size_t cleanup_stack_nop;
 	size_t cleanup_stack_reg;
+	bool destructor_needed;
 };
 
 typedef struct subtilis_ir_section_t_ subtilis_ir_section_t;

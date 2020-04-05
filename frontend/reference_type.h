@@ -32,9 +32,11 @@
 void subtilis_reference_type_init_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 				      size_t dest_loc, size_t source_reg,
 				      bool check_size, subtilis_error_t *err);
-void subtilis_reference_type_new_ref(subtilis_parser_t *p, size_t dest_mem_reg,
-				     size_t dest_loc, size_t source_reg,
-				     bool check_size, subtilis_error_t *err);
+void subtilis_reference_type_new_ref(subtilis_parser_t *p,
+				     const subtilis_type_t *type,
+				     size_t dest_mem_reg, size_t dest_loc,
+				     size_t source_reg, bool check_size,
+				     subtilis_error_t *err);
 void subtilis_reference_type_copy_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 				      size_t dest_loc, size_t source_reg,
 				      subtilis_error_t *err);
@@ -59,16 +61,24 @@ void subtilis_reference_type_memcpy_dest(subtilis_parser_t *p, size_t dest_reg,
 					 size_t src_reg, size_t size_reg,
 					 subtilis_error_t *err);
 void subtilis_reference_inc_cleanup_stack(subtilis_parser_t *p,
+					  const subtilis_type_t *type,
 					  subtilis_error_t *err);
 size_t subtilis_reference_type_alloc(subtilis_parser_t *p,
 				     const subtilis_type_t *type, size_t loc,
 				     size_t store_reg, size_t size_reg,
 				     bool push, subtilis_error_t *err);
-void subtilis_reference_type_push_reference(subtilis_parser_t *p, size_t reg,
-					    size_t loc, subtilis_error_t *err);
+void subtilis_reference_type_push_reference(subtilis_parser_t *p,
+					    const subtilis_type_t *type,
+					    size_t reg, size_t loc,
+					    subtilis_error_t *err);
 void subtilis_reference_type_pop_and_deref(subtilis_parser_t *p,
+					   bool ref_of_ref,
 					   subtilis_error_t *err);
 void subtilis_reference_type_deref(subtilis_parser_t *p, size_t mem_reg,
 				   size_t loc, subtilis_error_t *err);
+void subtilis_reference_deallocate_refs(subtilis_parser_t *p,
+					subtilis_ir_operand_t load_reg,
+					subtilis_symbol_table_t *st,
+					size_t level, subtilis_error_t *err);
 
 #endif

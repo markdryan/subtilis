@@ -27,10 +27,6 @@ subtilis_exp_t *subtils_parser_read_array(subtilis_parser_t *p,
 
 void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
 				  bool local, subtilis_error_t *err);
-void subtilis_parser_deallocate_arrays(subtilis_parser_t *p,
-				       subtilis_ir_operand_t load_reg,
-				       subtilis_symbol_table_t *st,
-				       size_t level, subtilis_error_t *err);
 void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
 					    subtilis_token_t *t, size_t mem_reg,
 					    const subtilis_symbol_t *s,
