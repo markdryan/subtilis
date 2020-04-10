@@ -21,6 +21,9 @@
 #include "parser.h"
 
 size_t subtilis_string_type_size(const subtilis_type_t *type);
+void subtilis_string_type_set_size(subtilis_parser_t *p, size_t mem_reg,
+				   size_t loc, size_t size_reg,
+				   subtilis_error_t *err);
 void subtilis_string_type_zero_ref(subtilis_parser_t *p,
 				   const subtilis_type_t *type, size_t mem_reg,
 				   size_t loc, subtilis_error_t *err);
@@ -28,6 +31,11 @@ void subtilis_string_type_new_ref_from_char(subtilis_parser_t *p,
 					    size_t mem_reg, size_t loc,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err);
+size_t subtilis_string_type_lca_const(subtilis_parser_t *p, const char *str,
+				      size_t len, subtilis_error_t *err);
+void subtilis_string_init_from_lca(subtilis_parser_t *p, size_t mem_reg,
+				   size_t loc, size_t lca_reg, size_t size_reg,
+				   bool push, subtilis_error_t *err);
 void subtilis_string_type_new_owned_ref_from_const(subtilis_parser_t *p,
 						   size_t mem_reg, size_t loc,
 						   subtilis_exp_t *e,

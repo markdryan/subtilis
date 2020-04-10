@@ -64,6 +64,21 @@ cleanup:
 	return SIZE_MAX;
 }
 
+size_t subtilis_string_type_lca_const(subtilis_parser_t *p, const char *str,
+				      size_t len, subtilis_error_t *err)
+{
+	size_t id;
+	subtilis_ir_operand_t op1;
+
+	id = prv_add_string_constant(p, str, len, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	op1.integer = (int32_t)id;
+	return subtilis_ir_section_add_instr2(p->current, SUBTILIS_OP_INSTR_LCA,
+					      op1, err);
+}
+
 size_t subtilis_string_type_size(const subtilis_type_t *type)
 {
 	size_t size;
@@ -84,12 +99,25 @@ size_t subtilis_string_type_size(const subtilis_type_t *type)
 	return size;
 }
 
+void subtilis_string_type_set_size(subtilis_parser_t *p, size_t mem_reg,
+				   size_t loc, size_t size_reg,
+				   subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+
+	op0.reg = size_reg;
+	op1.reg = mem_reg;
+	op2.integer = loc + SUBTIILIS_STRING_SIZE_OFF;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op0, op1, op2, err);
+}
+
 void subtilis_string_type_zero_ref(subtilis_parser_t *p,
 				   const subtilis_type_t *type, size_t mem_reg,
 				   size_t loc, subtilis_error_t *err)
 {
-	subtilis_ir_operand_t op1;
-	subtilis_ir_operand_t op2;
 	subtilis_exp_t *zero = NULL;
 
 	zero = subtilis_exp_new_int32(0, err);
@@ -100,10 +128,8 @@ void subtilis_string_type_zero_ref(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	op1.reg = mem_reg, op2.integer = loc + SUBTIILIS_STRING_SIZE_OFF;
-	subtilis_ir_section_add_instr_reg(p->current,
-					  SUBTILIS_OP_INSTR_STOREO_I32,
-					  zero->exp.ir_op, op1, op2, err);
+	subtilis_string_type_set_size(p, mem_reg, loc, zero->exp.ir_op.reg,
+				      err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -114,6 +140,22 @@ cleanup:
 	subtilis_exp_delete(zero);
 }
 
+void subtilis_string_init_from_lca(subtilis_parser_t *p, size_t mem_reg,
+				   size_t loc, size_t lca_reg, size_t size_reg,
+				   bool push, subtilis_error_t *err)
+
+{
+	size_t dest_reg;
+
+	dest_reg = subtilis_reference_type_alloc(p, &subtilis_type_string, loc,
+						 mem_reg, size_reg, push, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_reference_type_memcpy_dest(p, dest_reg, lca_reg, size_reg,
+					    err);
+}
+
 static void prv_init_string_from_const(subtilis_parser_t *p, size_t mem_reg,
 				       size_t loc, const subtilis_buffer_t *str,
 				       bool push, subtilis_error_t *err)
@@ -121,7 +163,6 @@ static void prv_init_string_from_const(subtilis_parser_t *p, size_t mem_reg,
 	size_t id;
 	size_t src_reg;
 	subtilis_ir_operand_t op1;
-	size_t dest_reg;
 	subtilis_exp_t *sizee = NULL;
 	size_t buf_size = subtilis_buffer_get_size(str);
 
@@ -151,15 +192,8 @@ static void prv_init_string_from_const(subtilis_parser_t *p, size_t mem_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	dest_reg = subtilis_reference_type_alloc(p, &subtilis_type_string, loc,
-						 mem_reg, sizee->exp.ir_op.reg,
-						 push, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_reference_type_memcpy_dest(p, dest_reg, src_reg,
-					    sizee->exp.ir_op.reg, err);
-
+	subtilis_string_init_from_lca(p, mem_reg, loc, src_reg,
+				      sizee->exp.ir_op.reg, push, err);
 cleanup:
 
 	subtilis_exp_delete(sizee);

@@ -44,7 +44,8 @@ COMMON =\
 	sizet_vector.c \
 	string_type_if.c \
 	string_type.c \
-	reference_type.c
+	reference_type.c \
+	local_buffer_type.c
 
 ARM =\
 	arm_core.c \

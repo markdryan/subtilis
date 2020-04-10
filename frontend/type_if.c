@@ -21,6 +21,7 @@
 #include "array_string_type.h"
 #include "float64_type.h"
 #include "int32_type.h"
+#include "local_buffer_type_if.h"
 #include "string_type_if.h"
 #include "type_if.h"
 
@@ -37,6 +38,7 @@ static subtilis_type_if *prv_type_map[] = {
 	&subtilis_type_array_int32
 ,	&subtilis_type_array_string,
 	NULL,
+	&subtilis_type_if_local_buffer,
 };
 
 /* clang-format on */

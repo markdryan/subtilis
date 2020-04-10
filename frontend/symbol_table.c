@@ -114,7 +114,8 @@ void subtilis_symbol_table_level_down(subtilis_symbol_table_t *st,
 
 static subtilis_symbol_t *prv_symbol_new(const char *key, size_t loc,
 					 const subtilis_type_t *id_type,
-					 bool is_reg, subtilis_error_t *err)
+					 size_t size, bool is_reg,
+					 subtilis_error_t *err)
 {
 	subtilis_symbol_t *sym;
 
@@ -124,7 +125,7 @@ static subtilis_symbol_t *prv_symbol_new(const char *key, size_t loc,
 		return NULL;
 	}
 
-	sym->size = subtilis_type_if_size(id_type, err);
+	sym->size = size;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 	sym->key = key;
@@ -140,10 +141,11 @@ on_error:
 	return NULL;
 }
 
-const subtilis_symbol_t *
-subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
-			     const subtilis_type_t *id_type,
-			     subtilis_error_t *err)
+static const subtilis_symbol_t *
+prv_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
+			const subtilis_type_t *id_type, size_t size,
+			subtilis_error_t *err)
+
 {
 	subtilis_symbol_t *sym;
 	char *key_dup = NULL;
@@ -159,7 +161,7 @@ subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 	}
 	(void)strcpy(key_dup, key);
 
-	sym = prv_symbol_new(key_dup, st->allocated, id_type, false, err);
+	sym = prv_symbol_new(key_dup, st->allocated, id_type, size, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -182,6 +184,36 @@ on_error:
 	free(key_dup);
 	free(sym);
 	return NULL;
+}
+
+const subtilis_symbol_t *
+subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
+			     const subtilis_type_t *id_type,
+			     subtilis_error_t *err)
+{
+	size_t size;
+
+	size = subtilis_type_if_size(id_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return prv_symbol_table_insert(st, key, id_type, size, err);
+}
+
+const subtilis_symbol_t *
+subtilis_symbol_table_create_local_buf(subtilis_symbol_table_t *st, size_t size,
+				       subtilis_error_t *err)
+{
+	char buf[64];
+
+	/*
+	 * Subtilis identifiers cannot start with a number so there'll be no
+	 * clash here.
+	 */
+
+	sprintf(buf, "%zu", st->tmp_count++);
+	return prv_symbol_table_insert(st, buf, &subtilis_type_local_buffer,
+				       size, err);
 }
 
 const subtilis_symbol_t *
@@ -265,6 +297,7 @@ subtilis_symbol_table_insert_reg(subtilis_symbol_table_t *st, const char *key,
 				 subtilis_error_t *err)
 {
 	subtilis_symbol_t *sym;
+	size_t size;
 	char *key_dup = NULL;
 
 	sym = subtilis_hashtable_find(st->h, key);
@@ -278,7 +311,10 @@ subtilis_symbol_table_insert_reg(subtilis_symbol_table_t *st, const char *key,
 	}
 	(void)strcpy(key_dup, key);
 
-	sym = prv_symbol_new(key_dup, reg_num, id_type, true, err);
+	size = subtilis_type_if_size(id_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+	sym = prv_symbol_new(key_dup, reg_num, id_type, size, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 

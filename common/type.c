@@ -32,6 +32,7 @@ const subtilis_type_t subtilis_type_real = {SUBTILIS_TYPE_REAL};
 const subtilis_type_t subtilis_type_integer = {SUBTILIS_TYPE_INTEGER};
 const subtilis_type_t subtilis_type_string = {SUBTILIS_TYPE_STRING};
 const subtilis_type_t subtilis_type_void = {SUBTILIS_TYPE_VOID};
+const subtilis_type_t subtilis_type_local_buffer = {SUBTILIS_TYPE_LOCAL_BUFFER};
 
 /* clang-format off */
 static const char *const prv_fixed_type_names[] = {
