@@ -2327,6 +2327,16 @@ const subtilis_test_case_t test_cases[] = {
 	 "a$() = \"Mark\""
 	 "print a$(0)\n",
 	 "Mark\n",
+	},
+	{"related_for_loops",
+	 "FOR Y% := 2 TO 4\n"
+	 "  FOR X% := Y% TO 4\n"
+	 "    PRINT X%;\n"
+	 "    PRINT \" \";\n"
+	 "    PRINT Y%\n"
+	 "  NEXT\n"
+	 "NEXT\n",
+	 "2 2\n3 2\n4 2\n3 3\n4 3\n4 4\n",
 	}
 };
 
