@@ -39,11 +39,19 @@ subtilis_riscos_generate(
 
 void subtilis_riscos_arm_printi(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_printstr(subtilis_ir_section_t *s, size_t start,
+				  void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_printnl(subtilis_ir_section_t *s, size_t start,
 				 void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_modei32(subtilis_ir_section_t *s, size_t start,
 				 void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_plot(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_at(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_pos(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_vpos(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_gcol(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
@@ -90,6 +98,8 @@ void subtilis_riscos_arm_ref(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_deref(subtilis_ir_section_t *s, size_t start,
 			       void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_getref(subtilis_ir_section_t *s, size_t start,
+				void *user_data, subtilis_error_t *err);
 
 #define SUBTILIS_RISCOS_ARM_CAPS 0
 

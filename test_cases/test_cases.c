@@ -2176,6 +2176,167 @@ const subtilis_test_case_t test_cases[] = {
 	"print c%\n"
 	"print d%\n",
 	"640\n512\n784\n740\n32\n24\n16\n-28\n",
+	},
+	{
+	"string_basic",
+	"print \"hello world\"\n"
+	"local a$ = \"from BASIC\"\n"
+	"print a$\n"
+	"print \"\"\n"
+	"c$ := a$\n"
+	"print c$\n"
+	"a$ = \"new value for a$\"\n"
+	"print a$\n"
+	"local d$\n"
+	"a$ = d$\n"
+	"print a$\n"
+	"glob$ = \"Hello global\"\n"
+	"print glob$\n"
+	"glob$ = d$\n"
+	"print glob$\n",
+	"hello world\nfrom BASIC\n\nfrom BASIC\nnew value for a$\n\n"
+	"Hello global\n\n"
+	},
+	{
+	"print_semi_colon",
+	"print \"hello\";\n"
+	"print 1;\n"
+	"print 2\n",
+	"hello12\n"
+	},
+	{"chr$",
+	 "print chr$(33)\n"
+	 "a% := 33\n"
+	 "print chr$(a%)\n"
+	 "a = 33\n"
+	 "print chr$(a)\n",
+	 "!\n!\n!\n"
+	},
+	{"asc",
+	 "print asc(\"01\")\n"
+	 "a$ = \"01\"\n"
+	 "print asc(a$)\n"
+	 "b$ := \"\"\n"
+	 "print asc(\"\")\n"
+	 "print asc(b$)\n",
+	 "48\n48\n-1\n-1\n"
+	},
+	{"len",
+	 "print len(\"Hello world\")\n"
+	 "print len(\"\")\n"
+	 "a$ = \"01\"\n"
+	 "b$ := \"\"\n"
+	 "print len(b$)\n"
+	 "print len(a$)\n",
+	 "11\n0\n0\n2\n"
+	},
+	{"spc",
+	 "print spc(10) \"Hello world\"\n"
+	 "a% := 10\n"
+	 "print spc(a%) \"Hello world\"\n",
+	 "          Hello world\n"
+	 "          Hello world\n",
+	},
+	{"tab_one_arg",
+	 "print tab(10) \"Hello world\"\n"
+	 "a% := 10\n"
+	 "print spc(a%) \"Hello world\"\n",
+	 "          Hello world\n"
+	 "          Hello world\n",
+	},
+	{"string_args",
+	 "a$ := \"hello\"\n"
+	 "PROCmark(a$, \" world\")\n"
+	 "DEF PROCmark(b$, c$)\n"
+	 "print b$;\n"
+	 "print c$\n"
+	 "ENDPROC\n",
+	 "hello world\n",
+	},
+	{"fn_string",
+	 "print FNHello$;\n"
+	 "print FNWorld$\n"
+	 "DEF FNHello$\n"
+	 "<-\"hello\"\n"
+	 "DEF FNWorld$\n"
+	 "a$ := \" world\"\n"
+	 "<-a$\n",
+	 "hello world\n",
+	},
+	{"string_array",
+	 "dim a$(10)\n"
+	 "a$() = \"Mark\", \"you\", \"really\", \"are\", \"very\", \"cool\","
+	 "\"and\", \"have\", \"written\", \"a\", \"great compiler\"\n"
+	 "a$(5) = \"old\"\n"
+	 "for i% = 0 to 9\n"
+	 "  print a$(i%);\n"
+	 "  print \" \";\n"
+	 "next\n"
+	 "print a$(i%)\n",
+	 "Mark you really are very old and have written a great compiler\n"
+	},
+	{"string_array_fn",
+	 "a$() := FNMark$(1)()\n"
+	 "dim ab%(1)\n"
+	 "for i% = 0 to dim(a$(),1)-1\n"
+	 "  print a$(i%);\n"
+	 "  print \" \";\n"
+	 "next\n"
+	 "print a$(i%)\n"
+	 "DEF FNMark$(1)\n"
+	 "local dim a$(11)\n"
+	 "a$() = \"Mark\", \"you\", \"really\", \"are\", \"very\", \"cool\","
+	 "\"and\", \"have\", \"\", \"written\", \"a\", \"great compiler\"\n"
+	 "a$(5) = \"old\"\n"
+	 "<-a$()\n",
+	 "Mark you really are very old and have  written a great compiler\n"
+	},
+	{"string_array_fn2",
+	 "a$() := FNHello$(1)()\n"
+	 "for i% := 0 to 10\n"
+	 "  print a$(i%)\n"
+	 "next\n"
+	 "DEF FNHello$(1)\n"
+	 "    local dim a$(10)\n"
+	 "    for i% := 0 to 10\n"
+	 "      a$(i%) = \"hello\"\n"
+	 "    next\n"
+	 "    b$() := a$()\n"
+	 "<-b$()\n",
+	 "hello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\n"
+	 "hello\nhello\n",
+	},
+	{"string_array_fn3",
+	 "a$() = FNHello$(1)()\n"
+	 "for i% = 0 to 10\n"
+	 "print a$(i%)\n"
+	 "next\n"
+	 "\n"
+	 "def FNHello$(1)\n"
+	 "local dim a$(10)\n"
+	 "hello$ := \"hello\"\n"
+	 "for i% := 0 to 10\n"
+	 "a$(i%) = hello$\n"
+	 "next\n"
+	 "<-a$()\n",
+	 "hello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\n"
+	 "hello\nhello\n",
+	},
+	{"string_array_1_el",
+	 "dim a$(1)\n"
+	 "a$() = \"Mark\""
+	 "print a$(0)\n",
+	 "Mark\n",
+	},
+	{"related_for_loops",
+	 "FOR Y% := 2 TO 4\n"
+	 "  FOR X% := Y% TO 4\n"
+	 "    PRINT X%;\n"
+	 "    PRINT \" \";\n"
+	 "    PRINT Y%\n"
+	 "  NEXT\n"
+	 "NEXT\n",
+	 "2 2\n3 2\n4 2\n3 3\n4 3\n4 4\n",
 	}
 };
 

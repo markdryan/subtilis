@@ -791,6 +791,9 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.size = prv_size,
 	.data_size = NULL,
 	.zero = prv_zero_const,
+	.zero_ref = NULL,
+	.new_ref = NULL,
+	.assign_ref = NULL,
 	.top_bit = prv_top_bit_const,
 	.zero_reg = NULL,
 	.const_of = prv_const_of,
@@ -833,6 +836,7 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.call = NULL,
 	.ret = NULL,
 	.print = NULL,
+	.destructor = NULL,
 };
 
 /* clang-format on */
@@ -1798,6 +1802,9 @@ subtilis_type_if subtilis_type_int32 = {
 	.size = prv_size,
 	.data_size = NULL,
 	.zero = prv_zero,
+	.zero_ref = NULL,
+	.new_ref = NULL,
+	.assign_ref = NULL,
 	.top_bit = prv_top_bit,
 	.zero_reg = prv_zero_reg,
 	.const_of = prv_const_of,
@@ -1840,6 +1847,7 @@ subtilis_type_if subtilis_type_int32 = {
 	.call = prv_call,
 	.ret = prv_ret,
 	.print = prv_print,
+	.destructor = NULL,
 };
 
 /* clang-format on */

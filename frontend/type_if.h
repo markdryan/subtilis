@@ -26,6 +26,15 @@ typedef void (*subtilis_type_if_typeof_t)(const subtilis_type_t *element_type,
 					  subtilis_type_t *type);
 typedef subtilis_exp_t *(*subtilis_type_if_none_t)(subtilis_parser_t *p,
 						   subtilis_error_t *err);
+typedef void (*subtilis_type_if_zeroref_t)(subtilis_parser_t *p,
+					   const subtilis_type_t *type,
+					   size_t mem_reg, size_t loc,
+					   subtilis_error_t *err);
+typedef void (*subtilis_type_if_initref_t)(subtilis_parser_t *p,
+					   const subtilis_type_t *type,
+					   size_t mem_reg, size_t loc,
+					   subtilis_exp_t *e,
+					   subtilis_error_t *err);
 typedef void (*subtilis_type_if_reg_t)(subtilis_parser_t *p, size_t reg,
 				       subtilis_error_t *err);
 typedef subtilis_exp_t *(*subtilis_type_if_unary_t)(subtilis_parser_t *p,
@@ -93,6 +102,9 @@ struct subtilis_type_if_ {
 	subtilis_type_if_size_t size;
 	subtilis_type_if_unary_t data_size;
 	subtilis_type_if_none_t zero;
+	subtilis_type_if_zeroref_t zero_ref;
+	subtilis_type_if_initref_t new_ref;
+	subtilis_type_if_initref_t assign_ref;
 	subtilis_type_if_none_t top_bit;
 	subtilis_type_if_reg_t zero_reg;
 	subtilis_type_if_typeof_t const_of;
@@ -139,13 +151,14 @@ struct subtilis_type_if_ {
 	subtilis_type_if_call_t call;
 	subtilis_type_if_reg_t ret;
 	subtilis_type_if_print_t print;
+	subtilis_type_if_size_t destructor;
 };
 
 typedef struct subtilis_type_if_ subtilis_type_if;
 
 /*
  * Returns the size of the type in bytes.  For reference types
- * this is the size of the reference, e.g., 12 bytes for a one
+ * this is the size of the reference, e.g., 16 bytes for a one
  * dimensional array on 32 bit bit builds.
  */
 
@@ -172,6 +185,34 @@ subtilis_exp_t *subtilis_type_if_data_size(subtilis_parser_t *p,
 subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 				      const subtilis_type_t *type,
 				      subtilis_error_t *err);
+
+/*
+ * Initialises a new reference type identified by the mem_reg and loc parameters
+ * to its zero value.
+ */
+
+void subtilis_type_if_zero_ref(subtilis_parser_t *p,
+			       const subtilis_type_t *type, size_t mem_reg,
+			       size_t loc, subtilis_error_t *err);
+
+/*
+ * Initialises a new reference type identified by the mem_reg and loc parameters
+ * to the value contained in e.
+ */
+
+void subtilis_type_if_new_ref(subtilis_parser_t *p, const subtilis_type_t *type,
+			      size_t mem_reg, size_t loc, subtilis_exp_t *e,
+			      subtilis_error_t *err);
+
+/*
+ * Initialises an existing reference type identified by the mem_reg and
+ * loc parameters to the value contained in e.
+ */
+
+void subtilis_type_if_assign_ref(subtilis_parser_t *p,
+				 const subtilis_type_t *type, size_t mem_reg,
+				 size_t loc, subtilis_exp_t *e,
+				 subtilis_error_t *err);
 
 /*
  * Only defined for integer types.  Returns an expression containing an
@@ -256,7 +297,7 @@ void subtilis_type_if_assign_to_reg(subtilis_parser_t *p, size_t reg,
 
 /*
  * Assigns the value in expression e to the memory location represented by
- * mem_reg and offset loc.  Only implemented for scalar types.
+ * mem_reg and offset loc.  Not implemented for arrays.
  */
 
 void subtilis_type_if_assign_to_mem(subtilis_parser_t *p, size_t mem_reg,
@@ -315,7 +356,7 @@ subtilis_type_if_indexed_read(subtilis_parser_t *p, const char *var_name,
 
 /*
  * Returns the scalar value stored in the memory location represented by
- * mem_reg and offset loc.  Only implemented for scalar types.
+ * mem_reg and offset loc.  Not implemented for arrays.
  */
 
 subtilis_exp_t *subtilis_type_if_load_from_mem(subtilis_parser_t *p,
@@ -563,5 +604,11 @@ subtilis_exp_t *subtilis_type_if_coerce_type(subtilis_parser_t *p,
  */
 
 subtilis_ir_reg_type_t subtilis_type_if_reg_type(const subtilis_type_t *type);
+
+/*
+ * Returns the destructor of a reference type.  0 if no destructor is needed.
+ */
+
+size_t subtilis_type_if_destructor(const subtilis_type_t *type);
 
 #endif

@@ -29,6 +29,7 @@
 #include "parser_graphics.h"
 #include "parser_loops.h"
 #include "parser_output.h"
+#include "reference_type.h"
 #include "variable.h"
 
 #define SUBTILIS_MAIN_FN "subtilis_main"
@@ -46,7 +47,8 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 		goto on_error;
 	}
 
-	p->handle_escapes = true;
+	p->settings.handle_escapes = true;
+	p->settings.ignore_graphics_errors = true;
 
 	p->st = subtilis_symbol_table_new(err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -57,7 +59,7 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 		goto on_error;
 	p->local_st = p->main_st;
 
-	p->prog = subtilis_ir_prog_new(err, p->handle_escapes);
+	p->prog = subtilis_ir_prog_new(&p->settings, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -272,8 +274,8 @@ subtilis_keyword_type_t subtilis_parser_if_compound(subtilis_parser_t *p,
 	p->current->endproc = false;
 
 	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
-	subtilis_parser_deallocate_arrays(p, var_reg, p->local_st, p->level,
-					  err);
+	subtilis_reference_deallocate_refs(p, var_reg, p->local_st, p->level,
+					   err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return key_type;
 

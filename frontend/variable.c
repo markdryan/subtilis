@@ -17,6 +17,7 @@
 #include "variable.h"
 #include "expression.h"
 #include "globals.h"
+#include "reference_type.h"
 #include "type_if.h"
 
 void subtilis_var_assign_hidden(subtilis_parser_t *p, const char *var_name,
@@ -69,18 +70,30 @@ subtilis_exp_t *subtilis_var_lookup_var(subtilis_parser_t *p, const char *tbuf,
 		reg = SUBTILIS_IR_REG_GLOBAL;
 	}
 
-	if (!subtilis_type_if_is_numeric(&s->t)) {
-		subtilis_error_set_numeric_expected(
-		    err, tbuf, p->l->stream->name, p->l->line);
-		return NULL;
+	if (subtilis_type_if_is_numeric(&s->t)) {
+		if (!s->is_reg) {
+			return subtilis_type_if_load_from_mem(p, &s->t, reg,
+							      s->loc, err);
+		} else {
+			return subtilis_exp_new_var(&s->t, s->loc, err);
+		}
+	} else if (s->t.type == SUBTILIS_TYPE_STRING) {
+		/*
+		 * We have a reference type.  We return a pointer to it.
+		 */
+		reg = subtilis_reference_get_pointer(p, reg, s->loc, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+		return subtilis_exp_new_var(&s->t, reg, err);
 	}
 
-	if (!s->is_reg) {
-		return subtilis_type_if_load_from_mem(p, &s->t, reg, s->loc,
-						      err);
-	} else {
-		return subtilis_exp_new_var(&s->t, s->loc, err);
-	}
+	/*
+	 * TODO: Not great but will do for now.
+	 */
+
+	subtilis_error_set_numeric_expected(err, tbuf, p->l->stream->name,
+					    p->l->line);
+	return NULL;
 }
 
 void subtilis_var_set_eflag(subtilis_parser_t *p, bool value,

@@ -320,13 +320,16 @@ static void prv_for_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 
 	if (new_local) {
-		e = subtilis_type_if_exp_to_var(p, e, err);
+		if (subtilis_type_if_reg_type(&type) ==
+		    SUBTILIS_IR_REG_TYPE_INTEGER)
+			for_ctx->loc = p->current->reg_counter++;
+		else
+			for_ctx->loc = p->current->freg_counter++;
+		subtilis_type_if_assign_to_reg(p, for_ctx->loc, e, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		for_ctx->loc = e->exp.ir_op.reg;
 		(void)subtilis_symbol_table_insert_reg(
 		    p->local_st, var_name, &type, for_ctx->loc, err);
-		subtilis_exp_delete(e);
 	} else if (for_ctx->is_reg) {
 		subtilis_type_if_assign_to_reg(p, for_ctx->loc, e, err);
 	} else {

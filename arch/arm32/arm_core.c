@@ -118,7 +118,7 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 						 size_t freg_counter,
 						 size_t label_counter,
 						 size_t locals,
-						 bool handle_escapes,
+						 const subtilis_settings_t *set,
 						 subtilis_error_t *err)
 /* clang-format on */
 
@@ -137,7 +137,7 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 	s->last_op = SIZE_MAX;
 	s->locals = locals;
 	s->op_pool = pool;
-	s->handle_escapes = handle_escapes;
+	s->settings = set;
 	s->no_cleanup_label = s->label_counter++;
 
 	return s;
@@ -247,7 +247,7 @@ subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 					   subtilis_arm_op_pool_t *op_pool,
 					   subtilis_string_pool_t *string_pool,
 					   subtilis_constant_pool_t *cnst_pool,
-					   bool handle_escapes,
+					   const subtilis_settings_t *settings,
 					   subtilis_error_t *err)
 {
 	double dummy_float = 1.0;
@@ -273,7 +273,7 @@ subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 
 	/* Slightly weird but on ARM FPA the words of a double are big endian */
 	arm_p->reverse_fpa_consts = (*lower_word) == 0;
-	arm_p->handle_escapes = handle_escapes;
+	arm_p->settings = settings;
 
 	return arm_p;
 
@@ -300,7 +300,7 @@ subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 
 	arm_s = subtilis_arm_section_new(prog->op_pool, stype, reg_counter,
 					 freg_counter, label_counter, locals,
-					 prog->handle_escapes, err);
+					 prog->settings, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -1057,7 +1057,7 @@ void subtilis_arm_add_stran_imm(subtilis_arm_section_t *s,
 				subtilis_arm_ccode_type_t ccode,
 				subtilis_arm_reg_t dest,
 				subtilis_arm_reg_t base, int32_t offset,
-				subtilis_error_t *err)
+				bool byte, subtilis_error_t *err)
 {
 	subtilis_arm_op2_t op2;
 	subtilis_arm_instr_t *instr;
@@ -1090,6 +1090,7 @@ void subtilis_arm_add_stran_imm(subtilis_arm_section_t *s,
 	stran->offset = op2;
 	stran->pre_indexed = true;
 	stran->write_back = false;
+	stran->byte = byte;
 	stran->subtract = subtract;
 }
 
@@ -1112,6 +1113,7 @@ void subtilis_arm_add_push(subtilis_arm_section_t *s,
 	stran->pre_indexed = true;
 	stran->write_back = true;
 	stran->subtract = true;
+	stran->byte = false;
 }
 
 void subtilis_arm_add_pop(subtilis_arm_section_t *s,
@@ -1133,6 +1135,7 @@ void subtilis_arm_add_pop(subtilis_arm_section_t *s,
 	stran->pre_indexed = false;
 	stran->write_back = true;
 	stran->subtract = false;
+	stran->byte = false;
 }
 
 void subtilis_arm_insert_push(subtilis_arm_section_t *s,
@@ -1156,6 +1159,7 @@ void subtilis_arm_insert_push(subtilis_arm_section_t *s,
 	stran->pre_indexed = true;
 	stran->write_back = true;
 	stran->subtract = true;
+	stran->byte = false;
 }
 
 void subtilis_arm_insert_pop(subtilis_arm_section_t *s,
@@ -1179,6 +1183,7 @@ void subtilis_arm_insert_pop(subtilis_arm_section_t *s,
 	stran->pre_indexed = false;
 	stran->write_back = true;
 	stran->subtract = false;
+	stran->byte = false;
 }
 
 /* clang-format off */
@@ -1214,6 +1219,7 @@ void subtilis_arm_insert_stran_spill_imm(subtilis_arm_section_t *s,
 	stran->pre_indexed = true;
 	stran->write_back = false;
 	stran->subtract = false;
+	stran->byte = false;
 }
 
 void subtilis_arm_insert_stran_imm(subtilis_arm_section_t *s,
@@ -1253,6 +1259,7 @@ void subtilis_arm_insert_stran_imm(subtilis_arm_section_t *s,
 	stran->pre_indexed = true;
 	stran->write_back = false;
 	stran->subtract = subtract;
+	stran->byte = false;
 }
 
 void subtilis_arm_add_cmp_imm(subtilis_arm_section_t *s,

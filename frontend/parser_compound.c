@@ -22,6 +22,7 @@
 #include "parser_call.h"
 #include "parser_compound.h"
 #include "parser_exp.h"
+#include "reference_type.h"
 #include "type_if.h"
 
 static void prv_local_array_ref(subtilis_parser_t *p, subtilis_token_t *t,
@@ -65,8 +66,10 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err)
 {
 	const char *tbuf;
-	subtilis_exp_t *e;
 	subtilis_type_t type;
+	bool value_present;
+	const subtilis_symbol_t *s;
+	subtilis_exp_t *e = NULL;
 	char *var_name = NULL;
 
 	subtilis_lexer_get(p->l, t, err);
@@ -109,25 +112,43 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 
-	if (!((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "="))) {
-		e = subtilis_type_if_zero(p, &type, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
+	value_present =
+	    (t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "=");
+	if (subtilis_type_if_is_numeric(&type)) {
+		if (!value_present) {
+			e = subtilis_type_if_zero(p, &type, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+		} else {
+			e = subtilis_parser_assign_local_num(p, t, var_name,
+							     &type, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+		}
+		(void)subtilis_symbol_table_insert_reg(
+		    p->local_st, var_name, &type, e->exp.ir_op.reg, err);
 	} else {
-		e = subtilis_parser_assign_local(p, t, var_name, &type, err);
+		s = subtilis_symbol_table_insert(p->local_st, var_name, &type,
+						 err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
+
+		if (!value_present) {
+			subtilis_type_if_zero_ref(
+			    p, &type, SUBTILIS_IR_REG_LOCAL, s->loc, err);
+		} else {
+			e = subtilis_parser_expression(p, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+			subtilis_type_if_new_ref(
+			    p, &type, SUBTILIS_IR_REG_LOCAL, s->loc, e, err);
+			e = NULL;
+		}
 	}
-	(void)subtilis_symbol_table_insert_reg(p->local_st, var_name, &type,
-					       e->exp.ir_op.reg, err);
-	subtilis_exp_delete(e);
-	free(var_name);
-	var_name = NULL;
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 
 cleanup:
 
+	subtilis_exp_delete(e);
 	free(var_name);
 }
 
@@ -163,8 +184,8 @@ void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 		p->current->endproc = false;
 
 	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
-	subtilis_parser_deallocate_arrays(p, var_reg, p->local_st, p->level,
-					  err);
+	subtilis_reference_deallocate_refs(p, var_reg, p->local_st, p->level,
+					   err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

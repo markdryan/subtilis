@@ -25,6 +25,7 @@
 #include "parser_compound.h"
 #include "parser_error.h"
 #include "parser_exp.h"
+#include "reference_type.h"
 #include "type_if.h"
 
 struct subtilis_parser_param_t_ {
@@ -252,6 +253,7 @@ subtilis_exp_t *subtilis_parser_call(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	free(params);
+	params = NULL;
 
 	stype = subtilis_type_section_new(&fn_type, num_poss_args, ptypes, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -331,7 +333,7 @@ prv_process_param(subtilis_parser_t *p, subtilis_token_t *t,
 
 		*symbol = subtilis_symbol_table_insert(p->local_st, var_name,
 						       &ptype, err);
-	} else {
+	} else if (subtilis_type_if_is_numeric(&type)) {
 		ptype = type;
 		switch (subtilis_type_if_reg_type(&type)) {
 		case SUBTILIS_IR_REG_TYPE_INTEGER:
@@ -349,6 +351,13 @@ prv_process_param(subtilis_parser_t *p, subtilis_token_t *t,
 
 		*symbol = subtilis_symbol_table_insert_reg(
 		    p->local_st, var_name, &ptype, reg_num, err);
+	} else {
+		/* reference type */
+
+		ptype = type;
+		*num_iparams += 1;
+		*symbol = subtilis_symbol_table_insert(p->local_st, var_name,
+						       &ptype, err);
 	}
 
 cleanup:
@@ -582,17 +591,20 @@ static size_t prv_init_block_variables(subtilis_parser_t *p,
 	dest_op.reg = SUBTILIS_IR_REG_LOCAL;
 	for (i = 0; i < stype->num_parameters; i++) {
 		t = &stype->parameters[i];
-		if ((t->type != SUBTILIS_TYPE_ARRAY_REAL) &&
-		    (t->type != SUBTILIS_TYPE_ARRAY_INTEGER)) {
-			if (subtilis_type_if_reg_type(t) ==
-			    SUBTILIS_IR_REG_TYPE_INTEGER)
-				source_reg++;
-			continue;
+		if ((t->type == SUBTILIS_TYPE_ARRAY_REAL) ||
+		    (t->type == SUBTILIS_TYPE_ARRAY_INTEGER)) {
+			blocks++;
+			source_op.reg = source_reg++;
+			subtlis_array_type_copy_param_ref(
+			    p, t, dest_op, symbols[i]->loc, source_op, 0, err);
+		} else if (t->type == SUBTILIS_TYPE_STRING) {
+			blocks++;
+			subtilis_reference_type_copy_ref(
+			    p, dest_op.reg, symbols[i]->loc, source_reg++, err);
+		} else if (subtilis_type_if_reg_type(t) ==
+			   SUBTILIS_IR_REG_TYPE_INTEGER) {
+			source_reg++;
 		}
-		blocks++;
-		source_op.reg = source_reg++;
-		subtlis_array_type_copy_param_ref(
-		    p, t, dest_op, symbols[i]->loc, source_op, 0, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return 0;
 	}
@@ -780,7 +792,8 @@ void subtilis_parser_unwind(subtilis_parser_t *p, subtilis_error_t *err)
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_array_type_pop_and_deref(p, err);
+	subtilis_reference_type_pop_and_deref(p, p->current->destructor_needed,
+					      err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

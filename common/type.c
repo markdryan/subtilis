@@ -32,18 +32,20 @@ const subtilis_type_t subtilis_type_real = {SUBTILIS_TYPE_REAL};
 const subtilis_type_t subtilis_type_integer = {SUBTILIS_TYPE_INTEGER};
 const subtilis_type_t subtilis_type_string = {SUBTILIS_TYPE_STRING};
 const subtilis_type_t subtilis_type_void = {SUBTILIS_TYPE_VOID};
+const subtilis_type_t subtilis_type_local_buffer = {SUBTILIS_TYPE_LOCAL_BUFFER};
 
 /* clang-format off */
 static const char *const prv_fixed_type_names[] = {
-	"integer", /* SUBTILIS_TYPE_CONST_INTEGER */
-	"real",    /* SUBTILIS_TYPE_CONST_REAL */
-	"string",    /* SUBTILIS_TYPE_CONST_STRING */
+	"const integer", /* SUBTILIS_TYPE_CONST_INTEGER */
+	"const real",    /* SUBTILIS_TYPE_CONST_REAL */
+	"const string",    /* SUBTILIS_TYPE_CONST_STRING */
 	"real",    /* SUBTILIS_TYPE_REAL */
 	"integer", /* SUBTILIS_TYPE_INTEGER */
 	"string",  /* SUBTILIS_TYPE_STRING */
 	"void",    /* SUBTILIS_TYPE_VOID */
 	"array of reals", /* SUBTILIS_TYPE_ARRAY_REAL */
 	"array of ints", /* SUBTILIS_TYPE_ARRAY_INTEGER */
+	"array of strings", /* SUBTILIS_TYPE_ARRAY_STRING */
 };
 
 /* clang-format on */
@@ -74,6 +76,8 @@ bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b)
 	case SUBTILIS_TYPE_ARRAY_REAL:
 	case SUBTILIS_TYPE_ARRAY_INTEGER:
 		return prv_array_type_match(a, b);
+	case SUBTILIS_TYPE_STRING:
+		return b->type == b->type;
 	default:
 		return true;
 	}
@@ -102,6 +106,7 @@ subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 	for (i = 0; i < num_parameters; i++) {
 		switch (parameters[i].type) {
 		case SUBTILIS_TYPE_INTEGER:
+		case SUBTILIS_TYPE_STRING:
 		case SUBTILIS_TYPE_ARRAY_REAL:
 		case SUBTILIS_TYPE_ARRAY_INTEGER:
 			stype->int_regs++;

@@ -219,11 +219,11 @@ cleanup:
 		subtilis_exp_delete(indices[i]);
 }
 
-subtilis_exp_t *subtilis_parser_assign_local(subtilis_parser_t *p,
-					     subtilis_token_t *t,
-					     const char *var_name,
-					     subtilis_type_t *type,
-					     subtilis_error_t *err)
+subtilis_exp_t *subtilis_parser_assign_local_num(subtilis_parser_t *p,
+						 subtilis_token_t *t,
+						 const char *var_name,
+						 subtilis_type_t *type,
+						 subtilis_error_t *err)
 {
 	subtilis_exp_t *e;
 
@@ -247,6 +247,7 @@ static void prv_assignment_local(subtilis_parser_t *p, subtilis_token_t *t,
 				 const char *var_name, subtilis_type_t *id_type,
 				 subtilis_error_t *err)
 {
+	const subtilis_symbol_t *s;
 	subtilis_exp_t *e;
 
 	if (subtilis_symbol_table_lookup(p->local_st, var_name)) {
@@ -255,13 +256,31 @@ static void prv_assignment_local(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 
-	e = subtilis_parser_assign_local(p, t, var_name, id_type, err);
+	if (subtilis_type_if_is_numeric(id_type)) {
+		e = subtilis_parser_assign_local_num(p, t, var_name, id_type,
+						     err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		(void)subtilis_symbol_table_insert_reg(
+		    p->local_st, var_name, id_type, e->exp.ir_op.reg, err);
+		subtilis_exp_delete(e);
+		return;
+	}
+
+	/*
+	 * We've got a reference type, e.g., a string.
+	 */
+
+	s = subtilis_symbol_table_insert(p->local_st, var_name, id_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	(void)subtilis_symbol_table_insert_reg(p->local_st, var_name, id_type,
-					       e->exp.ir_op.reg, err);
-	subtilis_exp_delete(e);
+	e = subtilis_parser_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_type_if_new_ref(p, id_type, SUBTILIS_IR_REG_LOCAL, s->loc, e,
+				 err);
 }
 
 char *subtilis_parser_get_assignment_var(subtilis_parser_t *p,
@@ -384,7 +403,7 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 	} else if (!strcmp(tbuf, "+=")) {
 		at = SUBTILIS_ASSIGN_TYPE_PLUS_EQUAL;
-	} else if (!strcmp(tbuf, "-=")) {
+	} else if (!strcmp(tbuf, "-=") && subtilis_type_if_is_numeric(&type)) {
 		at = SUBTILIS_ASSIGN_TYPE_MINUS_EQUAL;
 	} else {
 		subtilis_error_set_assignment_op_expected(
@@ -396,17 +415,31 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	/* Ownership of e is passed to the following functions. */
-
-	e = subtilis_type_if_coerce_type(p, e, &type, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
 	if (new_global) {
 		s = subtilis_symbol_table_insert(p->st, var_name, &type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 	}
+
+	/* Ownership of e is passed to the following functions. */
+
+	if (!subtilis_type_if_is_numeric(&s->t)) {
+		if (at == SUBTILIS_ASSIGN_TYPE_EQUAL) {
+			if (new_global)
+				subtilis_type_if_new_ref(p, &s->t, op1.reg,
+							 s->loc, e, err);
+			else
+				subtilis_type_if_assign_ref(p, &s->t, op1.reg,
+							    s->loc, e, err);
+		} else {
+			subtilis_error_set_assertion_failed(err);
+		}
+		goto cleanup;
+	}
+
+	e = subtilis_type_if_coerce_type(p, e, &type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
 	e = prv_assignment_operator(p, var_name, e, at, err);
 	if (err->type != SUBTILIS_ERROR_OK)

@@ -20,6 +20,8 @@
 #include "array_type.h"
 #include "parser_array.h"
 #include "parser_exp.h"
+#include "reference_type.h"
+#include "string_type.h"
 #include "type_if.h"
 
 subtilis_exp_t *subtils_parser_read_array(subtilis_parser_t *p,
@@ -136,11 +138,6 @@ static uint8_t *prv_append_const_el(subtilis_parser_t *p, subtilis_exp_t *e,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	/*
-	 * This is only going to work for scalar types.  How do we
-	 * handle strings?
-	 */
-
 	memcpy(&buffer[el * element_size], &e->exp.ir_op, element_size);
 
 cleanup:
@@ -151,12 +148,11 @@ cleanup:
 }
 
 static void prv_check_initialiser_count(subtilis_parser_t *p, size_t entries,
-					size_t mem_reg,
+					size_t mem_reg, subtilis_exp_t *maxe,
 					const subtilis_symbol_t *s,
 					subtilis_error_t *err)
 {
 	subtilis_exp_t *sizee = NULL;
-	subtilis_exp_t *maxe = NULL;
 	subtilis_ir_operand_t error_label;
 	subtilis_ir_operand_t ok_label;
 
@@ -164,10 +160,6 @@ static void prv_check_initialiser_count(subtilis_parser_t *p, size_t entries,
 	ok_label.label = subtilis_ir_section_new_label(p->current);
 
 	sizee = subtilis_exp_new_int32(entries, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	maxe = subtilis_array_type_dynamic_size(p, mem_reg, s->loc, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -186,10 +178,11 @@ cleanup:
 	subtilis_exp_delete(sizee);
 }
 
-static void prv_parse_initialiser(subtilis_parser_t *p, subtilis_token_t *t,
-				  subtilis_exp_t *e, size_t mem_reg,
-				  const subtilis_symbol_t *s,
-				  subtilis_error_t *err)
+static void prv_parse_numeric_initialiser(subtilis_parser_t *p,
+					  subtilis_token_t *t,
+					  subtilis_exp_t *e, size_t mem_reg,
+					  const subtilis_symbol_t *s,
+					  subtilis_error_t *err)
 {
 	const char *tbuf;
 	size_t id;
@@ -204,6 +197,7 @@ static void prv_parse_initialiser(subtilis_parser_t *p, subtilis_token_t *t,
 	size_t element_size;
 	size_t reg;
 	subtilis_ir_operand_t op1;
+	subtilis_exp_t *maxe;
 	uint8_t *buffer = NULL;
 	size_t i = 0;
 
@@ -272,8 +266,13 @@ static void prv_parse_initialiser(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	if (dynamic) {
+		maxe =
+		    subtilis_array_type_dynamic_size(p, mem_reg, s->loc, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
 		prv_check_initialiser_count(p, entries * element_size, mem_reg,
-					    s, err);
+					    maxe, s, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 	}
@@ -300,13 +299,354 @@ static void prv_parse_initialiser(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_array_type_memcpy(p, mem_reg, s->loc, reg,
-				   sizee->exp.ir_op.reg, err);
+	subtilis_reference_type_memcpy(p, mem_reg, s->loc, reg,
+				       sizee->exp.ir_op.reg, err);
 
 cleanup:
 	subtilis_exp_delete(sizee);
 	subtilis_exp_delete(e);
 	free(buffer);
+}
+
+static subtilis_exp_t **prv_parse_const_string_list(subtilis_parser_t *p,
+						    subtilis_exp_t *e,
+						    subtilis_token_t *t,
+						    size_t *len,
+						    subtilis_error_t *err)
+{
+	size_t i;
+	const char *tbuf;
+	subtilis_exp_t **ee;
+	subtilis_exp_t **ee_tmp;
+	size_t new_max;
+	size_t max = SUBTILIS_CONFIG_CONSTANT_ARRAY_GRAN;
+	size_t count = 0;
+
+	ee = malloc(sizeof(*ee) * max);
+	if (!ee) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+
+	ee[count++] = subtilis_type_if_dup(e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	e = NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	while ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, ",")) {
+		if (count == max) {
+			new_max = max + SUBTILIS_CONFIG_CONSTANT_ARRAY_GRAN;
+			ee_tmp = realloc(ee, new_max * sizeof(*ee));
+			if (!*ee_tmp) {
+				subtilis_error_set_oom(err);
+				goto cleanup;
+			}
+			ee = ee_tmp;
+			max = new_max;
+		}
+		e = subtilis_parser_expression(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		if (e->type.type != SUBTILIS_TYPE_CONST_STRING) {
+			subtilis_error_set_const_string_expected(
+			    err, p->l->stream->name, p->l->line);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+		}
+
+		ee[count++] = e;
+		e = NULL;
+		tbuf = subtilis_token_get_text(t);
+	}
+
+	*len = count;
+	return ee;
+
+cleanup:
+
+	for (i = 0; i < count; i++)
+		subtilis_exp_delete(ee[i]);
+	free(ee);
+	subtilis_exp_delete(e);
+
+	return NULL;
+}
+
+static size_t prv_init_lca_table(subtilis_parser_t *p, subtilis_exp_t **ee,
+				 size_t entries, subtilis_error_t *err)
+{
+	size_t i;
+	size_t buf_size;
+	size_t table_base;
+	const subtilis_symbol_t *s;
+	size_t local_block_size;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	const subtilis_buffer_t *str;
+
+	/*
+	 * TODO: pointer size is hardcoded to 4
+	 */
+
+	local_block_size = entries * sizeof(int32_t) * 2;
+	s = subtilis_symbol_table_create_local_buf(p->local_st,
+						   local_block_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	op0.reg = SUBTILIS_IR_REG_LOCAL;
+	op1.integer = s->loc;
+	table_base = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	for (i = 0; i < entries; i++) {
+		str = &ee[i]->exp.str;
+		buf_size = subtilis_buffer_get_size(str) - 1;
+		op1.integer = buf_size;
+		op0.reg = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return 0;
+		op1.reg = table_base;
+		op2.integer = i * sizeof(int32_t) * 2;
+		subtilis_ir_section_add_instr_reg(p->current,
+						  SUBTILIS_OP_INSTR_STOREO_I32,
+						  op0, op1, op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return 0;
+
+		if (buf_size == 0)
+			continue;
+
+		op0.reg = subtilis_string_type_lca_const(
+		    p, subtilis_buffer_get_string(str), buf_size, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return 0;
+
+		op1.reg = table_base;
+		op2.integer = (i * sizeof(int32_t) * 2) + sizeof(int32_t);
+		subtilis_ir_section_add_instr_reg(p->current,
+						  SUBTILIS_OP_INSTR_STOREO_I32,
+						  op0, op1, op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return 0;
+	}
+
+	return table_base;
+}
+
+static void prv_read_string_table(subtilis_parser_t *p, size_t array_base,
+				  size_t table_base, size_t entries,
+				  size_t element_size, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t start;
+	subtilis_ir_operand_t end;
+	subtilis_ir_operand_t zero_len;
+	subtilis_ir_operand_t gt_zero;
+	subtilis_ir_operand_t table_end;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t size;
+	subtilis_ir_operand_t tmp;
+	subtilis_ir_operand_t cond;
+	subtilis_ir_operand_t skip;
+	subtilis_ir_operand_t lca_offset;
+	subtilis_ir_operand_t table_ptr;
+	subtilis_ir_operand_t array_ptr;
+
+	start.label = subtilis_ir_section_new_label(p->current);
+	end.label = subtilis_ir_section_new_label(p->current);
+	zero_len.label = subtilis_ir_section_new_label(p->current);
+	gt_zero.label = subtilis_ir_section_new_label(p->current);
+	skip.label = subtilis_ir_section_new_label(p->current);
+
+	table_ptr.reg = table_base;
+	array_ptr.reg = array_base;
+
+	op1.integer = entries * sizeof(int32_t) * 2;
+	table_end.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, table_ptr, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, start.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = 0;
+	size.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, table_ptr, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  size, gt_zero, zero_len, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, gt_zero.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = sizeof(int32_t);
+	lca_offset.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, table_ptr, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_string_init_from_lca(p, array_ptr.reg, 0, lca_offset.reg,
+				      size.reg, false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     skip, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, zero_len.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_string_type_set_size(p, array_ptr.reg, 0, size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, skip.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = (int32_t)element_size;
+	tmp.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, array_ptr, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      array_ptr, tmp, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = sizeof(int32_t) * 2;
+	tmp.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, table_ptr, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      table_ptr, tmp, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	cond.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LT_I32, table_ptr, table_end, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  cond, start, end, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, end.label, err);
+}
+
+static void prv_parse_string_initialiser(subtilis_parser_t *p,
+					 subtilis_token_t *t, subtilis_exp_t *e,
+					 size_t mem_reg,
+					 const subtilis_symbol_t *s,
+					 subtilis_error_t *err)
+{
+	int32_t dim;
+	size_t element_size;
+	size_t data_reg;
+	subtilis_exp_t **ee;
+	size_t table_base;
+	subtilis_exp_t *maxe = NULL;
+	subtilis_exp_t *maxe_dup = NULL;
+	const subtilis_type_t *type = &s->t;
+	bool dynamic = false;
+	size_t max_elements = 1;
+	size_t entries;
+	size_t i = 0;
+
+	ee = prv_parse_const_string_list(p, e, t, &entries, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * If there's only one string in the list it's not worth setting up tge
+	 * loop.
+	 */
+
+	if (entries == 1) {
+		data_reg = subtilis_reference_get_data(p, mem_reg, s->loc, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		subtilis_string_type_new_owned_ref_from_const(p, data_reg, 0,
+							      ee[0], err);
+		ee[0] = NULL;
+		goto cleanup;
+	}
+
+	do {
+		dim = type->params.array.dims[i];
+		if (dim == SUBTILIS_DYNAMIC_DIMENSION) {
+			max_elements = SIZE_MAX;
+			dynamic = true;
+			break;
+		}
+		max_elements *= (dim + 1);
+		i++;
+	} while (i < type->params.array.num_dims);
+
+	element_size = subtilis_type_if_size(&subtilis_type_string, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (!dynamic) {
+		if (entries > max_elements) {
+			subtilis_error_bad_element_count(
+			    err, p->l->stream->name, p->l->line);
+			goto cleanup;
+		}
+	} else {
+		maxe =
+		    subtilis_array_type_dynamic_size(p, mem_reg, s->loc, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		maxe_dup = subtilis_type_if_dup(maxe, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		prv_check_initialiser_count(p, entries * element_size, mem_reg,
+					    maxe_dup, s, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	table_base = prv_init_lca_table(p, ee, entries, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	data_reg = subtilis_reference_get_data(p, mem_reg, s->loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_read_string_table(p, data_reg, table_base, entries, element_size,
+			      err);
+
+cleanup:
+
+	for (i = 0; i < entries; i++)
+		subtilis_exp_delete(ee[i]);
+	free(ee);
+
+	subtilis_exp_delete(maxe);
 }
 
 void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
@@ -315,15 +655,27 @@ void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err)
 {
-	if (subtilis_type_eq(&s->t, &e->type))
+	subtilis_type_t el_type;
+
+	if (subtilis_type_eq(&s->t, &e->type)) {
 		subtilis_array_type_assign_ref(p, &s->t.params.array, mem_reg,
 					       s->loc, e->exp.ir_op.reg, err);
-	else if (subtilis_type_if_is_numeric(&e->type))
-		prv_parse_initialiser(p, t, e, mem_reg, s, err);
-	else
-		subtilis_error_set_array_type_mismatch(err, p->l->stream->name,
-						       p->l->line);
+	} else {
+		subtilis_type_if_element_type(p, &s->t, &el_type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		if (subtilis_type_if_is_numeric(&el_type) &&
+		    subtilis_type_if_is_numeric(&e->type))
+			prv_parse_numeric_initialiser(p, t, e, mem_reg, s, err);
+		else if ((s->t.type == SUBTILIS_TYPE_ARRAY_STRING) &&
+			 (e->type.type == SUBTILIS_TYPE_CONST_STRING))
+			prv_parse_string_initialiser(p, t, e, mem_reg, s, err);
+		else
+			subtilis_error_set_array_type_mismatch(
+			    err, p->l->stream->name, p->l->line);
+	}
 
+cleanup:
 	subtilis_exp_delete(e);
 }
 
@@ -421,31 +773,6 @@ cleanup:
 	free(var_name);
 }
 
-void subtilis_parser_deallocate_arrays(subtilis_parser_t *p,
-				       subtilis_ir_operand_t load_reg,
-				       subtilis_symbol_table_t *st,
-				       size_t level, subtilis_error_t *err)
-{
-	size_t i;
-	const subtilis_symbol_t *s;
-	subtilis_symbol_level_t *l = &st->levels[level];
-
-	/*
-	 * TODO: This whole thing needs to be more generic when we have more
-	 * heap based types, e.g., strings.
-	 */
-	for (i = 0; i < l->size; i++) {
-		s = l->symbols[i];
-		if ((s->t.type != SUBTILIS_TYPE_ARRAY_REAL) &&
-		    (s->t.type != SUBTILIS_TYPE_ARRAY_INTEGER))
-			continue;
-
-		subtilis_array_type_pop_and_deref(p, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-	}
-}
-
 subtilis_exp_t *subtilis_parser_get_dim(subtilis_parser_t *p,
 					subtilis_token_t *t,
 					subtilis_error_t *err)
@@ -475,7 +802,8 @@ subtilis_exp_t *subtilis_parser_get_dim(subtilis_parser_t *p,
 	}
 
 	if ((ar->type.type != SUBTILIS_TYPE_ARRAY_REAL) &&
-	    (ar->type.type != SUBTILIS_TYPE_ARRAY_INTEGER)) {
+	    (ar->type.type != SUBTILIS_TYPE_ARRAY_INTEGER) &&
+	    (ar->type.type != SUBTILIS_TYPE_ARRAY_STRING)) {
 		subtilis_error_not_array(err, "First argument to dim",
 					 p->l->stream->name, p->l->line);
 		goto cleanup;

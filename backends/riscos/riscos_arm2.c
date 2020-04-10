@@ -166,10 +166,13 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"rsubii32 *, *, *", subtilis_arm_gen_rsubii32},
 	{"addi32 *, *, *", subtilis_arm_gen_addi32},
 	{"subi32 *, *, *", subtilis_arm_gen_subi32},
+	{"storeoi8 *, *, *", subtilis_arm_gen_storeoi8},
 	{"storeoi32 *, *, *", subtilis_arm_gen_storeoi32},
+	{"loadoi8 *, *, *", subtilis_arm_gen_loadoi8},
 	{"loadoi32 *, *, *", subtilis_arm_gen_loadoi32},
 	{"label_1", subtilis_arm_gen_label},
 	{"printi32 *\n", subtilis_riscos_arm_printi},
+	{"printstr *, *\n", subtilis_riscos_arm_printstr},
 	{"printnl\n", subtilis_riscos_arm_printnl},
 	{"jmp *\n", subtilis_arm_gen_jump},
 	{"andii32 *, *, *\n", subtilis_arm_gen_andii32},
@@ -236,9 +239,13 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"realloc *, *, *\n", subtilis_riscos_arm_realloc},
 	{"ref *\n", subtilis_riscos_arm_ref},
 	{"deref *\n", subtilis_riscos_arm_deref},
+	{"getref *, *\n", subtilis_riscos_arm_getref},
 	{"pushi32 *\n", subtilis_arm_gen_pushi32},
 	{"popi32 *\n", subtilis_arm_gen_popi32},
 	{"lca *, *\n", subtilis_arm_gen_lca},
+	{"at *, *\n", subtilis_riscos_arm_at},
+	{"pos *\n", subtilis_riscos_arm_pos},
+	{"vpos *\n", subtilis_riscos_arm_vpos},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

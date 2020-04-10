@@ -1,4 +1,4 @@
-WimpSlot -min 1024k
+WimpSlot -min 4096k
 Dir <Obey$Dir>.common
 amu -f ROMakefile THROWBACK=-throwback
 Dir <Obey$Dir>.frontend

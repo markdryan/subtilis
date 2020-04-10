@@ -29,6 +29,8 @@ typedef enum {
 	SUBTILIS_TYPE_VOID,
 	SUBTILIS_TYPE_ARRAY_REAL,
 	SUBTILIS_TYPE_ARRAY_INTEGER,
+	SUBTILIS_TYPE_ARRAY_STRING,
+	SUBTILIS_TYPE_LOCAL_BUFFER,
 	SUBTILIS_TYPE_MAX,
 } subtilis_type_type_t;
 
@@ -85,5 +87,6 @@ extern const subtilis_type_t subtilis_type_real;
 extern const subtilis_type_t subtilis_type_integer;
 extern const subtilis_type_t subtilis_type_string;
 extern const subtilis_type_t subtilis_type_void;
+extern const subtilis_type_t subtilis_type_local_buffer;
 
 #endif

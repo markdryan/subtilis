@@ -20,6 +20,7 @@ COMMON =\
 	parser_graphics.c \
 	parser_input.c \
 	parser_output.c \
+	parser_string.c \
 	parser_rnd.c \
 	expression.c \
 	ir.c \
@@ -38,8 +39,13 @@ COMMON =\
 	int32_type.c \
 	array_int32_type.c \
 	array_float64_type.c \
+	array_string_type.c \
 	array_type.c \
-	sizet_vector.c
+	sizet_vector.c \
+	string_type_if.c \
+	string_type.c \
+	reference_type.c \
+	local_buffer_type.c
 
 ARM =\
 	arm_core.c \

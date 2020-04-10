@@ -72,6 +72,9 @@ const subtilis_symbol_t *subtilis_symbol_table_promote_tmp(
 /* clang-format on */
 
 const subtilis_symbol_t *
+subtilis_symbol_table_create_local_buf(subtilis_symbol_table_t *st, size_t size,
+				       subtilis_error_t *err);
+const subtilis_symbol_t *
 subtilis_symbol_table_insert_reg(subtilis_symbol_table_t *st, const char *key,
 				 const subtilis_type_t *id_type, size_t reg_num,
 				 subtilis_error_t *err);

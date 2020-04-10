@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Mark Ryan
+ * Copyright (c) 2020 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "array_float64_type.h"
+#include "array_string_type.h"
 #include "array_type.h"
+#include "string_type.h"
 
 static size_t prv_size(const subtilis_type_t *type)
 {
@@ -28,15 +29,16 @@ static size_t prv_size(const subtilis_type_t *type)
 static subtilis_exp_t *prv_data_size(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err)
 {
-	subtilis_exp_t *three;
+	subtilis_exp_t *sizee;
+	size_t string_size = subtilis_string_type_size(&subtilis_type_string);
 
-	three = subtilis_exp_new_int32(3, err);
+	sizee = subtilis_exp_new_int32(string_size, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		subtilis_exp_delete(e);
 		return NULL;
 	}
 
-	return subtilis_type_if_lsl(p, e, three, err);
+	return subtilis_type_if_mul(p, e, sizee, err);
 }
 
 static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
@@ -61,7 +63,7 @@ static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
 static void prv_element_type(const subtilis_type_t *type,
 			     subtilis_type_t *element_type)
 {
-	element_type->type = SUBTILIS_TYPE_REAL;
+	element_type->type = SUBTILIS_TYPE_STRING;
 }
 
 static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -76,7 +78,7 @@ prv_indexed_read(subtilis_parser_t *p, const char *var_name,
 		 subtilis_exp_t **indices, size_t index_count,
 		 subtilis_error_t *err)
 {
-	return subtilis_array_read(p, var_name, type, &subtilis_type_real,
+	return subtilis_array_read(p, var_name, type, &subtilis_type_string,
 				   mem_reg, loc, indices, index_count, err);
 }
 
@@ -86,7 +88,7 @@ static void prv_indexed_write(subtilis_parser_t *p, const char *var_name,
 			      subtilis_exp_t **indices, size_t index_count,
 			      subtilis_error_t *err)
 {
-	subtilis_array_write(p, var_name, type, &subtilis_type_real, mem_reg,
+	subtilis_array_write(p, var_name, type, &subtilis_type_string, mem_reg,
 			     loc, e, indices, index_count, err);
 }
 
@@ -96,8 +98,8 @@ static void prv_indexed_add(subtilis_parser_t *p, const char *var_name,
 			    subtilis_exp_t **indices, size_t index_count,
 			    subtilis_error_t *err)
 {
-	subtilis_array_add(p, var_name, type, &subtilis_type_real, mem_reg, loc,
-			   e, indices, index_count, err);
+	subtilis_error_set_not_supported(err, "Not supported yet",
+					 p->l->stream->name, p->l->line);
 }
 
 static void prv_indexed_sub(subtilis_parser_t *p, const char *var_name,
@@ -106,8 +108,8 @@ static void prv_indexed_sub(subtilis_parser_t *p, const char *var_name,
 			    subtilis_exp_t **indices, size_t index_count,
 			    subtilis_error_t *err)
 {
-	subtilis_array_sub(p, var_name, type, &subtilis_type_real, mem_reg, loc,
-			   e, indices, index_count, err);
+	subtilis_error_set_not_supported(err, "-= on string arrays",
+					 p->l->stream->name, p->l->line);
 }
 
 static subtilis_exp_t *prv_unary_minus(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -262,8 +264,10 @@ static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
 	    p->current, SUBTILIS_OP_INSTR_RET_I32, ret_reg, err);
 }
 
+static size_t prv_destructor(const subtilis_type_t *type) { return 1; }
+
 /* clang-format off */
-subtilis_type_if subtilis_type_array_float64 = {
+subtilis_type_if subtilis_type_array_string = {
 	.is_const = false,
 	.is_numeric = false,
 	.is_integer = false,
@@ -311,7 +315,7 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.abs = prv_abs,
 	.call = prv_call,
 	.ret = prv_ret,
-	.destructor = NULL,
+	.destructor = prv_destructor,
 };
 
 /* clang-format on */

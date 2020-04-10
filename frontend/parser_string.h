@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Mark Ryan
+ * Copyright (c) 2020 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_ERROR_CODES_H
-#define __SUBTILIS_ERROR_CODES_H
+#ifndef __SUBTILIS_PARSER_STRING_H
+#define __SUBTILIS_PARSER_STRING_H
 
-#define SUBTILIS_ERROR_CODE_BAD_DIM 10
-#define SUBTILIS_ERROR_CODE_OOM 11
-#define SUBTILIS_ERROR_CODE_ESCAPE 17
-#define SUBTILIS_ERROR_CODE_DIV_BY_ZERO 18
-#define SUBTILIS_ERROR_CODE_LOG_RANGE 22
-#define SUBTILIS_ERROR_CODE_GRAPHICS 128
-#define SUBTILIS_ERROR_CODE_BAD_TIME 129
-#define SUBTILIS_ERROR_CODE_BAD_INPUT 130
-#define SUBTILIS_ERROR_CODE_BAD_OS_ID 131
+#include "expression.h"
 
+subtilis_exp_t *subtilis_parser_chrstr(subtilis_parser_t *p,
+				       subtilis_token_t *t,
+				       subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_asc(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_len(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_error_t *err);
 #endif

@@ -26,7 +26,9 @@
 #include "parser_graphics.h"
 #include "parser_input.h"
 #include "parser_math.h"
+#include "parser_output.h"
 #include "parser_rnd.h"
+#include "parser_string.h"
 #include "type_if.h"
 #include "variable.h"
 
@@ -135,6 +137,11 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 
 	tbuf = subtilis_token_get_text(t);
 	switch (t->type) {
+	case SUBTILIS_TOKEN_STRING:
+		e = subtilis_exp_new_str(&t->buf, err);
+		if (!e)
+			goto cleanup;
+		break;
 	case SUBTILIS_TOKEN_INTEGER:
 		e = subtilis_exp_new_int32(t->tok.integer, err);
 		if (!e)
@@ -238,6 +245,16 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return subtilis_parser_get_err(p, t, err);
 		case SUBTILIS_KEYWORD_DIM:
 			return subtilis_parser_get_dim(p, t, err);
+		case SUBTILIS_KEYWORD_CHR_STR:
+			return subtilis_parser_chrstr(p, t, err);
+		case SUBTILIS_KEYWORD_ASC:
+			return subtilis_parser_asc(p, t, err);
+		case SUBTILIS_KEYWORD_LEN:
+			return subtilis_parser_len(p, t, err);
+		case SUBTILIS_KEYWORD_POS:
+			return subtilis_parser_pos(p, t, err);
+		case SUBTILIS_KEYWORD_VPOS:
+			return subtilis_parser_vpos(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "Unexpected keyword in expression",

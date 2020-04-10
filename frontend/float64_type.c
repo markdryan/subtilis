@@ -551,6 +551,9 @@ subtilis_type_if subtilis_type_const_float64 = {
 	.size = prv_size,
 	.data_size = NULL,
 	.zero = prv_zero_const,
+	.zero_ref = NULL,
+	.new_ref = NULL,
+	.assign_ref = NULL,
 	.zero_reg = NULL,
 	.const_of = prv_const_of,
 	.array_of = NULL,
@@ -593,6 +596,7 @@ subtilis_type_if subtilis_type_const_float64 = {
 	.call = NULL,
 	.ret = NULL,
 	.print = NULL,
+	.destructor = NULL,
 };
 
 /* clang-format on */
@@ -1161,6 +1165,9 @@ subtilis_type_if subtilis_type_float64 = {
 	.size = prv_size,
 	.data_size = NULL,
 	.zero = prv_zero,
+	.zero_ref = NULL,
+	.new_ref = NULL,
+	.assign_ref = NULL,
 	.zero_reg = prv_zero_reg,
 	.const_of = prv_const_of,
 	.array_of = prv_array_of,
@@ -1203,6 +1210,7 @@ subtilis_type_if subtilis_type_float64 = {
 	.call = prv_call,
 	.ret = prv_ret,
 	.print = prv_print,
+	.destructor = NULL,
 };
 
 /* clang-format on */

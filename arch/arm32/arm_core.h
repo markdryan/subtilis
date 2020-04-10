@@ -209,6 +209,7 @@ struct subtilis_arm_stran_instr_t_ {
 	bool pre_indexed;
 	bool write_back;
 	bool subtract;
+	bool byte;
 };
 
 typedef struct subtilis_arm_stran_instr_t_ subtilis_arm_stran_instr_t;
@@ -434,7 +435,7 @@ struct subtilis_arm_section_t_ {
 	size_t max_ret_site_count;
 	size_t *ret_sites;
 	subtilis_type_section_t *stype;
-	bool handle_escapes;
+	const subtilis_settings_t *settings;
 	size_t no_cleanup_label;
 };
 
@@ -448,7 +449,7 @@ struct subtilis_arm_prog_t_ {
 	subtilis_constant_pool_t *constant_pool;
 	subtilis_arm_op_pool_t *op_pool;
 	bool reverse_fpa_consts;
-	bool handle_escapes;
+	const subtilis_settings_t *settings;
 };
 
 typedef struct subtilis_arm_prog_t_ subtilis_arm_prog_t;
@@ -469,7 +470,7 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 						 size_t freg_counter,
 						 size_t label_counter,
 						 size_t locals,
-						 bool handle_escapes,
+						 const subtilis_settings_t *set,
 						 subtilis_error_t *err);
 /* clang-format on */
 
@@ -479,7 +480,7 @@ subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 					   subtilis_arm_op_pool_t *op_pool,
 					   subtilis_string_pool_t *string_pool,
 					   subtilis_constant_pool_t *cnst_pool,
-					   bool handle_escapes,
+					   const subtilis_settings_t *settings,
 					   subtilis_error_t *err);
 /* clang-format off */
 subtilis_arm_section_t *
@@ -586,7 +587,7 @@ void subtilis_arm_add_stran_imm(subtilis_arm_section_t *s,
 				subtilis_arm_ccode_type_t ccode,
 				subtilis_arm_reg_t dest,
 				subtilis_arm_reg_t base, int32_t offset,
-				subtilis_error_t *err);
+				bool byte, subtilis_error_t *err);
 void subtilis_arm_add_push(subtilis_arm_section_t *arm_s,
 			   subtilis_arm_ccode_type_t ccode, size_t reg_num,
 			   subtilis_error_t *err);

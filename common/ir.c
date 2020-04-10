@@ -73,10 +73,12 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "mulir", SUBTILIS_OP_CLASS_FREG_FREG_REAL},
 	{ "divii32", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "divir", SUBTILIS_OP_CLASS_FREG_FREG_REAL},
+	{ "loadoi8", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "loadoi32", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "loador", SUBTILIS_OP_CLASS_FREG_REG_I32},
 	{ "loadi32", SUBTILIS_OP_CLASS_REG_REG},
 	{ "loadr", SUBTILIS_OP_CLASS_REG_REG},
+	{ "storeoi8", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "storeoi32", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "storeor", SUBTILIS_OP_CLASS_FREG_REG_I32},
 	{ "storei32", SUBTILIS_OP_CLASS_REG_REG},
@@ -87,6 +89,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "movfp", SUBTILIS_OP_CLASS_FREG_FREG},
 	{ "printi32", SUBTILIS_OP_CLASS_REG},
 	{ "printfp", SUBTILIS_OP_CLASS_FREG},
+	{ "printstr", SUBTILIS_OP_CLASS_REG_REG },
 	{ "printnl", SUBTILIS_OP_CLASS_NONE},
 	{ "rsubii32", SUBTILIS_OP_CLASS_REG_REG_I32 },
 	{ "rsubir", SUBTILIS_OP_CLASS_FREG_FREG_REAL },
@@ -173,9 +176,13 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "realloc", SUBTILIS_OP_CLASS_REG_REG_REG },
 	{ "ref", SUBTILIS_OP_CLASS_REG },
 	{ "deref", SUBTILIS_OP_CLASS_REG },
+	{ "getref", SUBTILIS_OP_CLASS_REG_REG },
 	{ "pushi32", SUBTILIS_OP_CLASS_REG },
 	{ "popi32", SUBTILIS_OP_CLASS_REG },
 	{ "lca", SUBTILIS_OP_CLASS_REG_I32 },
+	{ "at", SUBTILIS_OP_CLASS_REG_REG },
+	{ "pos", SUBTILIS_OP_CLASS_REG },
+	{ "vpos", SUBTILIS_OP_CLASS_REG },
 };
 
 /*
@@ -296,6 +303,7 @@ static subtilis_ir_section_t *prv_ir_section_new(subtilis_error_t *err)
 	s->cleanup_stack = SIZE_MAX;
 	s->cleanup_stack_nop = SIZE_MAX;
 	s->cleanup_stack_reg = SIZE_MAX;
+	s->destructor_needed = false;
 
 	return s;
 }
@@ -581,8 +589,8 @@ size_t subtilis_ir_section_promote_nop(subtilis_ir_section_t *s, size_t nop,
 	return instr->operands[0].reg;
 }
 
-subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err,
-					 bool handle_escapes)
+subtilis_ir_prog_t *subtilis_ir_prog_new(const subtilis_settings_t *settings,
+					 subtilis_error_t *err)
 {
 	subtilis_ir_prog_t *p;
 
@@ -600,7 +608,7 @@ subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	p->handle_escapes = handle_escapes;
+	p->settings = settings;
 
 	return p;
 
@@ -679,6 +687,8 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	case SUBTILIS_TYPE_INTEGER:
 	case SUBTILIS_TYPE_ARRAY_REAL:
 	case SUBTILIS_TYPE_ARRAY_INTEGER:
+	case SUBTILIS_TYPE_ARRAY_STRING:
+	case SUBTILIS_TYPE_STRING:
 		s->ret_reg = s->reg_counter++;
 		break;
 	default:

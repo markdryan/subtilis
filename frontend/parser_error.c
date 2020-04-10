@@ -23,6 +23,7 @@
 #include "parser_call.h"
 #include "parser_error.h"
 #include "parser_exp.h"
+#include "reference_type.h"
 #include "type_if.h"
 #include "variable.h"
 
@@ -49,7 +50,7 @@ void subtilis_parser_handle_escape(subtilis_parser_t *p, subtilis_error_t *err)
 {
 	/* Let's not test for escape in an error handler. */
 
-	if (!p->handle_escapes || p->current->in_error_handler)
+	if (!p->settings.handle_escapes || p->current->in_error_handler)
 		return;
 
 	subtilis_ir_section_add_instr_no_arg(p->current,
@@ -114,8 +115,8 @@ void subtilis_parser_onerror(subtilis_parser_t *p, subtilis_token_t *t,
 						    start);
 
 	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
-	subtilis_parser_deallocate_arrays(p, var_reg, p->local_st, p->level,
-					  err);
+	subtilis_reference_deallocate_refs(p, var_reg, p->local_st, p->level,
+					   err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

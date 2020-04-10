@@ -23,6 +23,7 @@
 #include "builtins.h"
 #include "constant_pool.h"
 #include "error.h"
+#include "settings.h"
 #include "string_pool.h"
 #include "type.h"
 
@@ -253,6 +254,18 @@ typedef enum {
 	SUBTILIS_OP_INSTR_DIVI_REAL,
 
 	/*
+	 * loadoi8 r0, r1, #off
+	 *
+	 * Loads an 8 bit integer from a memory location formed by
+	 * the sum of the contents of a register and a constant into another
+	 * register.
+	 *
+	 * r0 = [r1 + #off]
+	 */
+
+	SUBTILIS_OP_INSTR_LOADO_I8,
+
+	/*
 	 * loadoi32 r0, r1, #off
 	 *
 	 * Loads a 32 bit integer from a memory location formed by
@@ -297,6 +310,17 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_LOAD_REAL,
+
+	/*
+	 * storeoi8 r0, r1, #off
+	 *
+	 * Stores the least significant byte of register a into the
+	 * memory location defined by the sum of a register and a constant.
+	 *
+	 * [r1 + #off] = r0 & 0xff
+	 */
+
+	SUBTILIS_OP_INSTR_STOREO_I8,
 
 	/*
 	 * storeoi32 r0, r1, #off
@@ -398,6 +422,14 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_PRINT_FP,
+
+	/*
+	 * printstr r0, r1
+	 *
+	 * Prints r1 bytes from the string pointed to by r0.
+	 */
+
+	SUBTILIS_OP_INSTR_PRINT_STR,
 
 	/*
 	 * printnl
@@ -969,7 +1001,8 @@ typedef enum {
 	 * Changes the screen mode to that of the number contained in the
 	 * specified register.  If an error occurs the error flag is set
 	 * and an error is written into the error offset for the current
-	 * section.
+	 * section.  Note errors are ignored unless handle_graphics_errors
+	 * is set to false.
 	 *
 	 */
 
@@ -980,7 +1013,8 @@ typedef enum {
 	 *
 	 * Platform specific drawing routine.  If an error occurs the error
 	 * flag is set and an error is written into the error offset for
-	 * the current section.
+	 * the current section.  Note errors are ignored unless
+	 * handle_graphics_errors is set to false.
 	 *
 	 */
 
@@ -991,7 +1025,8 @@ typedef enum {
 	 *
 	 * Change the colour used for graphics operations.  If an error occurs
 	 * the error flag is set and an error is written into the error offset
-	 * for the current section.
+	 * for the current section.  Note errors are ignored unless
+	 * handle_graphics_errors is set to false.
 	 *
 	 */
 
@@ -1002,7 +1037,8 @@ typedef enum {
 	 *
 	 * Sets the graphics origin.  If an error occurs the error flag is set
 	 * and an error is written into the error offset for the current
-	 * section.
+	 * section.  Note errors are ignored unless handle_graphics_errors
+	 * is set to false.
 	 *
 	 */
 
@@ -1024,7 +1060,8 @@ typedef enum {
 	 *
 	 * Clears the text viewport.  If an error occurs the error flag is set
 	 * and an error is written into the error offset for the current
-	 * section.
+	 * section.  Note errors are ignored unless prv_handle_graphics_error
+	 * is set to false.
 	 *
 	 */
 
@@ -1035,7 +1072,8 @@ typedef enum {
 	 *
 	 * Clears the graphics viewport. If an error occurs the error flag
 	 * is set and an error is written into the error offset for these
-	 * current section.
+	 * current section.  Note errors are ignored unless
+	 * handle_graphics_errors is set to false.
 	 *
 	 */
 
@@ -1046,7 +1084,8 @@ typedef enum {
 	 *
 	 * Turns on the text cursor.  If an error occurs the error flag is set
 	 * and an error is written into the error offset for the current
-	 * section.
+	 * section.  Note errors are ignored unless handle_graphics_errors is
+	 * set to false.
 	 *
 	 */
 
@@ -1057,7 +1096,8 @@ typedef enum {
 	 *
 	 * Turns off the text cursor.  If an error occurs the error flag is set
 	 * and an error is written into the error offset for the current
-	 * section.
+	 * section.  Note errors are ignored unless handle_graphics_errors is
+	 * set to false.
 	 *
 	 */
 
@@ -1068,7 +1108,8 @@ typedef enum {
 	 *
 	 * Wait for end of current display frame.  If an error occurs the error
 	 * flag is set and an error is written into the error offset for these
-	 * current section.
+	 * current section.  Note errors are ignored unless
+	 * handle_graphics_errors is set to false.
 	 *
 	 */
 
@@ -1241,6 +1282,8 @@ typedef enum {
 	 * Sends the lowest 8 bits of the integer stored in r0 to the
 	 * output stream.  If an error occurs the error flag is set and
 	 * an error is written into the error offset for the current section.
+	 * Note errors are ignored unless handle_graphics_errors is set
+	 * to false.
 	 */
 
 	SUBTILIS_OP_INSTR_VDU,
@@ -1251,7 +1294,8 @@ typedef enum {
 	 *
 	 * Stores the pixel colour at location r1, r2 in r0.  If an error occurs
 	 * the error flag is set and an error is written into the error offsets
-	 * for the current section.
+	 * for the current section.  Note errors are ignored unless
+	 * handle_graphics_errors is set to false.
 	 */
 
 	SUBTILIS_OP_INSTR_POINT,
@@ -1262,7 +1306,8 @@ typedef enum {
 	 *
 	 * Stores the tint at location r1, r2 in r0.  If an error occurs
 	 * the error flag is set and an error is written into the error offsets
-	 * for the current section.
+	 * for the current section. Note errors are ignored unless
+	 * handle_graphics_errors is set to false.
 	 */
 
 	SUBTILIS_OP_INSTR_TINT,
@@ -1348,6 +1393,15 @@ typedef enum {
 
 	/*
 	 *
+	 * getref r0, r1
+	 *
+	 * Stores the reference count of the object pointed to by r1 in r0.
+	 */
+
+	SUBTILIS_OP_INSTR_GETREF,
+
+	/*
+	 *
 	 * push r0
 	 *
 	 * Pushes the 32 bit value in r0 onto the stack.
@@ -1374,6 +1428,42 @@ typedef enum {
 
 	SUBTILIS_OP_INSTR_LCA,
 
+	/*
+	 *
+	 * at r0, r1
+	 *
+	 * Moves the text cursor to the x and y coordinates specified by r0 and
+	 * r1 which represent the x and y coordinates respectively.  If an error
+	 * occurs the error flag is set and an error is written into the error
+	 * offsets for the current section.  Note errors are ignored unless
+	 * handle_graphics_errors is set to false.
+	 */
+
+	SUBTILIS_OP_INSTR_AT,
+
+	/*
+	 *
+	 * pos r0
+	 *
+	 * Writes the x coordinate of the text cursor to r0.  If an error
+	 * occurs the error flag is set and an error is written into the error
+	 * offsets for the current section.  Note errors are ignored unless
+	 * handle_graphics_errors is set to false.
+	 */
+
+	SUBTILIS_OP_INSTR_POS,
+
+	/*
+	 *
+	 * vpos r0
+	 *
+	 * Writes the y coordinate of the text cursor to r0.  If an error
+	 * occurs the error flag is set and an error is written into the error
+	 * offsets for the current section.  Note errors are ignored unless
+	 * handle_graphics_errors is set to false.
+	 */
+
+	SUBTILIS_OP_INSTR_VPOS,
 } subtilis_op_instr_type_t;
 
 typedef enum {
@@ -1484,6 +1574,7 @@ struct subtilis_ir_section_t_ {
 	size_t cleanup_stack;
 	size_t cleanup_stack_nop;
 	size_t cleanup_stack_reg;
+	bool destructor_needed;
 };
 
 typedef struct subtilis_ir_section_t_ subtilis_ir_section_t;
@@ -1493,7 +1584,7 @@ struct subtilis_ir_prog_t_ {
 	size_t num_sections;
 	size_t max_sections;
 	subtilis_string_pool_t *string_pool;
-	bool handle_escapes;
+	const subtilis_settings_t *settings;
 	subtilis_constant_pool_t *constant_pool;
 };
 
@@ -1559,8 +1650,8 @@ subtilis_handler_list_t *
 subtilis_handler_list_update(subtilis_handler_list_t *list, size_t level,
 			     size_t label, subtilis_error_t *err);
 
-subtilis_ir_prog_t *subtilis_ir_prog_new(subtilis_error_t *err,
-					 bool handle_escapes);
+subtilis_ir_prog_t *subtilis_ir_prog_new(const subtilis_settings_t *settings,
+					 subtilis_error_t *err);
 /* clang-format off */
 subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	subtilis_ir_prog_t *p, const char *name, size_t locals,
