@@ -36,8 +36,8 @@ const subtilis_type_t subtilis_type_local_buffer = {SUBTILIS_TYPE_LOCAL_BUFFER};
 
 /* clang-format off */
 static const char *const prv_fixed_type_names[] = {
-	"const integer", /* SUBTILIS_TYPE_CONST_INTEGER */
 	"const real",    /* SUBTILIS_TYPE_CONST_REAL */
+	"const integer", /* SUBTILIS_TYPE_CONST_INTEGER */
 	"const string",    /* SUBTILIS_TYPE_CONST_STRING */
 	"real",    /* SUBTILIS_TYPE_REAL */
 	"integer", /* SUBTILIS_TYPE_INTEGER */

@@ -100,11 +100,11 @@ static void prv_walk_instr(subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 	case SUBTILIS_FPA_INSTR_FML:
 	case SUBTILIS_FPA_INSTR_FDV:
 	case SUBTILIS_FPA_INSTR_FRD:
+	case SUBTILIS_FPA_INSTR_RPW:
+	case SUBTILIS_FPA_INSTR_POW:
 		walker->fpa_data_dyadic_fn(walker->user_data, op, instr->type,
 					   &instr->operands.fpa_data, err);
 		break;
-	case SUBTILIS_FPA_INSTR_RPW:
-	case SUBTILIS_FPA_INSTR_POW:
 	case SUBTILIS_FPA_INSTR_POL:
 	case SUBTILIS_FPA_INSTR_ABS:
 	case SUBTILIS_FPA_INSTR_RND:

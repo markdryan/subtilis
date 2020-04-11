@@ -67,6 +67,7 @@ subtilis_type_if subtilis_type_if_local_buffer = {
 	.lte = NULL,
 	.lt = NULL,
 	.gte = NULL,
+	.pow = NULL,
 	.lsl = NULL,
 	.lsr = NULL,
 	.asr = NULL,

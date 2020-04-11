@@ -519,6 +519,45 @@ static subtilis_exp_t *prv_gte_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 	return a1;
 }
 
+static subtilis_exp_t *prv_pow_const(subtilis_parser_t *p, subtilis_exp_t *a1,
+				     subtilis_exp_t *a2, bool swapped,
+				     subtilis_error_t *err)
+{
+	/* a2 must be const */
+
+	switch (a2->type.type) {
+	case SUBTILIS_TYPE_CONST_INTEGER:
+		if (a2->exp.ir_op.integer == 0) {
+			a1->exp.ir_op.integer = 1;
+			a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
+			break;
+		} else if (a2->exp.ir_op.integer == 1) {
+			break;
+		}
+		a2->exp.ir_op.real = (double)a2->exp.ir_op.integer;
+	case SUBTILIS_TYPE_CONST_REAL:
+		if (a2->exp.ir_op.real == 0.0) {
+			a1->exp.ir_op.integer = 1;
+			a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
+			break;
+		} else if (a2->exp.ir_op.real == 1) {
+			break;
+		}
+		a1->exp.ir_op.real =
+		    pow(a1->exp.ir_op.real, a2->exp.ir_op.real);
+		break;
+	default:
+		subtilis_exp_delete(a1);
+		subtilis_exp_delete(a2);
+		subtilis_error_set_bad_expression(err, p->l->stream->name,
+						  p->l->line);
+		return NULL;
+	}
+
+	subtilis_exp_delete(a2);
+	return a1;
+}
+
 static subtilis_exp_t *prv_abs_const(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err)
 {
@@ -588,6 +627,7 @@ subtilis_type_if subtilis_type_const_float64 = {
 	.lte = prv_lte_const,
 	.lt = prv_lt_const,
 	.gte = prv_gte_const,
+	.pow = prv_pow_const,
 	.lsl = NULL,
 	.lsr = NULL,
 	.asr = NULL,
@@ -1022,6 +1062,69 @@ static subtilis_exp_t *prv_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       SUBTILIS_OP_INSTR_GTE_REAL, err);
 }
 
+static subtilis_exp_t *prv_pow(subtilis_parser_t *p, subtilis_exp_t *a1,
+			       subtilis_exp_t *a2, bool swapped,
+			       subtilis_error_t *err)
+{
+	subtilis_exp_t *tmp;
+
+	if (!swapped) {
+		if (((a2->type.type == SUBTILIS_TYPE_CONST_INTEGER) &&
+		     (a2->exp.ir_op.integer == 0)) ||
+		    (((a2->type.type == SUBTILIS_TYPE_CONST_REAL) &&
+		      (a2->exp.ir_op.real == 0.0)))) {
+			a1->exp.ir_op.integer = 1;
+			a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
+			subtilis_exp_delete(a2);
+			return a1;
+		} else if (((a2->type.type == SUBTILIS_TYPE_CONST_INTEGER) &&
+			    (a2->exp.ir_op.integer == 1)) ||
+			   (((a2->type.type == SUBTILIS_TYPE_CONST_REAL) &&
+			     (a2->exp.ir_op.real == 1.0)))) {
+			subtilis_exp_delete(a2);
+			return a1;
+		}
+	}
+
+	a2 = subtilis_type_if_exp_to_var(p, a2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	switch (a2->type.type) {
+	case SUBTILIS_TYPE_INTEGER:
+		a2 = subtilis_type_if_to_float64(p, a2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+		break;
+	case SUBTILIS_TYPE_REAL:
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		goto on_error;
+	}
+
+	if (swapped) {
+		tmp = a1;
+		a1 = a2;
+		a2 = tmp;
+	}
+
+	a1->exp.ir_op.reg =
+	    subtilis_ir_section_add_instr(p->current, SUBTILIS_OP_INSTR_POWR,
+					  a1->exp.ir_op, a2->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	subtilis_exp_delete(a2);
+
+	return a1;
+
+on_error:
+	subtilis_exp_delete(a1);
+	subtilis_exp_delete(a2);
+	return NULL;
+}
+
 static subtilis_exp_t *prv_abs(subtilis_parser_t *p, subtilis_exp_t *e,
 			       subtilis_error_t *err)
 {
@@ -1202,6 +1305,7 @@ subtilis_type_if subtilis_type_float64 = {
 	.lte = prv_lte,
 	.lt = prv_lt,
 	.gte = prv_gte,
+	.pow = prv_pow,
 	.lsl = NULL,
 	.lsr = NULL,
 	.asr = NULL,

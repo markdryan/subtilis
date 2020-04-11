@@ -1817,6 +1817,24 @@ static void prv_process_fpa_rfs(subtilis_arm_vm_t *arm_vm,
 	arm_vm->regs[15] += 4;
 }
 
+static float prv_process_fpa_pow_real32(float a, float b)
+{
+	return (float)pow(a, b);
+}
+
+static double prv_process_fpa_pow_real64(double a, double b)
+{
+	return pow(a, b);
+}
+
+static void prv_process_fpa_pow(subtilis_arm_vm_t *arm_vm,
+				subtilis_fpa_data_instr_t *op,
+				subtilis_error_t *err)
+{
+	prv_process_fpa_dyadic(arm_vm, op, prv_process_fpa_pow_real32,
+			       prv_process_fpa_pow_real64, err);
+}
+
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			 subtilis_error_t *err)
 {
@@ -2003,6 +2021,10 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			break;
 		case SUBTILIS_FPA_INSTR_RFS:
 			prv_process_fpa_rfs(arm_vm, &instr.operands.fpa_cptran,
+					    err);
+			break;
+		case SUBTILIS_FPA_INSTR_POW:
+			prv_process_fpa_pow(arm_vm, &instr.operands.fpa_data,
 					    err);
 			break;
 		default:

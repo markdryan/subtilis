@@ -143,6 +143,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_binary_nc_t lte;
 	subtilis_type_if_binary_nc_t lt;
 	subtilis_type_if_binary_nc_t gte;
+	subtilis_type_if_binary_nc_t pow;
 	subtilis_type_if_binary_t lsl;
 	subtilis_type_if_binary_t lsr;
 	subtilis_type_if_binary_t asr;
@@ -504,6 +505,13 @@ subtilis_exp_t *subtilis_type_if_lt(subtilis_parser_t *p, subtilis_exp_t *a1,
  */
 
 subtilis_exp_t *subtilis_type_if_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
+				     subtilis_exp_t *a2, subtilis_error_t *err);
+
+/*
+ * Returns pow(a1, a2)
+ */
+
+subtilis_exp_t *subtilis_type_if_pow(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err);
 
 /*

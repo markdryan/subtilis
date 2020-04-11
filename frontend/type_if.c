@@ -655,6 +655,15 @@ subtilis_exp_t *subtilis_type_if_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 	    p, a1, a2, prv_type_map[a1->type.type]->gte, swapped, err);
 }
 
+subtilis_exp_t *subtilis_type_if_pow(subtilis_parser_t *p, subtilis_exp_t *a1,
+				     subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	bool swapped = prv_order_expressions(&a1, &a2);
+
+	return prv_call_binary_nc_fn(
+	    p, a1, a2, prv_type_map[a1->type.type]->pow, swapped, err);
+}
+
 subtilis_exp_t *subtilis_type_if_lsl(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err)
 

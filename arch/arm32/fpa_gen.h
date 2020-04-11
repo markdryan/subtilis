@@ -131,5 +131,7 @@ void subtilis_fpa_gen_absr(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err);
 void subtilis_fpa_gen_preamble(subtilis_arm_section_t *arm_s,
 			       subtilis_error_t *err);
+void subtilis_fpa_gen_pow(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
 
 #endif
