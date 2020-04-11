@@ -481,6 +481,12 @@ static void prv_parse_tab(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 
 	if (args == 2) {
+		e[0] = subtilis_type_if_exp_to_var(p, e[0], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		e[1] = subtilis_type_if_exp_to_var(p, e[1], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
 		subtilis_ir_section_add_instr_no_reg2(
 		    p->current, SUBTILIS_OP_INSTR_AT, e[0]->exp.ir_op,
 		    e[1]->exp.ir_op, err);
