@@ -2337,7 +2337,37 @@ const subtilis_test_case_t test_cases[] = {
 	 "  NEXT\n"
 	 "NEXT\n",
 	 "2 2\n3 2\n4 2\n3 3\n4 3\n4 4\n",
-	}
+	},
+	{"pow",
+	 "print 10 ^ -1\n"
+	 "print 10 ^ 0\n"
+	 "print 10 ^ 2\n"
+	 "print 10.0 ^ 0\n"
+	 "print 10.0 ^ 2\n"
+	 "print 10.0 ^ 2.0\n"
+	 "print 10 ^ 2.0\n"
+	 "print 10 ^ 1\n"
+	 "print 10 ^ 1.0\n"
+	 "a% := 10\n"
+	 "b% := 0\n"
+	 "print a% ^ b%\n"
+	 "b% = 2\n"
+	 "print a% ^ b%\n"
+	 "b% = -1\n"
+	 "print a% ^ b%\n"
+	 "a% = 16\n"
+	 "b = 0.5\n"
+	 "print a% ^ b\n"
+	 "a = 16.0\n"
+	 "print a ^ b\n"
+	 "b% = 2\n"
+	 "print a ^ b%\n"
+	 "print a ^ 0.0\n"
+	 "print a ^ 0\n"
+	 "print a ^ 1\n"
+	 "print a% ^ 1\n",
+	 "0.1\n1\n100\n1\n100\n100\n100\n10\n10\n1\n100\n0.1\n4\n4\n256\n1\n1\n16\n16\n",
+	},
 };
 
 /* clang-format on */

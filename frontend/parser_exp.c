@@ -283,7 +283,39 @@ cleanup:
 static subtilis_exp_t *prv_priority2(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
-	return prv_priority1(p, t, err);
+	const char *tbuf;
+	subtilis_exp_t *e1 = NULL;
+	subtilis_exp_t *e2 = NULL;
+
+	e1 = prv_priority1(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	while (t->type == SUBTILIS_TOKEN_OPERATOR) {
+		tbuf = subtilis_token_get_text(t);
+		if (strcmp(tbuf, "^"))
+			break;
+
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		e2 = prv_priority1(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		e1 = subtilis_type_if_pow(p, e1, e2, err);
+		e2 = NULL;
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	return e1;
+
+cleanup:
+
+	subtilis_exp_delete(e2);
+	subtilis_exp_delete(e1);
+	return NULL;
 }
 
 static subtilis_exp_t *prv_priority3(subtilis_parser_t *p, subtilis_token_t *t,

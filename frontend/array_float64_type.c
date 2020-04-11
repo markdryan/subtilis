@@ -207,6 +207,15 @@ static subtilis_exp_t *prv_mod(subtilis_parser_t *p, subtilis_exp_t *a1,
 	return NULL;
 }
 
+static subtilis_exp_t *prv_pow(subtilis_parser_t *p, subtilis_exp_t *a1,
+			       subtilis_exp_t *a2, bool swapped,
+			       subtilis_error_t *err)
+{
+	subtilis_error_set_not_supported(err, "pow on arrays",
+					 p->l->stream->name, p->l->line);
+	return NULL;
+}
+
 static subtilis_exp_t *prv_lsl(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, subtilis_error_t *err)
 {
@@ -305,6 +314,7 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.lte = NULL,
 	.lt = NULL,
 	.gte = NULL,
+	.pow = prv_pow,
 	.lsl = prv_lsl,
 	.lsr = prv_lsr,
 	.asr = prv_asr,
