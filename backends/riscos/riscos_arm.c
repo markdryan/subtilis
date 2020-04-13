@@ -410,6 +410,9 @@ static void prv_add_builtin(subtilis_ir_section_t *s,
 	case SUBTILIS_BUILTINS_MEMCPY:
 		subtilis_arm_mem_memcpy(s, arm_s, err);
 		break;
+	case SUBTILIS_BUILTINS_MEMCMP:
+		subtilis_arm_mem_memcmp(s, arm_s, err);
+		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
 	}

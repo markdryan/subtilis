@@ -524,3 +524,72 @@ cleanup:
 
 	subtilis_exp_delete(e);
 }
+
+subtilis_exp_t *subtilis_string_type_eq(subtilis_parser_t *p, size_t a_reg,
+					size_t b_reg, size_t len,
+					subtilis_error_t *err)
+{
+	subtilis_ir_arg_t *args;
+	char *name = NULL;
+	static const char memcpy[] = "_memcmp";
+
+	name = malloc(sizeof(memcpy));
+	if (!name) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+	strcpy(name, memcpy);
+
+	args = malloc(sizeof(*args) * 3);
+	if (!args) {
+		free(name);
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+
+	args[0].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[0].reg = a_reg;
+	args[1].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[1].reg = b_reg;
+	args[2].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[2].reg = len;
+
+	return subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_MEMCMP, NULL,
+				     args, &subtilis_type_integer, 3, err);
+}
+
+subtilis_exp_t *subtilis_string_type_compare(subtilis_parser_t *p, size_t a_reg,
+					     size_t a_len_reg, size_t b_reg,
+					     size_t b_len_reg,
+					     subtilis_error_t *err)
+{
+	subtilis_ir_arg_t *args;
+	char *name = NULL;
+	static const char memcpy[] = "_compare";
+
+	name = malloc(sizeof(memcpy));
+	if (!name) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+	strcpy(name, memcpy);
+
+	args = malloc(sizeof(*args) * 4);
+	if (!args) {
+		free(name);
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+
+	args[0].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[0].reg = a_reg;
+	args[1].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[1].reg = a_len_reg;
+	args[2].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[2].reg = b_reg;
+	args[3].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[3].reg = b_len_reg;
+
+	return subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_COMPARE, NULL,
+				     args, &subtilis_type_integer, 4, err);
+}

@@ -825,11 +825,24 @@ typedef enum {
 	 * JMPC r0, label1, label2
 	 *
 	 * Jumps to label1 if the value of r0 is non zero and jumps to label2
-	 * otherwise.
+	 * otherwise.  This instruction made be fused with a preceding
+	 * instruction by the backend, effectively discarding the value in r0.
+	 * If the value is signficant, use SUBTILIS_OP_INSTR_JMPC_NF.
 	 *
 	 */
 
 	SUBTILIS_OP_INSTR_JMPC,
+
+	/*
+	 * JMPC r0, label1, label2
+	 *
+	 * Jumps to label1 if the value of r0 is non zero and jumps to label2
+	 * otherwise.  This instruction must never be fused by the backends with
+	 * a preeeding comparison instruction.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_JMPC_NF,
 
 	/*
 	 * JMPC label1

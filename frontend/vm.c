@@ -721,6 +721,30 @@ static void prv_memcpy(subitlis_vm_t *vm, subtilis_ir_call_t *call,
 	       vm->regs[call->args[2].reg]);
 }
 
+static void prv_memcmp(subitlis_vm_t *vm, subtilis_ir_call_t *call,
+		       subtilis_error_t *err)
+{
+	const char *a = (const char *)&vm->memory[vm->regs[call->args[0].reg]];
+	const char *b = (const char *)&vm->memory[vm->regs[call->args[1].reg]];
+	size_t len = vm->regs[call->args[2].reg];
+
+	vm->regs[call->reg] = memcmp(a, b, len) == 0 ? -1 : 0;
+}
+
+static void prv_compare(subitlis_vm_t *vm, subtilis_ir_call_t *call,
+			subtilis_error_t *err)
+{
+	const char *a = (const char *)&vm->memory[vm->regs[call->args[0].reg]];
+	size_t a_len = vm->regs[call->args[1].reg];
+	const char *b = (const char *)&vm->memory[vm->regs[call->args[2].reg]];
+	size_t b_len = vm->regs[call->args[3].reg];
+
+	if (b_len < a_len)
+		a_len = b_len;
+
+	vm->regs[call->reg] = strncmp(a, b, a_len);
+}
+
 static void prv_handle_builtin(subitlis_vm_t *vm, subtilis_builtin_type_t ftype,
 			       subtilis_ir_call_t *call, subtilis_error_t *err)
 {
@@ -729,6 +753,10 @@ static void prv_handle_builtin(subitlis_vm_t *vm, subtilis_builtin_type_t ftype,
 		return prv_memset(vm, call, err);
 	case SUBTILIS_BUILTINS_MEMCPY:
 		return prv_memcpy(vm, call, err);
+	case SUBTILIS_BUILTINS_MEMCMP:
+		return prv_memcmp(vm, call, err);
+	case SUBTILIS_BUILTINS_COMPARE:
+		return prv_compare(vm, call, err);
 	default:
 		subtilis_error_set_assertion_failed(err);
 	}
@@ -1380,6 +1408,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_gteii32,                         /* SUBTILIS_OP_INSTR_GTEI_I32 */
 	prv_gteir,                           /* SUBTILIS_OP_INSTR_GTEI_REAL */
 	prv_jmpc,                            /* SUBTILIS_OP_INSTR_JMPC */
+	prv_jmpc,                            /* SUBTILIS_OP_INSTR_JMPC_NF */
 	prv_jmp,                             /* SUBTILIS_OP_INSTR_JMP */
 	prv_ret,                             /* SUBTILIS_OP_INSTR_RET */
 	prv_reti32,                          /* SUBTILIS_OP_INSTR_RET_I32 */
