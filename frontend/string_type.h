@@ -61,5 +61,11 @@ void subtilis_string_type_print(subtilis_parser_t *p, subtilis_exp_t *e,
 				subtilis_error_t *err);
 void subtilis_string_type_print_const(subtilis_parser_t *p, subtilis_exp_t *e,
 				      subtilis_error_t *err);
-
+subtilis_exp_t *subtilis_string_type_eq(subtilis_parser_t *p, size_t a_reg,
+					size_t b_reg, size_t len,
+					subtilis_error_t *err);
+subtilis_exp_t *subtilis_string_type_compare(subtilis_parser_t *p, size_t a_reg,
+					     size_t a_len_reg, size_t b_reg,
+					     size_t b_len_reg,
+					     subtilis_error_t *err);
 #endif

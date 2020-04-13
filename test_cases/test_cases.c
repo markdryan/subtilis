@@ -2368,6 +2368,64 @@ const subtilis_test_case_t test_cases[] = {
 	 "print a% ^ 1\n",
 	 "0.1\n1\n100\n1\n100\n100\n100\n10\n10\n1\n100\n0.1\n4\n4\n256\n1\n1\n16\n16\n",
 	},
+	{"str_eq",
+	 "PRINT \"hello\" = \"hello\""
+	 "PRINT \"world\" = \"hello\""
+	 "PRINT \"world\" = \"a\""
+	 "a$ = \"hello\""
+	 "PRINT a$ = \"hello\""
+	 "PRINT a$ = \"world\""
+	 "PRINT a$ = \"a\""
+	 "PRINT \"hello\" = a$"
+	 "PRINT \"world\" = a$"
+	 "PRINT \"a\" = a$"
+	 "b$ = \"world\""
+	 "c$ = \"hello\""
+	 "d$ = \"a\""
+	 "PRINT a$ = a$"
+	 "PRINT a$ = b$"
+	 "PRINT a$ = c$"
+	 "PRINT a$ = d$"
+	 "long1$ =\"abcdefghijklmnopqrstuvwxyz\""
+	 "long2$ =\"abcdefghijklmnopqrstuvwxyz\""
+	 "long3$ =\"aacdefghijklmnopqrstuvwxyz\""
+	 "long4$ =\"abcdefghijklmnopprstuvwxyz\""
+	 "long5$ =\"abcdefghijklmnopprstuvwxyy\""
+	 "PRINT long1$ = long2$"
+	 "PRINT long1$ = long3$"
+	 "PRINT long1$ = long4$"
+	 "PRINT long1$ = long5$",
+	 "-1\n0\n0\n-1\n0\n0\n-1\n0\n0\n-1\n0\n-1\n0\n-1\n0\n0\n0\n",
+	},
+	{"str_neq",
+	 "PRINT \"hello\" <> \"hello\""
+	 "PRINT \"world\" <> \"hello\""
+	 "PRINT \"world\" <> \"a\""
+	 "a$ = \"hello\""
+	 "PRINT a$ <> \"hello\""
+	 "PRINT a$ <> \"world\""
+	 "PRINT a$ <> \"a\""
+	 "PRINT \"hello\" <> a$"
+	 "PRINT \"world\" <> a$"
+	 "PRINT \"a\" <> a$"
+	 "b$ = \"world\""
+	 "c$ = \"hello\""
+	 "d$ = \"a\""
+	 "PRINT a$ <> a$"
+	 "PRINT a$ <> b$"
+	 "PRINT a$ <> c$"
+	 "PRINT a$ <> d$"
+	 "long1$ =\"abcdefghijklmnopqrstuvwxyz\""
+	 "long2$ =\"abcdefghijklmnopqrstuvwxyz\""
+	 "long3$ =\"aacdefghijklmnopqrstuvwxyz\""
+	 "long4$ =\"abcdefghijklmnopprstuvwxyz\""
+	 "long5$ =\"abcdefghijklmnopprstuvwxyy\""
+	 "PRINT long1$ <> long2$"
+	 "PRINT long1$ <> long3$"
+	 "PRINT long1$ <> long4$"
+	 "PRINT long1$ <> long5$",
+	 "0\n-1\n-1\n0\n-1\n-1\n0\n-1\n-1\n0\n-1\n0\n-1\n0\n-1\n-1\n-1\n",
+	}
 };
 
 /* clang-format on */

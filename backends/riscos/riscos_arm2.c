@@ -125,6 +125,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	 "label_1\n",
 	 subtilis_arm_gen_jmpc_rev},
 	{"jmpc *, *, *\n", subtilis_arm_gen_jmpc_no_label},
+	{"jmpcnf *, *, *\n", subtilis_arm_gen_jmpc_no_label},
 	{"call\n", subtilis_arm_gen_call},
 	{"calli32\n", subtilis_arm_gen_calli32},
 	{"callr\n", subtilis_fpa_gen_callr},

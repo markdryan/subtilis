@@ -126,6 +126,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "gteii32", SUBTILIS_OP_CLASS_REG_REG_I32},
 	{ "gteir", SUBTILIS_OP_CLASS_REG_FREG_REAL},
 	{ "jmpc", SUBTILIS_OP_CLASS_REG_LABEL_LABEL},
+	{ "jmpcnf", SUBTILIS_OP_CLASS_REG_LABEL_LABEL},
 	{ "jmp", SUBTILIS_OP_CLASS_LABEL},
 	{ "ret", SUBTILIS_OP_CLASS_NONE},
 	{ "reti32", SUBTILIS_OP_CLASS_REG},
