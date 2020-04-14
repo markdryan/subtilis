@@ -285,6 +285,35 @@ static void prv_dup(subtilis_exp_t *e1, subtilis_exp_t *e2,
 	e2->exp.ir_op = e1->exp.ir_op;
 }
 
+static subtilis_exp_t *prv_compare_fixed_len(subtilis_parser_t *p, size_t a1,
+					     size_t a2,
+					     subtilis_op_instr_type_t iload,
+					     subtilis_op_instr_type_t icmp,
+					     subtilis_error_t *err)
+{
+	subtilis_ir_operand_t a1_ptr;
+	subtilis_ir_operand_t a2_ptr;
+	subtilis_ir_operand_t offset;
+	subtilis_ir_operand_t op0;
+
+	offset.integer = 0;
+	op0.reg = a1;
+	a1_ptr.reg =
+	    subtilis_ir_section_add_instr(p->current, iload, op0, offset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	op0.reg = a2;
+	a2_ptr.reg =
+	    subtilis_ir_section_add_instr(p->current, iload, op0, offset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	a1 = subtilis_ir_section_add_instr(p->current, icmp, a1_ptr, a2_ptr,
+					   err);
+	return subtilis_exp_new_var(&subtilis_type_integer, a1, err);
+}
+
 static subtilis_exp_t *prv_eq_non_const_const(subtilis_parser_t *p,
 					      subtilis_exp_t *a1,
 					      subtilis_exp_t *a2,
@@ -295,6 +324,7 @@ static subtilis_exp_t *prv_eq_non_const_const(subtilis_parser_t *p,
 	subtilis_ir_operand_t len_neq;
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op2;
+	size_t a2_len;
 	size_t a1_ptr;
 	size_t dest_reg = p->current->reg_counter++;
 	subtilis_exp_t *len1 = NULL;
@@ -310,7 +340,8 @@ static subtilis_exp_t *prv_eq_non_const_const(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 	op0.reg = dest_reg;
-	op2.integer = subtilis_buffer_get_size(&a2->exp.str) - 1;
+	a2_len = subtilis_buffer_get_size(&a2->exp.str) - 1;
+	op2.integer = (int32_t)a2_len;
 	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_EQI_I32,
 					  op0, len1->exp.ir_op, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -332,8 +363,17 @@ static subtilis_exp_t *prv_eq_non_const_const(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	eq = subtilis_string_type_eq(p, a1_ptr, const_ptr, len1->exp.ir_op.reg,
-				     err);
+	if (a2_len == 1)
+		eq = prv_compare_fixed_len(p, a1_ptr, const_ptr,
+					   SUBTILIS_OP_INSTR_LOADO_I8,
+					   SUBTILIS_OP_INSTR_EQI_I32, err);
+	else if (a2_len == 4)
+		eq = prv_compare_fixed_len(p, a1_ptr, const_ptr,
+					   SUBTILIS_OP_INSTR_LOADO_I32,
+					   SUBTILIS_OP_INSTR_EQI_I32, err);
+	else
+		eq = subtilis_string_type_eq(p, a1_ptr, const_ptr,
+					     len1->exp.ir_op.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -500,6 +540,7 @@ static subtilis_exp_t *prv_neq_non_const_const(subtilis_parser_t *p,
 	subtilis_ir_operand_t len_neq;
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op2;
+	size_t a2_len;
 	size_t a1_ptr;
 	size_t dest_reg = p->current->reg_counter++;
 	subtilis_exp_t *len1 = NULL;
@@ -515,6 +556,7 @@ static subtilis_exp_t *prv_neq_non_const_const(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 	op0.reg = dest_reg;
+	a2_len = subtilis_buffer_get_size(&a2->exp.str) - 1;
 	op2.integer = subtilis_buffer_get_size(&a2->exp.str) - 1;
 	subtilis_ir_section_add_instr_reg(p->current,
 					  SUBTILIS_OP_INSTR_NEQI_I32, op0,
@@ -538,8 +580,17 @@ static subtilis_exp_t *prv_neq_non_const_const(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	eq = subtilis_string_type_eq(p, a1_ptr, const_ptr, len1->exp.ir_op.reg,
-				     err);
+	if (a2_len == 1)
+		eq = prv_compare_fixed_len(p, a1_ptr, const_ptr,
+					   SUBTILIS_OP_INSTR_LOADO_I8,
+					   SUBTILIS_OP_INSTR_EQI_I32, err);
+	else if (a2_len == 4)
+		eq = prv_compare_fixed_len(p, a1_ptr, const_ptr,
+					   SUBTILIS_OP_INSTR_LOADO_I32,
+					   SUBTILIS_OP_INSTR_EQI_I32, err);
+	else
+		eq = subtilis_string_type_eq(p, a1_ptr, const_ptr,
+					     len1->exp.ir_op.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

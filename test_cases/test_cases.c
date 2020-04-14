@@ -2383,6 +2383,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "c$ = \"hello\""
 	 "d$ = \"a\""
 	 "PRINT a$ = a$"
+	 "PRINT a$ = \"hell\""
 	 "PRINT a$ = b$"
 	 "PRINT a$ = c$"
 	 "PRINT a$ = d$"
@@ -2395,7 +2396,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "PRINT long1$ = long3$"
 	 "PRINT long1$ = long4$"
 	 "PRINT long1$ = long5$",
-	 "-1\n0\n0\n-1\n0\n0\n-1\n0\n0\n-1\n0\n-1\n0\n-1\n0\n0\n0\n",
+	 "-1\n0\n0\n-1\n0\n0\n-1\n0\n0\n-1\n0\n0\n-1\n0\n-1\n0\n0\n0\n",
 	},
 	{"str_neq",
 	 "PRINT \"hello\" <> \"hello\""
@@ -2412,6 +2413,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "c$ = \"hello\""
 	 "d$ = \"a\""
 	 "PRINT a$ <> a$"
+	 "PRINT a$ <> \"hell\""
 	 "PRINT a$ <> b$"
 	 "PRINT a$ <> c$"
 	 "PRINT a$ <> d$"
@@ -2424,7 +2426,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "PRINT long1$ <> long3$"
 	 "PRINT long1$ <> long4$"
 	 "PRINT long1$ <> long5$",
-	 "0\n-1\n-1\n0\n-1\n-1\n0\n-1\n-1\n0\n-1\n0\n-1\n0\n-1\n-1\n-1\n",
+	 "0\n-1\n-1\n0\n-1\n-1\n0\n-1\n-1\n0\n-1\n-1\n0\n-1\n0\n-1\n-1\n-1\n",
 	}
 };
 
