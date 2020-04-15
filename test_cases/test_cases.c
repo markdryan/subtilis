@@ -124,8 +124,9 @@ const subtilis_test_case_t test_cases[] = {
 	  "LET c% = 255\n"
 	  "PRINT c% = b%\n"
 	  "LET c% = b% = 254\n"
-	  "PRINT c%\n",
-	  "-1\n-1\n0\n-1\n0\n"},
+	  "PRINT c%\n"
+	  "PRINT COS(0) = 1\n",
+	  "-1\n-1\n0\n-1\n0\n-1\n"},
 	{ "neq",
 	  "LET b% = &ff\n"
 	  "PRINT 10 <> 5 + 5\n"
@@ -134,8 +135,9 @@ const subtilis_test_case_t test_cases[] = {
 	  "LET c% = 255\n"
 	  "PRINT c% <> b%\n"
 	  "LET c% = b% <> 254\n"
-	  "PRINT c%\n",
-	  "0\n0\n-1\n0\n-1\n"},
+	  "PRINT c%\n"
+	  "PRINT COS(0) <> 1\n",
+	  "0\n0\n-1\n0\n-1\n0\n"},
 	{ "gt",
 	  "LET b% = &ff\n"
 	  "PRINT 10 > 5 + 5\n"
