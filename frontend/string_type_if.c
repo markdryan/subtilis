@@ -147,6 +147,126 @@ static subtilis_exp_t *prv_neq_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 	return a1;
 }
 
+static subtilis_exp_t *prv_gt_const(subtilis_parser_t *p, subtilis_exp_t *a1,
+				    subtilis_exp_t *a2, bool swapped,
+				    subtilis_error_t *err)
+{
+	int res;
+
+	/* a2 must be const */
+
+	switch (a2->type.type) {
+	case SUBTILIS_TYPE_CONST_STRING:
+		res = strcmp(subtilis_buffer_get_string(&a1->exp.str),
+			     subtilis_buffer_get_string(&a2->exp.str)) > 0
+			  ? -1
+			  : 0;
+		subtilis_buffer_free(&a1->exp.str);
+		a1->exp.ir_op.integer = res;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
+		break;
+	default:
+		subtilis_exp_delete(a1);
+		subtilis_exp_delete(a2);
+		subtilis_error_set_bad_expression(err, p->l->stream->name,
+						  p->l->line);
+		return NULL;
+	}
+
+	subtilis_exp_delete(a2);
+	return a1;
+}
+
+static subtilis_exp_t *prv_lte_const(subtilis_parser_t *p, subtilis_exp_t *a1,
+				     subtilis_exp_t *a2, bool swapped,
+				     subtilis_error_t *err)
+{
+	int res;
+
+	/* a2 must be const */
+
+	switch (a2->type.type) {
+	case SUBTILIS_TYPE_CONST_STRING:
+		res = strcmp(subtilis_buffer_get_string(&a1->exp.str),
+			     subtilis_buffer_get_string(&a2->exp.str)) <= 0
+			  ? -1
+			  : 0;
+		subtilis_buffer_free(&a1->exp.str);
+		a1->exp.ir_op.integer = res;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
+		break;
+	default:
+		subtilis_exp_delete(a1);
+		subtilis_exp_delete(a2);
+		subtilis_error_set_bad_expression(err, p->l->stream->name,
+						  p->l->line);
+		return NULL;
+	}
+
+	subtilis_exp_delete(a2);
+	return a1;
+}
+
+static subtilis_exp_t *prv_lt_const(subtilis_parser_t *p, subtilis_exp_t *a1,
+				    subtilis_exp_t *a2, bool swapped,
+				    subtilis_error_t *err)
+{
+	int res;
+
+	/* a2 must be const */
+
+	switch (a2->type.type) {
+	case SUBTILIS_TYPE_CONST_STRING:
+		res = strcmp(subtilis_buffer_get_string(&a1->exp.str),
+			     subtilis_buffer_get_string(&a2->exp.str)) < 0
+			  ? -1
+			  : 0;
+		subtilis_buffer_free(&a1->exp.str);
+		a1->exp.ir_op.integer = res;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
+		break;
+	default:
+		subtilis_exp_delete(a1);
+		subtilis_exp_delete(a2);
+		subtilis_error_set_bad_expression(err, p->l->stream->name,
+						  p->l->line);
+		return NULL;
+	}
+
+	subtilis_exp_delete(a2);
+	return a1;
+}
+
+static subtilis_exp_t *prv_gte_const(subtilis_parser_t *p, subtilis_exp_t *a1,
+				     subtilis_exp_t *a2, bool swapped,
+				     subtilis_error_t *err)
+{
+	int res;
+
+	/* a2 must be const */
+
+	switch (a2->type.type) {
+	case SUBTILIS_TYPE_CONST_STRING:
+		res = strcmp(subtilis_buffer_get_string(&a1->exp.str),
+			     subtilis_buffer_get_string(&a2->exp.str)) >= 0
+			  ? -1
+			  : 0;
+		subtilis_buffer_free(&a1->exp.str);
+		a1->exp.ir_op.integer = res;
+		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
+		break;
+	default:
+		subtilis_exp_delete(a1);
+		subtilis_exp_delete(a2);
+		subtilis_error_set_bad_expression(err, p->l->stream->name,
+						  p->l->line);
+		return NULL;
+	}
+
+	subtilis_exp_delete(a2);
+	return a1;
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_if_const_string = {
 	.is_const = true,
@@ -187,10 +307,10 @@ subtilis_type_if subtilis_type_if_const_string = {
 	.sub = NULL,
 	.div = NULL,
 	.mod = NULL,
-	.gt = NULL,
-	.lte = NULL,
-	.lt = NULL,
-	.gte = NULL,
+	.gt = prv_gt_const,
+	.lte = prv_lte_const,
+	.lt = prv_lt_const,
+	.gte = prv_gte_const,
 	.lsl = NULL,
 	.lsr = NULL,
 	.asr = NULL,
@@ -557,7 +677,7 @@ static subtilis_exp_t *prv_neq_non_const_const(subtilis_parser_t *p,
 		goto cleanup;
 	op0.reg = dest_reg;
 	a2_len = subtilis_buffer_get_size(&a2->exp.str) - 1;
-	op2.integer = subtilis_buffer_get_size(&a2->exp.str) - 1;
+	op2.integer = a2_len;
 	subtilis_ir_section_add_instr_reg(p->current,
 					  SUBTILIS_OP_INSTR_NEQI_I32, op0,
 					  len1->exp.ir_op, op2, err);
@@ -747,6 +867,183 @@ static subtilis_exp_t *prv_neq(subtilis_parser_t *p, subtilis_exp_t *a1,
 	return NULL;
 }
 
+static subtilis_exp_t *prv_compare_non_const_const(subtilis_parser_t *p,
+						   subtilis_exp_t *a1,
+						   subtilis_exp_t *a2,
+						   bool swapped,
+						   subtilis_error_t *err)
+{
+	size_t tmp_ptr;
+	size_t a1_ptr;
+	size_t a2_ptr;
+	subtilis_ir_operand_t op2;
+	subtilis_exp_t *tmp;
+	int32_t a2_len;
+	subtilis_exp_t *len1 = NULL;
+	subtilis_exp_t *len2 = NULL;
+	subtilis_exp_t *res = NULL;
+
+	len1 = subtilis_type_if_dup(a1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	len1 = subtilis_string_type_len(p, len1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a2_len = subtilis_buffer_get_size(&a2->exp.str) - 1;
+	len2 = subtilis_exp_new_int32(a2_len, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	len2 = subtilis_type_if_exp_to_var(p, len2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a1_ptr = subtilis_reference_get_data(p, a1->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op2.integer = a2_len;
+	a2_ptr = subtilis_string_type_lca_const(
+	    p, subtilis_buffer_get_string(&a2->exp.str), op2.integer, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (swapped) {
+		tmp_ptr = a1_ptr;
+		a1_ptr = a2_ptr;
+		a2_ptr = tmp_ptr;
+		tmp = len1;
+		len1 = len2;
+		len2 = tmp;
+	}
+
+	res = subtilis_string_type_compare(p, a1_ptr, len1->exp.ir_op.reg,
+					   a2_ptr, len2->exp.ir_op.reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(len2);
+	subtilis_exp_delete(len1);
+	subtilis_exp_delete(a2);
+	subtilis_exp_delete(a1);
+
+	return res;
+}
+
+static subtilis_exp_t *prv_compare_non_const_non_const(subtilis_parser_t *p,
+						       subtilis_exp_t *a1,
+						       subtilis_exp_t *a2,
+						       subtilis_error_t *err)
+{
+	size_t a1_ptr;
+	size_t a2_ptr;
+	subtilis_exp_t *len1 = NULL;
+	subtilis_exp_t *len2 = NULL;
+	subtilis_exp_t *res = NULL;
+
+	len1 = subtilis_type_if_dup(a1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	len1 = subtilis_string_type_len(p, len1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	len2 = subtilis_type_if_dup(a2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	len2 = subtilis_string_type_len(p, len2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a1_ptr = subtilis_reference_get_data(p, a1->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a2_ptr = subtilis_reference_get_data(p, a2->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	res = subtilis_string_type_compare(p, a1_ptr, len1->exp.ir_op.reg,
+					   a2_ptr, len2->exp.ir_op.reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(len2);
+	subtilis_exp_delete(len1);
+	subtilis_exp_delete(a2);
+	subtilis_exp_delete(a1);
+
+	return res;
+}
+
+static subtilis_exp_t *prv_compare(subtilis_parser_t *p, subtilis_exp_t *a1,
+				   subtilis_exp_t *a2, bool swapped,
+				   subtilis_op_instr_type_t itype,
+				   subtilis_error_t *err)
+{
+	subtilis_exp_t *zero;
+	size_t res;
+
+	switch (a2->type.type) {
+	case SUBTILIS_TYPE_CONST_STRING:
+		a1 = prv_compare_non_const_const(p, a1, a2, swapped, err);
+		break;
+	case SUBTILIS_TYPE_STRING:
+		a1 = prv_compare_non_const_non_const(p, a1, a2, err);
+		break;
+	default:
+		subtilis_error_set_bad_expression(err, p->l->stream->name,
+						  p->l->line);
+		subtilis_exp_delete(a1);
+		subtilis_exp_delete(a2);
+		return NULL;
+	}
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	zero = subtilis_exp_new_int32(0, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(a1);
+		return NULL;
+	}
+
+	res = subtilis_ir_section_add_instr(p->current, itype, a1->exp.ir_op,
+					    zero->exp.ir_op, err);
+	subtilis_exp_delete(a1);
+	subtilis_exp_delete(zero);
+
+	return subtilis_exp_new_int32_var(res, err);
+}
+
+static subtilis_exp_t *prv_gt(subtilis_parser_t *p, subtilis_exp_t *a1,
+			      subtilis_exp_t *a2, bool swapped,
+			      subtilis_error_t *err)
+{
+	return prv_compare(p, a1, a2, swapped, SUBTILIS_OP_INSTR_GTI_I32, err);
+}
+
+static subtilis_exp_t *prv_lte(subtilis_parser_t *p, subtilis_exp_t *a1,
+			       subtilis_exp_t *a2, bool swapped,
+			       subtilis_error_t *err)
+{
+	return prv_compare(p, a1, a2, swapped, SUBTILIS_OP_INSTR_LTEI_I32, err);
+}
+
+static subtilis_exp_t *prv_lt(subtilis_parser_t *p, subtilis_exp_t *a1,
+			      subtilis_exp_t *a2, bool swapped,
+			      subtilis_error_t *err)
+{
+	return prv_compare(p, a1, a2, swapped, SUBTILIS_OP_INSTR_LTI_I32, err);
+}
+
+static subtilis_exp_t *prv_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
+			       subtilis_exp_t *a2, bool swapped,
+			       subtilis_error_t *err)
+{
+	return prv_compare(p, a1, a2, swapped, SUBTILIS_OP_INSTR_GTEI_I32, err);
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_if_string = {
 	.is_const = false,
@@ -786,10 +1083,10 @@ subtilis_type_if subtilis_type_if_string = {
 	.sub = NULL,
 	.div = NULL,
 	.mod = NULL,
-	.gt = NULL,
-	.lte = NULL,
-	.lt = NULL,
-	.gte = NULL,
+	.gt = prv_gt,
+	.lte = prv_lte,
+	.lt = prv_lt,
+	.gte = prv_gte,
 	.lsl = NULL,
 	.lsr = NULL,
 	.asr = NULL,

@@ -2429,7 +2429,91 @@ const subtilis_test_case_t test_cases[] = {
 	 "PRINT long1$ <> long4$"
 	 "PRINT long1$ <> long5$",
 	 "0\n-1\n-1\n0\n-1\n-1\n0\n-1\n-1\n0\n-1\n-1\n0\n-1\n0\n-1\n-1\n-1\n",
-	}
+	},
+	{"str_lt",
+	 "print \"hello\" < \"hello\"\n"
+	 "print \"world\" < \"hello\"\n"
+	 "print \"world\" < \"a\"\n"
+	 "print \"a\" < \"world\"\n"
+	 "a$ = \"hello\"\n"
+	 "print a$ < \"hello\"\n"
+	 "print a$ < \"world\"\n"
+	 "b$ = \"world\"\n"
+	 "print a$ < b$\n"
+	 "print b$ < a$\n"
+	 "print a$ < a$\n"
+	 "long1$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long2$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long3$ =\"aacdefghijklmnopqrstuvwxyz\"\n"
+	 "long4$ =\"abcdefghijklmnopqrstuvwxyy\"\n"
+	 "print long1$ < long2$\n"
+	 "print long1$ < long3$\n"
+	 "print long4$ < long1$\n",
+	 "0\n0\n0\n-1\n0\n-1\n-1\n0\n0\n0\n0\n-1\n"
+	},
+	{"str_lte",
+	 "print \"hello\" <= \"hello\"\n"
+	 "print \"world\" <= \"hello\"\n"
+	 "print \"world\" <= \"a\"\n"
+	 "print \"a\" <= \"world\"\n"
+	 "a$ = \"hello\"\n"
+	 "print a$ <= \"hello\"\n"
+	 "print a$ <= \"world\"\n"
+	 "b$ = \"world\"\n"
+	 "print a$ <= b$\n"
+	 "print b$ <= a$\n"
+	 "print a$ <= a$\n"
+	 "long1$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long2$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long3$ =\"aacdefghijklmnopqrstuvwxyz\"\n"
+	 "long4$ =\"abcdefghijklmnopqrstuvwxyy\"\n"
+	 "print long1$ <= long2$\n"
+	 "print long1$ <= long3$\n"
+	 "print long4$ <= long1$\n",
+	 "-1\n0\n0\n-1\n-1\n-1\n-1\n0\n-1\n-1\n0\n-1\n"
+	},
+	{"str_gt",
+	 "print \"hello\" > \"hello\"\n"
+	 "print \"world\" > \"hello\"\n"
+	 "print \"world\" > \"a\"\n"
+	 "print \"a\" > \"world\"\n"
+	 "a$ = \"hello\"\n"
+	 "print a$ > \"hello\"\n"
+	 "print a$ > \"world\"\n"
+	 "b$ = \"world\"\n"
+	 "print a$ > b$\n"
+	 "print b$ > a$\n"
+	 "print a$ > a$\n"
+	 "long1$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long2$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long3$ =\"aacdefghijklmnopqrstuvwxyz\"\n"
+	 "long4$ =\"abcdefghijklmnopqrstuvwxyy\"\n"
+	 "print long1$ > long2$\n"
+	 "print long1$ > long3$\n"
+	 "print long4$ > long1$\n",
+	 "0\n-1\n-1\n0\n0\n0\n0\n-1\n0\n0\n-1\n0\n"
+	},
+	{"str_gte",
+	 "print \"hello\" >= \"hello\"\n"
+	 "print \"world\" >= \"hello\"\n"
+	 "print \"world\" >= \"a\"\n"
+	 "print \"a\" >= \"world\"\n"
+	 "a$ = \"hello\"\n"
+	 "print a$ >= \"hello\"\n"
+	 "print a$ >= \"world\"\n"
+	 "b$ = \"world\"\n"
+	 "print a$ >= b$\n"
+	 "print b$ >= a$\n"
+	 "print a$ >= a$\n"
+	 "long1$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long2$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long3$ =\"aacdefghijklmnopqrstuvwxyz\"\n"
+	 "long4$ =\"abcdefghijklmnopqrstuvwxyy\"\n"
+	 "print long1$ >= long2$\n"
+	 "print long1$ >= long3$\n"
+	 "print long4$ >= long1$\n",
+	 "-1\n-1\n-1\n0\n-1\n0\n0\n-1\n-1\n-1\n-1\n0\n",
+	},
 };
 
 /* clang-format on */

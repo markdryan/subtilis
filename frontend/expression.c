@@ -471,56 +471,24 @@ subtilis_exp_t *subtilis_exp_add(subtilis_parser_t *p, subtilis_exp_t *a1,
 subtilis_exp_t *subtilis_exp_gt(subtilis_parser_t *p, subtilis_exp_t *a1,
 				subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	if ((a1->type.type == SUBTILIS_TYPE_CONST_STRING ||
-	     a1->type.type == SUBTILIS_TYPE_STRING) &&
-	    (a2->type.type == SUBTILIS_TYPE_CONST_STRING ||
-	     a2->type.type == SUBTILIS_TYPE_STRING)) {
-		subtilis_error_set_assertion_failed(err);
-		return NULL;
-	}
-
 	return subtilis_type_if_gt(p, a1, a2, err);
 }
 
 subtilis_exp_t *subtilis_exp_lte(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	if ((a1->type.type == SUBTILIS_TYPE_CONST_STRING ||
-	     a1->type.type == SUBTILIS_TYPE_STRING) &&
-	    (a2->type.type == SUBTILIS_TYPE_CONST_STRING ||
-	     a2->type.type == SUBTILIS_TYPE_STRING)) {
-		subtilis_error_set_assertion_failed(err);
-		return NULL;
-	}
-
 	return subtilis_type_if_lte(p, a1, a2, err);
 }
 
 subtilis_exp_t *subtilis_exp_lt(subtilis_parser_t *p, subtilis_exp_t *a1,
 				subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	if ((a1->type.type == SUBTILIS_TYPE_CONST_STRING ||
-	     a1->type.type == SUBTILIS_TYPE_STRING) &&
-	    (a2->type.type == SUBTILIS_TYPE_CONST_STRING ||
-	     a2->type.type == SUBTILIS_TYPE_STRING)) {
-		subtilis_error_set_assertion_failed(err);
-		return NULL;
-	}
-
 	return subtilis_type_if_lt(p, a1, a2, err);
 }
 
 subtilis_exp_t *subtilis_exp_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	if ((a1->type.type == SUBTILIS_TYPE_CONST_STRING ||
-	     a1->type.type == SUBTILIS_TYPE_STRING) &&
-	    (a2->type.type == SUBTILIS_TYPE_CONST_STRING ||
-	     a2->type.type == SUBTILIS_TYPE_STRING)) {
-		subtilis_error_set_assertion_failed(err);
-		return NULL;
-	}
-
 	return subtilis_type_if_gte(p, a1, a2, err);
 }
 

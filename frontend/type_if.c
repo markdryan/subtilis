@@ -111,7 +111,16 @@ static subtilis_exp_t *prv_call_binary_nc_logical_fn(
 
 /* clang-format on */
 {
-	subtilis_exp_t *e = fn(p, a1, a2, swapped, err);
+	subtilis_exp_t *e;
+
+	if (!fn) {
+		subtilis_exp_delete(a1);
+		subtilis_exp_delete(a2);
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+
+	e = fn(p, a1, a2, swapped, err);
 
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
