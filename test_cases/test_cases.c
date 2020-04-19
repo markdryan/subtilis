@@ -124,8 +124,9 @@ const subtilis_test_case_t test_cases[] = {
 	  "LET c% = 255\n"
 	  "PRINT c% = b%\n"
 	  "LET c% = b% = 254\n"
-	  "PRINT c%\n",
-	  "-1\n-1\n0\n-1\n0\n"},
+	  "PRINT c%\n"
+	  "PRINT COS(0) = 1\n",
+	  "-1\n-1\n0\n-1\n0\n-1\n"},
 	{ "neq",
 	  "LET b% = &ff\n"
 	  "PRINT 10 <> 5 + 5\n"
@@ -134,8 +135,9 @@ const subtilis_test_case_t test_cases[] = {
 	  "LET c% = 255\n"
 	  "PRINT c% <> b%\n"
 	  "LET c% = b% <> 254\n"
-	  "PRINT c%\n",
-	  "0\n0\n-1\n0\n-1\n"},
+	  "PRINT c%\n"
+	  "PRINT COS(0) <> 1\n",
+	  "0\n0\n-1\n0\n-1\n0\n"},
 	{ "gt",
 	  "LET b% = &ff\n"
 	  "PRINT 10 > 5 + 5\n"
@@ -2383,6 +2385,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "c$ = \"hello\""
 	 "d$ = \"a\""
 	 "PRINT a$ = a$"
+	 "PRINT a$ = \"hell\""
 	 "PRINT a$ = b$"
 	 "PRINT a$ = c$"
 	 "PRINT a$ = d$"
@@ -2395,7 +2398,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "PRINT long1$ = long3$"
 	 "PRINT long1$ = long4$"
 	 "PRINT long1$ = long5$",
-	 "-1\n0\n0\n-1\n0\n0\n-1\n0\n0\n-1\n0\n-1\n0\n-1\n0\n0\n0\n",
+	 "-1\n0\n0\n-1\n0\n0\n-1\n0\n0\n-1\n0\n0\n-1\n0\n-1\n0\n0\n0\n",
 	},
 	{"str_neq",
 	 "PRINT \"hello\" <> \"hello\""
@@ -2412,6 +2415,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "c$ = \"hello\""
 	 "d$ = \"a\""
 	 "PRINT a$ <> a$"
+	 "PRINT a$ <> \"hell\""
 	 "PRINT a$ <> b$"
 	 "PRINT a$ <> c$"
 	 "PRINT a$ <> d$"
@@ -2424,8 +2428,120 @@ const subtilis_test_case_t test_cases[] = {
 	 "PRINT long1$ <> long3$"
 	 "PRINT long1$ <> long4$"
 	 "PRINT long1$ <> long5$",
-	 "0\n-1\n-1\n0\n-1\n-1\n0\n-1\n-1\n0\n-1\n0\n-1\n0\n-1\n-1\n-1\n",
-	}
+	 "0\n-1\n-1\n0\n-1\n-1\n0\n-1\n-1\n0\n-1\n-1\n0\n-1\n0\n-1\n-1\n-1\n",
+	},
+	{"str_lt",
+	 "print \"hello\" < \"hello\"\n"
+	 "print \"world\" < \"hello\"\n"
+	 "print \"world\" < \"a\"\n"
+	 "print \"a\" < \"world\"\n"
+	 "a$ = \"hello\"\n"
+	 "print a$ < \"hello\"\n"
+	 "print a$ < \"world\"\n"
+	 "b$ = \"world\"\n"
+	 "print a$ < b$\n"
+	 "print b$ < a$\n"
+	 "print a$ < a$\n"
+	 "long1$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long2$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long3$ =\"aacdefghijklmnopqrstuvwxyz\"\n"
+	 "long4$ =\"abcdefghijklmnopqrstuvwxyy\"\n"
+	 "print long1$ < long2$\n"
+	 "print long1$ < long3$\n"
+	 "print long4$ < long1$\n"
+	 "print \"\" < \"\"\n"
+	 "e$ := \"\"\n"
+	 "print e$ < \"\"\n"
+	 "print \"\" < e$\n"
+	 "f$ := \"\"\n"
+	 "print e$ < f$\n"
+	 "print \"\" < a$\n",
+	 "0\n0\n0\n-1\n0\n-1\n-1\n0\n0\n0\n0\n-1\n0\n0\n0\n0\n-1\n"
+	},
+	{"str_lte",
+	 "print \"hello\" <= \"hello\"\n"
+	 "print \"world\" <= \"hello\"\n"
+	 "print \"world\" <= \"a\"\n"
+	 "print \"a\" <= \"world\"\n"
+	 "a$ = \"hello\"\n"
+	 "print a$ <= \"hello\"\n"
+	 "print a$ <= \"world\"\n"
+	 "b$ = \"world\"\n"
+	 "print a$ <= b$\n"
+	 "print b$ <= a$\n"
+	 "print a$ <= a$\n"
+	 "long1$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long2$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long3$ =\"aacdefghijklmnopqrstuvwxyz\"\n"
+	 "long4$ =\"abcdefghijklmnopqrstuvwxyy\"\n"
+	 "print long1$ <= long2$\n"
+	 "print long1$ <= long3$\n"
+	 "print long4$ <= long1$\n"
+	 "print \"\" <= \"\"\n"
+	 "e$ := \"\"\n"
+	 "print e$ <= \"\"\n"
+	 "print \"\" <= e$\n"
+	 "f$ := \"\"\n"
+	 "print e$ <= f$\n"
+	 "print \"\" <= a$\n",
+	 "-1\n0\n0\n-1\n-1\n-1\n-1\n0\n-1\n-1\n0\n-1\n-1\n-1\n-1\n-1\n-1\n"
+	},
+	{"str_gt",
+	 "print \"hello\" > \"hello\"\n"
+	 "print \"world\" > \"hello\"\n"
+	 "print \"world\" > \"a\"\n"
+	 "print \"a\" > \"world\"\n"
+	 "a$ = \"hello\"\n"
+	 "print a$ > \"hello\"\n"
+	 "print a$ > \"world\"\n"
+	 "b$ = \"world\"\n"
+	 "print a$ > b$\n"
+	 "print b$ > a$\n"
+	 "print a$ > a$\n"
+	 "long1$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long2$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long3$ =\"aacdefghijklmnopqrstuvwxyz\"\n"
+	 "long4$ =\"abcdefghijklmnopqrstuvwxyy\"\n"
+	 "print long1$ > long2$\n"
+	 "print long1$ > long3$\n"
+	 "print long4$ > long1$\n"
+	 "print \"\" > \"\"\n"
+	 "e$ := \"\"\n"
+	 "print e$ > \"\"\n"
+	 "print \"\" > e$\n"
+	 "f$ := \"\"\n"
+	 "print e$ > f$\n"
+	 "print \"\" > a$\n",
+	 "0\n-1\n-1\n0\n0\n0\n0\n-1\n0\n0\n-1\n0\n0\n0\n0\n0\n0\n"
+	},
+	{"str_gte",
+	 "print \"hello\" >= \"hello\"\n"
+	 "print \"world\" >= \"hello\"\n"
+	 "print \"world\" >= \"a\"\n"
+	 "print \"a\" >= \"world\"\n"
+	 "a$ = \"hello\"\n"
+	 "print a$ >= \"hello\"\n"
+	 "print a$ >= \"world\"\n"
+	 "b$ = \"world\"\n"
+	 "print a$ >= b$\n"
+	 "print b$ >= a$\n"
+	 "print a$ >= a$\n"
+	 "long1$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long2$ =\"abcdefghijklmnopqrstuvwxyz\"\n"
+	 "long3$ =\"aacdefghijklmnopqrstuvwxyz\"\n"
+	 "long4$ =\"abcdefghijklmnopqrstuvwxyy\"\n"
+	 "print long1$ >= long2$\n"
+	 "print long1$ >= long3$\n"
+	 "print long4$ >= long1$\n"
+	 "print \"\" >= \"\"\n"
+	 "e$ := \"\"\n"
+	 "print e$ >= \"\"\n"
+	 "print \"\" >= e$\n"
+	 "f$ := \"\"\n"
+	 "print e$ >= f$\n"
+	 "print \"\" >= a$\n",
+	 "-1\n-1\n-1\n0\n-1\n0\n0\n-1\n-1\n-1\n-1\n0\n-1\n-1\n-1\n-1\n0\n",
+	},
 };
 
 /* clang-format on */

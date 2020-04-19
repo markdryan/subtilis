@@ -304,7 +304,7 @@ static subtilis_exp_t *prv_eq_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 	switch (a2->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		a1->exp.ir_op.integer =
-		    ((double)a1->exp.ir_op.integer) == a2->exp.ir_op.real ? -1
+		    (a1->exp.ir_op.real) == (double)a2->exp.ir_op.integer ? -1
 									  : 0;
 		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 		break;
@@ -333,7 +333,7 @@ static subtilis_exp_t *prv_neq_const(subtilis_parser_t *p, subtilis_exp_t *a1,
 	switch (a2->type.type) {
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		a1->exp.ir_op.integer =
-		    ((double)a1->exp.ir_op.integer) != a2->exp.ir_op.real ? -1
+		    a1->exp.ir_op.real != ((double)a2->exp.ir_op.integer) ? -1
 									  : 0;
 		a1->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 		break;

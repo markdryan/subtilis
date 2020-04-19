@@ -77,7 +77,7 @@ bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b)
 	case SUBTILIS_TYPE_ARRAY_INTEGER:
 		return prv_array_type_match(a, b);
 	case SUBTILIS_TYPE_STRING:
-		return b->type == b->type;
+		return a->type == b->type;
 	default:
 		return true;
 	}

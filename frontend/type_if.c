@@ -57,7 +57,7 @@ static subtilis_exp_t *prv_call_unary_fn(subtilis_parser_t *p,
 	return fn(p, e, err);
 }
 
-bool prv_order_expressions(subtilis_exp_t **a1, subtilis_exp_t **a2)
+static bool prv_order_expressions(subtilis_exp_t **a1, subtilis_exp_t **a2)
 {
 	subtilis_exp_t *e1;
 	subtilis_exp_t *e2;
@@ -111,7 +111,16 @@ static subtilis_exp_t *prv_call_binary_nc_logical_fn(
 
 /* clang-format on */
 {
-	subtilis_exp_t *e = fn(p, a1, a2, swapped, err);
+	subtilis_exp_t *e;
+
+	if (!fn) {
+		subtilis_exp_delete(a1);
+		subtilis_exp_delete(a2);
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+
+	e = fn(p, a1, a2, swapped, err);
 
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
@@ -179,7 +188,7 @@ void subtilis_type_if_zero_ref(subtilis_parser_t *p,
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-	return fn(p, type, mem_reg, loc, err);
+	fn(p, type, mem_reg, loc, err);
 }
 
 void subtilis_type_if_new_ref(subtilis_parser_t *p, const subtilis_type_t *type,
@@ -193,7 +202,7 @@ void subtilis_type_if_new_ref(subtilis_parser_t *p, const subtilis_type_t *type,
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-	return fn(p, type, mem_reg, loc, e, err);
+	fn(p, type, mem_reg, loc, e, err);
 }
 
 void subtilis_type_if_assign_ref(subtilis_parser_t *p,
@@ -208,7 +217,7 @@ void subtilis_type_if_assign_ref(subtilis_parser_t *p,
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-	return fn(p, type, mem_reg, loc, e, err);
+	fn(p, type, mem_reg, loc, e, err);
 }
 
 subtilis_exp_t *subtilis_type_if_top_bit(subtilis_parser_t *p,
