@@ -2448,8 +2448,15 @@ const subtilis_test_case_t test_cases[] = {
 	 "long4$ =\"abcdefghijklmnopqrstuvwxyy\"\n"
 	 "print long1$ < long2$\n"
 	 "print long1$ < long3$\n"
-	 "print long4$ < long1$\n",
-	 "0\n0\n0\n-1\n0\n-1\n-1\n0\n0\n0\n0\n-1\n"
+	 "print long4$ < long1$\n"
+	 "print \"\" < \"\"\n"
+	 "e$ := \"\"\n"
+	 "print e$ < \"\"\n"
+	 "print \"\" < e$\n"
+	 "f$ := \"\"\n"
+	 "print e$ < f$\n"
+	 "print \"\" < a$\n",
+	 "0\n0\n0\n-1\n0\n-1\n-1\n0\n0\n0\n0\n-1\n0\n0\n0\n0\n-1\n"
 	},
 	{"str_lte",
 	 "print \"hello\" <= \"hello\"\n"
@@ -2469,8 +2476,15 @@ const subtilis_test_case_t test_cases[] = {
 	 "long4$ =\"abcdefghijklmnopqrstuvwxyy\"\n"
 	 "print long1$ <= long2$\n"
 	 "print long1$ <= long3$\n"
-	 "print long4$ <= long1$\n",
-	 "-1\n0\n0\n-1\n-1\n-1\n-1\n0\n-1\n-1\n0\n-1\n"
+	 "print long4$ <= long1$\n"
+	 "print \"\" <= \"\"\n"
+	 "e$ := \"\"\n"
+	 "print e$ <= \"\"\n"
+	 "print \"\" <= e$\n"
+	 "f$ := \"\"\n"
+	 "print e$ <= f$\n"
+	 "print \"\" <= a$\n",
+	 "-1\n0\n0\n-1\n-1\n-1\n-1\n0\n-1\n-1\n0\n-1\n-1\n-1\n-1\n-1\n-1\n"
 	},
 	{"str_gt",
 	 "print \"hello\" > \"hello\"\n"
@@ -2490,8 +2504,15 @@ const subtilis_test_case_t test_cases[] = {
 	 "long4$ =\"abcdefghijklmnopqrstuvwxyy\"\n"
 	 "print long1$ > long2$\n"
 	 "print long1$ > long3$\n"
-	 "print long4$ > long1$\n",
-	 "0\n-1\n-1\n0\n0\n0\n0\n-1\n0\n0\n-1\n0\n"
+	 "print long4$ > long1$\n"
+	 "print \"\" > \"\"\n"
+	 "e$ := \"\"\n"
+	 "print e$ > \"\"\n"
+	 "print \"\" > e$\n"
+	 "f$ := \"\"\n"
+	 "print e$ > f$\n"
+	 "print \"\" > a$\n",
+	 "0\n-1\n-1\n0\n0\n0\n0\n-1\n0\n0\n-1\n0\n0\n0\n0\n0\n0\n"
 	},
 	{"str_gte",
 	 "print \"hello\" >= \"hello\"\n"
@@ -2511,8 +2532,15 @@ const subtilis_test_case_t test_cases[] = {
 	 "long4$ =\"abcdefghijklmnopqrstuvwxyy\"\n"
 	 "print long1$ >= long2$\n"
 	 "print long1$ >= long3$\n"
-	 "print long4$ >= long1$\n",
-	 "-1\n-1\n-1\n0\n-1\n0\n0\n-1\n-1\n-1\n-1\n0\n",
+	 "print long4$ >= long1$\n"
+	 "print \"\" >= \"\"\n"
+	 "e$ := \"\"\n"
+	 "print e$ >= \"\"\n"
+	 "print \"\" >= e$\n"
+	 "f$ := \"\"\n"
+	 "print e$ >= f$\n"
+	 "print \"\" >= a$\n",
+	 "-1\n-1\n-1\n0\n-1\n0\n0\n-1\n-1\n-1\n-1\n0\n-1\n-1\n-1\n-1\n0\n",
 	},
 };
 

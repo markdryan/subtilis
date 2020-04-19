@@ -739,10 +739,16 @@ static void prv_compare(subitlis_vm_t *vm, subtilis_ir_call_t *call,
 	const char *b = (const char *)&vm->memory[vm->regs[call->args[2].reg]];
 	size_t b_len = vm->regs[call->args[3].reg];
 
-	if (b_len < a_len)
-		a_len = b_len;
+	if (a_len == 0 && b_len > 0) {
+		vm->regs[call->reg] = -1;
+	} else if (a_len > 0 && b_len == 0) {
+		vm->regs[call->reg] = 1;
+	} else {
+		if (b_len < a_len)
+			a_len = b_len;
 
-	vm->regs[call->reg] = strncmp(a, b, a_len);
+		vm->regs[call->reg] = strncmp(a, b, a_len);
+	}
 }
 
 static void prv_handle_builtin(subitlis_vm_t *vm, subtilis_builtin_type_t ftype,
