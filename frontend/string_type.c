@@ -140,6 +140,46 @@ cleanup:
 	subtilis_exp_delete(zero);
 }
 
+void subtilis_string_init_from_ptr(subtilis_parser_t *p, size_t mem_reg,
+				   size_t loc, size_t lca_reg, size_t size_reg,
+				   bool push, subtilis_error_t *err)
+
+{
+	size_t dest_reg;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t empty;
+	subtilis_ir_operand_t not_empty;
+
+	empty.label = subtilis_ir_section_new_label(p->current);
+	not_empty.label = subtilis_ir_section_new_label(p->current);
+
+	subtilis_string_type_set_size(p, mem_reg, loc, size_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op0.reg = size_reg;
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  op0, not_empty, empty, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, not_empty.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	dest_reg = subtilis_reference_type_alloc(p, &subtilis_type_string, loc,
+						 mem_reg, size_reg, push, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_reference_type_memcpy_dest(p, dest_reg, lca_reg, size_reg,
+					    err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, empty.label, err);
+}
+
 void subtilis_string_init_from_lca(subtilis_parser_t *p, size_t mem_reg,
 				   size_t loc, size_t lca_reg, size_t size_reg,
 				   bool push, subtilis_error_t *err)
@@ -592,4 +632,295 @@ subtilis_exp_t *subtilis_string_type_compare(subtilis_parser_t *p, size_t a_reg,
 
 	return subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_COMPARE, NULL,
 				     args, &subtilis_type_integer, 4, err);
+}
+
+static subtilis_exp_t *prv_left_const(subtilis_parser_t *p,
+				      const subtilis_buffer_t *str,
+				      size_t size_reg, subtilis_error_t *err)
+{
+	const subtilis_symbol_t *s;
+	size_t id;
+	size_t ptr;
+	size_t src_reg;
+	subtilis_ir_operand_t less_zero;
+	subtilis_ir_operand_t gt_len;
+	subtilis_ir_operand_t condee;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t full_string;
+	subtilis_ir_operand_t partial;
+	size_t buf_size = subtilis_buffer_get_size(str) - 1;
+
+	full_string.label = subtilis_ir_section_new_label(p->current);
+	partial.label = subtilis_ir_section_new_label(p->current);
+
+	s = subtilis_symbol_table_insert_tmp(p->local_st, &subtilis_type_string,
+					     NULL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	op0.reg = size_reg;
+	op1.integer = 0;
+	less_zero.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LTI_I32, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	op1.integer = buf_size;
+	gt_len.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_GTEI_I32, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	condee.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_OR_I32, less_zero, gt_len, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  condee, full_string, partial, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_label(p->current, full_string.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	op1.integer = buf_size;
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_label(p->current, partial.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	id = prv_add_string_constant(p, subtilis_buffer_get_string(str),
+				     buf_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	op1.integer = (int32_t)id;
+	src_reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_LCA, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_string_init_from_lca(p, SUBTILIS_IR_REG_LOCAL, s->loc, src_reg,
+				      size_reg, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	ptr = subtilis_reference_get_pointer(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					     err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_var(&subtilis_type_string, ptr, err);
+}
+
+static subtilis_exp_t *prv_left_non_const(subtilis_parser_t *p, size_t str_reg,
+					  size_t left_reg, bool left_const,
+					  subtilis_error_t *err)
+{
+	const subtilis_symbol_t *s;
+	subtilis_ir_operand_t less_zero;
+	subtilis_ir_operand_t gt_len;
+	subtilis_ir_operand_t str_len_zero;
+	subtilis_ir_operand_t condee;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t full_string;
+	subtilis_ir_operand_t partial;
+	subtilis_ir_operand_t end;
+	size_t len_reg;
+	size_t ptr_reg = p->current->reg_counter++;
+
+	op0.reg = str_reg;
+	op1.integer = SUBTIILIS_STRING_SIZE_OFF;
+	len_reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	full_string.label = subtilis_ir_section_new_label(p->current);
+	partial.label = subtilis_ir_section_new_label(p->current);
+	end.label = subtilis_ir_section_new_label(p->current);
+
+	if (!left_const) {
+		op0.reg = left_reg;
+		op1.integer = 0;
+		less_zero.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_LTI_I32, op0, op1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+
+		op0.reg = left_reg;
+		op1.reg = len_reg;
+		gt_len.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_GTE_I32, op0, op1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+
+		condee.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_OR_I32, less_zero, gt_len,
+		    err);
+	} else {
+		op0.reg = left_reg;
+		op1.reg = len_reg;
+		condee.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_GTE_I32, op0, op1, err);
+	}
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	op0.reg = len_reg;
+	op1.integer = 0;
+	str_len_zero.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_EQI_I32, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	condee.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_OR_I32, condee, str_len_zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  condee, full_string, partial, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_label(p->current, full_string.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	op0.reg = ptr_reg;
+	op1.reg = str_reg;
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     end, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_label(p->current, partial.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	s = subtilis_symbol_table_insert_tmp(p->local_st, &subtilis_type_string,
+					     NULL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	str_reg = subtilis_reference_get_data(p, str_reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_string_init_from_ptr(p, SUBTILIS_IR_REG_LOCAL, s->loc, str_reg,
+				      left_reg, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	op0.reg = ptr_reg;
+	op1.reg = subtilis_reference_get_pointer(p, SUBTILIS_IR_REG_LOCAL,
+						 s->loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_label(p->current, end.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_var(&subtilis_type_string, ptr_reg, err);
+}
+
+subtilis_exp_t *subtilis_string_type_left(subtilis_parser_t *p,
+					  subtilis_exp_t *str,
+					  subtilis_exp_t *len,
+					  subtilis_error_t *err)
+{
+	size_t const_str_len;
+	size_t const_int_val;
+	subtilis_exp_t *ret;
+	bool left_const = false;
+
+	len = subtilis_type_if_to_int(p, len, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	switch (str->type.type) {
+	case SUBTILIS_TYPE_CONST_STRING:
+		const_str_len = subtilis_buffer_get_size(&str->exp.str) - 1;
+		if (const_str_len == 0) {
+			subtilis_exp_delete(len);
+			return str;
+		}
+		if (len->type.type == SUBTILIS_TYPE_CONST_INTEGER) {
+			const_int_val = len->exp.ir_op.integer;
+			if (const_int_val < const_str_len) {
+				subtilis_buffer_delete(
+				    &str->exp.str, const_int_val,
+				    const_str_len - const_int_val, err);
+				if (err->type != SUBTILIS_ERROR_OK)
+					goto cleanup;
+				subtilis_buffer_zero_terminate(&str->exp.str,
+							       err);
+				if (err->type != SUBTILIS_ERROR_OK)
+					goto cleanup;
+			}
+			subtilis_exp_delete(len);
+			return str;
+		}
+		ret = prv_left_const(p, &str->exp.str, len->exp.ir_op.reg, err);
+		subtilis_exp_delete(str);
+		subtilis_exp_delete(len);
+		return ret;
+	case SUBTILIS_TYPE_STRING:
+		if (len->type.type == SUBTILIS_TYPE_CONST_INTEGER) {
+			left_const = true;
+			if (len->exp.ir_op.integer < 0) {
+				subtilis_exp_delete(len);
+				return str;
+			}
+			if (len->exp.ir_op.integer == 0) {
+				str->type.type = SUBTILIS_TYPE_CONST_STRING;
+				subtilis_buffer_init(&str->exp.str, 1);
+				subtilis_buffer_zero_terminate(&str->exp.str,
+							       err);
+				if (err->type != SUBTILIS_ERROR_OK)
+					goto cleanup;
+				subtilis_exp_delete(len);
+				return str;
+			}
+			len = subtilis_type_if_exp_to_var(p, len, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+		}
+		ret = prv_left_non_const(p, str->exp.ir_op.reg,
+					 len->exp.ir_op.reg, left_const, err);
+		subtilis_exp_delete(str);
+		subtilis_exp_delete(len);
+		return ret;
+	default:
+		subtilis_error_set_string_expected(err, p->l->stream->name,
+						   p->l->line);
+		break;
+	}
+
+cleanup:
+
+	subtilis_exp_delete(str);
+	subtilis_exp_delete(len);
+
+	return NULL;
 }

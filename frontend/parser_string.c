@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-#include "parser_string.h"
+#include <string.h>
+
 #include "parser_exp.h"
+#include "parser_string.h"
 #include "reference_type.h"
 #include "string_type.h"
 #include "type_if.h"
@@ -97,4 +99,48 @@ subtilis_exp_t *subtilis_parser_len(subtilis_parser_t *p, subtilis_token_t *t,
 		return NULL;
 
 	return subtilis_string_type_len(p, e, err);
+}
+
+subtilis_exp_t *subtilis_parser_left_str(subtilis_parser_t *p,
+					 subtilis_token_t *t,
+					 subtilis_error_t *err)
+{
+	subtilis_exp_t *e[2];
+	size_t args;
+	size_t i;
+	const char *tbuf;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	if (strcmp(tbuf, "(")) {
+		subtilis_error_set_exp_expected(err, "( ", p->l->stream->name,
+						p->l->line);
+		return NULL;
+	}
+
+	args = subtilis_var_bracketed_args_have_b(p, t, e, 2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (args == 1) {
+		e[1] = subtilis_exp_new_int32(1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	return subtilis_string_type_left(p, e[0], e[1], err);
+
+cleanup:
+
+	for (i = 0; i < args; i++)
+		subtilis_exp_delete(e[i]);
+
+	return NULL;
 }
