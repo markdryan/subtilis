@@ -33,6 +33,9 @@ void subtilis_string_type_new_ref_from_char(subtilis_parser_t *p,
 					    subtilis_error_t *err);
 size_t subtilis_string_type_lca_const(subtilis_parser_t *p, const char *str,
 				      size_t len, subtilis_error_t *err);
+void subtilis_string_init_from_ptr(subtilis_parser_t *p, size_t mem_reg,
+				   size_t loc, size_t lca_reg, size_t size_reg,
+				   bool push, subtilis_error_t *err);
 void subtilis_string_init_from_lca(subtilis_parser_t *p, size_t mem_reg,
 				   size_t loc, size_t lca_reg, size_t size_reg,
 				   bool push, subtilis_error_t *err);
@@ -68,4 +71,9 @@ subtilis_exp_t *subtilis_string_type_compare(subtilis_parser_t *p, size_t a_reg,
 					     size_t a_len_reg, size_t b_reg,
 					     size_t b_len_reg,
 					     subtilis_error_t *err);
+subtilis_exp_t *subtilis_string_type_left(subtilis_parser_t *p,
+					  subtilis_exp_t *str,
+					  subtilis_exp_t *len,
+					  subtilis_error_t *err);
+
 #endif

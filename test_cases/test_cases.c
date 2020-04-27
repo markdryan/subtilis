@@ -2542,6 +2542,30 @@ const subtilis_test_case_t test_cases[] = {
 	 "print \"\" >= a$\n",
 	 "-1\n-1\n-1\n0\n-1\n0\n0\n-1\n-1\n-1\n-1\n0\n-1\n-1\n-1\n-1\n0\n",
 	},
+	{"left_str",
+	 "a$ = \"hello\"\n"
+	 "a% = 2\n"
+	 "print left$(a$)\n"
+	 "print left$(a$,1)\n"
+	 "print left$(a$,a%)\n"
+	 "print left$(\"\",10)\n"
+	 "print left$(\"hello\",10)\n"
+	 "print left$(a$,10)\n"
+	 "a%=10\n"
+	 "print left$(a$,a%)\n"
+	 "\n"
+	 "print left$(\"hello\",0)\n"
+	 "print left$(a$,0)\n"
+	 "a% = 0\n"
+	 "print left$(a$,a%)\n"
+	 "\n"
+	 "print left$(a$,-1)\n"
+	 "a%=-1\n"
+	 "print left$(a$,a%)\n"
+	 "a$ = \"\"\n"
+	 "print left$(a$,1)\n",
+	 "h\nh\nhe\n\nhello\nhello\nhello\n\n\n\nhello\nhello\n\n"
+	},
 };
 
 /* clang-format on */
