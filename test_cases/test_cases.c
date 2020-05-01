@@ -2563,9 +2563,72 @@ const subtilis_test_case_t test_cases[] = {
 	 "a%=-1\n"
 	 "print left$(a$,a%)\n"
 	 "a$ = \"\"\n"
-	 "print left$(a$,1)\n",
+	 "print left$(a$,1)\n"
+	 "a% = 0\n"
+	 "print left$(\"hello\",a%)\n"
+	 "a% = 2\n"
+	 "print left$(\"hello\",a%)\n"
+	 "print left$(\"hello\",-1)\n"
+	 "a%=-1\n"
+	 "print left$(\"hello\",a%)\n"
+	 "print left$(\"hello\")\n",
 	 "h\nh\nhe\n\nhello\nhello\nhello\n\n\n\nhello\nhello\n\n"
+	 "\nhe\nhello\nhello\nh\n",
 	},
+	{"right_str",
+	 "print right$(\"hello\")\n"
+	 "print right$(\"hello\", 1)\n"
+	 "print right$(\"hello\", 3)\n"
+	 "print right$(\"hello\", -1)\n"
+	 "print right$(\"hello\", 1000)\n"
+	 "print right$(\"hello\", 0)\n"
+	 "\n"
+	 "a% := 1\n"
+	 "print right$(\"hello\", a%)\n"
+	 "a% = 3\n"
+	 "print right$(\"hello\", a%)\n"
+	 "a% = -1\n"
+	 "print right$(\"hello\", a%)\n"
+	 "a% = 1000\n"
+	 "print right$(\"hello\", a%)\n"
+	 "a% = 0\n"
+	 "print right$(\"hello\", a%)\n"
+	 "\n"
+	 "a$ = \"hello\"\n"
+	 "print right$(a$)\n"
+	 "print right$(a$, 1)\n"
+	 "print right$(a$, 3)\n"
+	 "print right$(a$, -1)\n"
+	 "print right$(a$, 1000)\n"
+	 "print right$(a$, 0)\n"
+	 "\n"
+	 "a% = 1\n"
+	 "print right$(a$, a%)\n"
+	 "a% = 3\n"
+	 "print right$(a$, a%)\n"
+	 "a% = -1\n"
+	 "print right$(a$, a%)\n"
+	 "a% = 1000\n"
+	 "print right$(a$, a%)\n"
+	 "a% = 0\n"
+	 "print right$(a$, a%)\n",
+	 "o\no\nllo\nhello\nhello\n\no\nllo\nhello\nhello\n\n"
+	 "o\no\nllo\nhello\nhello\n\no\nllo\nhello\nhello\n\n",
+	},
+	{"right_str2",
+	 "a% := 1\n"
+	 "print right$(\"hello\", a%)\n"
+	 "a% = 3\n"
+	 "print right$(\"hello\", a%)\n"
+	 "a% = -1\n"
+	 "print right$(\"hello\", a%)\n"
+	 "a% = 1000\n"
+	 "print right$(\"hello\", a%)\n"
+	 "a% = 0\n"
+	 "print right$(\"hello\", a%)\n"
+	 "\n",
+	 "o\nllo\nhello\nhello\n\n"
+	}
 };
 
 /* clang-format on */

@@ -75,5 +75,9 @@ subtilis_exp_t *subtilis_string_type_left(subtilis_parser_t *p,
 					  subtilis_exp_t *str,
 					  subtilis_exp_t *len,
 					  subtilis_error_t *err);
+subtilis_exp_t *subtilis_string_type_right(subtilis_parser_t *p,
+					   subtilis_exp_t *str,
+					   subtilis_exp_t *len,
+					   subtilis_error_t *err);
 
 #endif
