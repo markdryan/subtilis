@@ -101,29 +101,27 @@ subtilis_exp_t *subtilis_parser_len(subtilis_parser_t *p, subtilis_token_t *t,
 	return subtilis_string_type_len(p, e, err);
 }
 
-subtilis_exp_t *subtilis_parser_left_str(subtilis_parser_t *p,
-					 subtilis_token_t *t,
-					 subtilis_error_t *err)
+static void prv_left_right_args(subtilis_parser_t *p, subtilis_token_t *t,
+				subtilis_exp_t **e, subtilis_error_t *err)
 {
-	subtilis_exp_t *e[2];
 	size_t args;
 	size_t i;
 	const char *tbuf;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return NULL;
+		return;
 
 	tbuf = subtilis_token_get_text(t);
 	if (strcmp(tbuf, "(")) {
 		subtilis_error_set_exp_expected(err, "( ", p->l->stream->name,
 						p->l->line);
-		return NULL;
+		return;
 	}
 
 	args = subtilis_var_bracketed_args_have_b(p, t, e, 2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return NULL;
+		return;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -135,12 +133,36 @@ subtilis_exp_t *subtilis_parser_left_str(subtilis_parser_t *p,
 			goto cleanup;
 	}
 
-	return subtilis_string_type_left(p, e[0], e[1], err);
+	return;
 
 cleanup:
 
 	for (i = 0; i < args; i++)
 		subtilis_exp_delete(e[i]);
+}
 
-	return NULL;
+subtilis_exp_t *subtilis_parser_left_str(subtilis_parser_t *p,
+					 subtilis_token_t *t,
+					 subtilis_error_t *err)
+{
+	subtilis_exp_t *e[2];
+
+	prv_left_right_args(p, t, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_string_type_left(p, e[0], e[1], err);
+}
+
+subtilis_exp_t *subtilis_parser_right_str(subtilis_parser_t *p,
+					  subtilis_token_t *t,
+					  subtilis_error_t *err)
+{
+	subtilis_exp_t *e[2];
+
+	prv_left_right_args(p, t, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_string_type_right(p, e[0], e[1], err);
 }
