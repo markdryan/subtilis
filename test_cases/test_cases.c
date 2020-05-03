@@ -2628,6 +2628,86 @@ const subtilis_test_case_t test_cases[] = {
 	 "print right$(\"hello\", a%)\n"
 	 "\n",
 	 "o\nllo\nhello\nhello\n\n"
+	},
+	{"mid_str",
+	 "print mid$(\"hello\", 0)\n"
+	 "print mid$(\"hello\", 1,-1)\n"
+	 "print mid$(\"hello\", -1)\n"
+	 "print mid$(\"hello\", 1,1)\n"
+	 "print mid$(\"hello\", 1,4)\n"
+	 "print mid$(\"hello\", 1,3)\n"
+	 "print mid$(\"hello\", 2,4)\n"
+	 "print mid$(\"hello\", 2,10)\n"
+	 "print mid$(\"hello\", 0,0)\n"
+	 "print mid$(\"hello\", 0,-1)\n"
+	 "b% := 0\n"
+	 "print mid$(\"hello\", 2, b%)\n"
+	 "b% = -1\n"
+	 "print mid$(\"hello\", 2, b%)\n"
+	 "b% = 1\n"
+	 "print mid$(\"hello\", 2, b%)\n"
+	 "b% = 2\n"
+	 "print mid$(\"hello\", 2, b%)\n"
+	 "b% = 10\n"
+	 "print mid$(\"hello\", 2, b%)\n",
+	 "hello\nhello\n\nh\nhell\nhel\nello\nello\n\nhello\n\nello\n"
+	 "e\nel\nello\n",
+	},
+	{"mid_str2",
+	 "a% := 0\n"
+	 "print mid$(\"hello\",a%)\n"
+	 "a% = 1\n"
+	 "print mid$(\"hello\",a%)\n"
+	 "a% = 2\n"
+	 "print mid$(\"hello\",a%)\n"
+	 "a% = 0\n"
+	 "print mid$(\"hello\",a%,1)\n"
+	 "a% = 1\n"
+	 "print mid$(\"hello\",a%, 2)\n"
+	 "a% = 2\n"
+	 "print mid$(\"hello\",a%, 3)\n"
+	 "b% = 0\n"
+	 "print mid$(\"hello\",a%,b%)\n"
+	 "b% = 1\n"
+	 "print mid$(\"hello\",a%,b%)\n"
+	 "b% = 3\n"
+	 "print mid$(\"hello\",a%,b%)\n"
+	 "b% = -1\n"
+	 "print mid$(\"hello\",a%,b%)\n"
+	 "b% = 100\n"
+	 "print mid$(\"hello\",a%,b%)\n",
+	 "hello\nhello\nello\nh\nhe\nell\n\ne\nell\nello\nello\n",
+	},
+	{"mid_str3",
+	 "a$ = \"hello\"\n"
+	 "a% := 0\n"
+	 "print mid$(a$,a%)\n"
+	 "a% = 1\n"
+	 "print mid$(a$,a%)\n"
+	 "a% = 2\n"
+	 "print mid$(a$,a%)\n"
+	 "a% = 0\n"
+	 "print mid$(a$,a%,1)\n"
+	 "a% = 1\n"
+	 "print mid$(a$,a%, 2)\n"
+	 "a% = 2\n"
+	 "print mid$(a$,a%, 3)\n"
+	 "b% = 0\n"
+	 "print mid$(a$,a%,b%)\n"
+	 "b% = 1\n"
+	 "print mid$(a$,a%,b%)\n"
+	 "b% = 3\n"
+	 "print mid$(a$,a%,b%)\n"
+	 "b% = -1\n"
+	 "print mid$(a$,a%,b%)\n"
+	 "b% = 100\n"
+	 "print mid$(a$,a%,b%)\n"
+
+	 "print mid$(a$, -1,1)\n"
+	 "print mid$(a$, 0,1)\n"
+	 "print mid$(a$, 1, 2)\n"
+	 "print mid$(a$, 2, 3)\n",
+	 "hello\nhello\nello\nh\nhe\nell\n\ne\nell\nello\nello\n\nh\nhe\nell\n",
 	}
 };
 
