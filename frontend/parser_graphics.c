@@ -434,6 +434,7 @@ void subtilis_parser_gcol(subtilis_parser_t *p, subtilis_token_t *t,
 	size_t i;
 	subtilis_exp_t *e[2];
 	subtilis_ir_operand_t op2;
+	const char *tbuf;
 
 	memset(&e, 0, sizeof(e));
 	memset(&op2, 0, sizeof(op2));
@@ -442,9 +443,28 @@ void subtilis_parser_gcol(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_parser_statement_int_args(p, t, e, 2, err);
+	e[0] = subtilis_parser_int_var_expression(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ",")) {
+		e[1] = e[0];
+		e[0] = subtilis_exp_new_int32(0, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		e[0] = subtilis_type_if_exp_to_var(p, e[0], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		e[1] = subtilis_parser_int_var_expression(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 
 	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_GCOL,
 					  e[0]->exp.ir_op, e[1]->exp.ir_op, op2,
