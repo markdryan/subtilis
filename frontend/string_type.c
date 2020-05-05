@@ -1238,8 +1238,6 @@ static subtilis_exp_t *prv_mid_str_ccv(subtilis_parser_t *p,
 	subtilis_ir_operand_t len_ok;
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
-	subtilis_ir_operand_t empty;
-	subtilis_ir_operand_t non_empty;
 	subtilis_ir_operand_t end;
 	subtilis_ir_operand_t condee;
 	const subtilis_symbol_t *s;
@@ -1251,8 +1249,6 @@ static subtilis_exp_t *prv_mid_str_ccv(subtilis_parser_t *p,
 	to_copy.reg = p->current->reg_counter++;
 	len_zero.label = subtilis_ir_section_new_label(p->current);
 	len_not_zero.label = subtilis_ir_section_new_label(p->current);
-	empty.label = subtilis_ir_section_new_label(p->current);
-	non_empty.label = subtilis_ir_section_new_label(p->current);
 	end.label = subtilis_ir_section_new_label(p->current);
 	len_too_big.label = subtilis_ir_section_new_label(p->current);
 	len_ok.label = subtilis_ir_section_new_label(p->current);
