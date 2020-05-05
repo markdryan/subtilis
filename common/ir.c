@@ -40,7 +40,7 @@ typedef enum {
 
 struct subtilis_ir_class_info_t_ {
 	size_t op_count;
-	subtilis_ir_operand_class_t classes[3];
+	subtilis_ir_operand_class_t classes[SUBTILIS_IR_MAX_OP_ARGS];
 };
 
 typedef struct subtilis_ir_class_info_t_ subtilis_ir_class_info_t;
@@ -186,6 +186,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "pos", SUBTILIS_OP_CLASS_REG },
 	{ "vpos", SUBTILIS_OP_CLASS_REG },
 	{ "tcol", SUBTILIS_OP_CLASS_REG },
+	{ "palette", SUBTILIS_OP_CLASS_REG_REG_REG_REG},
 };
 
 /*
@@ -194,6 +195,8 @@ static const subtilis_ir_op_desc_t op_desc[] = {
  */
 
 static const subtilis_ir_class_info_t class_details[] = {
+	{4, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER,
+	      SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER} },
 	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER,
 	      SUBTILIS_IR_OPERAND_REGISTER} },
 	{3, { SUBTILIS_IR_OPERAND_FREGISTER, SUBTILIS_IR_OPERAND_FREGISTER,
@@ -525,6 +528,48 @@ void subtilis_ir_section_add_instr_reg(subtilis_ir_section_t *s,
 		s->ops[s->len++] = op;
 }
 
+/* clang-format off */
+void subtilis_ir_section_add_instr4(subtilis_ir_section_t *s,
+				    subtilis_op_instr_type_t type,
+				    subtilis_ir_operand_t op0,
+				    subtilis_ir_operand_t op1,
+				    subtilis_ir_operand_t op2,
+				    subtilis_ir_operand_t op3,
+				    subtilis_error_t *err)
+
+/* clang-format on */
+
+{
+	subtilis_ir_op_t *op;
+	subtilis_ir_inst_t *instr;
+
+	if (s->in_error_handler)
+		prv_ensure_error_buffer(s, err);
+	else
+		prv_ensure_buffer(s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op = malloc(sizeof(*op));
+	if (!op) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+
+	op->type = SUBTILIS_OP_INSTR;
+	instr = &op->op.instr;
+	instr->type = type;
+	instr->operands[0] = op0;
+	instr->operands[1] = op1;
+	instr->operands[2] = op2;
+	instr->operands[3] = op3;
+
+	if (s->in_error_handler)
+		s->error_ops[s->error_len++] = op;
+	else
+		s->ops[s->len++] = op;
+}
+
 size_t subtilis_ir_section_add_nop(subtilis_ir_section_t *s,
 				   subtilis_error_t *err)
 {
@@ -768,6 +813,11 @@ static void prv_dump_instr(subtilis_ir_inst_t *instr)
 
 	printf("\t%s ", op_desc[instr->type].name);
 	switch (op_desc[instr->type].cls) {
+	case SUBTILIS_OP_CLASS_REG_REG_REG_REG:
+		printf("r%zu, r%zu, r%zu r%zu", instr->operands[0].reg,
+		       instr->operands[1].reg, instr->operands[2].reg,
+		       instr->operands[3].reg);
+		break;
 	case SUBTILIS_OP_CLASS_REG_REG_REG:
 		printf("r%zu, r%zu, r%zu", instr->operands[0].reg,
 		       instr->operands[1].reg, instr->operands[2].reg);

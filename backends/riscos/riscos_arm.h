@@ -102,6 +102,8 @@ void subtilis_riscos_arm_getref(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err);
 void subtilis_riscos_tcol(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
+void subtilis_riscos_palette(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err);
 
 #define SUBTILIS_RISCOS_ARM_CAPS 0
 
