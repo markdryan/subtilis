@@ -579,3 +579,55 @@ void subtilis_parser_off(subtilis_parser_t *p, subtilis_token_t *t,
 
 	subtilis_lexer_get(p->l, t, err);
 }
+
+void subtilis_parser_colour(subtilis_parser_t *p, subtilis_token_t *t,
+			    subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_exp_t *e;
+	const char *tbuf;
+	subtilis_exp_t *rgb[3];
+
+	memset(rgb, 0, sizeof(rgb));
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	e = subtilis_parser_int_var_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ",")) {
+		subtilis_ir_section_add_instr_no_reg(
+		    p->current, SUBTILIS_OP_INSTR_TCOL, e->exp.ir_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	} else {
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		subtilis_parser_statement_int_args(p, t, rgb, 3, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		subtilis_ir_section_add_instr4(
+		    p->current, SUBTILIS_OP_INSTR_PALETTE, e->exp.ir_op,
+		    rgb[0]->exp.ir_op, rgb[1]->exp.ir_op, rgb[2]->exp.ir_op,
+		    err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	if (!p->settings.ignore_graphics_errors)
+		subtilis_exp_handle_errors(p, err);
+
+cleanup:
+
+	for (i = 0; i < 3; i++)
+		subtilis_exp_delete(rgb[i]);
+
+	subtilis_exp_delete(e);
+}

@@ -1486,9 +1486,28 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_VPOS,
+
+	/*
+	 *
+	 * tcol r0
+	 *
+	 * Sets the current text colour to the value in r0.
+	 */
+
+	SUBTILIS_OP_INSTR_TCOL,
+
+	/*
+	 *
+	 * palette r0, r1, r2, r3
+	 *
+	 * Sets the logical colour in r0, to the rgb values in r1, r2, and r3.
+	 */
+
+	SUBTILIS_OP_INSTR_PALETTE,
 } subtilis_op_instr_type_t;
 
 typedef enum {
+	SUBTILIS_OP_CLASS_REG_REG_REG_REG,
 	SUBTILIS_OP_CLASS_REG_REG_REG,
 	SUBTILIS_OP_CLASS_FREG_FREG_FREG,
 	SUBTILIS_OP_CLASS_REG_REG_I32,
@@ -1523,9 +1542,11 @@ union subtilis_ir_operand_t_ {
 
 typedef union subtilis_ir_operand_t_ subtilis_ir_operand_t;
 
+#define SUBTILIS_IR_MAX_OP_ARGS 4
+
 struct subtilis_ir_inst_t_ {
 	subtilis_op_instr_type_t type;
-	subtilis_ir_operand_t operands[3];
+	subtilis_ir_operand_t operands[SUBTILIS_IR_MAX_OP_ARGS];
 };
 
 typedef struct subtilis_ir_inst_t_ subtilis_ir_inst_t;
@@ -1722,6 +1743,13 @@ void subtilis_ir_section_add_instr_reg(subtilis_ir_section_t *s,
 				       subtilis_ir_operand_t op1,
 				       subtilis_ir_operand_t op2,
 				       subtilis_error_t *err);
+void subtilis_ir_section_add_instr4(subtilis_ir_section_t *s,
+				    subtilis_op_instr_type_t type,
+				    subtilis_ir_operand_t op0,
+				    subtilis_ir_operand_t op1,
+				    subtilis_ir_operand_t op2,
+				    subtilis_ir_operand_t op3,
+				    subtilis_error_t *err);
 void subtilis_ir_section_dump(subtilis_ir_section_t *s);
 size_t subtilis_ir_section_new_label(subtilis_ir_section_t *s);
 void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,

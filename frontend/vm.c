@@ -1473,6 +1473,8 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_nop,                             /* SUBTILIS_OP_INSTR_AT */
 	prv_pos,                             /* SUBTILIS_OP_INSTR_POS */
 	prv_pos,                             /* SUBTILIS_OP_INSTR_VPOS */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_TCOL */
+	prv_nop,                             /* SUBTILIS_OP_INSTR_PALETTE */
 };
 
 /* clang-format on */
