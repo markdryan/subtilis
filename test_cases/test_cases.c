@@ -2708,7 +2708,16 @@ const subtilis_test_case_t test_cases[] = {
 	 "print mid$(a$, 1, 2)\n"
 	 "print mid$(a$, 2, 3)\n",
 	 "hello\nhello\nello\nh\nhe\nell\n\ne\nell\nello\nello\n\nh\nhe\nell\n",
-	}
+	},
+	{"nested_array_ref",
+	 "dim a%(10)\n"
+	 "a%() = 1, 2, 3\n"
+	 "for i% = 0 to dim(a%(),1)\n"
+	 "  b%() := a%()\n"
+	 "  print b%(i%)\n"
+	 "next\n",
+	 "1\n2\n3\n0\n0\n0\n0\n0\n0\n0\n0\n",
+	},
 };
 
 /* clang-format on */

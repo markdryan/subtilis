@@ -165,7 +165,8 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 
 	subtilis_parser_lookup_assignment_var(p, t, var_name, &s, &op1.reg,
 					      &new_global, err);
-	if (err->type == SUBTILIS_ERROR_UNKNOWN_VARIABLE) {
+	if (err->type == SUBTILIS_ERROR_UNKNOWN_VARIABLE ||
+	    err->type == SUBTILIS_ERROR_VARIABLE_BAD_LEVEL) {
 		if (at != SUBTILIS_ASSIGN_TYPE_CREATE_EQUAL)
 			goto cleanup;
 		subtilis_error_init(err);
