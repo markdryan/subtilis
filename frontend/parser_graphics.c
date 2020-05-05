@@ -579,3 +579,29 @@ void subtilis_parser_off(subtilis_parser_t *p, subtilis_token_t *t,
 
 	subtilis_lexer_get(p->l, t, err);
 }
+
+void subtilis_parser_colour(subtilis_parser_t *p, subtilis_token_t *t,
+			    subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	e = subtilis_parser_int_var_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_TCOL, e->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (!p->settings.ignore_graphics_errors)
+		subtilis_exp_handle_errors(p, err);
+
+cleanup:
+
+	subtilis_exp_delete(e);
+}

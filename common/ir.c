@@ -185,6 +185,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "at", SUBTILIS_OP_CLASS_REG_REG },
 	{ "pos", SUBTILIS_OP_CLASS_REG },
 	{ "vpos", SUBTILIS_OP_CLASS_REG },
+	{ "tcol", SUBTILIS_OP_CLASS_REG },
 };
 
 /*

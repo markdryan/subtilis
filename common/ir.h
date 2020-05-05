@@ -1486,6 +1486,15 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_VPOS,
+
+	/*
+	 *
+	 * tcol r0
+	 *
+	 * Sets the current text colour to the value in r0.
+	 */
+
+	SUBTILIS_OP_INSTR_TCOL,
 } subtilis_op_instr_type_t;
 
 typedef enum {

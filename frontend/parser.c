@@ -412,8 +412,8 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	subtilis_parser_clg, /* SUBTILIS_KEYWORD_CLG */
 	NULL, /* SUBTILIS_KEYWORD_CLOSE_HASH */
 	subtilis_parser_cls, /* SUBTILIS_KEYWORD_CLS */
-	NULL, /* SUBTILIS_KEYWORD_COLOR */
-	NULL, /* SUBTILIS_KEYWORD_COLOUR */
+	subtilis_parser_colour, /* SUBTILIS_KEYWORD_COLOR */
+	subtilis_parser_colour, /* SUBTILIS_KEYWORD_COLOUR */
 	NULL, /* SUBTILIS_KEYWORD_COS */
 	NULL, /* SUBTILIS_KEYWORD_COUNT */
 	subtilis_parser_def, /* SUBTILIS_KEYWORD_DEF */

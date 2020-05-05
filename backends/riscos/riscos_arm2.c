@@ -248,6 +248,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"pos *\n", subtilis_riscos_arm_pos},
 	{"vpos *\n", subtilis_riscos_arm_vpos},
 	{"powr *, *, *\n", subtilis_fpa_gen_pow},
+	{"tcol *\n", subtilis_riscos_tcol},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

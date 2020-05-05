@@ -50,6 +50,8 @@ void subtilis_parser_point(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err);
 void subtilis_parser_gcol(subtilis_parser_t *p, subtilis_token_t *t,
 			  subtilis_error_t *err);
+void subtilis_parser_colour(subtilis_parser_t *p, subtilis_token_t *t,
+			    subtilis_error_t *err);
 void subtilis_parser_origin(subtilis_parser_t *p, subtilis_token_t *t,
 			    subtilis_error_t *err);
 void subtilis_parser_cls(subtilis_parser_t *p, subtilis_token_t *t,
