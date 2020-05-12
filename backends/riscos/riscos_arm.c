@@ -416,6 +416,9 @@ static void prv_add_builtin(subtilis_ir_section_t *s,
 	case SUBTILIS_BUILTINS_COMPARE:
 		subtilis_arm_mem_strcmp(s, arm_s, err);
 		break;
+	case SUBTILIS_BUILTINS_MEMSETI8:
+		subtilis_arm_mem_memseti8(s, arm_s, err);
+		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
 	}

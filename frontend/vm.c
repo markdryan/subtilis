@@ -706,6 +706,22 @@ static void prv_set_args(subitlis_vm_t *vm, subtilis_ir_call_t *call,
 	free(real_args_copy);
 }
 
+static void prv_memseti32(subitlis_vm_t *vm, subtilis_ir_call_t *call,
+			  subtilis_error_t *err)
+{
+	size_t i = 0;
+	size_t size = vm->regs[call->args[1].reg];
+	int32_t *ptr = (int32_t *)&vm->memory[vm->regs[call->args[0].reg]];
+
+	if (size & 3) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	for (i = 0; i < size; i += 4)
+		*ptr++ = vm->regs[call->args[2].reg];
+}
+
 static void prv_memset(subitlis_vm_t *vm, subtilis_ir_call_t *call,
 		       subtilis_error_t *err)
 {
@@ -756,13 +772,15 @@ static void prv_handle_builtin(subitlis_vm_t *vm, subtilis_builtin_type_t ftype,
 {
 	switch (ftype) {
 	case SUBTILIS_BUILTINS_MEMSETI32:
-		return prv_memset(vm, call, err);
+		return prv_memseti32(vm, call, err);
 	case SUBTILIS_BUILTINS_MEMCPY:
 		return prv_memcpy(vm, call, err);
 	case SUBTILIS_BUILTINS_MEMCMP:
 		return prv_memcmp(vm, call, err);
 	case SUBTILIS_BUILTINS_COMPARE:
 		return prv_compare(vm, call, err);
+	case SUBTILIS_BUILTINS_MEMSETI8:
+		return prv_memset(vm, call, err);
 	default:
 		subtilis_error_set_assertion_failed(err);
 	}

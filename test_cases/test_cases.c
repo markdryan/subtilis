@@ -2718,6 +2718,45 @@ const subtilis_test_case_t test_cases[] = {
 	 "next\n",
 	 "1\n2\n3\n0\n0\n0\n0\n0\n0\n0\n0\n",
 	},
+	{"string_str",
+	 "print string$(0,\"aa\")\n"
+	 "print string$(-1,\"aa\")\n"
+	 "print string$(1,\"aa\")\n"
+	 "print string$(4,\"aa\")\n"
+	 "a% := 0\n"
+	 "print string$(a%,\"aa\")\n"
+	 "a% = -1\n"
+	 "print string$(a%,\"aa\")\n"
+	 "a% = 1\n"
+	 "print string$(a%,\"aa\")\n"
+	 "a% = 4\n"
+	 "print string$(a%,\"aa\")\n"
+	 "a$ = \"aa\"\n"
+	 "print string$(0, a$)\n"
+	 "print string$(-1, a$)\n"
+	 "print string$(1, a$)\n"
+	 "print string$(4, a$)\n"
+	 "a% = 0\n"
+	 "print string$(a%, a$)\n"
+	 "a% = -1\n"
+	 "print string$(a%, a$)\n"
+	 "a% = 1\n"
+	 "print string$(a%, a$)\n"
+	 "a% = 4\n"
+	 "print string$(a%, a$)\n"
+	 "print string$(4, \"a\")\n"
+	 "print string$(a%, \"a\")\n"
+	 "a$ = \"a\"\n"
+	 "print string$(4, a$)\n"
+	 "print string$(a%, a$)\n"
+	 "print string$(4.0, a$)\n"
+	 "a := 4.0\n"
+	 "print string$(a, a$)\n",
+	 "\n\naa\naaaaaaaa\n\n\naa\naaaaaaaa\n"
+	 "\n\naa\naaaaaaaa\n\n\naa\naaaaaaaa\n"
+	 "aaaa\naaaa\naaaa\naaaa\naaaa\naaaa\n",
+	}
+
 };
 
 /* clang-format on */

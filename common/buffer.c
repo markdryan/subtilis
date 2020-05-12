@@ -94,7 +94,12 @@ void subtilis_buffer_append_reserve(subtilis_buffer_t *buffer, size_t length,
 void subtilis_buffer_append(subtilis_buffer_t *buffer, const void *data,
 			    size_t length, subtilis_error_t *err)
 {
-	size_t old_size = subtilis_buffer_get_size(buffer);
+	size_t old_size;
+
+	if (length == 0)
+		return;
+
+	old_size = subtilis_buffer_get_size(buffer);
 
 	subtilis_buffer_append_reserve(buffer, length, err);
 	if (err->type != SUBTILIS_ERROR_OK)
