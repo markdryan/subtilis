@@ -566,13 +566,11 @@ void subtilis_builtins_ir_print_fp(subtilis_parser_t *p,
 	subtilis_ir_operand_t first_not_zero_label;
 	subtilis_ir_operand_t second_not_zero_label;
 	subtilis_ir_operand_t end_label;
-	subtilis_ir_operand_t end_label2;
 
 	loop_label.label = subtilis_ir_section_new_label(current);
 	end_label.label = subtilis_ir_section_new_label(current);
 	first_not_zero_label.label = subtilis_ir_section_new_label(current);
 	second_not_zero_label.label = subtilis_ir_section_new_label(current);
-	end_label2.label = subtilis_ir_section_new_label(current);
 
 	op1.reg = 0;
 	op1i.reg = subtilis_ir_section_add_instr2(
@@ -716,19 +714,8 @@ void subtilis_builtins_ir_print_fp(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_JMPC, cond,
-					  end_label2, loop_label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/* TODO:
-	 * There's a bug in the ARM code generator which gobbles up labels if
-	 * they are proceeded by a comparison and a JUMP.  So we're adding an
-	 * extra label here to be consumed as there are other jumps to the
-	 * end label.
-	 */
-
-	subtilis_ir_section_add_label(current, end_label2.label, err);
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_JMPC_NF,
+					  cond, end_label, loop_label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
