@@ -740,23 +740,25 @@ void subtilis_builtins_ir_print_fp(subtilis_parser_t *p,
 					     err);
 }
 
-static subtilis_ir_section_t *prv_add_1_arg(subtilis_parser_t *p,
-					    const char *name,
-					    const subtilis_type_t *ptype,
-					    const subtilis_type_t *rtype,
-					    subtilis_error_t *err)
+static subtilis_ir_section_t *prv_add_args(subtilis_parser_t *p,
+					   const char *name, size_t arg_count,
+					   const subtilis_type_t **ptype,
+					   const subtilis_type_t *rtype,
+					   subtilis_error_t *err)
 {
 	subtilis_type_section_t *ts;
 	subtilis_type_t *params;
 	subtilis_ir_section_t *current;
+	size_t i;
 
-	params = malloc(sizeof(subtilis_type_t) * 1);
+	params = malloc(sizeof(subtilis_type_t) * arg_count);
 	if (!params) {
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
-	params[0] = *ptype;
-	ts = subtilis_type_section_new(rtype, 1, params, err);
+	for (i = 0; i < arg_count; i++)
+		params[i] = *ptype[i];
+	ts = subtilis_type_section_new(rtype, arg_count, params, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -774,7 +776,10 @@ subtilis_builtins_ir_add_1_arg_int(subtilis_parser_t *p, const char *name,
 				   const subtilis_type_t *rtype,
 				   subtilis_error_t *err)
 {
-	return prv_add_1_arg(p, name, &subtilis_type_integer, rtype, err);
+	const subtilis_type_t *ptype[1];
+
+	ptype[0] = &subtilis_type_integer;
+	return prv_add_args(p, name, 1, ptype, rtype, err);
 }
 
 subtilis_ir_section_t *
@@ -782,5 +787,8 @@ subtilis_builtins_ir_add_1_arg_real(subtilis_parser_t *p, const char *name,
 				    const subtilis_type_t *rtype,
 				    subtilis_error_t *err)
 {
-	return prv_add_1_arg(p, name, &subtilis_type_real, rtype, err);
+	const subtilis_type_t *ptype[1];
+
+	ptype[0] = &subtilis_type_real;
+	return prv_add_args(p, name, 1, ptype, rtype, err);
 }
