@@ -271,3 +271,16 @@ cleanup:
 
 	return NULL;
 }
+
+subtilis_exp_t *subtilis_parser_str_str(subtilis_parser_t *p,
+					subtilis_token_t *t,
+					subtilis_error_t *err)
+{
+	subtilis_exp_t *val;
+
+	val = subtilis_parser_bracketed_exp(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_type_if_to_string(p, val, err);
+}

@@ -302,6 +302,7 @@ subtilis_type_if subtilis_type_array_string = {
 	.load_mem = NULL,
 	.to_int32 = NULL,
 	.to_float64 = NULL,
+	.to_string = NULL,
 	.unary_minus = prv_unary_minus,
 	.add = prv_add,
 	.mul = prv_mul,

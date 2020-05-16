@@ -263,6 +263,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return subtilis_parser_vpos(p, t, err);
 		case SUBTILIS_KEYWORD_STRING_STR:
 			return subtilis_parser_string_str(p, t, err);
+		case SUBTILIS_KEYWORD_STR_STR:
+			return subtilis_parser_str_str(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "Unexpected keyword in expression",
@@ -572,6 +574,48 @@ subtilis_exp_t *subtilis_parser_call_1_arg_fn(subtilis_parser_t *p,
 
 	return subtilis_exp_add_call(p, name_dup, SUBTILIS_BUILTINS_MAX, NULL,
 				     args, rtype, 1, err);
+
+cleanup:
+
+	free(args);
+
+	return NULL;
+}
+
+/* clang-format off */
+subtilis_exp_t *subtilis_parser_call_2_arg_fn(subtilis_parser_t *p,
+					      const char *name, size_t arg1,
+					      size_t arg2,
+					      subtilis_ir_reg_type_t ptype1,
+					      subtilis_ir_reg_type_t ptype2,
+					      const subtilis_type_t *rtype,
+					      subtilis_error_t *err)
+/* clang-format on */
+
+{
+	subtilis_ir_arg_t *args = NULL;
+	char *name_dup = NULL;
+
+	args = malloc(sizeof(*args) * 2);
+	if (!args) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+
+	name_dup = malloc(strlen(name) + 1);
+	if (!name_dup) {
+		subtilis_error_set_oom(err);
+		goto cleanup;
+	}
+	strcpy(name_dup, name);
+
+	args[0].type = ptype1;
+	args[0].reg = arg1;
+	args[1].type = ptype2;
+	args[1].reg = arg2;
+
+	return subtilis_exp_add_call(p, name_dup, SUBTILIS_BUILTINS_MAX, NULL,
+				     args, rtype, 2, err);
 
 cleanup:
 

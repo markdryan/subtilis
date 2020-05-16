@@ -2359,11 +2359,15 @@ subtilis_exp_t *subtilis_string_type_string(subtilis_parser_t *p,
 			} else if (count->exp.ir_op.integer <= 1) {
 				subtilis_buffer_init(&dummy, 128);
 				subtilis_buffer_zero_terminate(&dummy, err);
-				if (err->type != SUBTILIS_ERROR_OK)
+				if (err->type != SUBTILIS_ERROR_OK) {
+					subtilis_buffer_free(&dummy);
 					goto cleanup;
+				}
 				subtilis_exp_delete(count);
 				subtilis_exp_delete(str);
-				return subtilis_exp_new_str(&dummy, err);
+				str = subtilis_exp_new_str(&dummy, err);
+				subtilis_buffer_free(&dummy);
+				return str;
 			}
 			count = subtilis_type_if_exp_to_var(p, count, err);
 			if (err->type != SUBTILIS_ERROR_OK)

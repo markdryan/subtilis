@@ -1018,7 +1018,7 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		memcpy(addr, buf, buf_len);
 		arm_vm->regs[0] = arm_vm->regs[1];
 		arm_vm->regs[1] += buf_len - 1;
-		arm_vm->regs[2] -= buf_len;
+		arm_vm->regs[2] -= buf_len - 1;
 		break;
 	case 0x20000:
 	case 0x0:

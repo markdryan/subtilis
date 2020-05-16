@@ -1504,6 +1504,18 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_PALETTE,
+
+	/*
+	 *
+	 * i32todec r0, r1, r2
+	 *
+	 * Stores a string representation of r1 in the buffer pointed to by
+	 * r2.  r2 must be large enough to contain a decimal representation of
+	 * a 32 bit integer, including the sign, i.e., 11 bytes.  The number of
+	 * bytes written are returned in r0.
+	 */
+
+	SUBTILIS_OP_INSTR_I32TODEC,
 } subtilis_op_instr_type_t;
 
 typedef enum {

@@ -1360,6 +1360,14 @@ static void prv_pos(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = 0;
 }
 
+static void prv_i32_to_dec(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			   subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	char *buf = (char *)&vm->memory[vm->regs[ops[2].reg]];
+
+	vm->regs[ops[0].reg] = sprintf(buf, "%d", vm->regs[ops[1].reg]);
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1493,6 +1501,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_pos,                             /* SUBTILIS_OP_INSTR_VPOS */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_TCOL */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_PALETTE */
+	prv_i32_to_dec,                      /* SUBTILIS_OP_INSTR_I32TODEC */
 };
 
 /* clang-format on */

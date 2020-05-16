@@ -217,6 +217,15 @@ subtilis_symbol_table_create_local_buf(subtilis_symbol_table_t *st, size_t size,
 }
 
 const subtilis_symbol_t *
+subtilis_symbol_table_create_named_local_buf(subtilis_symbol_table_t *st,
+					     const char *name, size_t size,
+					     subtilis_error_t *err)
+{
+	return prv_symbol_table_insert(st, name, &subtilis_type_local_buffer,
+				       size, err);
+}
+
+const subtilis_symbol_t *
 subtilis_symbol_table_insert_tmp(subtilis_symbol_table_t *st,
 				 const subtilis_type_t *id_type,
 				 char **tmp_name, subtilis_error_t *err)

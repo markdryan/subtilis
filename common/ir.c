@@ -187,6 +187,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "vpos", SUBTILIS_OP_CLASS_REG },
 	{ "tcol", SUBTILIS_OP_CLASS_REG },
 	{ "palette", SUBTILIS_OP_CLASS_REG_REG_REG_REG},
+	{ "i32todec", SUBTILIS_OP_CLASS_REG_REG_REG },
 };
 
 /*
