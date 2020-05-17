@@ -1006,7 +1006,7 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	case 0xdc + 0x20000:
 	case 0xdc:
 		/* OS_ConvertInteger4  */
-		buf_len = sprintf(buf, "%d", arm_vm->regs[0]) + 1;
+		buf_len = sprintf(buf, "%d", arm_vm->regs[0]);
 		if (buf_len > arm_vm->regs[2]) {
 			subtilis_error_set_assertion_failed(err);
 			return;
@@ -1017,8 +1017,8 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			return;
 		memcpy(addr, buf, buf_len);
 		arm_vm->regs[0] = arm_vm->regs[1];
-		arm_vm->regs[1] += buf_len - 1;
-		arm_vm->regs[2] -= buf_len - 1;
+		arm_vm->regs[1] += buf_len;
+		arm_vm->regs[2] -= buf_len;
 		break;
 	case 0x20000:
 	case 0x0:
