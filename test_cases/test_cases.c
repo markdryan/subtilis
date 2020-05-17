@@ -1059,7 +1059,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "ENDERROR\n"
 	 "\n"
 	 "ERROR 3\n",
-	 "0\n2\n"},
+	 "0\n2\n",
+	 true},
 	{"error_handled",
 	 "PRINT 0\n"
 	 "\n"
@@ -1141,7 +1142,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "ENDERROR\n"
 	 "\n"
 	 "ERROR 2\n",
-	 "0\n1\n"},
+	 "0\n1\n",
+	true},
 	{"error_nested",
 	"PRINT 0\n"
 	"\n"
@@ -1360,7 +1362,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "DEF PROCEnd\n"
 	 "END\n"
 	 "ENDPROC\n",
-	 "-1\n"},
+	 "-1\n",
+	 true},
 	{"array_int_simple",
 	 "LOCAL i%\n"
 	 "DIM a%(10)\n"

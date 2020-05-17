@@ -17,10 +17,13 @@
 #ifndef __SUBTILIS_TEST_CASES_H
 #define __SUBTILIS_TEST_CASES_H
 
+#include <stdbool.h>
+
 struct subtilis_test_case_t_ {
 	const char *name;
 	const char *source;
 	const char *result;
+	bool mem_leaks_ok;
 };
 
 typedef struct subtilis_test_case_t_ subtilis_test_case_t;
