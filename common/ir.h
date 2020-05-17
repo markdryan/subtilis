@@ -408,14 +408,6 @@ typedef enum {
 	SUBTILIS_OP_INSTR_MOVFP,
 
 	/*
-	 * printi32 r0
-	 *
-	 * Prints the 32 bit integer stored in r0 to the output stream.
-	 */
-
-	SUBTILIS_OP_INSTR_PRINT_I32,
-
-	/*
 	 * printfp r0
 	 *
 	 * Prints the floating point number stored in r0 to the output stream.

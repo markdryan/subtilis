@@ -596,60 +596,6 @@ static void prv_handle_graphics_error(subtilis_arm_section_t *arm_s,
 			      SUBTILIS_ERROR_CODE_GRAPHICS, err);
 }
 
-void subtilis_riscos_arm_printi(subtilis_ir_section_t *s, size_t start,
-				void *user_data, subtilis_error_t *err)
-{
-	subtilis_arm_reg_t dest;
-	subtilis_arm_reg_t op1;
-	subtilis_arm_reg_t op2;
-	subtilis_arm_section_t *arm_s = user_data;
-	subtilis_ir_inst_t *printi = &s->ops[start]->op.instr;
-
-	dest = 0;
-	op2 = subtilis_arm_ir_to_arm_reg(printi->operands[0].reg);
-
-	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
-				 err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	op1 = 13;
-	dest = 1;
-
-	subtilis_arm_add_sub_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
-				 SUBTILIS_RISCOS_PRINT_BUFFER_SIZE, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	dest = 2;
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest,
-				 SUBTILIS_RISCOS_PRINT_BUFFER_SIZE, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/* OS_ConvertInteger4 */
-	/* read_mask = 0x7 = r0, r1, r2 */
-	/* write_mask = 0x7 = r0, r1, r2 */
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0xdc + 0x20000, 0x7,
-			     0x7, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	prv_handle_graphics_error(arm_s, s, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/* OS_Write0 */
-	/* read_mask = 0x1= r1 */
-	/* write_mask = 0x1 = r1 */
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_VC, 0x2 + 0x20000, 1, 1,
-			     err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	prv_handle_graphics_error(arm_s, s, err);
-}
-
 void subtilis_riscos_arm_printstr(subtilis_ir_section_t *s, size_t start,
 				  void *user_data, subtilis_error_t *err)
 {

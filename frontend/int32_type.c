@@ -1988,8 +1988,45 @@ static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
 static void prv_print(subtilis_parser_t *p, subtilis_exp_t *e,
 		      subtilis_error_t *err)
 {
-	subtilis_ir_section_add_instr_no_reg(
-	    p->current, SUBTILIS_OP_INSTR_PRINT_I32, e->exp.ir_op, err);
+	const subtilis_symbol_t *s;
+	subtilis_exp_t *sizee;
+	size_t ptr;
+	size_t size_reg;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+
+	s = subtilis_symbol_table_create_named_local_buf(
+	    p->local_st, "32_int_print_buf", 16, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	ptr = subtilis_reference_get_pointer(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					     err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op0.reg = ptr;
+	if (p->caps & SUBTILIS_BACKEND_HAVE_I32_TO_DEC) {
+		size_reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_I32TODEC, e->exp.ir_op, op0,
+		    err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	} else {
+		sizee = subtilis_builtin_ir_call_dec_to_str(p, e->exp.ir_op.reg,
+							    op0.reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		size_reg = sizee->exp.ir_op.reg;
+		subtilis_exp_delete(sizee);
+	}
+
+	op1.reg = size_reg;
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_PRINT_STR, op0, op1, err);
+
+cleanup:
+
 	subtilis_exp_delete(e);
 }
 

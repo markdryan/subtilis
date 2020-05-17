@@ -63,10 +63,10 @@ void subtilis_symbol_table_delete(subtilis_symbol_table_t *st)
 }
 
 static void prv_ensure_symbol_level(subtilis_symbol_table_t *st,
-				    subtilis_error_t *err)
+				    size_t level_idx, subtilis_error_t *err)
 {
 	size_t new_size;
-	subtilis_symbol_level_t *level = &st->levels[st->level];
+	subtilis_symbol_level_t *level = &st->levels[level_idx];
 	const subtilis_symbol_t **new_symbols;
 
 	if (level->size < level->max_size)
@@ -144,7 +144,7 @@ on_error:
 static const subtilis_symbol_t *
 prv_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 			const subtilis_type_t *id_type, size_t size,
-			subtilis_error_t *err)
+			size_t level, subtilis_error_t *err)
 
 {
 	subtilis_symbol_t *sym;
@@ -165,10 +165,10 @@ prv_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	prv_ensure_symbol_level(st, err);
+	prv_ensure_symbol_level(st, level, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
-	st->levels[st->level].symbols[st->levels[st->level].size++] = sym;
+	st->levels[level].symbols[st->levels[level].size++] = sym;
 
 	(void)subtilis_hashtable_insert(st->h, key_dup, sym, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -197,7 +197,7 @@ subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	return prv_symbol_table_insert(st, key, id_type, size, err);
+	return prv_symbol_table_insert(st, key, id_type, size, st->level, err);
 }
 
 const subtilis_symbol_t *
@@ -207,13 +207,22 @@ subtilis_symbol_table_create_local_buf(subtilis_symbol_table_t *st, size_t size,
 	char buf[64];
 
 	/*
+	 * Everything on the stack needs to be 32 bit word aligned.
+	 */
+
+	if (size & 3) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+
+	/*
 	 * Subtilis identifiers cannot start with a number so there'll be no
 	 * clash here.
 	 */
 
 	sprintf(buf, "%zu", st->tmp_count++);
 	return prv_symbol_table_insert(st, buf, &subtilis_type_local_buffer,
-				       size, err);
+				       size, 0, err);
 }
 
 const subtilis_symbol_t *
@@ -221,8 +230,17 @@ subtilis_symbol_table_create_named_local_buf(subtilis_symbol_table_t *st,
 					     const char *name, size_t size,
 					     subtilis_error_t *err)
 {
+	/*
+	 * Everything on the stack needs to be 32 bit word aligned.
+	 */
+
+	if (size & 3) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+
 	return prv_symbol_table_insert(st, name, &subtilis_type_local_buffer,
-				       size, err);
+				       size, 0, err);
 }
 
 const subtilis_symbol_t *
@@ -327,7 +345,7 @@ subtilis_symbol_table_insert_reg(subtilis_symbol_table_t *st, const char *key,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	prv_ensure_symbol_level(st, err);
+	prv_ensure_symbol_level(st, st->level, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 	st->levels[st->level].symbols[st->levels[st->level].size++] = sym;
