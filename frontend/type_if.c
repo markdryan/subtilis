@@ -37,8 +37,8 @@ static subtilis_type_if *prv_type_map[] = {
 	&subtilis_type_array_float64,
 	&subtilis_type_array_int32
 ,	&subtilis_type_array_string,
-	NULL,
 	&subtilis_type_if_local_buffer,
+	NULL,
 };
 
 /* clang-format on */
