@@ -87,7 +87,6 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "movir", SUBTILIS_OP_CLASS_FREG_REAL},
 	{ "mov", SUBTILIS_OP_CLASS_REG_REG},
 	{ "movfp", SUBTILIS_OP_CLASS_FREG_FREG},
-	{ "printfp", SUBTILIS_OP_CLASS_FREG},
 	{ "printstr", SUBTILIS_OP_CLASS_REG_REG },
 	{ "printnl", SUBTILIS_OP_CLASS_NONE},
 	{ "rsubii32", SUBTILIS_OP_CLASS_REG_REG_I32 },

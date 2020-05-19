@@ -408,14 +408,6 @@ typedef enum {
 	SUBTILIS_OP_INSTR_MOVFP,
 
 	/*
-	 * printfp r0
-	 *
-	 * Prints the floating point number stored in r0 to the output stream.
-	 */
-
-	SUBTILIS_OP_INSTR_PRINT_FP,
-
-	/*
 	 * printstr r0, r1
 	 *
 	 * Prints r1 bytes from the string pointed to by r0.
@@ -1508,6 +1500,18 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_I32TODEC,
+
+	/*
+	 *
+	 * realtodec r0, fp1, r2
+	 *
+	 * Stores a string representation of fp1 in the buffer pointed to by
+	 * r2.  r2 must be at least 24 bytes.  The instruction is not allowed
+	 * to write more than 24 bytes into the buffer pointed to by r2.  The
+	 * number of bytes written are returned in r0.
+	 */
+
+	SUBTILIS_OP_INSTR_REALTODEC,
 } subtilis_op_instr_type_t;
 
 typedef enum {

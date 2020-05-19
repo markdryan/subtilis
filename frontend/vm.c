@@ -375,15 +375,6 @@ static void prv_divir(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->fregs[ops[0].reg] = vm->fregs[ops[1].reg] / ops[2].real;
 }
 
-static void prv_printfp(subitlis_vm_t *vm, subtilis_buffer_t *b,
-			subtilis_ir_operand_t *ops, subtilis_error_t *err)
-{
-	char buf[64];
-
-	sprintf(buf, "%f", vm->fregs[ops[0].reg]);
-	subtilis_buffer_append_string(b, buf, err);
-}
-
 static void prv_printstr(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			 subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -1392,7 +1383,6 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_movir,                           /* SUBTILIS_OP_INSTR_MOVI_REAL */
 	prv_mov,                             /* SUBTILIS_OP_INSTR_MOV */
 	prv_movfp,                           /* SUBTILIS_OP_INSTR_MOVFP */
-	prv_printfp,                         /* SUBTILIS_OP_INSTR_PRINT_FP */
 	prv_printstr,                        /* SUBTILIS_OP_INSTR_PRINT_STR */
 	prv_printnl,                         /* SUBTILIS_OP_INSTR_PRINT_NL */
 	prv_rsubii32,                        /* SUBTILIS_OP_INSTR_RSUBI_I32 */
