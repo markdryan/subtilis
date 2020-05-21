@@ -2758,8 +2758,39 @@ const subtilis_test_case_t test_cases[] = {
 	 "\n\naa\naaaaaaaa\n\n\naa\naaaaaaaa\n"
 	 "\n\naa\naaaaaaaa\n\n\naa\naaaaaaaa\n"
 	 "aaaa\naaaa\naaaa\naaaa\naaaa\naaaa\n",
-	}
-
+	},
+	{"str_str",
+	 "print str$(10)\n"
+	 "print str$(-10)\n"
+	 "print str$(2147483647)\n"
+	 "print str$(&80000000)\n"
+	 "print str$(3.1457)\n"
+	 "print str$(-3.1457)\n"
+	 "a% := 10\n"
+	 "print str$(a%)\n"
+	 "a% = -10\n"
+	 "print str$(a%)\n"
+	 "a% = 2147483647\n"
+	 "print str$(2147483647)\n"
+	 "a% = &80000000\n"
+	 "print str$(a%)\n"
+	 "a := 3.1457\n"
+	 "print str$(a)\n"
+	 "a = -3.1457\n"
+	 "print str$(a)\n"
+	 "print str$~(&ffffffff)\n"
+	 "print str$~(4000)\n"
+	 "print str$~(4000.6666)\n"
+	 "a% = &ffffffff\n"
+	 "print str$~(a%)\n"
+	 "a% = 4000\n"
+	 "print str$~(a%)\n"
+	 "a = 4000.6666\n"
+	 "print str$~(a)\n",
+	 "10\n-10\n2147483647\n-2147483648\n3.1457\n-3.1457\n"
+	 "10\n-10\n2147483647\n-2147483648\n3.1457\n-3.1457\n"
+	 "FFFFFFFF\nFA0\nFA0\nFFFFFFFF\nFA0\nFA0\n"
+	},
 };
 
 /* clang-format on */
