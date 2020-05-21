@@ -17,10 +17,13 @@
 #ifndef __SUBTILIS_TEST_CASES_H
 #define __SUBTILIS_TEST_CASES_H
 
+#include <stdbool.h>
+
 struct subtilis_test_case_t_ {
 	const char *name;
 	const char *source;
 	const char *result;
+	bool mem_leaks_ok;
 };
 
 typedef struct subtilis_test_case_t_ subtilis_test_case_t;
@@ -206,6 +209,8 @@ typedef enum {
 	SUBTILIS_TEST_CASE_ID_MID$_STR2,
 	SUBTILIS_TEST_CASE_ID_MID$_STR3,
 	SUBTILIS_TEST_CASE_ID_NESTED_ARRAY_REF,
+	SUBTILIS_TEST_CASE_ID_STRING_STR,
+	SUBTILIS_TEST_CASE_ID_STR_STR,
 	SUBTILIS_TEST_CASE_ID_MAX,
 } subtilis_test_case_id_t;
 

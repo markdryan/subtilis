@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "parser_exp.h"
@@ -215,4 +216,113 @@ cleanup:
 		subtilis_exp_delete(e[i]);
 
 	return NULL;
+}
+
+subtilis_exp_t *subtilis_parser_string_str(subtilis_parser_t *p,
+					   subtilis_token_t *t,
+					   subtilis_error_t *err)
+{
+	subtilis_exp_t *e[2];
+	const char *tbuf;
+	size_t args;
+	size_t i;
+
+	e[0] = NULL;
+	e[1] = NULL;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	if (strcmp(tbuf, "(")) {
+		subtilis_error_set_exp_expected(err, "( ", p->l->stream->name,
+						p->l->line);
+		return NULL;
+	}
+
+	args = subtilis_var_bracketed_args_have_b(p, t, e, 2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (args != 2 || ((e[1]->type.type != SUBTILIS_TYPE_CONST_STRING) &&
+			  (e[1]->type.type != SUBTILIS_TYPE_STRING))) {
+		subtilis_error_set_string_expected(err, p->l->stream->name,
+						   p->l->line);
+		goto cleanup;
+	}
+
+	e[0] = subtilis_type_if_to_int(p, e[0], err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e[0] = subtilis_string_type_string(p, e[0], e[1], err);
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return e[0];
+
+cleanup:
+
+	for (i = 0; i < args; i++)
+		subtilis_exp_delete(e[i]);
+
+	return NULL;
+}
+
+subtilis_exp_t *subtilis_parser_str_str(subtilis_parser_t *p,
+					subtilis_token_t *t,
+					subtilis_error_t *err)
+{
+	subtilis_exp_t *val;
+	const char *tbuf;
+	bool hex = false;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
+		subtilis_error_set_expected(err, "( or ~", tbuf,
+					    p->l->stream->name, p->l->line);
+		return NULL;
+	}
+
+	if (!strcmp(tbuf, "~")) {
+		hex = true;
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+		tbuf = subtilis_token_get_text(t);
+	}
+
+	if (strcmp(tbuf, "(")) {
+		subtilis_error_set_expected(err, "(", tbuf, p->l->stream->name,
+					    p->l->line);
+		return NULL;
+	}
+
+	val = subtilis_parser_bracketed_exp_internal(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(val);
+		return NULL;
+	}
+
+	if (hex) {
+		if (!subtilis_type_if_is_integer(&val->type)) {
+			val = subtilis_type_if_to_int(p, val, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return NULL;
+		}
+		return subtilis_type_if_to_hex_string(p, val, err);
+	}
+
+	return subtilis_type_if_to_string(p, val, err);
 }

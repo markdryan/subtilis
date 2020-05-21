@@ -37,8 +37,8 @@ static subtilis_type_if *prv_type_map[] = {
 	&subtilis_type_array_float64,
 	&subtilis_type_array_int32
 ,	&subtilis_type_array_string,
-	NULL,
 	&subtilis_type_if_local_buffer,
+	NULL,
 };
 
 /* clang-format on */
@@ -487,6 +487,38 @@ subtilis_exp_t *subtilis_type_if_to_float64(subtilis_parser_t *p,
 {
 	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->to_float64,
 				 err);
+}
+
+subtilis_exp_t *subtilis_type_if_to_string(subtilis_parser_t *p,
+					   subtilis_exp_t *e,
+					   subtilis_error_t *err)
+{
+	if (!prv_type_map[e->type.type]->to_string) {
+		subtilis_error_set_bad_conversion(
+		    err, subtilis_type_name(&e->type),
+		    subtilis_type_name(&subtilis_type_string),
+		    p->l->stream->name, p->l->line);
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->to_string,
+				 err);
+}
+
+subtilis_exp_t *subtilis_type_if_to_hex_string(subtilis_parser_t *p,
+					       subtilis_exp_t *e,
+					       subtilis_error_t *err)
+{
+	if (!prv_type_map[e->type.type]->to_hex_string) {
+		subtilis_error_set_bad_conversion(
+		    err, subtilis_type_name(&e->type),
+		    subtilis_type_name(&subtilis_type_string),
+		    p->l->stream->name, p->l->line);
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+	return prv_call_unary_fn(
+	    p, e, prv_type_map[e->type.type]->to_hex_string, err);
 }
 
 subtilis_exp_t *subtilis_type_if_unary_minus(subtilis_parser_t *p,

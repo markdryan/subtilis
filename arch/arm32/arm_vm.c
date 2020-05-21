@@ -985,6 +985,7 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	size_t buf_len;
 	size_t ptr;
 	size_t code;
+	const char *format = "%d";
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
@@ -1003,10 +1004,14 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		arm_vm->regs[1] = 0x8000 + arm_vm->mem_size;
 		arm_vm->regs[2] = 0;
 		break;
+	case 0xd4 + 0x20000:
+	case 0xd4:
+		/* OS_ConvertHex8 */
+		format = "%X";
 	case 0xdc + 0x20000:
 	case 0xdc:
 		/* OS_ConvertInteger4  */
-		buf_len = sprintf(buf, "%d", arm_vm->regs[0]) + 1;
+		buf_len = sprintf(buf, format, arm_vm->regs[0]);
 		if (buf_len > arm_vm->regs[2]) {
 			subtilis_error_set_assertion_failed(err);
 			return;
@@ -1017,7 +1022,7 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			return;
 		memcpy(addr, buf, buf_len);
 		arm_vm->regs[0] = arm_vm->regs[1];
-		arm_vm->regs[1] += buf_len - 1;
+		arm_vm->regs[1] += buf_len;
 		arm_vm->regs[2] -= buf_len;
 		break;
 	case 0x20000:

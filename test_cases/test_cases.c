@@ -1059,7 +1059,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "ENDERROR\n"
 	 "\n"
 	 "ERROR 3\n",
-	 "0\n2\n"},
+	 "0\n2\n",
+	 true},
 	{"error_handled",
 	 "PRINT 0\n"
 	 "\n"
@@ -1141,7 +1142,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "ENDERROR\n"
 	 "\n"
 	 "ERROR 2\n",
-	 "0\n1\n"},
+	 "0\n1\n",
+	true},
 	{"error_nested",
 	"PRINT 0\n"
 	"\n"
@@ -1360,7 +1362,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "DEF PROCEnd\n"
 	 "END\n"
 	 "ENDPROC\n",
-	 "-1\n"},
+	 "-1\n",
+	 true},
 	{"array_int_simple",
 	 "LOCAL i%\n"
 	 "DIM a%(10)\n"
@@ -2717,6 +2720,76 @@ const subtilis_test_case_t test_cases[] = {
 	 "  print b%(i%)\n"
 	 "next\n",
 	 "1\n2\n3\n0\n0\n0\n0\n0\n0\n0\n0\n",
+	},
+	{"string_str",
+	 "print string$(0,\"aa\")\n"
+	 "print string$(-1,\"aa\")\n"
+	 "print string$(1,\"aa\")\n"
+	 "print string$(4,\"aa\")\n"
+	 "a% := 0\n"
+	 "print string$(a%,\"aa\")\n"
+	 "a% = -1\n"
+	 "print string$(a%,\"aa\")\n"
+	 "a% = 1\n"
+	 "print string$(a%,\"aa\")\n"
+	 "a% = 4\n"
+	 "print string$(a%,\"aa\")\n"
+	 "a$ = \"aa\"\n"
+	 "print string$(0, a$)\n"
+	 "print string$(-1, a$)\n"
+	 "print string$(1, a$)\n"
+	 "print string$(4, a$)\n"
+	 "a% = 0\n"
+	 "print string$(a%, a$)\n"
+	 "a% = -1\n"
+	 "print string$(a%, a$)\n"
+	 "a% = 1\n"
+	 "print string$(a%, a$)\n"
+	 "a% = 4\n"
+	 "print string$(a%, a$)\n"
+	 "print string$(4, \"a\")\n"
+	 "print string$(a%, \"a\")\n"
+	 "a$ = \"a\"\n"
+	 "print string$(4, a$)\n"
+	 "print string$(a%, a$)\n"
+	 "print string$(4.0, a$)\n"
+	 "a := 4.0\n"
+	 "print string$(a, a$)\n",
+	 "\n\naa\naaaaaaaa\n\n\naa\naaaaaaaa\n"
+	 "\n\naa\naaaaaaaa\n\n\naa\naaaaaaaa\n"
+	 "aaaa\naaaa\naaaa\naaaa\naaaa\naaaa\n",
+	},
+	{"str_str",
+	 "print str$(10)\n"
+	 "print str$(-10)\n"
+	 "print str$(2147483647)\n"
+	 "print str$(&80000000)\n"
+	 "print str$(3.1457)\n"
+	 "print str$(-3.1457)\n"
+	 "a% := 10\n"
+	 "print str$(a%)\n"
+	 "a% = -10\n"
+	 "print str$(a%)\n"
+	 "a% = 2147483647\n"
+	 "print str$(2147483647)\n"
+	 "a% = &80000000\n"
+	 "print str$(a%)\n"
+	 "a := 3.1457\n"
+	 "print str$(a)\n"
+	 "a = -3.1457\n"
+	 "print str$(a)\n"
+	 "print str$~(&ffffffff)\n"
+	 "print str$~(4000)\n"
+	 "print str$~(4000.6666)\n"
+	 "a% = &ffffffff\n"
+	 "print str$~(a%)\n"
+	 "a% = 4000\n"
+	 "print str$~(a%)\n"
+	 "a = 4000.6666\n"
+	 "print str$~(a)\n",
+	 "10\n-10\n2147483647\n-2147483648\n3.1457\n-3.1457\n"
+	 "10\n-10\n2147483647\n-2147483648\n3.1457\n-3.1457\n"
+	 "FFFFFFFF\nFA0\nFA0\nFFFFFFFF\nFA0\nFA0\n"
 	},
 };
 

@@ -18,7 +18,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "builtins_ir.h"
 #include "int32_type.h"
+#include "reference_type.h"
+#include "string_type.h"
 
 static size_t prv_size(const subtilis_type_t *type) { return 4; }
 
@@ -125,6 +128,42 @@ static subtilis_exp_t *prv_to_float64_const(subtilis_parser_t *p,
 {
 	e->type.type = SUBTILIS_TYPE_CONST_REAL;
 	e->exp.ir_op.real = (double)e->exp.ir_op.integer;
+	return e;
+}
+
+static subtilis_exp_t *prv_to_string_const(subtilis_parser_t *p,
+					   subtilis_exp_t *e,
+					   subtilis_error_t *err)
+{
+	char buf[32];
+	size_t len = sprintf(buf, "%d", e->exp.ir_op.integer) + 1;
+
+	e->type.type = SUBTILIS_TYPE_CONST_STRING;
+	subtilis_buffer_init(&e->exp.str, 128);
+	subtilis_buffer_append(&e->exp.str, buf, len, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return e;
+}
+
+static subtilis_exp_t *prv_to_hex_string_const(subtilis_parser_t *p,
+					       subtilis_exp_t *e,
+					       subtilis_error_t *err)
+{
+	char buf[32];
+	size_t len = sprintf(buf, "%X", e->exp.ir_op.integer) + 1;
+
+	e->type.type = SUBTILIS_TYPE_CONST_STRING;
+	subtilis_buffer_init(&e->exp.str, 128);
+	subtilis_buffer_append(&e->exp.str, buf, len, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
 	return e;
 }
 
@@ -855,6 +894,8 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.load_mem = NULL,
 	.to_int32 = prv_to_int32,
 	.to_float64 = prv_to_float64_const,
+	.to_string = prv_to_string_const,
+	.to_hex_string = prv_to_hex_string_const,
 	.coerce = prv_coerce_type_const,
 	.unary_minus = prv_unary_minus_const,
 	.add = prv_add_const,
@@ -1020,6 +1061,97 @@ on_error:
 
 	subtilis_exp_delete(e);
 	return NULL;
+}
+
+typedef subtilis_exp_t *(*subtilis_int32_type_format_t)(subtilis_parser_t *p,
+							size_t val_reg,
+							size_t buf_reg,
+							subtilis_error_t *err);
+
+static subtilis_exp_t *prv_to_string_common(subtilis_parser_t *p,
+					    subtilis_exp_t *e, int32_t buf_size,
+					    subtilis_backend_caps_t cap,
+					    subtilis_op_instr_type_t op_code,
+					    subtilis_int32_type_format_t fn,
+					    subtilis_error_t *err)
+{
+	size_t size_reg;
+	subtilis_exp_t *sizee;
+	const subtilis_symbol_t *s;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+
+	op1.integer = buf_size;
+	size_reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	s = subtilis_symbol_table_insert_tmp(p->local_st, &subtilis_type_string,
+					     NULL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	/*
+	 * Here we allocate more memory then we probably need but it saves
+	 * us a memcpy.
+	 */
+
+	op0.reg = subtilis_reference_type_alloc(p, &subtilis_type_string,
+						s->loc, SUBTILIS_IR_REG_LOCAL,
+						size_reg, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	if (p->caps & cap) {
+		size_reg = subtilis_ir_section_add_instr(
+		    p->current, op_code, e->exp.ir_op, op0, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+	} else {
+		sizee = fn(p, e->exp.ir_op.integer, op0.reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+		size_reg = sizee->exp.ir_op.reg;
+		subtilis_exp_delete(sizee);
+	}
+
+	subtilis_exp_delete(e);
+	e = NULL;
+
+	subtilis_string_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+				      size_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	op0.reg = subtilis_reference_get_pointer(p, SUBTILIS_IR_REG_LOCAL,
+						 s->loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_var(&subtilis_type_string, op0.reg, err);
+
+on_error:
+
+	subtilis_exp_delete(e);
+	return NULL;
+}
+
+static subtilis_exp_t *prv_to_string(subtilis_parser_t *p, subtilis_exp_t *e,
+				     subtilis_error_t *err)
+{
+	return prv_to_string_common(p, e, 11, SUBTILIS_BACKEND_HAVE_I32_TO_DEC,
+				    SUBTILIS_OP_INSTR_I32TODEC,
+				    subtilis_builtin_ir_call_dec_to_str, err);
+}
+
+static subtilis_exp_t *prv_to_hex_string(subtilis_parser_t *p,
+					 subtilis_exp_t *e,
+					 subtilis_error_t *err)
+{
+	return prv_to_string_common(p, e, 11, SUBTILIS_BACKEND_HAVE_I32_TO_HEX,
+				    SUBTILIS_OP_INSTR_I32TOHEX,
+				    subtilis_builtin_ir_call_hex_to_str, err);
 }
 
 static subtilis_exp_t *prv_coerce_type(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -1899,8 +2031,45 @@ static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
 static void prv_print(subtilis_parser_t *p, subtilis_exp_t *e,
 		      subtilis_error_t *err)
 {
-	subtilis_ir_section_add_instr_no_reg(
-	    p->current, SUBTILIS_OP_INSTR_PRINT_I32, e->exp.ir_op, err);
+	const subtilis_symbol_t *s;
+	subtilis_exp_t *sizee;
+	size_t ptr;
+	size_t size_reg;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+
+	s = subtilis_symbol_table_create_named_local_buf(
+	    p->local_st, "32_int_print_buf", 16, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	ptr = subtilis_reference_get_pointer(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					     err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op0.reg = ptr;
+	if (p->caps & SUBTILIS_BACKEND_HAVE_I32_TO_DEC) {
+		size_reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_I32TODEC, e->exp.ir_op, op0,
+		    err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	} else {
+		sizee = subtilis_builtin_ir_call_dec_to_str(p, e->exp.ir_op.reg,
+							    op0.reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		size_reg = sizee->exp.ir_op.reg;
+		subtilis_exp_delete(sizee);
+	}
+
+	op1.reg = size_reg;
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_PRINT_STR, op0, op1, err);
+
+cleanup:
+
 	subtilis_exp_delete(e);
 }
 
@@ -1933,6 +2102,8 @@ subtilis_type_if subtilis_type_int32 = {
 	.load_mem = prv_load_from_mem,
 	.to_int32 = prv_to_int32,
 	.to_float64 = prv_to_float64,
+	.to_string = prv_to_string,
+	.to_hex_string = prv_to_hex_string,
 	.coerce = prv_coerce_type,
 	.unary_minus = prv_unary_minus,
 	.add = prv_add,

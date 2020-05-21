@@ -29,7 +29,7 @@
 
 static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 			    subtilis_error_type_t expected_err,
-			    const char *expected)
+			    const char *expected, bool mem_leaks_ok)
 {
 	subtilis_error_t err;
 	subtilis_buffer_t b;
@@ -98,7 +98,7 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 		goto cleanup;
 	}
 
-	if (vm->heap.used_list) {
+	if (!mem_leaks_ok && vm->heap.used_list) {
 		printf("Memory Leak!!!\n");
 		retval = 1;
 		goto cleanup;
@@ -131,7 +131,7 @@ static int prv_test_examples(void)
 		printf("arm_%s", test->name);
 		pass = parser_test_wrapper(
 		    test->source, SUBTILIS_RISCOS_ARM_CAPS, prv_test_example,
-		    SUBTILIS_ERROR_OK, test->result);
+		    SUBTILIS_ERROR_OK, test->result, test->mem_leaks_ok);
 		ret |= pass;
 	}
 

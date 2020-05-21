@@ -37,8 +37,6 @@ subtilis_riscos_generate(
 #define SUBTILIS_RISCOS_PRINT_BUFFER_SIZE 32
 #define SUBTILIS_RISCOS_RUNTIME_SIZE SUBTILIS_RISCOS_PRINT_BUFFER_SIZE
 
-void subtilis_riscos_arm_printi(subtilis_ir_section_t *s, size_t start,
-				void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_printstr(subtilis_ir_section_t *s, size_t start,
 				  void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_printnl(subtilis_ir_section_t *s, size_t start,
@@ -104,7 +102,12 @@ void subtilis_riscos_tcol(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_riscos_palette(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_i32_to_dec(subtilis_ir_section_t *s, size_t start,
+				    void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_i32_to_hex(subtilis_ir_section_t *s, size_t start,
+				    void *user_data, subtilis_error_t *err);
 
-#define SUBTILIS_RISCOS_ARM_CAPS 0
+#define SUBTILIS_RISCOS_ARM_CAPS                                               \
+	(SUBTILIS_BACKEND_HAVE_I32_TO_DEC | SUBTILIS_BACKEND_HAVE_I32_TO_HEX)
 
 #endif

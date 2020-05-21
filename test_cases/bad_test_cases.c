@@ -436,6 +436,11 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"a%() = \"hello\", \"world\"n",
 	SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH,
 	},
+	{
+	"str_str_mismatch",
+	"a$ = str$~(\"hello\")\n",
+	SUBTILIS_ERROR_INTEGER_EXPECTED,
+	},
 };
 
 /* clang-format on */

@@ -375,24 +375,6 @@ static void prv_divir(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->fregs[ops[0].reg] = vm->fregs[ops[1].reg] / ops[2].real;
 }
 
-static void prv_printi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
-			 subtilis_ir_operand_t *ops, subtilis_error_t *err)
-{
-	char buf[64];
-
-	sprintf(buf, "%d", vm->regs[ops[0].reg]);
-	subtilis_buffer_append_string(b, buf, err);
-}
-
-static void prv_printfp(subitlis_vm_t *vm, subtilis_buffer_t *b,
-			subtilis_ir_operand_t *ops, subtilis_error_t *err)
-{
-	char buf[64];
-
-	sprintf(buf, "%f", vm->fregs[ops[0].reg]);
-	subtilis_buffer_append_string(b, buf, err);
-}
-
 static void prv_printstr(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			 subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -706,6 +688,22 @@ static void prv_set_args(subitlis_vm_t *vm, subtilis_ir_call_t *call,
 	free(real_args_copy);
 }
 
+static void prv_memseti32(subitlis_vm_t *vm, subtilis_ir_call_t *call,
+			  subtilis_error_t *err)
+{
+	size_t i = 0;
+	size_t size = vm->regs[call->args[1].reg];
+	int32_t *ptr = (int32_t *)&vm->memory[vm->regs[call->args[0].reg]];
+
+	if (size & 3) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	for (i = 0; i < size; i += 4)
+		*ptr++ = vm->regs[call->args[2].reg];
+}
+
 static void prv_memset(subitlis_vm_t *vm, subtilis_ir_call_t *call,
 		       subtilis_error_t *err)
 {
@@ -756,13 +754,15 @@ static void prv_handle_builtin(subitlis_vm_t *vm, subtilis_builtin_type_t ftype,
 {
 	switch (ftype) {
 	case SUBTILIS_BUILTINS_MEMSETI32:
-		return prv_memset(vm, call, err);
+		return prv_memseti32(vm, call, err);
 	case SUBTILIS_BUILTINS_MEMCPY:
 		return prv_memcpy(vm, call, err);
 	case SUBTILIS_BUILTINS_MEMCMP:
 		return prv_memcmp(vm, call, err);
 	case SUBTILIS_BUILTINS_COMPARE:
 		return prv_compare(vm, call, err);
+	case SUBTILIS_BUILTINS_MEMSETI8:
+		return prv_memset(vm, call, err);
 	default:
 		subtilis_error_set_assertion_failed(err);
 	}
@@ -1342,6 +1342,14 @@ static void prv_pos(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = 0;
 }
 
+static void prv_i32_to_dec(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			   subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	char *buf = (char *)&vm->memory[vm->regs[ops[2].reg]];
+
+	vm->regs[ops[0].reg] = sprintf(buf, "%d", vm->regs[ops[1].reg]);
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1375,8 +1383,6 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_movir,                           /* SUBTILIS_OP_INSTR_MOVI_REAL */
 	prv_mov,                             /* SUBTILIS_OP_INSTR_MOV */
 	prv_movfp,                           /* SUBTILIS_OP_INSTR_MOVFP */
-	prv_printi32,                        /* SUBTILIS_OP_INSTR_PRINT_I32 */
-	prv_printfp,                         /* SUBTILIS_OP_INSTR_PRINT_FP */
 	prv_printstr,                        /* SUBTILIS_OP_INSTR_PRINT_STR */
 	prv_printnl,                         /* SUBTILIS_OP_INSTR_PRINT_NL */
 	prv_rsubii32,                        /* SUBTILIS_OP_INSTR_RSUBI_I32 */
@@ -1475,6 +1481,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_pos,                             /* SUBTILIS_OP_INSTR_VPOS */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_TCOL */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_PALETTE */
+	prv_i32_to_dec,                      /* SUBTILIS_OP_INSTR_I32TODEC */
 };
 
 /* clang-format on */

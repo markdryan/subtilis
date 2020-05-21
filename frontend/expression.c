@@ -423,8 +423,9 @@ subtilis_exp_t *subtilis_exp_new_str(subtilis_buffer_t *str,
 	e->type.type = SUBTILIS_TYPE_CONST_STRING;
 	e->temporary = NULL;
 	subtilis_buffer_init(&e->exp.str, str->granularity);
-	subtilis_buffer_append(&e->exp.str, str->buffer->data,
-			       subtilis_buffer_get_size(str), err);
+	if (subtilis_buffer_get_size(str) > 0)
+		subtilis_buffer_append(&e->exp.str, str->buffer->data,
+				       subtilis_buffer_get_size(str), err);
 
 	return e;
 }

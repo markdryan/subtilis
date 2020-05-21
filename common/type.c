@@ -46,6 +46,7 @@ static const char *const prv_fixed_type_names[] = {
 	"array of reals", /* SUBTILIS_TYPE_ARRAY_REAL */
 	"array of ints", /* SUBTILIS_TYPE_ARRAY_INTEGER */
 	"array of strings", /* SUBTILIS_TYPE_ARRAY_STRING */
+	"local buffer",  /* SUBTILIS_TYPE_LOCAL_BUFFER */
 };
 
 /* clang-format on */

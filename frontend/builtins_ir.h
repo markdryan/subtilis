@@ -42,9 +42,9 @@ void subtilis_builtins_ir_rnd_real(subtilis_parser_t *p,
 				   subtilis_ir_section_t *current,
 				   subtilis_error_t *err);
 
-void subtilis_builtins_ir_print_fp(subtilis_parser_t *p,
-				   subtilis_ir_section_t *current,
-				   subtilis_error_t *err);
+void subtilis_builtins_ir_fp_to_str(subtilis_parser_t *p,
+				    subtilis_ir_section_t *current,
+				    subtilis_error_t *err);
 
 subtilis_ir_section_t *
 subtilis_builtins_ir_add_1_arg_int(subtilis_parser_t *p, const char *name,
@@ -54,5 +54,20 @@ subtilis_ir_section_t *
 subtilis_builtins_ir_add_1_arg_real(subtilis_parser_t *p, const char *name,
 				    const subtilis_type_t *rtype,
 				    subtilis_error_t *err);
+
+subtilis_exp_t *subtilis_builtin_ir_call_dec_to_str(subtilis_parser_t *p,
+						    size_t val_reg,
+						    size_t buf_reg,
+						    subtilis_error_t *err);
+
+subtilis_exp_t *subtilis_builtin_ir_call_hex_to_str(subtilis_parser_t *p,
+						    size_t val_reg,
+						    size_t buf_reg,
+						    subtilis_error_t *err);
+
+subtilis_exp_t *subtilis_builtin_ir_call_fp_to_str(subtilis_parser_t *p,
+						   size_t val_reg,
+						   size_t buf_reg,
+						   subtilis_error_t *err);
 
 #endif

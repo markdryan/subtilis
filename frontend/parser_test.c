@@ -26,9 +26,10 @@
 
 int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 			int (*fn)(subtilis_lexer_t *, subtilis_parser_t *,
-				  subtilis_error_type_t, const char *expected),
+				  subtilis_error_type_t, const char *expected,
+				  bool mem_leaks_ok),
 			subtilis_error_type_t expected_err,
-			const char *expected)
+			const char *expected, bool mem_leaks_ok)
 {
 	subtilis_stream_t s;
 	subtilis_error_t err;
@@ -51,7 +52,7 @@ int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	retval = fn(l, p, expected_err, expected);
+	retval = fn(l, p, expected_err, expected, mem_leaks_ok);
 
 	printf(": [%s]\n", retval ? "FAIL" : "OK");
 
@@ -87,7 +88,7 @@ static void prv_check_for_error(subtilis_lexer_t *l,
 
 static int prv_check_eval_res(subtilis_lexer_t *l, subtilis_parser_t *p,
 			      subtilis_error_type_t expected_err,
-			      const char *expected)
+			      const char *expected, bool mem_leaks_ok)
 {
 	subtilis_buffer_t b;
 	subtilis_error_t err;
@@ -159,7 +160,7 @@ static int prv_test_let(void)
 	printf("parser_let");
 	return parser_test_wrapper(let_test, SUBTILIS_BACKEND_INTER_CAPS,
 				   prv_check_eval_res, SUBTILIS_ERROR_OK,
-				   "119\n");
+				   "119\n", false);
 }
 
 static int prv_test_expressions(void)
@@ -171,8 +172,8 @@ static int prv_test_expressions(void)
 		printf("parser_%s", test_cases[i].name);
 		retval |= parser_test_wrapper(
 		    test_cases[i].source, SUBTILIS_BACKEND_INTER_CAPS,
-		    prv_check_eval_res, SUBTILIS_ERROR_OK,
-		    test_cases[i].result);
+		    prv_check_eval_res, SUBTILIS_ERROR_OK, test_cases[i].result,
+		    false);
 	}
 
 	return retval;
@@ -187,7 +188,7 @@ static int prv_test_bad_cases(void)
 		printf("parser_bad_%s", bad_test_cases[i].name);
 		retval |= parser_test_wrapper(
 		    bad_test_cases[i].source, SUBTILIS_BACKEND_INTER_CAPS,
-		    prv_check_eval_res, bad_test_cases[i].err, "");
+		    prv_check_eval_res, bad_test_cases[i].err, "", false);
 	}
 
 	return retval;
@@ -198,7 +199,7 @@ static int prv_test_print(void)
 	printf("parser_print");
 	return parser_test_wrapper(
 	    "PRINT (10 * 3 * 3 + 1) DIV 2", SUBTILIS_BACKEND_INTER_CAPS,
-	    prv_check_eval_res, SUBTILIS_ERROR_OK, "45\n");
+	    prv_check_eval_res, SUBTILIS_ERROR_OK, "45\n", false);
 }
 
 int parser_test(void)
