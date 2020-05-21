@@ -123,6 +123,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_unary_t to_int32;
 	subtilis_type_if_unary_t to_float64;
 	subtilis_type_if_unary_t to_string;
+	subtilis_type_if_unary_t to_hex_string;
 	subtilis_type_if_coerce_t coerce;
 	subtilis_type_if_unary_t unary_minus;
 	subtilis_type_if_binary_t add;
@@ -392,6 +393,14 @@ subtilis_exp_t *subtilis_type_if_to_float64(subtilis_parser_t *p,
 subtilis_exp_t *subtilis_type_if_to_string(subtilis_parser_t *p,
 					   subtilis_exp_t *e,
 					   subtilis_error_t *err);
+
+/*
+ * Returns a hex string representation of expression e
+ */
+
+subtilis_exp_t *subtilis_type_if_to_hex_string(subtilis_parser_t *p,
+					       subtilis_exp_t *e,
+					       subtilis_error_t *err);
 
 /*
  * Unary minus for scalar types.

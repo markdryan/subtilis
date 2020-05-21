@@ -1512,6 +1512,18 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_REALTODEC,
+
+	/*
+	 *
+	 * i32tohex r0, r1, r2
+	 *
+	 * Stores a hexadecimal string representation of r1 in the buffer
+	 * pointed to by r2.  r2 must be large enough to contain a decimal
+	 * representation of a 32 bit integer, i.e., 8 bytes.  The number of
+	 * bytes written are returned in r0.
+	 */
+
+	SUBTILIS_OP_INSTR_I32TOHEX,
 } subtilis_op_instr_type_t;
 
 typedef enum {
@@ -1524,6 +1536,7 @@ typedef enum {
 	SUBTILIS_OP_CLASS_REG_LABEL_LABEL,
 	SUBTILIS_OP_CLASS_REG_FREG_FREG,
 	SUBTILIS_OP_CLASS_REG_FREG_REAL,
+	SUBTILIS_OP_CLASS_REG_FREG_REG,
 	SUBTILIS_OP_CLASS_REG_I32,
 	SUBTILIS_OP_CLASS_FREG_REAL,
 	SUBTILIS_OP_CLASS_REG_REG,

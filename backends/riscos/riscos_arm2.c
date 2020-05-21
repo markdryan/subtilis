@@ -250,6 +250,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"tcol *\n", subtilis_riscos_tcol},
 	{"palette *, *, *, *\n", subtilis_riscos_palette},
 	{"i32todec *, *, *\n", subtilis_riscos_arm_i32_to_dec},
+	{"i32tohex *, *, *\n", subtilis_riscos_arm_i32_to_hex},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

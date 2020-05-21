@@ -277,10 +277,52 @@ subtilis_exp_t *subtilis_parser_str_str(subtilis_parser_t *p,
 					subtilis_error_t *err)
 {
 	subtilis_exp_t *val;
+	const char *tbuf;
+	bool hex = false;
 
-	val = subtilis_parser_bracketed_exp(p, t, err);
+	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
+		subtilis_error_set_expected(err, "( or ~", tbuf,
+					    p->l->stream->name, p->l->line);
+		return NULL;
+	}
+
+	if (!strcmp(tbuf, "~")) {
+		hex = true;
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+		tbuf = subtilis_token_get_text(t);
+	}
+
+	if (strcmp(tbuf, "(")) {
+		subtilis_error_set_expected(err, "(", tbuf, p->l->stream->name,
+					    p->l->line);
+		return NULL;
+	}
+
+	val = subtilis_parser_bracketed_exp_internal(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(val);
+		return NULL;
+	}
+
+	if (hex) {
+		if (!subtilis_type_if_is_integer(&val->type)) {
+			val = subtilis_type_if_to_int(p, val, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return NULL;
+		}
+		return subtilis_type_if_to_hex_string(p, val, err);
+	}
 
 	return subtilis_type_if_to_string(p, val, err);
 }

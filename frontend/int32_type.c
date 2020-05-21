@@ -149,6 +149,24 @@ static subtilis_exp_t *prv_to_string_const(subtilis_parser_t *p,
 	return e;
 }
 
+static subtilis_exp_t *prv_to_hex_string_const(subtilis_parser_t *p,
+					       subtilis_exp_t *e,
+					       subtilis_error_t *err)
+{
+	char buf[32];
+	size_t len = sprintf(buf, "%X", e->exp.ir_op.integer) + 1;
+
+	e->type.type = SUBTILIS_TYPE_CONST_STRING;
+	subtilis_buffer_init(&e->exp.str, 128);
+	subtilis_buffer_append(&e->exp.str, buf, len, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return e;
+}
+
 static subtilis_exp_t *prv_coerce_type_const(subtilis_parser_t *p,
 					     subtilis_exp_t *e,
 					     const subtilis_type_t *type,
@@ -877,6 +895,7 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.to_int32 = prv_to_int32,
 	.to_float64 = prv_to_float64_const,
 	.to_string = prv_to_string_const,
+	.to_hex_string = prv_to_hex_string_const,
 	.coerce = prv_coerce_type_const,
 	.unary_minus = prv_unary_minus_const,
 	.add = prv_add_const,
@@ -1044,8 +1063,17 @@ on_error:
 	return NULL;
 }
 
-static subtilis_exp_t *prv_to_string(subtilis_parser_t *p, subtilis_exp_t *e,
-				     subtilis_error_t *err)
+typedef subtilis_exp_t *(*subtilis_int32_type_format_t)(subtilis_parser_t *p,
+							size_t val_reg,
+							size_t buf_reg,
+							subtilis_error_t *err);
+
+static subtilis_exp_t *prv_to_string_common(subtilis_parser_t *p,
+					    subtilis_exp_t *e, int32_t buf_size,
+					    subtilis_backend_caps_t cap,
+					    subtilis_op_instr_type_t op_code,
+					    subtilis_int32_type_format_t fn,
+					    subtilis_error_t *err)
 {
 	size_t size_reg;
 	subtilis_exp_t *sizee;
@@ -1053,7 +1081,7 @@ static subtilis_exp_t *prv_to_string(subtilis_parser_t *p, subtilis_exp_t *e,
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
 
-	op1.integer = 11;
+	op1.integer = buf_size;
 	size_reg = subtilis_ir_section_add_instr2(
 	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1075,15 +1103,13 @@ static subtilis_exp_t *prv_to_string(subtilis_parser_t *p, subtilis_exp_t *e,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	if (p->caps & SUBTILIS_BACKEND_HAVE_I32_TO_DEC) {
+	if (p->caps & cap) {
 		size_reg = subtilis_ir_section_add_instr(
-		    p->current, SUBTILIS_OP_INSTR_I32TODEC, e->exp.ir_op, op0,
-		    err);
+		    p->current, op_code, e->exp.ir_op, op0, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 	} else {
-		sizee = subtilis_builtin_ir_call_dec_to_str(
-		    p, e->exp.ir_op.integer, op0.reg, err);
+		sizee = fn(p, e->exp.ir_op.integer, op0.reg, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 		size_reg = sizee->exp.ir_op.reg;
@@ -1109,6 +1135,23 @@ on_error:
 
 	subtilis_exp_delete(e);
 	return NULL;
+}
+
+static subtilis_exp_t *prv_to_string(subtilis_parser_t *p, subtilis_exp_t *e,
+				     subtilis_error_t *err)
+{
+	return prv_to_string_common(p, e, 11, SUBTILIS_BACKEND_HAVE_I32_TO_DEC,
+				    SUBTILIS_OP_INSTR_I32TODEC,
+				    subtilis_builtin_ir_call_dec_to_str, err);
+}
+
+static subtilis_exp_t *prv_to_hex_string(subtilis_parser_t *p,
+					 subtilis_exp_t *e,
+					 subtilis_error_t *err)
+{
+	return prv_to_string_common(p, e, 11, SUBTILIS_BACKEND_HAVE_I32_TO_HEX,
+				    SUBTILIS_OP_INSTR_I32TOHEX,
+				    subtilis_builtin_ir_call_hex_to_str, err);
 }
 
 static subtilis_exp_t *prv_coerce_type(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -2060,6 +2103,7 @@ subtilis_type_if subtilis_type_int32 = {
 	.to_int32 = prv_to_int32,
 	.to_float64 = prv_to_float64,
 	.to_string = prv_to_string,
+	.to_hex_string = prv_to_hex_string,
 	.coerce = prv_coerce_type,
 	.unary_minus = prv_unary_minus,
 	.add = prv_add,

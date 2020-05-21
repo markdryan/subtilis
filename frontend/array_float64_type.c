@@ -299,6 +299,7 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.to_int32 = NULL,
 	.to_float64 = NULL,
 	.to_string = NULL,
+	.to_hex_string = NULL,
 	.unary_minus = prv_unary_minus,
 	.add = prv_add,
 	.mul = prv_mul,

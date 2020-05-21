@@ -60,6 +60,11 @@ subtilis_exp_t *subtilis_builtin_ir_call_dec_to_str(subtilis_parser_t *p,
 						    size_t buf_reg,
 						    subtilis_error_t *err);
 
+subtilis_exp_t *subtilis_builtin_ir_call_hex_to_str(subtilis_parser_t *p,
+						    size_t val_reg,
+						    size_t buf_reg,
+						    subtilis_error_t *err);
+
 subtilis_exp_t *subtilis_builtin_ir_call_fp_to_str(subtilis_parser_t *p,
 						   size_t val_reg,
 						   size_t buf_reg,
