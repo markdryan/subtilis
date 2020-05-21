@@ -532,9 +532,14 @@ subtilis_exp_t *subtilis_type_if_unary_minus(subtilis_parser_t *p,
 subtilis_exp_t *subtilis_type_if_add(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	(void)prv_order_expressions(&a1, &a2);
-	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->add,
-				  err);
+	/*
+	 * Irritatingly, string addition is not commutative.
+	 */
+
+	bool swapped = prv_order_expressions(&a1, &a2);
+
+	return prv_call_binary_nc_fn(
+	    p, a1, a2, prv_type_map[a1->type.type]->add, swapped, err);
 }
 
 subtilis_exp_t *subtilis_type_if_mul(subtilis_parser_t *p, subtilis_exp_t *a1,

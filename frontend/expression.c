@@ -288,29 +288,6 @@ on_error:
 	return NULL;
 }
 
-/* Swap the arguments if necessary to ensure that the constant comes last
- * Returns true if arguments have been swapped.
- */
-
-static bool prv_order_expressions(subtilis_exp_t **a1, subtilis_exp_t **a2)
-{
-	subtilis_exp_t *e1 = *a1;
-	subtilis_exp_t *e2 = *a2;
-
-	if ((e2->type.type == SUBTILIS_TYPE_INTEGER ||
-	     e2->type.type == SUBTILIS_TYPE_REAL ||
-	     e2->type.type == SUBTILIS_TYPE_STRING) &&
-	    (e1->type.type == SUBTILIS_TYPE_CONST_INTEGER ||
-	     e1->type.type == SUBTILIS_TYPE_CONST_REAL ||
-	     e1->type.type == SUBTILIS_TYPE_CONST_STRING)) {
-		*a1 = e2;
-		*a2 = e1;
-		return true;
-	}
-
-	return false;
-}
-
 subtilis_exp_t *subtilis_exp_new_empty(const subtilis_type_t *type,
 				       subtilis_error_t *err)
 {
@@ -430,42 +407,9 @@ subtilis_exp_t *subtilis_exp_new_str(subtilis_buffer_t *str,
 	return e;
 }
 
-static subtilis_exp_t *prv_subtilis_exp_add_str(subtilis_parser_t *p,
-						subtilis_exp_t *a1,
-						subtilis_exp_t *a2,
-						subtilis_error_t *err)
-{
-	size_t len;
-
-	(void)prv_order_expressions(&a1, &a2);
-
-	if (a1->type.type == SUBTILIS_TYPE_CONST_STRING) {
-		len = subtilis_buffer_get_size(&a2->exp.str);
-		subtilis_buffer_remove_terminator(&a1->exp.str);
-		subtilis_buffer_append(&a1->exp.str, a2->exp.str.buffer->data,
-				       len, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return NULL;
-		return a1;
-	} else if (a2->type.type == SUBTILIS_TYPE_CONST_STRING) {
-		subtilis_error_set_assertion_failed(err);
-		return NULL;
-	}
-
-	subtilis_error_set_assertion_failed(err);
-	return NULL;
-}
-
 subtilis_exp_t *subtilis_exp_add(subtilis_parser_t *p, subtilis_exp_t *a1,
 				 subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	if ((a1->type.type == SUBTILIS_TYPE_CONST_STRING ||
-	     a1->type.type == SUBTILIS_TYPE_STRING) &&
-	    (a2->type.type == SUBTILIS_TYPE_CONST_STRING ||
-	     a2->type.type == SUBTILIS_TYPE_STRING)) {
-		return prv_subtilis_exp_add_str(p, a1, a2, err);
-	}
-
 	return subtilis_type_if_add(p, a1, a2, err);
 }
 

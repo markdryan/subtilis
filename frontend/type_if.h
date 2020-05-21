@@ -126,7 +126,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_unary_t to_hex_string;
 	subtilis_type_if_coerce_t coerce;
 	subtilis_type_if_unary_t unary_minus;
-	subtilis_type_if_binary_t add;
+	subtilis_type_if_binary_nc_t add;
 	subtilis_type_if_binary_t mul;
 	subtilis_type_if_binary_t and;
 	/* clang-format off */

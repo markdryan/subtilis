@@ -88,5 +88,8 @@ subtilis_exp_t *subtilis_string_type_string(subtilis_parser_t *p,
 					    subtilis_exp_t *count,
 					    subtilis_exp_t *str,
 					    subtilis_error_t *err);
+subtilis_exp_t *subtilis_string_type_add(subtilis_parser_t *p,
+					 subtilis_exp_t *a1, subtilis_exp_t *a2,
+					 bool swapped, subtilis_error_t *err);
 
 #endif

@@ -72,6 +72,24 @@ static subtilis_exp_t *prv_coerce_type_const(subtilis_parser_t *p,
 	return prv_exp_to_var_const(p, e, err);
 }
 
+static subtilis_exp_t *prv_add_const(subtilis_parser_t *p, subtilis_exp_t *a1,
+				     subtilis_exp_t *a2, bool swapped,
+				     subtilis_error_t *err)
+{
+	size_t len;
+
+	len = subtilis_buffer_get_size(&a2->exp.str);
+	subtilis_buffer_remove_terminator(&a1->exp.str);
+	subtilis_buffer_append(&a1->exp.str, a2->exp.str.buffer->data, len,
+			       err);
+	subtilis_exp_delete(a2);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(a1);
+		return NULL;
+	}
+	return a1;
+}
+
 static void prv_assign_to_mem_const(subtilis_parser_t *p, size_t mem_reg,
 				    size_t loc, subtilis_exp_t *e,
 				    subtilis_error_t *err)
@@ -297,7 +315,7 @@ subtilis_type_if subtilis_type_if_const_string = {
 	.to_string = NULL,
 	.coerce = prv_coerce_type_const,
 	.unary_minus = NULL,
-	.add = NULL,
+	.add = prv_add_const,
 	.mul = NULL,
 	.and = NULL,
 	.or = NULL,
@@ -1075,7 +1093,7 @@ subtilis_type_if subtilis_type_if_string = {
 	.to_string = NULL,
 	.to_hex_string = NULL,
 	.unary_minus = NULL,
-	.add = NULL,
+	.add = subtilis_string_type_add,
 	.mul = NULL,
 	.and = NULL,
 	.or = NULL,

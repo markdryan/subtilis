@@ -201,7 +201,8 @@ static subtilis_exp_t *prv_unary_minus_const(subtilis_parser_t *p,
 }
 
 static subtilis_exp_t *prv_add_const(subtilis_parser_t *p, subtilis_exp_t *a1,
-				     subtilis_exp_t *a2, subtilis_error_t *err)
+				     subtilis_exp_t *a2, bool swapped,
+				     subtilis_error_t *err)
 {
 	/* a2 must be const */
 
@@ -984,7 +985,8 @@ on_error:
 }
 
 static subtilis_exp_t *prv_add(subtilis_parser_t *p, subtilis_exp_t *a1,
-			       subtilis_exp_t *a2, subtilis_error_t *err)
+			       subtilis_exp_t *a2, bool swapped,
+			       subtilis_error_t *err)
 {
 	return prv_commutative(p, a1, a2, SUBTILIS_OP_INSTR_ADDI_REAL,
 			       SUBTILIS_OP_INSTR_ADD_REAL, err);

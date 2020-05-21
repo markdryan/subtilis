@@ -121,7 +121,8 @@ static subtilis_exp_t *prv_unary_minus(subtilis_parser_t *p, subtilis_exp_t *e,
 }
 
 static subtilis_exp_t *prv_add(subtilis_parser_t *p, subtilis_exp_t *a1,
-			       subtilis_exp_t *a2, subtilis_error_t *err)
+			       subtilis_exp_t *a2, bool swapped,
+			       subtilis_error_t *err)
 {
 	subtilis_error_set_not_supported(err, "+ on arrays", p->l->stream->name,
 					 p->l->line);
