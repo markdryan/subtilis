@@ -346,6 +346,11 @@ void subtilis_arm_mem_memseti8(subtilis_ir_section_t *s,
 				 err);
 }
 
+/*
+ * Either the source or the dest or both pointers may not be word aligned.  If
+ * anything is not word aligned we take the slow path.
+ */
+
 void subtilis_arm_mem_memcpy(subtilis_ir_section_t *s,
 			     subtilis_arm_section_t *arm_s,
 			     subtilis_error_t *err)
@@ -378,6 +383,61 @@ void subtilis_arm_mem_memcpy(subtilis_ir_section_t *s,
 	datai->op1 = dest_reg;
 	datai->op2.type = SUBTILIS_ARM_OP2_REG;
 	datai->op2.op.reg = size;
+
+	/*
+	 * Check that both the source and the destination are word aligned.  If
+	 * they're not we take the slow path.
+	 */
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_AND, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai = &instr->operands.data;
+	datai->status = false;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->dest = 10;
+	datai->op1 = src_reg;
+	datai->op2.type = SUBTILIS_ARM_OP2_I32;
+	datai->op2.op.integer = 3;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_AND, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai = &instr->operands.data;
+	datai->status = false;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->dest = 9;
+	datai->op1 = dest_reg;
+	datai->op2.type = SUBTILIS_ARM_OP2_I32;
+	datai->op2.op.integer = 3;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_ORR, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai = &instr->operands.data;
+	datai->status = true;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->dest = 9;
+	datai->op1 = 9;
+	datai->op2.type = SUBTILIS_ARM_OP2_REG;
+	datai->op2.op.reg = 10;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_NE;
+	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
+	br->target.label = start_tiny_label;
 
 	subtilis_arm_add_sub_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false,
 				 stm_end_reg, end_reg, 32, err);
