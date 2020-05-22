@@ -192,7 +192,7 @@ static size_t prv_create_tmp_ref(subtilis_parser_t *p, size_t reg,
 	}
 
 	source.reg = reg;
-	subtlis_array_type_create_tmp_ref(p, fn_type, dest, source, err);
+	subtilis_type_if_copy_ret(p, fn_type, dest.reg, source.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 

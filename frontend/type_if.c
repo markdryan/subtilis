@@ -191,6 +191,20 @@ void subtilis_type_if_zero_ref(subtilis_parser_t *p,
 	fn(p, type, mem_reg, loc, err);
 }
 
+void subtilis_type_if_copy_ret(subtilis_parser_t *p,
+			       const subtilis_type_t *type, size_t dest_reg,
+			       size_t source_reg, subtilis_error_t *err)
+{
+	subtilis_type_if_reg2_t fn;
+
+	fn = prv_type_map[type->type]->copy_ret;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(p, type, dest_reg, source_reg, err);
+}
+
 void subtilis_type_if_new_ref(subtilis_parser_t *p, const subtilis_type_t *type,
 			      size_t mem_reg, size_t loc, subtilis_exp_t *e,
 			      subtilis_error_t *err)

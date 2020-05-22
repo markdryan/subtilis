@@ -278,7 +278,7 @@ static void prv_assignment_local(subtilis_parser_t *p, subtilis_token_t *t,
 
 	if (e->temporary) {
 		(void)subtilis_symbol_table_promote_tmp(
-			p->local_st, &e->type, e->temporary, var_name, err);
+		    p->local_st, &e->type, e->temporary, var_name, err);
 
 		subtilis_exp_delete(e);
 		return;
@@ -287,7 +287,6 @@ static void prv_assignment_local(subtilis_parser_t *p, subtilis_token_t *t,
 	s = subtilis_symbol_table_insert(p->local_st, var_name, id_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-
 
 	subtilis_type_if_new_ref(p, id_type, SUBTILIS_IR_REG_LOCAL, s->loc, e,
 				 err);

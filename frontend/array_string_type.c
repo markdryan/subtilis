@@ -289,6 +289,7 @@ subtilis_type_if subtilis_type_array_string = {
 	.new_ref = NULL,
 	.assign_ref = NULL,
 	.zero_reg = prv_zero_reg,
+	.copy_ret = subtlis_array_type_copy_ret,
 	.array_of = NULL,
 	.element_type = prv_element_type,
 	.exp_to_var = prv_exp_to_var,

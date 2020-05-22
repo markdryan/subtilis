@@ -130,6 +130,74 @@ void subtilis_reference_type_copy_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 	    p->current, SUBTILIS_OP_INSTR_PUSH_I32, op2, err);
 }
 
+/*
+ * Initialise a temporary reference on the caller's stack with the contents
+ * of a reference variable on the callee's stack.  This is called directly after
+ * the callee's ret has executed so his stack is still presevered.
+ *
+ * TODO: This is a bit risky though.  Might be better, and faster, to allocate
+ * space for this variable on the caller's stack.
+ */
+
+void subtilis_reference_type_copy_ret(subtilis_parser_t *p,
+				      const subtilis_type_t *t, size_t dest_reg,
+				      size_t source_reg, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t d;
+	subtilis_ir_operand_t s;
+
+	d.reg = dest_reg;
+	s.reg = source_reg;
+
+	op2.integer = SUBTIILIS_REFERENCE_SIZE_OFF;
+	op0.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, s, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op0, d, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.reg = subtilis_reference_get_data(p, source_reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.integer = SUBTIILIS_REFERENCE_DATA_OFF;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op1, d, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.integer = SUBTIILIS_REFERENCE_DESTRUCTOR_OFF;
+	op1.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, s, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op1, d, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * It's important that this comes last as the reference we're
+	 * copying might be left on the stack of a previous function.
+	 * We don't want to overwrite the data before we've copied it.
+	 */
+
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_PUSH_I32, d, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_reference_inc_cleanup_stack(p, t, err);
+}
+
 void subtilis_reference_type_ref(subtilis_parser_t *p, size_t mem_reg,
 				 size_t loc, bool check_size,
 				 subtilis_error_t *err)
