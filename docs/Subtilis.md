@@ -386,10 +386,10 @@ NEXT
 
 ### Keywords that act like Functions
 
-Keywords that act like functions, e.g., COS, SIN and RND, are parsed like functions,
-without requiring the FN prefix.  This means that their parameters must be enclosed
-within brackets even if there is only one parameter.  In BBC BASIC you could write SINA
-but in Subtilis you must write SIN(A)
+Keywords that act like functions, e.g., LEN, ASC, COS, SIN and RND, are parsed like
+functions, without requiring the FN prefix.  This means that their parameters must be
+enclosed within brackets even if there is only one parameter.  In BBC BASIC you could
+write SINA but in Subtilis you must write SIN(A)
 
 ### Error Handling
 
