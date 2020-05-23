@@ -493,29 +493,15 @@ void subtilis_reference_inc_cleanup_stack(subtilis_parser_t *p,
 					      dest, op2, err);
 }
 
-size_t subtilis_reference_type_alloc(subtilis_parser_t *p,
-				     const subtilis_type_t *type, size_t loc,
-				     size_t store_reg, size_t size_reg,
-				     bool push, subtilis_error_t *err)
+static size_t prv_do_alloc(subtilis_parser_t *p, size_t size_reg,
+			   subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op;
-	subtilis_ir_operand_t op1;
-	subtilis_ir_operand_t destructor;
-	subtilis_ir_operand_t size_op;
-	subtilis_ir_operand_t store_op;
 	subtilis_exp_t *e;
+	subtilis_ir_operand_t size_op;
 
 	size_op.reg = size_reg;
-	store_op.reg = store_reg;
 
-	op1.integer = loc + SUBTIILIS_REFERENCE_SIZE_OFF;
-	subtilis_ir_section_add_instr_reg(p->current,
-					  SUBTILIS_OP_INSTR_STOREO_I32, size_op,
-					  store_op, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
-	op1.integer = loc + SUBTIILIS_REFERENCE_DATA_OFF;
 	if (p->caps & SUBTILIS_BACKEND_HAVE_ALLOC) {
 		op.reg = subtilis_ir_section_add_instr2(
 		    p->current, SUBTILIS_OP_INSTR_ALLOC, size_op, err);
@@ -535,6 +521,35 @@ size_t subtilis_reference_type_alloc(subtilis_parser_t *p,
 		op.reg = e->exp.ir_op.reg;
 		subtilis_exp_delete(e);
 	}
+
+	return op.reg;
+}
+
+size_t subtilis_reference_type_alloc(subtilis_parser_t *p,
+				     const subtilis_type_t *type, size_t loc,
+				     size_t store_reg, size_t size_reg,
+				     bool push, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t destructor;
+	subtilis_ir_operand_t size_op;
+	subtilis_ir_operand_t store_op;
+
+	size_op.reg = size_reg;
+	store_op.reg = store_reg;
+
+	op1.integer = loc + SUBTIILIS_REFERENCE_SIZE_OFF;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_STOREO_I32, size_op,
+					  store_op, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	op1.integer = loc + SUBTIILIS_REFERENCE_DATA_OFF;
+	op.reg = prv_do_alloc(p, size_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
 
 	if (push) {
 		subtilis_reference_type_push_reference(p, type, store_reg, loc,
@@ -562,6 +577,178 @@ size_t subtilis_reference_type_alloc(subtilis_parser_t *p,
 		return SIZE_MAX;
 
 	return op.reg;
+}
+
+static size_t prv_resize_with_realloc(subtilis_parser_t *p, size_t loc,
+				      size_t store_reg, size_t data_reg,
+				      size_t size_reg, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	size_t dest_reg = p->current->reg_counter++;
+
+	op0.reg = data_reg;
+	op1.reg = size_reg;
+	op2.reg = dest_reg;
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_REALLOC,
+					  op0, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_exp_handle_errors(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	op0.reg = size_reg;
+	op1.reg = store_reg;
+	op2.integer = loc + SUBTIILIS_REFERENCE_SIZE_OFF;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op0, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	op0.reg = dest_reg;
+	op1.reg = store_reg;
+	op2.integer = loc + SUBTIILIS_REFERENCE_DATA_OFF;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op0, op1, op2, err);
+
+	return dest_reg;
+}
+
+static size_t prv_resize_with_malloc(subtilis_parser_t *p, size_t loc,
+				     size_t store_reg, size_t data_reg,
+				     size_t old_size_reg, size_t new_size_reg,
+				     size_t delta_reg, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t store;
+	subtilis_ir_operand_t free_space;
+	subtilis_ir_operand_t block_size;
+	subtilis_ir_operand_t old_size;
+	subtilis_ir_operand_t new_size;
+	subtilis_ir_operand_t alloc_needed;
+	subtilis_ir_operand_t alloc_needed_label;
+	subtilis_ir_operand_t alloc_end_label;
+	subtilis_ir_operand_t no_alloc_needed_label;
+	subtilis_ir_operand_t dest;
+	subtilis_ir_operand_t data;
+	subtilis_ir_operand_t delta;
+	subtilis_ir_operand_t new_block;
+
+	alloc_needed_label.label = subtilis_ir_section_new_label(p->current);
+	no_alloc_needed_label.label = subtilis_ir_section_new_label(p->current);
+	alloc_end_label.label = subtilis_ir_section_new_label(p->current);
+
+	data.reg = data_reg;
+	dest.reg = p->current->reg_counter++;
+	old_size.reg = old_size_reg;
+	new_size.reg = new_size_reg;
+	store.reg = store_reg;
+	delta.reg = delta_reg;
+
+	op0.reg = data_reg;
+	free_space.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_BLOCK_FREE, op0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	block_size.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, old_size, free_space, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	alloc_needed.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_GT_I32, new_size, block_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  alloc_needed, alloc_needed_label,
+					  no_alloc_needed_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_label(p->current, alloc_needed_label.label,
+				      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	new_block.reg = prv_do_alloc(p, new_size_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_reference_type_memcpy_dest(p, new_block.reg, data_reg,
+					    old_size_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	/*
+	 * Here we call deref directly as we already have the pointer to the
+	 * block and we don't want to call any destructors.
+	 */
+
+	prv_call_deref(p, data, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	op2.integer = loc + SUBTIILIS_REFERENCE_DATA_OFF;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_STOREO_I32,
+					  new_block, store, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      dest, new_block, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     alloc_end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_label(p->current, no_alloc_needed_label.label,
+				      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_BLOCK_ADJUST, data, delta, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      dest, data, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_label(p->current, alloc_end_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	op2.integer = loc + SUBTIILIS_REFERENCE_SIZE_OFF;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_STOREO_I32,
+					  new_size, store, op2, err);
+
+	return dest.reg;
+}
+
+size_t subtilis_reference_type_realloc(subtilis_parser_t *p, size_t loc,
+				       size_t store_reg, size_t data_reg,
+				       size_t old_size_reg, size_t new_size_reg,
+				       size_t delta_reg, subtilis_error_t *err)
+{
+	if (p->caps & SUBTILIS_BACKEND_HAVE_ALLOC)
+		return prv_resize_with_realloc(p, loc, store_reg, data_reg,
+					       new_size_reg, err);
+
+	return prv_resize_with_malloc(p, loc, store_reg, data_reg, old_size_reg,
+				      new_size_reg, delta_reg, err);
 }
 
 static void prv_deref(subtilis_parser_t *p, size_t mem_reg, size_t loc,

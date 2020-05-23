@@ -1378,7 +1378,8 @@ typedef enum {
 	 *
 	 * Unless there is an error, r2 always points to the resized memory
 	 * block on exit.  r2 and r0 may be equal.  They will be different if
-
+	 * the block needs to be moved.
+	 *
 	 * If an error occurs the error flag is set and an error is written
 	 * into the error offsets for the current section.
 	 */

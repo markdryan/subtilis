@@ -2407,6 +2407,8 @@ subtilis_exp_t *subtilis_string_type_add(subtilis_parser_t *p,
 	const subtilis_symbol_t *s;
 	size_t dest_reg;
 	size_t tmp;
+	char *tmp_name = NULL;
+	char *a1_tmp;
 
 	op2.integer = SUBTIILIS_STRING_SIZE_OFF;
 	a1_size.reg = subtilis_ir_section_add_instr(
@@ -2468,21 +2470,37 @@ subtilis_exp_t *subtilis_string_type_add(subtilis_parser_t *p,
 		tmp = a1_data.reg;
 		a1_data.reg = a2_data.reg;
 		a2_data.reg = tmp;
+		a1_tmp = a2->temporary;
+	} else {
+		a1_tmp = a1->temporary;
 	}
 
-	s = subtilis_symbol_table_insert_tmp(p->local_st, &subtilis_type_string,
-					     NULL, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+	if (a1_tmp) {
+		s = subtilis_symbol_table_lookup(p->local_st, a1_tmp);
+		if (!s) {
+			subtilis_error_set_assertion_failed(err);
+			goto cleanup;
+		}
+		dest_reg = subtilis_reference_type_realloc(
+		    p, s->loc, SUBTILIS_IR_REG_LOCAL, a1_data.reg, a1_size.reg,
+		    new_size.reg, a2_size.reg, err);
+	} else {
+		s = subtilis_symbol_table_insert_tmp(
+		    p->local_st, &subtilis_type_string, &tmp_name, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
 
-	dest_reg = subtilis_reference_type_alloc(p, &subtilis_type_string,
-						 s->loc, SUBTILIS_IR_REG_LOCAL,
-						 new_size.reg, true, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		a1->temporary = tmp_name;
 
-	subtilis_reference_type_memcpy_dest(p, dest_reg, a1_data.reg,
-					    a1_size.reg, err);
+		dest_reg = subtilis_reference_type_alloc(
+		    p, &subtilis_type_string, s->loc, SUBTILIS_IR_REG_LOCAL,
+		    new_size.reg, true, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		subtilis_reference_type_memcpy_dest(p, dest_reg, a1_data.reg,
+						    a1_size.reg, err);
+	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
