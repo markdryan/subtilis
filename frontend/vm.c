@@ -1127,6 +1127,12 @@ static void prv_powr(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	    pow(vm->fregs[ops[1].reg], vm->fregs[ops[2].reg]);
 }
 
+static void prv_expr(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->fregs[ops[0].reg] = exp(vm->fregs[ops[1].reg]);
+}
+
 static void prv_get(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -1458,6 +1464,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_ln,                              /* SUBTILIS_OP_INSTR_LN */
 	prv_absr,                            /* SUBTILIS_OP_INSTR_ABSR */
 	prv_powr,                            /* SUBTILIS_OP_INSTR_POWR */
+	prv_expr,                            /* SUBTILIS_OP_INSTR_EXPR */
 	prv_get,                             /* SUBTILIS_OP_INSTR_GET */
 	prv_get,                             /* SUBTILIS_OP_INSTR_GETTIMEOUT */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_INKEY */

@@ -119,7 +119,8 @@ static subtilis_exp_t *prv_unary_minus(subtilis_parser_t *p, subtilis_exp_t *e,
 }
 
 static subtilis_exp_t *prv_add(subtilis_parser_t *p, subtilis_exp_t *a1,
-			       subtilis_exp_t *a2, subtilis_error_t *err)
+			       subtilis_exp_t *a2, bool swapped,
+			       subtilis_error_t *err)
 {
 	subtilis_error_set_not_supported(err, "+ on arrays", p->l->stream->name,
 					 p->l->line);
@@ -284,6 +285,7 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.new_ref = NULL,
 	.assign_ref = NULL,
 	.zero_reg = prv_zero_reg,
+	.copy_ret = subtlis_array_type_copy_ret,
 	.array_of = NULL,
 	.element_type = prv_element_type,
 	.exp_to_var = prv_exp_to_var,

@@ -2389,3 +2389,126 @@ cleanup:
 
 	return NULL;
 }
+
+subtilis_exp_t *subtilis_string_type_add(subtilis_parser_t *p,
+					 subtilis_exp_t *a1, subtilis_exp_t *a2,
+					 bool swapped, subtilis_error_t *err)
+{
+	size_t len;
+	subtilis_ir_operand_t a1_size;
+	subtilis_ir_operand_t a2_size;
+	subtilis_ir_operand_t new_size;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t a1_data;
+	subtilis_ir_operand_t a2_data;
+	const subtilis_symbol_t *s;
+	size_t dest_reg;
+	size_t tmp;
+
+	op2.integer = SUBTIILIS_STRING_SIZE_OFF;
+	a1_size.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, a1->exp.ir_op, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a1_data.reg = subtilis_reference_get_data(p, a1->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	switch (a2->type.type) {
+	case SUBTILIS_TYPE_CONST_STRING:
+		len = subtilis_buffer_get_size(&a2->exp.str) - 1;
+		if (len == 0) {
+			subtilis_exp_delete(a2);
+			return a1;
+		}
+
+		op1.integer = len;
+		a2_size.reg = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		a2_data.reg = subtilis_string_type_lca_const(
+		    p, subtilis_buffer_get_string(&a2->exp.str), len, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		break;
+	case SUBTILIS_TYPE_STRING:
+		op2.integer = SUBTIILIS_STRING_SIZE_OFF;
+		a2_size.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_LOADO_I32, a2->exp.ir_op, op2,
+		    err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		a2_data.reg =
+		    subtilis_reference_get_data(p, a2->exp.ir_op.reg, 0, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		break;
+	default:
+		subtilis_error_set_string_expected(err, p->l->stream->name,
+						   p->l->line);
+		goto cleanup;
+	}
+
+	new_size.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, a1_size, a2_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (swapped) {
+		tmp = a1_size.reg;
+		a1_size.reg = a2_size.reg;
+		a2_size.reg = tmp;
+		tmp = a1_data.reg;
+		a1_data.reg = a2_data.reg;
+		a2_data.reg = tmp;
+	}
+
+	s = subtilis_symbol_table_insert_tmp(p->local_st, &subtilis_type_string,
+					     NULL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	dest_reg = subtilis_reference_type_alloc(p, &subtilis_type_string,
+						 s->loc, SUBTILIS_IR_REG_LOCAL,
+						 new_size.reg, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_reference_type_memcpy_dest(p, dest_reg, a1_data.reg,
+					    a1_size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.reg = dest_reg;
+	dest_reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, op1, a1_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_reference_type_memcpy_dest(p, dest_reg, a2_data.reg,
+					    a2_size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a1->exp.ir_op.reg = subtilis_reference_get_pointer(
+	    p, SUBTILIS_IR_REG_LOCAL, s->loc, err);
+
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_delete(a2);
+
+	return a1;
+
+cleanup:
+
+	subtilis_exp_delete(a1);
+	subtilis_exp_delete(a2);
+
+	return NULL;
+}

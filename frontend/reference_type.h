@@ -40,6 +40,9 @@ void subtilis_reference_type_new_ref(subtilis_parser_t *p,
 void subtilis_reference_type_copy_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 				      size_t dest_loc, size_t source_reg,
 				      subtilis_error_t *err);
+void subtilis_reference_type_copy_ret(subtilis_parser_t *p,
+				      const subtilis_type_t *t, size_t dest_reg,
+				      size_t source_reg, subtilis_error_t *err);
 void subtilis_reference_type_assign_ref(subtilis_parser_t *p,
 					size_t dest_mem_reg, size_t dest_loc,
 					size_t source_reg,

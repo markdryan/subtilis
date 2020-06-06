@@ -441,6 +441,12 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"a$ = str$~(\"hello\")\n",
 	SUBTILIS_ERROR_INTEGER_EXPECTED,
 	},
+	{
+	"str_add_mismatch",
+	"a$ := \"hello\"\n"
+	"print a$ + 10\n",
+	SUBTILIS_ERROR_STRING_EXPECTED,
+	},
 };
 
 /* clang-format on */

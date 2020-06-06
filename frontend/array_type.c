@@ -295,13 +295,26 @@ cleanup:
 	subtilis_exp_delete(e);
 }
 
-void subtlis_array_type_create_tmp_ref(subtilis_parser_t *p,
-				       const subtilis_type_t *t,
-				       subtilis_ir_operand_t dest_reg,
-				       subtilis_ir_operand_t source_reg,
-				       subtilis_error_t *err)
+/*
+ * Initialise a temporary reference on the caller's stack with the contents
+ * of an array variable on the callee's stack.  This is called directly after
+ * the callee's ret has executed so his stack is still presevered.
+ *
+ * TODO: This is a bit risky though.  Might be better, and faster, to allocate
+ * space for this variable on the caller's stack.
+ */
+
+void subtlis_array_type_copy_ret(subtilis_parser_t *p, const subtilis_type_t *t,
+				 size_t dest_reg, size_t source_reg,
+				 subtilis_error_t *err)
 {
-	prv_copy_ref_base(p, t, dest_reg, 0, source_reg, 0, false, err);
+	subtilis_ir_operand_t d;
+	subtilis_ir_operand_t s;
+
+	d.reg = dest_reg;
+	s.reg = source_reg;
+
+	prv_copy_ref_base(p, t, d, 0, s, 0, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

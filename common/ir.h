@@ -1218,6 +1218,15 @@ typedef enum {
 	SUBTILIS_OP_INSTR_POWR,
 
 	/*
+	 * expr fp0, fp1
+	 *
+	 * fp0 = e ^ fp1
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_EXPR,
+
+	/*
 	 * get r0
 	 *
 	 * Wait for a key press from the user and store the ASCII code

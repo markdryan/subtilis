@@ -37,6 +37,10 @@ typedef void (*subtilis_type_if_initref_t)(subtilis_parser_t *p,
 					   subtilis_error_t *err);
 typedef void (*subtilis_type_if_reg_t)(subtilis_parser_t *p, size_t reg,
 				       subtilis_error_t *err);
+typedef void (*subtilis_type_if_reg2_t)(subtilis_parser_t *p,
+					const subtilis_type_t *type,
+					size_t reg1, size_t reg2,
+					subtilis_error_t *err);
 typedef subtilis_exp_t *(*subtilis_type_if_unary_t)(subtilis_parser_t *p,
 						    subtilis_exp_t *e,
 						    subtilis_error_t *err);
@@ -107,6 +111,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_initref_t assign_ref;
 	subtilis_type_if_none_t top_bit;
 	subtilis_type_if_reg_t zero_reg;
+	subtilis_type_if_reg2_t copy_ret;
 	subtilis_type_if_typeof_t const_of;
 	subtilis_type_if_typeof_t array_of;
 	subtilis_type_if_typeof_t element_type;
@@ -126,7 +131,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_unary_t to_hex_string;
 	subtilis_type_if_coerce_t coerce;
 	subtilis_type_if_unary_t unary_minus;
-	subtilis_type_if_binary_t add;
+	subtilis_type_if_binary_nc_t add;
 	subtilis_type_if_binary_t mul;
 	subtilis_type_if_binary_t and;
 	/* clang-format off */
@@ -197,6 +202,17 @@ subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 void subtilis_type_if_zero_ref(subtilis_parser_t *p,
 			       const subtilis_type_t *type, size_t mem_reg,
 			       size_t loc, subtilis_error_t *err);
+
+/*
+ * Initialises a new reference type from a value returned from a function.
+ * Here we sort of adopt the returned reference, i.e., we don't decrement
+ * its count when the called function exits, nor do we increase it.  We do
+ * need to add it to the cleanup stack of the calling function though.
+ */
+
+void subtilis_type_if_copy_ret(subtilis_parser_t *p,
+			       const subtilis_type_t *type, size_t dest_reg,
+			       size_t source_reg, subtilis_error_t *err);
 
 /*
  * Initialises a new reference type identified by the mem_reg and loc parameters

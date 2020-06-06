@@ -208,7 +208,8 @@ static subtilis_exp_t *prv_unary_minus_const(subtilis_parser_t *p,
 }
 
 static subtilis_exp_t *prv_add_const(subtilis_parser_t *p, subtilis_exp_t *a1,
-				     subtilis_exp_t *a2, subtilis_error_t *err)
+				     subtilis_exp_t *a2, bool swapped,
+				     subtilis_error_t *err)
 {
 	/* a2 must be const */
 
@@ -879,6 +880,7 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.assign_ref = NULL,
 	.top_bit = prv_top_bit_const,
 	.zero_reg = NULL,
+	.copy_ret = NULL,
 	.const_of = prv_const_of,
 	.array_of = NULL,
 	.element_type = NULL,
@@ -1353,7 +1355,8 @@ on_error:
 }
 
 static subtilis_exp_t *prv_add(subtilis_parser_t *p, subtilis_exp_t *a1,
-			       subtilis_exp_t *a2, subtilis_error_t *err)
+			       subtilis_exp_t *a2, bool swapped,
+			       subtilis_error_t *err)
 {
 	return prv_commutative(
 	    p, a1, a2, SUBTILIS_OP_INSTR_ADDI_I32, SUBTILIS_OP_INSTR_ADD_I32,
@@ -2087,6 +2090,7 @@ subtilis_type_if subtilis_type_int32 = {
 	.assign_ref = NULL,
 	.top_bit = prv_top_bit,
 	.zero_reg = prv_zero_reg,
+	.copy_ret = NULL,
 	.const_of = prv_const_of,
 	.array_of = prv_array_of,
 	.element_type = NULL,

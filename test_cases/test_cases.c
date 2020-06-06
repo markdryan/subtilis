@@ -2791,6 +2791,30 @@ const subtilis_test_case_t test_cases[] = {
 	 "10\n-10\n2147483647\n-2147483648\n3.1457\n-3.1457\n"
 	 "FFFFFFFF\nFA0\nFA0\nFFFFFFFF\nFA0\nFA0\n"
 	},
+	{"str_add_1",
+	 "print \"hello\" + \" \" + \"world\"\n"
+	 "a$ := \"hello\"\n"
+	 "b$ := \"world\"\n"
+	 "c$ := \"\"\n"
+	 "print a$ + b$\n"
+	 "print a$ + c$\n"
+	 "print c$ + b$\n"
+	 "print \"\" + a$\n"
+	 "print b$ + \"\"\n"
+	 "print \"hello\" + b$\n"
+	 "print a$ + \" \" + \"world\"\n",
+	 "hello world\nhelloworld\nhello\nworld\nhello\nworld\n"
+	 "helloworld\nhello world\n",
+	},
+	{"exp",
+	 "print exp(1)\n"
+	 "a% = 1\n"
+	 "print exp(a%)\n"
+	 "print exp(0)\n"
+	 "a = 0\n"
+	 "print exp(a)\n",
+	 "2.7182818284\n2.7182818284\n1\n1\n"
+	},
 };
 
 /* clang-format on */

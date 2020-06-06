@@ -38,6 +38,8 @@ subtilis_exp_t *subtilis_parser_acs(subtilis_parser_t *p, subtilis_token_t *t,
 				    subtilis_error_t *err);
 subtilis_exp_t *subtilis_parser_atn(subtilis_parser_t *p, subtilis_token_t *t,
 				    subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_exp(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_error_t *err);
 subtilis_exp_t *subtilis_parser_log(subtilis_parser_t *p, subtilis_token_t *t,
 				    subtilis_op_instr_type_t itype,
 				    double (*log_fn)(double n),

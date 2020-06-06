@@ -247,6 +247,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"pos *\n", subtilis_riscos_arm_pos},
 	{"vpos *\n", subtilis_riscos_arm_vpos},
 	{"powr *, *, *\n", subtilis_fpa_gen_pow},
+	{"expr *, *\n", subtilis_fpa_gen_exp},
 	{"tcol *\n", subtilis_riscos_tcol},
 	{"palette *, *, *, *\n", subtilis_riscos_palette},
 	{"i32todec *, *, *\n", subtilis_riscos_arm_i32_to_dec},

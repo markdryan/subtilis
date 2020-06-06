@@ -219,6 +219,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return subtilis_parser_rnd(p, t, err);
 		case SUBTILIS_KEYWORD_SQR:
 			return subtilis_parser_sqr(p, t, err);
+		case SUBTILIS_KEYWORD_EXP:
+			return subtilis_parser_exp(p, t, err);
 		case SUBTILIS_KEYWORD_LOG:
 			return subtilis_parser_log(p, t, SUBTILIS_OP_INSTR_LOG,
 						   log10, err);

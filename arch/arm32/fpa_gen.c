@@ -745,6 +745,13 @@ void subtilis_fpa_gen_pow(subtilis_ir_section_t *s, size_t start,
 			SUBTILIS_ARM_CCODE_AL, err);
 }
 
+void subtilis_fpa_gen_exp(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	prv_data_monadic_simple(s, start, user_data, SUBTILIS_FPA_INSTR_EXP,
+				SUBTILIS_ARM_CCODE_AL, err);
+}
+
 void subtilis_fpa_gen_preamble(subtilis_arm_section_t *arm_s,
 			       subtilis_error_t *err)
 {

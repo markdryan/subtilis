@@ -272,11 +272,19 @@ static void prv_assignment_local(subtilis_parser_t *p, subtilis_token_t *t,
 	 * We've got a reference type, e.g., a string.
 	 */
 
-	s = subtilis_symbol_table_insert(p->local_st, var_name, id_type, err);
+	e = subtilis_parser_expression(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	e = subtilis_parser_expression(p, t, err);
+	if (e->temporary) {
+		(void)subtilis_symbol_table_promote_tmp(
+		    p->local_st, &e->type, e->temporary, var_name, err);
+
+		subtilis_exp_delete(e);
+		return;
+	}
+
+	s = subtilis_symbol_table_insert(p->local_st, var_name, id_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
