@@ -2806,6 +2806,15 @@ const subtilis_test_case_t test_cases[] = {
 	 "hello world\nhelloworld\nhello\nworld\nhello\nworld\n"
 	 "helloworld\nhello world\n",
 	},
+	{"exp",
+	 "print exp(1)\n"
+	 "a% = 1\n"
+	 "print exp(a%)\n"
+	 "print exp(0)\n"
+	 "a = 0\n"
+	 "print exp(a)\n",
+	 "2.7182818284\n2.7182818284\n1\n1\n"
+	},
 };
 
 /* clang-format on */

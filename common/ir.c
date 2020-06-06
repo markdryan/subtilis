@@ -162,6 +162,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "ln", SUBTILIS_OP_CLASS_FREG_FREG },
 	{ "absr", SUBTILIS_OP_CLASS_FREG_FREG },
 	{ "powr", SUBTILIS_OP_CLASS_FREG_FREG_FREG },
+	{ "expr", SUBTILIS_OP_CLASS_FREG_FREG },
 	{ "get", SUBTILIS_OP_CLASS_REG },
 	{ "gettimeout", SUBTILIS_OP_CLASS_REG_REG },
 	{ "inkey", SUBTILIS_OP_CLASS_REG_REG },
