@@ -2179,6 +2179,17 @@ static bool prv_is_reg_used_before(subtilis_arm_reg_ud_t *ud, size_t reg_num,
 		 * from the subsequent instruction.
 		 */
 
+		/*
+		 * TODO: The basic problem here is that the distance walkers
+		 * check the source operands before the destination operands.
+		 * So if an instruction references the same register for both
+		 * source and destination, this information does not get
+		 * conveyed by the walker.  We find out it's been read from
+		 * but we don't know it's been written to.  We really need
+		 * different walkers for computing used before which check
+		 * destination before source.
+		 */
+
 		for (i = 0; i < ud->dist_data.last_used + 1; i++) {
 			if ((from == to) || (from->next == SIZE_MAX))
 				return false;

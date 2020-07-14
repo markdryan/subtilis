@@ -109,6 +109,20 @@ static void prv_dist_stran_instr(void *user_data, subtilis_arm_op_t *op,
 {
 	subtilis_dist_data_t *ud = user_data;
 
+	/*
+	 * TODO: register allocator does not correctly cope with
+	 * pre-index addressing or writeback.
+	 */
+
+	if (instr->base == ud->reg_num) {
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
+	prv_dist_handle_op2(ud, &instr->offset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	if (type == SUBTILIS_ARM_INSTR_LDR) {
 		if (instr->dest == ud->reg_num) {
 			ud->last_used = -1;
@@ -121,18 +135,6 @@ static void prv_dist_stran_instr(void *user_data, subtilis_arm_op_t *op,
 			return;
 		}
 	}
-
-	/*
-	 * TODO: register allocator does not correctly cope with
-	 * pre-index addressing or writeback.
-	 */
-
-	if (instr->base == ud->reg_num) {
-		subtilis_error_set_walker_failed(err);
-		return;
-	}
-
-	prv_dist_handle_op2(ud, &instr->offset, err);
 }
 
 static void prv_dist_mtran_instr(void *user_data, subtilis_arm_op_t *op,
