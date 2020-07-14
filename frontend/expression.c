@@ -243,9 +243,19 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 						 : p->current->len;
 	call_site--;
 
-	subtilis_exp_handle_errors(p, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto on_error;
+	/*
+	 * We don't check for errors after calls to builtin functions that do
+	 * not generate errors.  Doing so is wasteful and can also cause problem
+	 * when a builtin, like deref, is called in a place where we don't want
+	 * to check for errors, e.g., when unwinding the stack.
+	 */
+
+	if ((ftype == SUBTILIS_BUILTINS_MAX) ||
+	    subtilis_builtin_list[ftype].generates_error) {
+		subtilis_exp_handle_errors(p, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+	}
 
 	if (fn_type->type != SUBTILIS_TYPE_VOID &&
 	    !subtilis_type_if_is_numeric(fn_type)) {

@@ -551,6 +551,7 @@ cleanup:
 
 subtilis_exp_t *subtilis_parser_call_1_arg_fn(subtilis_parser_t *p,
 					      const char *name, size_t reg,
+					      subtilis_builtin_type_t ftype,
 					      subtilis_ir_reg_type_t ptype,
 					      const subtilis_type_t *rtype,
 					      subtilis_error_t *err)
@@ -574,8 +575,8 @@ subtilis_exp_t *subtilis_parser_call_1_arg_fn(subtilis_parser_t *p,
 	args[0].type = ptype;
 	args[0].reg = reg;
 
-	return subtilis_exp_add_call(p, name_dup, SUBTILIS_BUILTINS_MAX, NULL,
-				     args, rtype, 1, err);
+	return subtilis_exp_add_call(p, name_dup, ftype, NULL, args, rtype, 1,
+				     err);
 
 cleanup:
 

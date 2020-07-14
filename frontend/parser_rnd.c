@@ -101,9 +101,9 @@ static subtilis_exp_t *prv_rnd_var(subtilis_parser_t *p, subtilis_exp_t *e,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_parser_call_1_arg_fn(p, "_rnd_real", reg,
-					  SUBTILIS_IR_REG_TYPE_INTEGER,
-					  &subtilis_type_real, err);
+	e = subtilis_parser_call_1_arg_fn(
+	    p, "_rnd_real", reg, SUBTILIS_BUILTINS_MAX,
+	    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_real, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -124,9 +124,9 @@ static subtilis_exp_t *prv_rnd_var(subtilis_parser_t *p, subtilis_exp_t *e,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_parser_call_1_arg_fn(p, "_rnd_int", reg,
-					  SUBTILIS_IR_REG_TYPE_INTEGER,
-					  &subtilis_type_integer, err);
+	e = subtilis_parser_call_1_arg_fn(
+	    p, "_rnd_int", reg, SUBTILIS_BUILTINS_MAX,
+	    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_integer, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

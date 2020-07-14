@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Mark Ryan
+ * Copyright (c) 2020 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_BACKEND_CAPS_H
-#define __SUBTILIS_BACKEND_CAPS_H
+#ifndef __SUBTILIS_ARM_HEAP_H
+#define __SUBTILIS_ARM_HEAP_H
 
-#include <stdint.h>
+#include "arm_core.h"
 
-#define SUBTILIS_BACKEND_HAVE_DIV 1
-#define SUBTILIS_BACKEND_HAVE_REAL_TO_DEC 2
-#define SUBTILIS_BACKEND_HAVE_I32_TO_DEC 4
-#define SUBTILIS_BACKEND_HAVE_I32_TO_HEX 8
-#define SUBTILIS_BACKEND_HAVE_ALLOC 16
-
-#define SUBTILIS_BACKEND_INTER_CAPS                                            \
-	(SUBTILIS_BACKEND_HAVE_DIV | SUBTILIS_BACKEND_HAVE_ALLOC)
-typedef uint32_t subtilis_backend_caps_t;
+const uint32_t subtilis_arm_heap_min_size(void);
+void subtilis_arm_heap_init(subtilis_arm_section_t *arm_s,
+			    subtilis_error_t *err);
+void subtilis_arm_heap_alloc(subtilis_arm_section_t *arm_s, size_t good_label,
+			     size_t bad_label, subtilis_error_t *err);
+void subtilis_arm_heap_free(subtilis_arm_section_t *arm_s,
+			    subtilis_arm_reg_t heap_start,
+			    subtilis_arm_reg_t block, subtilis_error_t *err);
 
 #endif

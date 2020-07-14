@@ -25,9 +25,11 @@ subtilis_exp_t *subtilis_parser_priority7(subtilis_parser_t *p,
 					  subtilis_error_t *err);
 subtilis_exp_t *subtilis_parser_call_1_arg_fn(subtilis_parser_t *p,
 					      const char *name, size_t reg,
+					      subtilis_builtin_type_t ftype,
 					      subtilis_ir_reg_type_t ptype,
 					      const subtilis_type_t *rtype,
 					      subtilis_error_t *err);
+
 /* clang-format off */
 subtilis_exp_t *subtilis_parser_call_2_arg_fn(subtilis_parser_t *p,
 					      const char *name, size_t arg1,
