@@ -27,5 +27,8 @@ void subtilis_arm_heap_alloc(subtilis_arm_section_t *arm_s, size_t good_label,
 void subtilis_arm_heap_free(subtilis_arm_section_t *arm_s,
 			    subtilis_arm_reg_t heap_start,
 			    subtilis_arm_reg_t block, subtilis_error_t *err);
-
+void subtilis_arm_heap_free_space(subtilis_arm_section_t *arm_s,
+				  subtilis_arm_reg_t heap_start,
+				  subtilis_arm_reg_t result,
+				  subtilis_error_t *err);
 #endif

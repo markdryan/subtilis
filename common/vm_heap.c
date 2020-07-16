@@ -172,3 +172,17 @@ void subtilis_vm_heap_free(subtilis_vm_heap_t *heap)
 		ptr = next;
 	}
 }
+
+size_t subtilis_vm_heap_free_space(subtilis_vm_heap_t *heap)
+{
+	subtilis_vm_heap_free_block_t *ptr;
+	size_t sum = 0;
+
+	ptr = heap->free_list;
+	while (ptr) {
+		sum += ptr->size;
+		ptr = ptr->next;
+	}
+
+	return sum;
+}

@@ -19,6 +19,7 @@ COMMON =\
 	parser_error.c \
 	parser_graphics.c \
 	parser_input.c \
+	parser_mem.c \
 	parser_output.c \
 	parser_string.c \
 	parser_rnd.c \

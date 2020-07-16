@@ -1509,3 +1509,136 @@ void subtilis_arm_heap_free(subtilis_arm_section_t *arm_s,
 				   SUBTILIS_ARM_CCODE_AL, ptr, block, 4, false,
 				   err);
 }
+
+void subtilis_arm_heap_free_space(subtilis_arm_section_t *arm_s,
+				  subtilis_arm_reg_t heap_start,
+				  subtilis_arm_reg_t result,
+				  subtilis_error_t *err)
+{
+	size_t outer_loop_label;
+	size_t inner_loop_label;
+	size_t skip_label;
+	subtilis_arm_stran_instr_t *stran;
+	subtilis_arm_br_instr_t *br;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_data_instr_t *datai;
+	const subtilis_arm_reg_t ptr = 0;
+	const subtilis_arm_reg_t slots_counter = 1;
+	const subtilis_arm_reg_t scratch = 2;
+	const subtilis_arm_reg_t sum = 3;
+
+	outer_loop_label = arm_s->label_counter++;
+	inner_loop_label = arm_s->label_counter++;
+	skip_label = arm_s->label_counter++;
+
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false,
+				 sum, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false,
+				 slots_counter, subtilis_arm_heap_max_slot,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+
+	subtilis_arm_section_add_label(arm_s, outer_loop_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_LDR, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	stran = &instr->operands.stran;
+
+	stran->ccode = SUBTILIS_ARM_CCODE_AL;
+	stran->dest = ptr;
+	stran->base = heap_start;
+	stran->offset.type = SUBTILIS_ARM_OP2_SHIFTED;
+	stran->offset.op.shift.reg = slots_counter;
+	stran->offset.op.shift.type = SUBTILIS_ARM_SHIFT_LSL;
+	stran->offset.op.shift.shift.integer = 2;
+	stran->offset.op.shift.shift_reg = false;
+	stran->pre_indexed = true;
+	stran->write_back = false;
+	stran->subtract = false;
+	stran->byte = false;
+
+	subtilis_arm_section_add_label(arm_s, inner_loop_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_AL, ptr, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_EQ;
+	br->link = false;
+	br->target.label = skip_label;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, scratch, ptr, 0,
+				   false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_ADD, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	datai = &instr->operands.data;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->status = false;
+	datai->dest = sum;
+	datai->op1 = sum;
+	datai->op2.type = SUBTILIS_ARM_OP2_REG;
+	datai->op2.op.reg = scratch;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, ptr, ptr,
+				   4, false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_AL;
+	br->link = false;
+	br->target.label = inner_loop_label;
+
+	subtilis_arm_section_add_label(arm_s, skip_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_sub_imm(arm_s, SUBTILIS_ARM_CCODE_AL, true,
+				 slots_counter, slots_counter, 1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_NE;
+	br->link = false;
+	br->target.label = outer_loop_label;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, result,
+				 sum, err);
+}

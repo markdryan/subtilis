@@ -26,6 +26,7 @@
 #include "parser_graphics.h"
 #include "parser_input.h"
 #include "parser_math.h"
+#include "parser_mem.h"
 #include "parser_output.h"
 #include "parser_rnd.h"
 #include "parser_string.h"
@@ -255,6 +256,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return subtilis_parser_len(p, t, err);
 		case SUBTILIS_KEYWORD_LEFT_STR:
 			return subtilis_parser_left_str(p, t, err);
+		case SUBTILIS_KEYWORD_HEAP_FREE:
+			return subtilis_parser_mem_heap_free(p, t, err);
 		case SUBTILIS_KEYWORD_RIGHT_STR:
 			return subtilis_parser_right_str(p, t, err);
 		case SUBTILIS_KEYWORD_MID_STR:

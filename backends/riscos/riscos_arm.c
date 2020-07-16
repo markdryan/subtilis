@@ -1922,3 +1922,24 @@ void subtilis_riscos_arm_i32_to_hex(subtilis_ir_section_t *s, size_t start,
 				  SUBTILIS_ARM_CCODE_AL, false, dest, 2, 11,
 				  err);
 }
+
+void subtilis_riscos_arm_heap_free_space(subtilis_ir_section_t *s, size_t start,
+					 void *user_data,
+					 subtilis_error_t *err)
+{
+	subtilis_arm_reg_t heap_start;
+	subtilis_arm_reg_t result;
+	subtilis_arm_reg_t scratch;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *free_space = &s->ops[start]->op.instr;
+
+	heap_start = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	result = subtilis_arm_ir_to_arm_reg(free_space->operands[0].reg);
+	scratch = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+
+	prv_load_heap_pointer(arm_s, scratch, heap_start, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_heap_free_space(arm_s, heap_start, result, err);
+}
