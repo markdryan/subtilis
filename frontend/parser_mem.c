@@ -23,8 +23,8 @@ subtilis_exp_t *subtilis_parser_mem_heap_free(subtilis_parser_t *p,
 	size_t reg;
 	subtilis_exp_t *e = NULL;
 
-	reg = subtilis_ir_section_add_instr1(
-		    p->current, SUBTILIS_OP_INSTR_HEAP_FREE, err);
+	reg = subtilis_ir_section_add_instr1(p->current,
+					     SUBTILIS_OP_INSTR_HEAP_FREE, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 

@@ -16,15 +16,14 @@
 
 #include "arm_heap.h"
 
-const int32_t subtilis_arm_heap_min_slot_shift = 5;
+#define subtilis_arm_heap_min_slot_shift 5
 
 /* clang-format off */
-const int32_t subtilis_arm_heap_min_slot_size =
-	1 << subtilis_arm_heap_min_slot_shift;
+#define subtilis_arm_heap_min_slot_size (1 << subtilis_arm_heap_min_slot_shift)
 
 /* clang-format on */
-const size_t subtilis_arm_heap_max_slot = 12; /* Index of final slot */
-const size_t subtilis_arm_heap_max_slots = subtilis_arm_heap_max_slot + 1;
+#define subtilis_arm_heap_max_slot 12 /* Index of final slot */
+#define subtilis_arm_heap_max_slots (subtilis_arm_heap_max_slot + 1)
 
 /*
  * We need to ensure that there's enough heap space available to
@@ -1177,7 +1176,7 @@ static void prv_split_small_block(subtilis_arm_section_t *arm_s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	/* We fall through to good label here. */
+	/* We fallthrough to good label here. */
 }
 
 /*
@@ -1531,9 +1530,8 @@ void subtilis_arm_heap_free_space(subtilis_arm_section_t *arm_s,
 	inner_loop_label = arm_s->label_counter++;
 	skip_label = arm_s->label_counter++;
 
-
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false,
-				 sum, 0, err);
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, sum, 0,
+				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1542,7 +1540,6 @@ void subtilis_arm_heap_free_space(subtilis_arm_section_t *arm_s,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-
 
 	subtilis_arm_section_add_label(arm_s, outer_loop_label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1605,8 +1602,8 @@ void subtilis_arm_heap_free_space(subtilis_arm_section_t *arm_s,
 	datai->op2.op.reg = scratch;
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
-				   SUBTILIS_ARM_CCODE_AL, ptr, ptr,
-				   4, false, err);
+				   SUBTILIS_ARM_CCODE_AL, ptr, ptr, 4, false,
+				   err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

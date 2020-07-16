@@ -1359,7 +1359,7 @@ static void prv_i32_to_dec(subitlis_vm_t *vm, subtilis_buffer_t *b,
 static void prv_heap_free(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			  subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	vm->regs[ops[0].reg] = (int32_t) subtilis_vm_heap_free_space(&vm->heap);
+	vm->regs[ops[0].reg] = (int32_t)subtilis_vm_heap_free_space(&vm->heap);
 }
 
 /* clang-format off */

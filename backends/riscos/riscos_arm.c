@@ -1924,8 +1924,7 @@ void subtilis_riscos_arm_i32_to_hex(subtilis_ir_section_t *s, size_t start,
 }
 
 void subtilis_riscos_arm_heap_free_space(subtilis_ir_section_t *s, size_t start,
-					 void *user_data,
-					 subtilis_error_t *err)
+					 void *user_data, subtilis_error_t *err)
 {
 	subtilis_arm_reg_t heap_start;
 	subtilis_arm_reg_t result;
