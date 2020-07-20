@@ -1632,7 +1632,7 @@ void subtilis_arm_heap_free_space(subtilis_arm_section_t *arm_s,
 		return;
 
 	br = &instr->operands.br;
-	br->ccode = SUBTILIS_ARM_CCODE_NE;
+	br->ccode = SUBTILIS_ARM_CCODE_PL;
 	br->link = false;
 	br->target.label = outer_loop_label;
 
