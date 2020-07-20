@@ -218,7 +218,8 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 				      subtilis_type_section_t *stype,
 				      subtilis_ir_arg_t *args,
 				      const subtilis_type_t *fn_type,
-				      size_t num_params, subtilis_error_t *err)
+				      size_t num_params, bool check_error,
+				      subtilis_error_t *err)
 {
 	size_t reg;
 	size_t call_site;
@@ -247,11 +248,13 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 	 * We don't check for errors after calls to builtin functions that do
 	 * not generate errors.  Doing so is wasteful and can also cause problem
 	 * when a builtin, like deref, is called in a place where we don't want
-	 * to check for errors, e.g., when unwinding the stack.
+	 * to check for errors, e.g., when unwinding the stack.  IR builtins
+	 * are indistinguishable from normal functions, but the check_error
+	 * flag can be used to disable error checking for those functions.
 	 */
 
-	if ((ftype == SUBTILIS_BUILTINS_MAX) ||
-	    subtilis_builtin_list[ftype].generates_error) {
+	if (check_error && ((ftype == SUBTILIS_BUILTINS_MAX) ||
+			    subtilis_builtin_list[ftype].generates_error)) {
 		subtilis_exp_handle_errors(p, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;

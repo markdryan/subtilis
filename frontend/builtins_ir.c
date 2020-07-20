@@ -1411,7 +1411,7 @@ subtilis_exp_t *subtilis_builtin_ir_call_dec_to_str(subtilis_parser_t *p,
 
 	return subtilis_parser_call_2_arg_fn(
 	    p, "_dec_to_str", val_reg, buf_reg, SUBTILIS_IR_REG_TYPE_INTEGER,
-	    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_integer, err);
+	    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_integer, false, err);
 }
 
 subtilis_exp_t *subtilis_builtin_ir_call_hex_to_str(subtilis_parser_t *p,
@@ -1438,7 +1438,7 @@ subtilis_exp_t *subtilis_builtin_ir_call_hex_to_str(subtilis_parser_t *p,
 
 	return subtilis_parser_call_2_arg_fn(
 	    p, "_hex_to_str", val_reg, buf_reg, SUBTILIS_IR_REG_TYPE_INTEGER,
-	    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_integer, err);
+	    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_integer, false, err);
 }
 
 subtilis_exp_t *subtilis_builtin_ir_call_fp_to_str(subtilis_parser_t *p,
@@ -1465,5 +1465,5 @@ subtilis_exp_t *subtilis_builtin_ir_call_fp_to_str(subtilis_parser_t *p,
 
 	return subtilis_parser_call_2_arg_fn(
 	    p, "_fp_to_str", val_reg, buf_reg, SUBTILIS_IR_REG_TYPE_REAL,
-	    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_integer, err);
+	    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_integer, false, err);
 }

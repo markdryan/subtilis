@@ -44,7 +44,8 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 				      subtilis_type_section_t *stype,
 				      subtilis_ir_arg_t *args,
 				      const subtilis_type_t *fn_type,
-				      size_t num_params, subtilis_error_t *err);
+				      size_t num_params, bool check_error,
+				      subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_empty(const subtilis_type_t *type,
 				       subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_var(const subtilis_type_t *type,

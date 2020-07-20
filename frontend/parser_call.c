@@ -262,7 +262,7 @@ subtilis_exp_t *subtilis_parser_call(subtilis_parser_t *p, subtilis_token_t *t,
 	/* Ownership of stypes, args and name passed to this function. */
 
 	return subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_MAX, stype,
-				     args, &fn_type, num_poss_args, err);
+				     args, &fn_type, num_poss_args, true, err);
 
 on_error:
 

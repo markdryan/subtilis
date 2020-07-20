@@ -318,7 +318,8 @@ static void prv_call_deref(subtilis_parser_t *p, subtilis_ir_operand_t address,
 	else
 		(void)subtilis_parser_call_1_arg_fn(
 		    p, "_deref", address.reg, SUBTILIS_BUILTINS_DEREF,
-		    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_void, err);
+		    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_void, true,
+		    err);
 }
 
 void subtilis_reference_type_assign_ref(subtilis_parser_t *p,
@@ -423,7 +424,7 @@ void subtilis_reference_type_memcpy_dest(subtilis_parser_t *p, size_t dest_reg,
 	args[2].reg = size_reg;
 
 	(void)subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_MEMCPY, NULL,
-				    args, &subtilis_type_void, 3, err);
+				    args, &subtilis_type_void, 3, true, err);
 }
 
 static void prv_ensure_cleanup_stack(subtilis_parser_t *p,
@@ -527,7 +528,8 @@ size_t subtilis_reference_type_alloc(subtilis_parser_t *p,
 	} else {
 		e = subtilis_parser_call_1_arg_fn(
 		    p, "_alloc", size_reg, SUBTILIS_BUILTINS_ALLOC,
-		    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_integer, err);
+		    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_integer, true,
+		    err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return SIZE_MAX;
 		op.reg = e->exp.ir_op.reg;

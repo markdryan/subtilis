@@ -23,20 +23,22 @@
 subtilis_exp_t *subtilis_parser_priority7(subtilis_parser_t *p,
 					  subtilis_token_t *t,
 					  subtilis_error_t *err);
+/* clang-format off */
 subtilis_exp_t *subtilis_parser_call_1_arg_fn(subtilis_parser_t *p,
 					      const char *name, size_t reg,
 					      subtilis_builtin_type_t ftype,
 					      subtilis_ir_reg_type_t ptype,
 					      const subtilis_type_t *rtype,
+					      bool check_errors,
 					      subtilis_error_t *err);
 
-/* clang-format off */
 subtilis_exp_t *subtilis_parser_call_2_arg_fn(subtilis_parser_t *p,
 					      const char *name, size_t arg1,
 					      size_t arg2,
 					      subtilis_ir_reg_type_t ptype1,
 					      subtilis_ir_reg_type_t ptype2,
 					      const subtilis_type_t *rtype,
+					      bool check_errors,
 					      subtilis_error_t *err);
 /* clang-format on */
 

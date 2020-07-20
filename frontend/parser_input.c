@@ -126,5 +126,5 @@ subtilis_exp_t *subtilis_parser_inkey(subtilis_parser_t *p, subtilis_token_t *t,
 
 	return subtilis_parser_call_1_arg_fn(
 	    p, "_inkey", reg, SUBTILIS_BUILTINS_MAX,
-	    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_integer, err);
+	    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_integer, true, err);
 }
