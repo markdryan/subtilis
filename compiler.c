@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
 {
 	subtilis_error_t err;
 	subtilis_stream_t s;
+	subtilis_settings_t settings;
 	subtilis_lexer_t *l = NULL;
 	subtilis_parser_t *p = NULL;
 	subtilis_arm_prog_t *arm_p = NULL;
@@ -60,7 +61,11 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	p = subtilis_parser_new(l, SUBTILIS_RISCOS_ARM_CAPS, &err);
+	settings.handle_escapes = true;
+	settings.ignore_graphics_errors = true;
+	settings.check_mem_leaks = false;
+
+	p = subtilis_parser_new(l, SUBTILIS_RISCOS_ARM_CAPS, &settings, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

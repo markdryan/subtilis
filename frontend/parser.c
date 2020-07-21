@@ -30,12 +30,15 @@
 #include "parser_loops.h"
 #include "parser_output.h"
 #include "reference_type.h"
+#include "string_type.h"
+#include "type_if.h"
 #include "variable.h"
 
 #define SUBTILIS_MAIN_FN "subtilis_main"
 
 subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 				       subtilis_backend_caps_t caps,
+				       const subtilis_settings_t *settings,
 				       subtilis_error_t *err)
 {
 	const subtilis_symbol_t *s;
@@ -47,8 +50,7 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 		goto on_error;
 	}
 
-	p->settings.handle_escapes = true;
-	p->settings.ignore_graphics_errors = true;
+	p->settings = *settings;
 
 	p->st = subtilis_symbol_table_new(err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -294,6 +296,116 @@ static void prv_proc(subtilis_parser_t *p, subtilis_token_t *t,
 	(void)subtilis_parser_call(p, t, err);
 }
 
+static void prv_initialise_free_mem(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_exp_t *e;
+
+	if (!p->settings.check_mem_leaks)
+		return;
+
+	reg = subtilis_ir_section_add_instr1(p->current,
+					     SUBTILIS_OP_INSTR_HEAP_FREE, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	e = subtilis_exp_new_int32_var(reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_var_assign_hidden(p, subtilis_heap_free_on_startup_var,
+				   &subtilis_type_integer, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+}
+
+static void prv_check_free_mem(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_ir_operand_t msg_ptr;
+	subtilis_ir_operand_t msg_len_reg;
+	subtilis_ir_operand_t msg_len;
+	subtilis_ir_operand_t leak_label;
+	subtilis_ir_operand_t no_leak_label;
+	const char *msg = " BYTES LEAKED!";
+	subtilis_exp_t *old_value = NULL;
+	subtilis_exp_t *new_value = NULL;
+
+	if (!p->settings.check_mem_leaks)
+		return;
+
+	leak_label.label = subtilis_ir_section_new_label(p->current);
+	no_leak_label.label = subtilis_ir_section_new_label(p->current);
+
+	old_value =
+	    subtilis_var_lookup_var(p, subtilis_heap_free_on_startup_var, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	reg = subtilis_ir_section_add_instr1(p->current,
+					     SUBTILIS_OP_INSTR_HEAP_FREE, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	new_value = subtilis_exp_new_int32_var(reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	old_value = subtilis_type_if_sub(p, old_value, new_value, err);
+	new_value = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  old_value->exp.ir_op, leak_label,
+					  no_leak_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, leak_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	/*
+	 * Any error here would cause the program to loop and possibly never
+	 * end.  This is a debug feature but still.  We know dectostr will
+	 * not generate an error but we need to ensure backends with native
+	 * support for this function won't either.
+	 */
+
+	p->settings.ignore_graphics_errors = true;
+
+	subtilis_type_if_print(p, old_value, err);
+	old_value = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	msg_len.integer = strlen(msg);
+	msg_ptr.reg =
+	    subtilis_string_type_lca_const(p, msg, msg_len.integer, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	msg_len_reg.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, msg_len, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_PRINT_STR, msg_ptr, msg_len_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, no_leak_label.label, err);
+
+cleanup:
+
+	subtilis_exp_delete(old_value);
+	subtilis_exp_delete(new_value);
+}
+
 static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 		     subtilis_error_t *err)
 {
@@ -326,6 +438,10 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	prv_initialise_free_mem(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -352,6 +468,10 @@ static void prv_root(subtilis_parser_t *p, subtilis_token_t *t,
 
 	subtilis_ir_section_add_label(p->current, p->current->nofree_label,
 				      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_check_free_mem(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

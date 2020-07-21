@@ -22,6 +22,7 @@
 struct subtilis_settings_t_ {
 	bool handle_escapes;
 	bool ignore_graphics_errors;
+	bool check_mem_leaks;
 };
 
 typedef struct subtilis_settings_t_ subtilis_settings_t;

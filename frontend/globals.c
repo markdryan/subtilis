@@ -19,3 +19,4 @@
 const char *subtilis_rnd_hidden_var = "_RND";
 const char *subtilis_eflag_hidden_var = "_EFLAG";
 const char *subtilis_err_hidden_var = "_ERR";
+const char *subtilis_heap_free_on_startup_var = "_HEAPFREE";
