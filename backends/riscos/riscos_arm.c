@@ -198,9 +198,6 @@ static void prv_init_heap(subtilis_arm_section_t *arm_s, uint32_t stack_size,
 	datai->op2.type = SUBTILIS_ARM_OP2_REG;
 	datai->op2.op.reg = 1;
 
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
 	subtilis_arm_heap_init(arm_s, err);
 }
 
