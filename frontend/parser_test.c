@@ -51,7 +51,7 @@ int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 
 	settings.handle_escapes = true;
 	settings.ignore_graphics_errors = true;
-	settings.check_mem_leaks = true;
+	settings.check_mem_leaks = !mem_leaks_ok;
 
 	p = subtilis_parser_new(l, caps, &settings, &err);
 	if (err.type != SUBTILIS_ERROR_OK)

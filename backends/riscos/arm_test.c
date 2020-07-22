@@ -98,12 +98,6 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 		goto cleanup;
 	}
 
-	if (!mem_leaks_ok && vm->heap.used_list) {
-		printf("Memory Leak!!!\n");
-		retval = 1;
-		goto cleanup;
-	}
-
 	retval = 0;
 
 cleanup:
