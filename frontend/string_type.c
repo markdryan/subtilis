@@ -595,7 +595,8 @@ subtilis_exp_t *subtilis_string_type_eq(subtilis_parser_t *p, size_t a_reg,
 	args[2].reg = len;
 
 	return subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_MEMCMP, NULL,
-				     args, &subtilis_type_integer, 3, err);
+				     args, &subtilis_type_integer, 3, true,
+				     err);
 }
 
 subtilis_exp_t *subtilis_string_type_compare(subtilis_parser_t *p, size_t a_reg,
@@ -631,7 +632,8 @@ subtilis_exp_t *subtilis_string_type_compare(subtilis_parser_t *p, size_t a_reg,
 	args[3].reg = b_len_reg;
 
 	return subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_COMPARE, NULL,
-				     args, &subtilis_type_integer, 4, err);
+				     args, &subtilis_type_integer, 4, true,
+				     err);
 }
 
 static size_t prv_left_right_const(subtilis_parser_t *p,
@@ -1929,7 +1931,7 @@ static void prv_memset_string(subtilis_parser_t *p, size_t base_reg,
 	args[2].reg = val_reg;
 
 	(void)subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_MEMSETI8, NULL,
-				    args, &subtilis_type_void, 3, err);
+				    args, &subtilis_type_void, 3, true, err);
 }
 
 static subtilis_exp_t *prv_string_from_const_char(subtilis_parser_t *p,

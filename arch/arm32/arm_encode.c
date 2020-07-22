@@ -632,7 +632,6 @@ static void prv_encode_stran_instr(void *user_data, subtilis_arm_op_t *op,
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-
 	word |= instr->ccode << 28;
 	word |= 1 << 26;
 	if (instr->pre_indexed)
@@ -804,19 +803,8 @@ static void prv_encode_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 				  subtilis_error_t *err)
 {
 	subtilis_arm_stran_instr_t stran;
+	size_t written_to;
 	subtilis_arm_encode_ud_t *ud = user_data;
-
-	prv_check_pool(ud, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	if (ud->ldrc_int == SIZE_MAX)
-		ud->ldrc_int = ud->words_written;
-
-	prv_add_const(ud, instr->label, ud->words_written,
-		      SUBTILIS_ARM_ENCODE_BP_LDR, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 
 	stran.ccode = instr->ccode;
 	stran.dest = instr->dest;
@@ -829,6 +817,26 @@ static void prv_encode_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	stran.byte = false;
 	prv_encode_stran_instr(user_data, op, SUBTILIS_ARM_INSTR_LDR, &stran,
 			       err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * We encode the instruction first and then we add our constant to the
+	 * pool.  The reason for this is that we need to know the exact location
+	 * of our LDRC instruction before adding the constant.  This may not be
+	 * the value of ud->words_written on the entry to this function as
+	 * the call to prv_encode_stran may flush the constant pool.  If this
+	 * happens, we'll end up with a B statement instead of a LDR statement
+	 * the value of ud->words_written on entry to the function.
+	 */
+
+	written_to = ud->words_written - 1;
+
+	if (ud->ldrc_int == SIZE_MAX)
+		ud->ldrc_int = written_to;
+
+	prv_add_const(ud, instr->label, written_to, SUBTILIS_ARM_ENCODE_BP_LDR,
+		      err);
 }
 
 static void prv_encode_cmp_instr(void *user_data, subtilis_arm_op_t *op,

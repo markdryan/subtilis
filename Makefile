@@ -19,6 +19,7 @@ COMMON =\
 	parser_error.c \
 	parser_graphics.c \
 	parser_input.c \
+	parser_mem.c \
 	parser_output.c \
 	parser_string.c \
 	parser_rnd.c \
@@ -65,7 +66,8 @@ ARM =\
 	bitset.c \
 	arm_sub_section.c \
 	arm_peephole.c \
-	arm_mem.c
+	arm_mem.c \
+	arm_heap.c
 
 COMPILER =\
 	compiler.c

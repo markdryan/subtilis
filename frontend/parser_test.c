@@ -36,6 +36,7 @@ int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 	subtilis_lexer_t *l = NULL;
 	subtilis_parser_t *p = NULL;
 	int retval;
+	subtilis_settings_t settings;
 
 	subtilis_error_init(&err);
 	subtilis_stream_from_text(&s, text, &err);
@@ -48,7 +49,11 @@ int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 		goto fail;
 	}
 
-	p = subtilis_parser_new(l, caps, &err);
+	settings.handle_escapes = true;
+	settings.ignore_graphics_errors = true;
+	settings.check_mem_leaks = !mem_leaks_ok;
+
+	p = subtilis_parser_new(l, caps, &settings, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 

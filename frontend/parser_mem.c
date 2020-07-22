@@ -14,17 +14,33 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_SETTINGS_H
-#define __SUBTILIS_SETTINGS_H
+#include "parser_mem.h"
 
-#include <stdint.h>
+subtilis_exp_t *subtilis_parser_mem_heap_free(subtilis_parser_t *p,
+					      subtilis_token_t *t,
+					      subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_exp_t *e = NULL;
 
-struct subtilis_settings_t_ {
-	bool handle_escapes;
-	bool ignore_graphics_errors;
-	bool check_mem_leaks;
-};
+	reg = subtilis_ir_section_add_instr1(p->current,
+					     SUBTILIS_OP_INSTR_HEAP_FREE, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
 
-typedef struct subtilis_settings_t_ subtilis_settings_t;
+	e = subtilis_exp_new_int32_var(reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
 
-#endif
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return e;
+
+cleanup:
+
+	subtilis_exp_delete(e);
+
+	return NULL;
+}

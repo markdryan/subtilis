@@ -838,6 +838,14 @@ PRINT FNDouble%(1)(b%())(1)
 
 will not compile, and to be honest, the langauge is all the better for this restriction.
 
+## New keywords
+
+### HEAPFREE
+
+Returns the number of free bytes available in the heap.  Only makes sense on platforms where the
+amount of memory allocated to a program is fixed when it's run.  On platforms where there's
+no memory restriction on an application, the maximum integer value is returned.
+
 ## Unimplemented Language Features
 
 ### Assembler

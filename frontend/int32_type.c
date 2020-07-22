@@ -469,7 +469,7 @@ static size_t prv_div_mod_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	args[4].type = SUBTILIS_IR_REG_TYPE_INTEGER;
 	args[4].reg = err_reg;
 	e = subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_IDIV, NULL, args,
-				  &subtilis_type_integer, 5, err);
+				  &subtilis_type_integer, 5, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return 0;
 	res = e->exp.ir_op.reg;

@@ -43,6 +43,8 @@ subtilis_vm_heap_free_block_t *subtilis_vm_heap_new_block(uint32_t start,
 							  uint32_t size);
 void subtilis_vm_heap_free_block(subtilis_vm_heap_t *heap, uint32_t ptr,
 				 subtilis_error_t *err);
+size_t subtilis_vm_heap_free_space(subtilis_vm_heap_t *heap);
+
 subtilis_vm_heap_free_block_t *
 subtilis_vm_heap_realloc(subtilis_vm_heap_t *heap, uint32_t ptr, int32_t size,
 			 uint32_t *old_size, subtilis_error_t *err);

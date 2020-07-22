@@ -20,5 +20,6 @@
 extern const char *subtilis_rnd_hidden_var;
 extern const char *subtilis_eflag_hidden_var;
 extern const char *subtilis_err_hidden_var;
+extern const char *subtilis_heap_free_on_startup_var;
 
 #endif

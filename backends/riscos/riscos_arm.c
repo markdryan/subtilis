@@ -18,12 +18,18 @@
 
 #include "../../arch/arm32/arm2_div.h"
 #include "../../arch/arm32/arm_gen.h"
+#include "../../arch/arm32/arm_heap.h"
 #include "../../arch/arm32/arm_mem.h"
 #include "../../arch/arm32/arm_peephole.h"
 #include "../../arch/arm32/arm_reg_alloc.h"
 #include "../../arch/arm32/arm_sub_section.h"
 #include "../../common/error_codes.h"
 #include "riscos_arm.h"
+
+static void prv_alloc(subtilis_ir_section_t *s, subtilis_arm_section_t *arm_s,
+		      subtilis_error_t *err);
+static void prv_deref(subtilis_ir_section_t *s, subtilis_arm_section_t *arm_s,
+		      subtilis_error_t *err);
 
 #define RISCOS_ARM_GLOBAL_ESC_FLAG (-4)
 #define RISCOS_ARM_GLOBAL_ESC_HANDLER (-8)
@@ -170,11 +176,6 @@ static void prv_init_heap(subtilis_arm_section_t *arm_s, uint32_t stack_size,
 	 * R13 is the top of the stack
 	 */
 
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 0,
-				 err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 1, 11,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -200,19 +201,14 @@ static void prv_init_heap(subtilis_arm_section_t *arm_s, uint32_t stack_size,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	/* OS_Heap */
-	/* read_mask = 11 = R0, R1, R3 */
-	/* No registers are corrupted by this SWI */
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x1d, 11, 0, err);
+	subtilis_arm_heap_init(arm_s, err);
 }
 
-static void prv_load_heap_pointer(subtilis_arm_section_t *arm_s, size_t scratch,
+static void prv_load_heap_pointer(subtilis_arm_section_t *arm_s,
+				  subtilis_arm_reg_t reg,
+				  subtilis_arm_reg_t scratch,
 				  subtilis_error_t *err)
 {
-	size_t reg;
-
-	reg = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
-
 	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, reg,
 				 0x8000, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -234,7 +230,7 @@ static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_br_instr_t *br;
 	const uint32_t stack_size = 8192;
-	const uint32_t min_heap_size = 8192;
+	const uint32_t min_heap_size = subtilis_arm_heap_min_size();
 
 	needed = globals + stack_size + min_heap_size;
 	if (arm_s->settings->handle_escapes)
@@ -276,7 +272,7 @@ static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 
 	/* Load heap start into R11 */
 
-	prv_load_heap_pointer(arm_s, 11, err);
+	prv_load_heap_pointer(arm_s, 10, 11, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -418,6 +414,12 @@ static void prv_add_builtin(subtilis_ir_section_t *s,
 		break;
 	case SUBTILIS_BUILTINS_MEMSETI8:
 		subtilis_arm_mem_memseti8(s, arm_s, err);
+		break;
+	case SUBTILIS_BUILTINS_ALLOC:
+		prv_alloc(s, arm_s, err);
+		break;
+	case SUBTILIS_BUILTINS_DEREF:
+		prv_deref(s, arm_s, err);
 		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
@@ -1440,54 +1442,52 @@ void subtilis_riscos_arm_testesc(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_section_add_label(arm_s, label, err);
 }
 
-void subtilis_riscos_arm_alloc(subtilis_ir_section_t *s, size_t start,
-			       void *user_data, subtilis_error_t *err)
+/*
+ * This is a built-in function that receives the sizes in bytes to allocate
+ * in r0 and returns the allocated memory in r0, or 0 in case of failure.
+ * Should a failure occur we also set the error flags appropriately.
+ */
+
+static void prv_alloc(subtilis_ir_section_t *s, subtilis_arm_section_t *arm_s,
+		      subtilis_error_t *err)
 {
-	subtilis_arm_reg_t reg;
-	subtilis_arm_reg_t one;
-	subtilis_ir_inst_t *alloc = &s->ops[start]->op.instr;
-	subtilis_arm_section_t *arm_s = user_data;
+	size_t good_label;
+	size_t bad_label;
+	subtilis_arm_reg_t heap_start = 0;
+	subtilis_arm_reg_t requested_size = 1;
+	subtilis_arm_reg_t scratch = 2;
+	subtilis_arm_reg_t actual_size = 11;
 
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 2,
-				 err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	prv_load_heap_pointer(arm_s, 1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+	good_label = arm_s->label_counter++;
+	bad_label = arm_s->label_counter++;
 
 	/*
-	 * Allocate an extra 8 bytes for the reference count.
+	 * We need to add 8 bytes for
+	 * 1. The ref count.
+	 * 2. The requested size + 16 bytes.  This information can be used to
+	 *    determine how much data is actually left in the allocated block
+	 *    which helps with re-alloc.
 	 */
 
-	reg = subtilis_arm_ir_to_arm_reg(alloc->operands[1].reg);
-	subtilis_arm_add_add_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 3, reg, 8,
-				 err);
+	subtilis_arm_add_add_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false,
+				 requested_size, 0, 8, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	/* OS_Heap */
-	/* read_mask = 11 = r0, r1, r3  */
-	/* write_mask = 4 = r2 */
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x1d + 0x20000, 11,
-			     4, err);
+	subtilis_arm_add_add_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false,
+				 actual_size, requested_size, 8, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	/*
-	 * We want to return allocated block + 8 to program.
-	 */
-
-	reg = subtilis_arm_ir_to_arm_reg(alloc->operands[0].reg);
-	subtilis_arm_add_add_imm(arm_s, SUBTILIS_ARM_CCODE_VC, false, reg, 2, 8,
-				 err);
+	prv_load_heap_pointer(arm_s, scratch, heap_start, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	one = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
-	subtilis_arm_gen_sete(arm_s, s, SUBTILIS_ARM_CCODE_VS, one,
-			      SUBTILIS_ERROR_CODE_OOM, err);
+	subtilis_arm_heap_alloc(arm_s, good_label, bad_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_section_add_label(arm_s, good_label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1495,23 +1495,57 @@ void subtilis_riscos_arm_alloc(subtilis_ir_section_t *s, size_t start,
 	 * Store reference count of 1 in first few bytes of new block
 	 */
 
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_VC, false, one, 1,
-				 err);
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, scratch,
+				 1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
-				   SUBTILIS_ARM_CCODE_VC, one, 2, 0, false,
+				   SUBTILIS_ARM_CCODE_AL, scratch, 0, 0, false,
 				   err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	/*
-	 * Store size of block
+	 * Store actual size of block.  Real size is R0 - 8
 	 */
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
-				   SUBTILIS_ARM_CCODE_VC, 3, 2, 4, false, err);
+				   SUBTILIS_ARM_CCODE_AL, actual_size, 0, 4,
+				   false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * We want to return allocated block + 8 to program.
+	 */
+
+	subtilis_arm_add_add_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 0, 8,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 15, 14,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_section_add_label(arm_s, bad_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_gen_sete(arm_s, s, SUBTILIS_ARM_CCODE_AL, scratch,
+			      SUBTILIS_ERROR_CODE_OOM, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 0,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 15, 14,
+				 err);
 }
 
 void subtilis_riscos_arm_realloc(subtilis_ir_section_t *s, size_t start,
@@ -1525,12 +1559,14 @@ void subtilis_riscos_arm_realloc(subtilis_ir_section_t *s, size_t start,
 	subtilis_ir_inst_t *realloc = &s->ops[start]->op.instr;
 	subtilis_arm_section_t *arm_s = user_data;
 
+	reg = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+
 	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 4,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	prv_load_heap_pointer(arm_s, 1, err);
+	prv_load_heap_pointer(arm_s, reg, 1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1625,22 +1661,21 @@ void subtilis_riscos_arm_ref(subtilis_ir_section_t *s, size_t start,
 				   false, err);
 }
 
-void subtilis_riscos_arm_deref(subtilis_ir_section_t *s, size_t start,
-			       void *user_data, subtilis_error_t *err)
+static void prv_deref(subtilis_ir_section_t *s, subtilis_arm_section_t *arm_s,
+		      subtilis_error_t *err)
 {
-	subtilis_arm_reg_t count;
-	subtilis_arm_reg_t ptr;
-	subtilis_arm_reg_t block;
-	subtilis_ir_inst_t *deref = &s->ops[start]->op.instr;
-	subtilis_arm_section_t *arm_s = user_data;
-
-	ptr = subtilis_arm_ir_to_arm_reg(deref->operands[0].reg);
-	block = 2;
-	count = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	size_t label;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_br_instr_t *br;
+	subtilis_arm_reg_t ptr = 0;
+	subtilis_arm_reg_t block = 2;
+	subtilis_arm_reg_t count = 3;
 
 	/*
 	 * Subtract 8 from the memory address provided by program
 	 */
+
+	label = arm_s->label_counter++;
 
 	subtilis_arm_add_sub_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, block,
 				 ptr, 8, err);
@@ -1658,26 +1693,39 @@ void subtilis_riscos_arm_deref(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_EQ, false, 0, 3,
-				 err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	prv_load_heap_pointer(arm_s, 1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/* OS_Heap */
-	/* read_mask = 7 = r0, r1, r2  */
-	/* write_mask = 0*/
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_EQ, 0x1d + 0x20000, 7, 0,
-			     err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
-				   SUBTILIS_ARM_CCODE_NE, count, block, 0,
+				   SUBTILIS_ARM_CCODE_AL, count, block, 0,
 				   false, err);
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_NE;
+	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
+	br->target.label = label;
+
+	prv_load_heap_pointer(arm_s, ptr, 1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * R1 - contains the start of the heap
+	 * R2 - block contains the start of the block
+	 */
+
+	subtilis_arm_heap_free(arm_s, 1, 2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_section_add_label(arm_s, label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 15, 14,
+				 err);
 }
 
 void subtilis_riscos_arm_getref(subtilis_ir_section_t *s, size_t start,
@@ -1873,4 +1921,24 @@ void subtilis_riscos_arm_i32_to_hex(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_add_data_imm(arm_s, SUBTILIS_ARM_INSTR_RSB,
 				  SUBTILIS_ARM_CCODE_AL, false, dest, 2, 11,
 				  err);
+}
+
+void subtilis_riscos_arm_heap_free_space(subtilis_ir_section_t *s, size_t start,
+					 void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t heap_start;
+	subtilis_arm_reg_t result;
+	subtilis_arm_reg_t scratch;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *free_space = &s->ops[start]->op.instr;
+
+	heap_start = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	result = subtilis_arm_ir_to_arm_reg(free_space->operands[0].reg);
+	scratch = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+
+	prv_load_heap_pointer(arm_s, scratch, heap_start, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_heap_free_space(arm_s, heap_start, result, err);
 }

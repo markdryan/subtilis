@@ -135,6 +135,7 @@ static void prv_decode_stran_op2(uint32_t encoded, subtilis_arm_op2_t *op2)
 		if (encoded & 0xff0) {
 			op2->type = SUBTILIS_ARM_OP2_SHIFTED;
 			op2->op.shift.reg = encoded & 0xf;
+			op2->op.shift.shift_reg = false;
 			op2->op.shift.shift.integer = (encoded >> 7) & 0x1f;
 			if (op2->op.shift.shift.integer == 0)
 				op2->op.shift.shift.integer = 32;

@@ -1533,6 +1533,16 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_I32TOHEX,
+
+	/*
+	 *
+	 * heapfree r0
+	 *
+	 * Returns the number of bytes of free space available in the heap in
+	 * the register r0.
+	 */
+
+	SUBTILIS_OP_INSTR_HEAP_FREE,
 } subtilis_op_instr_type_t;
 
 typedef enum {

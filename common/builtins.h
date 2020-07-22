@@ -28,6 +28,8 @@ typedef enum {
 	SUBTILIS_BUILTINS_MEMCMP,
 	SUBTILIS_BUILTINS_COMPARE,
 	SUBTILIS_BUILTINS_MEMSETI8,
+	SUBTILIS_BUILTINS_ALLOC,
+	SUBTILIS_BUILTINS_DEREF,
 	SUBTILIS_BUILTINS_MAX
 } subtilis_builtin_type_t;
 
@@ -37,6 +39,7 @@ struct _subtilis_builtin_t {
 	subtilis_type_t ret_type;
 	size_t num_parameters;
 	subtilis_type_t arg_types[4];
+	bool generates_error;
 };
 
 typedef struct _subtilis_builtin_t subtilis_builtin_t;

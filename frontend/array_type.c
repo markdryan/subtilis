@@ -123,7 +123,7 @@ static void prv_memset_array(subtilis_parser_t *p, size_t base_reg,
 	args[2].reg = val_reg;
 
 	(void)subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_MEMSETI32, NULL,
-				    args, &subtilis_type_void, 3, err);
+				    args, &subtilis_type_void, 3, true, err);
 }
 
 void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,

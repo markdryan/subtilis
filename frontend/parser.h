@@ -47,6 +47,7 @@ typedef struct subtilis_parser_t_ subtilis_parser_t;
 
 subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 				       subtilis_backend_caps_t caps,
+				       const subtilis_settings_t *settings,
 				       subtilis_error_t *err);
 void subtilis_parse(subtilis_parser_t *p, subtilis_error_t *err);
 void subtilis_parser_delete(subtilis_parser_t *p);

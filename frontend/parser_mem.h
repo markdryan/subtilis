@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Mark Ryan
+ * Copyright (c) 2020 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-#include "globals.h"
+#ifndef __SUBTILIS_PARSER_MEM_H
+#define __SUBTILIS_PARSER_MEM_H
 
-const char *subtilis_rnd_hidden_var = "_RND";
-const char *subtilis_eflag_hidden_var = "_EFLAG";
-const char *subtilis_err_hidden_var = "_ERR";
-const char *subtilis_heap_free_on_startup_var = "_HEAPFREE";
+#include "expression.h"
+#include "parser.h"
+
+subtilis_exp_t *subtilis_parser_mem_heap_free(subtilis_parser_t *p,
+					      subtilis_token_t *t,
+					      subtilis_error_t *err);
+
+#endif

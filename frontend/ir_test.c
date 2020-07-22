@@ -395,6 +395,7 @@ static int prv_check_matcher(subtilis_lexer_t *l, subtilis_parser_t *p,
 	const size_t rule_order[] = {4, 5, 4, 5, 4, 5, 3, 5, 4, 5,
 				     6, 1, 6, 2, 5, 7, 7, 7, 8};
 
+	p->settings.check_mem_leaks = false;
 	subtilis_error_init(&err);
 	subtilis_parse(p, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
