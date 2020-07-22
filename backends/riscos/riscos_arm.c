@@ -1942,3 +1942,46 @@ void subtilis_riscos_arm_heap_free_space(subtilis_ir_section_t *s, size_t start,
 
 	subtilis_arm_heap_free_space(arm_s, heap_start, result, err);
 }
+
+void subtilis_riscos_arm_block_free_space(subtilis_ir_section_t *s,
+					  size_t start, void *user_data,
+					  subtilis_error_t *err)
+{
+	subtilis_arm_reg_t total;
+	subtilis_arm_reg_t space_used;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_data_instr_t *datai;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *block_space = &s->ops[start]->op.instr;
+	subtilis_arm_reg_t dest =
+	    subtilis_arm_ir_to_arm_reg(block_space->operands[0].reg);
+	subtilis_arm_reg_t block =
+	    subtilis_arm_ir_to_arm_reg(block_space->operands[1].reg);
+
+	total = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	space_used = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, space_used, block, -4,
+				   false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, total, block, -16,
+				   false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_SUB, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	datai = &instr->operands.data;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->status = false;
+	datai->dest = dest;
+	datai->op1 = total;
+	datai->op2.type = SUBTILIS_ARM_OP2_REG;
+	datai->op2.op.reg = space_used;
+}

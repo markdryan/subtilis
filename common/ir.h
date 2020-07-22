@@ -1543,6 +1543,17 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_HEAP_FREE,
+
+	/*
+	 *
+	 * blockfree r0, r1
+	 *
+	 * Returns in r0 the number of bytes of free space available in the
+	 * block pointed to by r1.  Not used if realloc is implemented by the
+	 * backend.  Is used if it isn't.
+	 */
+
+	SUBTILIS_OP_INSTR_BLOCK_FREE,
 } subtilis_op_instr_type_t;
 
 typedef enum {

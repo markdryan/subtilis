@@ -251,6 +251,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"i32todec *, *, *\n", subtilis_riscos_arm_i32_to_dec},
 	{"i32tohex *, *, *\n", subtilis_riscos_arm_i32_to_hex},
 	{"heapfree *\n", subtilis_riscos_arm_heap_free_space},
+	{"blockfree *, *\n", subtilis_riscos_arm_block_free_space},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

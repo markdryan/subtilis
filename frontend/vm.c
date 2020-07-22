@@ -1362,6 +1362,12 @@ static void prv_heap_free(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = (int32_t)subtilis_vm_heap_free_space(&vm->heap);
 }
 
+static void prv_block_free(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			   subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1497,7 +1503,8 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_i32_to_dec,                      /* SUBTILIS_OP_INSTR_I32TODEC */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_REALTODEC */
 	prv_nop,                             /* SUBTILIS_OP_INSTR_I32TOHEX */
-	prv_heap_free                        /* SUBTILIS_OP_INSTR_HEAP_FREE */
+	prv_heap_free,                       /* SUBTILIS_OP_INSTR_HEAP_FREE */
+	prv_block_free                       /* SUBTILIS_OP_INSTR_BLOCK_FREE */
 };
 
 /* clang-format on */
