@@ -235,7 +235,6 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"tint *, *, *\n", subtilis_riscos_arm_tint},
 	{"end\n", subtilis_riscos_arm_end},
 	{"testesc\n", subtilis_riscos_arm_testesc},
-	{"realloc *, *, *\n", subtilis_riscos_arm_realloc},
 	{"ref *\n", subtilis_riscos_arm_ref},
 	{"getref *, *\n", subtilis_riscos_arm_getref},
 	{"pushi32 *\n", subtilis_arm_gen_pushi32},
