@@ -1554,6 +1554,19 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_BLOCK_FREE,
+
+	/*
+	 *
+	 * blockadjust r0, r1
+	 *
+	 * Reduces the number of bytes of free space available in the block
+	 * pointed to by r0 by r1 bytes.  This instruction must not be used
+	 * to reduce the amount of free space below 0.  The backend will not
+	 * check for this, so don't do it!  Again, this instruction is only
+	 * needed if the backend doesn't support realloc.
+	 */
+
+	SUBTILIS_OP_INSTR_BLOCK_ADJUST,
 } subtilis_op_instr_type_t;
 
 typedef enum {

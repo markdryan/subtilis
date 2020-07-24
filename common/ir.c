@@ -191,6 +191,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "i32tohex", SUBTILIS_OP_CLASS_REG_REG_REG },
 	{ "heapfree", SUBTILIS_OP_CLASS_REG },
 	{ "blockfree", SUBTILIS_OP_CLASS_REG_REG },
+	{ "blockadjust", SUBTILIS_OP_CLASS_REG_REG },
 };
 
 /*
