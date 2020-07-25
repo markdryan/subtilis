@@ -138,7 +138,7 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_prog_t *p,
 
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto fail;
-	vm->regs[SUBTILIS_IR_REG_GLOBAL] = SUBTILIS_VM_HEAP_SIZE;
+	vm->regs[SUBTILIS_IR_REG_GLOBAL] = const_size + SUBTILIS_VM_HEAP_SIZE;
 	vm->regs[SUBTILIS_IR_REG_LOCAL] =
 	    vm->regs[SUBTILIS_IR_REG_GLOBAL] + st->max_allocated;
 	vm->top = vm->memory_size;
