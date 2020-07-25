@@ -62,9 +62,17 @@ subtilis_vm_heap_claim_block(subtilis_vm_heap_t *heap, uint32_t size,
 
 	new_block = NULL;
 	block = heap->free_list;
-	while (block && block->size < size) {
+	while (block && block->size != size) {
 		new_block = block;
 		block = block->next;
+	}
+	if (!block) {
+		new_block = NULL;
+		block = heap->free_list;
+		while (block && block->size < size) {
+			new_block = block;
+			block = block->next;
+		}
 	}
 	if (!block)
 		return NULL;
