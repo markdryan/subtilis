@@ -2815,6 +2815,43 @@ const subtilis_test_case_t test_cases[] = {
 	 "print exp(a)\n",
 	 "2.7182818284\n2.7182818284\n1\n1\n"
 	},
+	{"heap_buster",
+	 "for i% := 1 to 10000\n"
+	 "  PROCAlloc\n"
+	 "next\n"
+	 "\n"
+	 "def PROCAlloc\n"
+	 "  onerror\n"
+	 "  endproc\n"
+	 "enderror\n"
+	 "\n"
+	 "  size% := rnd(64*256)\n"
+	 "  local dim ar(size%)\n"
+	 "endproc\n",
+	 ""},
+	{"string_add_equals",
+	 "a$ := \"hel\"\n"
+	 "a$ += \"lo\"\n"
+	 "b$ = a$\n"
+	 "a$ += \" world\"\n"
+	 "print a$\n"
+	 "print b$\n"
+	 "\n"
+	 "c$ = \"\"\n"
+	 "b$ += c$\n"
+	 "print b$\n"
+	 "\n"
+	 "c$ += a$\n"
+	 "print c$\n"
+	 "\n"
+	 "b$ += \"\"\n"
+	 "print b$\n"
+	 "\n"
+	 "a$ += a$\n"
+	 "print a$\n",
+	 "hello world\nhello\nhello\nhello world\nhello\n"
+	 "hello worldhello world\n"
+	},
 };
 
 /* clang-format on */

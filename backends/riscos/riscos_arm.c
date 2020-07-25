@@ -198,9 +198,6 @@ static void prv_init_heap(subtilis_arm_section_t *arm_s, uint32_t stack_size,
 	datai->op2.type = SUBTILIS_ARM_OP2_REG;
 	datai->op2.op.reg = 1;
 
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
 	subtilis_arm_heap_init(arm_s, err);
 }
 
@@ -1548,88 +1545,6 @@ static void prv_alloc(subtilis_ir_section_t *s, subtilis_arm_section_t *arm_s,
 				 err);
 }
 
-void subtilis_riscos_arm_realloc(subtilis_ir_section_t *s, size_t start,
-				 void *user_data, subtilis_error_t *err)
-{
-	size_t reg;
-	subtilis_arm_reg_t block;
-	subtilis_arm_reg_t new_size;
-	subtilis_arm_instr_t *instr;
-	subtilis_arm_data_instr_t *datai;
-	subtilis_ir_inst_t *realloc = &s->ops[start]->op.instr;
-	subtilis_arm_section_t *arm_s = user_data;
-
-	reg = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
-
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 4,
-				 err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	prv_load_heap_pointer(arm_s, reg, 1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/*
-	 * Subtract 8 from the memory address provided by program
-	 */
-
-	block = subtilis_arm_ir_to_arm_reg(realloc->operands[0].reg);
-	subtilis_arm_add_sub_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 2, block,
-				 8, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/*
-	 * Compute delta for new size in R3.  We need to load the old size first
-	 */
-
-	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
-				   SUBTILIS_ARM_CCODE_VC, 3, block, 4, false,
-				   err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	new_size = subtilis_arm_ir_to_arm_reg(realloc->operands[1].reg);
-	instr =
-	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_RSB, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-	datai = &instr->operands.data;
-	datai->ccode = SUBTILIS_ARM_CCODE_AL;
-	datai->status = false;
-	datai->dest = 3;
-	datai->op1 = 3;
-	datai->op2.type = SUBTILIS_ARM_OP2_REG;
-	datai->op2.op.reg = new_size;
-
-	/* OS_Heap */
-	/* read_mask = 15 = r0, r1, r2, r3  */
-	/* write_mask = 4 = r2 */
-	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x1d + 0x20000, 15,
-			     4, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/*
-	 * We want to return allocated block + 8 to program.
-	 */
-
-	reg = subtilis_arm_ir_to_arm_reg(realloc->operands[2].reg);
-	subtilis_arm_add_add_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, reg, 2, 8,
-				 err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/*
-	 * Store size of block
-	 */
-
-	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
-				   SUBTILIS_ARM_CCODE_VC, new_size, 2, 4, false,
-				   err);
-}
-
 void subtilis_riscos_arm_ref(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err)
 {
@@ -1941,4 +1856,87 @@ void subtilis_riscos_arm_heap_free_space(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	subtilis_arm_heap_free_space(arm_s, heap_start, result, err);
+}
+
+void subtilis_riscos_arm_block_free_space(subtilis_ir_section_t *s,
+					  size_t start, void *user_data,
+					  subtilis_error_t *err)
+{
+	subtilis_arm_reg_t total;
+	subtilis_arm_reg_t space_used;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_data_instr_t *datai;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *block_space = &s->ops[start]->op.instr;
+	subtilis_arm_reg_t dest =
+	    subtilis_arm_ir_to_arm_reg(block_space->operands[0].reg);
+	subtilis_arm_reg_t block =
+	    subtilis_arm_ir_to_arm_reg(block_space->operands[1].reg);
+
+	total = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	space_used = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, space_used, block, -4,
+				   false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, total, block, -16,
+				   false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_SUB, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	datai = &instr->operands.data;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->status = false;
+	datai->dest = dest;
+	datai->op1 = total;
+	datai->op2.type = SUBTILIS_ARM_OP2_REG;
+	datai->op2.op.reg = space_used;
+}
+
+void subtilis_riscos_arm_block_adjust(subtilis_ir_section_t *s, size_t start,
+				      void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t new_space_used;
+	subtilis_arm_reg_t space_used;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_data_instr_t *datai;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *block_adjust = &s->ops[start]->op.instr;
+	subtilis_arm_reg_t block =
+	    subtilis_arm_ir_to_arm_reg(block_adjust->operands[0].reg);
+	subtilis_arm_reg_t increment =
+	    subtilis_arm_ir_to_arm_reg(block_adjust->operands[1].reg);
+
+	space_used = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	new_space_used = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, space_used, block, -4,
+				   false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_ADD, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	datai = &instr->operands.data;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->status = false;
+	datai->dest = new_space_used;
+	datai->op1 = space_used;
+	datai->op2.type = SUBTILIS_ARM_OP2_REG;
+	datai->op2.op.reg = increment;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
+				   SUBTILIS_ARM_CCODE_AL, new_space_used, block,
+				   -4, false, err);
 }

@@ -91,5 +91,8 @@ subtilis_exp_t *subtilis_string_type_string(subtilis_parser_t *p,
 subtilis_exp_t *subtilis_string_type_add(subtilis_parser_t *p,
 					 subtilis_exp_t *a1, subtilis_exp_t *a2,
 					 bool swapped, subtilis_error_t *err);
+void subtilis_string_type_add_eq(subtilis_parser_t *p, size_t store_reg,
+				 size_t loc, subtilis_exp_t *a2,
+				 subtilis_error_t *err);
 
 #endif

@@ -235,7 +235,6 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"tint *, *, *\n", subtilis_riscos_arm_tint},
 	{"end\n", subtilis_riscos_arm_end},
 	{"testesc\n", subtilis_riscos_arm_testesc},
-	{"realloc *, *, *\n", subtilis_riscos_arm_realloc},
 	{"ref *\n", subtilis_riscos_arm_ref},
 	{"getref *, *\n", subtilis_riscos_arm_getref},
 	{"pushi32 *\n", subtilis_arm_gen_pushi32},
@@ -251,6 +250,8 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"i32todec *, *, *\n", subtilis_riscos_arm_i32_to_dec},
 	{"i32tohex *, *, *\n", subtilis_riscos_arm_i32_to_hex},
 	{"heapfree *\n", subtilis_riscos_arm_heap_free_space},
+	{"blockfree *, *\n", subtilis_riscos_arm_block_free_space},
+	{"blockadjust *, *\n", subtilis_riscos_arm_block_adjust},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

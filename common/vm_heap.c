@@ -62,9 +62,17 @@ subtilis_vm_heap_claim_block(subtilis_vm_heap_t *heap, uint32_t size,
 
 	new_block = NULL;
 	block = heap->free_list;
-	while (block && block->size < size) {
+	while (block && block->size != size) {
 		new_block = block;
 		block = block->next;
+	}
+	if (!block) {
+		new_block = NULL;
+		block = heap->free_list;
+		while (block && block->size < size) {
+			new_block = block;
+			block = block->next;
+		}
 	}
 	if (!block)
 		return NULL;
@@ -122,8 +130,6 @@ subtilis_vm_heap_realloc(subtilis_vm_heap_t *heap, uint32_t ptr, int32_t size,
 {
 	subtilis_vm_heap_free_block_t *block;
 	subtilis_vm_heap_free_block_t *new_block;
-	uint32_t new_size;
-	int32_t delta;
 
 	block = subtilis_vm_heap_find_block(heap, ptr);
 	if (!block) {
@@ -131,23 +137,10 @@ subtilis_vm_heap_realloc(subtilis_vm_heap_t *heap, uint32_t ptr, int32_t size,
 		return NULL;
 	}
 
-	delta = size;
-	if (delta < 0) {
-		/*
-		 * Can't be bothered implementing block shrinkage.
-		 * The compiler will never generate code that does this.
-		 */
-
-		subtilis_error_set_assertion_failed(err);
-		return NULL;
-	}
-
-	new_size = block->size + (uint32_t)delta;
-	new_block = subtilis_vm_heap_claim_block(heap, new_size, err);
+	new_block = subtilis_vm_heap_claim_block(heap, size, err);
 	if (!new_block || err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	block->next = heap->free_list;
-	heap->free_list = block;
+
 	*old_size = block->size;
 
 	return new_block;

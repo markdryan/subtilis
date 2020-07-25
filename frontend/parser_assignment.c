@@ -21,6 +21,7 @@
 #include "parser_array.h"
 #include "parser_assignment.h"
 #include "parser_exp.h"
+#include "string_type.h"
 #include "type_if.h"
 #include "variable.h"
 
@@ -440,6 +441,8 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 			else
 				subtilis_type_if_assign_ref(p, &s->t, op1.reg,
 							    s->loc, e, err);
+		} else if (s->t.type == SUBTILIS_TYPE_STRING) {
+			subtilis_string_type_add_eq(p, op1.reg, s->loc, e, err);
 		} else {
 			subtilis_error_set_assertion_failed(err);
 		}

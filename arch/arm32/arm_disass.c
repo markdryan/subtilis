@@ -468,6 +468,7 @@ void subtilis_arm_disass_dump(uint8_t *code, size_t len)
 
 	for (i = 0; i < words; i++) {
 		subtilis_error_init(&err);
+		printf("%lx\t", 0x8000 + (i * 4));
 		subtilis_arm_disass(&instr, ((uint32_t *)code)[i], &err);
 		if (err.type == SUBTILIS_ERROR_OK)
 			subtilis_arm_instr_dump(&instr);

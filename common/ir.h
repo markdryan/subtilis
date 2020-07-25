@@ -1378,7 +1378,8 @@ typedef enum {
 	 *
 	 * Unless there is an error, r2 always points to the resized memory
 	 * block on exit.  r2 and r0 may be equal.  They will be different if
-
+	 * the block needs to be moved.
+	 *
 	 * If an error occurs the error flag is set and an error is written
 	 * into the error offsets for the current section.
 	 */
@@ -1543,6 +1544,30 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_HEAP_FREE,
+
+	/*
+	 *
+	 * blockfree r0, r1
+	 *
+	 * Returns in r0 the number of bytes of free space available in the
+	 * block pointed to by r1.  Not used if realloc is implemented by the
+	 * backend.  Is used if it isn't.
+	 */
+
+	SUBTILIS_OP_INSTR_BLOCK_FREE,
+
+	/*
+	 *
+	 * blockadjust r0, r1
+	 *
+	 * Reduces the number of bytes of free space available in the block
+	 * pointed to by r0 by r1 bytes.  This instruction must not be used
+	 * to reduce the amount of free space below 0.  The backend will not
+	 * check for this, so don't do it!  Again, this instruction is only
+	 * needed if the backend doesn't support realloc.
+	 */
+
+	SUBTILIS_OP_INSTR_BLOCK_ADJUST,
 } subtilis_op_instr_type_t;
 
 typedef enum {
