@@ -2815,6 +2815,20 @@ const subtilis_test_case_t test_cases[] = {
 	 "print exp(a)\n",
 	 "2.7182818284\n2.7182818284\n1\n1\n"
 	},
+	{"heap_buster",
+	 "for i% := 1 to 10000\n"
+	 "  PROCAlloc\n"
+	 "next\n"
+	 "\n"
+	 "def PROCAlloc\n"
+	 "  onerror\n"
+	 "  endproc\n"
+	 "enderror\n"
+	 "\n"
+	 "  size% := rnd(64*256)\n"
+	 "  local dim ar(size%)\n"
+	 "endproc\n",
+	 ""},
 };
 
 /* clang-format on */
