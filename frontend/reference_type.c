@@ -380,6 +380,22 @@ size_t subtilis_reference_get_data(subtilis_parser_t *p, size_t reg, size_t loc,
 	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
 }
 
+void subtilis_reference_set_data(subtilis_parser_t *p, size_t reg,
+				 size_t store_reg, size_t loc,
+				 subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+
+	op0.reg = reg;
+	op1.reg = store_reg;
+	op2.integer = loc + SUBTIILIS_REFERENCE_DATA_OFF;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op0, op1, op2, err);
+}
+
 void subtilis_reference_type_memcpy(subtilis_parser_t *p, size_t mem_reg,
 				    size_t loc, size_t src_reg, size_t size_reg,
 				    subtilis_error_t *err)
@@ -493,8 +509,8 @@ void subtilis_reference_inc_cleanup_stack(subtilis_parser_t *p,
 					      dest, op2, err);
 }
 
-static size_t prv_do_alloc(subtilis_parser_t *p, size_t size_reg,
-			   subtilis_error_t *err)
+size_t subtilis_reference_type_raw_alloc(subtilis_parser_t *p, size_t size_reg,
+					 subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op;
 	subtilis_exp_t *e;
@@ -547,7 +563,7 @@ size_t subtilis_reference_type_alloc(subtilis_parser_t *p,
 		return SIZE_MAX;
 
 	op1.integer = loc + SUBTIILIS_REFERENCE_DATA_OFF;
-	op.reg = prv_do_alloc(p, size_reg, err);
+	op.reg = subtilis_reference_type_raw_alloc(p, size_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
@@ -676,7 +692,7 @@ static size_t prv_resize_with_malloc(subtilis_parser_t *p, size_t loc,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	new_block.reg = prv_do_alloc(p, new_size_reg, err);
+	new_block.reg = subtilis_reference_type_raw_alloc(p, new_size_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 

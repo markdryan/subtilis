@@ -2554,3 +2554,156 @@ cleanup:
 
 	return NULL;
 }
+
+void subtilis_string_type_add_eq(subtilis_parser_t *p, size_t store_reg,
+				 size_t loc, subtilis_exp_t *a2,
+				 subtilis_error_t *err)
+{
+	size_t dest_reg;
+	char *a2_tmp;
+	subtilis_ir_operand_t a1_size;
+	subtilis_ir_operand_t a2_size;
+	subtilis_ir_operand_t new_size;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t a1_data;
+	subtilis_ir_operand_t a2_data;
+	subtilis_ir_operand_t store;
+	subtilis_ir_operand_t ref_count;
+	bool a2_gt_0;
+	subtilis_ir_operand_t a1_gt_zero_label;
+	subtilis_ir_operand_t malloc_label;
+	subtilis_ir_operand_t realloc_label;
+	subtilis_ir_operand_t copy_label;
+	subtilis_ir_operand_t ptr;
+
+	ptr.reg = p->current->reg_counter++;
+
+	a1_gt_zero_label.label = subtilis_ir_section_new_label(p->current);
+	malloc_label.label = subtilis_ir_section_new_label(p->current);
+	realloc_label.label = subtilis_ir_section_new_label(p->current);
+	copy_label.label = subtilis_ir_section_new_label(p->current);
+
+	store.reg = store_reg;
+	a2_gt_0 =
+	    prv_get_string_details(p, a2, &a2_size, &a2_data, &a2_tmp, err);
+	if (err->type != SUBTILIS_ERROR_OK || !a2_gt_0)
+		return;
+
+	op2.integer = loc + SUBTIILIS_STRING_SIZE_OFF;
+	a1_size.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, store, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	new_size.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, a1_size, a2_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  a1_size, a1_gt_zero_label,
+					  malloc_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, a1_gt_zero_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.integer = loc + SUBTIILIS_STRING_DATA_OFF;
+	a1_data.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, store, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * If our string only has one reference we can realloc it.  Otherwise
+	 * we need to malloc and copy.
+	 */
+
+	ref_count.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_GETREF, a1_data, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.integer = 1;
+	ref_count.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_EQI_I32, ref_count, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC_NF,
+					  ref_count, realloc_label,
+					  malloc_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, malloc_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	dest_reg = subtilis_reference_type_raw_alloc(p, new_size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * There's no leak potential here as mempcy and deref cannot fail.
+	 */
+
+	subtilis_reference_type_memcpy_dest(p, dest_reg, a1_data.reg,
+					    a1_size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_reference_type_deref(p, store_reg, loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_reference_set_data(p, dest_reg, store_reg, loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_string_type_set_size(p, store_reg, loc, new_size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.reg = dest_reg;
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      ptr, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     copy_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, realloc_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	dest_reg = subtilis_reference_type_realloc(
+	    p, loc, store_reg, a1_data.reg, a1_size.reg, new_size.reg,
+	    a2_size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.reg = dest_reg;
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      ptr, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, copy_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	dest_reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, ptr, a1_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_reference_type_memcpy_dest(p, dest_reg, a2_data.reg,
+					    a2_size.reg, err);
+}
