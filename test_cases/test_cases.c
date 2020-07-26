@@ -2852,6 +2852,20 @@ const subtilis_test_case_t test_cases[] = {
 	 "hello world\nhello\nhello\nhello world\nhello\n"
 	 "hello worldhello world\n"
 	},
+	{
+	"string_array_add_equals",
+	"dim a$(10)\n"
+	"\n"
+	"b$ := \"hello\"\n"
+	"a$(0) += \" world\"\n"
+	"a$(1) = \"hello\"\n"
+	"a$(1) += a$(0)\n"
+	"a$(0) += \"\"\n"
+	"\n"
+	"print a$(0)\n"
+	"print a$(1)\n",
+	" world\nhello world\n"
+	},
 };
 
 /* clang-format on */

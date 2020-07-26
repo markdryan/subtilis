@@ -98,8 +98,16 @@ static void prv_indexed_add(subtilis_parser_t *p, const char *var_name,
 			    subtilis_exp_t **indices, size_t index_count,
 			    subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "Not supported yet",
-					 p->l->stream->name, p->l->line);
+	subtilis_exp_t *offset;
+
+	offset = subtilis_array_index_calc(p, var_name, type, mem_reg, loc,
+					   indices, index_count, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_string_type_add_eq(p, offset->exp.ir_op.reg, 0, e, err);
+
+	subtilis_exp_delete(offset);
 }
 
 static void prv_indexed_sub(subtilis_parser_t *p, const char *var_name,
