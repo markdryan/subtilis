@@ -571,6 +571,12 @@ When an error is propagated from a function, the return value of that function
 is set to the default value for the type.  This is sort of irrelvant as that
 value cannot be accessed by the program.
 
+### Strings
+
+Strings work much in the same way as they do in BBC BASIC with the exception that there
+is no limit on the length of strings apart from the memory made avaiable to the
+program.
+
 ### Arrays
 
 Arrays variables can be declared in two different ways in Subtilis.
@@ -858,12 +864,10 @@ will be implemented at some point.
 Here's a list of other language features that are currently not implemented but which will be at some point
 
 * The @% variable
-* Strings
 * File Handling
 * CASE OF
 * SOUND
 * OSCLI and *
-* TAB
 * RETURN for passing arguments by reference to procedures and functions
 * POINT TO
 
