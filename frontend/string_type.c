@@ -944,10 +944,10 @@ cleanup:
 	return NULL;
 }
 
-subtilis_exp_t *subtilis_string_type_left(subtilis_parser_t *p,
-					  subtilis_exp_t *str,
-					  subtilis_exp_t *len,
-					  subtilis_error_t *err)
+subtilis_exp_t *subtilis_string_type_left_exp(subtilis_parser_t *p,
+					      subtilis_exp_t *str,
+					      subtilis_exp_t *len,
+					      subtilis_error_t *err)
 {
 	size_t const_str_len;
 	size_t const_int_val;
@@ -1160,10 +1160,10 @@ static subtilis_exp_t *prv_right_non_const(subtilis_parser_t *p, size_t str_reg,
 	return subtilis_exp_new_var(&subtilis_type_string, ptr_reg, err);
 }
 
-subtilis_exp_t *subtilis_string_type_right(subtilis_parser_t *p,
-					   subtilis_exp_t *str,
-					   subtilis_exp_t *len,
-					   subtilis_error_t *err)
+subtilis_exp_t *subtilis_string_type_right_exp(subtilis_parser_t *p,
+					       subtilis_exp_t *str,
+					       subtilis_exp_t *len,
+					       subtilis_error_t *err)
 {
 	size_t const_str_len;
 	subtilis_exp_t *ret = NULL;
@@ -1767,11 +1767,11 @@ static subtilis_exp_t *prv_mid_str_vvv(subtilis_parser_t *p,
 	return subtilis_exp_new_var(&subtilis_type_string, ptr, err);
 }
 
-subtilis_exp_t *subtilis_string_type_mid(subtilis_parser_t *p,
-					 subtilis_exp_t *str,
-					 subtilis_exp_t *start,
-					 subtilis_exp_t *len,
-					 subtilis_error_t *err)
+subtilis_exp_t *subtilis_string_type_mid_exp(subtilis_parser_t *p,
+					     subtilis_exp_t *str,
+					     subtilis_exp_t *start,
+					     subtilis_exp_t *len,
+					     subtilis_error_t *err)
 {
 	size_t const_str_len;
 	subtilis_exp_t *ret = NULL;

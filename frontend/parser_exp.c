@@ -255,13 +255,13 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 		case SUBTILIS_KEYWORD_LEN:
 			return subtilis_parser_len(p, t, err);
 		case SUBTILIS_KEYWORD_LEFT_STR:
-			return subtilis_parser_left_str(p, t, err);
+			return subtilis_parser_left_str_exp(p, t, err);
 		case SUBTILIS_KEYWORD_HEAP_FREE:
 			return subtilis_parser_mem_heap_free(p, t, err);
 		case SUBTILIS_KEYWORD_RIGHT_STR:
-			return subtilis_parser_right_str(p, t, err);
+			return subtilis_parser_right_str_exp(p, t, err);
 		case SUBTILIS_KEYWORD_MID_STR:
-			return subtilis_parser_mid_str(p, t, err);
+			return subtilis_parser_mid_str_exp(p, t, err);
 		case SUBTILIS_KEYWORD_POS:
 			return subtilis_parser_pos(p, t, err);
 		case SUBTILIS_KEYWORD_VPOS:

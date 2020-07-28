@@ -142,9 +142,9 @@ cleanup:
 		subtilis_exp_delete(e[i]);
 }
 
-subtilis_exp_t *subtilis_parser_left_str(subtilis_parser_t *p,
-					 subtilis_token_t *t,
-					 subtilis_error_t *err)
+subtilis_exp_t *subtilis_parser_left_str_exp(subtilis_parser_t *p,
+					     subtilis_token_t *t,
+					     subtilis_error_t *err)
 {
 	subtilis_exp_t *e[2];
 
@@ -152,12 +152,12 @@ subtilis_exp_t *subtilis_parser_left_str(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	return subtilis_string_type_left(p, e[0], e[1], err);
+	return subtilis_string_type_left_exp(p, e[0], e[1], err);
 }
 
-subtilis_exp_t *subtilis_parser_right_str(subtilis_parser_t *p,
-					  subtilis_token_t *t,
-					  subtilis_error_t *err)
+subtilis_exp_t *subtilis_parser_right_str_exp(subtilis_parser_t *p,
+					      subtilis_token_t *t,
+					      subtilis_error_t *err)
 {
 	subtilis_exp_t *e[2];
 
@@ -165,12 +165,12 @@ subtilis_exp_t *subtilis_parser_right_str(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	return subtilis_string_type_right(p, e[0], e[1], err);
+	return subtilis_string_type_right_exp(p, e[0], e[1], err);
 }
 
-subtilis_exp_t *subtilis_parser_mid_str(subtilis_parser_t *p,
-					subtilis_token_t *t,
-					subtilis_error_t *err)
+subtilis_exp_t *subtilis_parser_mid_str_exp(subtilis_parser_t *p,
+					    subtilis_token_t *t,
+					    subtilis_error_t *err)
 {
 	subtilis_exp_t *e[3];
 	size_t args;
@@ -208,7 +208,7 @@ subtilis_exp_t *subtilis_parser_mid_str(subtilis_parser_t *p,
 		goto cleanup;
 	}
 
-	return subtilis_string_type_mid(p, e[0], e[1], e[2], err);
+	return subtilis_string_type_mid_exp(p, e[0], e[1], e[2], err);
 
 cleanup:
 
