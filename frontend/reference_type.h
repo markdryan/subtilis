@@ -66,6 +66,17 @@ void subtilis_reference_type_memcpy(subtilis_parser_t *p, size_t mem_reg,
 void subtilis_reference_type_memcpy_dest(subtilis_parser_t *p, size_t dest_reg,
 					 size_t src_reg, size_t size_reg,
 					 subtilis_error_t *err);
+void subtilis_reference_type_set_size(subtilis_parser_t *p, size_t mem_reg,
+				      size_t loc, size_t size_reg,
+				      subtilis_error_t *err);
+size_t subtilis_reference_type_re_malloc(subtilis_parser_t *p, size_t store_reg,
+					 size_t loc, size_t data_reg,
+					 size_t size_reg, size_t new_size_reg,
+					 subtilis_error_t *err);
+size_t subtilis_reference_type_copy_on_write(subtilis_parser_t *p,
+					     size_t store_reg, size_t loc,
+					     size_t size_reg,
+					     subtilis_error_t *err);
 void subtilis_reference_inc_cleanup_stack(subtilis_parser_t *p,
 					  const subtilis_type_t *type,
 					  subtilis_error_t *err);

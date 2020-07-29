@@ -813,8 +813,8 @@ static subtilis_exp_t *prv_to_string(subtilis_parser_t *p, subtilis_exp_t *e,
 	subtilis_exp_delete(e);
 	e = NULL;
 
-	subtilis_string_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
-				      size_reg, err);
+	subtilis_reference_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					 size_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 

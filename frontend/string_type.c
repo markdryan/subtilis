@@ -99,21 +99,6 @@ size_t subtilis_string_type_size(const subtilis_type_t *type)
 	return size;
 }
 
-void subtilis_string_type_set_size(subtilis_parser_t *p, size_t mem_reg,
-				   size_t loc, size_t size_reg,
-				   subtilis_error_t *err)
-{
-	subtilis_ir_operand_t op0;
-	subtilis_ir_operand_t op1;
-	subtilis_ir_operand_t op2;
-
-	op0.reg = size_reg;
-	op1.reg = mem_reg;
-	op2.integer = loc + SUBTIILIS_STRING_SIZE_OFF;
-	subtilis_ir_section_add_instr_reg(
-	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op0, op1, op2, err);
-}
-
 void subtilis_string_type_zero_ref(subtilis_parser_t *p,
 				   const subtilis_type_t *type, size_t mem_reg,
 				   size_t loc, subtilis_error_t *err)
@@ -128,8 +113,8 @@ void subtilis_string_type_zero_ref(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_string_type_set_size(p, mem_reg, loc, zero->exp.ir_op.reg,
-				      err);
+	subtilis_reference_type_set_size(p, mem_reg, loc, zero->exp.ir_op.reg,
+					 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -153,7 +138,7 @@ void subtilis_string_init_from_ptr(subtilis_parser_t *p, size_t mem_reg,
 	empty.label = subtilis_ir_section_new_label(p->current);
 	not_empty.label = subtilis_ir_section_new_label(p->current);
 
-	subtilis_string_type_set_size(p, mem_reg, loc, size_reg, err);
+	subtilis_reference_type_set_size(p, mem_reg, loc, size_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -738,8 +723,8 @@ static subtilis_exp_t *prv_left_const(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	subtilis_string_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
-				      size_reg, err);
+	subtilis_reference_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					 size_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -1047,8 +1032,8 @@ static subtilis_exp_t *prv_right_const(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	subtilis_string_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
-				      size_reg, err);
+	subtilis_reference_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					 size_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -1271,8 +1256,8 @@ static subtilis_exp_t *prv_mid_str_ccv(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	subtilis_string_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc, len_reg,
-				      err);
+	subtilis_reference_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					 len_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -1549,8 +1534,8 @@ static size_t prv_mid_str_check(subtilis_parser_t *p, size_t start_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_string_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
-				      zero_reg.reg, err);
+	subtilis_reference_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					 zero_reg.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -2333,8 +2318,8 @@ static void prv_string_str_non_const_common(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_string_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
-				      zero_reg.reg, err);
+	subtilis_reference_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					 zero_reg.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -2544,8 +2529,8 @@ static subtilis_exp_t *prv_string_str_non_const(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_string_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
-				      zero_reg.reg, err);
+	subtilis_reference_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					 zero_reg.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -2923,28 +2908,8 @@ void subtilis_string_type_add_eq(subtilis_parser_t *p, size_t store_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest_reg = subtilis_reference_type_raw_alloc(p, new_size.reg, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/*
-	 * There's no leak potential here as mempcy and deref cannot fail.
-	 */
-
-	subtilis_reference_type_memcpy_dest(p, dest_reg, a1_data.reg,
-					    a1_size.reg, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_reference_type_deref(p, store_reg, loc, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_reference_set_data(p, dest_reg, store_reg, loc, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_string_type_set_size(p, store_reg, loc, new_size.reg, err);
+	dest_reg = subtilis_reference_type_re_malloc(
+	    p, store_reg, loc, a1_data.reg, a1_size.reg, new_size.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
