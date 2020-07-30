@@ -1841,6 +1841,7 @@ cleanup:
 static size_t prv_left_right_calc_len(subtilis_parser_t *p, subtilis_exp_t *str,
 				      subtilis_exp_t *len,
 				      subtilis_exp_t *value,
+				      size_t *str_len_reg,
 				      subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op0;
@@ -2017,6 +2018,8 @@ static size_t prv_left_right_calc_len(subtilis_parser_t *p, subtilis_exp_t *str,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
+	*str_len_reg = str_len.reg;
+
 	return to_copy_reg;
 }
 
@@ -2025,10 +2028,12 @@ void subtilis_string_type_left(subtilis_parser_t *p, subtilis_exp_t *str,
 			       subtilis_error_t *err)
 {
 	size_t buf_size;
+	size_t data_reg;
 	subtilis_ir_operand_t end_label;
 	subtilis_ir_operand_t strlen_gt0_label;
 	subtilis_ir_operand_t to_copy;
 	subtilis_ir_operand_t source_str;
+	size_t str_len_reg;
 
 	end_label.label = subtilis_ir_section_new_label(p->current);
 	strlen_gt0_label.label = subtilis_ir_section_new_label(p->current);
@@ -2071,7 +2076,8 @@ void subtilis_string_type_left(subtilis_parser_t *p, subtilis_exp_t *str,
 			goto cleanup;
 	}
 
-	to_copy.reg = prv_left_right_calc_len(p, str, len, value, err);
+	to_copy.reg =
+	    prv_left_right_calc_len(p, str, len, value, &str_len_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -2089,7 +2095,10 @@ void subtilis_string_type_left(subtilis_parser_t *p, subtilis_exp_t *str,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	/* We should do the malloc here */
+	data_reg = subtilis_reference_type_copy_on_write(p, str->exp.ir_op.reg,
+							 0, str_len_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
 	if (value->type.type == SUBTILIS_TYPE_CONST_STRING)
 		source_str.reg = subtilis_string_type_lca_const(
@@ -2102,8 +2111,8 @@ void subtilis_string_type_left(subtilis_parser_t *p, subtilis_exp_t *str,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_reference_type_memcpy(p, str->exp.ir_op.reg, 0, source_str.reg,
-				       to_copy.reg, err);
+	subtilis_reference_type_memcpy_dest(p, data_reg, source_str.reg,
+					    to_copy.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
