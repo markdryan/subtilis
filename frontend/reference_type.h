@@ -72,6 +72,7 @@ void subtilis_reference_type_set_size(subtilis_parser_t *p, size_t mem_reg,
 size_t subtilis_reference_type_re_malloc(subtilis_parser_t *p, size_t store_reg,
 					 size_t loc, size_t data_reg,
 					 size_t size_reg, size_t new_size_reg,
+					 bool data_known_valid,
 					 subtilis_error_t *err);
 size_t subtilis_reference_type_copy_on_write(subtilis_parser_t *p,
 					     size_t store_reg, size_t loc,

@@ -461,9 +461,11 @@ void subtilis_reference_type_set_size(subtilis_parser_t *p, size_t mem_reg,
 size_t subtilis_reference_type_re_malloc(subtilis_parser_t *p, size_t store_reg,
 					 size_t loc, size_t data_reg,
 					 size_t size_reg, size_t new_size_reg,
+					 bool data_known_valid,
 					 subtilis_error_t *err)
 {
 	size_t dest_reg;
+	subtilis_ir_operand_t data;
 
 	dest_reg = subtilis_reference_type_raw_alloc(p, new_size_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -478,7 +480,12 @@ size_t subtilis_reference_type_re_malloc(subtilis_parser_t *p, size_t store_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	subtilis_reference_type_deref(p, store_reg, loc, err);
+	if (data_known_valid) {
+		data.reg = data_reg;
+		prv_call_deref(p, data, err);
+	} else {
+		subtilis_reference_type_deref(p, store_reg, loc, err);
+	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
@@ -543,7 +550,7 @@ size_t subtilis_reference_type_copy_on_write(subtilis_parser_t *p,
 		return SIZE_MAX;
 
 	dest_reg = subtilis_reference_type_re_malloc(
-	    p, store_reg, loc, data_reg.reg, size_reg, size_reg, err);
+	    p, store_reg, loc, data_reg.reg, size_reg, size_reg, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 

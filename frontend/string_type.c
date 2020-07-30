@@ -2917,8 +2917,9 @@ void subtilis_string_type_add_eq(subtilis_parser_t *p, size_t store_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest_reg = subtilis_reference_type_re_malloc(
-	    p, store_reg, loc, a1_data.reg, a1_size.reg, new_size.reg, err);
+	dest_reg = subtilis_reference_type_re_malloc(p, store_reg, loc,
+						     a1_data.reg, a1_size.reg,
+						     new_size.reg, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
