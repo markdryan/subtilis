@@ -577,6 +577,18 @@ Strings work much in the same way as they do in BBC BASIC with the exception tha
 is no limit on the length of strings apart from the memory made avaiable to the
 program.
 
+Strings in Subtilis have value semantics as they do in BBC BASIC.  However, strings are
+actually implemented as copy on write reference types in Subtilis.  Assigning one string
+to another does not the copy source's data.  It simply increases its reference count.  This makes
+assigning one string to another and passing and returning strings to and from functions
+nice and quick.  There is a price to pay when the string is modified however.  When
+modifying a string using += or the statement form of left$, mid$ or right string$, a
+copy of the target string may need to be made.  The copy only happens if the reference
+count of the underlying string is > 1, but even in this case there is still a price to be
+paid as the reference count check needs to be done at runtime, so there's a small performance
+penalty.  Also, as we need to build these checks into our compiled code, language constructs that
+modify strings tend to generate more code than constructs that read from strings.
+
 ### Arrays
 
 Arrays variables can be declared in two different ways in Subtilis.
