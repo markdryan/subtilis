@@ -2866,6 +2866,44 @@ const subtilis_test_case_t test_cases[] = {
 	"print a$(1)\n",
 	" world\nhello world\n"
 	},
+	{"left_string_statement",
+	 "a$ := \"hello mark\"\n"
+	 "left$(a$) = \"HEL\"\n"
+	 "print a$\n"
+	 "left$(a$,0) = \"HEL\"\n"
+	 "print a$\n"
+	 "left$(a$,-1) = \"HEL\"\n"
+	 "print a$\n"
+	 "left$(a$,3) = \"he\"\n"
+	 "print a$\n"
+	 "b$ := \"HEL\"\n"
+	 "a$ = \"hello mark\"\n"
+	 "left$(a$) = b$\n"
+	 "print a$\n"
+	 "b% := 0\n"
+	 "left$(a$,b%) = b$\n"
+	 "print a$\n"
+	 "b% = -1\n"
+	 "left$(a$,b%) = b$\n"
+	 "print a$\n"
+	 "b% = 3\n"
+	 "b$ = \"he\"\n"
+	 "left$(a$,b%) = b$\n"
+	 "print a$\n"
+	 "a$ = \"hello mark\"\n"
+	 "c$ = a$\n"
+	 "left$(a$,3) = \"HEL\"\n"
+	 "print a$\n"
+	 "print c$\n"
+	 "left$(a$) = \"\"\n"
+	 "print a$\n"
+	 "a$ = \"\"\n"
+	 "left$(a$) = b$\n"
+	 "print a$\n",
+	 "Hello mark\nHello mark\nHELlo mark\nheLlo mark\n"
+	 "Hello mark\nHello mark\nHELlo mark\nheLlo mark\n"
+	 "HELlo mark\nhello mark\nHELlo mark\n\n"
+	},
 };
 
 /* clang-format on */
