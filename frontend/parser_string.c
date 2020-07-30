@@ -356,3 +356,33 @@ cleanup:
 	subtilis_exp_delete(e[0]);
 	subtilis_exp_delete(e[1]);
 }
+
+void subtilis_parser_right_str(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_exp_t *e[2];
+	subtilis_exp_t *value;
+
+	prv_left_right_args(p, t, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, "=")) {
+		subtilis_error_set_assignment_op_expected(
+		    err, tbuf, p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
+	value = subtilis_parser_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_string_type_right(p, e[0], e[1], value, err);
+	return;
+
+cleanup:
+	subtilis_exp_delete(e[0]);
+	subtilis_exp_delete(e[1]);
+}

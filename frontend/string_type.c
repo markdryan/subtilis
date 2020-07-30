@@ -1842,6 +1842,7 @@ static size_t prv_left_right_calc_len(subtilis_parser_t *p, subtilis_exp_t *str,
 				      subtilis_exp_t *len,
 				      subtilis_exp_t *value,
 				      size_t *str_len_reg,
+				      size_t *value_len_reg,
 				      subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op0;
@@ -2019,21 +2020,26 @@ static size_t prv_left_right_calc_len(subtilis_parser_t *p, subtilis_exp_t *str,
 		return SIZE_MAX;
 
 	*str_len_reg = str_len.reg;
+	*value_len_reg = value_len.reg;
 
 	return to_copy_reg;
 }
 
-void subtilis_string_type_left(subtilis_parser_t *p, subtilis_exp_t *str,
-			       subtilis_exp_t *len, subtilis_exp_t *value,
-			       subtilis_error_t *err)
+static void prv_left_right_statement(subtilis_parser_t *p, subtilis_exp_t *str,
+				     subtilis_exp_t *len, subtilis_exp_t *value,
+				     bool left, subtilis_error_t *err)
 {
 	size_t buf_size;
 	size_t data_reg;
+	subtilis_ir_operand_t data;
+	subtilis_ir_operand_t str_len;
+	subtilis_ir_operand_t value_len;
 	subtilis_ir_operand_t end_label;
 	subtilis_ir_operand_t strlen_gt0_label;
 	subtilis_ir_operand_t to_copy;
 	subtilis_ir_operand_t source_str;
 	size_t str_len_reg;
+	size_t value_len_reg;
 
 	end_label.label = subtilis_ir_section_new_label(p->current);
 	strlen_gt0_label.label = subtilis_ir_section_new_label(p->current);
@@ -2076,8 +2082,8 @@ void subtilis_string_type_left(subtilis_parser_t *p, subtilis_exp_t *str,
 			goto cleanup;
 	}
 
-	to_copy.reg =
-	    prv_left_right_calc_len(p, str, len, value, &str_len_reg, err);
+	to_copy.reg = prv_left_right_calc_len(p, str, len, value, &str_len_reg,
+					      &value_len_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -2111,6 +2117,30 @@ void subtilis_string_type_left(subtilis_parser_t *p, subtilis_exp_t *str,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	if (!left) {
+		data.reg = data_reg;
+		str_len.reg = str_len_reg;
+		data.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_ADD_I32, data, str_len, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		data_reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_SUB_I32, data, to_copy, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		value_len.reg = value_len_reg;
+		source_str.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_ADD_I32, source_str,
+		    value_len, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		source_str.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_SUB_I32, source_str, to_copy,
+		    err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
 	subtilis_reference_type_memcpy_dest(p, data_reg, source_str.reg,
 					    to_copy.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -2125,6 +2155,20 @@ cleanup:
 	subtilis_exp_delete(str);
 	subtilis_exp_delete(len);
 	subtilis_exp_delete(value);
+}
+
+void subtilis_string_type_left(subtilis_parser_t *p, subtilis_exp_t *str,
+			       subtilis_exp_t *len, subtilis_exp_t *value,
+			       subtilis_error_t *err)
+{
+	prv_left_right_statement(p, str, len, value, true, err);
+}
+
+void subtilis_string_type_right(subtilis_parser_t *p, subtilis_exp_t *str,
+				subtilis_exp_t *len, subtilis_exp_t *value,
+				subtilis_error_t *err)
+{
+	prv_left_right_statement(p, str, len, value, false, err);
 }
 
 static subtilis_exp_t *prv_string_str_const(subtilis_parser_t *p,
