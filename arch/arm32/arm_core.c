@@ -672,6 +672,7 @@ static size_t prv_add_data_imm_ldr(subtilis_arm_section_t *s,
 	ldrc->ccode = ccode;
 	ldrc->dest = dest;
 	ldrc->label = label;
+	ldrc->link_time = false;
 	return label;
 }
 
@@ -698,6 +699,7 @@ size_t subtilis_arm_insert_data_imm_ldr(subtilis_arm_section_t *s,
 	ldrc->ccode = ccode;
 	ldrc->dest = dest;
 	ldrc->label = label;
+	ldrc->link_time = false;
 	return label;
 }
 
@@ -722,6 +724,7 @@ size_t subtilis_add_explicit_ldr(subtilis_arm_section_t *s,
 	ldrc->ccode = ccode;
 	ldrc->dest = dest;
 	ldrc->label = label;
+	ldrc->link_time = link_time;
 
 	return label;
 }

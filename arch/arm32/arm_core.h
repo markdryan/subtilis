@@ -255,6 +255,7 @@ struct subtilis_arm_ldrc_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	subtilis_arm_reg_t dest;
 	size_t label;
+	bool link_time;
 };
 
 typedef struct subtilis_arm_ldrc_instr_t_ subtilis_arm_ldrc_instr_t;
