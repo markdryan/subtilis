@@ -1876,10 +1876,6 @@ static size_t prv_left_right_calc_len(subtilis_parser_t *p, subtilis_exp_t *str,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	/*
-	 * This bit isn't quire right.
-	 */
-
 	if (len->type.type == SUBTILIS_TYPE_INTEGER) {
 		op1.integer = 0;
 		less_zero.reg = subtilis_ir_section_add_instr(

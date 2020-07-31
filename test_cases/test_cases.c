@@ -2868,7 +2868,7 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"left_string_statement",
 	 "a$ := \"hello mark\"\n"
-	 "left$(a$) = \"HEL\"\n"
+	 "left$(a$) = \"HE\"\n"
 	 "print a$\n"
 	 "left$(a$,0) = \"HEL\"\n"
 	 "print a$\n"
@@ -2876,13 +2876,14 @@ const subtilis_test_case_t test_cases[] = {
 	 "print a$\n"
 	 "left$(a$,3) = \"he\"\n"
 	 "print a$\n"
-	 "b$ := \"HEL\"\n"
+	 "b$ := \"HE\"\n"
 	 "a$ = \"hello mark\"\n"
 	 "left$(a$) = b$\n"
 	 "print a$\n"
 	 "b% := 0\n"
 	 "left$(a$,b%) = b$\n"
 	 "print a$\n"
+	 "b$ = \"HEL\"\n"
 	 "b% = -1\n"
 	 "left$(a$,b%) = b$\n"
 	 "print a$\n"
@@ -2900,13 +2901,13 @@ const subtilis_test_case_t test_cases[] = {
 	 "a$ = \"\"\n"
 	 "left$(a$) = b$\n"
 	 "print a$\n",
-	 "Hello mark\nHello mark\nHELlo mark\nheLlo mark\n"
-	 "Hello mark\nHello mark\nHELlo mark\nheLlo mark\n"
+	 "HEllo mark\nHEllo mark\nHELlo mark\nheLlo mark\n"
+	 "HEllo mark\nHEllo mark\nHELlo mark\nheLlo mark\n"
 	 "HELlo mark\nhello mark\nHELlo mark\n\n"
 	},
 	{"right_string_statement",
 	 "a$ := \"hello mark\"\n"
-	 "right$(a$) = \"ARK\"\n"
+	 "right$(a$) = \"RK\"\n"
 	 "print a$\n"
 	 "\n"
 	 "right$(a$,0) = \"ARK\"\n"
@@ -2918,7 +2919,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "right$(a$,3) = \"rk\"\n"
 	 "print a$\n"
 	 "\n"
-	 "b$ := \"ARK\"\n"
+	 "b$ := \"RK\"\n"
 	 "\n"
 	 "a$ = \"hello mark\"\n"
 	 "right$(a$) = b$\n"
@@ -2928,6 +2929,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "right$(a$,b%) = b$\n"
 	 "print a$\n"
 	 "\n"
+	 "b$ = \"ARK\"\n"
 	 "b% = -1\n"
 	 "right$(a$,b%) = b$\n"
 	 "print a$\n"
@@ -2942,8 +2944,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "right$(a$,3) = \"ARK\"\n"
 	 "print a$\n"
 	 "print c$\n",
-	 "hello marK\nhello marK\nhello mARK\nhello mArk\n"
-	 "hello marK\nhello marK\nhello mARK\nhello mARK\n"
+	 "hello maRK\nhello maRK\nhello mARK\nhello mArk\n"
+	 "hello maRK\nhello maRK\nhello mARK\nhello mARK\n"
 	 "hello mARK\nhello mark\n"
 	},
 };
