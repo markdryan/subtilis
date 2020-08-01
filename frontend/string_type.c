@@ -1847,28 +1847,14 @@ static size_t prv_left_right_calc_len(subtilis_parser_t *p, subtilis_exp_t *str,
 {
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t len_op;
 	subtilis_ir_operand_t str_len;
 	subtilis_ir_operand_t gt_len;
 	subtilis_ir_operand_t less_zero;
 	subtilis_ir_operand_t condee;
-	subtilis_ir_operand_t full_string_label;
-	subtilis_ir_operand_t partial_string_label;
-	subtilis_ir_operand_t len_calc_finished_label;
-	subtilis_ir_operand_t to_comp_calc_finished_label;
-	subtilis_ir_operand_t use_value_len_label;
-	subtilis_ir_operand_t use_comp_len_label;
 	subtilis_ir_operand_t value_len;
-	size_t to_comp_reg = p->current->reg_counter++;
+	size_t to_comp_reg;
 	size_t to_copy_reg = p->current->reg_counter++;
-
-	full_string_label.label = subtilis_ir_section_new_label(p->current);
-	partial_string_label.label = subtilis_ir_section_new_label(p->current);
-	use_comp_len_label.label = subtilis_ir_section_new_label(p->current);
-	use_value_len_label.label = subtilis_ir_section_new_label(p->current);
-	to_comp_calc_finished_label.label =
-	    subtilis_ir_section_new_label(p->current);
-	len_calc_finished_label.label =
-	    subtilis_ir_section_new_label(p->current);
 
 	op1.integer = SUBTIILIS_STRING_SIZE_OFF;
 	str_len.reg = subtilis_ir_section_add_instr(
@@ -1876,34 +1862,49 @@ static size_t prv_left_right_calc_len(subtilis_parser_t *p, subtilis_exp_t *str,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	if (len->type.type == SUBTILIS_TYPE_INTEGER) {
-		op1.integer = 0;
-		less_zero.reg = subtilis_ir_section_add_instr(
-		    p->current, SUBTILIS_OP_INSTR_LTI_I32, len->exp.ir_op, op1,
-		    err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return SIZE_MAX;
-
-		gt_len.reg = subtilis_ir_section_add_instr(
-		    p->current, SUBTILIS_OP_INSTR_GTE_I32, len->exp.ir_op,
-		    str_len, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return SIZE_MAX;
-
-		condee.reg = subtilis_ir_section_add_instr(
-		    p->current, SUBTILIS_OP_INSTR_OR_I32, less_zero, gt_len,
-		    err);
-	} else if (len->exp.ir_op.integer < 0) {
-		op1.integer = -1;
-		condee.reg = subtilis_ir_section_add_instr2(
-		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
+	if ((len->type.type == SUBTILIS_TYPE_CONST_INTEGER) &&
+	    (len->exp.ir_op.integer < 0)) {
+		to_comp_reg = str_len.reg;
 	} else {
-		condee.reg = subtilis_ir_section_add_instr(
-		    p->current, SUBTILIS_OP_INSTR_LTI_I32, str_len,
-		    len->exp.ir_op, err);
+		to_comp_reg = p->current->reg_counter++;
+		if (len->type.type == SUBTILIS_TYPE_INTEGER) {
+			op1.integer = 0;
+			less_zero.reg = subtilis_ir_section_add_instr(
+			    p->current, SUBTILIS_OP_INSTR_LTI_I32,
+			    len->exp.ir_op, op1, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return SIZE_MAX;
+
+			gt_len.reg = subtilis_ir_section_add_instr(
+			    p->current, SUBTILIS_OP_INSTR_GTE_I32,
+			    len->exp.ir_op, str_len, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return SIZE_MAX;
+
+			condee.reg = subtilis_ir_section_add_instr(
+			    p->current, SUBTILIS_OP_INSTR_OR_I32, less_zero,
+			    gt_len, err);
+			len_op = len->exp.ir_op;
+		} else {
+			len_op.reg = subtilis_ir_section_add_instr2(
+			    p->current, SUBTILIS_OP_INSTR_MOVI_I32,
+			    len->exp.ir_op, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return SIZE_MAX;
+			condee.reg = subtilis_ir_section_add_instr(
+			    p->current, SUBTILIS_OP_INSTR_LT_I32, str_len,
+			    len_op, err);
+		}
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+
+		op0.reg = to_comp_reg;
+		subtilis_ir_section_add_instr4(p->current,
+					       SUBTILIS_OP_INSTR_CMOV_I32, op0,
+					       condee, str_len, len_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
 	}
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
 
 	if (value->type.type == SUBTILIS_TYPE_CONST_STRING) {
 		op1.integer = subtilis_buffer_get_size(&value->exp.str) - 1;
@@ -1918,100 +1919,17 @@ static size_t prv_left_right_calc_len(subtilis_parser_t *p, subtilis_exp_t *str,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
-					  condee, full_string_label,
-					  partial_string_label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
-	subtilis_ir_section_add_label(p->current, full_string_label.label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
-	op1.reg = to_comp_reg;
-	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
-					      op1, str_len, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
-	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
-					     to_comp_calc_finished_label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
-	subtilis_ir_section_add_label(p->current, partial_string_label.label,
-				      err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
-	op1.reg = to_comp_reg;
-	if (len->type.type == SUBTILIS_TYPE_INTEGER)
-		subtilis_ir_section_add_instr_no_reg2(p->current,
-						      SUBTILIS_OP_INSTR_MOV,
-						      op1, len->exp.ir_op, err);
-	else
-		subtilis_ir_section_add_instr_no_reg2(
-		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, len->exp.ir_op,
-		    err);
-
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
-	subtilis_ir_section_add_label(p->current,
-				      to_comp_calc_finished_label.label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
-	/*
-	 * TOOD: It would be nice to have a  conditional assignment IR statement
-	 * for integers, e.g.,
-	 * cmov target, condition, val1, val2.
-	 * We could eliminate two branches here.
-	 */
-
 	op1.reg = to_comp_reg;
 	condee.reg = subtilis_ir_section_add_instr(
 	    p->current, SUBTILIS_OP_INSTR_GT_I32, value_len, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
-					  condee, use_value_len_label,
-					  use_comp_len_label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
-	subtilis_ir_section_add_label(p->current, use_value_len_label.label,
-				      err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
 	op0.reg = to_copy_reg;
 	op1.reg = to_comp_reg;
-	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
-					      op0, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
 
-	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
-					     len_calc_finished_label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
-	subtilis_ir_section_add_label(p->current, use_comp_len_label.label,
-				      err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
-	op0.reg = to_copy_reg;
-	op1.reg = to_comp_reg;
-	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
-					      op0, value_len, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
-	subtilis_ir_section_add_label(p->current, len_calc_finished_label.label,
-				      err);
+	subtilis_ir_section_add_instr4(p->current, SUBTILIS_OP_INSTR_CMOV_I32,
+				       op0, condee, op1, value_len, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
