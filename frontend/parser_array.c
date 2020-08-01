@@ -511,7 +511,7 @@ static void prv_read_string_table(subtilis_parser_t *p, size_t array_base,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_string_type_set_size(p, array_ptr.reg, 0, size.reg, err);
+	subtilis_reference_type_set_size(p, array_ptr.reg, 0, size.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

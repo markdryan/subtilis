@@ -22,6 +22,25 @@
 #include <stdlib.h>
 #include <string.h>
 
+/*
+ * A quick comment on constant encoding.  There are three main types of
+ * constants that can be inserted into the code stream, outside of an
+ * instruction; 32 bit integer, 64 bit floats and buffers.  Integer and
+ * floating point constants are placed in constant pools which appear
+ * throughout the code.  Buffer constants are placed at the end of the
+ * program and an offset to their location is recorded in a constant pool.
+ * If a function is small there's likely to be only one constant pool at
+ * the end of the function.  However, if the function is large it's likely
+ * to contain multiple constant pools.  The pools appear inline in the
+ * function and are skipped with a branch statement during execution.
+ *
+ * There are two different types of constants.  Constants whose values
+ * are known at compile time, and constants whose value are not known
+ * until the program is linked (as they're offsets to other locations
+ * in the program).  When encodin link time constants we write 0xffff
+ * at compile time and then fill the values in a link time.
+ */
+
 #define SUBTILIS_ENCODER_BACKPATCH_GRAN 128
 #define SUBTILIS_ENCODER_CODE_GRAN 1024
 
@@ -68,6 +87,11 @@ struct subtilis_arm_encode_ud_t_ {
 };
 
 typedef struct subtilis_arm_encode_ud_t_ subtilis_arm_encode_ud_t;
+
+static void prv_encode_cmp_instr(void *user_data, subtilis_arm_op_t *op,
+				 subtilis_arm_instr_type_t type,
+				 subtilis_arm_data_instr_t *instr,
+				 subtilis_error_t *err);
 
 static void prv_free_encode_ud(subtilis_arm_encode_ud_t *ud)
 {
@@ -330,12 +354,13 @@ static void prv_add_back_patch(subtilis_arm_encode_ud_t *ud, size_t label,
 	new_bp->code_index = code_index;
 }
 
-static void prv_check_pool(subtilis_arm_encode_ud_t *ud, subtilis_error_t *err)
+static void prv_check_pool_adj(subtilis_arm_encode_ud_t *ud, size_t adj,
+			       subtilis_error_t *err)
 {
 	uint32_t word = 0;
 	bool pool_needed = false;
 	size_t pool_end = ud->int_const_count + (ud->real_const_count * 2) +
-			  ud->words_written;
+			  ud->words_written + adj;
 
 	/* We need to leave one byte for the branch statement. */
 
@@ -373,6 +398,11 @@ static void prv_check_pool(subtilis_arm_encode_ud_t *ud, subtilis_error_t *err)
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	ud->max_labels++;
+}
+
+static void prv_check_pool(subtilis_arm_encode_ud_t *ud, subtilis_error_t *err)
+{
+	prv_check_pool_adj(ud, 0, err);
 }
 
 static void prv_reset_encode_ud(subtilis_arm_encode_ud_t *ud,
@@ -632,6 +662,7 @@ static void prv_encode_stran_instr(void *user_data, subtilis_arm_op_t *op,
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
+
 	word |= instr->ccode << 28;
 	word |= 1 << 26;
 	if (instr->pre_indexed)
@@ -803,8 +834,43 @@ static void prv_encode_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 				  subtilis_error_t *err)
 {
 	subtilis_arm_stran_instr_t stran;
-	size_t written_to;
 	subtilis_arm_encode_ud_t *ud = user_data;
+
+	/*
+	 * So this is a little tricky.  If we're just loading a normal
+	 * compile time constant we want to ensure that a constant pool
+	 * does not get flushed after we write the constant but before
+	 * we write the LDR instruction.  Loading constants with lca
+	 * involves two instructions, an LDR and an ADD, both of which
+	 * use R15 as a source.  It's important that they are not split
+	 * up by a constant pool.  So here we use a prv_check_pool_adj
+	 * to force a pool flush if there's not enough space for the
+	 * constant and all the instructions neeeded to load it.
+	 */
+
+	/*
+	 * adj is the number of additional words that can be written
+	 * without causing a pool flush. 1 word for the constant,
+	 * one word for the ldr and optionally one word for the add
+	 * if we're doing an lca.
+	 */
+
+	size_t adj = 2;
+
+	if (instr->link_time)
+		adj += 1;
+
+	prv_check_pool_adj(ud, adj, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_const(ud, instr->label, ud->words_written,
+		      SUBTILIS_ARM_ENCODE_BP_LDR, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (ud->ldrc_int == SIZE_MAX)
+		ud->ldrc_int = ud->words_written;
 
 	stran.ccode = instr->ccode;
 	stran.dest = instr->dest;
@@ -817,26 +883,53 @@ static void prv_encode_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	stran.byte = false;
 	prv_encode_stran_instr(user_data, op, SUBTILIS_ARM_INSTR_LDR, &stran,
 			       err);
+}
+
+static void prv_encode_cmov_instr(void *user_data, subtilis_arm_op_t *op,
+				  subtilis_arm_instr_type_t type,
+				  subtilis_arm_cmov_instr_t *instr,
+				  subtilis_error_t *err)
+{
+	subtilis_arm_data_instr_t data;
+
+	if (!instr->fused) {
+		memset(&data, 0, sizeof(data));
+
+		data.ccode = SUBTILIS_ARM_CCODE_AL;
+		data.status = true;
+		data.op1 = instr->op1;
+		data.op2.type = SUBTILIS_ARM_OP2_I32;
+		data.op2.op.integer = 0;
+
+		prv_encode_cmp_instr(user_data, NULL, SUBTILIS_ARM_INSTR_CMP,
+				     &data, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	memset(&data, 0, sizeof(data));
+
+	data.ccode = instr->fused ? instr->true_cond : SUBTILIS_ARM_CCODE_EQ;
+	data.status = false;
+	data.dest = instr->dest;
+	data.op2.type = SUBTILIS_ARM_OP2_REG;
+	data.op2.op.reg = instr->op3;
+
+	prv_encode_mov_instr(user_data, NULL, SUBTILIS_ARM_INSTR_MOV, &data,
+			     err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	/*
-	 * We encode the instruction first and then we add our constant to the
-	 * pool.  The reason for this is that we need to know the exact location
-	 * of our LDRC instruction before adding the constant.  This may not be
-	 * the value of ud->words_written on the entry to this function as
-	 * the call to prv_encode_stran may flush the constant pool.  If this
-	 * happens, we'll end up with a B statement instead of a LDR statement
-	 * the value of ud->words_written on entry to the function.
-	 */
+	memset(&data, 0, sizeof(data));
 
-	written_to = ud->words_written - 1;
+	data.ccode = instr->fused ? instr->false_cond : SUBTILIS_ARM_CCODE_NE;
+	data.status = false;
+	data.dest = instr->dest;
+	data.op2.type = SUBTILIS_ARM_OP2_REG;
+	data.op2.op.reg = instr->op2;
 
-	if (ud->ldrc_int == SIZE_MAX)
-		ud->ldrc_int = written_to;
-
-	prv_add_const(ud, instr->label, written_to, SUBTILIS_ARM_ENCODE_BP_LDR,
-		      err);
+	prv_encode_mov_instr(user_data, NULL, SUBTILIS_ARM_INSTR_MOV, &data,
+			     err);
 }
 
 static void prv_encode_cmp_instr(void *user_data, subtilis_arm_op_t *op,
@@ -1160,7 +1253,15 @@ static void prv_encode_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	subtilis_fpa_stran_instr_t stran;
 	subtilis_arm_encode_ud_t *ud = user_data;
 
-	prv_check_pool(ud, err);
+	/*
+	 * adj is the number of additional words that can be written
+	 * without causing a pool flush.  2 for the double and one
+	 * for the ldr instruction.
+	 */
+
+	size_t adj = 3;
+
+	prv_check_pool_adj(ud, adj, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1247,6 +1348,7 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 	walker.br_fn = prv_encode_br_instr;
 	walker.swi_fn = prv_encode_swi_instr;
 	walker.ldrc_fn = prv_encode_ldrc_instr;
+	walker.cmov_fn = prv_encode_cmov_instr;
 	walker.fpa_data_monadic_fn = prv_encode_fpa_data_monadic_instr;
 	walker.fpa_data_dyadic_fn = prv_encode_fpa_data_dyadic_instr;
 	walker.fpa_stran_fn = prv_encode_fpa_stran_instr;

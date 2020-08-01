@@ -29,6 +29,7 @@
 #include "parser_graphics.h"
 #include "parser_loops.h"
 #include "parser_output.h"
+#include "parser_string.h"
 #include "reference_type.h"
 #include "string_type.h"
 #include "type_if.h"
@@ -573,7 +574,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_INPUT_HASH */
 	NULL, /* SUBTILIS_KEYWORD_INSTR */
 	NULL, /* SUBTILIS_KEYWORD_INT */
-	NULL, /* SUBTILIS_KEYWORD_LEFT_STR */
+	subtilis_parser_left_str, /* SUBTILIS_KEYWORD_LEFT_STR */
 	NULL, /* SUBTILIS_KEYWORD_LEN */
 	subtilis_parser_let, /* SUBTILIS_KEYWORD_LET */
 	subtilis_parser_line, /* SUBTILIS_KEYWORD_LINE */
@@ -614,7 +615,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_REPORT */
 	NULL, /* SUBTILIS_KEYWORD_REPORT_STR */
 	NULL, /* SUBTILIS_KEYWORD_RETURN */
-	NULL, /* SUBTILIS_KEYWORD_RIGHT_STR */
+	subtilis_parser_right_str, /* SUBTILIS_KEYWORD_RIGHT_STR */
 	NULL, /* SUBTILIS_KEYWORD_RND */
 	NULL, /* SUBTILIS_KEYWORD_SGN */
 	NULL, /* SUBTILIS_KEYWORD_SIN */

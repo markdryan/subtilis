@@ -21,9 +21,6 @@
 #include "parser.h"
 
 size_t subtilis_string_type_size(const subtilis_type_t *type);
-void subtilis_string_type_set_size(subtilis_parser_t *p, size_t mem_reg,
-				   size_t loc, size_t size_reg,
-				   subtilis_error_t *err);
 void subtilis_string_type_zero_ref(subtilis_parser_t *p,
 				   const subtilis_type_t *type, size_t mem_reg,
 				   size_t loc, subtilis_error_t *err);
@@ -71,19 +68,25 @@ subtilis_exp_t *subtilis_string_type_compare(subtilis_parser_t *p, size_t a_reg,
 					     size_t a_len_reg, size_t b_reg,
 					     size_t b_len_reg,
 					     subtilis_error_t *err);
-subtilis_exp_t *subtilis_string_type_left(subtilis_parser_t *p,
-					  subtilis_exp_t *str,
-					  subtilis_exp_t *len,
-					  subtilis_error_t *err);
-subtilis_exp_t *subtilis_string_type_right(subtilis_parser_t *p,
-					   subtilis_exp_t *str,
-					   subtilis_exp_t *len,
-					   subtilis_error_t *err);
-subtilis_exp_t *subtilis_string_type_mid(subtilis_parser_t *p,
-					 subtilis_exp_t *str,
-					 subtilis_exp_t *start,
-					 subtilis_exp_t *len,
-					 subtilis_error_t *err);
+subtilis_exp_t *subtilis_string_type_left_exp(subtilis_parser_t *p,
+					      subtilis_exp_t *str,
+					      subtilis_exp_t *len,
+					      subtilis_error_t *err);
+subtilis_exp_t *subtilis_string_type_right_exp(subtilis_parser_t *p,
+					       subtilis_exp_t *str,
+					       subtilis_exp_t *len,
+					       subtilis_error_t *err);
+subtilis_exp_t *subtilis_string_type_mid_exp(subtilis_parser_t *p,
+					     subtilis_exp_t *str,
+					     subtilis_exp_t *start,
+					     subtilis_exp_t *len,
+					     subtilis_error_t *err);
+void subtilis_string_type_left(subtilis_parser_t *p, subtilis_exp_t *str,
+			       subtilis_exp_t *len, subtilis_exp_t *value,
+			       subtilis_error_t *err);
+void subtilis_string_type_right(subtilis_parser_t *p, subtilis_exp_t *str,
+				subtilis_exp_t *len, subtilis_exp_t *value,
+				subtilis_error_t *err);
 subtilis_exp_t *subtilis_string_type_string(subtilis_parser_t *p,
 					    subtilis_exp_t *count,
 					    subtilis_exp_t *str,

@@ -271,7 +271,7 @@ NEXT
 is allowed and recommended in Subtilis.
 
 The LOCAL keyword can be used anywhere inside a function or procedure.  Local variables,
-are scoped.  Local variables defined in a block are only avaialable within that block.
+are scoped.  Local variables defined in a block are only available within that block.
 Local variables defined at the top level of a function or a procedure are available
 in all subsequent blocks in that function or procedure.  Local variables shadow global
 variables of the same name but they do not shadow local variables.  It is an error to
@@ -396,7 +396,7 @@ write SINA but in Subtilis you must write SIN(A)
 Error handling in a Subtilis is a little different from BBC Basic.  When an error
 occurs inside a procedure of function, one of three things happen.
 
-1. The program will jump to the nearest approoriate error handler defined in
+1. The program will jump to the nearest appropriate error handler defined in
    the procedure or function.
 2. If there are no appropriate error handlers and we're not in the main procedure,
    the procedure or function will return, and we check for an error handler in the
@@ -428,7 +428,7 @@ ERROR 29
 
 When control is passed to an error handler normal execution of that function ceases.
 It is not possible to return to the statement that caused the error, or indeed the
-subsequent statement.  Once the error handler has finished excuting control will
+subsequent statement.  Once the error handler has finished executing control will
 transfer to any other available error handlers in the same function or control will
 return to the calling function.  By default, errors are not consumed by error handlers.
 The error will still be present in the calling function.  This behaviour can be
@@ -456,7 +456,7 @@ will print
 0
 ```
 
-This is because the error has not been consumed by PROCFail and it has been propegated
+This is because the error has not been consumed by PROCFail and it has been propagated
 to the main procedure.  As this procedure does not have an error handler, we exit the
 program.  However, if we modify the code to add an ENDPROC after PRINT 0, e.g.,
 
@@ -567,9 +567,27 @@ called from inside an error handler.  The main motivation for doing this would
 be to alter the code of the error being returned.  Currently, the ERROR keyword
 only accepts a number as we don't yet have any strings in Subtilis.
 
-When an error is propegated from a function, the return value of that function
+When an error is propagated from a function, the return value of that function
 is set to the default value for the type.  This is sort of irrelvant as that
 value cannot be accessed by the program.
+
+### Strings
+
+Strings work much in the same way as they do in BBC BASIC with the exception that there
+is no limit on the length of strings apart from the memory made avaiable to the
+program.
+
+Strings in Subtilis have value semantics as they do in BBC BASIC.  However, strings are
+actually implemented as copy on write reference types in Subtilis.  Assigning one string
+to another does not the copy source's data.  It simply increases its reference count.  This makes
+assigning one string to another and passing and returning strings to and from functions
+nice and quick.  There is a price to pay when the string is modified however.  When
+modifying a string using += or the statement form of left$, mid$ or right string$, a
+copy of the target string may need to be made.  The copy only happens if the reference
+count of the underlying string is > 1, but even in this case there is still a price to be
+paid as the reference count check needs to be done at runtime, so there's a small performance
+penalty.  Also, as we need to build these checks into our compiled code, language constructs that
+modify strings tend to generate more code than constructs that read from strings.
 
 ### Arrays
 
@@ -581,13 +599,13 @@ Arrays variables can be declared in two different ways in Subtilis.
 Unlike BBC Basic, arrays are always reference types in Subtilis.  In BBC Basic
 arrays behave like value types in some cases and reference types (when passed to
 procedures) in other cases.  In Subtilis arrays are always reference types.  When
-you delcare an array with the DIM statement two separate things happen. You allocate
+you declare an array with the DIM statement two separate things happen. You allocate
 space on the heap to store the array and you initialise a reference to that array
 which can be used to refer to it there after.
 
 The DIM keyword works in mostly the same way as it does in BBC Basic with the exception that
 arrays are currently limited to a maximum of 10 dimensions, an arbitrarily chosen limit, which may change.
-Arrays can be declared inside functions but they need to be delcared local.
+Arrays can be declared inside functions but they need to be declared local.
 
 For example,
 
@@ -656,7 +674,7 @@ b%() = c%()
 
 would result in a compile error.
 
-*The following three paragrapghs describe functionality that is not yet
+*The following three paragraphs describe functionality that is not yet
  implemented. It is not currently possible to explicitly specify the dimensions
  of an array reference.  We probably want to be able to do this, particularly to
  be able to create a reference that has all dynamic dimensions.*
@@ -675,7 +693,7 @@ b%(2, 10, 0) = a%()
 b%() = c%()
 ```
 
-would generate no compile errors as the second dimension of the array refernce is dynamic and
+would generate no compile errors as the second dimension of the array reference is dynamic and
 is not known until run-time.  It is not necessary to specify values for all the dimensions.
 The compiler will assume that any dimensions for which values are not specified are dynamic,
 for example,
@@ -836,7 +854,7 @@ an array reference first.  So the follow code,
 PRINT FNDouble%(1)(b%())(1)
 ```
 
-will not compile, and to be honest, the langauge is all the better for this restriction.
+will not compile, and to be honest, the language is all the better for this restriction.
 
 ## New keywords
 
@@ -858,12 +876,10 @@ will be implemented at some point.
 Here's a list of other language features that are currently not implemented but which will be at some point
 
 * The @% variable
-* Strings
 * File Handling
 * CASE OF
 * SOUND
 * OSCLI and *
-* TAB
 * RETURN for passing arguments by reference to procedures and functions
 * POINT TO
 

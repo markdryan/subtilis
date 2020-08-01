@@ -26,15 +26,19 @@ subtilis_exp_t *subtilis_parser_asc(subtilis_parser_t *p, subtilis_token_t *t,
 				    subtilis_error_t *err);
 subtilis_exp_t *subtilis_parser_len(subtilis_parser_t *p, subtilis_token_t *t,
 				    subtilis_error_t *err);
-subtilis_exp_t *subtilis_parser_left_str(subtilis_parser_t *p,
-					 subtilis_token_t *t,
-					 subtilis_error_t *err);
-subtilis_exp_t *subtilis_parser_right_str(subtilis_parser_t *p,
-					  subtilis_token_t *t,
-					  subtilis_error_t *err);
-subtilis_exp_t *subtilis_parser_mid_str(subtilis_parser_t *p,
-					subtilis_token_t *t,
-					subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_left_str_exp(subtilis_parser_t *p,
+					     subtilis_token_t *t,
+					     subtilis_error_t *err);
+void subtilis_parser_left_str(subtilis_parser_t *p, subtilis_token_t *t,
+			      subtilis_error_t *err);
+void subtilis_parser_right_str(subtilis_parser_t *p, subtilis_token_t *t,
+			       subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_right_str_exp(subtilis_parser_t *p,
+					      subtilis_token_t *t,
+					      subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_mid_str_exp(subtilis_parser_t *p,
+					    subtilis_token_t *t,
+					    subtilis_error_t *err);
 subtilis_exp_t *subtilis_parser_string_str(subtilis_parser_t *p,
 					   subtilis_token_t *t,
 					   subtilis_error_t *err);

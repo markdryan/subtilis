@@ -99,21 +99,6 @@ size_t subtilis_string_type_size(const subtilis_type_t *type)
 	return size;
 }
 
-void subtilis_string_type_set_size(subtilis_parser_t *p, size_t mem_reg,
-				   size_t loc, size_t size_reg,
-				   subtilis_error_t *err)
-{
-	subtilis_ir_operand_t op0;
-	subtilis_ir_operand_t op1;
-	subtilis_ir_operand_t op2;
-
-	op0.reg = size_reg;
-	op1.reg = mem_reg;
-	op2.integer = loc + SUBTIILIS_STRING_SIZE_OFF;
-	subtilis_ir_section_add_instr_reg(
-	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op0, op1, op2, err);
-}
-
 void subtilis_string_type_zero_ref(subtilis_parser_t *p,
 				   const subtilis_type_t *type, size_t mem_reg,
 				   size_t loc, subtilis_error_t *err)
@@ -128,8 +113,8 @@ void subtilis_string_type_zero_ref(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_string_type_set_size(p, mem_reg, loc, zero->exp.ir_op.reg,
-				      err);
+	subtilis_reference_type_set_size(p, mem_reg, loc, zero->exp.ir_op.reg,
+					 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -153,7 +138,7 @@ void subtilis_string_init_from_ptr(subtilis_parser_t *p, size_t mem_reg,
 	empty.label = subtilis_ir_section_new_label(p->current);
 	not_empty.label = subtilis_ir_section_new_label(p->current);
 
-	subtilis_string_type_set_size(p, mem_reg, loc, size_reg, err);
+	subtilis_reference_type_set_size(p, mem_reg, loc, size_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -738,8 +723,8 @@ static subtilis_exp_t *prv_left_const(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	subtilis_string_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
-				      size_reg, err);
+	subtilis_reference_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					 size_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -944,10 +929,10 @@ cleanup:
 	return NULL;
 }
 
-subtilis_exp_t *subtilis_string_type_left(subtilis_parser_t *p,
-					  subtilis_exp_t *str,
-					  subtilis_exp_t *len,
-					  subtilis_error_t *err)
+subtilis_exp_t *subtilis_string_type_left_exp(subtilis_parser_t *p,
+					      subtilis_exp_t *str,
+					      subtilis_exp_t *len,
+					      subtilis_error_t *err)
 {
 	size_t const_str_len;
 	size_t const_int_val;
@@ -1047,8 +1032,8 @@ static subtilis_exp_t *prv_right_const(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	subtilis_string_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
-				      size_reg, err);
+	subtilis_reference_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					 size_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -1160,10 +1145,10 @@ static subtilis_exp_t *prv_right_non_const(subtilis_parser_t *p, size_t str_reg,
 	return subtilis_exp_new_var(&subtilis_type_string, ptr_reg, err);
 }
 
-subtilis_exp_t *subtilis_string_type_right(subtilis_parser_t *p,
-					   subtilis_exp_t *str,
-					   subtilis_exp_t *len,
-					   subtilis_error_t *err)
+subtilis_exp_t *subtilis_string_type_right_exp(subtilis_parser_t *p,
+					       subtilis_exp_t *str,
+					       subtilis_exp_t *len,
+					       subtilis_error_t *err)
 {
 	size_t const_str_len;
 	subtilis_exp_t *ret = NULL;
@@ -1271,8 +1256,8 @@ static subtilis_exp_t *prv_mid_str_ccv(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	subtilis_string_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc, len_reg,
-				      err);
+	subtilis_reference_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					 len_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -1549,8 +1534,8 @@ static size_t prv_mid_str_check(subtilis_parser_t *p, size_t start_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_string_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
-				      zero_reg.reg, err);
+	subtilis_reference_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					 zero_reg.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1767,11 +1752,11 @@ static subtilis_exp_t *prv_mid_str_vvv(subtilis_parser_t *p,
 	return subtilis_exp_new_var(&subtilis_type_string, ptr, err);
 }
 
-subtilis_exp_t *subtilis_string_type_mid(subtilis_parser_t *p,
-					 subtilis_exp_t *str,
-					 subtilis_exp_t *start,
-					 subtilis_exp_t *len,
-					 subtilis_error_t *err)
+subtilis_exp_t *subtilis_string_type_mid_exp(subtilis_parser_t *p,
+					     subtilis_exp_t *str,
+					     subtilis_exp_t *start,
+					     subtilis_exp_t *len,
+					     subtilis_error_t *err)
 {
 	size_t const_str_len;
 	subtilis_exp_t *ret = NULL;
@@ -1851,6 +1836,253 @@ cleanup:
 	subtilis_exp_delete(len);
 
 	return ret;
+}
+
+static size_t prv_left_right_calc_len(subtilis_parser_t *p, subtilis_exp_t *str,
+				      subtilis_exp_t *len,
+				      subtilis_exp_t *value,
+				      size_t *str_len_reg,
+				      size_t *value_len_reg,
+				      subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t len_op;
+	subtilis_ir_operand_t str_len;
+	subtilis_ir_operand_t gt_len;
+	subtilis_ir_operand_t less_zero;
+	subtilis_ir_operand_t condee;
+	subtilis_ir_operand_t value_len;
+	size_t to_comp_reg;
+	size_t to_copy_reg = p->current->reg_counter++;
+
+	op1.integer = SUBTIILIS_STRING_SIZE_OFF;
+	str_len.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, str->exp.ir_op, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	if ((len->type.type == SUBTILIS_TYPE_CONST_INTEGER) &&
+	    (len->exp.ir_op.integer < 0)) {
+		to_comp_reg = str_len.reg;
+	} else {
+		to_comp_reg = p->current->reg_counter++;
+		if (len->type.type == SUBTILIS_TYPE_INTEGER) {
+			op1.integer = 0;
+			less_zero.reg = subtilis_ir_section_add_instr(
+			    p->current, SUBTILIS_OP_INSTR_LTI_I32,
+			    len->exp.ir_op, op1, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return SIZE_MAX;
+
+			gt_len.reg = subtilis_ir_section_add_instr(
+			    p->current, SUBTILIS_OP_INSTR_GTE_I32,
+			    len->exp.ir_op, str_len, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return SIZE_MAX;
+
+			condee.reg = subtilis_ir_section_add_instr(
+			    p->current, SUBTILIS_OP_INSTR_OR_I32, less_zero,
+			    gt_len, err);
+			len_op = len->exp.ir_op;
+		} else {
+			len_op.reg = subtilis_ir_section_add_instr2(
+			    p->current, SUBTILIS_OP_INSTR_MOVI_I32,
+			    len->exp.ir_op, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return SIZE_MAX;
+			condee.reg = subtilis_ir_section_add_instr(
+			    p->current, SUBTILIS_OP_INSTR_LT_I32, str_len,
+			    len_op, err);
+		}
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+
+		op0.reg = to_comp_reg;
+		subtilis_ir_section_add_instr4(p->current,
+					       SUBTILIS_OP_INSTR_CMOV_I32, op0,
+					       condee, str_len, len_op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+	}
+
+	if (value->type.type == SUBTILIS_TYPE_CONST_STRING) {
+		op1.integer = subtilis_buffer_get_size(&value->exp.str) - 1;
+		value_len.reg = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
+	} else {
+		op1.integer = SUBTIILIS_STRING_SIZE_OFF;
+		value_len.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_LOADO_I32, value->exp.ir_op,
+		    op1, err);
+	}
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	op1.reg = to_comp_reg;
+	condee.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_GT_I32, value_len, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	op0.reg = to_copy_reg;
+	op1.reg = to_comp_reg;
+
+	subtilis_ir_section_add_instr4(p->current, SUBTILIS_OP_INSTR_CMOV_I32,
+				       op0, condee, op1, value_len, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	*str_len_reg = str_len.reg;
+	*value_len_reg = value_len.reg;
+
+	return to_copy_reg;
+}
+
+static void prv_left_right_statement(subtilis_parser_t *p, subtilis_exp_t *str,
+				     subtilis_exp_t *len, subtilis_exp_t *value,
+				     bool left, subtilis_error_t *err)
+{
+	size_t buf_size;
+	size_t data_reg;
+	subtilis_ir_operand_t data;
+	subtilis_ir_operand_t str_len;
+	subtilis_ir_operand_t value_len;
+	subtilis_ir_operand_t end_label;
+	subtilis_ir_operand_t strlen_gt0_label;
+	subtilis_ir_operand_t to_copy;
+	subtilis_ir_operand_t source_str;
+	size_t str_len_reg;
+	size_t value_len_reg;
+
+	end_label.label = subtilis_ir_section_new_label(p->current);
+	strlen_gt0_label.label = subtilis_ir_section_new_label(p->current);
+
+	if (str->type.type != SUBTILIS_TYPE_STRING) {
+		subtilis_error_set_string_variable_expected(
+		    err, p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
+	switch (value->type.type) {
+	case SUBTILIS_TYPE_CONST_STRING:
+		buf_size = subtilis_buffer_get_size(&value->exp.str);
+
+		/*
+		 * No error here.  We just don't do anything.
+		 */
+
+		if (buf_size == 1)
+			goto cleanup;
+		break;
+	case SUBTILIS_TYPE_STRING:
+		break;
+	default:
+		subtilis_error_set_string_expected(err, p->l->stream->name,
+						   p->l->line);
+		break;
+	}
+
+	len = subtilis_type_if_to_int(p, len, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (len->type.type == SUBTILIS_TYPE_CONST_INTEGER) {
+		/*
+		 * No error here.  We just don't do anything.
+		 */
+
+		if (len->exp.ir_op.integer == 0)
+			goto cleanup;
+	}
+
+	to_copy.reg = prv_left_right_calc_len(p, str, len, value, &str_len_reg,
+					      &value_len_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	/*
+	 * If to_copy is 0 there's nothing to do.
+	 */
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  to_copy, strlen_gt0_label, end_label,
+					  err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, strlen_gt0_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	data_reg = subtilis_reference_type_copy_on_write(p, str->exp.ir_op.reg,
+							 0, str_len_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (value->type.type == SUBTILIS_TYPE_CONST_STRING)
+		source_str.reg = subtilis_string_type_lca_const(
+		    p, subtilis_buffer_get_string(&value->exp.str),
+		    subtilis_buffer_get_size(&value->exp.str) - 1, err);
+	else
+		source_str.reg = subtilis_reference_get_data(
+		    p, value->exp.ir_op.reg, 0, err);
+
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (!left) {
+		data.reg = data_reg;
+		str_len.reg = str_len_reg;
+		data.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_ADD_I32, data, str_len, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		data_reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_SUB_I32, data, to_copy, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		value_len.reg = value_len_reg;
+		source_str.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_ADD_I32, source_str,
+		    value_len, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		source_str.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_SUB_I32, source_str, to_copy,
+		    err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	subtilis_reference_type_memcpy_dest(p, data_reg, source_str.reg,
+					    to_copy.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, end_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+cleanup:
+
+	subtilis_exp_delete(str);
+	subtilis_exp_delete(len);
+	subtilis_exp_delete(value);
+}
+
+void subtilis_string_type_left(subtilis_parser_t *p, subtilis_exp_t *str,
+			       subtilis_exp_t *len, subtilis_exp_t *value,
+			       subtilis_error_t *err)
+{
+	prv_left_right_statement(p, str, len, value, true, err);
+}
+
+void subtilis_string_type_right(subtilis_parser_t *p, subtilis_exp_t *str,
+				subtilis_exp_t *len, subtilis_exp_t *value,
+				subtilis_error_t *err)
+{
+	prv_left_right_statement(p, str, len, value, false, err);
 }
 
 static subtilis_exp_t *prv_string_str_const(subtilis_parser_t *p,
@@ -2053,8 +2285,8 @@ static void prv_string_str_non_const_common(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_string_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
-				      zero_reg.reg, err);
+	subtilis_reference_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					 zero_reg.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -2264,8 +2496,8 @@ static subtilis_exp_t *prv_string_str_non_const(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_string_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
-				      zero_reg.reg, err);
+	subtilis_reference_type_set_size(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					 zero_reg.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -2643,28 +2875,9 @@ void subtilis_string_type_add_eq(subtilis_parser_t *p, size_t store_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest_reg = subtilis_reference_type_raw_alloc(p, new_size.reg, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/*
-	 * There's no leak potential here as mempcy and deref cannot fail.
-	 */
-
-	subtilis_reference_type_memcpy_dest(p, dest_reg, a1_data.reg,
-					    a1_size.reg, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_reference_type_deref(p, store_reg, loc, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_reference_set_data(p, dest_reg, store_reg, loc, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_string_type_set_size(p, store_reg, loc, new_size.reg, err);
+	dest_reg = subtilis_reference_type_re_malloc(p, store_reg, loc,
+						     a1_data.reg, a1_size.reg,
+						     new_size.reg, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

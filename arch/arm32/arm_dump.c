@@ -64,6 +64,7 @@ static const char *const instr_desc[] = {
 	"B",    // SUBTILIS_ARM_INSTR_B
 	"SWI",  // SUBTILIS_ARM_INSTR_SWI
 	"LDR",  // SUBTILIS_ARM_INSTR_LDRC
+	"CMOV",  // SUBTILIS_ARM_INSTR_CMOV
 	"LDF",  // SUBTILIS_FPA_INSTR_LDF
 	"STF",  // SUBTILIS_FPA_INSTR_STF
 	"LDR",  // SUBTILIS_FPA_INSTR_LDRC
@@ -287,6 +288,24 @@ static void prv_dump_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	printf(" R%zu, label_%zu\n", instr->dest, instr->label);
 }
 
+static void prv_dump_cmov_instr(void *user_data, subtilis_arm_op_t *op,
+				subtilis_arm_instr_type_t type,
+				subtilis_arm_cmov_instr_t *instr,
+				subtilis_error_t *err)
+{
+	printf("\t%s", instr_desc[type]);
+	if (instr->fused) {
+		printf("%s%s", ccode_desc[instr->false_cond],
+		       ccode_desc[instr->true_cond]);
+		printf(" R%zu, R%zu, R%zu\n", instr->dest, instr->op2,
+		       instr->op3);
+
+	} else {
+		printf(" R%zu, R%zu, R%zu, R%zu\n", instr->dest, instr->op1,
+		       instr->op2, instr->op3);
+	}
+}
+
 static void prv_dump_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 			       subtilis_arm_instr_type_t type,
 			       subtilis_arm_data_instr_t *instr,
@@ -486,6 +505,7 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 	walker.br_fn = prv_dump_br_instr;
 	walker.swi_fn = prv_dump_swi_instr;
 	walker.ldrc_fn = prv_dump_ldrc_instr;
+	walker.cmov_fn = prv_dump_cmov_instr;
 	walker.fpa_data_monadic_fn = prv_dump_fpa_data_monadic_instr;
 	walker.fpa_data_dyadic_fn = prv_dump_fpa_data_dyadic_instr;
 	walker.fpa_stran_fn = prv_dump_fpa_stran_instr;
@@ -567,6 +587,10 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 	case SUBTILIS_ARM_INSTR_LDRC:
 		prv_dump_ldrc_instr(NULL, NULL, instr->type,
 				    &instr->operands.ldrc, NULL);
+		break;
+	case SUBTILIS_ARM_INSTR_CMOV:
+		prv_dump_cmov_instr(NULL, NULL, instr->type,
+				    &instr->operands.cmov, NULL);
 		break;
 	case SUBTILIS_ARM_INSTR_LDM:
 	case SUBTILIS_ARM_INSTR_STM:

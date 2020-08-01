@@ -443,6 +443,142 @@ void subtilis_reference_type_memcpy_dest(subtilis_parser_t *p, size_t dest_reg,
 				    args, &subtilis_type_void, 3, true, err);
 }
 
+void subtilis_reference_type_set_size(subtilis_parser_t *p, size_t mem_reg,
+				      size_t loc, size_t size_reg,
+				      subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+
+	op0.reg = size_reg;
+	op1.reg = mem_reg;
+	op2.integer = loc + SUBTIILIS_REFERENCE_SIZE_OFF;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op0, op1, op2, err);
+}
+
+size_t subtilis_reference_type_re_malloc(subtilis_parser_t *p, size_t store_reg,
+					 size_t loc, size_t data_reg,
+					 size_t size_reg, size_t new_size_reg,
+					 bool data_known_valid,
+					 subtilis_error_t *err)
+{
+	size_t dest_reg;
+	subtilis_ir_operand_t data;
+
+	dest_reg = subtilis_reference_type_raw_alloc(p, new_size_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	/*
+	 * There's no leak potential here as mempcy and deref cannot fail.
+	 */
+
+	subtilis_reference_type_memcpy_dest(p, dest_reg, data_reg, size_reg,
+					    err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	if (data_known_valid) {
+		data.reg = data_reg;
+		prv_call_deref(p, data, err);
+	} else {
+		subtilis_reference_type_deref(p, store_reg, loc, err);
+	}
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_reference_set_data(p, dest_reg, store_reg, loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	if (size_reg != new_size_reg) {
+		subtilis_reference_type_set_size(p, store_reg, loc,
+						 new_size_reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+	}
+
+	return dest_reg;
+}
+
+size_t subtilis_reference_type_copy_on_write(subtilis_parser_t *p,
+					     size_t store_reg, size_t loc,
+					     size_t size_reg,
+					     subtilis_error_t *err)
+{
+	size_t dest_reg;
+	subtilis_ir_operand_t ptr;
+	subtilis_ir_operand_t malloc_label;
+	subtilis_ir_operand_t nomalloc_label;
+	subtilis_ir_operand_t end_label;
+	subtilis_ir_operand_t ref_count;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t data_reg;
+
+	malloc_label.label = subtilis_ir_section_new_label(p->current);
+	nomalloc_label.label = subtilis_ir_section_new_label(p->current);
+	end_label.label = subtilis_ir_section_new_label(p->current);
+
+	ptr.reg = p->current->reg_counter++;
+
+	data_reg.reg = subtilis_reference_get_data(p, store_reg, loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	ref_count.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_GETREF, data_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	op2.integer = 1;
+	ref_count.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_EQI_I32, ref_count, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  ref_count, nomalloc_label,
+					  malloc_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_label(p->current, malloc_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	dest_reg = subtilis_reference_type_re_malloc(
+	    p, store_reg, loc, data_reg.reg, size_reg, size_reg, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	op1.reg = dest_reg;
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      ptr, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_label(p->current, nomalloc_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      ptr, data_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_label(p->current, end_label.label, err);
+
+	return ptr.reg;
+}
+
 static void prv_ensure_cleanup_stack(subtilis_parser_t *p,
 				     bool destructor_needed,
 				     subtilis_error_t *err)

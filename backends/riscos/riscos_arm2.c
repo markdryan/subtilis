@@ -126,6 +126,11 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	 subtilis_arm_gen_jmpc_rev},
 	{"jmpc *, *, *\n", subtilis_arm_gen_jmpc_no_label},
 	{"jmpcnf *, *, *\n", subtilis_arm_gen_jmpc_no_label},
+	{"gti32 r_1, *, *\n"
+	 "cmovi32 *, r_1, *, *\n", subtilis_arm_gen_cmovi32_gti32},
+	{"lti32 r_1, *, *\n"
+	 "cmovi32 *, r_1, *, *\n", subtilis_arm_gen_cmovi32_lti32},
+	{"cmovi32 *, *, *, *\n", subtilis_arm_gen_cmovi32},
 	{"call\n", subtilis_arm_gen_call},
 	{"calli32\n", subtilis_arm_gen_calli32},
 	{"callr\n", subtilis_fpa_gen_callr},
