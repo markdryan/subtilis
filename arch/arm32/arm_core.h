@@ -119,6 +119,7 @@ typedef enum {
 	SUBTILIS_ARM_INSTR_B,
 	SUBTILIS_ARM_INSTR_SWI,
 	SUBTILIS_ARM_INSTR_LDRC,
+	SUBTILIS_ARM_INSTR_CMOV,
 
 	SUBTILIS_FPA_INSTR_LDF,
 	SUBTILIS_FPA_INSTR_STF,
@@ -260,6 +261,18 @@ struct subtilis_arm_ldrc_instr_t_ {
 
 typedef struct subtilis_arm_ldrc_instr_t_ subtilis_arm_ldrc_instr_t;
 
+struct subtilis_arm_cmov_instr_t_ {
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_reg_t op2;
+	subtilis_arm_reg_t op3;
+	bool fused;
+	subtilis_arm_ccode_type_t true_cond;
+	subtilis_arm_ccode_type_t false_cond;
+};
+
+typedef struct subtilis_arm_cmov_instr_t_ subtilis_arm_cmov_instr_t;
+
 typedef enum {
 	SUBTILIS_FPA_ROUNDING_NEAREST,
 	SUBTILIS_FPA_ROUNDING_PLUS_INFINITY,
@@ -345,6 +358,7 @@ struct subtilis_arm_instr_t_ {
 		subtilis_arm_br_instr_t br;
 		subtilis_arm_swi_instr_t swi;
 		subtilis_arm_ldrc_instr_t ldrc;
+		subtilis_arm_cmov_instr_t cmov;
 		subtilis_fpa_data_instr_t fpa_data;
 		subtilis_fpa_stran_instr_t fpa_stran;
 		subtilis_fpa_tran_instr_t fpa_tran;
@@ -568,6 +582,15 @@ void subtilis_arm_add_data_imm(subtilis_arm_section_t *s,
 			       subtilis_arm_ccode_type_t ccode, bool status,
 			       subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
 			       int32_t op2, subtilis_error_t *err);
+void subtilis_arm_add_cmov(subtilis_arm_section_t *s, subtilis_arm_reg_t dest,
+			   subtilis_arm_reg_t op1, subtilis_arm_reg_t op2,
+			   subtilis_arm_reg_t op3, subtilis_error_t *err);
+void subtilis_arm_add_cmov_fused(subtilis_arm_section_t *s,
+				 subtilis_arm_reg_t dest,
+				 subtilis_arm_reg_t op2, subtilis_arm_reg_t op3,
+				 subtilis_arm_ccode_type_t true_cond,
+				 subtilis_arm_ccode_type_t false_cond,
+				 subtilis_error_t *err);
 void subtilis_arm_add_swi(subtilis_arm_section_t *s,
 			  subtilis_arm_ccode_type_t ccode, size_t code,
 			  uint32_t read_mask, uint32_t write_mask,

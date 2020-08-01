@@ -1568,6 +1568,19 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_BLOCK_ADJUST,
+
+	/*
+	 *
+	 * cmovi32 r0, r1, r2, r3
+	 *
+	 * r0 = r2 if r1 != 0
+	 * r0 = r3 if r1 == 0
+	 *
+	 * Assigns the value of either r2 or r3 to r0 depending on the
+	 * value of r1.
+	 */
+
+	SUBTILIS_OP_INSTR_CMOV_I32,
 } subtilis_op_instr_type_t;
 
 typedef enum {

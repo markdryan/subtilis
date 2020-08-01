@@ -621,6 +621,63 @@ void subtilis_arm_gen_jmpc_no_label(subtilis_ir_section_t *s, size_t start,
 	br->target.label = jmp->operands[2].label;
 }
 
+static void prv_cmovi32_fused(subtilis_ir_section_t *s, size_t start,
+			      void *user_data,
+			      subtilis_arm_ccode_type_t true_cond,
+			      subtilis_arm_ccode_type_t false_cond,
+			      subtilis_error_t *err)
+{
+	subtilis_arm_reg_t op0;
+	subtilis_arm_reg_t op2;
+	subtilis_arm_reg_t op3;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *cmov = &s->ops[start + 1]->op.instr;
+
+	prv_cmp_simple(s, start, user_data, SUBTILIS_ARM_INSTR_CMP,
+		       SUBTILIS_ARM_CCODE_AL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op0 = subtilis_arm_ir_to_arm_reg(cmov->operands[0].reg);
+	op2 = subtilis_arm_ir_to_arm_reg(cmov->operands[2].reg);
+	op3 = subtilis_arm_ir_to_arm_reg(cmov->operands[3].reg);
+
+	subtilis_arm_add_cmov_fused(arm_s, op0, op2, op3, false_cond, true_cond,
+				    err);
+}
+
+void subtilis_arm_gen_cmovi32_gti32(subtilis_ir_section_t *s, size_t start,
+				    void *user_data, subtilis_error_t *err)
+{
+	prv_cmovi32_fused(s, start, user_data, SUBTILIS_ARM_CCODE_GT,
+			  SUBTILIS_ARM_CCODE_LE, err);
+}
+
+void subtilis_arm_gen_cmovi32_lti32(subtilis_ir_section_t *s, size_t start,
+				    void *user_data, subtilis_error_t *err)
+{
+	prv_cmovi32_fused(s, start, user_data, SUBTILIS_ARM_CCODE_LT,
+			  SUBTILIS_ARM_CCODE_GE, err);
+}
+
+void subtilis_arm_gen_cmovi32(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t op0;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_reg_t op2;
+	subtilis_arm_reg_t op3;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *cmov = &s->ops[start]->op.instr;
+
+	op0 = subtilis_arm_ir_to_arm_reg(cmov->operands[0].reg);
+	op1 = subtilis_arm_ir_to_arm_reg(cmov->operands[1].reg);
+	op2 = subtilis_arm_ir_to_arm_reg(cmov->operands[2].reg);
+	op3 = subtilis_arm_ir_to_arm_reg(cmov->operands[3].reg);
+
+	subtilis_arm_add_cmov(arm_s, op0, op1, op2, op3, err);
+}
+
 void subtilis_arm_gen_eorii32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err)
 {

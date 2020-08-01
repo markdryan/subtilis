@@ -192,6 +192,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "heapfree", SUBTILIS_OP_CLASS_REG },
 	{ "blockfree", SUBTILIS_OP_CLASS_REG_REG },
 	{ "blockadjust", SUBTILIS_OP_CLASS_REG_REG },
+	{ "cmovi32", SUBTILIS_OP_CLASS_REG_REG_REG_REG},
 };
 
 /*
@@ -821,7 +822,7 @@ static void prv_dump_instr(subtilis_ir_inst_t *instr)
 	printf("\t%s ", op_desc[instr->type].name);
 	switch (op_desc[instr->type].cls) {
 	case SUBTILIS_OP_CLASS_REG_REG_REG_REG:
-		printf("r%zu, r%zu, r%zu r%zu", instr->operands[0].reg,
+		printf("r%zu, r%zu, r%zu, r%zu", instr->operands[0].reg,
 		       instr->operands[1].reg, instr->operands[2].reg,
 		       instr->operands[3].reg);
 		break;

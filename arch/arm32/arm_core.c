@@ -983,6 +983,48 @@ void subtilis_arm_add_data_imm(subtilis_arm_section_t *s,
 	datai->op2 = data_opt2;
 }
 
+void subtilis_arm_add_cmov(subtilis_arm_section_t *s, subtilis_arm_reg_t dest,
+			   subtilis_arm_reg_t op1, subtilis_arm_reg_t op2,
+			   subtilis_arm_reg_t op3, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_cmov_instr_t *cmov;
+
+	instr = subtilis_arm_section_add_instr(s, SUBTILIS_ARM_INSTR_CMOV, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	cmov = &instr->operands.cmov;
+	cmov->dest = dest;
+	cmov->op1 = op1;
+	cmov->op2 = op2;
+	cmov->op3 = op3;
+	cmov->fused = false;
+}
+
+void subtilis_arm_add_cmov_fused(subtilis_arm_section_t *s,
+				 subtilis_arm_reg_t dest,
+				 subtilis_arm_reg_t op2, subtilis_arm_reg_t op3,
+				 subtilis_arm_ccode_type_t true_cond,
+				 subtilis_arm_ccode_type_t false_cond,
+				 subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_cmov_instr_t *cmov;
+
+	instr = subtilis_arm_section_add_instr(s, SUBTILIS_ARM_INSTR_CMOV, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	cmov = &instr->operands.cmov;
+	cmov->dest = dest;
+	cmov->op2 = op2;
+	cmov->op3 = op3;
+	cmov->fused = true;
+	cmov->true_cond = true_cond;
+	cmov->false_cond = false_cond;
+}
+
 void subtilis_arm_add_swi(subtilis_arm_section_t *s,
 			  subtilis_arm_ccode_type_t ccode, size_t code,
 			  uint32_t read_mask, uint32_t write_mask,

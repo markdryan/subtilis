@@ -88,6 +88,11 @@ struct subtilis_arm_encode_ud_t_ {
 
 typedef struct subtilis_arm_encode_ud_t_ subtilis_arm_encode_ud_t;
 
+static void prv_encode_cmp_instr(void *user_data, subtilis_arm_op_t *op,
+				 subtilis_arm_instr_type_t type,
+				 subtilis_arm_data_instr_t *instr,
+				 subtilis_error_t *err);
+
 static void prv_free_encode_ud(subtilis_arm_encode_ud_t *ud)
 {
 	subtilis_arm_link_delete(ud->link);
@@ -880,6 +885,53 @@ static void prv_encode_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 			       err);
 }
 
+static void prv_encode_cmov_instr(void *user_data, subtilis_arm_op_t *op,
+				  subtilis_arm_instr_type_t type,
+				  subtilis_arm_cmov_instr_t *instr,
+				  subtilis_error_t *err)
+{
+	subtilis_arm_data_instr_t data;
+
+	if (!instr->fused) {
+		memset(&data, 0, sizeof(data));
+
+		data.ccode = SUBTILIS_ARM_CCODE_AL;
+		data.status = true;
+		data.op1 = instr->op1;
+		data.op2.type = SUBTILIS_ARM_OP2_I32;
+		data.op2.op.integer = 0;
+
+		prv_encode_cmp_instr(user_data, NULL, SUBTILIS_ARM_INSTR_CMP,
+				     &data, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	memset(&data, 0, sizeof(data));
+
+	data.ccode = instr->fused ? instr->true_cond : SUBTILIS_ARM_CCODE_EQ;
+	data.status = false;
+	data.dest = instr->dest;
+	data.op2.type = SUBTILIS_ARM_OP2_REG;
+	data.op2.op.reg = instr->op3;
+
+	prv_encode_mov_instr(user_data, NULL, SUBTILIS_ARM_INSTR_MOV, &data,
+			     err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	memset(&data, 0, sizeof(data));
+
+	data.ccode = instr->fused ? instr->false_cond : SUBTILIS_ARM_CCODE_NE;
+	data.status = false;
+	data.dest = instr->dest;
+	data.op2.type = SUBTILIS_ARM_OP2_REG;
+	data.op2.op.reg = instr->op2;
+
+	prv_encode_mov_instr(user_data, NULL, SUBTILIS_ARM_INSTR_MOV, &data,
+			     err);
+}
+
 static void prv_encode_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 				 subtilis_arm_instr_type_t type,
 				 subtilis_arm_data_instr_t *instr,
@@ -1296,6 +1348,7 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 	walker.br_fn = prv_encode_br_instr;
 	walker.swi_fn = prv_encode_swi_instr;
 	walker.ldrc_fn = prv_encode_ldrc_instr;
+	walker.cmov_fn = prv_encode_cmov_instr;
 	walker.fpa_data_monadic_fn = prv_encode_fpa_data_monadic_instr;
 	walker.fpa_data_dyadic_fn = prv_encode_fpa_data_dyadic_instr;
 	walker.fpa_stran_fn = prv_encode_fpa_stran_instr;
