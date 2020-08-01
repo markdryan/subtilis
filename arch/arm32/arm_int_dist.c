@@ -37,7 +37,6 @@ static void prv_dist_handle_op2(subtilis_dist_data_t *ud,
 			return;
 		}
 	}
-	ud->last_used++;
 }
 
 static void prv_dist_mov_instr(void *user_data, subtilis_arm_op_t *op,
@@ -56,6 +55,8 @@ static void prv_dist_mov_instr(void *user_data, subtilis_arm_op_t *op,
 		subtilis_error_set_walker_failed(err);
 		return;
 	}
+
+	ud->last_used++;
 }
 
 static void prv_dist_data_instr(void *user_data, subtilis_arm_op_t *op,
@@ -79,6 +80,8 @@ static void prv_dist_data_instr(void *user_data, subtilis_arm_op_t *op,
 		subtilis_error_set_walker_failed(err);
 		return;
 	}
+
+	ud->last_used++;
 }
 
 static void prv_dist_mul_instr(void *user_data, subtilis_arm_op_t *op,
@@ -135,6 +138,8 @@ static void prv_dist_stran_instr(void *user_data, subtilis_arm_op_t *op,
 			return;
 		}
 	}
+
+	ud->last_used++;
 }
 
 static void prv_dist_mtran_instr(void *user_data, subtilis_arm_op_t *op,
@@ -255,6 +260,8 @@ static void prv_dist_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	}
 
 	prv_dist_handle_op2(ud, &instr->op2, err);
+
+	ud->last_used++;
 }
 
 static void prv_dist_label(void *user_data, subtilis_arm_op_t *op, size_t label,
