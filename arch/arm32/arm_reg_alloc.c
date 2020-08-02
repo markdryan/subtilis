@@ -309,6 +309,8 @@ struct subtilis_arm_reg_ud_t_ {
 	size_t instr_count;
 	subtlis_arm_walker_t int_dist_walker;
 	subtlis_arm_walker_t fpa_dist_walker;
+	subtlis_arm_walker_t int_used_walker;
+	subtlis_arm_walker_t fpa_used_walker;
 	subtilis_dist_data_t dist_data;
 	subtilis_arm_op_t **ss_terminators;
 	size_t current_ss;
@@ -591,6 +593,8 @@ static void prv_init_arm_reg_ud(subtilis_arm_reg_ud_t *ud,
 
 	subtilis_init_int_dist_walker(&ud->int_dist_walker, &ud->dist_data);
 	subtilis_init_fpa_dist_walker(&ud->fpa_dist_walker, &ud->dist_data);
+	subtilis_init_int_used_walker(&ud->int_used_walker, &ud->dist_data);
+	subtilis_init_fpa_used_walker(&ud->fpa_used_walker, &ud->dist_data);
 }
 
 static int prv_calculate_dist(subtilis_arm_reg_ud_t *ud, size_t reg_num,
@@ -2211,51 +2215,20 @@ cleanup:
 }
 
 static bool prv_is_reg_used_before(subtilis_arm_reg_ud_t *ud, size_t reg_num,
-				   subtlis_arm_walker_t *dist_walker,
+				   subtlis_arm_walker_t *used_walker,
 				   subtilis_arm_op_t *from,
 				   subtilis_arm_op_t *to)
 {
 	subtilis_error_t err;
-	size_t i;
 
+	subtilis_error_init(&err);
 	ud->dist_data.reg_num = reg_num;
+	ud->dist_data.last_used = 0;
+	subtilis_arm_walk_from_to(ud->arm_s, used_walker, from, to, &err);
+	if ((err.type == SUBTILIS_ERROR_OK) || (ud->dist_data.last_used != -1))
+		return false;
 
-	do {
-		subtilis_error_init(&err);
-		ud->dist_data.last_used = 0;
-		subtilis_arm_walk_from_to(ud->arm_s, dist_walker, from, to,
-					  &err);
-		if (err.type == SUBTILIS_ERROR_OK)
-			return false;
-		else if (ud->dist_data.last_used == -1)
-			return true;
-
-		/*
-		 * We arrive here if reg_num is read from but not written to
-		 * by one instruction in the region.  We need to keep checking.
-		 * from the subsequent instruction.
-		 */
-
-		/*
-		 * TODO: The basic problem here is that the distance walkers
-		 * check the source operands before the destination operands.
-		 * So if an instruction references the same register for both
-		 * source and destination, this information does not get
-		 * conveyed by the walker.  We find out it's been read from
-		 * but we don't know it's been written to.  We really need
-		 * different walkers for computing used before which check
-		 * destination before source.
-		 */
-
-		for (i = 0; i < ud->dist_data.last_used + 1; i++) {
-			if ((from == to) || (from->next == SIZE_MAX))
-				return false;
-
-			from = &ud->arm_s->op_pool->ops[from->next];
-		}
-	} while (true);
-
-	return false;
+	return true;
 }
 
 void subtilis_arm_regs_used_before_from_tov(subtilis_arm_section_t *arm_s,
@@ -2273,7 +2246,7 @@ void subtilis_arm_regs_used_before_from_tov(subtilis_arm_section_t *arm_s,
 		return;
 
 	for (i = SUBTILIS_ARM_INT_VIRT_REG_START; i < int_args; i++) {
-		if (prv_is_reg_used_before(&ud, i, &ud.int_dist_walker, from,
+		if (prv_is_reg_used_before(&ud, i, &ud.int_used_walker, from,
 					   op)) {
 			subtilis_bitset_set(&used->int_regs, i, err);
 			if (err->type != SUBTILIS_ERROR_OK)
@@ -2282,7 +2255,7 @@ void subtilis_arm_regs_used_before_from_tov(subtilis_arm_section_t *arm_s,
 	}
 
 	for (i = SUBTILIS_ARM_FPA_VIRT_REG_START; i < real_args; i++) {
-		if (prv_is_reg_used_before(&ud, i, &ud.fpa_dist_walker, from,
+		if (prv_is_reg_used_before(&ud, i, &ud.fpa_used_walker, from,
 					   op)) {
 			subtilis_bitset_set(&used->real_regs, i, err);
 			if (err->type != SUBTILIS_ERROR_OK)
@@ -2314,7 +2287,7 @@ void subtilis_arm_regs_used_before_from_to(subtilis_arm_section_t *arm_s,
 		i = SUBTILIS_ARM_REG_MIN_INT_REGS;
 	for (; i <= SUBTILIS_ARM_REG_MAX_INT_REGS - 1; i++) {
 		if (i < arm_s->stype->int_regs ||
-		    prv_is_reg_used_before(&ud, i, &ud.int_dist_walker, from,
+		    prv_is_reg_used_before(&ud, i, &ud.int_used_walker, from,
 					   op))
 			int_reg_list |= 1 << i;
 	}
@@ -2324,7 +2297,7 @@ void subtilis_arm_regs_used_before_from_to(subtilis_arm_section_t *arm_s,
 		i = SUBTILIS_ARM_REG_MIN_FPA_REGS;
 	for (; i < SUBTILIS_ARM_REG_MAX_FPA_REGS; i++) {
 		if (i < arm_s->stype->fp_regs ||
-		    prv_is_reg_used_before(&ud, i, &ud.fpa_dist_walker, from,
+		    prv_is_reg_used_before(&ud, i, &ud.fpa_used_walker, from,
 					   op))
 			fpa_reg_list |= 1 << i;
 	}
