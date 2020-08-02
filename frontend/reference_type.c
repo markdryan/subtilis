@@ -625,24 +625,10 @@ void subtilis_reference_inc_cleanup_stack(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	/*
-	 * TODO: The part of the register allocator that preserves
-	 * live registers between basic blocks can't handle the case
-	 * when an instruction uses the same register for both source
-	 * and destination.  Ultimately, all that code is going to
-	 * dissapear when we have a global register allocator, so for
-	 * now we're just going to live with it.
-	 */
-
 	op2.integer = 1;
 	dest.reg = p->current->cleanup_stack;
-	op2.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, dest, op2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
-					      dest, op2, err);
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, dest, dest, op2, err);
 }
 
 size_t subtilis_reference_type_raw_alloc(subtilis_parser_t *p, size_t size_reg,

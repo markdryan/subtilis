@@ -1174,7 +1174,6 @@ void subtilis_array_type_deref_els(subtilis_parser_t *p, size_t data_reg,
 	subtilis_ir_operand_t op2;
 	subtilis_ir_operand_t data_end;
 	subtilis_ir_operand_t counter;
-	subtilis_ir_operand_t counter2;
 	subtilis_ir_operand_t conde;
 	subtilis_ir_operand_t start;
 	subtilis_ir_operand_t end;
@@ -1208,13 +1207,8 @@ void subtilis_array_type_deref_els(subtilis_parser_t *p, size_t data_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	counter2.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, counter, op2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
-					      counter, counter2, err);
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, counter, counter, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

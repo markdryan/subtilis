@@ -711,13 +711,8 @@ void subtilis_builtins_ir_fp_to_str(subtilis_parser_t *p,
 		goto cleanup;
 
 	op1.integer = 1;
-	op0.reg = subtilis_ir_section_add_instr(
-	    current, SUBTILIS_OP_INSTR_ADDI_I32, arg_buf, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_no_reg2(current, SUBTILIS_OP_INSTR_MOV,
-					      arg_buf, op0, err);
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_ADDI_I32,
+					  arg_buf, arg_buf, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -968,13 +963,8 @@ void subtilis_builtins_ir_dec_to_str(subtilis_parser_t *p,
 		goto cleanup;
 
 	op1.integer = 1;
-	op0.reg = subtilis_ir_section_add_instr(
-	    current, SUBTILIS_OP_INSTR_ADDI_I32, arg_buf, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_no_reg2(current, SUBTILIS_OP_INSTR_MOV,
-					      arg_buf, op0, err);
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_ADDI_I32,
+					  arg_buf, arg_buf, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1026,13 +1016,8 @@ void subtilis_builtins_ir_dec_to_str(subtilis_parser_t *p,
 	val = NULL;
 
 	op1.integer = 1;
-	op0.reg = subtilis_ir_section_add_instr(
-	    current, SUBTILIS_OP_INSTR_ADDI_I32, arg_buf, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_no_reg2(current, SUBTILIS_OP_INSTR_MOV,
-					      arg_buf, op0, err);
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_ADDI_I32,
+					  arg_buf, arg_buf, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1074,13 +1059,8 @@ void subtilis_builtins_ir_dec_to_str(subtilis_parser_t *p,
 	 */
 
 	op1.integer = 1;
-	op0.reg = subtilis_ir_section_add_instr(
-	    current, SUBTILIS_OP_INSTR_SUBI_I32, arg_buf, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_no_reg2(current, SUBTILIS_OP_INSTR_MOV,
-					      arg_buf, op0, err);
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_SUBI_I32,
+					  arg_buf, arg_buf, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1120,13 +1100,8 @@ void subtilis_builtins_ir_dec_to_str(subtilis_parser_t *p,
 		goto cleanup;
 
 	op1.integer = 1;
-	op0.reg = subtilis_ir_section_add_instr(
-	    current, SUBTILIS_OP_INSTR_SUBI_I32, arg_buf, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_no_reg2(current, SUBTILIS_OP_INSTR_MOV,
-					      arg_buf, op0, err);
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_SUBI_I32,
+					  arg_buf, arg_buf, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1135,13 +1110,9 @@ void subtilis_builtins_ir_dec_to_str(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	op0.reg = subtilis_ir_section_add_instr(
-	    current, SUBTILIS_OP_INSTR_ADDI_I32, reverse_start, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_no_reg2(current, SUBTILIS_OP_INSTR_MOV,
-					      reverse_start, op0, err);
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_ADDI_I32,
+					  reverse_start, reverse_start, op1,
+					  err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1293,13 +1264,8 @@ void subtilis_builtins_ir_hex_to_str(subtilis_parser_t *p,
 		goto cleanup;
 
 	op1.integer = 1;
-	op0.reg = subtilis_ir_section_add_instr(
-	    current, SUBTILIS_OP_INSTR_ADDI_I32, arg_buf, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_no_reg2(current, SUBTILIS_OP_INSTR_MOV,
-					      arg_buf, op0, err);
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_ADDI_I32,
+					  arg_buf, arg_buf, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

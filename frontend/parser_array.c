@@ -451,7 +451,6 @@ static void prv_read_string_table(subtilis_parser_t *p, size_t array_base,
 	subtilis_ir_operand_t table_end;
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t size;
-	subtilis_ir_operand_t tmp;
 	subtilis_ir_operand_t cond;
 	subtilis_ir_operand_t skip;
 	subtilis_ir_operand_t lca_offset;
@@ -520,24 +519,16 @@ static void prv_read_string_table(subtilis_parser_t *p, size_t array_base,
 		return;
 
 	op1.integer = (int32_t)element_size;
-	tmp.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, array_ptr, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
-					      array_ptr, tmp, err);
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_ADDI_I32, array_ptr,
+					  array_ptr, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	op1.integer = sizeof(int32_t) * 2;
-	tmp.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, table_ptr, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
-					      table_ptr, tmp, err);
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_ADDI_I32, table_ptr,
+					  table_ptr, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
