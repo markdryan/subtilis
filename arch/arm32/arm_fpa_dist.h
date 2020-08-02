@@ -21,5 +21,7 @@
 
 void subtilis_init_fpa_dist_walker(subtlis_arm_walker_t *walker,
 				   void *user_data);
+void subtilis_init_fpa_used_walker(subtlis_arm_walker_t *walker,
+				   void *user_data);
 
 #endif
