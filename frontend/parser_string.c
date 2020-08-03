@@ -129,6 +129,12 @@ static void prv_left_right_args(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	if (args == 0) {
+		subtilis_error_set_string_expected(err, p->l->stream->name,
+						   p->l->line);
+		goto cleanup;
+	}
+
 	if (args == 1) {
 		e[1] = subtilis_exp_new_int32(default_val, err);
 		if (err->type != SUBTILIS_ERROR_OK)
