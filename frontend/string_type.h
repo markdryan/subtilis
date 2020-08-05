@@ -87,6 +87,9 @@ void subtilis_string_type_left(subtilis_parser_t *p, subtilis_exp_t *str,
 void subtilis_string_type_right(subtilis_parser_t *p, subtilis_exp_t *str,
 				subtilis_exp_t *len, subtilis_exp_t *value,
 				subtilis_error_t *err);
+void subtilis_string_type_mid(subtilis_parser_t *p, subtilis_exp_t *str,
+			      subtilis_exp_t *start, subtilis_exp_t *len,
+			      subtilis_exp_t *value, subtilis_error_t *err);
 subtilis_exp_t *subtilis_string_type_string(subtilis_parser_t *p,
 					    subtilis_exp_t *count,
 					    subtilis_exp_t *str,

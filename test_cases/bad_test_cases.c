@@ -459,6 +459,18 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"right$() = \"aa\"\n",
 	SUBTILIS_ERROR_STRING_EXPECTED,
 	},
+	{
+	"mid_str_zero_arg",
+	"a$ := \"hello\"\n"
+	"mid$() = \"aa\"\n",
+	SUBTILIS_ERROR_STRING_EXPECTED,
+	},
+	{
+	"mid_str_one_arg",
+	"a$ := \"hello\"\n"
+	"mid$(a$) = \"aa\"\n",
+	SUBTILIS_ERROR_NUMERIC_EXP_EXPECTED,
+	},
 };
 
 /* clang-format on */
