@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_ir_prog_dump(p->prog);
+	//	subtilis_ir_prog_dump(p->prog);
 
 	pool = subtilis_arm_op_pool_new(&err);
 	if (err.type != SUBTILIS_ERROR_OK)
@@ -85,8 +85,8 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	printf("\n\n");
-	subtilis_arm_prog_dump(arm_p);
+	//	printf("\n\n");
+	//	subtilis_arm_prog_dump(arm_p);
 
 	subtilis_arm_encode(arm_p, "RunImage", prv_set_prog_size, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
