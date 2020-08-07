@@ -2,7 +2,7 @@
 
 ## Building Subtilis
 
-Subtilis can be run on modern computers as a cross compiler or directly on a RiscOS 3 or RiscOS4 machine such as a RiscPC.  To build Subtilis for Linux or MacOS simply type.
+Subtilis can be built and run on modern computers as a cross compiler or directly on a RiscOS 3 or RiscOS 4 machine such as a RiscPC.  To build Subtilis for Linux or MacOS you'll need a C99 compiler and a make tool.  Once you have these installed simply type
 
 ```
 git clone git@github.com:markdryan/subtilis.git
