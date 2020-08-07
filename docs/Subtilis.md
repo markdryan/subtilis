@@ -24,8 +24,12 @@ They'll be replaced by structures and composite literals.
 
 #### EVAL
 
-EVAL will probably never be implemented as it would require run time type information
-which Subtilis does not generate and will probably never generate (to keep binaries small).
+EVAL will probably never be implemented, at least in the form that it appears in
+BBC BASIC, as this would require run time type information which Subtilis does not
+generate and will probably never generate (to keep binaries small).  A limited version
+of EVAL may be possible where variables that can be accessed by the EVAL expression
+are specified at compile time, but this will need a lot of thought and isn't a
+priority.
 
 #### Line numbers, GOTO and GOSUB
 
@@ -34,8 +38,7 @@ will result in an error.  As there are no line numbers there are also no GOTOs
 (explicit or implicit) and no GOSUBs.  GOTO and GOSUB will probably never be
 implemented.  GOSUB is essentially useless.  While GOTO can be useful for writing
 cleanup code and for handling errors, there are better ways to do these sort of
-things today, e.g, ON ERROR or something like Go's defer statement.  Subtilis will
-probably get a defer statement at some point in the future.
+things today, e.g, ON ERROR.
 
 ### Subtilis permits lower case keywords
 
@@ -140,7 +143,7 @@ but one of these files can contain only functions and procedures.  One of the fi
 however contain some basic statements that occur before, after or in between function and procedure
 definitions.  These basic statements are actually part of the main function although no function is
 explicitly defined.  They are the first statements that will be executed when the program is run.
-There is no need to insert and END statement before the first procedure of function definition.
+There is no need to insert an END statement before the first procedure of function definition.
 
 For example
 
@@ -179,7 +182,7 @@ works just as well.  Again note the lack of an END statement.
 
 When a new variable is defined using var = or LET var = and that variable has not
 been declared LOCAL, the compiler will try to create a new global variable.  However,
-Subtilis is much more restrictive than BBC Basic when creating global variables.
+Subtilis is much more restrictive than BBC BASIC when creating global variables.
 Global variables can only be created at the top level of the main procedure.  So although
 they can be read from and written to anywhere in the program, they cannot be declared,
 i.e., defined for the first time, in a user defined function or procedure or in a 
@@ -253,8 +256,19 @@ DEF PROCFor
 ENDPROC
 ```
 
+or
+
+```
+DEF PROCFor
+    FOR I% := 1 TO 10
+        PRINT I%
+    NEXT
+ENDPROC
+```
+
+
 which will be much faster, will generate less code and won't interfere with
-other parts of your code.  Note the programs in the two examples above
+other parts of your code.  Note the programs in the threex examples above
 are equivalent.  In both cases the local variable I% is declared in the
 outermost scope of the procedure, i.e., is accessible outside of the FOR
 loop.
@@ -393,7 +407,7 @@ write SINA but in Subtilis you must write SIN(A)
 
 ### Error Handling
 
-Error handling in a Subtilis is a little different from BBC Basic.  When an error
+Error handling in a Subtilis is a little different from BBC BASIC.  When an error
 occurs inside a procedure of function, one of three things happen.
 
 1. The program will jump to the nearest appropriate error handler defined in
@@ -432,7 +446,7 @@ subsequent statement.  Once the error handler has finished executing control wil
 transfer to any other available error handlers in the same function or control will
 return to the calling function.  By default, errors are not consumed by error handlers.
 The error will still be present in the calling function.  This behaviour can be
-overriding by explicitly returning from the error handler using ENDPROC or <-
+overridden by explicitly returning from the error handler using ENDPROC or <-
 as appropriate.  For example, the following code will print
 
 ```
@@ -456,7 +470,7 @@ will print
 0
 ```
 
-This is because the error has not been consumed by PROCFail and it has been propagated
+This is because the error has not been consumed by PROCFail and it has been propegated
 to the main procedure.  As this procedure does not have an error handler, we exit the
 program.  However, if we modify the code to add an ENDPROC after PRINT 0, e.g.,
 
@@ -562,10 +576,18 @@ will simply print
 ```
 
 Procedures and functions can be called inside an error handler but they cannot
-generate errors.  Any errors that they do generate are discarded.  ERROR can be
-called from inside an error handler.  The main motivation for doing this would
+generate errors.  Any errors that they do generate are discarded.  This is
+obviously very broken and will be changing soon.  The main issue here is that
+if you do try to do an allocation inside an error handler, e.g., create a new string
+and that allocation fails, the error will be ignore and the code that then
+initialies the string will be executed crashing the program.  So this
+behaviour is going to change and there will be a new keyword to help manage this
+sorts of situations.
+
+ERROR can be called from inside an error handler.  The main motivation for doing this would
 be to alter the code of the error being returned.  Currently, the ERROR keyword
-only accepts a number as we don't yet have any strings in Subtilis.
+only accepts a number.  Long term it will probably accept a structure when
+structures have been added to the language.
 
 When an error is propagated from a function, the return value of that function
 is set to the default value for the type.  This is sort of irrelvant as that
@@ -593,17 +615,17 @@ modify strings tend to generate more code than constructs that read from strings
 
 Arrays variables can be declared in two different ways in Subtilis.
 
-1. Using the DIM keyword as in BBC Basic
+1. Using the DIM keyword as in BBC BASIC
 2. Using an array reference
 
-Unlike BBC Basic, arrays are always reference types in Subtilis.  In BBC Basic
+Unlike BBC BASIC, arrays are always reference types in Subtilis.  In BBC BASIC
 arrays behave like value types in some cases and reference types (when passed to
 procedures) in other cases.  In Subtilis arrays are always reference types.  When
 you declare an array with the DIM statement two separate things happen. You allocate
 space on the heap to store the array and you initialise a reference to that array
 which can be used to refer to it there after.
 
-The DIM keyword works in mostly the same way as it does in BBC Basic with the exception that
+The DIM keyword works in mostly the same way as it does in BBC BASIC with the exception that
 arrays are currently limited to a maximum of 10 dimensions, an arbitrarily chosen limit, which may change.
 Arrays can be declared inside functions but they need to be declared local.
 
@@ -717,6 +739,8 @@ b%(2) = a%()
 ```
 
 The second assignment statement will result in an error.
+
+### Array Memory Management and Arrays as arguments
 
 All arrays are currently allocated on the heap and are reference counted.  This is likely to
 change at some point in the future once we have escape analysis, but for the time being
@@ -848,7 +872,7 @@ function calls and function pointers.
 There's no technical reason that this isn't supported apart from the fact that
 it would make the code hard to read, but it's not currently possible to directly
 index an array returned from a function.  It needs to be assigned to an array or
-an array reference first.  So the follow code,
+an array reference first.  So the following code,
 
 ```
 PRINT FNDouble%(1)(b%())(1)
@@ -882,15 +906,18 @@ Here's a list of other language features that are currently not implemented but 
 * OSCLI and *
 * RETURN for passing arguments by reference to procedures and functions
 * POINT TO
+* INPUT
+* VAL and INSTR
+* SWAP
+* The vector operations on arrays are not implemented but will be
 
 There are also some enhancements that will need to be added to the language to make it
 more palatable to the modern programmer.
 
 * Structures
 * Functions and procedures as first class types
-* Closures
 * Maps
-* Defer
+* Ability to append to single dimension arrays and strings
 
 ## Tooling
 

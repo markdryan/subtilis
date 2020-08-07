@@ -8,3 +8,4 @@ WHILE i% > 0
       RECTANGLE -i%,-i%,i%*2,i%*2
       LET i% = i% - 20
       LET col% = col% + 1
+ENDWHILE

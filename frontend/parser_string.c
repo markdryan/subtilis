@@ -129,6 +129,12 @@ static void prv_left_right_args(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	if (args == 0) {
+		subtilis_error_set_string_expected(err, p->l->stream->name,
+						   p->l->line);
+		goto cleanup;
+	}
+
 	if (args == 1) {
 		e[1] = subtilis_exp_new_int32(default_val, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -386,4 +392,77 @@ void subtilis_parser_right_str(subtilis_parser_t *p, subtilis_token_t *t,
 cleanup:
 	subtilis_exp_delete(e[0]);
 	subtilis_exp_delete(e[1]);
+}
+
+void subtilis_parser_mid_str(subtilis_parser_t *p, subtilis_token_t *t,
+			     subtilis_error_t *err)
+{
+	size_t args;
+	const char *tbuf;
+	subtilis_exp_t *e[3];
+	subtilis_exp_t *value;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+	if (strcmp(tbuf, "(")) {
+		subtilis_error_set_exp_expected(err, "( ", p->l->stream->name,
+						p->l->line);
+		return;
+	}
+
+	args = subtilis_var_bracketed_args_have_b(p, t, e, 3, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (args == 0) {
+		subtilis_error_set_string_expected(err, p->l->stream->name,
+						   p->l->line);
+		goto cleanup;
+	}
+
+	if (args == 1) {
+		subtilis_error_set_numeric_exp_expected(err, p->l->stream->name,
+							p->l->line);
+		goto cleanup;
+	}
+
+	if (args == 2) {
+		e[2] = subtilis_exp_new_int32(-1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, "=")) {
+		subtilis_error_set_assignment_op_expected(
+		    err, tbuf, p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
+	value = subtilis_parser_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if ((e[1]->type.type == SUBTILIS_TYPE_CONST_INTEGER) &&
+	    (e[1]->exp.ir_op.integer == 0)) {
+		subtilis_exp_delete(e[1]);
+		subtilis_string_type_left(p, e[0], e[2], value, err);
+		return;
+	}
+
+	subtilis_string_type_mid(p, e[0], e[1], e[2], value, err);
+
+	return;
+
+cleanup:
+	subtilis_exp_delete(e[0]);
+	subtilis_exp_delete(e[1]);
+	subtilis_exp_delete(e[2]);
 }
