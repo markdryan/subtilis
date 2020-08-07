@@ -3013,7 +3013,12 @@ const subtilis_test_case_t test_cases[] = {
 	 "heLLO mark\nhello mark\nhELLO Mark\nhELLO MARK\n"
 	 "HELLO MARK\nheLLO mark\nhELLO Mark\nhELLO Mark\n"
 	 "hELLO Mark\n"
-	}
+	},
+	{"min_int32",
+	 "a% = -2147483648\n"
+	 "print a%\n",
+	 "-2147483648\n"
+	},
 };
 
 /* clang-format on */
