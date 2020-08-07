@@ -2245,6 +2245,7 @@ void subtilis_string_type_mid(subtilis_parser_t *p, subtilis_exp_t *str,
 cleanup:
 
 	subtilis_exp_delete(str);
+	subtilis_exp_delete(start);
 	subtilis_exp_delete(len);
 	subtilis_exp_delete(value);
 }
