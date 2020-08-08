@@ -395,6 +395,18 @@ static subtilis_exp_t *prv_priority4(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 	tbuf = subtilis_token_get_text(t);
+
+	/*
+	 * Special case for number too big.
+	 */
+
+	if ((t->type == SUBTILIS_TOKEN_INTEGER) &&
+	    (t->tok.integer == -2147483648)) {
+		subtilis_error_set_number_too_long(
+		    err, tbuf, p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
 	while (t->type == SUBTILIS_TOKEN_OPERATOR) {
 		tbuf = subtilis_token_get_text(t);
 		if (!strcmp(tbuf, "+"))

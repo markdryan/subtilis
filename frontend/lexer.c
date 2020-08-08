@@ -33,6 +33,9 @@ static void prv_skip_line(subtilis_lexer_t *l, subtilis_error_t *err);
 typedef subtilis_token_end_t (*token_end_t)(subtilis_lexer_t *,
 					    subtilis_token_t *, char ch,
 					    subtilis_error_t *);
+static void prv_process_negative_decimal(subtilis_lexer_t *l,
+					 subtilis_token_t *t,
+					 subtilis_error_t *err);
 
 subtilis_lexer_t *subtilis_lexer_new(subtilis_stream_t *s, size_t buf_size,
 				     subtilis_error_t *err)
@@ -51,6 +54,7 @@ subtilis_lexer_t *subtilis_lexer_new(subtilis_stream_t *s, size_t buf_size,
 	l->line = 1;
 	l->character = 1;
 	l->index = 0;
+	l->next = NULL;
 
 	return l;
 }
@@ -58,6 +62,7 @@ subtilis_lexer_t *subtilis_lexer_new(subtilis_stream_t *s, size_t buf_size,
 void subtilis_lexer_delete(subtilis_lexer_t *l, subtilis_error_t *err)
 {
 	if (l) {
+		subtilis_token_delete(l->next);
 		l->stream->close(l->stream->handle, err);
 		free(l);
 	}
@@ -184,6 +189,11 @@ static void prv_process_complex_operator(subtilis_lexer_t *l,
 		return;
 
 	ch1 = l->buffer[l->index];
+	if ((ch == '-') && (ch1 >= '0' && ch1 <= '9')) {
+		prv_process_negative_decimal(l, t, err);
+		return;
+	}
+
 	switch (ch1) {
 	case '=':
 		prv_set_next(l, t);
@@ -278,8 +288,6 @@ static void prv_process_float(subtilis_lexer_t *l, subtilis_token_t *t,
 	t->tok.real = atof(tbuf);
 }
 
-/* TODO:  The maximum negative int constant is incorrect */
-
 static void prv_parse_integer(subtilis_lexer_t *l, subtilis_token_t *t,
 			      int base, subtilis_error_t *err)
 {
@@ -330,6 +338,45 @@ static void prv_process_decimal(subtilis_lexer_t *l, subtilis_token_t *t,
 		return;
 
 	prv_parse_integer(l, t, 10, err);
+}
+
+static void prv_process_negative_decimal(subtilis_lexer_t *l,
+					 subtilis_token_t *t,
+					 subtilis_error_t *err)
+{
+	const char *tbuf;
+
+	if (l->next) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	l->next = subtilis_token_new(err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_set_first(l, l->next, SUBTILIS_TOKEN_INTEGER);
+	if (!prv_extract_number(l, l->next, prv_decimal_end, err))
+		return;
+
+	tbuf = subtilis_token_get_text_with_err(l->next, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (strcmp(tbuf, "2147483648")) {
+		prv_parse_integer(l, l->next, 10, err);
+	} else {
+		/* This is a special case where we have the smallest possible
+		 * 32 bit integer.  Here we return 1 token, the integer, rather
+		 * than the '-' on this call to the lexer and the integer on the
+		 * next.
+		 */
+
+		subtilis_token_claim(t, l->next);
+		subtilis_token_delete(l->next);
+		l->next = NULL;
+		t->tok.integer = -2147483648;
+	}
 }
 
 static subtilis_token_end_t prv_hexadecimal_end(subtilis_lexer_t *l,
@@ -772,6 +819,13 @@ subtilis_token_t *subtilis_token_new(subtilis_error_t *err)
 	return t;
 }
 
+void subtilis_token_claim(subtilis_token_t *dest, subtilis_token_t *src)
+{
+	subtilis_buffer_free(&dest->buf);
+	*dest = *src;
+	subtilis_buffer_init(&src->buf, 1);
+}
+
 void subtilis_token_delete(subtilis_token_t *t)
 {
 	if (!t)
@@ -811,13 +865,24 @@ void subtilis_lexer_get(subtilis_lexer_t *l, subtilis_token_t *t,
 
 	do {
 		prv_reinit_token(t);
-		prv_skip_white(l, err);
-		if ((err->type != SUBTILIS_ERROR_OK) ||
-		    (l->index == l->buf_end))
-			return;
-		rem = prv_process_token(l, t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+		if (l->next) {
+			/*
+			 * We transfer ownership of our buffer.
+			 */
+
+			subtilis_token_claim(t, l->next);
+			subtilis_token_delete(l->next);
+			l->next = NULL;
+			rem = false;
+		} else {
+			prv_skip_white(l, err);
+			if ((err->type != SUBTILIS_ERROR_OK) ||
+			    (l->index == l->buf_end))
+				return;
+			rem = prv_process_token(l, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		}
 	} while (rem);
 	subtilis_buffer_zero_terminate(&t->buf, err);
 }
