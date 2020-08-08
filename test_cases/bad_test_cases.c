@@ -486,6 +486,12 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"mid$(\"hello\", 1) = \"aa\"\n",
 	SUBTILIS_ERROR_STRING_VARIABLE_EXPECTED,
 	},
+	{
+	"print_hex_not_num",
+	"a$ := \"hello\"\n"
+	"print ~a$\n",
+	SUBTILIS_ERROR_INTEGER_EXPECTED,
+	},
 };
 
 /* clang-format on */

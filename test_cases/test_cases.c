@@ -3019,6 +3019,15 @@ const subtilis_test_case_t test_cases[] = {
 	 "print a%\n",
 	 "-2147483648\n"
 	},
+	{"print_hex",
+	 "print ~100\n"
+	 "a% = 100\n"
+	 "print ~a%\n"
+	 "print ~15.8\n"
+	 "a = 15.8\n"
+	 "print ~a\n",
+	 "64\n64\nF\nF\n"
+	},
 };
 
 /* clang-format on */

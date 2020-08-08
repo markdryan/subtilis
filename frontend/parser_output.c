@@ -516,6 +516,7 @@ void subtilis_parser_print(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err)
 {
 	const char *tbuf;
+	bool hex = false;
 	subtilis_exp_t *e = NULL;
 
 	subtilis_lexer_get(p->l, t, err);
@@ -531,11 +532,26 @@ void subtilis_parser_print(subtilis_parser_t *p, subtilis_token_t *t,
 			return;
 	}
 
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && (!strcmp(tbuf, "~"))) {
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		hex = true;
+	}
+
 	e = subtilis_parser_priority7(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	if (subtilis_type_if_is_numeric(&e->type)) {
+	if (hex) {
+		if (!subtilis_type_if_is_integer(&e->type)) {
+			e = subtilis_type_if_to_int(p, e, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		}
+		e = subtilis_type_if_to_hex_string(p, e, err);
+	} else if (subtilis_type_if_is_numeric(&e->type)) {
 		e = subtilis_type_if_exp_to_var(p, e, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
