@@ -156,6 +156,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_binary_t asr;
 	subtilis_type_if_unary_t abs;
 	subtilis_type_if_unary_t sgn;
+	subtilis_type_if_unary_t is_inf;
 	subtilis_type_if_call_t call;
 	subtilis_type_if_reg_t ret;
 	subtilis_type_if_print_t print;
@@ -167,7 +168,7 @@ typedef struct subtilis_type_if_ subtilis_type_if;
 /*
  * Returns the size of the type in bytes.  For reference types
  * this is the size of the reference, e.g., 16 bytes for a one
- * dimensional array on 32 bit bit builds.
+ * dimensional array on 32 bit builds.
  */
 
 size_t subtilis_type_if_size(const subtilis_type_t *type,
@@ -585,6 +586,13 @@ subtilis_exp_t *subtilis_type_if_abs(subtilis_parser_t *p, subtilis_exp_t *e,
 
 subtilis_exp_t *subtilis_type_if_sgn(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err);
+
+/*
+ * Returns -1 if e is either + or - infinity, 0 otherwise.
+ */
+
+subtilis_exp_t *subtilis_type_if_is_inf(subtilis_parser_t *p, subtilis_exp_t *e,
+					subtilis_error_t *err);
 
 /*
  * Generates a call instruction for a function that returns a value of type

@@ -604,6 +604,15 @@ static subtilis_exp_t *prv_sgn_const(subtilis_parser_t *p, subtilis_exp_t *e,
 	return e;
 }
 
+static subtilis_exp_t *prv_is_inf_const(subtilis_parser_t *p, subtilis_exp_t *e,
+					subtilis_error_t *err)
+{
+	e->exp.ir_op.integer = isinf(e->exp.ir_op.real) ? -1 : 0;
+	e->type.type = SUBTILIS_TYPE_CONST_INTEGER;
+
+	return e;
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_const_float64 = {
 	.is_const = true,
@@ -658,6 +667,7 @@ subtilis_type_if subtilis_type_const_float64 = {
 	.asr = NULL,
 	.abs = prv_abs_const,
 	.sgn = prv_sgn_const,
+	.is_inf = prv_is_inf_const,
 	.call = NULL,
 	.ret = NULL,
 	.print = NULL,
@@ -1294,6 +1304,60 @@ cleanup:
 	return NULL;
 }
 
+static subtilis_exp_t *prv_is_inf(subtilis_parser_t *p, subtilis_exp_t *e,
+				  subtilis_error_t *err)
+
+{
+	const subtilis_symbol_t *s;
+	int32_t offset;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	size_t reg;
+
+	s = subtilis_symbol_table_create_local_buf(p->local_st, 8, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_assign_to_mem(p, SUBTILIS_IR_REG_LOCAL, s->loc, e, err);
+	e = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	offset = (p->caps & SUBTILIS_BACKEND_REVERSE_DOUBLES) ? 0 : 4;
+
+	op1.reg = SUBTILIS_IR_REG_LOCAL;
+	op2.integer = s->loc + offset;
+	reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	/*
+	 * Shift left by one to get rid of the sign bit.
+	 */
+
+	op1.reg = reg;
+	op2.integer = 1;
+	reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LSLI_I32, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.reg = reg;
+	op2.integer = 2047 << 21;
+	reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_EQI_I32, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return subtilis_exp_new_int32_var(reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(e);
+	return NULL;
+}
+
 static subtilis_exp_t *prv_call(subtilis_parser_t *p,
 				const subtilis_type_t *type,
 				subtilis_ir_arg_t *args, size_t num_args,
@@ -1418,6 +1482,7 @@ subtilis_type_if subtilis_type_float64 = {
 	.asr = NULL,
 	.abs = prv_abs,
 	.sgn = prv_sgn,
+	.is_inf = prv_is_inf,
 	.call = prv_call,
 	.ret = prv_ret,
 	.print = prv_print,

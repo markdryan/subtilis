@@ -443,6 +443,18 @@ void subtilis_reference_type_memcpy_dest(subtilis_parser_t *p, size_t dest_reg,
 				    args, &subtilis_type_void, 3, true, err);
 }
 
+size_t subtilis_reference_type_get_size(subtilis_parser_t *p, size_t mem_reg,
+					size_t loc, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+
+	op1.reg = mem_reg;
+	op2.integer = loc + SUBTIILIS_REFERENCE_SIZE_OFF;
+	return subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op1, op2, err);
+}
+
 void subtilis_reference_type_set_size(subtilis_parser_t *p, size_t mem_reg,
 				      size_t loc, size_t size_reg,
 				      subtilis_error_t *err)

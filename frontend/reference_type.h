@@ -66,6 +66,8 @@ void subtilis_reference_type_memcpy(subtilis_parser_t *p, size_t mem_reg,
 void subtilis_reference_type_memcpy_dest(subtilis_parser_t *p, size_t dest_reg,
 					 size_t src_reg, size_t size_reg,
 					 subtilis_error_t *err);
+size_t subtilis_reference_type_get_size(subtilis_parser_t *p, size_t mem_reg,
+					size_t loc, subtilis_error_t *err);
 void subtilis_reference_type_set_size(subtilis_parser_t *p, size_t mem_reg,
 				      size_t loc, size_t size_reg,
 				      subtilis_error_t *err);
