@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "builtins_ir.h"
 #include "parser_exp.h"
 #include "parser_string.h"
 #include "reference_type.h"
@@ -465,4 +467,60 @@ cleanup:
 	subtilis_exp_delete(e[0]);
 	subtilis_exp_delete(e[1]);
 	subtilis_exp_delete(e[2]);
+}
+
+subtilis_exp_t *subtilis_parser_val(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+	const char *str;
+	char *copy;
+	char *ptr;
+	size_t str_size;
+	size_t str_reg;
+	double ret_val = 0.0;
+
+	e = subtilis_parser_bracketed_exp(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (e->type.type == SUBTILIS_TYPE_CONST_STRING) {
+		str = subtilis_buffer_get_string(&e->exp.str);
+		str_size = subtilis_buffer_get_size(&e->exp.str) - 1;
+		if (str_size < 2 || (strcmp(str, "0x") && strcmp(str, "0X"))) {
+			copy = malloc(str_size + 1);
+			if (!copy) {
+				subtilis_error_set_oom(err);
+				subtilis_exp_delete(e);
+				return NULL;
+			}
+			strcpy(copy, str);
+			ptr = strchr(copy, 'e');
+			if (ptr) {
+				*ptr = 0;
+			} else {
+				ptr = strchr(copy, 'E');
+				if (ptr)
+					*ptr = 0;
+			}
+			ret_val = strtod(copy, NULL);
+			if (isinf(ret_val)) {
+				subtilis_error_set_number_too_long(
+				    err, copy, p->l->stream->name, p->l->line);
+				free(copy);
+				subtilis_exp_delete(e);
+				return NULL;
+			}
+			free(copy);
+		}
+		subtilis_exp_delete(e);
+		return subtilis_exp_new_real(ret_val, err);
+	} else if (e->type.type == SUBTILIS_TYPE_STRING) {
+		str_reg = e->exp.ir_op.reg;
+		subtilis_exp_delete(e);
+		return subtilis_builtin_ir_call_str_to_fp(p, str_reg, err);
+	}
+
+	subtilis_error_set_string_expected(err, p->l->stream->name, p->l->line);
+	return NULL;
 }

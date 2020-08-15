@@ -335,6 +335,7 @@ subtilis_type_if subtilis_type_array_string = {
 	.lsr = prv_lsr,
 	.asr = prv_asr,
 	.abs = prv_abs,
+	.is_inf = NULL,
 	.call = prv_call,
 	.ret = prv_ret,
 	.destructor = prv_destructor,

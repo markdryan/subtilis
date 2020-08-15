@@ -40,5 +40,5 @@ install:
 script:
  - CFLAGS="-g -fsanitize=address -fno-omit-frame-pointer -Wall -Werror" make
  - CFLAGS="-g -fsanitize=address -fno-omit-frame-pointer -Wall -Werror" make check
- - perl checkpatch.pl --no-tree -f --strict --show-types --ignore NEW_TYPEDEFS --ignore PREFER_KERNEL_TYPES --ignore SPLIT_STRING --ignore UNNECESSARY_PARENTHESES --ignore SPDX_LICENSE_TAG --ignore OPEN_ENDED_LINE --ignore BOOL_MEMBER --ignore BIT_MACRO  --ignore PREFER_FALLTHROUGH *.[ch] common/*.[ch] frontend/*.[ch] test_cases/*.[ch] arch/arm32/*.[ch] backends/riscos/*.[ch]
+ - perl checkpatch.pl --no-tree -f --strict --show-types --ignore NEW_TYPEDEFS --ignore PREFER_KERNEL_TYPES --ignore SPLIT_STRING --ignore UNNECESSARY_PARENTHESES --ignore SPDX_LICENSE_TAG --ignore OPEN_ENDED_LINE --ignore BOOL_MEMBER --ignore BIT_MACRO  --ignore PREFER_FALLTHROUGH --ignore MISSING_SPACE *.[ch] common/*.[ch] frontend/*.[ch] test_cases/*.[ch] arch/arm32/*.[ch] backends/riscos/*.[ch]
  - ./check-format.sh

@@ -796,6 +796,19 @@ subtilis_exp_t *subtilis_type_if_sgn(subtilis_parser_t *p, subtilis_exp_t *e,
 	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->sgn, err);
 }
 
+subtilis_exp_t *subtilis_type_if_is_inf(subtilis_parser_t *p, subtilis_exp_t *e,
+					subtilis_error_t *err)
+{
+	if (!subtilis_type_if_is_numeric(&e->type)) {
+		subtilis_error_set_numeric_expected(
+		    err, subtilis_type_name(&e->type), p->l->stream->name,
+		    p->l->line);
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->is_inf, err);
+}
+
 subtilis_exp_t *subtilis_type_if_call(subtilis_parser_t *p,
 				      const subtilis_type_t *type,
 				      subtilis_ir_arg_t *args, size_t num_args,

@@ -866,6 +866,14 @@ static subtilis_exp_t *prv_sgn_const(subtilis_parser_t *p, subtilis_exp_t *e,
 	return e;
 }
 
+static subtilis_exp_t *prv_is_inf(subtilis_parser_t *p, subtilis_exp_t *e,
+				  subtilis_error_t *err)
+{
+	e->exp.ir_op.integer = 0;
+	e->type.type = SUBTILIS_TYPE_CONST_INTEGER;
+	return e;
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_const_int32 = {
 	.is_const = true,
@@ -921,6 +929,7 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.asr = prv_asr_const,
 	.abs = prv_abs_const,
 	.sgn = prv_sgn_const,
+	.is_inf = prv_is_inf,
 	.call = NULL,
 	.ret = NULL,
 	.print = NULL,
@@ -2131,6 +2140,7 @@ subtilis_type_if subtilis_type_int32 = {
 	.asr = prv_asr,
 	.abs = prv_abs,
 	.sgn = prv_sgn,
+	.is_inf = prv_is_inf,
 	.call = prv_call,
 	.ret = prv_ret,
 	.print = prv_print,
