@@ -1341,7 +1341,7 @@ typedef enum {
 	 *
 	 * testesc
 	 *
-	 * Checks the system escape condition is set.  If it is, the the error
+	 * Checks the system escape condition is set.  If it is, the error
 	 * flag is set and an error is written into the error offsets for the
 	 * current section. This instruction also clears the system escape.
 	 * condition.

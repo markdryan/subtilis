@@ -168,7 +168,7 @@ typedef struct subtilis_type_if_ subtilis_type_if;
 /*
  * Returns the size of the type in bytes.  For reference types
  * this is the size of the reference, e.g., 16 bytes for a one
- * dimensional array on 32 bit bit builds.
+ * dimensional array on 32 bit builds.
  */
 
 size_t subtilis_type_if_size(const subtilis_type_t *type,
