@@ -224,6 +224,38 @@ cleanup:
 	subtilis_exp_delete(sizee);
 }
 
+subtilis_exp_t *subtilis_string_type_new_tmp_from_char(subtilis_parser_t *p,
+						       subtilis_exp_t *e,
+						       subtilis_error_t *err)
+{
+	subtilis_type_t type;
+	const subtilis_symbol_t *s;
+	size_t reg;
+
+	type.type = SUBTILIS_TYPE_STRING;
+	s = subtilis_symbol_table_insert_tmp(p->local_st, &type, NULL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_string_type_new_ref_from_char(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					       e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	reg = subtilis_reference_get_pointer(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					     err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_var(&s->t, reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(e);
+
+	return NULL;
+}
+
 void subtilis_string_type_new_ref_from_char(subtilis_parser_t *p,
 					    size_t mem_reg, size_t loc,
 					    subtilis_exp_t *e,
