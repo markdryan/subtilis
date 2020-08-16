@@ -19,6 +19,7 @@
 #include "builtins_ir.h"
 #include "parser_exp.h"
 #include "parser_input.h"
+#include "string_type.h"
 #include "type_if.h"
 
 subtilis_exp_t *subtilis_parser_get(subtilis_parser_t *p, subtilis_token_t *t,
@@ -45,6 +46,19 @@ subtilis_exp_t *subtilis_parser_get(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	return e;
+}
+
+subtilis_exp_t *subtilis_parser_get_str(subtilis_parser_t *p,
+					subtilis_token_t *t,
+					subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+
+	e = subtilis_parser_get(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_string_type_new_tmp_from_char(p, e, err);
 }
 
 static subtilis_exp_t *prv_inkey_const(subtilis_parser_t *p,
