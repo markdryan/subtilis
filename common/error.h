@@ -88,6 +88,7 @@ typedef enum {
 	SUBTILIS_ERROR_STRING_EXPECTED,
 	SUBTILIS_ERROR_CONST_STRING_EXPECTED,
 	SUBTILIS_ERROR_STRING_VARIABLE_EXPECTED,
+	SUBTILIS_ERROR_BAD_VAL_ARG,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -273,6 +274,9 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_string_variable_expected(e, file, line)             \
 	subtilis_error_set_syntax(e, SUBTILIS_ERROR_STRING_VARIABLE_EXPECTED,  \
 				  file, line, __FILE__, __LINE__)
+#define subtilis_error_set_bad_val_arg(e, file, line)                          \
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_BAD_VAL_ARG, file, line,   \
+				  __FILE__, __LINE__)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,
