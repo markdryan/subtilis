@@ -1779,7 +1779,7 @@ void subtilis_riscos_arm_i32_to_dec(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 2, 11,
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 2, 12,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -1793,7 +1793,7 @@ void subtilis_riscos_arm_i32_to_dec(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	subtilis_arm_add_data_imm(arm_s, SUBTILIS_ARM_INSTR_RSB,
-				  SUBTILIS_ARM_CCODE_AL, false, dest, 2, 11,
+				  SUBTILIS_ARM_CCODE_AL, false, dest, 2, 12,
 				  err);
 }
 

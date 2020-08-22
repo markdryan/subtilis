@@ -1505,7 +1505,7 @@ typedef enum {
 	 *
 	 * Stores a string representation of r1 in the buffer pointed to by
 	 * r2.  r2 must be large enough to contain a decimal representation of
-	 * a 32 bit integer, including the sign, i.e., 11 bytes.  The number of
+	 * a 32 bit integer, including the sign, i.e., 12 bytes.  The number of
 	 * bytes written are returned in r0.
 	 */
 
