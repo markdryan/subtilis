@@ -500,7 +500,10 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	 "0000000000000000000000000000000000000000000000\")\n",
 	 SUBTILIS_ERROR_NUMBER_TOO_LONG,
 	},
-
+	{"val_bad_base",
+	"print val(\"2\", 11)\n",
+	SUBTILIS_ERROR_BAD_VAL_ARG,
+	},
 };
 
 /* clang-format on */

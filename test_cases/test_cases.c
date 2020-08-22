@@ -3080,7 +3080,85 @@ const subtilis_test_case_t test_cases[] = {
 	 "print val(a$)\n",
 	 "20\n",
 	},
-
+	{"int_val",
+	 "print val(\"1234\", 10)\n"
+	 "a% = 10\n"
+	"a$ = \"1234\"\n"
+	 "print val(a$, 10)\n"
+	 "a$ = \"-1234f\"\n"
+	 "print val(a$, 10)\n"
+	 "a$ = \"-10000001\"\n"
+	 "print val(a$, 2)\n"
+	 "a$ = \"-10000\"\n"
+	 "print val(a$, 10)\n"
+	 "a$ = \"2147483647\"\n"
+	 "print val(a$, a%)\n"
+	 "a$ = \"-2147483648\"\n"
+	 "print val(a$, a%)\n"
+	 "\n"
+	 "PROCOverflow(\"2147483648\")\n"
+	 "PROCOverflow(\"-2147483649\")\n"
+	 "\n"
+	 "def PROCOverflow(a$)\n"
+	 "\n"
+	 "onerror\n"
+	 "print err\n"
+	 "endproc\n"
+	 "enderror\n"
+	 "\n"
+	 "print val(a$,10)\n"
+	 "\n"
+	 "endproc\n",
+	 "1234\n1234\n-1234\n-129\n-10000\n2147483647\n-2147483648\n20\n20\n"
+	},
+	{"hex_val",
+	 "print val(\"1ff\", 16)\n"
+	 "a$ = \"1ff\"\n"
+	 "print val(a$,16)\n"
+	 "a% = 16\n"
+	 "print val(a$,a%)\n"
+	 "a% = 16\n"
+	 "print val(\"1ff?\",a%)\n"
+	 "a% = 16\n"
+	 "print val(\"7fffffff\",a%)\n"
+	 "a% = 16\n"
+	 "print val(\"-1ff\",a%)\n"
+	 "a% = 16\n"
+	 "print val(\"-80000000\",a%)\n"
+	 "print val(\"-100\",a%)\n"
+	 "\n"
+	 "PROCOverflow(\"80000000\")\n"
+	 "PROCOverflow(\"-80000001\")\n"
+	 "\n"
+	 "def PROCOverflow(a$)\n"
+	 "\n"
+	 "onerror\n"
+	 "print err\n"
+	 "endproc\n"
+	 "enderror\n"
+	 "\n"
+	 "print val(a$, 16)\n"
+	 "\n"
+	 "endproc\n",
+	"511\n511\n511\n511\n2147483647\n-511\n-2147483648\n-256\n20\n20\n"
+	},
+	{"val_bad_base",
+	 "PROCBadBase(0)\n"
+	 "PROCBadBase(1)\n"
+	 "PROCBadBase(11)\n"
+	 "PROCBadBase(17)\n"
+	 "def PROCBadBase(a%)\n"
+	 "\n"
+	 "onerror\n"
+	 "print err\n"
+	 "endproc\n"
+	 "enderror\n"
+	 "\n"
+	 "print val(\"1\", a%)\n"
+	 "\n"
+	 "endproc\n",
+	 "31\n31\n31\n31\n"
+	},
 };
 
 /* clang-format on */

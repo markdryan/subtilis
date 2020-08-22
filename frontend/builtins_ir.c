@@ -1298,53 +1298,60 @@ cleanup:
 	p->current = old_current;
 }
 
-static size_t prv_find_first_stop(subtilis_parser_t *p,
-				  subtilis_ir_operand_t str_data,
-				  subtilis_ir_operand_t str_len,
-				  subtilis_ir_operand_t end_str,
-				  subtilis_ir_operand_t end_label,
-				  subtilis_ir_operand_t *minus,
-				  subtilis_error_t *err)
+/* clang-format off */
+static size_t prv_find_first_stop_prolog(subtilis_parser_t *p,
+					 subtilis_ir_operand_t str_data,
+					 subtilis_ir_operand_t str_len,
+					 subtilis_ir_operand_t max_digit,
+					 bool immediate_digit,
+					 subtilis_ir_operand_t end_str,
+					 subtilis_ir_operand_t *byte,
+					 subtilis_ir_operand_t skip_sign_label,
+					 subtilis_ir_operand_t first_end_label,
+					 subtilis_ir_operand_t end_label,
+					 subtilis_ir_operand_t *minus,
+					 subtilis_ir_operand_t *loop_cond,
+					 subtilis_error_t *err)
+/* clang-format on */
+
 {
 	subtilis_ir_operand_t ptr;
-	subtilis_ir_operand_t byte;
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t le_9;
-	subtilis_ir_operand_t condee;
 	subtilis_ir_operand_t have_sign_label;
-	subtilis_ir_operand_t first_end_label;
 	subtilis_ir_operand_t check_for_minus_label;
-	subtilis_ir_operand_t skip_sign_label;
+	subtilis_ir_operand_t negative_label;
 	subtilis_ir_operand_t whole_number_start_label;
 	subtilis_ir_operand_t keep_looking_label;
+	subtilis_ir_operand_t condee;
 
 	check_for_minus_label.label = subtilis_ir_section_new_label(p->current);
-	skip_sign_label.label = subtilis_ir_section_new_label(p->current);
+	negative_label.label = subtilis_ir_section_new_label(p->current);
 	have_sign_label.label = subtilis_ir_section_new_label(p->current);
 	whole_number_start_label.label =
 	    subtilis_ir_section_new_label(p->current);
 	keep_looking_label.label = subtilis_ir_section_new_label(p->current);
-	first_end_label.label = subtilis_ir_section_new_label(p->current);
 
 	ptr.reg = subtilis_ir_section_add_instr2(
 	    p->current, SUBTILIS_OP_INSTR_MOV, str_data, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	op1.integer = 0;
+	op1.integer = 1;
 	minus->reg = subtilis_ir_section_add_instr2(
 	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	byte.reg = subtilis_ir_section_add_instr(
+	op1.integer = 0;
+	byte->reg = subtilis_ir_section_add_instr(
 	    p->current, SUBTILIS_OP_INSTR_LOADO_I8, ptr, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
 	op1.integer = '+';
 	condee.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_NEQI_I32, byte, op1, err);
+	    p->current, SUBTILIS_OP_INSTR_NEQI_I32, *byte, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
@@ -1360,14 +1367,24 @@ static size_t prv_find_first_stop(subtilis_parser_t *p,
 		return SIZE_MAX;
 
 	op1.integer = '-';
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_EQI_I32,
-					  *minus, byte, op1, err);
+	condee.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_EQI_I32, *byte, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC_NF,
-					  *minus, have_sign_label,
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  condee, negative_label,
 					  whole_number_start_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_label(p->current, negative_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	op1.integer = 0;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_RSUBI_I32, *minus, *minus, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
@@ -1410,7 +1427,7 @@ static size_t prv_find_first_stop(subtilis_parser_t *p,
 
 	op1.integer = 0;
 	subtilis_ir_section_add_instr_reg(
-	    p->current, SUBTILIS_OP_INSTR_LOADO_I8, byte, ptr, op1, err);
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I8, *byte, ptr, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
@@ -1421,18 +1438,45 @@ static size_t prv_find_first_stop(subtilis_parser_t *p,
 
 	op1.integer = '0';
 	condee.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_LTI_I32, byte, op1, err);
+	    p->current, SUBTILIS_OP_INSTR_LTI_I32, *byte, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	op1.integer = '9';
 	le_9.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_GTI_I32, byte, op1, err);
+	    p->current, immediate_digit ? SUBTILIS_OP_INSTR_GTI_I32
+					: SUBTILIS_OP_INSTR_GT_I32,
+	    *byte, max_digit, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	condee.reg = subtilis_ir_section_add_instr(
+	loop_cond->reg = subtilis_ir_section_add_instr(
 	    p->current, SUBTILIS_OP_INSTR_OR_I32, condee, le_9, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	return ptr.reg;
+}
+
+static size_t
+prv_find_first_stop(subtilis_parser_t *p, subtilis_ir_operand_t str_data,
+		    subtilis_ir_operand_t str_len,
+		    subtilis_ir_operand_t max_digit, bool immediate_digit,
+		    subtilis_ir_operand_t end_str,
+		    subtilis_ir_operand_t end_label,
+		    subtilis_ir_operand_t *minus, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t skip_sign_label;
+	subtilis_ir_operand_t first_end_label;
+	subtilis_ir_operand_t condee;
+	size_t ptr;
+	subtilis_ir_operand_t byte;
+
+	skip_sign_label.label = subtilis_ir_section_new_label(p->current);
+	first_end_label.label = subtilis_ir_section_new_label(p->current);
+
+	ptr = prv_find_first_stop_prolog(
+	    p, str_data, str_len, max_digit, immediate_digit, end_str, &byte,
+	    skip_sign_label, first_end_label, end_label, minus, &condee, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
@@ -1444,20 +1488,18 @@ static size_t prv_find_first_stop(subtilis_parser_t *p,
 
 	subtilis_ir_section_add_label(p->current, first_end_label.label, err);
 
-	return ptr.reg;
+	return ptr;
 }
 
-static void prv_compute_whole_part(subtilis_parser_t *p,
-				   subtilis_ir_operand_t str_data,
-				   subtilis_ir_operand_t ptr,
-				   subtilis_ir_operand_t ret_val,
-				   subtilis_error_t *err)
+static void
+prv_compute_whole_part(subtilis_parser_t *p, subtilis_ir_operand_t str_data,
+		       subtilis_ir_operand_t ptr, subtilis_ir_operand_t ret_val,
+		       subtilis_ir_operand_t factor, subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t condee;
 	subtilis_ir_operand_t byte;
 	subtilis_ir_operand_t bytef;
-	subtilis_ir_operand_t factor;
 	subtilis_ir_operand_t product;
 	subtilis_ir_operand_t new_ptr;
 	subtilis_ir_operand_t whole_start_label;
@@ -1468,9 +1510,8 @@ static void prv_compute_whole_part(subtilis_parser_t *p,
 	process_whole_label.label = subtilis_ir_section_new_label(p->current);
 	skip_whole_label.label = subtilis_ir_section_new_label(p->current);
 
-	op1.real = 1.0;
 	factor.reg = subtilis_ir_section_add_instr2(
-	    p->current, SUBTILIS_OP_INSTR_MOVI_REAL, op1, err);
+	    p->current, SUBTILIS_OP_INSTR_MOVFP, factor, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1551,6 +1592,7 @@ static void prv_compute_fractional_part(subtilis_parser_t *p,
 					subtilis_ir_operand_t end_str,
 					subtilis_ir_operand_t ptr,
 					subtilis_ir_operand_t ret_val,
+					subtilis_ir_operand_t factor,
 					subtilis_error_t *err)
 {
 	subtilis_ir_operand_t condee;
@@ -1558,7 +1600,6 @@ static void prv_compute_fractional_part(subtilis_parser_t *p,
 	subtilis_ir_operand_t bytef;
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t le_9;
-	subtilis_ir_operand_t factor;
 	subtilis_ir_operand_t product;
 	subtilis_ir_operand_t have_fractional_label;
 	subtilis_ir_operand_t no_fractional_label;
@@ -1615,8 +1656,8 @@ static void prv_compute_fractional_part(subtilis_parser_t *p,
 		return;
 
 	op1.real = 0.1;
-	factor.reg = subtilis_ir_section_add_instr2(
-	    p->current, SUBTILIS_OP_INSTR_MOVI_REAL, op1, err);
+	factor.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_MULI_REAL, factor, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1731,10 +1772,8 @@ void subtilis_builtins_ir_str_to_fp(subtilis_parser_t *p,
 	subtilis_ir_operand_t end_label;
 	subtilis_ir_operand_t ret_val;
 	subtilis_ir_operand_t op1;
-	subtilis_ir_operand_t minus;
+	subtilis_ir_operand_t factor;
 	subtilis_ir_operand_t plus_minus_label;
-	subtilis_ir_operand_t minus_label;
-	subtilis_ir_operand_t plus_label;
 	subtilis_ir_operand_t inf_label;
 	subtilis_ir_operand_t finish_label;
 	subtilis_exp_t *e = NULL;
@@ -1746,8 +1785,6 @@ void subtilis_builtins_ir_str_to_fp(subtilis_parser_t *p,
 	end_label.label = current->end_label;
 	ret_val.reg = current->ret_reg;
 	plus_minus_label.label = subtilis_ir_section_new_label(current);
-	minus_label.label = subtilis_ir_section_new_label(current);
-	plus_label.label = subtilis_ir_section_new_label(current);
 	inf_label.label = subtilis_ir_section_new_label(current);
 	finish_label.label = subtilis_ir_section_new_label(current);
 
@@ -1788,36 +1825,22 @@ void subtilis_builtins_ir_str_to_fp(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	ptr.reg = prv_find_first_stop(p, str_data, str_len, end_str,
-				      finish_label, &minus, err);
+	op1.integer = '9';
+	ptr.reg = prv_find_first_stop(p, str_data, str_len, op1, true, end_str,
+				      finish_label, &factor, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	prv_compute_whole_part(p, str_data, ptr, ret_val, err);
+	factor.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOV_I32_FP, factor, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_compute_whole_part(p, str_data, ptr, ret_val, factor, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	prv_compute_fractional_part(p, end_str, ptr, ret_val, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_JMPC,
-					  minus, minus_label, plus_label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_label(current, minus_label.label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	op1.real = 0;
-	subtilis_ir_section_add_instr_reg(p->current,
-					  SUBTILIS_OP_INSTR_RSUBI_REAL, ret_val,
-					  ret_val, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_ir_section_add_label(current, plus_label.label, err);
+	prv_compute_fractional_part(p, end_str, ptr, ret_val, factor, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1862,6 +1885,574 @@ void subtilis_builtins_ir_str_to_fp(subtilis_parser_t *p,
 
 cleanup:
 	subtilis_exp_delete(e);
+	p->current = old_current;
+}
+
+/* clang-format off */
+static void prv_compute_whole_int_part(subtilis_parser_t *p,
+				       subtilis_ir_operand_t str_data,
+				       subtilis_ir_operand_t base,
+				       subtilis_ir_operand_t ptr,
+				       subtilis_ir_operand_t ret_val,
+				       subtilis_ir_operand_t overflow_label,
+				       subtilis_ir_operand_t end_label,
+				       subtilis_ir_operand_t factor,
+				       subtilis_error_t *err)
+/* clang-format on */
+
+{
+	subtilis_ir_operand_t sign;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t condee;
+	subtilis_ir_operand_t byte;
+	subtilis_ir_operand_t product;
+	subtilis_ir_operand_t new_ptr;
+	subtilis_ir_operand_t overflow;
+	subtilis_ir_operand_t whole_start_label;
+	subtilis_ir_operand_t process_whole_label;
+	subtilis_ir_operand_t check_overflow_label;
+
+	whole_start_label.label = subtilis_ir_section_new_label(p->current);
+	process_whole_label.label = subtilis_ir_section_new_label(p->current);
+	check_overflow_label.label = subtilis_ir_section_new_label(p->current);
+
+	sign.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOV, factor, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	new_ptr.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOV, ptr, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, whole_start_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = 1;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_SUBI_I32, new_ptr, new_ptr, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	condee.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_GTE_I32, new_ptr, str_data, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  condee, process_whole_label,
+					  end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, process_whole_label.label,
+				      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = 0;
+	byte.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I8, new_ptr, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = '0';
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_SUBI_I32, byte, byte, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	product.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_MUL_I32, byte, factor, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_MUL_I32,
+					  factor, factor, base, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_ADD_I32,
+					  ret_val, ret_val, product, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  ret_val, check_overflow_label,
+					  whole_start_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, check_overflow_label.label,
+				      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * Now check for overflow.  We EOR the sign and the sum
+	 * together.  If the top bit is set we've overflowed.
+	 */
+
+	overflow.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_EOR_I32, ret_val, sign, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = 0x80000000;
+	overflow.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ANDI_I32, overflow, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  overflow, overflow_label,
+					  whole_start_label, err);
+}
+
+void subtilis_builtins_ir_str_to_int32(subtilis_parser_t *p,
+				       subtilis_ir_section_t *current,
+				       subtilis_error_t *err)
+{
+	subtilis_ir_section_t *old_current;
+	subtilis_ir_operand_t str;
+	subtilis_ir_operand_t str_data;
+	subtilis_ir_operand_t base;
+	subtilis_ir_operand_t max_digit;
+	subtilis_ir_operand_t str_len;
+	subtilis_ir_operand_t end_str;
+	subtilis_ir_operand_t ptr;
+	subtilis_ir_operand_t condee;
+	subtilis_ir_operand_t end_label;
+	subtilis_ir_operand_t ret_val;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t factor;
+	subtilis_ir_operand_t plus_minus_label;
+	subtilis_ir_operand_t overflow_label;
+	subtilis_exp_t *e = NULL;
+
+	old_current = p->current;
+	p->current = current;
+
+	str.reg = SUBTILIS_IR_REG_TEMP_START;
+	base.reg = SUBTILIS_IR_REG_TEMP_START + 1;
+	end_label.label = current->end_label;
+	ret_val.reg = current->ret_reg;
+	plus_minus_label.label = subtilis_ir_section_new_label(current);
+	overflow_label.label = subtilis_ir_section_new_label(current);
+
+	op1.integer = 0;
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, ret_val, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	str_len.reg = subtilis_reference_type_get_size(p, str.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.integer = 0;
+	condee.reg = subtilis_ir_section_add_instr(
+	    current, SUBTILIS_OP_INSTR_GTI_I32, str_len, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_JMPC,
+					  condee, plus_minus_label, end_label,
+					  err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(current, plus_minus_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	str_data.reg = subtilis_reference_get_data(p, str.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	end_str.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, str_data, str_len, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.integer = '0';
+	max_digit.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, base, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	ptr.reg = prv_find_first_stop(p, str_data, str_len, max_digit, false,
+				      end_str, end_label, &factor, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_compute_whole_int_part(p, str_data, base, ptr, ret_val,
+				   overflow_label, end_label, factor, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(current, end_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg(current, SUBTILIS_OP_INSTR_RET_I32,
+					     ret_val, err);
+
+	subtilis_ir_section_add_label(current, overflow_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_new_int32(SUBTILIS_ERROR_CODE_NUMBER_TOO_BIG, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_generate_error(p, e, err);
+	e = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+cleanup:
+	p->current = old_current;
+}
+
+static size_t prv_find_first_stop_hex(subtilis_parser_t *p,
+				      subtilis_ir_operand_t str_data,
+				      subtilis_ir_operand_t str_len,
+				      subtilis_ir_operand_t end_str,
+				      subtilis_ir_operand_t end_label,
+				      subtilis_ir_operand_t *minus,
+				      subtilis_error_t *err)
+{
+	subtilis_ir_operand_t skip_sign_label;
+	subtilis_ir_operand_t first_end_label;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t max_digit;
+	subtilis_ir_operand_t condee;
+	subtilis_ir_operand_t condee2;
+	subtilis_ir_operand_t lta;
+	subtilis_ir_operand_t gtf;
+	size_t ptr;
+	subtilis_ir_operand_t byte;
+
+	skip_sign_label.label = subtilis_ir_section_new_label(p->current);
+	first_end_label.label = subtilis_ir_section_new_label(p->current);
+
+	max_digit.integer = '9';
+	ptr = prv_find_first_stop_prolog(
+	    p, str_data, str_len, max_digit, true, end_str, &byte,
+	    skip_sign_label, first_end_label, end_label, minus, &condee, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	op1.integer = 32;
+	byte.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ORI_I32, byte, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	op1.integer = 'a';
+	lta.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LTI_I32, byte, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	op1.integer = 'f';
+	gtf.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_GTI_I32, byte, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	condee2.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_OR_I32, lta, gtf, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	condee.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_EOR_I32, condee, condee2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC_NF,
+					  condee, skip_sign_label,
+					  first_end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_ir_section_add_label(p->current, first_end_label.label, err);
+
+	return ptr;
+}
+
+/* clang-format off */
+static void prv_compute_whole_hex_part(subtilis_parser_t *p,
+				       subtilis_ir_operand_t str_data,
+				       subtilis_ir_operand_t base,
+				       subtilis_ir_operand_t ptr,
+				       subtilis_ir_operand_t ret_val,
+				       subtilis_ir_operand_t overflow_label,
+				       subtilis_ir_operand_t end_label,
+				       subtilis_ir_operand_t factor,
+				       subtilis_error_t *err)
+/* clang-format off */
+
+{
+	subtilis_ir_operand_t sign;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t condee;
+	subtilis_ir_operand_t byte;
+	subtilis_ir_operand_t ored_byte;
+	subtilis_ir_operand_t product;
+	subtilis_ir_operand_t new_ptr;
+	subtilis_ir_operand_t overflow;
+	subtilis_ir_operand_t whole_start_label;
+	subtilis_ir_operand_t process_whole_label;
+	subtilis_ir_operand_t hex_digit_label;
+	subtilis_ir_operand_t skip_dec_label;
+	subtilis_ir_operand_t dec_digit_label;
+	subtilis_ir_operand_t check_overflow_label;
+
+	whole_start_label.label = subtilis_ir_section_new_label(p->current);
+	process_whole_label.label = subtilis_ir_section_new_label(p->current);
+	hex_digit_label.label = subtilis_ir_section_new_label(p->current);
+	dec_digit_label.label = subtilis_ir_section_new_label(p->current);
+	skip_dec_label.label = subtilis_ir_section_new_label(p->current);
+	check_overflow_label.label = subtilis_ir_section_new_label(p->current);
+
+	sign.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOV, factor, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	new_ptr.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOV, ptr, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, whole_start_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = 1;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_SUBI_I32, new_ptr, new_ptr, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	condee.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_GTE_I32, new_ptr, str_data, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  condee, process_whole_label,
+					  end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, process_whole_label.label,
+				      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = 0;
+	byte.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I8, new_ptr, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = '9';
+	condee.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_GTI_I32, byte, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  condee, hex_digit_label,
+					  dec_digit_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, hex_digit_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = 32;
+	ored_byte.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ORI_I32, byte, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = 'a' - 10;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_SUBI_I32, byte, ored_byte, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     skip_dec_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, dec_digit_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = '0';
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_SUBI_I32, byte, byte, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, skip_dec_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	product.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_MUL_I32, byte, factor, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = 4;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_LSLI_I32, factor, factor, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_ADD_I32,
+					  ret_val, ret_val, product, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  ret_val, check_overflow_label,
+					  whole_start_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, check_overflow_label.label,
+				      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * Now check for overflow.  We EOR the sign and the sum
+	 * together.  If the top bit is set we've overflowed.
+	 */
+
+	overflow.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_EOR_I32, ret_val, sign, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = 0x80000000;
+	overflow.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ANDI_I32, overflow, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  overflow, overflow_label,
+					  whole_start_label, err);
+}
+
+void subtilis_builtins_ir_hexstr_to_int32(subtilis_parser_t *p,
+					  subtilis_ir_section_t *current,
+					  subtilis_error_t *err)
+{
+	subtilis_ir_section_t *old_current;
+	subtilis_ir_operand_t str;
+	subtilis_ir_operand_t str_data;
+	subtilis_ir_operand_t base;
+	subtilis_ir_operand_t str_len;
+	subtilis_ir_operand_t end_str;
+	subtilis_ir_operand_t ptr;
+	subtilis_ir_operand_t condee;
+	subtilis_ir_operand_t end_label;
+	subtilis_ir_operand_t ret_val;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t factor;
+	subtilis_ir_operand_t plus_minus_label;
+	subtilis_ir_operand_t overflow_label;
+	subtilis_exp_t *e = NULL;
+
+	old_current = p->current;
+	p->current = current;
+
+	str.reg = SUBTILIS_IR_REG_TEMP_START;
+	base.reg = SUBTILIS_IR_REG_TEMP_START + 1;
+	end_label.label = current->end_label;
+	ret_val.reg = current->ret_reg;
+	plus_minus_label.label = subtilis_ir_section_new_label(current);
+	overflow_label.label = subtilis_ir_section_new_label(current);
+
+	op1.integer = 0;
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, ret_val, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	str_len.reg = subtilis_reference_type_get_size(p, str.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.integer = 0;
+	condee.reg = subtilis_ir_section_add_instr(
+	    current, SUBTILIS_OP_INSTR_GTI_I32, str_len, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_JMPC,
+					  condee, plus_minus_label, end_label,
+					  err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(current, plus_minus_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	str_data.reg = subtilis_reference_get_data(p, str.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	end_str.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, str_data, str_len, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	ptr.reg = prv_find_first_stop_hex(p, str_data, str_len, end_str,
+					  end_label, &factor, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_compute_whole_hex_part(p, str_data, base, ptr, ret_val,
+				   overflow_label, end_label, factor, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(current, end_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg(current, SUBTILIS_OP_INSTR_RET_I32,
+					     ret_val, err);
+
+	subtilis_ir_section_add_label(current, overflow_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_new_int32(SUBTILIS_ERROR_CODE_NUMBER_TOO_BIG, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_generate_error(p, e, err);
+	e = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+cleanup:
 	p->current = old_current;
 }
 
@@ -2025,4 +2616,54 @@ subtilis_exp_t *subtilis_builtin_ir_call_str_to_fp(subtilis_parser_t *p,
 	return subtilis_parser_call_1_arg_fn(
 	    p, "_str_to_fp", str_reg, SUBTILIS_BUILTINS_MAX,
 	    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_real, true, err);
+}
+
+subtilis_exp_t *subtilis_builtin_ir_call_hexstr_to_int32(subtilis_parser_t *p,
+							 size_t str_reg,
+							 subtilis_error_t *err)
+{
+	subtilis_ir_section_t *fn;
+	const subtilis_type_t *ptype[1];
+
+	ptype[0] = &subtilis_type_integer;
+
+	fn = prv_add_args(p, "_hexstr_to_int32", 1, ptype,
+			  &subtilis_type_integer, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
+			return NULL;
+		subtilis_error_init(err);
+	} else {
+		subtilis_builtins_ir_hexstr_to_int32(p, fn, err);
+	}
+
+	return subtilis_parser_call_1_arg_fn(
+	    p, "_hexstr_to_int32", str_reg, SUBTILIS_BUILTINS_MAX,
+	    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_integer, true, err);
+}
+
+subtilis_exp_t *subtilis_builtin_ir_call_str_to_int32(subtilis_parser_t *p,
+						      size_t str_reg,
+						      size_t base_reg,
+						      subtilis_error_t *err)
+{
+	subtilis_ir_section_t *fn;
+	const subtilis_type_t *ptype[2];
+
+	ptype[0] = &subtilis_type_integer;
+	ptype[1] = &subtilis_type_integer;
+
+	fn = prv_add_args(p, "_str_to_int32", 2, ptype, &subtilis_type_integer,
+			  err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
+			return NULL;
+		subtilis_error_init(err);
+	} else {
+		subtilis_builtins_ir_str_to_int32(p, fn, err);
+	}
+
+	return subtilis_parser_call_2_arg_fn(
+	    p, "_str_to_int32", str_reg, base_reg, SUBTILIS_IR_REG_TYPE_INTEGER,
+	    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_integer, true, err);
 }

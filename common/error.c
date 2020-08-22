@@ -220,6 +220,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_STRING_VARIABLE_EXPECTED */
 	{"String variable expected\n", 0},
+
+	/* SUBTILIS_ERROR_BAD_VAL_ARG */
+	{"The second value to VAL must be either 16 or >= 2 and <= 10\n", 0},
 };
 
 /* clang-format on */

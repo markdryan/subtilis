@@ -76,5 +76,12 @@ subtilis_exp_t *subtilis_builtin_ir_call_fp_to_str(subtilis_parser_t *p,
 subtilis_exp_t *subtilis_builtin_ir_call_str_to_fp(subtilis_parser_t *p,
 						   size_t str_reg,
 						   subtilis_error_t *err);
+subtilis_exp_t *subtilis_builtin_ir_call_hexstr_to_int32(subtilis_parser_t *p,
+							 size_t str_reg,
+							 subtilis_error_t *err);
+subtilis_exp_t *subtilis_builtin_ir_call_str_to_int32(subtilis_parser_t *p,
+						      size_t str_reg,
+						      size_t base_reg,
+						      subtilis_error_t *err);
 
 #endif

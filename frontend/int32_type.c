@@ -1151,7 +1151,7 @@ on_error:
 static subtilis_exp_t *prv_to_string(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err)
 {
-	return prv_to_string_common(p, e, 11, SUBTILIS_BACKEND_HAVE_I32_TO_DEC,
+	return prv_to_string_common(p, e, 16, SUBTILIS_BACKEND_HAVE_I32_TO_DEC,
 				    SUBTILIS_OP_INSTR_I32TODEC,
 				    subtilis_builtin_ir_call_dec_to_str, err);
 }
@@ -1160,7 +1160,7 @@ static subtilis_exp_t *prv_to_hex_string(subtilis_parser_t *p,
 					 subtilis_exp_t *e,
 					 subtilis_error_t *err)
 {
-	return prv_to_string_common(p, e, 11, SUBTILIS_BACKEND_HAVE_I32_TO_HEX,
+	return prv_to_string_common(p, e, 16, SUBTILIS_BACKEND_HAVE_I32_TO_HEX,
 				    SUBTILIS_OP_INSTR_I32TOHEX,
 				    subtilis_builtin_ir_call_hex_to_str, err);
 }

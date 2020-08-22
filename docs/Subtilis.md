@@ -842,6 +842,31 @@ on the other hand will print out a floating point variable, e.g, 10.0.
 This is all very broken and will have to change.  We'll probably end up with RND returning
 floating point numbers and RND% returning integers.
 
+### VAL
+
+VAL like RND is a little compiler unfriendly.  You don't always know at compile time
+what the type returned by the keyword is going to be so you have to assume that it's
+a real.  For this reason VAL(a$) in Subtilis converts from a string to a floating
+point number using floating point arithmetic and so will be slow on most Archimedes.
+For this reason, Subtilis introduces a variant on the VAL keyword which takes a
+second argument.  The second argument denotes the base of the number in string
+representation and when present the compiler always converts from a string to
+an int using integer arthimetic.  Valid values for the base are 2-10 and 16.  For
+example
+
+```
+print val(256, 10)
+print val(100, 16)
+```
+
+will print
+
+```
+256
+256
+```
+
+
 ### Zero argument functions that return arrays
 
 Functions and procedures with zero arguments can be currently invoked with and
