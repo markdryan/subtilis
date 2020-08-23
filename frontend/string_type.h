@@ -23,7 +23,8 @@
 size_t subtilis_string_type_size(const subtilis_type_t *type);
 void subtilis_string_type_zero_ref(subtilis_parser_t *p,
 				   const subtilis_type_t *type, size_t mem_reg,
-				   size_t loc, subtilis_error_t *err);
+				   size_t loc, bool push,
+				   subtilis_error_t *err);
 subtilis_exp_t *subtilis_string_type_new_tmp_from_char(subtilis_parser_t *p,
 						       subtilis_exp_t *e,
 						       subtilis_error_t *err);

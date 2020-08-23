@@ -344,6 +344,12 @@ subtilis_type_if subtilis_type_if_const_string = {
 
 /* clang-format on */
 
+static void prv_zero_ref(subtilis_parser_t *p, const subtilis_type_t *type,
+			 size_t mem_reg, size_t loc, subtilis_error_t *err)
+{
+	subtilis_string_type_zero_ref(p, type, mem_reg, loc, true, err);
+}
+
 static subtilis_exp_t *prv_data_size(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err)
 {
@@ -1074,7 +1080,7 @@ subtilis_type_if subtilis_type_if_string = {
 	.size = subtilis_string_type_size,
 	.data_size = prv_data_size,
 	.zero = NULL,
-	.zero_ref = subtilis_string_type_zero_ref,
+	.zero_ref = prv_zero_ref,
 	.new_ref = subtilis_string_type_new_ref,
 	.assign_ref = subtilis_string_type_assign_ref,
 	.zero_reg = prv_zero_reg,

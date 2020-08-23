@@ -3159,6 +3159,19 @@ const subtilis_test_case_t test_cases[] = {
 	 "endproc\n",
 	 "31\n31\n31\n31\n"
 	},
+	{"string_null_assign",
+	 "a$ = \"122\"\n"
+	 "a$ = \"\"\n"
+	 "a$ = \"-2147483648\"\n"
+	 "print a$\n",
+	 "-2147483648\n"
+	},
+	{"string_null_init",
+	 "a$ = \"\"\n"
+	 "a$ = \"hello\"\n"
+	 "print a$\n",
+	 "hello\n"
+	},
 };
 
 /* clang-format on */
