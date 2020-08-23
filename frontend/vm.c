@@ -195,8 +195,7 @@ static void prv_subr(subitlis_vm_t *vm, subtilis_buffer_t *b,
 static void prv_muli32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	vm->regs[ops[0].reg] =
-	    vm->regs[ops[1].integer] * vm->regs[ops[2].integer];
+	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] * vm->regs[ops[2].reg];
 }
 
 static void prv_mulr(subitlis_vm_t *vm, subtilis_buffer_t *b,

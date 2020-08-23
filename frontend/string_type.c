@@ -101,7 +101,7 @@ size_t subtilis_string_type_size(const subtilis_type_t *type)
 
 void subtilis_string_type_zero_ref(subtilis_parser_t *p,
 				   const subtilis_type_t *type, size_t mem_reg,
-				   size_t loc, subtilis_error_t *err)
+				   size_t loc, bool push, subtilis_error_t *err)
 {
 	subtilis_exp_t *zero = NULL;
 
@@ -118,7 +118,9 @@ void subtilis_string_type_zero_ref(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_reference_type_push_reference(p, type, mem_reg, loc, err);
+	if (push)
+		subtilis_reference_type_push_reference(p, type, mem_reg, loc,
+						       err);
 
 cleanup:
 
@@ -193,7 +195,7 @@ static void prv_init_string_from_const(subtilis_parser_t *p, size_t mem_reg,
 
 	if (buf_size == 1) {
 		subtilis_string_type_zero_ref(p, &subtilis_type_string, mem_reg,
-					      loc, err);
+					      loc, push, err);
 		return;
 	}
 
