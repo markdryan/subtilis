@@ -1209,3 +1209,21 @@ void subtilis_arm_gen_sete(subtilis_arm_section_t *arm_s,
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR, ccode, reg,
 				   12, s->error_offset, false, err);
 }
+
+void subtilis_arm_gen_sete_reg(subtilis_arm_section_t *arm_s,
+			       subtilis_ir_section_t *s,
+			       subtilis_arm_ccode_type_t ccode, size_t reg,
+			       size_t error_code, subtilis_error_t *err)
+{
+	subtilis_arm_add_mov_imm(arm_s, ccode, false, reg, -1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR, ccode, reg,
+				   12, s->eflag_offset, false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR, ccode,
+				   error_code, 12, s->error_offset, false, err);
+}

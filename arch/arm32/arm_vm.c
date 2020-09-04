@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../../common/error_codes.h"
 #include "../../common/utils.h"
 #include "arm_disass.h"
 #include "arm_vm.h"
@@ -907,7 +908,7 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	case 0x10:
 		/* OS_GetEnv */
 		arm_vm->regs[0] = 0;
-		arm_vm->regs[1] = 0x8000 + arm_vm->mem_size;
+		arm_vm->regs[1] = 0x8000 + arm_vm->mem_size - 4;
 		arm_vm->regs[2] = 0;
 		break;
 	case 0xd4 + 0x20000:
@@ -918,9 +919,12 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	case 0xdc:
 		/* OS_ConvertInteger4  */
 		buf_len = sprintf(buf, format, arm_vm->regs[0]);
-		if (buf_len > arm_vm->regs[2]) {
-			subtilis_error_set_assertion_failed(err);
-			return;
+		if (buf_len + 1 > arm_vm->regs[2]) {
+			*((uint32_t *)&arm_vm->memory[arm_vm->mem_size - 4]) =
+			    SUBTILIS_ERROR_CODE_BUFFER_OVERFLOW;
+			arm_vm->overflow_flag = true;
+			arm_vm->regs[0] = arm_vm->mem_size - 4 + 0x8000;
+			break;
 		}
 		addr =
 		    prv_get_vm_address(arm_vm, arm_vm->regs[1], buf_len, err);

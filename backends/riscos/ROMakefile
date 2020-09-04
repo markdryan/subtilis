@@ -2,7 +2,7 @@
 
 COMPONENT = riscos
 
-OBJS = riscos_arm riscos_arm2
+OBJS = riscos_arm riscos_arm2 riscos_swi
 
 CFLAGS ?= -Wxla
 

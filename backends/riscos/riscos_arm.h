@@ -110,9 +110,15 @@ void subtilis_riscos_arm_block_free_space(subtilis_ir_section_t *s,
 					  subtilis_error_t *err);
 void subtilis_riscos_arm_block_adjust(subtilis_ir_section_t *s, size_t start,
 				      void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_syscall(subtilis_ir_section_t *s, size_t start,
+				 void *user_data, subtilis_error_t *err);
 
 #define SUBTILIS_RISCOS_ARM_CAPS                                               \
 	(SUBTILIS_BACKEND_HAVE_I32_TO_DEC | SUBTILIS_BACKEND_HAVE_I32_TO_HEX | \
 	 SUBTILIS_BACKEND_REVERSE_DOUBLES)
+
+size_t subtilis_riscos_sys_trans(const char *call_name);
+bool subtilis_riscos_sys_check(size_t call_id, uint32_t *in_regs,
+			       uint32_t *out_regs, bool *handle_errors);
 
 #endif

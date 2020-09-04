@@ -76,5 +76,8 @@ size_t subtilis_var_bracketed_args_have_b(subtilis_parser_t *p,
 					  subtilis_token_t *t,
 					  subtilis_exp_t **e, size_t max,
 					  subtilis_error_t *err);
-
+subtilis_exp_t *subtilis_var_lookup_ref(subtilis_parser_t *p,
+					subtilis_token_t *t, bool *local,
+					subtilis_type_t *type,
+					subtilis_error_t *err);
 #endif

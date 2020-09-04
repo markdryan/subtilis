@@ -24,6 +24,65 @@
 #include "parser.h"
 #include "vm.h"
 
+/*
+ * We'll just implement a few RiscOS SWIs to test the SWI mechanism.
+ */
+
+static size_t prv_sys_trans(const char *call_name)
+{
+	bool x_flag = call_name[0] == 'X';
+
+	if (x_flag)
+		call_name++;
+
+	if (!strcmp(call_name, "OS_Write0"))
+		return 2 | ((x_flag) ? 0x20000 : 0);
+
+	if (!strcmp(call_name, "OS_GetEnv"))
+		return 0x10 | ((x_flag) ? 0x20000 : 0);
+
+	if (!strcmp(call_name, "OS_ConvertInteger4"))
+		return 0xdc | ((x_flag) ? 0x20000 : 0);
+
+	return SIZE_MAX;
+}
+
+static bool prv_sys_check(size_t call_id, uint32_t *in_regs, uint32_t *out_regs,
+			  bool *check_for_errors)
+{
+	size_t code = call_id & ~((size_t)0x20000);
+
+	if ((code >= 256 + 32) && (code < 512)) {
+		*in_regs = 0;
+		*out_regs = 0;
+		*check_for_errors = call_id & 0x20000;
+		return true;
+	}
+
+	switch (call_id) {
+	case 2 + 0x20000:
+	case 2:
+		*in_regs = 1;
+		*out_regs = 1;
+		*check_for_errors = call_id & 0x20000;
+		return true;
+	case 0x10:
+	case 0x10 + 0x20000:
+		*in_regs = 0;
+		*out_regs = 7;
+		*check_for_errors = call_id & 0x20000;
+		return true;
+	case 0xdc:
+	case 0xdc + 0x20000:
+		*in_regs = 7;
+		*out_regs = 7;
+		*check_for_errors = call_id & 0x20000;
+		return true;
+	default:
+		return false;
+	}
+}
+
 int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 			int (*fn)(subtilis_lexer_t *, subtilis_parser_t *,
 				  subtilis_error_type_t, const char *expected,
@@ -33,10 +92,11 @@ int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 {
 	subtilis_stream_t s;
 	subtilis_error_t err;
-	subtilis_lexer_t *l = NULL;
-	subtilis_parser_t *p = NULL;
 	int retval;
 	subtilis_settings_t settings;
+	subtilis_backend_t backend;
+	subtilis_lexer_t *l = NULL;
+	subtilis_parser_t *p = NULL;
 
 	subtilis_error_init(&err);
 	subtilis_stream_from_text(&s, text, &err);
@@ -52,8 +112,11 @@ int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 	settings.handle_escapes = true;
 	settings.ignore_graphics_errors = true;
 	settings.check_mem_leaks = !mem_leaks_ok;
+	backend.caps = caps;
+	backend.sys_trans = prv_sys_trans;
+	backend.sys_check = prv_sys_check;
 
-	p = subtilis_parser_new(l, caps, &settings, &err);
+	p = subtilis_parser_new(l, &backend, &settings, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 

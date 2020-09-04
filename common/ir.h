@@ -46,6 +46,7 @@ typedef enum {
 	SUBTILIS_OP_CALL,
 	SUBTILIS_OP_CALLI32,
 	SUBTILIS_OP_CALLREAL,
+	SUBTILIS_OP_SYS_CALL,
 	SUBTILIS_OP_PHI,
 	SUBTILIS_OP_MAX,
 } subtilis_op_type_t;
@@ -1581,6 +1582,7 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_CMOV_I32,
+
 } subtilis_op_instr_type_t;
 
 typedef enum {
@@ -1651,12 +1653,32 @@ struct subtilis_ir_call_t_ {
 
 typedef struct subtilis_ir_call_t_ subtilis_ir_call_t;
 
+struct subtilis_ir_sys_out_reg_t_ {
+	size_t reg;
+	bool local;
+};
+
+typedef struct subtilis_ir_sys_out_reg_t_ subtilis_ir_sys_out_reg_t;
+
+struct subtilis_ir_sys_call_t_ {
+	size_t call_id;
+	uint32_t in_mask;
+	uint32_t out_mask;
+	size_t flags_reg;
+	bool flags_local;
+	size_t *in_regs;
+	subtilis_ir_sys_out_reg_t *out_regs;
+};
+
+typedef struct subtilis_ir_sys_call_t_ subtilis_ir_sys_call_t;
+
 struct subtilis_ir_op_t_ {
 	subtilis_op_type_t type;
 	union {
 		subtilis_ir_inst_t instr;
 		size_t label;
 		subtilis_ir_call_t call;
+		subtilis_ir_sys_call_t sys_call;
 	} op;
 };
 
@@ -1845,6 +1867,16 @@ size_t subtilis_ir_section_add_real_call(subtilis_ir_section_t *s,
 					 size_t arg_count,
 					 subtilis_ir_arg_t *args,
 					 subtilis_error_t *err);
+/*
+ * Ownership of in_regs and out_regs  passes to this function.
+ * flags_reg == SIZE_MAX if no flags are to be returned.
+ */
+void subtilis_ir_section_add_sys_call(subtilis_ir_section_t *s, size_t call_id,
+				      size_t *in_regs,
+				      subtilis_ir_sys_out_reg_t *out_regs,
+				      uint32_t in_mask, uint32_t out_mask,
+				      size_t flags_reg, bool flags_local,
+				      subtilis_error_t *err);
 void subtilis_ir_parse_rules(const subtilis_ir_rule_raw_t *raw,
 			     subtilis_ir_rule_t *parsed, size_t count,
 			     subtilis_error_t *err);

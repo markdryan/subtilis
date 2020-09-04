@@ -966,3 +966,86 @@ size_t subtilis_var_bracketed_args_have_b(subtilis_parser_t *p,
 {
 	return prv_bracketed_args_have_b(p, t, e, max, NULL, err);
 }
+
+/*
+ * Read the next expression which must be a variable or an
+ * array access and return a reference to that variable.  If the
+ * variable is a scalar local variable, its register is simply
+ * returned.  If it's a global variable or an array expression
+ * a pointer to the variable is returned.  This is used to
+ * implement SYS and also hopefully one day return parameters.
+ */
+
+subtilis_exp_t *subtilis_var_lookup_ref(subtilis_parser_t *p,
+					subtilis_token_t *t, bool *local,
+					subtilis_type_t *type,
+					subtilis_error_t *err)
+{
+	const char *tbuf;
+	size_t reg;
+	const subtilis_symbol_t *s;
+	subtilis_exp_t *e;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+
+	tbuf = subtilis_token_get_text(t);
+
+	reg = SUBTILIS_IR_REG_LOCAL;
+	s = subtilis_symbol_table_lookup(p->local_st, tbuf);
+	if (!s) {
+		s = subtilis_symbol_table_lookup(p->st, tbuf);
+		if (!s) {
+			subtilis_error_set_unknown_variable(
+			    err, tbuf, p->l->stream->name, p->l->line);
+			return NULL;
+		}
+		reg = SUBTILIS_IR_REG_GLOBAL;
+	}
+
+	if (s->t.type == SUBTILIS_TYPE_INTEGER) {
+		*type = s->t;
+		if (!s->is_reg) {
+			*local = false;
+			if (s->loc != 0) {
+				op0.reg = reg;
+				op1.integer = s->loc;
+				reg = subtilis_ir_section_add_instr(
+				    p->current, SUBTILIS_OP_INSTR_ADDI_I32, op0,
+				    op1, err);
+				if (err->type != SUBTILIS_ERROR_OK)
+					return NULL;
+			}
+			e = subtilis_exp_new_var(&s->t, reg, err);
+		} else {
+			*local = true;
+			e = subtilis_exp_new_var(&s->t, s->loc, err);
+		}
+
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK) {
+			subtilis_exp_delete(e);
+			return NULL;
+		}
+
+		return e;
+	} else if (s->t.type == SUBTILIS_TYPE_ARRAY_INTEGER) {
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+
+		tbuf = subtilis_token_get_text(t);
+		if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, "(")) {
+			subtilis_error_set_exp_expected(
+			    err, "(", p->l->stream->name, p->l->line);
+
+			return NULL;
+		}
+
+		*local = false;
+		return subtils_parser_element_address(p, t, s, reg, tbuf, err);
+	}
+
+	subtilis_error_set_integer_variable_expected(
+	    err, subtilis_type_name(&s->t), p->l->stream->name, p->l->line);
+	return NULL;
+}

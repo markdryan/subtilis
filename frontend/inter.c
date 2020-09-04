@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
 	subtilis_error_t err;
 	subtilis_stream_t s;
 	subtilis_settings_t settings;
+	subtilis_backend_t backend;
 	subtilis_lexer_t *l = NULL;
 	subtilis_parser_t *p = NULL;
 
@@ -78,8 +79,11 @@ int main(int argc, char *argv[])
 	settings.ignore_graphics_errors = true;
 	settings.check_mem_leaks = true;
 
-	p = subtilis_parser_new(l, SUBTILIS_BACKEND_INTER_CAPS, &settings,
-				&err);
+	backend.caps = SUBTILIS_BACKEND_INTER_CAPS;
+	backend.sys_trans = NULL;
+	backend.sys_check = NULL;
+
+	p = subtilis_parser_new(l, &backend, &settings, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

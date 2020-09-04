@@ -372,8 +372,13 @@ static void prv_ir_section_delete(subtilis_ir_section_t *s)
 		op = s->ops[i];
 		if ((op->type == SUBTILIS_OP_CALL) ||
 		    (op->type == SUBTILIS_OP_CALLI32) ||
-		    (op->type == SUBTILIS_OP_CALLREAL))
+		    (op->type == SUBTILIS_OP_CALLREAL)) {
 			free(op->op.call.args);
+		} else if (op->type == SUBTILIS_OP_SYS_CALL) {
+			free(op->op.sys_call.in_regs);
+			free(op->op.sys_call.out_regs);
+		}
+
 		free(op);
 	}
 	free(s->ops);
@@ -382,8 +387,12 @@ static void prv_ir_section_delete(subtilis_ir_section_t *s)
 		op = s->error_ops[i];
 		if ((op->type == SUBTILIS_OP_CALL) ||
 		    (op->type == SUBTILIS_OP_CALLI32) ||
-		    (op->type == SUBTILIS_OP_CALLREAL))
+		    (op->type == SUBTILIS_OP_CALLREAL)) {
 			free(op->op.call.args);
+		} else if (op->type == SUBTILIS_OP_SYS_CALL) {
+			free(op->op.sys_call.in_regs);
+			free(op->op.sys_call.out_regs);
+		}
 		free(op);
 	}
 	free(s->error_ops);
@@ -931,6 +940,55 @@ static void prv_dump_call(subtilis_op_type_t type, subtilis_ir_call_t *c)
 	}
 }
 
+static void prv_dump_sys_call(subtilis_ir_sys_call_t *s)
+{
+	size_t i;
+	size_t max_reg;
+
+	printf("\tsyscall %zx", s->call_id);
+	if (s->in_mask) {
+		max_reg = 0;
+		for (i = 0; i < 16; i++)
+			if ((1 << i) & s->in_mask)
+				max_reg++;
+		i = 0;
+		do {
+			printf(", ");
+			if ((1 << i) & s->in_mask)
+				printf("%zu", s->in_regs[i]);
+			i++;
+		} while (i < max_reg);
+	}
+
+	if (s->out_mask) {
+		printf("to ");
+		max_reg = 0;
+		for (i = 0; i < 16; i++)
+			if ((1 << i) & s->out_mask)
+				max_reg++;
+		i = 0;
+		do {
+			if ((1 << i) & s->out_mask) {
+				if (s->out_regs[i].local)
+					printf("%zu", s->out_regs[i].reg);
+				else
+					printf("[%zu]", s->out_regs[i].reg);
+			}
+			i++;
+			if (i == max_reg)
+				break;
+			printf(", ");
+		} while (true);
+	}
+
+	if (s->flags_reg != SIZE_MAX) {
+		if (s->flags_local)
+			printf(" : %zu", s->flags_reg);
+		else
+			printf(" : [%zu]", s->flags_reg);
+	}
+}
+
 static void prv_dump_section_ops(subtilis_ir_op_t **ops, size_t len)
 {
 	size_t i;
@@ -946,6 +1004,8 @@ static void prv_dump_section_ops(subtilis_ir_op_t **ops, size_t len)
 			 (ops[i]->type == SUBTILIS_OP_CALLI32) ||
 			 (ops[i]->type == SUBTILIS_OP_CALLREAL))
 			prv_dump_call(ops[i]->type, &ops[i]->op.call);
+		else if (ops[i]->type == SUBTILIS_OP_SYS_CALL)
+			prv_dump_sys_call(&ops[i]->op.sys_call);
 		else
 			continue;
 		printf("\n");
@@ -1010,6 +1070,41 @@ static void prv_add_call(subtilis_ir_section_t *s, subtilis_op_type_t type,
 	op->op.call.proc_id = 0;
 	op->op.call.arg_count = arg_count;
 	op->op.call.args = args;
+	if (s->in_error_handler)
+		s->error_ops[s->error_len++] = op;
+	else
+		s->ops[s->len++] = op;
+}
+
+void subtilis_ir_section_add_sys_call(subtilis_ir_section_t *s, size_t call_id,
+				      size_t *in_regs,
+				      subtilis_ir_sys_out_reg_t *out_regs,
+				      uint32_t in_mask, uint32_t out_mask,
+				      size_t flags_reg, bool flags_local,
+				      subtilis_error_t *err)
+{
+	subtilis_ir_op_t *op;
+
+	if (s->in_error_handler)
+		prv_ensure_error_buffer(s, err);
+	else
+		prv_ensure_buffer(s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op = malloc(sizeof(*op));
+	if (!op) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	op->type = SUBTILIS_OP_SYS_CALL;
+	op->op.sys_call.call_id = call_id;
+	op->op.sys_call.in_regs = in_regs;
+	op->op.sys_call.out_regs = out_regs;
+	op->op.sys_call.in_mask = in_mask;
+	op->op.sys_call.out_mask = out_mask;
+	op->op.sys_call.flags_reg = flags_reg;
+	op->op.sys_call.flags_local = flags_local;
 	if (s->in_error_handler)
 		s->error_ops[s->error_len++] = op;
 	else
@@ -1229,6 +1324,11 @@ static const char *prv_parse_match(const char *rule,
 		return rule;
 	}
 
+	if (!strcmp(instr, "syscall")) {
+		match->type = SUBTILIS_OP_SYS_CALL;
+		return rule;
+	}
+
 	for (i = 0; i < sizeof(op_desc) / sizeof(subtilis_ir_op_desc_t); i++)
 		if (!strcmp(instr, op_desc[i].name))
 			break;
@@ -1381,6 +1481,8 @@ static bool prv_match_op(subtilis_ir_op_t *op, subtilis_ir_op_match_t *match,
 	if (op->type == SUBTILIS_OP_CALLI32)
 		return true;
 	if (op->type == SUBTILIS_OP_CALLREAL)
+		return true;
+	if (op->type == SUBTILIS_OP_SYS_CALL)
 		return true;
 	if (op->type == SUBTILIS_OP_LABEL)
 		return prv_process_floating_label(state, op->op.label,

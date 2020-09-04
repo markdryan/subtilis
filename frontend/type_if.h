@@ -124,6 +124,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_iwrite_t indexed_add;
 	subtilis_type_if_iwrite_t indexed_sub;
 	subtilis_type_if_iread_t indexed_read;
+	subtilis_type_if_iread_t indexed_address;
 	subtilis_type_if_load_t load_mem;
 	subtilis_type_if_unary_t to_int32;
 	subtilis_type_if_unary_t to_float64;
@@ -373,6 +374,18 @@ subtilis_type_if_indexed_read(subtilis_parser_t *p, const char *var_name,
 			      const subtilis_type_t *type, size_t mem_reg,
 			      size_t loc, subtilis_exp_t **indices,
 			      size_t index_count, subtilis_error_t *err);
+
+/*
+ * Returns a pointer to the scalar element, identified by the indices array,
+ * of an array identified by mem_reg and loc.  Compile and runtime bounds
+ * checking isperformed.  Not implemented for scalar types.
+ */
+
+subtilis_exp_t *
+subtilis_type_if_indexed_address(subtilis_parser_t *p, const char *var_name,
+				 const subtilis_type_t *type, size_t mem_reg,
+				 size_t loc, subtilis_exp_t **indices,
+				 size_t index_count, subtilis_error_t *err);
 
 /*
  * Returns the scalar value stored in the memory location represented by
