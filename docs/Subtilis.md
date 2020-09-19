@@ -979,7 +979,7 @@ enderror
 local free%
 local flags%
 sys "XOS_ConvertInteger4", 1999, a%(), 2 to ,,free% ; flags%
-print "Shouldn't get here and here are the flags ";
+print "Should get here and here are the flags ";
 print flags%
 ```
 
