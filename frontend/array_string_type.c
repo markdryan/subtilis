@@ -309,6 +309,7 @@ subtilis_type_if subtilis_type_array_string = {
 	.indexed_add = prv_indexed_add,
 	.indexed_sub = prv_indexed_sub,
 	.indexed_read = prv_indexed_read,
+	.indexed_address = NULL,
 	.load_mem = NULL,
 	.to_int32 = NULL,
 	.to_float64 = NULL,

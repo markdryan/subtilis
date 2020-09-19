@@ -223,6 +223,16 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_BAD_VAL_ARG */
 	{"The second value to VAL must be either 16 or >= 2 and <= 10\n", 0},
+
+	/* SUBTILIS_ERROR_SYS_BAD_ARGS */
+	{"Incorrect arguments passed to SYS call", 0},
+
+	/* SUBTILIS_ERROR_SYS_TOO_MANY_ARGS */
+	{"There can be no more than 16 input or 16 output arguments to"
+	 " a sys call", 0},
+
+	/* SUBTILIS_ERROR_INTEGER_VARIABLE_EXPECTED */
+	{"Integer variable expected found %s", 1},
 };
 
 /* clang-format on */

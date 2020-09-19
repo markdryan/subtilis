@@ -257,6 +257,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	{"heapfree *\n", subtilis_riscos_arm_heap_free_space},
 	{"blockfree *, *\n", subtilis_riscos_arm_block_free_space},
 	{"blockadjust *, *\n", subtilis_riscos_arm_block_adjust},
+	{"syscall\n", subtilis_riscos_arm_syscall},
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

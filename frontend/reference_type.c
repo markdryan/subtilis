@@ -312,7 +312,7 @@ void subtilis_reference_type_new_ref(subtilis_parser_t *p,
 static void prv_call_deref(subtilis_parser_t *p, subtilis_ir_operand_t address,
 			   subtilis_error_t *err)
 {
-	if (p->caps & SUBTILIS_BACKEND_HAVE_ALLOC)
+	if (p->backend.caps & SUBTILIS_BACKEND_HAVE_ALLOC)
 		subtilis_ir_section_add_instr_no_reg(
 		    p->current, SUBTILIS_OP_INSTR_DEREF, address, err);
 	else
@@ -652,7 +652,7 @@ size_t subtilis_reference_type_raw_alloc(subtilis_parser_t *p, size_t size_reg,
 
 	size_op.reg = size_reg;
 
-	if (p->caps & SUBTILIS_BACKEND_HAVE_ALLOC) {
+	if (p->backend.caps & SUBTILIS_BACKEND_HAVE_ALLOC) {
 		op.reg = subtilis_ir_section_add_instr2(
 		    p->current, SUBTILIS_OP_INSTR_ALLOC, size_op, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -893,7 +893,7 @@ size_t subtilis_reference_type_realloc(subtilis_parser_t *p, size_t loc,
 				       size_t old_size_reg, size_t new_size_reg,
 				       size_t delta_reg, subtilis_error_t *err)
 {
-	if (p->caps & SUBTILIS_BACKEND_HAVE_ALLOC)
+	if (p->backend.caps & SUBTILIS_BACKEND_HAVE_ALLOC)
 		return prv_resize_with_realloc(p, loc, store_reg, data_reg,
 					       new_size_reg, err);
 

@@ -282,12 +282,12 @@ static void prv_loador(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	memcpy(&vm->fregs[ops[0].reg], src, sizeof(double));
 }
 
-static void prv_divide_by_zero(subitlis_vm_t *vm, int32_t code)
+static void prv_generate_error(subitlis_vm_t *vm, int32_t code)
 {
 	int32_t base = vm->regs[SUBTILIS_IR_REG_GLOBAL];
 
 	vm->memory[base + vm->s->eflag_offset] = -1;
-	vm->memory[base + vm->s->error_offset] = code;
+	*((int32_t *)&vm->memory[base + vm->s->error_offset]) = code;
 }
 
 static void prv_divi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
@@ -296,7 +296,7 @@ static void prv_divi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	int32_t divisor = vm->regs[ops[2].reg];
 
 	if (divisor == 0) {
-		prv_divide_by_zero(vm, SUBTILIS_ERROR_CODE_DIV_BY_ZERO);
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_DIV_BY_ZERO);
 		return;
 	}
 	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] / divisor;
@@ -308,7 +308,7 @@ static void prv_divr(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	double divisor = vm->fregs[ops[2].reg];
 
 	if (divisor == 0.0) {
-		prv_divide_by_zero(vm, SUBTILIS_ERROR_CODE_DIV_BY_ZERO);
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_DIV_BY_ZERO);
 		return;
 	}
 	vm->fregs[ops[0].reg] = vm->fregs[ops[1].reg] / divisor;
@@ -320,7 +320,7 @@ static void prv_modi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	int32_t divisor = vm->regs[ops[2].reg];
 
 	if (divisor == 0) {
-		prv_divide_by_zero(vm, SUBTILIS_ERROR_CODE_DIV_BY_ZERO);
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_DIV_BY_ZERO);
 		return;
 	}
 	vm->regs[ops[0].reg] = vm->regs[ops[1].reg] % divisor;
@@ -406,7 +406,7 @@ static void prv_rdivir(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	double divisor = vm->fregs[ops[1].reg];
 
 	if (divisor == 0.0) {
-		prv_divide_by_zero(vm, SUBTILIS_ERROR_CODE_DIV_BY_ZERO);
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_DIV_BY_ZERO);
 		return;
 	}
 	vm->fregs[ops[0].reg] = ops[2].real / divisor;
@@ -975,6 +975,75 @@ static void prv_retir(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->fregs[reg] = ops[0].real;
 }
 
+static void prv_sys_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			 subtilis_ir_sys_call_t *sys_call,
+			 subtilis_error_t *err)
+{
+	const char *str;
+	char buf[32];
+	size_t code = sys_call->call_id & ~((size_t)0x20000);
+	size_t written;
+
+	if ((code >= 256 + 32) && (code < 512)) {
+		buf[0] = (char)code - 256;
+		buf[1] = 0;
+		subtilis_buffer_append_string(b, buf, err);
+		return;
+	}
+
+	switch (sys_call->call_id) {
+	case 2:
+	case 0x20002:
+		/* OS_Write0 */
+		str = (const char *)&vm->memory[vm->regs[sys_call->in_regs[0]]];
+		subtilis_buffer_append_string(b, str, err);
+		break;
+	case 0x10 + 0x20000:
+	case 0x10:
+		/* OS_GetEnv */
+		if (sys_call->out_regs[0].local)
+			vm->regs[sys_call->out_regs[0].reg] = 0;
+		else
+			vm->memory[vm->regs[sys_call->out_regs[0].reg]] = 0;
+		if (sys_call->out_regs[1].local)
+			vm->regs[sys_call->out_regs[1].reg] = vm->memory_size;
+		else
+			vm->memory[vm->regs[sys_call->out_regs[1].reg]] =
+			    vm->memory_size;
+		;
+		if (sys_call->out_regs[2].local)
+			vm->regs[sys_call->out_regs[2].reg] = 0;
+		else
+			vm->memory[vm->regs[sys_call->out_regs[2].reg]] = 0;
+		break;
+	case 0xdc:
+	case 0xdc + 0x20000:
+		/* OS_ConvertInteger4 */
+
+		written =
+		    snprintf(buf, 32, "%d", vm->regs[sys_call->in_regs[0]]);
+		if (written + 1 > vm->regs[sys_call->in_regs[2]]) {
+			prv_generate_error(vm,
+					   SUBTILIS_ERROR_CODE_BUFFER_OVERFLOW);
+			return;
+		}
+		if (sys_call->out_regs[0].reg != SIZE_MAX)
+			vm->regs[sys_call->out_regs[0].reg] =
+			    vm->regs[sys_call->in_regs[1]];
+		if (sys_call->out_regs[1].reg != SIZE_MAX)
+			vm->regs[sys_call->out_regs[1].reg] =
+			    vm->regs[sys_call->in_regs[1]] + written;
+		if (sys_call->out_regs[2].reg != SIZE_MAX)
+			vm->regs[sys_call->out_regs[2].reg] =
+			    vm->regs[sys_call->in_regs[2]] - written;
+		memcpy(&vm->memory[vm->regs[sys_call->in_regs[1]]], buf,
+		       written + 1);
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+	}
+}
+
 static void prv_lsli32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
@@ -1094,7 +1163,7 @@ static void prv_log(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	double arg = vm->fregs[ops[1].reg];
 
 	if (arg <= 0.0) {
-		prv_divide_by_zero(vm, SUBTILIS_ERROR_CODE_LOG_RANGE);
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_LOG_RANGE);
 		return;
 	}
 	vm->fregs[ops[0].reg] = log10(arg);
@@ -1106,7 +1175,7 @@ static void prv_ln(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	double arg = vm->fregs[ops[1].reg];
 
 	if (arg <= 0.0) {
-		prv_divide_by_zero(vm, SUBTILIS_ERROR_CODE_LOG_RANGE);
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_LOG_RANGE);
 		return;
 	}
 
@@ -1385,143 +1454,143 @@ static void prv_cmov_i32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
-	prv_addi32,                          /* SUBTILIS_OP_INSTR_ADD_I32 */
-	prv_addr,                            /* SUBTILIS_OP_INSTR_ADD_REAL */
-	prv_subi32,                          /* SUBTILIS_OP_INSTR_SUB_I32 */
-	prv_subr,                            /* SUBTILIS_OP_INSTR_SUB_REAL */
-	prv_muli32,                          /* SUBTILIS_OP_INSTR_MUL_I32 */
-	prv_mulr,                            /* SUBTILIS_OP_INSTR_MUL_REAL */
-	prv_divi32,                          /* SUBTILIS_OP_INSTR_DIV_I32 */
-	prv_modi32,                          /* SUBTILIS_OP_INSTR_MOD_I32 */
-	prv_divr,                            /* SUBTILIS_OP_INSTR_DIV_REAL */
-	prv_addii32,                         /* SUBTILIS_OP_INSTR_ADDI_I32 */
-	prv_addir,                           /* SUBTILIS_OP_INSTR_ADDI_REAL */
-	prv_subii32,                         /* SUBTILIS_OP_INSTR_SUBI_I32 */
-	prv_subir,                           /* SUBTILIS_OP_INSTR_SUBI_REAL */
-	prv_mulii32,                         /* SUBTILIS_OP_INSTR_MULI_I32 */
-	prv_mulir,                           /* SUBTILIS_OP_INSTR_MULI_REAL */
-	prv_divii32,                         /* SUBTILIS_OP_INSTR_DIVI_I32 */
-	prv_divir,                           /* SUBTILIS_OP_INSTR_DIVI_REAL */
-	prv_loadoi8,                         /* SUBTILIS_OP_INSTR_LOADO_I8 */
-	prv_loadoi32,                        /* SUBTILIS_OP_INSTR_LOADO_I32 */
-	prv_loador,                          /* SUBTILIS_OP_INSTR_LOADO_REAL */
-	NULL,                                /* SUBTILIS_OP_INSTR_LOAD_I32 */
-	NULL,                                /* SUBTILIS_OP_INSTR_LOAD_REAL */
-	prv_storeoi8,                        /* SUBTILIS_OP_INSTR_STOREO_I8 */
-	prv_storeoi32,                       /* SUBTILIS_OP_INSTR_STOREO_I32 */
-	prv_storeor,                         /* SUBTILIS_OP_INSTR_STOREO_REAL */
-	NULL,                                /* SUBTILIS_OP_INSTR_STORE_I32 */
-	NULL,                                /* SUBTILIS_OP_INSTR_STORE_REAL */
-	prv_movii32,                         /* SUBTILIS_OP_INSTR_MOVI_I32 */
-	prv_movir,                           /* SUBTILIS_OP_INSTR_MOVI_REAL */
-	prv_mov,                             /* SUBTILIS_OP_INSTR_MOV */
-	prv_movfp,                           /* SUBTILIS_OP_INSTR_MOVFP */
-	prv_printstr,                        /* SUBTILIS_OP_INSTR_PRINT_STR */
-	prv_printnl,                         /* SUBTILIS_OP_INSTR_PRINT_NL */
-	prv_rsubii32,                        /* SUBTILIS_OP_INSTR_RSUBI_I32 */
-	prv_rsubir,                          /* SUBTILIS_OP_INSTR_RSUBI_REAL */
-	prv_rdivir,                          /* SUBTILIS_OP_INSTR_RDIVI_REAL */
-	prv_andi32,                          /* SUBTILIS_OP_INSTR_AND_I32 */
-	prv_andii32,                         /* SUBTILIS_OP_INSTR_ANDI_I32 */
-	prv_ori32,                           /* SUBTILIS_OP_INSTR_OR_I32 */
-	prv_orii32,                          /* SUBTILIS_OP_INSTR_ORI_I32 */
-	prv_eori32,                          /* SUBTILIS_OP_INSTR_EOR_I32 */
-	prv_eorii32,                         /* SUBTILIS_OP_INSTR_EORI_I32 */
-	prv_noti32,                          /* SUBTILIS_OP_INSTR_NOT_I32 */
-	prv_eqi32,                           /* SUBTILIS_OP_INSTR_EQ_I32 */
-	prv_eqr,                             /* SUBTILIS_OP_INSTR_EQ_REAL */
-	prv_eqii32,                          /* SUBTILIS_OP_INSTR_EQI_I32 */
-	prv_eqir,                            /* SUBTILIS_OP_INSTR_EQI_REAL */
-	prv_neqi32,                          /* SUBTILIS_OP_INSTR_NEQ_I32 */
-	prv_neqr,                            /* SUBTILIS_OP_INSTR_NEQ_REAL */
-	prv_neqii32,                         /* SUBTILIS_OP_INSTR_NEQI_I32 */
-	prv_neqir,                           /* SUBTILIS_OP_INSTR_NEQI_REAL */
-	prv_gti32,                           /* SUBTILIS_OP_INSTR_GT_I32 */
-	prv_gtr,                             /* SUBTILIS_OP_INSTR_GT_REAL */
-	prv_gtii32,                          /* SUBTILIS_OP_INSTR_GTI_I32 */
-	prv_gtir,                            /* SUBTILIS_OP_INSTR_GTI_REAL */
-	prv_ltei32,                          /* SUBTILIS_OP_INSTR_LTE_I32 */
-	prv_lter,                            /* SUBTILIS_OP_INSTR_LTE_REAL */
-	prv_lteii32,                         /* SUBTILIS_OP_INSTR_LTEI_I32 */
-	prv_lteir,                           /* SUBTILIS_OP_INSTR_LTEI_REAL */
-	prv_lti32,                           /* SUBTILIS_OP_INSTR_LT_I32 */
-	prv_ltr,                             /* SUBTILIS_OP_INSTR_LT_REAL */
-	prv_ltii32,                          /* SUBTILIS_OP_INSTR_LTI_I32 */
-	prv_ltir,                            /* SUBTILIS_OP_INSTR_LTI_REAL */
-	prv_gtei32,                          /* SUBTILIS_OP_INSTR_GTE_I32 */
-	prv_gter,                            /* SUBTILIS_OP_INSTR_GTE_REAL */
-	prv_gteii32,                         /* SUBTILIS_OP_INSTR_GTEI_I32 */
-	prv_gteir,                           /* SUBTILIS_OP_INSTR_GTEI_REAL */
-	prv_jmpc,                            /* SUBTILIS_OP_INSTR_JMPC */
-	prv_jmpc,                            /* SUBTILIS_OP_INSTR_JMPC_NF */
-	prv_jmp,                             /* SUBTILIS_OP_INSTR_JMP */
-	prv_ret,                             /* SUBTILIS_OP_INSTR_RET */
-	prv_reti32,                          /* SUBTILIS_OP_INSTR_RET_I32 */
-	prv_retii32,                         /* SUBTILIS_OP_INSTR_RETI_I32 */
-	prv_retr,                            /* SUBTILIS_OP_INSTR_RET_REAL */
-	prv_retir,                           /* SUBTILIS_OP_INSTR_RETI_REAL */
-	prv_lsli32,                          /* SUBTILIS_OP_INSTR_LSL_I32 */
-	prv_lslii32,                         /* SUBTILIS_OP_INSTR_LSLI_I32 */
-	prv_lsri32,                          /* SUBTILIS_OP_INSTR_LSR_I32 */
-	prv_lsrii32,                         /* SUBTILIS_OP_INSTR_LSRI_I32 */
-	prv_asri32,                          /* SUBTILIS_OP_INSTR_ASR_I32 */
-	prv_asrii32,                         /* SUBTILIS_OP_INSTR_ASRI_I32 */
-	prv_movi32fp,                        /* SUBTILIS_OP_INSTR_MOV_I32_FP */
-	prv_movfpi32,                        /* SUBTILIS_OP_INSTR_MOV_FP_I32 */
-	prv_movfprdi32,                      /* SUBTILIS_OP_INSTR_MOV_FPRD_I32*/
-	prv_nop,                             /* SUBTILIS_OP_INSTR_NOP */
-	prv_nop,                             /* SUBTILIS_OP_INSTR_MODE_I32 */
-	prv_nop,                             /* SUBTILIS_OP_INSTR_PLOT */
-	prv_nop,                             /* SUBTILIS_OP_INSTR_GCOL */
-	prv_nop,                             /* SUBTILIS_OP_INSTR_ORIGIN */
-	prv_gettime,                         /* SUBTILIS_OP_INSTR_GETTIME */
-	prv_nop,                             /* SUBTILIS_OP_INSTR_CLS */
-	prv_nop,                             /* SUBTILIS_OP_INSTR_CLG */
-	prv_nop,                             /* SUBTILIS_OP_INSTR_ON */
-	prv_nop,                             /* SUBTILIS_OP_INSTR_OFF */
-	prv_nop,                             /* SUBTILIS_OP_INSTR_WAIT */
-	prv_sin,                             /* SUBTILIS_OP_INSTR_SIN */
-	prv_cos,                             /* SUBTILIS_OP_INSTR_COS */
-	prv_tan,                             /* SUBTILIS_OP_INSTR_TAN */
-	prv_asn,                             /* SUBTILIS_OP_INSTR_ASN */
-	prv_acs,                             /* SUBTILIS_OP_INSTR_ACS */
-	prv_atn,                             /* SUBTILIS_OP_INSTR_ATN */
-	prv_sqr,                             /* SUBTILIS_OP_INSTR_SQR */
-	prv_log,                             /* SUBTILIS_OP_INSTR_LOG */
-	prv_ln,                              /* SUBTILIS_OP_INSTR_LN */
-	prv_absr,                            /* SUBTILIS_OP_INSTR_ABSR */
-	prv_powr,                            /* SUBTILIS_OP_INSTR_POWR */
-	prv_expr,                            /* SUBTILIS_OP_INSTR_EXPR */
-	prv_get,                             /* SUBTILIS_OP_INSTR_GET */
-	prv_get,                             /* SUBTILIS_OP_INSTR_GETTIMEOUT */
-	prv_nop,                             /* SUBTILIS_OP_INSTR_INKEY */
-	prv_osbyteid,                        /* SUBTILIS_OP_INSTR_OS_BYTE_ID */
-	prv_vdui,                            /* SUBTILIS_OP_INSTR_VDUI */
-	prv_vdu,                             /* SUBTILIS_OP_INSTR_VDU */
-	prv_point,                           /* SUBTILIS_OP_INSTR_POINT */
-	prv_tint,                            /* SUBTILIS_OP_INSTR_TINT */
-	prv_end,                             /* SUBTILIS_OP_INSTR_END */
-	prv_testesc,                         /* SUBTILIS_OP_INSTR_TESTESC */
-	prv_alloc,                           /* SUBTILIS_OP_INSTR_ALLOC */
-	prv_realloc,                         /* SUBTILIS_OP_INSTR_REALLOC */
-	prv_ref,                             /* SUBTILIS_OP_INSTR_REF */
-	prv_deref,                           /* SUBTILIS_OP_INSTR_DEREF */
-	prv_getref,                          /* SUBTILIS_OP_INSTR_GETREF */
-	prv_pushi32,                         /* SUBTILIS_OP_INSTR_PUSH_I32 */
-	prv_popi32,                          /* SUBTILIS_OP_INSTR_POP_I32 */
-	prv_lca,                             /* SUBTILIS_OP_INSTR_LCA_I32 */
-	prv_nop,                             /* SUBTILIS_OP_INSTR_AT */
-	prv_pos,                             /* SUBTILIS_OP_INSTR_POS */
-	prv_pos,                             /* SUBTILIS_OP_INSTR_VPOS */
-	prv_nop,                             /* SUBTILIS_OP_INSTR_TCOL */
-	prv_nop,                             /* SUBTILIS_OP_INSTR_PALETTE */
-	prv_i32_to_dec,                      /* SUBTILIS_OP_INSTR_I32TODEC */
-	prv_nop,                             /* SUBTILIS_OP_INSTR_REALTODEC */
-	prv_nop,                             /* SUBTILIS_OP_INSTR_I32TOHEX */
-	prv_heap_free,                       /* SUBTILIS_OP_INSTR_HEAP_FREE */
-	prv_block_free,                      /* SUBTILIS_OP_INSTR_BLOCK_FREE */
-	prv_block_adjust,                    /* SUBTILIS_OP_INSTR_BLOCK_ADJUST*/
-	prv_cmov_i32                         /* SUBTILIS_OP_INSTR_CMOV_I32*/
+	prv_addi32,                        /* SUBTILIS_OP_INSTR_ADD_I32 */
+	prv_addr,                          /* SUBTILIS_OP_INSTR_ADD_REAL */
+	prv_subi32,                        /* SUBTILIS_OP_INSTR_SUB_I32 */
+	prv_subr,                          /* SUBTILIS_OP_INSTR_SUB_REAL */
+	prv_muli32,                        /* SUBTILIS_OP_INSTR_MUL_I32 */
+	prv_mulr,                          /* SUBTILIS_OP_INSTR_MUL_REAL */
+	prv_divi32,                        /* SUBTILIS_OP_INSTR_DIV_I32 */
+	prv_modi32,                        /* SUBTILIS_OP_INSTR_MOD_I32 */
+	prv_divr,                          /* SUBTILIS_OP_INSTR_DIV_REAL */
+	prv_addii32,                       /* SUBTILIS_OP_INSTR_ADDI_I32 */
+	prv_addir,                         /* SUBTILIS_OP_INSTR_ADDI_REAL */
+	prv_subii32,                       /* SUBTILIS_OP_INSTR_SUBI_I32 */
+	prv_subir,                         /* SUBTILIS_OP_INSTR_SUBI_REAL */
+	prv_mulii32,                       /* SUBTILIS_OP_INSTR_MULI_I32 */
+	prv_mulir,                         /* SUBTILIS_OP_INSTR_MULI_REAL */
+	prv_divii32,                       /* SUBTILIS_OP_INSTR_DIVI_I32 */
+	prv_divir,                         /* SUBTILIS_OP_INSTR_DIVI_REAL */
+	prv_loadoi8,                       /* SUBTILIS_OP_INSTR_LOADO_I8 */
+	prv_loadoi32,                      /* SUBTILIS_OP_INSTR_LOADO_I32 */
+	prv_loador,                        /* SUBTILIS_OP_INSTR_LOADO_REAL */
+	NULL,                              /* SUBTILIS_OP_INSTR_LOAD_I32 */
+	NULL,                              /* SUBTILIS_OP_INSTR_LOAD_REAL */
+	prv_storeoi8,                      /* SUBTILIS_OP_INSTR_STOREO_I8 */
+	prv_storeoi32,                     /* SUBTILIS_OP_INSTR_STOREO_I32 */
+	prv_storeor,                       /* SUBTILIS_OP_INSTR_STOREO_REAL */
+	NULL,                              /* SUBTILIS_OP_INSTR_STORE_I32 */
+	NULL,                              /* SUBTILIS_OP_INSTR_STORE_REAL */
+	prv_movii32,                       /* SUBTILIS_OP_INSTR_MOVI_I32 */
+	prv_movir,                         /* SUBTILIS_OP_INSTR_MOVI_REAL */
+	prv_mov,                           /* SUBTILIS_OP_INSTR_MOV */
+	prv_movfp,                         /* SUBTILIS_OP_INSTR_MOVFP */
+	prv_printstr,                      /* SUBTILIS_OP_INSTR_PRINT_STR */
+	prv_printnl,                       /* SUBTILIS_OP_INSTR_PRINT_NL */
+	prv_rsubii32,                      /* SUBTILIS_OP_INSTR_RSUBI_I32 */
+	prv_rsubir,                        /* SUBTILIS_OP_INSTR_RSUBI_REAL */
+	prv_rdivir,                        /* SUBTILIS_OP_INSTR_RDIVI_REAL */
+	prv_andi32,                        /* SUBTILIS_OP_INSTR_AND_I32 */
+	prv_andii32,                       /* SUBTILIS_OP_INSTR_ANDI_I32 */
+	prv_ori32,                         /* SUBTILIS_OP_INSTR_OR_I32 */
+	prv_orii32,                        /* SUBTILIS_OP_INSTR_ORI_I32 */
+	prv_eori32,                        /* SUBTILIS_OP_INSTR_EOR_I32 */
+	prv_eorii32,                       /* SUBTILIS_OP_INSTR_EORI_I32 */
+	prv_noti32,                        /* SUBTILIS_OP_INSTR_NOT_I32 */
+	prv_eqi32,                         /* SUBTILIS_OP_INSTR_EQ_I32 */
+	prv_eqr,                           /* SUBTILIS_OP_INSTR_EQ_REAL */
+	prv_eqii32,                        /* SUBTILIS_OP_INSTR_EQI_I32 */
+	prv_eqir,                          /* SUBTILIS_OP_INSTR_EQI_REAL */
+	prv_neqi32,                        /* SUBTILIS_OP_INSTR_NEQ_I32 */
+	prv_neqr,                          /* SUBTILIS_OP_INSTR_NEQ_REAL */
+	prv_neqii32,                       /* SUBTILIS_OP_INSTR_NEQI_I32 */
+	prv_neqir,                         /* SUBTILIS_OP_INSTR_NEQI_REAL */
+	prv_gti32,                         /* SUBTILIS_OP_INSTR_GT_I32 */
+	prv_gtr,                           /* SUBTILIS_OP_INSTR_GT_REAL */
+	prv_gtii32,                        /* SUBTILIS_OP_INSTR_GTI_I32 */
+	prv_gtir,                          /* SUBTILIS_OP_INSTR_GTI_REAL */
+	prv_ltei32,                        /* SUBTILIS_OP_INSTR_LTE_I32 */
+	prv_lter,                          /* SUBTILIS_OP_INSTR_LTE_REAL */
+	prv_lteii32,                       /* SUBTILIS_OP_INSTR_LTEI_I32 */
+	prv_lteir,                         /* SUBTILIS_OP_INSTR_LTEI_REAL */
+	prv_lti32,                         /* SUBTILIS_OP_INSTR_LT_I32 */
+	prv_ltr,                           /* SUBTILIS_OP_INSTR_LT_REAL */
+	prv_ltii32,                        /* SUBTILIS_OP_INSTR_LTI_I32 */
+	prv_ltir,                          /* SUBTILIS_OP_INSTR_LTI_REAL */
+	prv_gtei32,                        /* SUBTILIS_OP_INSTR_GTE_I32 */
+	prv_gter,                          /* SUBTILIS_OP_INSTR_GTE_REAL */
+	prv_gteii32,                       /* SUBTILIS_OP_INSTR_GTEI_I32 */
+	prv_gteir,                         /* SUBTILIS_OP_INSTR_GTEI_REAL */
+	prv_jmpc,                          /* SUBTILIS_OP_INSTR_JMPC */
+	prv_jmpc,                          /* SUBTILIS_OP_INSTR_JMPC_NF */
+	prv_jmp,                           /* SUBTILIS_OP_INSTR_JMP */
+	prv_ret,                           /* SUBTILIS_OP_INSTR_RET */
+	prv_reti32,                        /* SUBTILIS_OP_INSTR_RET_I32 */
+	prv_retii32,                       /* SUBTILIS_OP_INSTR_RETI_I32 */
+	prv_retr,                          /* SUBTILIS_OP_INSTR_RET_REAL */
+	prv_retir,                         /* SUBTILIS_OP_INSTR_RETI_REAL */
+	prv_lsli32,                        /* SUBTILIS_OP_INSTR_LSL_I32 */
+	prv_lslii32,                       /* SUBTILIS_OP_INSTR_LSLI_I32 */
+	prv_lsri32,                        /* SUBTILIS_OP_INSTR_LSR_I32 */
+	prv_lsrii32,                       /* SUBTILIS_OP_INSTR_LSRI_I32 */
+	prv_asri32,                        /* SUBTILIS_OP_INSTR_ASR_I32 */
+	prv_asrii32,                       /* SUBTILIS_OP_INSTR_ASRI_I32 */
+	prv_movi32fp,                      /* SUBTILIS_OP_INSTR_MOV_I32_FP */
+	prv_movfpi32,                      /* SUBTILIS_OP_INSTR_MOV_FP_I32 */
+	prv_movfprdi32,                    /* SUBTILIS_OP_INSTR_MOV_FPRD_I32*/
+	prv_nop,                           /* SUBTILIS_OP_INSTR_NOP */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_MODE_I32 */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_PLOT */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_GCOL */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_ORIGIN */
+	prv_gettime,                       /* SUBTILIS_OP_INSTR_GETTIME */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_CLS */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_CLG */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_ON */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_OFF */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_WAIT */
+	prv_sin,                           /* SUBTILIS_OP_INSTR_SIN */
+	prv_cos,                           /* SUBTILIS_OP_INSTR_COS */
+	prv_tan,                           /* SUBTILIS_OP_INSTR_TAN */
+	prv_asn,                           /* SUBTILIS_OP_INSTR_ASN */
+	prv_acs,                           /* SUBTILIS_OP_INSTR_ACS */
+	prv_atn,                           /* SUBTILIS_OP_INSTR_ATN */
+	prv_sqr,                           /* SUBTILIS_OP_INSTR_SQR */
+	prv_log,                           /* SUBTILIS_OP_INSTR_LOG */
+	prv_ln,                            /* SUBTILIS_OP_INSTR_LN */
+	prv_absr,                          /* SUBTILIS_OP_INSTR_ABSR */
+	prv_powr,                          /* SUBTILIS_OP_INSTR_POWR */
+	prv_expr,                          /* SUBTILIS_OP_INSTR_EXPR */
+	prv_get,                           /* SUBTILIS_OP_INSTR_GET */
+	prv_get,                           /* SUBTILIS_OP_INSTR_GETTIMEOUT */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_INKEY */
+	prv_osbyteid,                      /* SUBTILIS_OP_INSTR_OS_BYTE_ID */
+	prv_vdui,                          /* SUBTILIS_OP_INSTR_VDUI */
+	prv_vdu,                           /* SUBTILIS_OP_INSTR_VDU */
+	prv_point,                         /* SUBTILIS_OP_INSTR_POINT */
+	prv_tint,                          /* SUBTILIS_OP_INSTR_TINT */
+	prv_end,                           /* SUBTILIS_OP_INSTR_END */
+	prv_testesc,                       /* SUBTILIS_OP_INSTR_TESTESC */
+	prv_alloc,                         /* SUBTILIS_OP_INSTR_ALLOC */
+	prv_realloc,                       /* SUBTILIS_OP_INSTR_REALLOC */
+	prv_ref,                           /* SUBTILIS_OP_INSTR_REF */
+	prv_deref,                         /* SUBTILIS_OP_INSTR_DEREF */
+	prv_getref,                        /* SUBTILIS_OP_INSTR_GETREF */
+	prv_pushi32,                       /* SUBTILIS_OP_INSTR_PUSH_I32 */
+	prv_popi32,                        /* SUBTILIS_OP_INSTR_POP_I32 */
+	prv_lca,                           /* SUBTILIS_OP_INSTR_LCA_I32 */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_AT */
+	prv_pos,                           /* SUBTILIS_OP_INSTR_POS */
+	prv_pos,                           /* SUBTILIS_OP_INSTR_VPOS */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_TCOL */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_PALETTE */
+	prv_i32_to_dec,                    /* SUBTILIS_OP_INSTR_I32TODEC */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_REALTODEC */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_I32TOHEX */
+	prv_heap_free,                     /* SUBTILIS_OP_INSTR_HEAP_FREE */
+	prv_block_free,                    /* SUBTILIS_OP_INSTR_BLOCK_FREE */
+	prv_block_adjust,                  /* SUBTILIS_OP_INSTR_BLOCK_ADJUST */
+	prv_cmov_i32,                      /* SUBTILIS_OP_INSTR_CMOV_I32 */
 };
 
 /* clang-format on */
@@ -1545,6 +1614,9 @@ void subitlis_vm_run(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		} else if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_CALLREAL) {
 			prv_call(vm, b, &subtilis_type_real,
 				 &vm->s->ops[vm->pc]->op.call, err);
+		} else if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_SYS_CALL) {
+			prv_sys_call(vm, b, &vm->s->ops[vm->pc]->op.sys_call,
+				     err);
 		} else if (vm->s->ops[vm->pc]->type != SUBTILIS_OP_INSTR) {
 			continue;
 		} else {

@@ -415,7 +415,7 @@ static size_t prv_div_mod_vars(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	static const char idiv[] = "_idiv";
 	char *name = NULL;
 
-	if (p->caps & SUBTILIS_BACKEND_HAVE_DIV) {
+	if (p->backend.caps & SUBTILIS_BACKEND_HAVE_DIV) {
 		res =
 		    subtilis_ir_section_add_instr(p->current, type, a, b, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -901,6 +901,7 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.indexed_add = NULL,
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
+	.indexed_address = NULL,
 	.load_mem = NULL,
 	.to_int32 = prv_to_int32,
 	.to_float64 = prv_to_float64_const,
@@ -1114,7 +1115,7 @@ static subtilis_exp_t *prv_to_string_common(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	if (p->caps & cap) {
+	if (p->backend.caps & cap) {
 		size_reg = subtilis_ir_section_add_instr(
 		    p->current, op_code, e->exp.ir_op, op0, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -1554,7 +1555,7 @@ static size_t prv_div_by_constant(subtilis_parser_t *p, subtilis_ir_operand_t a,
 	if ((err->type != SUBTILIS_ERROR_OK) || can_optimise)
 		return res;
 
-	if (p->caps & SUBTILIS_BACKEND_HAVE_DIV) {
+	if (p->backend.caps & SUBTILIS_BACKEND_HAVE_DIV) {
 		instr = SUBTILIS_OP_INSTR_DIVI_I32;
 		return subtilis_ir_section_add_instr(p->current, instr, a, b,
 						     err);
@@ -2061,7 +2062,7 @@ static void prv_print(subtilis_parser_t *p, subtilis_exp_t *e,
 		goto cleanup;
 
 	op0.reg = ptr;
-	if (p->caps & SUBTILIS_BACKEND_HAVE_I32_TO_DEC) {
+	if (p->backend.caps & SUBTILIS_BACKEND_HAVE_I32_TO_DEC) {
 		size_reg = subtilis_ir_section_add_instr(
 		    p->current, SUBTILIS_OP_INSTR_I32TODEC, e->exp.ir_op, op0,
 		    err);
@@ -2112,6 +2113,7 @@ subtilis_type_if subtilis_type_int32 = {
 	.indexed_add = NULL,
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
+	.indexed_address = NULL,
 	.load_mem = prv_load_from_mem,
 	.to_int32 = prv_to_int32,
 	.to_float64 = prv_to_float64,

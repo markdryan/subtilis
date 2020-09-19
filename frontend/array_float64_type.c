@@ -80,6 +80,16 @@ prv_indexed_read(subtilis_parser_t *p, const char *var_name,
 				   mem_reg, loc, indices, index_count, err);
 }
 
+static subtilis_exp_t *
+prv_indexed_address(subtilis_parser_t *p, const char *var_name,
+		    const subtilis_type_t *type, size_t mem_reg, size_t loc,
+		    subtilis_exp_t **indices, size_t index_count,
+		    subtilis_error_t *err)
+{
+	return subtilis_array_index_calc(p, var_name, type, mem_reg, loc,
+					 indices, index_count, err);
+}
+
 static void prv_indexed_write(subtilis_parser_t *p, const char *var_name,
 			      const subtilis_type_t *type, size_t mem_reg,
 			      size_t loc, subtilis_exp_t *e,
@@ -297,6 +307,7 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.indexed_add = prv_indexed_add,
 	.indexed_sub = prv_indexed_sub,
 	.indexed_read = prv_indexed_read,
+	.indexed_address = prv_indexed_address,
 	.load_mem = NULL,
 	.to_int32 = NULL,
 	.to_float64 = NULL,

@@ -17,7 +17,7 @@
 #ifndef __SUBTILIS_PARSER_H
 #define __SUBTILIS_PARSER_H
 
-#include "../common/backend_caps.h"
+#include "../common/backend.h"
 #include "../common/ir.h"
 #include "../common/settings.h"
 #include "../common/sizet_vector.h"
@@ -27,7 +27,7 @@
 
 struct subtilis_parser_t_ {
 	subtilis_lexer_t *l;
-	subtilis_backend_caps_t caps;
+	subtilis_backend_t backend;
 	subtilis_ir_section_t *current;
 	subtilis_ir_section_t *main;
 	subtilis_ir_prog_t *prog;
@@ -46,7 +46,7 @@ struct subtilis_parser_t_ {
 typedef struct subtilis_parser_t_ subtilis_parser_t;
 
 subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
-				       subtilis_backend_caps_t caps,
+				       const subtilis_backend_t *backend,
 				       const subtilis_settings_t *settings,
 				       subtilis_error_t *err);
 void subtilis_parse(subtilis_parser_t *p, subtilis_error_t *err);

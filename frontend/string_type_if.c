@@ -1096,6 +1096,7 @@ subtilis_type_if subtilis_type_if_string = {
 	.indexed_add = NULL,
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
+	.indexed_address = NULL,
 	.load_mem = prv_load_from_mem,
 	.to_int32 = NULL,
 	.to_float64 = NULL,

@@ -637,6 +637,7 @@ subtilis_type_if subtilis_type_const_float64 = {
 	.assign_mem = prv_assign_to_mem_const,
 	.indexed_write = NULL,
 	.indexed_read = NULL,
+	.indexed_address = NULL,
 	.indexed_add = NULL,
 	.indexed_sub = NULL,
 	.load_mem = NULL,
@@ -805,7 +806,7 @@ static subtilis_exp_t *prv_to_string(subtilis_parser_t *p, subtilis_exp_t *e,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	if (p->caps & SUBTILIS_BACKEND_HAVE_REAL_TO_DEC) {
+	if (p->backend.caps & SUBTILIS_BACKEND_HAVE_REAL_TO_DEC) {
 		size_reg = subtilis_ir_section_add_instr(
 		    p->current, SUBTILIS_OP_INSTR_REALTODEC, e->exp.ir_op, op0,
 		    err);
@@ -1323,7 +1324,7 @@ static subtilis_exp_t *prv_is_inf(subtilis_parser_t *p, subtilis_exp_t *e,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	offset = (p->caps & SUBTILIS_BACKEND_REVERSE_DOUBLES) ? 0 : 4;
+	offset = (p->backend.caps & SUBTILIS_BACKEND_REVERSE_DOUBLES) ? 0 : 4;
 
 	op1.reg = SUBTILIS_IR_REG_LOCAL;
 	op2.integer = s->loc + offset;
@@ -1404,7 +1405,7 @@ static void prv_print(subtilis_parser_t *p, subtilis_exp_t *e,
 		goto cleanup;
 
 	op0.reg = ptr;
-	if (p->caps & SUBTILIS_BACKEND_HAVE_REAL_TO_DEC) {
+	if (p->backend.caps & SUBTILIS_BACKEND_HAVE_REAL_TO_DEC) {
 		size_reg = subtilis_ir_section_add_instr(
 		    p->current, SUBTILIS_OP_INSTR_REALTODEC, e->exp.ir_op, op0,
 		    err);
@@ -1454,6 +1455,7 @@ subtilis_type_if subtilis_type_float64 = {
 	.indexed_add = NULL,
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
+	.indexed_address = NULL,
 	.load_mem = prv_load_from_mem,
 	.to_int32 = prv_to_int32,
 	.to_float64 = prv_returne,

@@ -28,10 +28,19 @@ void subtilis_string_type_zero_ref(subtilis_parser_t *p,
 subtilis_exp_t *subtilis_string_type_new_tmp_from_char(subtilis_parser_t *p,
 						       subtilis_exp_t *e,
 						       subtilis_error_t *err);
+subtilis_exp_t *subtilis_string_type_copy_and_zt(subtilis_parser_t *p,
+						 subtilis_exp_t *e,
+						 subtilis_error_t *err);
 void subtilis_string_type_new_ref_from_char(subtilis_parser_t *p,
 					    size_t mem_reg, size_t loc,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err);
+subtilis_exp_t *subtilis_string_lca_const_zt(subtilis_parser_t *p,
+					     subtilis_exp_t *e,
+					     subtilis_error_t *err);
+subtilis_exp_t *subtilis_string_zt_non_const(subtilis_parser_t *p,
+					     subtilis_exp_t *e,
+					     subtilis_error_t *err);
 size_t subtilis_string_type_lca_const(subtilis_parser_t *p, const char *str,
 				      size_t len, subtilis_error_t *err);
 void subtilis_string_init_from_ptr(subtilis_parser_t *p, size_t mem_reg,

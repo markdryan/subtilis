@@ -28,6 +28,7 @@
 #include "parser_error.h"
 #include "parser_graphics.h"
 #include "parser_loops.h"
+#include "parser_os.h"
 #include "parser_output.h"
 #include "parser_string.h"
 #include "reference_type.h"
@@ -38,7 +39,7 @@
 #define SUBTILIS_MAIN_FN "subtilis_main"
 
 subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
-				       subtilis_backend_caps_t caps,
+				       const subtilis_backend_t *backend,
 				       const subtilis_settings_t *settings,
 				       subtilis_error_t *err)
 {
@@ -96,7 +97,7 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 	p->main = p->current;
 
 	p->l = l;
-	p->caps = caps;
+	p->backend = *backend;
 	p->level = 0;
 
 	return p;
@@ -630,7 +631,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_SUM */
 	NULL, /* SUBTILIS_KEYWORD_SUMLEN */
 	NULL, /* SUBTILIS_KEYWORD_SWAP */
-	NULL, /* SUBTILIS_KEYWORD_SYS */
+	subtilis_parser_sys, /* SUBTILIS_KEYWORD_SYS */
 	NULL, /* SUBTILIS_KEYWORD_TAB */
 	NULL, /* SUBTILIS_KEYWORD_TAN */
 	NULL, /* SUBTILIS_KEYWORD_TEMPO */

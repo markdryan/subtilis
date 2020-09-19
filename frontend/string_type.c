@@ -302,6 +302,168 @@ cleanup:
 	subtilis_exp_delete(e);
 }
 
+subtilis_exp_t *subtilis_string_lca_const_zt(subtilis_parser_t *p,
+					     subtilis_exp_t *e,
+					     subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_exp_t *ret_val = NULL;
+
+	subtilis_buffer_zero_terminate(&e->exp.str, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	reg = subtilis_string_type_lca_const(
+	    p, subtilis_buffer_get_string(&e->exp.str),
+	    subtilis_buffer_get_size(&e->exp.str), err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	ret_val = subtilis_exp_new_int32_var(reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(e);
+
+	return ret_val;
+}
+
+static subtilis_exp_t *prv_zt_non_const_tmp(subtilis_parser_t *p,
+					    subtilis_exp_t *e,
+					    subtilis_error_t *err)
+{
+	size_t reg;
+	size_t old_size_reg;
+	size_t delta_reg;
+	size_t new_size_reg;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_exp_t *ret_val = NULL;
+
+	reg = subtilis_reference_get_data(p, e->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	old_size_reg =
+	    subtilis_reference_type_get_size(p, e->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.integer = 1;
+	delta_reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op0.reg = old_size_reg;
+	new_size_reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	reg = subtilis_reference_type_realloc(p, 0, e->exp.ir_op.reg, reg,
+					      old_size_reg, new_size_reg,
+					      delta_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op0.integer = 0;
+	op0.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.reg = reg;
+	op2.reg = old_size_reg;
+	op1.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op2.integer = 0;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I8, op0, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	ret_val = subtilis_exp_new_int32_var(reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(e);
+	return ret_val;
+}
+
+static subtilis_exp_t *prv_zt_non_const(subtilis_parser_t *p, subtilis_exp_t *e,
+					subtilis_error_t *err)
+{
+	subtilis_buffer_t buf;
+	size_t reg;
+	subtilis_exp_t *null_str = NULL;
+	subtilis_exp_t *new_str = NULL;
+
+	subtilis_buffer_init(&buf, 2);
+
+	/*
+	 * The string addition code will discard one of the null terminators
+	 * so we need two.
+	 */
+
+	subtilis_buffer_append(&buf, "\0\0", 2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	null_str = subtilis_exp_new_str(&buf, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	new_str = subtilis_string_type_add(p, e, null_str, false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	reg = subtilis_reference_get_data(p, new_str->exp.ir_op.reg, 0, err);
+	subtilis_exp_delete(new_str);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_int32_var(reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(null_str);
+	subtilis_exp_delete(e);
+
+	return NULL;
+}
+
+/*
+ * Copies a variable string appending a null character to
+ * the end of the new string.  This is needed for SYS calls.
+ */
+
+subtilis_exp_t *subtilis_string_zt_non_const(subtilis_parser_t *p,
+					     subtilis_exp_t *e,
+					     subtilis_error_t *err)
+{
+	if (e->type.type != SUBTILIS_TYPE_STRING) {
+		subtilis_error_set_string_variable_expected(
+		    err, p->l->stream->name, p->l->line);
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	if (e->temporary)
+		return prv_zt_non_const_tmp(p, e, err);
+
+	/*
+	 * We need to create a brand new temporary string and copy
+	 * the contents of the old string appending a 0 to the end
+	 */
+
+	return prv_zt_non_const(p, e, err);
+}
+
 /*
  * Used to initialise a string variable from a constant.  The string
  * variable is owned by some container and so does not need to be

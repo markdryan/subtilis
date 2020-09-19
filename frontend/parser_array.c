@@ -73,6 +73,42 @@ cleanup:
 	return e;
 }
 
+subtilis_exp_t *
+subtils_parser_element_address(subtilis_parser_t *p, subtilis_token_t *t,
+			       const subtilis_symbol_t *s, size_t mem_reg,
+			       const char *var_name, subtilis_error_t *err)
+{
+	subtilis_exp_t *indices[SUBTILIS_MAX_DIMENSIONS];
+	size_t i;
+	subtilis_exp_t *e = NULL;
+	size_t dims = 0;
+
+	dims = subtilis_var_bracketed_int_args_have_b(
+	    p, t, indices, SUBTILIS_MAX_DIMENSIONS, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (dims == 0) {
+		subtilis_error_bad_index_count(err, var_name,
+					       p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
+	e = subtilis_type_if_indexed_address(p, var_name, &s->t, mem_reg,
+					     s->loc, indices, dims, err);
+
+cleanup:
+
+	for (i = 0; i < dims; i++)
+		subtilis_exp_delete(indices[i]);
+
+	return e;
+}
+
 /*
  * Returns 0 and no error if more than max args are read.  Caller is
  * expected to free expressions even in case of error.

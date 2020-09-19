@@ -15,6 +15,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "../../arch/arm32/arm2_div.h"
 #include "../../arch/arm32/arm_gen.h"
@@ -25,6 +26,7 @@
 #include "../../arch/arm32/arm_sub_section.h"
 #include "../../common/error_codes.h"
 #include "riscos_arm.h"
+#include "riscos_swi.h"
 
 static void prv_alloc(subtilis_ir_section_t *s, subtilis_arm_section_t *arm_s,
 		      subtilis_error_t *err);
@@ -1939,4 +1941,192 @@ void subtilis_riscos_arm_block_adjust(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
 				   SUBTILIS_ARM_CCODE_AL, new_space_used, block,
 				   -4, false, err);
+}
+
+static int prv_sys_string_lookup(const void *av, const void *bv)
+{
+	const char *a = (const char *)av;
+	size_t *b = (size_t *)bv;
+
+	return strcmp(a, subtilis_riscos_swi_list[*b].name);
+}
+
+size_t subtilis_riscos_sys_trans(const char *call_name)
+{
+	size_t *found;
+	size_t error_bit = 0;
+
+	if (call_name[0] == 'X') {
+		call_name++;
+		error_bit = 0x20000;
+	}
+
+	found = bsearch(call_name, &subtilis_riscos_swi_index[0],
+			subtilis_riscos_known_swis, sizeof(*found),
+			prv_sys_string_lookup);
+
+	if (!found)
+		return SIZE_MAX;
+
+	return subtilis_riscos_swi_list[*found].num | error_bit;
+}
+
+static int prv_sys_num_lookup(const void *av, const void *bv)
+{
+	size_t *a = (size_t *)av;
+	subtilis_riscos_swi_t *b = (subtilis_riscos_swi_t *)bv;
+
+	if (*a == b->num)
+		return 0;
+	if (*a < b->num)
+		return -1;
+	return 1;
+}
+
+bool subtilis_riscos_sys_check(size_t call_id, uint32_t *in_regs,
+			       uint32_t *out_regs, bool *handle_errors)
+{
+	subtilis_riscos_swi_t *found;
+
+	if (call_id & 0x20000) {
+		*handle_errors = true;
+		call_id &= ~0x20000;
+	} else {
+		*handle_errors = false;
+	}
+
+	if (call_id >= 0x100 && call_id <= 0x1ff) {
+		*in_regs = 0;
+		return true;
+	}
+
+	found = bsearch(&call_id, &subtilis_riscos_swi_list[0],
+			subtilis_riscos_known_swis, sizeof(*found),
+			prv_sys_num_lookup);
+
+	if (!found)
+		return false;
+
+	*in_regs = found->in_regs;
+	*out_regs = found->out_regs;
+
+	return true;
+}
+
+static uint32_t prv_check_out_regs(size_t call_id, subtilis_error_t *err)
+{
+	subtilis_riscos_swi_t *found;
+
+	if (call_id >= 0x100 && call_id <= 0x1ff)
+		return 0;
+
+	found = bsearch(&call_id, &subtilis_riscos_swi_list[0],
+			subtilis_riscos_known_swis, sizeof(*found),
+			prv_sys_num_lookup);
+
+	if (!found) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+
+	return found->out_regs;
+}
+
+void subtilis_riscos_arm_syscall(subtilis_ir_section_t *s, size_t start,
+				 void *user_data, subtilis_error_t *err)
+{
+	uint32_t out_regs;
+	size_t in_reg;
+	size_t out_reg;
+	size_t i;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_reg_t one;
+	subtilis_arm_data_instr_t *datai;
+	subtilis_arm_ccode_type_t ccode = SUBTILIS_ARM_CCODE_AL;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_sys_call_t *sys_call = &s->ops[start]->op.sys_call;
+	size_t call_id = sys_call->call_id & ~(0x20000);
+	size_t flags_reg;
+
+	out_regs = prv_check_out_regs(call_id, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	for (i = 0; i <= 10; i++) {
+		if (!((1 << i) & sys_call->in_mask))
+			continue;
+		in_reg = subtilis_arm_ir_to_arm_reg(sys_call->in_regs[i]);
+		subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, i,
+					 in_reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, sys_call->call_id,
+			     sys_call->in_mask, out_regs, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if ((sys_call->call_id & 0x20000) &&
+	    (sys_call->flags_reg == SIZE_MAX)) {
+		subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+					   SUBTILIS_ARM_CCODE_VS, 0, 0, 0,
+					   false, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		one = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+
+		subtilis_arm_gen_sete_reg(arm_s, s, SUBTILIS_ARM_CCODE_VS, one,
+					  0, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		ccode = SUBTILIS_ARM_CCODE_VC;
+	}
+
+	for (i = 0; i <= 10; i++) {
+		if (!((1 << i) & sys_call->out_mask))
+			continue;
+		out_reg = subtilis_arm_ir_to_arm_reg(sys_call->out_regs[i].reg);
+		if (sys_call->out_regs[i].local)
+			subtilis_arm_add_mov_reg(arm_s, ccode, false, out_reg,
+						 i, err);
+		else
+			subtilis_arm_add_stran_imm(
+			    arm_s, SUBTILIS_ARM_INSTR_STR, ccode, i, out_reg, 0,
+			    false, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	if (sys_call->flags_reg != SIZE_MAX) {
+		if (sys_call->flags_local)
+			flags_reg =
+			    subtilis_arm_ir_to_arm_reg(sys_call->flags_reg);
+		else
+			flags_reg =
+			    subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+		subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false,
+					 flags_reg, 0xf << 28, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		instr = subtilis_arm_section_add_instr(
+		    arm_s, SUBTILIS_ARM_INSTR_AND, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		datai = &instr->operands.data;
+		datai->ccode = SUBTILIS_ARM_CCODE_AL;
+		datai->status = false;
+		datai->dest = flags_reg;
+		datai->op1 = flags_reg;
+		datai->op2.type = SUBTILIS_ARM_OP2_REG;
+		datai->op2.op.reg = 15;
+
+		if (!sys_call->flags_local)
+			subtilis_arm_add_stran_imm(
+			    arm_s, SUBTILIS_ARM_INSTR_STR,
+			    SUBTILIS_ARM_CCODE_AL, flags_reg,
+			    subtilis_arm_ir_to_arm_reg(sys_call->flags_reg), 0,
+			    false, err);
+	}
 }

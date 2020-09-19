@@ -21,6 +21,7 @@ COMMON =\
 	parser_input.c \
 	parser_mem.c \
 	parser_output.c \
+	parser_os.c \
 	parser_string.c \
 	parser_rnd.c \
 	expression.c \
@@ -50,6 +51,7 @@ COMMON =\
 
 ARM =\
 	arm_core.c \
+	riscos_swi.c \
 	riscos_arm.c \
 	riscos_arm2.c \
 	arm_gen.c \

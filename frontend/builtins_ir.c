@@ -634,7 +634,7 @@ void subtilis_builtins_ir_fp_to_str(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	if (p->caps & SUBTILIS_BACKEND_HAVE_I32_TO_DEC) {
+	if (p->backend.caps & SUBTILIS_BACKEND_HAVE_I32_TO_DEC) {
 		size_reg = subtilis_ir_section_add_instr(
 		    p->current, SUBTILIS_OP_INSTR_I32TODEC, op1i, arg_buf, err);
 		if (err->type != SUBTILIS_ERROR_OK)

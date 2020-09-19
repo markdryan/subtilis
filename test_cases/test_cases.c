@@ -3172,6 +3172,55 @@ const subtilis_test_case_t test_cases[] = {
 	 "print a$\n",
 	 "hello\n"
 	},
+	{"sys_write0_str",
+	 "sys \"OS_Write0\", \"hello world\"\n"
+	 "print \"\"\n",
+	 "hello world\n",
+	},
+	{"sys_write0_int",
+	 "sys 2, \"hello world\"\n"
+	 "print \"\"\n",
+	 "hello world\n",
+	},
+	{"sys_write0_str",
+	 "a$ = \"hello world\"\n"
+	 "sys \"OS_Write0\", \"hello world\"\n"
+	 "print \"\"\n",
+	 "hello world\n",
+	},
+	{"sys_get_env",
+	 "a% := 1\n"
+	 "b% = 0\n"
+	 "c% = 0\n"
+	 "sys \"OS_GetEnv\" to a%, b%, c%\n"
+	 "print b% > 0\n"
+	 "sys \"OS_GetEnv\" to b%, a%, c%\n"
+	 "print a% > 0\n",
+	 "-1\n-1\n",
+	},
+	{"sys_write_c",
+	 "sys 256+33\n"
+	 "print \"\"\n",
+	 "!\n"
+	},
+	{"sys_os_convert_integer",
+	 "dim a%(10)\n"
+	 "local free%\n"
+	 "sys \"OS_ConvertInteger4\", 1999, a%(), 44 to ,,free%\n"
+	 "sys \"OS_Write0\", a%()\n"
+	 "print \"\""
+	 "print free%\n",
+	 "1999\n40\n",
+	},
+	{
+	"sys_failed",
+	"dim a%(1)\n"
+	"onerror print err enderror\n"
+	"local free%\n"
+	"sys \"XOS_ConvertInteger4\", 1999, a%(), 2 to ,,free%\n"
+	"print \"Shouldn't get here\"\n",
+	"484\n",
+	}
 };
 
 /* clang-format on */

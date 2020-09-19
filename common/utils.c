@@ -15,6 +15,7 @@
  */
 
 #include <string.h>
+#include <sys/time.h>
 #include <time.h>
 
 #include "config.h"
@@ -40,14 +41,18 @@ const char *subtilis_utils_basename(const char *path)
 
 int32_t subtilis_get_i32_time(void)
 {
-	time_t t = time(NULL);
 	struct tm ts;
+	struct timeval tv;
 
 	memset(&ts, 0, sizeof(ts));
 	ts.tm_year = 2018 - 1900;
 	ts.tm_mon = 11;
 	ts.tm_mday = 22;
-	t = t - mktime(&ts);
 
-	return (int32_t)(t * 100);
+	gettimeofday(&tv, NULL);
+	tv.tv_sec -= mktime(&ts);
+	tv.tv_sec *= 100;
+	tv.tv_sec += tv.tv_usec / 10000;
+
+	return tv.tv_sec;
 }
