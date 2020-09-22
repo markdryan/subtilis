@@ -1542,6 +1542,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_nop,                           /* SUBTILIS_OP_INSTR_MODE_I32 */
 	prv_nop,                           /* SUBTILIS_OP_INSTR_PLOT */
 	prv_nop,                           /* SUBTILIS_OP_INSTR_GCOL */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_GCOL_TINT */
 	prv_nop,                           /* SUBTILIS_OP_INSTR_ORIGIN */
 	prv_gettime,                       /* SUBTILIS_OP_INSTR_GETTIME */
 	prv_nop,                           /* SUBTILIS_OP_INSTR_CLS */
@@ -1583,6 +1584,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_pos,                           /* SUBTILIS_OP_INSTR_POS */
 	prv_pos,                           /* SUBTILIS_OP_INSTR_VPOS */
 	prv_nop,                           /* SUBTILIS_OP_INSTR_TCOL */
+	prv_nop,                           /* SUBTILIS_OP_INSTR_TCOL_TINT */
 	prv_nop,                           /* SUBTILIS_OP_INSTR_PALETTE */
 	prv_i32_to_dec,                    /* SUBTILIS_OP_INSTR_I32TODEC */
 	prv_nop,                           /* SUBTILIS_OP_INSTR_REALTODEC */
