@@ -29,5 +29,5 @@ BASIC programs so that they can be compiled with Subtilis.
 Please see the Subtilis [documentation](https://github.com/markdryan/subtilis/blob/master/docs/Subtilis.md) for more details.
 
 Subtilis is still very much in its infancy and is not recommended for use by anyone
-other than it's author.  Nevertheless, if you want to play around with it, please visit
+other than its author.  Nevertheless, if you want to play around with it, please visit
 the [GettingStarted](https://github.com/markdryan/subtilis/blob/master/docs/GettingStarted.md) page.
