@@ -102,6 +102,7 @@ struct subtilis_type_if_ {
 	bool is_const;
 	bool is_numeric;
 	bool is_integer;
+	bool is_array;
 	subtilis_ir_reg_type_t param_type;
 	subtilis_type_if_size_t size;
 	subtilis_type_if_unary_t data_size;
@@ -651,6 +652,12 @@ bool subtilis_type_if_is_numeric(const subtilis_type_t *type);
  */
 
 bool subtilis_type_if_is_integer(const subtilis_type_t *type);
+
+/*
+ * Returns true if the given type is an array of some kind.
+ */
+
+bool subtilis_type_if_is_array(const subtilis_type_t *type);
 
 /*
  * Converts expression e to type type, if possible.

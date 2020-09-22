@@ -287,6 +287,7 @@ subtilis_type_if subtilis_type_array_int32 = {
 	.is_const = false,
 	.is_numeric = false,
 	.is_integer = false,
+	.is_array = true,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = prv_size,
 	.data_size = prv_data_size,

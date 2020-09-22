@@ -888,6 +888,11 @@ bool subtilis_type_if_is_integer(const subtilis_type_t *type)
 	return prv_type_map[type->type]->is_integer;
 }
 
+bool subtilis_type_if_is_array(const subtilis_type_t *type)
+{
+	return prv_type_map[type->type]->is_array;
+}
+
 subtilis_exp_t *subtilis_type_if_coerce_type(subtilis_parser_t *p,
 					     subtilis_exp_t *e,
 					     const subtilis_type_t *type,

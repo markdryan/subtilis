@@ -552,6 +552,12 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	 "sys \"OS_GetEnv\" to ,,,a%\n",
 	 SUBTILIS_ERROR_SYS_BAD_ARGS,
 	},
+	{"sys_int_as_array",
+	 "local a%\n"
+	 "local free%\n"
+	 "sys \"OS_ConvertInteger4\", 1999, a%(), 44 to ,,free%\n",
+	 SUBTILIS_ERROR_NOT_ARRAY,
+	},
 };
 
 /* clang-format on */
