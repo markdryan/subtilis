@@ -26,6 +26,7 @@ subtilis_type_if subtilis_type_if_local_buffer = {
 	.is_const = false,
 	.is_numeric = true,
 	.is_integer = true,
+	.is_array = false,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = NULL,
 	.data_size = NULL,
