@@ -1031,6 +1031,21 @@ typedef enum {
 	SUBTILIS_OP_INSTR_GCOL,
 
 	/*
+	 * gcoltint r0, r1, r2
+	 *
+	 * Change the colour used for graphics operations.  Similar to
+	 * SUBTILIS_OP_INSTR_GCOL but provides an additional parameter that
+	 * can be used to set the tint or brightness of a colour.  Is not
+	 * supported on all platforms.  If an error occurs the error flag is set
+	 * and an error is written into the error offset for the currently
+	 * section.  Note errors are ignored unless handle_graphics_errors is
+	 * set to false.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_GCOL_TINT,
+
+	/*
 	 * origin r0, r1
 	 *
 	 * Sets the graphics origin.  If an error occurs the error flag is set
@@ -1490,6 +1505,17 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_TCOL,
+
+	/*
+	 *
+	 * tcoltint r0, r2
+	 *
+	 * Similar to tcol with the exception that a second platform specific
+	 * parameter is supplied that specifies a brightness of a tint for the
+	 * colour.  This instruction is not supported by all platforms.
+	 */
+
+	SUBTILIS_OP_INSTR_TCOL_TINT,
 
 	/*
 	 *
