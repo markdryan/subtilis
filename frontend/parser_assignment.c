@@ -115,6 +115,28 @@ cleanup:
 	subtilis_exp_delete(e);
 }
 
+static void prv_check_bad_def(subtilis_parser_t *p, const char *var_name,
+			      subtilis_error_t *err)
+{
+	if (!strncmp(var_name, "DEFPROC", 7) ||
+	    !strncmp(var_name, "defPROC", 7))
+		subtilis_error_set_defproc_should_be_def_proc(
+		    err, p->l->stream->name, p->l->line);
+	else if (!strncmp(var_name, "DEFFN", 5) ||
+		 !strncmp(var_name, "defFN", 5))
+		subtilis_error_set_deffn_should_be_def_fn(
+		    err, p->l->stream->name, p->l->line);
+}
+
+static void prv_missing_operator_error(subtilis_parser_t *p, const char *tbuf,
+				       const char *var_name,
+				       subtilis_error_t *err)
+{
+	subtilis_error_set_assignment_op_expected(err, tbuf, p->l->stream->name,
+						  p->l->line);
+	prv_check_bad_def(p, var_name, err);
+}
+
 static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 			     const char *var_name,
 			     const subtilis_type_t *id_type,
@@ -132,8 +154,10 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 
 	dims = subtilis_var_bracketed_int_args_have_b(
 	    p, t, indices, SUBTILIS_MAX_DIMENSIONS, err);
-	if (err->type != SUBTILIS_ERROR_OK)
+	if (err->type != SUBTILIS_ERROR_OK) {
+		prv_check_bad_def(p, var_name, err);
 		return;
+	}
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -141,8 +165,7 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 
 	tbuf = subtilis_token_get_text(t);
 	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
-		subtilis_error_set_assignment_op_expected(
-		    err, tbuf, p->l->stream->name, p->l->line);
+		prv_missing_operator_error(p, tbuf, var_name, err);
 		goto cleanup;
 	}
 
@@ -155,8 +178,7 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 	} else if (!strcmp(tbuf, ":=") && (dims == 0)) {
 		at = SUBTILIS_ASSIGN_TYPE_CREATE_EQUAL;
 	} else {
-		subtilis_error_set_assignment_op_expected(
-		    err, tbuf, p->l->stream->name, p->l->line);
+		prv_missing_operator_error(p, tbuf, var_name, err);
 		goto cleanup;
 	}
 
@@ -381,8 +403,7 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 
 	tbuf = subtilis_token_get_text(t);
 	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
-		subtilis_error_set_assignment_op_expected(
-		    err, tbuf, p->l->stream->name, p->l->line);
+		prv_missing_operator_error(p, tbuf, var_name, err);
 		goto cleanup;
 	}
 
@@ -408,8 +429,7 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	if (!strcmp(tbuf, "=") || !strcmp(tbuf, ":=")) {
 		at = SUBTILIS_ASSIGN_TYPE_EQUAL;
 	} else if (new_global) {
-		subtilis_error_set_assignment_op_expected(
-		    err, tbuf, p->l->stream->name, p->l->line);
+		prv_missing_operator_error(p, tbuf, var_name, err);
 		goto cleanup;
 	} else if (!strcmp(tbuf, "+=")) {
 		at = SUBTILIS_ASSIGN_TYPE_PLUS_EQUAL;

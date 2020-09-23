@@ -92,6 +92,8 @@ typedef enum {
 	SUBTILIS_ERROR_SYS_BAD_ARGS,
 	SUBTILIS_ERROR_SYS_TOO_MANY_ARGS,
 	SUBTILIS_ERROR_INTEGER_VARIABLE_EXPECTED,
+	SUBTILIS_ERROR_DEFPROC_SHOULD_BE_DEF_PROC,
+	SUBTILIS_ERROR_DEFFN_SHOULD_BE_DEF_FN,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -289,6 +291,13 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_integer_variable_expected(e, found, file, line)     \
 	subtilis_error_set1(e, SUBTILIS_ERROR_INTEGER_VARIABLE_EXPECTED,       \
 			    found, file, line)
+#define subtilis_error_set_defproc_should_be_def_proc(e, file, line)           \
+	subtilis_error_set_syntax(e,                                           \
+				  SUBTILIS_ERROR_DEFPROC_SHOULD_BE_DEF_PROC,   \
+				  file, line, __FILE__, __LINE__)
+#define subtilis_error_set_deffn_should_be_def_fn(e, file, line)               \
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_DEFFN_SHOULD_BE_DEF_FN,    \
+				  file, line, __FILE__, __LINE__)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,

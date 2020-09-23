@@ -558,6 +558,44 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	 "sys \"OS_ConvertInteger4\", 1999, a%(), 44 to ,,free%\n",
 	 SUBTILIS_ERROR_NOT_ARRAY,
 	},
+	{"defproc1",
+	 "PROCMark\n"
+	 "DEFPROCMark\n"
+	 "ENDPROC\n",
+	 SUBTILIS_ERROR_DEFPROC_SHOULD_BE_DEF_PROC,
+	},
+	{"defproc2",
+	 "PROCMark(10)\n"
+	 "a% := 1\n"
+	 "DEFPROCMark(a%)\n"
+	 "ENDPROC\n",
+	 SUBTILIS_ERROR_DEFPROC_SHOULD_BE_DEF_PROC,
+	},
+	{"defproc3",
+	 "PROCMark(10)\n"
+	 "DEFPROCMark(a%)\n"
+	 "ENDPROC\n",
+	 SUBTILIS_ERROR_DEFPROC_SHOULD_BE_DEF_PROC,
+	},
+	{"deffn1",
+	 "PRINT FNMark\n"
+	 "DEFFNMark\n"
+	 "<-10\n",
+	 SUBTILIS_ERROR_DEFFN_SHOULD_BE_DEF_FN,
+	},
+	{"deffn2",
+	 "PRINT FNMark(10)\n"
+	 "a% := 0\n"
+	 "DEFFNMark(a%)\n"
+	 "<-a%\n",
+	 SUBTILIS_ERROR_DEFFN_SHOULD_BE_DEF_FN,
+	},
+	{"deffn3",
+	 "PRINT FNMark(10)\n"
+	 "DEFFNMark(a%)\n"
+	 "<-a%\n",
+	 SUBTILIS_ERROR_DEFFN_SHOULD_BE_DEF_FN,
+	},
 };
 
 /* clang-format on */
