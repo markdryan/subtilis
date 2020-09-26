@@ -3220,7 +3220,35 @@ const subtilis_test_case_t test_cases[] = {
 	"sys \"XOS_ConvertInteger4\", 1999, a%(), 2 to ,,free%\n"
 	"print \"Shouldn't get here\"\n",
 	"484\n",
-	}
+	},
+	{
+	"plot_as_int_array",
+	"dim plot%(1)\n"
+	"plot%() = 1, 2\n"
+	"print plot%(0)\n"
+	"print plot%(1)\n",
+	"1\n2\n",
+	},
+	{
+	"plot_as_string_array",
+	"dim plot$(1)\n"
+	"plot$() = \"hello\", \"world\"\n"
+	"print plot$(0)\n"
+	"print plot$(1)\n",
+	"hello\nworld\n",
+	},
+	{
+	"plot_as_int",
+	"plot% := 1\n"
+	"print plot%\n",
+	"1\n",
+	},
+	{
+	"plot_as_string",
+	"plot$ := \"hello\"\n"
+	"print plot$\n",
+	"hello\n",
+	},
 };
 
 /* clang-format on */

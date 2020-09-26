@@ -607,6 +607,10 @@ static bool prv_process_keyword(subtilis_lexer_t *l, char ch,
 			prv_set_next_with_err(l, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return false;
+		} else if (ch == '%') {
+			prv_set_next_with_err(l, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return false;
 		}
 	}
 
@@ -630,7 +634,7 @@ static bool prv_process_keyword(subtilis_lexer_t *l, char ch,
 		possible_fn = strncmp(tbuf, "FN", 2) == 0;
 		if (possible_proc || possible_fn) {
 			subtilis_buffer_remove_terminator(&t->buf);
-			if (ch != '$')
+			if (ch != '$' && ch != '%')
 				ch = 0;
 			prv_process_call(l, t, possible_proc, ch, err);
 			return false;
@@ -662,7 +666,7 @@ static bool prv_process_keyword(subtilis_lexer_t *l, char ch,
 	subtilis_buffer_remove_terminator(&t->buf);
 	if (possible_id) {
 		t->type = SUBTILIS_TOKEN_IDENTIFIER;
-		if (ch != '$')
+		if (ch != '$' && ch != '%')
 			ch = 0;
 		prv_validate_identifier(l, t, ch, err);
 		return false;
