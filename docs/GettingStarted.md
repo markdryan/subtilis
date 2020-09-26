@@ -21,7 +21,7 @@ This will create a file called RunImage in your local directory.  RunImage is a 
 
 ## Building Subtilis for RiscOS
 
-Subtilis on RiscOS is built using the DDE.  To build it simple copy the source files to your RiscPC or Archimedes and click on the Mk obey file.  It can take 5-10 minutes to build on a RiscPC.
+Subtilis on RiscOS is built using the DDE.  To build it simply copy the source files to your RiscPC or Archimedes and click on the Mk obey file.  It can take 5-10 minutes to build on a RiscPC.
  
 
 
