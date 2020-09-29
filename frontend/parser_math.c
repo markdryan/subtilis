@@ -17,7 +17,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "lexer.h"
+#include "../common/lexer.h"
 #include "parser_exp.h"
 #include "parser_math.h"
 #include "type_if.h"

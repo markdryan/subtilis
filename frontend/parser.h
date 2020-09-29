@@ -21,8 +21,8 @@
 #include "../common/ir.h"
 #include "../common/settings.h"
 #include "../common/sizet_vector.h"
+#include "../common/lexer.h"
 #include "call.h"
-#include "lexer.h"
 #include "symbol_table.h"
 
 struct subtilis_parser_t_ {

@@ -22,7 +22,7 @@
 #include "backends/riscos/riscos_arm.h"
 #include "backends/riscos/riscos_arm2.h"
 #include "common/error.h"
-#include "frontend/lexer.h"
+#include "common/lexer.h"
 #include "frontend/parser.h"
 
 static void prv_set_prog_size(uint32_t *code, size_t words_written,

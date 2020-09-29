@@ -21,8 +21,8 @@
 
 #include "../common/buffer.h"
 #include "../common/type.h"
-#include "keywords.h"
-#include "stream.h"
+#include "../common/keywords.h"
+#include "../common/stream.h"
 
 /* Does not apply to strings which are limitless in size */
 

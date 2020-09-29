@@ -16,7 +16,7 @@
 
 #include "symbol_table_test.h"
 
-#include "keywords.h"
+#include "../common/keywords.h"
 #include "symbol_table.h"
 
 static int prv_test_type(subtilis_symbol_table_t *st, subtilis_token_t *t,

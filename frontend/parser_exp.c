@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "lexer.h"
+#include "../common/lexer.h"
 #include "parser_array.h"
 #include "parser_call.h"
 #include "parser_error.h"

@@ -18,9 +18,9 @@
 
 #include "parser_test.h"
 
+#include "../common/lexer.h"
 #include "../test_cases/bad_test_cases.h"
 #include "../test_cases/test_cases.h"
-#include "lexer.h"
 #include "parser.h"
 #include "vm.h"
 

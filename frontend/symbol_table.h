@@ -17,8 +17,8 @@
 #ifndef __SUBTILIS_SYMBOL_TABLE_H
 #define __SUBTILIS_SYMBOL_TABLE_H
 
+#include "../common/lexer.h"
 #include "hash_table.h"
-#include "lexer.h"
 
 #define SUBTILIS_SYMBOL_MAX_LEVELS 32
 
