@@ -5,7 +5,7 @@ COMMON =\
 	lexer.c \
 	error.c \
 	utils.c \
-	keywords.c \
+	basic_keywords.c \
 	buffer.c \
 	parser.c \
 	parser_array.c \

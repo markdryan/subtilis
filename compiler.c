@@ -23,6 +23,7 @@
 #include "backends/riscos/riscos_arm2.h"
 #include "common/error.h"
 #include "common/lexer.h"
+#include "frontend/basic_keywords.h"
 #include "frontend/parser.h"
 
 static void prv_set_prog_size(uint32_t *code, size_t words_written,
@@ -58,7 +59,9 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	l = subtilis_lexer_new(&s, SUBTILIS_CONFIG_LEXER_BUF_SIZE, &err);
+	l = subtilis_lexer_new(&s, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
+			       subtilis_keywords_list, SUBTILIS_KEYWORD_TOKENS,
+			       &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

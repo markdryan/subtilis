@@ -103,7 +103,9 @@ int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	l = subtilis_lexer_new(&s, SUBTILIS_CONFIG_LEXER_BUF_SIZE, &err);
+	l = subtilis_lexer_new(&s, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
+			       subtilis_keywords_list, SUBTILIS_KEYWORD_TOKENS,
+			       &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		s.close(s.handle, &err);
 		goto fail;

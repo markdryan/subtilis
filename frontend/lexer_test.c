@@ -19,7 +19,8 @@
 #include <string.h>
 
 #include "../common/buffer.h"
-#include "lexer.h"
+#include "../common/lexer.h"
+#include "basic_keywords.h"
 #include "lexer_test.h"
 
 /* clang-format off */
@@ -47,7 +48,8 @@ static int prv_test_wrapper(const char *text, size_t buf_size,
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
-	l = subtilis_lexer_new(&s, buf_size, &err);
+	l = subtilis_lexer_new(&s, buf_size, subtilis_keywords_list,
+			       SUBTILIS_KEYWORD_TOKENS, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		s.close(s.handle, &err);
 		goto fail;

@@ -20,9 +20,9 @@
 #include <stdint.h>
 
 #include "../common/buffer.h"
-#include "../common/type.h"
 #include "../common/keywords.h"
 #include "../common/stream.h"
+#include "../common/type.h"
 
 /* Does not apply to strings which are limitless in size */
 
@@ -31,6 +31,8 @@
 typedef struct _subtilis_token_t subtilis_token_t;
 
 struct _subtilis_lexer_t {
+	const subtilis_keyword_t *keywords;
+	size_t num_keywords;
 	subtilis_stream_t *stream;
 	unsigned int line;
 	unsigned int character;
@@ -55,7 +57,7 @@ typedef enum {
 } subtilis_token_type_t;
 
 struct _subtilis_token_keyword_t {
-	subtilis_keyword_type_t type;
+	int type;
 	bool supported;
 	subtilis_type_t id_type;
 };
@@ -75,6 +77,8 @@ struct _subtilis_token_t {
 
 /* Takes ownership of s*/
 subtilis_lexer_t *subtilis_lexer_new(subtilis_stream_t *s, size_t buf_size,
+				     const subtilis_keyword_t *keywords,
+				     size_t num_keywords,
 				     subtilis_error_t *err);
 void subtilis_lexer_delete(subtilis_lexer_t *l, subtilis_error_t *err);
 void subtilis_lexer_get(subtilis_lexer_t *l, subtilis_token_t *t,

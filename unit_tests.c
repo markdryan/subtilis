@@ -22,7 +22,7 @@
 #include "backends/riscos/arm_test.h"
 #include "common/bitset_test.h"
 #include "frontend/ir_test.h"
-#include "common/lexer_test.h"
+#include "frontend/lexer_test.h"
 #include "frontend/parser_test.h"
 #include "frontend/symbol_table_test.h"
 

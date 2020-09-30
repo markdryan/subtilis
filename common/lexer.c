@@ -38,7 +38,8 @@ static void prv_process_negative_decimal(subtilis_lexer_t *l,
 					 subtilis_error_t *err);
 
 subtilis_lexer_t *subtilis_lexer_new(subtilis_stream_t *s, size_t buf_size,
-				     subtilis_error_t *err)
+				     const subtilis_keyword_t *keywords,
+				     size_t num_keywords, subtilis_error_t *err)
 {
 	subtilis_lexer_t *l;
 
@@ -48,6 +49,8 @@ subtilis_lexer_t *subtilis_lexer_new(subtilis_stream_t *s, size_t buf_size,
 		return NULL;
 	}
 
+	l->keywords = keywords;
+	l->num_keywords = num_keywords;
 	l->buf_size = buf_size;
 	l->buf_end = 0;
 	l->stream = s;
@@ -644,10 +647,8 @@ static bool prv_process_keyword(subtilis_lexer_t *l, char ch,
 	// TODO: bsearch may not be efficient for large files.
 
 	key.str = tbuf;
-	kw =
-	    bsearch(&key, subtilis_keywords_list,
-		    sizeof(subtilis_keywords_list) / sizeof(subtilis_keyword_t),
-		    sizeof(subtilis_keyword_t), prv_compare_keyword);
+	kw = bsearch(&key, l->keywords, l->num_keywords, sizeof(*l->keywords),
+		     prv_compare_keyword);
 
 	if (kw) {
 		if (kw->type == SUBTILIS_KEYWORD_REM) {

@@ -153,8 +153,7 @@ cleanup:
 }
 
 void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
-			      subtilis_keyword_type_t end_key,
-			      subtilis_error_t *err)
+			      int end_key, subtilis_error_t *err)
 {
 	unsigned int start;
 	subtilis_ir_operand_t var_reg;
