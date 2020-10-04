@@ -38,8 +38,11 @@ static void prv_process_negative_decimal(subtilis_lexer_t *l,
 					 subtilis_error_t *err);
 
 subtilis_lexer_t *subtilis_lexer_new(subtilis_stream_t *s, size_t buf_size,
-				     const subtilis_keyword_t *keywords,
-				     size_t num_keywords, subtilis_error_t *err)
+				     const subtilis_keyword_t *basic_keywords,
+				     size_t num_basic_keywords,
+				     const subtilis_keyword_t *ass_keywords,
+				     size_t num_ass_keywords,
+				     subtilis_error_t *err)
 {
 	subtilis_lexer_t *l;
 
@@ -49,8 +52,12 @@ subtilis_lexer_t *subtilis_lexer_new(subtilis_stream_t *s, size_t buf_size,
 		return NULL;
 	}
 
-	l->keywords = keywords;
-	l->num_keywords = num_keywords;
+	l->keywords = basic_keywords;
+	l->num_keywords = num_basic_keywords;
+	l->basic_keywords = basic_keywords;
+	l->num_basic_keywords = num_basic_keywords;
+	l->ass_keywords = ass_keywords;
+	l->num_ass_keywords = num_ass_keywords;
 	l->buf_size = buf_size;
 	l->buf_end = 0;
 	l->stream = s;
@@ -69,6 +76,26 @@ void subtilis_lexer_delete(subtilis_lexer_t *l, subtilis_error_t *err)
 		l->stream->close(l->stream->handle, err);
 		free(l);
 	}
+}
+
+void subtilis_lexer_set_ass_keywords(subtilis_lexer_t *l, bool ass,
+				     subtilis_error_t *err)
+{
+	if (!ass) {
+		l->keywords = l->basic_keywords;
+		l->num_keywords = l->num_basic_keywords;
+		return;
+	}
+
+	if (!l->ass_keywords) {
+		subtilis_error_set_not_supported(
+		    err, "Assembler not supported on this target",
+		    l->stream->name, l->line);
+		return;
+	}
+
+	l->keywords = l->ass_keywords;
+	l->num_keywords = l->num_ass_keywords;
 }
 
 /* subtilis_token_new will reserve SUBTILIS_MAX_TOKEN_SIZE + 1 in bytes for the

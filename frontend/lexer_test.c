@@ -49,7 +49,7 @@ static int prv_test_wrapper(const char *text, size_t buf_size,
 		goto fail;
 
 	l = subtilis_lexer_new(&s, buf_size, subtilis_keywords_list,
-			       SUBTILIS_KEYWORD_TOKENS, &err);
+			       SUBTILIS_KEYWORD_TOKENS, NULL, 0, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		s.close(s.handle, &err);
 		goto fail;

@@ -33,6 +33,10 @@ typedef struct _subtilis_token_t subtilis_token_t;
 struct _subtilis_lexer_t {
 	const subtilis_keyword_t *keywords;
 	size_t num_keywords;
+	const subtilis_keyword_t *basic_keywords;
+	size_t num_basic_keywords;
+	const subtilis_keyword_t *ass_keywords;
+	size_t num_ass_keywords;
 	subtilis_stream_t *stream;
 	unsigned int line;
 	unsigned int character;
@@ -77,10 +81,14 @@ struct _subtilis_token_t {
 
 /* Takes ownership of s*/
 subtilis_lexer_t *subtilis_lexer_new(subtilis_stream_t *s, size_t buf_size,
-				     const subtilis_keyword_t *keywords,
-				     size_t num_keywords,
+				     const subtilis_keyword_t *basic_keywords,
+				     size_t num_basic_keywords,
+				     const subtilis_keyword_t *ass_keywords,
+				     size_t num_ass_keywords,
 				     subtilis_error_t *err);
 void subtilis_lexer_delete(subtilis_lexer_t *l, subtilis_error_t *err);
+void subtilis_lexer_set_ass_keywords(subtilis_lexer_t *l, bool ass,
+				     subtilis_error_t *err);
 void subtilis_lexer_get(subtilis_lexer_t *l, subtilis_token_t *t,
 			subtilis_error_t *err);
 subtilis_token_t *subtilis_token_new(subtilis_error_t *err);
