@@ -550,12 +550,26 @@ subtilis_riscos_generate(
 
 	for (i = 1; i < p->num_sections; i++) {
 		s = p->sections[i];
+		if (s->section_type == SUBTILIS_IR_SECTION_ASM) {
+			arm_s = (subtilis_arm_section_t *)s->asm_code;
+
+			/*
+			 * Ownership of inline assembly transfers to the ARM
+			 * section.
+			 */
+
+			s->asm_code = NULL;
+			subtilis_arm_prog_append_section(arm_p, arm_s, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+			continue;
+		}
 		arm_s = subtilis_arm_prog_section_new(
 		    arm_p, s->type, s->reg_counter, s->freg_counter,
 		    s->label_counter, s->locals, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		if (s->ftype != SUBTILIS_BUILTINS_MAX)
+		if (s->section_type == SUBTILIS_IR_SECTION_BACKEND_BUILTIN)
 			prv_add_builtin(s, arm_s, err);
 		else
 			prv_add_section(s, arm_s, parsed, rule_count, err);
@@ -2307,4 +2321,39 @@ void subtilis_riscos_arm_syscall(subtilis_ir_section_t *s, size_t start,
 			    subtilis_arm_ir_to_arm_reg(sys_call->flags_reg), 0,
 			    false, err);
 	}
+}
+
+void subtilis_riscos_asm_free_t(void *asm_code)
+{
+	subtilis_arm_section_t *arm_s = asm_code;
+
+	subtilis_arm_section_delete(arm_s);
+}
+
+void *subtilis_riscos_asm_parse_t(subtilis_lexer_t *l, subtilis_token_t *t,
+				  void *backend_data,
+				  subtilis_type_section_t *stype,
+				  const subtilis_settings_t *set,
+				  subtilis_error_t *err)
+{
+	subtilis_arm_section_t *arm_s;
+	subtilis_arm_op_pool_t *pool = backend_data;
+
+	arm_s = subtilis_arm_section_new(pool, stype, 0, 0, 0, 0, set, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 15, 14,
+				 err);
+
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return arm_s;
+
+cleanup:
+
+	subtilis_arm_section_delete(arm_s);
+
+	return NULL;
 }

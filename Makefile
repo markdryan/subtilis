@@ -69,7 +69,8 @@ ARM =\
 	arm_sub_section.c \
 	arm_peephole.c \
 	arm_mem.c \
-	arm_heap.c
+	arm_heap.c \
+	arm_keywords.c
 
 COMPILER =\
 	compiler.c

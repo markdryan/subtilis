@@ -18,6 +18,7 @@
 #include <stdio.h>
 
 #include "arch/arm32/arm_encode.h"
+#include "arch/arm32/arm_keywords.h"
 #include "arch/arm32/fpa_gen.h"
 #include "backends/riscos/riscos_arm.h"
 #include "backends/riscos/riscos_arm2.h"
@@ -61,7 +62,8 @@ int main(int argc, char *argv[])
 
 	l = subtilis_lexer_new(&s, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
 			       subtilis_keywords_list, SUBTILIS_KEYWORD_TOKENS,
-			       NULL, 0, &err);
+			       subtilis_arm_keywords_list,
+			       SUBTILIS_ARM_KEYWORD_TOKENS, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -69,9 +71,16 @@ int main(int argc, char *argv[])
 	settings.ignore_graphics_errors = true;
 	settings.check_mem_leaks = false;
 
+	pool = subtilis_arm_op_pool_new(&err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	backend.caps = SUBTILIS_RISCOS_ARM_CAPS;
 	backend.sys_trans = subtilis_riscos_sys_trans;
 	backend.sys_check = subtilis_riscos_sys_check;
+	backend.backend_data = pool;
+	backend.asm_parse = subtilis_riscos_asm_parse_t;
+	backend.asm_free = subtilis_riscos_asm_free_t;
 
 	p = subtilis_parser_new(l, &backend, &settings, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
@@ -82,10 +91,6 @@ int main(int argc, char *argv[])
 		goto cleanup;
 
 	//	subtilis_ir_prog_dump(p->prog);
-
-	pool = subtilis_arm_op_pool_new(&err);
-	if (err.type != SUBTILIS_ERROR_OK)
-		goto cleanup;
 
 	arm_p = subtilis_riscos_generate(
 	    pool, p->prog, riscos_arm2_rules, riscos_arm2_rules_count,

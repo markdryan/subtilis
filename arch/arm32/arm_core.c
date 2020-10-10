@@ -308,6 +308,19 @@ subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 	return arm_s;
 }
 
+void subtilis_arm_prog_append_section(subtilis_arm_prog_t *prog,
+				      subtilis_arm_section_t *arm_s,
+				      subtilis_error_t *err)
+{
+	if (prog->num_sections == prog->max_sections) {
+		subtilis_arm_section_delete(arm_s);
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	prog->sections[prog->num_sections++] = arm_s;
+}
+
 void subtilis_arm_prog_delete(subtilis_arm_prog_t *prog)
 {
 	size_t i;

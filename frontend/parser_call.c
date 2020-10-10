@@ -612,6 +612,46 @@ static size_t prv_init_block_variables(subtilis_parser_t *p,
 	return blocks;
 }
 
+static void prv_parser_assembly(subtilis_parser_t *p, subtilis_token_t *t,
+				const char *name,
+				subtilis_type_section_t *stype,
+				subtilis_error_t *err)
+{
+	subtilis_error_t err2;
+	void *asm_code = NULL;
+
+	subtilis_lexer_set_ass_keywords(p->l, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	asm_code = p->backend.asm_parse(p->l, t, p->backend.backend_data, stype,
+					&p->settings, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	subtilis_ir_prog_asm_section_new(p->prog, name, stype,
+					 p->l->stream->name, p->l->line,
+					 p->eflag_offset, p->error_offset,
+					 p->backend.asm_free, asm_code, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	subtilis_error_init(&err2);
+	subtilis_lexer_set_ass_keywords(p->l, false, &err2);
+
+	subtilis_lexer_get(p->l, t, err);
+	return;
+
+on_error:
+
+	subtilis_error_init(&err2);
+	subtilis_lexer_set_ass_keywords(p->l, false, &err2);
+}
+
 void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 			 subtilis_error_t *err)
 {
@@ -662,6 +702,11 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 	params = NULL;
+
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "[")) {
+		prv_parser_assembly(p, t, name, stype, err);
+		goto on_error;
+	}
 
 	p->current = subtilis_ir_prog_section_new(
 	    p->prog, name, 0, stype, SUBTILIS_BUILTINS_MAX, p->l->stream->name,

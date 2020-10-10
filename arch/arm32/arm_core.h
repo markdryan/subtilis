@@ -506,6 +506,10 @@ subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 			      size_t locals, subtilis_error_t *err);
 /* clang-format on */
 
+void subtilis_arm_prog_append_section(subtilis_arm_prog_t *prog,
+				      subtilis_arm_section_t *arm_s,
+				      subtilis_error_t *err);
+
 void subtilis_arm_section_max_regs(subtilis_arm_section_t *s, size_t *int_regs,
 				   size_t *real_regs);
 

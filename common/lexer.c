@@ -89,8 +89,8 @@ void subtilis_lexer_set_ass_keywords(subtilis_lexer_t *l, bool ass,
 
 	if (!l->ass_keywords) {
 		subtilis_error_set_not_supported(
-		    err, "Assembler not supported on this target",
-		    l->stream->name, l->line);
+		    err, "Assembly language on this target is", l->stream->name,
+		    l->line);
 		return;
 	}
 

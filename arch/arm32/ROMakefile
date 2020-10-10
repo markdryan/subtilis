@@ -2,7 +2,7 @@
 
 COMPONENT = arm32
 
-OBJS = arm2_div arm_core arm_dump arm_encode arm_fpa_dist arm_gen    arm_int_dist arm_link arm_peephole arm_reg_alloc arm_sub_section arm_vm arm_walker fpa fpa_gen arm_mem arm_heap
+OBJS = arm2_div arm_core arm_dump arm_encode arm_fpa_dist arm_gen arm_keywords arm_int_dist arm_link arm_peephole arm_reg_alloc arm_sub_section arm_vm arm_walker fpa fpa_gen arm_mem arm_heap
 
 CFLAGS ?= -Wxla
 

@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 
+#include "backend.h"
 #include "buffer.h"
 #include "builtins.h"
 #include "constant_pool.h"
@@ -1717,7 +1718,14 @@ struct subtilis_handler_list_t_ {
 	subtilis_handler_list_t *next;
 };
 
+typedef enum {
+	SUBTILIS_IR_SECTION_IR,
+	SUBTILIS_IR_SECTION_BACKEND_BUILTIN,
+	SUBTILIS_IR_SECTION_ASM
+} subtilis_ir_section_type_t;
+
 struct subtilis_ir_section_t_ {
+	subtilis_ir_section_type_t section_type;
 	subtilis_type_section_t *type;
 	size_t locals;
 	size_t reg_counter;
@@ -1744,6 +1752,8 @@ struct subtilis_ir_section_t_ {
 	size_t cleanup_stack_nop;
 	size_t cleanup_stack_reg;
 	bool destructor_needed;
+	void *asm_code;
+	subtilis_backend_asm_free_t asm_free_fn;
 };
 
 typedef struct subtilis_ir_section_t_ subtilis_ir_section_t;
@@ -1827,6 +1837,11 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	subtilis_type_section_t *tp, subtilis_builtin_type_t ftype,
 	const char *file, size_t line, int32_t eflag_offset,
 	int32_t error_offset, subtilis_error_t *err);
+void subtilis_ir_prog_asm_section_new(
+	subtilis_ir_prog_t *p, const char *name, subtilis_type_section_t *tp,
+	const char *file, size_t line, int32_t eflag_offset,
+	int32_t error_offset, subtilis_backend_asm_free_t asm_free,
+	void *asm_code, subtilis_error_t *err);
 
 /* clang-format on */
 subtilis_ir_section_t *subtilis_ir_prog_find_section(subtilis_ir_prog_t *p,
