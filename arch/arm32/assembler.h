@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef SUBTILIS_RISCOS_SWI_H__
-#define SUBTILIS_RISCOS_SWI_H__
+#ifndef __SUBTILIS_ARM_ASSEMBLER_H
+#define __SUBTILIS_ARM_ASSEMBLER_H
 
-#include <stddef.h>
-#include <stdint.h>
+#include "../../common/backend_caps.h"
+#include "arm_core.h"
+#include "arm_swi.h"
 
-#include "../../arch/arm32/arm_swi.h"
-
-extern const size_t subtilis_riscos_known_swis;
-
-extern const subtilis_arm_swi_t subtilis_riscos_swi_list[];
-extern const size_t subtilis_riscos_swi_index[];
+/* clang-format off */
+subtilis_arm_section_t *subtilis_arm_asm_parse(
+	subtilis_lexer_t *l, subtilis_token_t *t, subtilis_arm_op_pool_t *pool,
+	subtilis_type_section_t *stype, const subtilis_settings_t *set,
+	subtilis_arm_swi_info_t *swi_info, subtilis_error_t *err);
+/* clang-format on */
 
 #endif

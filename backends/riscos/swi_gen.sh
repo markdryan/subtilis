@@ -22,7 +22,7 @@ echo "#include \"riscos_swi.h\""
 echo ""
 echo "/* clang-format off */"
 echo ""
-echo "subtilis_riscos_swi_t subtilis_riscos_swi_list[] = {"
+echo "const subtilis_arm_swi_t subtilis_riscos_swi_list[] = {"
 while read line ; do
       echo -n -e "\t"
       echo -n "{ "
@@ -32,11 +32,11 @@ done < swis.txt
 echo "};"
 
 echo ""
-echo "size_t subtilis_riscos_known_swis = sizeof(subtilis_riscos_swi_list) /"
-echo -e "\tsizeof(subtilis_riscos_swi_t);"
+echo "const size_t subtilis_riscos_known_swis = sizeof(subtilis_riscos_swi_list) /"
+echo -e "\tsizeof(subtilis_arm_swi_t);"
 echo ""
 
-echo "size_t subtilis_riscos_swi_index[] = {"
+echo "const size_t subtilis_riscos_swi_index[] = {"
 
 i=0
 while read line ; do

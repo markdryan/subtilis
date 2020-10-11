@@ -14,17 +14,27 @@
  * limitations under the License.
  */
 
-#ifndef SUBTILIS_RISCOS_SWI_H__
-#define SUBTILIS_RISCOS_SWI_H__
+#ifndef SUBTILIS_ARM_SWI_H__
+#define SUBTILIS_ARM_SWI_H__
 
 #include <stddef.h>
 #include <stdint.h>
 
-#include "../../arch/arm32/arm_swi.h"
+struct subtilis_arm_swi_t_ {
+	uint32_t num;
+	const char *name;
+	uint32_t in_regs;
+	uint32_t out_regs;
+};
 
-extern const size_t subtilis_riscos_known_swis;
+typedef struct subtilis_arm_swi_t_ subtilis_arm_swi_t;
 
-extern const subtilis_arm_swi_t subtilis_riscos_swi_list[];
-extern const size_t subtilis_riscos_swi_index[];
+struct subtilis_arm_swi_info_t_ {
+	size_t count;
+	const subtilis_arm_swi_t *swi_list;
+	const size_t *swi_index;
+};
+
+typedef struct subtilis_arm_swi_info_t_ subtilis_arm_swi_info_t;
 
 #endif

@@ -70,7 +70,8 @@ ARM =\
 	arm_peephole.c \
 	arm_mem.c \
 	arm_heap.c \
-	arm_keywords.c
+	arm_keywords.c \
+	assembler.c
 
 COMPILER =\
 	compiler.c

@@ -18,7 +18,7 @@
 
 /* clang-format off */
 
-subtilis_riscos_swi_t subtilis_riscos_swi_list[] = {
+const subtilis_arm_swi_t subtilis_riscos_swi_list[] = {
 	{ 0x00, "OS_WriteC", 0x1, 0x0 },
 	{ 0x01, "OS_WriteS", 0x0, 0x0 },
 	{ 0x02, "OS_Write0", 0x1, 0x1 },
@@ -198,10 +198,10 @@ subtilis_riscos_swi_t subtilis_riscos_swi_list[] = {
 	{ 0x400ED, "Wimp_ReadPixTrans", 0xc7, 0xc1 },
 };
 
-size_t subtilis_riscos_known_swis = sizeof(subtilis_riscos_swi_list) /
-	sizeof(subtilis_riscos_swi_t);
+const size_t subtilis_riscos_known_swis = sizeof(subtilis_riscos_swi_list) /
+	sizeof(subtilis_arm_swi_t);
 
-size_t subtilis_riscos_swi_index[] = {
+const size_t subtilis_riscos_swi_index[] = {
 	174, // "Font_ApplyFields"
 	136, // "Font_CacheAddr"
 	143, // "Font_Caret"

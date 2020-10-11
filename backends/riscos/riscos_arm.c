@@ -24,6 +24,7 @@
 #include "../../arch/arm32/arm_peephole.h"
 #include "../../arch/arm32/arm_reg_alloc.h"
 #include "../../arch/arm32/arm_sub_section.h"
+#include "../../arch/arm32/assembler.h"
 #include "../../common/error_codes.h"
 #include "riscos_arm.h"
 #include "riscos_swi.h"
@@ -2166,7 +2167,7 @@ size_t subtilis_riscos_sys_trans(const char *call_name)
 static int prv_sys_num_lookup(const void *av, const void *bv)
 {
 	size_t *a = (size_t *)av;
-	subtilis_riscos_swi_t *b = (subtilis_riscos_swi_t *)bv;
+	subtilis_arm_swi_t *b = (subtilis_arm_swi_t *)bv;
 
 	if (*a == b->num)
 		return 0;
@@ -2178,7 +2179,7 @@ static int prv_sys_num_lookup(const void *av, const void *bv)
 bool subtilis_riscos_sys_check(size_t call_id, uint32_t *in_regs,
 			       uint32_t *out_regs, bool *handle_errors)
 {
-	subtilis_riscos_swi_t *found;
+	subtilis_arm_swi_t *found;
 
 	if (call_id & 0x20000) {
 		*handle_errors = true;
@@ -2207,7 +2208,7 @@ bool subtilis_riscos_sys_check(size_t call_id, uint32_t *in_regs,
 
 static uint32_t prv_check_out_regs(size_t call_id, subtilis_error_t *err)
 {
-	subtilis_riscos_swi_t *found;
+	subtilis_arm_swi_t *found;
 
 	if (call_id >= 0x100 && call_id <= 0x1ff)
 		return 0;
@@ -2323,37 +2324,25 @@ void subtilis_riscos_arm_syscall(subtilis_ir_section_t *s, size_t start,
 	}
 }
 
-void subtilis_riscos_asm_free_t(void *asm_code)
+void subtilis_riscos_asm_free(void *asm_code)
 {
 	subtilis_arm_section_t *arm_s = asm_code;
 
 	subtilis_arm_section_delete(arm_s);
 }
 
-void *subtilis_riscos_asm_parse_t(subtilis_lexer_t *l, subtilis_token_t *t,
-				  void *backend_data,
-				  subtilis_type_section_t *stype,
-				  const subtilis_settings_t *set,
-				  subtilis_error_t *err)
+void *subtilis_riscos_asm_parse(subtilis_lexer_t *l, subtilis_token_t *t,
+				void *backend_data,
+				subtilis_type_section_t *stype,
+				const subtilis_settings_t *set,
+				subtilis_error_t *err)
 {
-	subtilis_arm_section_t *arm_s;
+	subtilis_arm_swi_info_t swi_info;
 	subtilis_arm_op_pool_t *pool = backend_data;
 
-	arm_s = subtilis_arm_section_new(pool, stype, 0, 0, 0, 0, set, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return NULL;
+	swi_info.count = subtilis_riscos_known_swis;
+	swi_info.swi_list = subtilis_riscos_swi_list;
+	swi_info.swi_index = subtilis_riscos_swi_index;
 
-	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 15, 14,
-				 err);
-
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	return arm_s;
-
-cleanup:
-
-	subtilis_arm_section_delete(arm_s);
-
-	return NULL;
+	return subtilis_arm_asm_parse(l, t, pool, stype, set, &swi_info, err);
 }

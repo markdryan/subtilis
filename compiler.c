@@ -79,8 +79,8 @@ int main(int argc, char *argv[])
 	backend.sys_trans = subtilis_riscos_sys_trans;
 	backend.sys_check = subtilis_riscos_sys_check;
 	backend.backend_data = pool;
-	backend.asm_parse = subtilis_riscos_asm_parse_t;
-	backend.asm_free = subtilis_riscos_asm_free_t;
+	backend.asm_parse = subtilis_riscos_asm_parse;
+	backend.asm_free = subtilis_riscos_asm_free;
 
 	p = subtilis_parser_new(l, &backend, &settings, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
