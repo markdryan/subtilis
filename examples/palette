@@ -1,0 +1,9 @@
+mode 20
+for i% := 1 to 15
+  color i%, i%*16, i% *16, i% * 16
+next
+
+for i% = 1 to 15
+  color i%
+  print "hello"
+next

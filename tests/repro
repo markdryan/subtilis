@@ -1,0 +1,27 @@
+onerror
+  print 666
+  print err
+enderror
+
+mode 2
+x% := 640
+y% := 512
+a% := 768
+b% := 768
+v% := 32
+w% := 24
+c% := 16
+d% := -28
+dim e%(7)
+if x% > 1280 or x% < 0 then v% = -v% endif
+if y% > 1024 or y% < 0 then w% = -w% endif
+a% += c%
+b% += d%
+print x%
+print y%
+print a%
+print b%
+print v%
+print w%
+print c%
+print d%

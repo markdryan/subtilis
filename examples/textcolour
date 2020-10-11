@@ -1,0 +1,11 @@
+mode 15
+for i% := 1 to 15
+  color i%
+  print "hello"
+next
+
+for i% = 1 to 15
+  color i%
+  color 128 + (15 - i%)
+  print "hello"
+next

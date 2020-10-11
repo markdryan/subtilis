@@ -1,0 +1,7 @@
+FOR Y% := 2 TO 4
+  FOR X% := Y% TO 4
+     PRINT X%;
+     PRINT " ";
+     PRINT Y%
+  NEXT
+NEXT
