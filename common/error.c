@@ -239,6 +239,12 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_DEFFN_SHOULD_BE_DEF_FN */
 	{"Unexpected identifier.  Did you mean DEF FN?\n", 0},
+
+	/* SUBTILIS_ERROR_ASS_BAD_REG */
+	{"%s is not a valid register name\n", 1},
+
+	/* SUBTILIS_ERROR_ASS_INTEGER_ENCODE */
+	{"%s cannot be encoded\n", 1},
 };
 
 /* clang-format on */

@@ -624,10 +624,6 @@ static void prv_parser_assembly(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto on_error;
-
 	asm_code = p->backend.asm_parse(p->l, t, p->backend.backend_data, stype,
 					&p->settings, err);
 	if (err->type != SUBTILIS_ERROR_OK)
