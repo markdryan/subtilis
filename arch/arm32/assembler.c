@@ -18,6 +18,7 @@
 
 #include "arm_core.h"
 #include "arm_expression.h"
+#include "arm_keywords.h"
 #include "assembler.h"
 
 typedef void (*subtilis_arm_ass_fn_t)(void *);
@@ -219,6 +220,7 @@ static void prv_get_op2(subtilis_arm_ass_context_t *c, subtilis_arm_op2_t *op2,
 	uint32_t encoded;
 	int32_t num;
 	subtilis_arm_exp_val_t *val;
+	const char *tbuf;
 
 	val = subtilis_arm_exp_val_get(c, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -247,8 +249,74 @@ static void prv_get_op2(subtilis_arm_ass_context_t *c, subtilis_arm_op2_t *op2,
 		goto cleanup;
 	}
 
-	op2->type = SUBTILIS_ARM_OP2_REG;
 	op2->op.reg = val->val.reg;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if (c->t->type != SUBTILIS_TOKEN_OPERATOR) {
+		op2->type = SUBTILIS_ARM_OP2_REG;
+		goto cleanup;
+	}
+
+	op2->type = SUBTILIS_ARM_OP2_SHIFTED;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if (strcmp(tbuf, ",")) {
+		op2->type = SUBTILIS_ARM_OP2_REG;
+		goto cleanup;
+	}
+
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if (c->t->type != SUBTILIS_TOKEN_KEYWORD) {
+		subtilis_error_set_keyword_expected(
+		    err, tbuf, c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	switch (c->t->tok.keyword.type) {
+	case SUBTILIS_ARM_KEYWORD_ASR:
+		op2->op.shift.type = SUBTILIS_ARM_SHIFT_ASR;
+		break;
+	case SUBTILIS_ARM_KEYWORD_LSL:
+		op2->op.shift.type = SUBTILIS_ARM_SHIFT_LSL;
+		break;
+	case SUBTILIS_ARM_KEYWORD_LSR:
+		op2->op.shift.type = SUBTILIS_ARM_SHIFT_LSR;
+		break;
+	case SUBTILIS_ARM_KEYWORD_ROR:
+		op2->op.shift.type = SUBTILIS_ARM_SHIFT_ROR;
+		break;
+	case SUBTILIS_ARM_KEYWORD_RRX:
+		op2->op.shift.type = SUBTILIS_ARM_SHIFT_RRX;
+		break;
+	default:
+		subtilis_error_set_expected(
+		    err, "ASR or LSL or LSR or ROR or RRX", tbuf,
+		    c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	subtilis_arm_exp_val_free(val);
+	val = subtilis_arm_exp_val_get(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (val->type == SUBTILIS_ARM_EXP_TYPE_INT) {
+		op2->op.shift.shift.integer = val->val.integer;
+		op2->op.shift.shift_reg = false;
+	} else if (val->type == SUBTILIS_ARM_EXP_TYPE_REG) {
+		op2->op.shift.shift.reg = val->val.reg;
+		op2->op.shift.shift_reg = true;
+	} else {
+		subtilis_error_set_expected(err, "integer or register",
+					    subtilis_arm_exp_type_name(val),
+					    c->l->stream->name, c->l->line);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
 
 cleanup:
 
@@ -295,10 +363,6 @@ static void prv_parse_arm_data(subtilis_arm_ass_context_t *c,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_lexer_get(c->l, c->t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
 	tbuf = subtilis_token_get_text(c->t);
 	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) && (strcmp(tbuf, ","))) {
 		subtilis_error_set_expected(err, ",", tbuf, c->l->stream->name,
@@ -307,10 +371,6 @@ static void prv_parse_arm_data(subtilis_arm_ass_context_t *c,
 	}
 
 	op1 = prv_get_reg(c, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_lexer_get(c->l, c->t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

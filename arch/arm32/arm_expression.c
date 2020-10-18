@@ -459,7 +459,7 @@ static subtilis_arm_exp_val_t *prv_priority1(subtilis_arm_ass_context_t *c,
 		e = prv_process_id(c, tbuf, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		return e;
+		break;
 
 	case SUBTILIS_TOKEN_KEYWORD:
 		switch (c->t->tok.keyword.type) {
