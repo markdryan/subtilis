@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include "arm_core.h"
+#include "arm_expression.h"
 #include "assembler.h"
 
 typedef void (*subtilis_arm_ass_fn_t)(void *);
@@ -28,17 +29,6 @@ struct subtilis_arm_ass_mnemomic_t_ {
 };
 
 typedef struct subtilis_arm_ass_mnemomic_t_ subtilis_arm_ass_mnemomic_t;
-
-struct subtilis_arm_ass_context_t_ {
-	subtilis_arm_section_t *arm_s;
-	subtilis_lexer_t *l;
-	subtilis_token_t *t;
-	subtilis_type_section_t *stype;
-	const subtilis_settings_t *set;
-	subtilis_arm_swi_info_t *swi_info;
-};
-
-typedef struct subtilis_arm_ass_context_t_ subtilis_arm_ass_context_t;
 
 /*
  * Must match order of codes in subtilis_arm_ccode_type_t
@@ -223,111 +213,70 @@ static void prv_parse_label(subtilis_arm_ass_context_t *c, const char *name,
 {
 }
 
-static subtilis_arm_reg_t parse_reg(subtilis_arm_ass_context_t *c,
-				    subtilis_error_t *err)
-{
-	const char *tbuf;
-	size_t reg;
-	size_t name_len;
-
-	tbuf = subtilis_token_get_text(c->t);
-	if ((tbuf[0] != 'R') && (tbuf[0] != 'r'))
-		goto on_error;
-
-	name_len = strlen(&tbuf[1]);
-	if (name_len != 1 && name_len != 2)
-		goto on_error;
-
-	if (tbuf[1] < '0' || tbuf[1] > '9')
-		goto on_error;
-	reg = tbuf[1] - '0';
-	if (name_len == 2) {
-		if (tbuf[2] < '0' || tbuf[2] > '9')
-			goto on_error;
-		reg *= 10;
-		reg += tbuf[2] - '0';
-	}
-
-	if (reg > 15) {
-		subtilis_error_set_ass_bad_reg(err, tbuf, c->l->stream->name,
-					       c->l->line);
-		return SIZE_MAX;
-	}
-
-	return (subtilis_arm_reg_t)reg;
-
-on_error:
-
-	subtilis_error_set_expected(err, "register", tbuf, c->l->stream->name,
-				    c->l->line);
-
-	return SIZE_MAX;
-}
-
 static void prv_get_op2(subtilis_arm_ass_context_t *c, subtilis_arm_op2_t *op2,
 			subtilis_error_t *err)
 {
 	uint32_t encoded;
 	int32_t num;
-	subtilis_arm_reg_t reg;
-	const char *tbuf;
+	subtilis_arm_exp_val_t *val;
 
-	subtilis_lexer_get(c->l, c->t, err);
+	val = subtilis_arm_exp_val_get(c, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	/*
-	 * TODO: We really need a constant expression parser here.
-	 */
-
-	if ((c->t->type == SUBTILIS_TOKEN_REAL) ||
-	    (c->t->type == SUBTILIS_TOKEN_INTEGER)) {
-		if (c->t->type == SUBTILIS_TOKEN_REAL)
-			num = (int32_t)c->t->tok.real;
+	if ((val->type == SUBTILIS_ARM_EXP_TYPE_INT) ||
+	    (val->type == SUBTILIS_ARM_EXP_TYPE_REAL)) {
+		if (val->type == SUBTILIS_ARM_EXP_TYPE_REAL)
+			num = (int32_t)val->val.real;
 		else
-			num = c->t->tok.integer;
+			num = val->val.integer;
 		if (!subtilis_arm_encode_imm(num, &encoded)) {
 			subtilis_error_set_ass_integer_encode(
 			    err, num, c->l->stream->name, c->l->line);
-			return;
+			goto cleanup;
 		}
 		op2->type = SUBTILIS_ARM_OP2_I32;
 		op2->op.integer = encoded;
-		return;
+		goto cleanup;
 	}
 
-	if (c->t->type != SUBTILIS_TOKEN_IDENTIFIER) {
-		tbuf = subtilis_token_get_text(c->t);
-		subtilis_error_set_expected(err, "register", tbuf,
+	if (val->type != SUBTILIS_ARM_EXP_TYPE_REG) {
+		subtilis_error_set_expected(err, "register",
+					    subtilis_arm_exp_type_name(val),
 					    c->l->stream->name, c->l->line);
-		return;
+		goto cleanup;
 	}
-
-	reg = parse_reg(c, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 
 	op2->type = SUBTILIS_ARM_OP2_REG;
-	op2->op.reg = reg;
+	op2->op.reg = val->val.reg;
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
 }
 
 static subtilis_arm_reg_t prv_get_reg(subtilis_arm_ass_context_t *c,
 				      subtilis_error_t *err)
 {
-	const char *tbuf;
+	subtilis_arm_exp_val_t *val;
+	subtilis_arm_reg_t reg;
 
-	subtilis_lexer_get(c->l, c->t, err);
+	val = subtilis_arm_exp_val_get(c, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	if (c->t->type != SUBTILIS_TOKEN_IDENTIFIER) {
-		tbuf = subtilis_token_get_text(c->t);
-		subtilis_error_set_expected(err, "register", tbuf,
+	if (val->type != SUBTILIS_ARM_EXP_TYPE_REG) {
+		subtilis_error_set_expected(err, "register",
+					    subtilis_arm_exp_type_name(val),
 					    c->l->stream->name, c->l->line);
-		return SIZE_MAX;
+		reg = SIZE_MAX;
+	} else {
+		reg = val->val.reg;
 	}
 
-	return parse_reg(c, err);
+	subtilis_arm_exp_val_free(val);
+
+	return reg;
 }
 
 static void prv_parse_arm_data(subtilis_arm_ass_context_t *c,
@@ -386,8 +335,6 @@ static void prv_parse_arm_data(subtilis_arm_ass_context_t *c,
 	datai->op1 = op1;
 	datai->op2 = op2;
 	datai->status = status;
-
-	subtilis_lexer_get(c->l, c->t, err);
 }
 
 static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
@@ -503,7 +450,7 @@ static void prv_parser_main_loop(subtilis_arm_ass_context_t *c,
 
 	subtilis_lexer_get(c->l, c->t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		goto on_error;
+		return;
 
 	tbuf = subtilis_token_get_text(c->t);
 	while ((c->t->type != SUBTILIS_TOKEN_OPERATOR) && (strcmp(tbuf, "]"))) {
@@ -517,14 +464,14 @@ static void prv_parser_main_loop(subtilis_arm_ass_context_t *c,
 			subtilis_error_set_expected(
 			    err, "keyword or identifier", tbuf,
 			    c->l->stream->name, c->l->line);
-			goto on_error;
+			return;
 		}
 
 		if (err->type != SUBTILIS_ERROR_OK)
-			goto on_error;
-	}
+			return;
 
-on_error:
+		tbuf = subtilis_token_get_text(c->t);
+	}
 }
 
 /* clang-format off */

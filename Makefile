@@ -71,7 +71,8 @@ ARM =\
 	arm_mem.c \
 	arm_heap.c \
 	arm_keywords.c \
-	assembler.c
+	assembler.c \
+	arm_expression.c
 
 COMPILER =\
 	compiler.c
