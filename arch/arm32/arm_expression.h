@@ -50,6 +50,8 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_new_str(subtilis_buffer_t *buf,
 						 subtilis_error_t *err);
 subtilis_arm_exp_val_t *subtilis_arm_exp_new_reg(subtilis_arm_reg_t reg,
 						 subtilis_error_t *err);
+subtilis_arm_exp_val_t *subtilis_arm_exp_new_id(const char *id,
+						subtilis_error_t *err);
 const char *subtilis_arm_exp_type_name(subtilis_arm_exp_val_t *val);
 void subtilis_arm_exp_val_free(subtilis_arm_exp_val_t *val);
 

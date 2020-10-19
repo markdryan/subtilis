@@ -92,6 +92,29 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_new_str(subtilis_buffer_t *buf,
 	return e;
 }
 
+subtilis_arm_exp_val_t *subtilis_arm_exp_new_id(const char *id,
+						subtilis_error_t *err)
+{
+	size_t len;
+	subtilis_arm_exp_val_t *e = malloc(sizeof(*e));
+
+	if (!e) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+
+	e->type = SUBTILIS_ARM_EXP_TYPE_ID;
+	len = strlen(id);
+	subtilis_buffer_init(&e->val.buf, len);
+	subtilis_buffer_append(&e->val.buf, id, len, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_arm_exp_val_free(e);
+		return NULL;
+	}
+
+	return e;
+}
+
 subtilis_arm_exp_val_t *subtilis_arm_exp_new_reg(subtilis_arm_reg_t reg,
 						 subtilis_error_t *err)
 {
@@ -334,10 +357,8 @@ static subtilis_arm_exp_val_t *prv_process_id(subtilis_arm_ass_context_t *c,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	if (reg == SIZE_MAX) {
-		subtilis_error_set_assertion_failed(err);
-		return NULL;
-	}
+	if (reg == SIZE_MAX)
+		return subtilis_arm_exp_new_id(id, err);
 
 	return subtilis_arm_exp_new_reg(reg, err);
 }
@@ -1023,8 +1044,8 @@ static subtilis_arm_exp_val_t *prv_priority7(subtilis_arm_ass_context_t *c,
 	subtilis_arm_exp_val_t *e1 = NULL;
 	subtilis_arm_exp_val_t *e2 = NULL;
 	subtilis_arm_exp_val_t *(*fn)(
-	    subtilis_arm_ass_context_t *c, subtilis_arm_exp_val_t *e1,
-	    subtilis_arm_exp_val_t *e2, subtilis_error_t *err);
+	    subtilis_arm_ass_context_t * c, subtilis_arm_exp_val_t * e1,
+	    subtilis_arm_exp_val_t * e2, subtilis_error_t * err);
 
 	e1 = prv_priority6(c, err);
 	if (err->type != SUBTILIS_ERROR_OK)

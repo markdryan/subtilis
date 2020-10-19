@@ -18,6 +18,7 @@
 #define __SUBTILIS_ARM_ASSEMBLER_H
 
 #include "../../common/backend_caps.h"
+#include "../../common/string_pool.h"
 #include "arm_core.h"
 #include "arm_swi.h"
 
@@ -28,6 +29,7 @@ struct subtilis_arm_ass_context_t_ {
 	subtilis_type_section_t *stype;
 	const subtilis_settings_t *set;
 	subtilis_arm_swi_info_t *swi_info;
+	subtilis_string_pool_t *label_pool;
 };
 
 typedef struct subtilis_arm_ass_context_t_ subtilis_arm_ass_context_t;
