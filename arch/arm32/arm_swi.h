@@ -29,12 +29,4 @@ struct subtilis_arm_swi_t_ {
 
 typedef struct subtilis_arm_swi_t_ subtilis_arm_swi_t;
 
-struct subtilis_arm_swi_info_t_ {
-	size_t count;
-	const subtilis_arm_swi_t *swi_list;
-	const size_t *swi_index;
-};
-
-typedef struct subtilis_arm_swi_info_t_ subtilis_arm_swi_info_t;
-
 #endif

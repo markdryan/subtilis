@@ -256,6 +256,7 @@ void subtilis_parser_sys(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_exp_t *call_name;
 	const char *tbuf;
 	size_t i;
+	const char *swi_name;
 	size_t translated;
 	bool handle_errors = false;
 	uint32_t expected_in_regs = 0;
@@ -287,11 +288,11 @@ void subtilis_parser_sys(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	if (call_name->type.type == SUBTILIS_TYPE_CONST_STRING) {
-		translated = p->backend.sys_trans(
-		    subtilis_buffer_get_string(&call_name->exp.str));
+		swi_name = subtilis_buffer_get_string(&call_name->exp.str);
+		translated = p->backend.sys_trans(swi_name);
 		if (translated == SIZE_MAX) {
-			subtilis_error_set_not_supported(
-			    err, "SWI", p->l->stream->name, p->l->line);
+			subtilis_error_set_sys_call_unknown(
+			    err, swi_name, p->l->stream->name, p->l->line);
 			goto cleanup;
 		}
 		subtilis_exp_delete(call_name);

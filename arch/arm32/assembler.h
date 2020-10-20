@@ -28,7 +28,7 @@ struct subtilis_arm_ass_context_t_ {
 	subtilis_token_t *t;
 	subtilis_type_section_t *stype;
 	const subtilis_settings_t *set;
-	subtilis_arm_swi_info_t *swi_info;
+	subtilis_backend_sys_trans sys_trans;
 	subtilis_string_pool_t *label_pool;
 };
 
@@ -38,7 +38,7 @@ typedef struct subtilis_arm_ass_context_t_ subtilis_arm_ass_context_t;
 subtilis_arm_section_t *subtilis_arm_asm_parse(
 	subtilis_lexer_t *l, subtilis_token_t *t, subtilis_arm_op_pool_t *pool,
 	subtilis_type_section_t *stype, const subtilis_settings_t *set,
-	subtilis_arm_swi_info_t *swi_info, subtilis_error_t *err);
+	subtilis_backend_sys_trans sys_trans, subtilis_error_t *err);
 /* clang-format on */
 
 #endif

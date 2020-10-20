@@ -2337,12 +2337,8 @@ void *subtilis_riscos_asm_parse(subtilis_lexer_t *l, subtilis_token_t *t,
 				const subtilis_settings_t *set,
 				subtilis_error_t *err)
 {
-	subtilis_arm_swi_info_t swi_info;
 	subtilis_arm_op_pool_t *pool = backend_data;
 
-	swi_info.count = subtilis_riscos_known_swis;
-	swi_info.swi_list = subtilis_riscos_swi_list;
-	swi_info.swi_index = subtilis_riscos_swi_index;
-
-	return subtilis_arm_asm_parse(l, t, pool, stype, set, &swi_info, err);
+	return subtilis_arm_asm_parse(l, t, pool, stype, set,
+				      subtilis_riscos_sys_trans, err);
 }
