@@ -1038,8 +1038,8 @@ static subtilis_arm_exp_val_t *prv_or(subtilis_arm_ass_context_t *c,
 	return prv_binary_int(c, e1, e2, prv_or_fn, err);
 }
 
-static subtilis_arm_exp_val_t *prv_priority7(subtilis_arm_ass_context_t *c,
-					     subtilis_error_t *err)
+subtilis_arm_exp_val_t *subtilis_arm_exp_pri7(subtilis_arm_ass_context_t *c,
+					      subtilis_error_t *err)
 {
 	subtilis_arm_exp_val_t *e1 = NULL;
 	subtilis_arm_exp_val_t *e2 = NULL;
@@ -1084,7 +1084,7 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_val_get(subtilis_arm_ass_context_t *c,
 	subtilis_lexer_get(c->l, c->t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	return prv_priority7(c, err);
+	return subtilis_arm_exp_pri7(c, err);
 }
 
 const char *subtilis_arm_exp_type_name(subtilis_arm_exp_val_t *val)

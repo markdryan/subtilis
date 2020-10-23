@@ -196,7 +196,7 @@ static bool prv_is_simple_operator(char c)
 {
 	return c == '/' || c == '*' || c == '(' || c == ')' || c == '=' ||
 	       c == ',' || c == ';' || c == '^' || c == '[' || c == ']' ||
-	       c == '|' || c == '~' || c == '?' || c == '$';
+	       c == '|' || c == '~' || c == '?' || c == '$' || c == '!';
 }
 
 static bool prv_is_separator(char c)

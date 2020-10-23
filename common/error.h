@@ -97,6 +97,7 @@ typedef enum {
 	SUBTILIS_ERROR_ASS_BAD_REG,
 	SUBTILIS_ERROR_ASS_INTEGER_ENCODE,
 	SUBTILIS_ERROR_SYS_CALL_UNKNOWN,
+	SUBTILIS_ERROR_ASS_BAD_OFFSET,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -308,6 +309,9 @@ void subtilis_error_init(subtilis_error_t *e);
 			       file, line, __FILE__, __LINE__)
 #define subtilis_error_set_sys_call_unknown(e, str, file, line)                \
 	subtilis_error_set1(e, SUBTILIS_ERROR_SYS_CALL_UNKNOWN, str, file, line)
+#define subtilis_error_set_ass_bad_offset(e, offset, file, line)               \
+	subtilis_error_set_int(e, SUBTILIS_ERROR_ASS_BAD_OFFSET, offset, 0,    \
+			       file, line, __FILE__, __LINE__)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,
