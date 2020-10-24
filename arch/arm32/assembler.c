@@ -575,13 +575,107 @@ static subtilis_arm_shift_type_t prv_get_st_shift(subtilis_arm_ass_context_t *c,
 	return st;
 }
 
-static void prv_parse_stran_post(subtilis_arm_ass_context_t *c,
-				 subtilis_arm_instr_type_t itype,
-				 subtilis_arm_ccode_type_t ccode,
-				 subtilis_arm_reg_t dest,
-				 subtilis_arm_reg_t base, bool byte,
+static subtilis_arm_exp_val_t *prv_get_offset(subtilis_arm_ass_context_t *c,
+					      bool *subtract,
+					      subtilis_error_t *err)
+{
+	const char *tbuf;
+
+	if (c->t->type == SUBTILIS_TOKEN_OPERATOR) {
+		tbuf = subtilis_token_get_text(c->t);
+		if (strcmp(tbuf, "-")) {
+			subtilis_error_set_expected(
+			    err, "-, register or integer", tbuf,
+			    c->l->stream->name, c->l->line);
+			return NULL;
+		}
+		*subtract = true;
+		return subtilis_arm_exp_val_get(c, err);
+	}
+	return subtilis_arm_exp_pri7(c, err);
+}
+
+static void prv_parse_int_offset(subtilis_arm_ass_context_t *c,
+				 subtilis_arm_exp_val_t *val,
+				 subtilis_arm_op2_t *offset, bool *subtract,
 				 subtilis_error_t *err)
 {
+	offset->type = SUBTILIS_ARM_OP2_I32;
+	if (val->val.integer < 0) {
+		*subtract = true;
+		offset->op.integer = -val->val.integer;
+	} else {
+		offset->op.integer = val->val.integer;
+	}
+	if (offset->op.integer > 4095)
+		subtilis_error_set_ass_bad_offset(
+		    err, val->val.integer, c->l->stream->name, c->l->line);
+}
+
+static void prv_parse_shift_offset(subtilis_arm_ass_context_t *c,
+				   subtilis_arm_exp_val_t *val,
+				   subtilis_arm_op2_t *offset,
+				   subtilis_error_t *err)
+{
+	offset->op.shift.reg = val->val.reg;
+	offset->type = SUBTILIS_ARM_OP2_SHIFTED;
+	offset->op.shift.type = prv_get_st_shift(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	val = subtilis_arm_exp_val_get(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	if (val->type == SUBTILIS_ARM_EXP_TYPE_INT) {
+		offset->op.shift.shift_reg = false;
+		offset->op.shift.shift.integer = val->val.integer;
+	} else if (val->type == SUBTILIS_ARM_EXP_TYPE_REG) {
+		offset->op.shift.shift_reg = true;
+		offset->op.shift.shift.reg = val->val.reg;
+	} else {
+		subtilis_error_set_expected(err, "integer or register",
+					    subtilis_arm_exp_type_name(val),
+					    c->l->stream->name, c->l->line);
+	}
+
+	subtilis_arm_exp_val_free(val);
+}
+
+static void prv_parse_stran_pre_off(subtilis_arm_ass_context_t *c,
+				    subtilis_arm_instr_type_t itype,
+				    subtilis_arm_ccode_type_t ccode,
+				    subtilis_arm_reg_t dest,
+				    subtilis_arm_reg_t base, bool byte,
+				    subtilis_arm_op2_t offset, bool subtract,
+				    subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_stran_instr_t *stran;
+	bool write_back = false;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type == SUBTILIS_TOKEN_OPERATOR) && (!strcmp(tbuf, "!"))) {
+		write_back = true;
+
+		subtilis_lexer_get(c->l, c->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	instr = subtilis_arm_section_add_instr(c->arm_s, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	stran = &instr->operands.stran;
+	stran->ccode = ccode;
+	stran->dest = dest;
+	stran->base = base;
+	stran->offset = offset;
+	stran->pre_indexed = true;
+	stran->write_back = write_back;
+	stran->byte = byte;
+	stran->subtract = subtract;
 }
 
 static void prv_parse_stran_pre(subtilis_arm_ass_context_t *c,
@@ -594,47 +688,21 @@ static void prv_parse_stran_pre(subtilis_arm_ass_context_t *c,
 	subtilis_arm_exp_val_t *val;
 	subtilis_arm_op2_t offset;
 	const char *tbuf;
-	subtilis_arm_instr_t *instr;
 	bool subtract = false;
-	subtilis_arm_stran_instr_t *stran;
-	bool write_back = false;
 
 	subtilis_lexer_get(c->l, c->t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	if (c->t->type == SUBTILIS_TOKEN_OPERATOR) {
-		tbuf = subtilis_token_get_text(c->t);
-		if (strcmp(tbuf, "-")) {
-			subtilis_error_set_expected(
-			    err, "-, register or integer", tbuf,
-			    c->l->stream->name, c->l->line);
-			return;
-		}
-		subtract = true;
-		val = subtilis_arm_exp_val_get(c, err);
-	} else {
-		val = subtilis_arm_exp_pri7(c, err);
-	}
+	val = prv_get_offset(c, &subtract, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	tbuf = subtilis_token_get_text(c->t);
 	if (val->type == SUBTILIS_ARM_EXP_TYPE_INT) {
-		offset.type = SUBTILIS_ARM_OP2_I32;
-		if (val->val.integer < 0) {
-			subtract = true;
-			offset.op.integer = -val->val.integer;
-		} else {
-			offset.op.integer = val->val.integer;
-		}
-		if (offset.op.integer > 4095) {
-			subtilis_error_set_ass_bad_offset(err, val->val.integer,
-							  c->l->stream->name,
-							  c->l->line);
+		prv_parse_int_offset(c, val, &offset, &subtract, err);
+		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		}
-
 		if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) ||
 		    (strcmp(tbuf, "]"))) {
 			subtilis_error_set_expected(
@@ -652,28 +720,9 @@ static void prv_parse_stran_pre(subtilis_arm_ass_context_t *c,
 			offset.op.reg = val->val.reg;
 			offset.type = SUBTILIS_ARM_OP2_REG;
 		} else if (!strcmp(tbuf, ",")) {
-			offset.op.shift.reg = val->val.reg;
-			offset.type = SUBTILIS_ARM_OP2_SHIFTED;
-			offset.op.shift.type = prv_get_st_shift(c, err);
+			prv_parse_shift_offset(c, val, &offset, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
-			subtilis_arm_exp_val_free(val);
-			val = subtilis_arm_exp_val_get(c, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			if (val->type == SUBTILIS_ARM_EXP_TYPE_INT) {
-				offset.op.shift.shift_reg = false;
-				offset.op.shift.shift.integer =
-				    val->val.integer;
-			} else if (val->type == SUBTILIS_ARM_EXP_TYPE_REG) {
-				offset.op.shift.shift_reg = true;
-				offset.op.shift.shift.reg = val->val.reg;
-			} else {
-				subtilis_error_set_expected(
-				    err, "integer or register",
-				    subtilis_arm_exp_type_name(val),
-				    c->l->stream->name, c->l->line);
-			}
 
 			if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) ||
 			    (strcmp(tbuf, "]"))) {
@@ -697,15 +746,71 @@ static void prv_parse_stran_pre(subtilis_arm_ass_context_t *c,
 
 	subtilis_lexer_get(c->l, c->t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		return;
+
+	prv_parse_stran_pre_off(c, itype, ccode, dest, base, byte, offset,
+				subtract, err);
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+}
+
+static void prv_parse_stran_post(subtilis_arm_ass_context_t *c,
+				 subtilis_arm_instr_type_t itype,
+				 subtilis_arm_ccode_type_t ccode,
+				 subtilis_arm_reg_t dest,
+				 subtilis_arm_reg_t base, bool byte,
+				 subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_arm_exp_val_t *val;
+	subtilis_arm_op2_t offset;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_stran_instr_t *stran;
+	bool subtract = false;
+
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	tbuf = subtilis_token_get_text(c->t);
-	if ((c->t->type == SUBTILIS_TOKEN_OPERATOR) && (!strcmp(tbuf, "!"))) {
-		write_back = true;
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || (strcmp(tbuf, ","))) {
+		offset.type = SUBTILIS_ARM_OP2_I32;
+		offset.op.integer = 0;
+		prv_parse_stran_pre_off(c, itype, ccode, dest, base, byte,
+					offset, false, err);
+		return;
+	}
 
-		subtilis_lexer_get(c->l, c->t, err);
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	val = prv_get_offset(c, &subtract, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if (val->type == SUBTILIS_ARM_EXP_TYPE_INT) {
+		prv_parse_int_offset(c, val, &offset, &subtract, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
+	} else if (val->type == SUBTILIS_ARM_EXP_TYPE_REG) {
+		if ((c->t->type == SUBTILIS_TOKEN_OPERATOR) &&
+		    !strcmp(tbuf, ",")) {
+			prv_parse_shift_offset(c, val, &offset, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+		} else {
+			offset.op.reg = val->val.reg;
+			offset.type = SUBTILIS_ARM_OP2_REG;
+		}
+	} else {
+		subtilis_error_set_expected(err, "integer or register",
+					    subtilis_arm_exp_type_name(val),
+					    c->l->stream->name, c->l->line);
+		goto cleanup;
 	}
 
 	instr = subtilis_arm_section_add_instr(c->arm_s, itype, err);
@@ -716,8 +821,8 @@ static void prv_parse_stran_pre(subtilis_arm_ass_context_t *c,
 	stran->dest = dest;
 	stran->base = base;
 	stran->offset = offset;
-	stran->pre_indexed = true;
-	stran->write_back = write_back;
+	stran->pre_indexed = false;
+	stran->write_back = true;
 	stran->byte = byte;
 	stran->subtract = subtract;
 
