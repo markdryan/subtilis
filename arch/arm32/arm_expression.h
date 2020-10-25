@@ -40,6 +40,9 @@ struct subtilis_arm_exp_val_t_ {
 
 typedef struct subtilis_arm_exp_val_t_ subtilis_arm_exp_val_t;
 
+subtilis_arm_reg_t subtilis_arm_exp_parse_reg(subtilis_arm_ass_context_t *c,
+					      const char *id,
+					      subtilis_error_t *err);
 subtilis_arm_exp_val_t *subtilis_arm_exp_pri7(subtilis_arm_ass_context_t *c,
 					      subtilis_error_t *err);
 subtilis_arm_exp_val_t *subtilis_arm_exp_val_get(subtilis_arm_ass_context_t *c,

@@ -164,12 +164,6 @@ typedef enum {
 	SUBTILIS_ARM_INSTR_MAX,
 } subtilis_arm_instr_type_t;
 
-/*
- * TODO: Maybe we should get rid of the stack versions of these
- * instructions as we'll lose the stack information when we
- * dissasemlble.
- */
-
 typedef enum {
 	SUBTILIS_ARM_MTRAN_IA,
 	SUBTILIS_ARM_MTRAN_IB,

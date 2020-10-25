@@ -28,7 +28,6 @@ struct subtilis_arm_ass_mnemomic_t_ {
 	subtilis_arm_instr_type_t type;
 	subtilis_arm_ass_fn_t asm_fn;
 	bool status_valid;
-	bool byte_valid;
 };
 
 typedef struct subtilis_arm_ass_mnemomic_t_ subtilis_arm_ass_mnemomic_t;
@@ -57,116 +56,131 @@ static const char *const condition_codes[] = {
 	"NV",
 };
 
+/*
+ * Must match order of codes in subtilis_arm_mtran_type_t
+ */
+
+static const char *const mtran_types[] = {
+	"IA",
+	"IB",
+	"DA",
+	"DB",
+	"FA",
+	"FD",
+	"EA",
+	"ED",
+};
+
 static const subtilis_arm_ass_mnemomic_t a_mnem[] = {
-	{ "ABS", SUBTILIS_FPA_INSTR_ABS, NULL, false, false},
-	{ "ACS", SUBTILIS_FPA_INSTR_ACS, NULL, false, false },
-	{ "ADC", SUBTILIS_ARM_INSTR_ADC, NULL, true, false },
-	{ "ADD", SUBTILIS_ARM_INSTR_ADD, NULL, true, false },
-	{ "ADF", SUBTILIS_FPA_INSTR_ADF, NULL, false, false },
-	{ "AND", SUBTILIS_ARM_INSTR_AND, NULL, true, false },
-	{ "ASN", SUBTILIS_FPA_INSTR_ASN, NULL, false, false },
-	{ "ATN", SUBTILIS_FPA_INSTR_ATN, NULL, false, false },
+	{ "ABS", SUBTILIS_FPA_INSTR_ABS, NULL, false },
+	{ "ACS", SUBTILIS_FPA_INSTR_ACS, NULL, false },
+	{ "ADC", SUBTILIS_ARM_INSTR_ADC, NULL, true },
+	{ "ADD", SUBTILIS_ARM_INSTR_ADD, NULL, true },
+	{ "ADF", SUBTILIS_FPA_INSTR_ADF, NULL, false },
+	{ "AND", SUBTILIS_ARM_INSTR_AND, NULL, true },
+	{ "ASN", SUBTILIS_FPA_INSTR_ASN, NULL, false },
+	{ "ATN", SUBTILIS_FPA_INSTR_ATN, NULL, false },
 };
 
 static const subtilis_arm_ass_mnemomic_t b_mnem[] = {
-	{ "B", SUBTILIS_ARM_INSTR_B, NULL, false, false },
-	{ "BL", SUBTILIS_ARM_INSTR_B, NULL, false, false },
-	{ "BIC", SUBTILIS_ARM_INSTR_BIC, NULL, true, false },
+	{ "B", SUBTILIS_ARM_INSTR_B, NULL, false },
+	{ "BL", SUBTILIS_ARM_INSTR_B, NULL, false },
+	{ "BIC", SUBTILIS_ARM_INSTR_BIC, NULL, true },
 };
 
 static const subtilis_arm_ass_mnemomic_t c_mnem[] = {
-	{ "CMF", SUBTILIS_FPA_INSTR_CMF, NULL, false, false },
-	{ "CMFE", SUBTILIS_FPA_INSTR_CMFE, NULL, false, false },
-	{ "CMN", SUBTILIS_ARM_INSTR_CMN, NULL, false, false },
-	{ "CMP", SUBTILIS_ARM_INSTR_CMP, NULL, false, false },
-	{ "CNF", SUBTILIS_FPA_INSTR_CNF, NULL, false, false },
-	{ "CNFE", SUBTILIS_FPA_INSTR_CNFE, NULL, false, false },
-	{ "COS", SUBTILIS_FPA_INSTR_COS, NULL, false, false },
+	{ "CMF", SUBTILIS_FPA_INSTR_CMF, NULL, false },
+	{ "CMFE", SUBTILIS_FPA_INSTR_CMFE, NULL, false },
+	{ "CMN", SUBTILIS_ARM_INSTR_CMN, NULL, false },
+	{ "CMP", SUBTILIS_ARM_INSTR_CMP, NULL, false },
+	{ "CNF", SUBTILIS_FPA_INSTR_CNF, NULL, false },
+	{ "CNFE", SUBTILIS_FPA_INSTR_CNFE, NULL, false },
+	{ "COS", SUBTILIS_FPA_INSTR_COS, NULL, false },
 };
 
 static const subtilis_arm_ass_mnemomic_t d_mnem[] = {
-	{ "DVF", SUBTILIS_FPA_INSTR_DVF, NULL, false, false },
+	{ "DVF", SUBTILIS_FPA_INSTR_DVF, NULL, false },
 };
 
 static const subtilis_arm_ass_mnemomic_t e_mnem[] = {
-	{ "EOR", SUBTILIS_ARM_INSTR_EOR, NULL, true, false },
-	{ "EXP", SUBTILIS_FPA_INSTR_EXP, NULL, false, false },
+	{ "EOR", SUBTILIS_ARM_INSTR_EOR, NULL, true },
+	{ "EXP", SUBTILIS_FPA_INSTR_EXP, NULL, false },
 };
 
 static const subtilis_arm_ass_mnemomic_t f_mnem[] = {
-	{ "FDV", SUBTILIS_FPA_INSTR_FDV, NULL, false, false },
-	{ "FIX", SUBTILIS_FPA_INSTR_FIX, NULL, false, false },
-	{ "FLT", SUBTILIS_FPA_INSTR_FLT, NULL, false, false },
-	{ "FML", SUBTILIS_FPA_INSTR_FML, NULL, false, false },
-	{ "FRD", SUBTILIS_FPA_INSTR_FRD, NULL, false, false },
+	{ "FDV", SUBTILIS_FPA_INSTR_FDV, NULL, false },
+	{ "FIX", SUBTILIS_FPA_INSTR_FIX, NULL, false },
+	{ "FLT", SUBTILIS_FPA_INSTR_FLT, NULL, false },
+	{ "FML", SUBTILIS_FPA_INSTR_FML, NULL, false },
+	{ "FRD", SUBTILIS_FPA_INSTR_FRD, NULL, false },
 };
 
 static const subtilis_arm_ass_mnemomic_t l_mnem[] = {
-	{ "LDF", SUBTILIS_FPA_INSTR_LDF, NULL, false, false },
-	{ "LDM", SUBTILIS_ARM_INSTR_LDM, NULL, false, false },
-	{ "LDR", SUBTILIS_ARM_INSTR_LDR, NULL, false, true },
-	{ "LGN", SUBTILIS_FPA_INSTR_LGN, NULL, false, false },
-	{ "LOG", SUBTILIS_FPA_INSTR_LOG, NULL, false, false },
+	{ "LDF", SUBTILIS_FPA_INSTR_LDF, NULL, false },
+	{ "LDM", SUBTILIS_ARM_INSTR_LDM, NULL, false },
+	{ "LDR", SUBTILIS_ARM_INSTR_LDR, NULL, false },
+	{ "LGN", SUBTILIS_FPA_INSTR_LGN, NULL, false },
+	{ "LOG", SUBTILIS_FPA_INSTR_LOG, NULL, false },
 };
 
 static const subtilis_arm_ass_mnemomic_t m_mnem[] = {
-	{ "MLA", SUBTILIS_ARM_INSTR_MLA, NULL, true, false },
-	{ "MNF", SUBTILIS_FPA_INSTR_MNF, NULL, false, false },
-	{ "MOV", SUBTILIS_ARM_INSTR_MOV, NULL, true, false },
-	{ "MUF", SUBTILIS_FPA_INSTR_MUF, NULL, false, false },
-	{ "MUL", SUBTILIS_ARM_INSTR_MUL, NULL, true, false },
-	{ "MVF", SUBTILIS_FPA_INSTR_MVF, NULL, false, false },
-	{ "MVN", SUBTILIS_ARM_INSTR_MVN, NULL, true, false },
+	{ "MLA", SUBTILIS_ARM_INSTR_MLA, NULL, true },
+	{ "MNF", SUBTILIS_FPA_INSTR_MNF, NULL, false },
+	{ "MOV", SUBTILIS_ARM_INSTR_MOV, NULL, true },
+	{ "MUF", SUBTILIS_FPA_INSTR_MUF, NULL, false },
+	{ "MUL", SUBTILIS_ARM_INSTR_MUL, NULL, true },
+	{ "MVF", SUBTILIS_FPA_INSTR_MVF, NULL, false },
+	{ "MVN", SUBTILIS_ARM_INSTR_MVN, NULL, true },
 };
 
 static const subtilis_arm_ass_mnemomic_t n_mnem[] = {
-	{ "NRM", SUBTILIS_FPA_INSTR_NRM, NULL, false, false },
+	{ "NRM", SUBTILIS_FPA_INSTR_NRM, NULL, false },
 };
 
 static const subtilis_arm_ass_mnemomic_t o_mnem[] = {
-	{ "ORR", SUBTILIS_ARM_INSTR_ORR, NULL, true, false },
+	{ "ORR", SUBTILIS_ARM_INSTR_ORR, NULL, true },
 };
 
 static const subtilis_arm_ass_mnemomic_t p_mnem[] = {
-	{ "POL", SUBTILIS_FPA_INSTR_POL, NULL, false, false },
-	{ "POW", SUBTILIS_FPA_INSTR_POW, NULL, false, false },
+	{ "POL", SUBTILIS_FPA_INSTR_POL, NULL, false },
+	{ "POW", SUBTILIS_FPA_INSTR_POW, NULL, false },
 };
 
 static const subtilis_arm_ass_mnemomic_t r_mnem[] = {
-	{ "RDF", SUBTILIS_FPA_INSTR_RDF, NULL, false, false },
-	{ "RFS", SUBTILIS_FPA_INSTR_RFS, NULL, false, false },
-	{ "RMF", SUBTILIS_FPA_INSTR_RMF, NULL, false, false },
-	{ "RND", SUBTILIS_FPA_INSTR_RND, NULL, false, false },
-	{ "RPW", SUBTILIS_FPA_INSTR_RPW, NULL, false, false },
-	{ "RSB", SUBTILIS_ARM_INSTR_RSB, NULL, true, false },
-	{ "RSC", SUBTILIS_ARM_INSTR_RSC, NULL, true, false },
-	{ "RSF", SUBTILIS_FPA_INSTR_RSF, NULL, false, false },
+	{ "RDF", SUBTILIS_FPA_INSTR_RDF, NULL, false },
+	{ "RFS", SUBTILIS_FPA_INSTR_RFS, NULL, false },
+	{ "RMF", SUBTILIS_FPA_INSTR_RMF, NULL, false },
+	{ "RND", SUBTILIS_FPA_INSTR_RND, NULL, false },
+	{ "RPW", SUBTILIS_FPA_INSTR_RPW, NULL, false },
+	{ "RSB", SUBTILIS_ARM_INSTR_RSB, NULL, true },
+	{ "RSC", SUBTILIS_ARM_INSTR_RSC, NULL, true },
+	{ "RSF", SUBTILIS_FPA_INSTR_RSF, NULL, false },
 };
 
 static const subtilis_arm_ass_mnemomic_t s_mnem[] = {
-	{ "SBC", SUBTILIS_ARM_INSTR_SBC, NULL, true, false },
-	{ "SIN", SUBTILIS_FPA_INSTR_SIN, NULL, false, false },
-	{ "SQT", SUBTILIS_FPA_INSTR_SQT, NULL, false, false },
-	{ "STF", SUBTILIS_FPA_INSTR_STF, NULL, false, false },
-	{ "STM", SUBTILIS_ARM_INSTR_STM, NULL, false, false },
-	{ "STR", SUBTILIS_ARM_INSTR_STR, NULL, false, true },
-	{ "SUB", SUBTILIS_ARM_INSTR_SUB, NULL, true, false },
-	{ "SUF", SUBTILIS_FPA_INSTR_SUF, NULL, false, false },
-	{ "SWI", SUBTILIS_ARM_INSTR_SWI, NULL, false, false },
+	{ "SBC", SUBTILIS_ARM_INSTR_SBC, NULL, true },
+	{ "SIN", SUBTILIS_FPA_INSTR_SIN, NULL, false },
+	{ "SQT", SUBTILIS_FPA_INSTR_SQT, NULL, false },
+	{ "STF", SUBTILIS_FPA_INSTR_STF, NULL, false },
+	{ "STM", SUBTILIS_ARM_INSTR_STM, NULL, false },
+	{ "STR", SUBTILIS_ARM_INSTR_STR, NULL, false },
+	{ "SUB", SUBTILIS_ARM_INSTR_SUB, NULL, true },
+	{ "SUF", SUBTILIS_FPA_INSTR_SUF, NULL, false },
+	{ "SWI", SUBTILIS_ARM_INSTR_SWI, NULL, false },
 };
 
 static const subtilis_arm_ass_mnemomic_t t_mnem[] = {
-	{ "TAN", SUBTILIS_FPA_INSTR_TAN, NULL, false, false },
-	{ "TEQ", SUBTILIS_ARM_INSTR_TEQ, NULL, false, false },
-	{ "TST", SUBTILIS_ARM_INSTR_TST, NULL, false, false },
+	{ "TAN", SUBTILIS_FPA_INSTR_TAN, NULL, false },
+	{ "TEQ", SUBTILIS_ARM_INSTR_TEQ, NULL, false },
+	{ "TST", SUBTILIS_ARM_INSTR_TST, NULL, false },
 };
 
 static const subtilis_arm_ass_mnemomic_t u_mnem[] = {
-	{ "URD", SUBTILIS_FPA_INSTR_URD, NULL, false, false },
+	{ "URD", SUBTILIS_FPA_INSTR_URD, NULL, false },
 };
 
 static const subtilis_arm_ass_mnemomic_t w_mnem[] = {
-	{ "WFS", SUBTILIS_FPA_INSTR_WFS, NULL, false, false },
+	{ "WFS", SUBTILIS_FPA_INSTR_WFS, NULL, false },
 };
 
 /* clang-format on */
@@ -363,6 +377,28 @@ static subtilis_arm_reg_t prv_get_reg(subtilis_arm_ass_context_t *c,
 	}
 
 	subtilis_arm_exp_val_free(val);
+
+	return reg;
+}
+
+static subtilis_arm_reg_t prv_parse_reg(subtilis_arm_ass_context_t *c,
+					subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_arm_reg_t reg;
+
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	tbuf = subtilis_token_get_text(c->t);
+	reg = subtilis_arm_exp_parse_reg(c, tbuf, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
 
 	return reg;
 }
@@ -884,10 +920,126 @@ static void prv_parse_stran(subtilis_arm_ass_context_t *c,
 				    c->l->line);
 }
 
+static void prv_parse_mtran_range(subtilis_arm_ass_context_t *c, size_t reg1,
+				  size_t *reg_list, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t reg2;
+	size_t i;
+
+	reg2 = prv_parse_reg(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (reg1 >= reg2) {
+		subtilis_error_set_ass_bad_range(
+		    err, reg1, reg2, c->l->stream->name, c->l->line);
+		return;
+	}
+
+	for (i = reg1 + 1; i <= reg2; i++)
+		*reg_list |= 1 << i;
+}
+
+static void prv_parse_mtran(subtilis_arm_ass_context_t *c,
+			    subtilis_arm_instr_type_t itype,
+			    subtilis_arm_ccode_type_t ccode,
+			    subtilis_arm_mtran_type_t mtran_type,
+			    subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	const char *tbuf;
+	subtilis_arm_reg_t reg1;
+	size_t reg_list = 0;
+	bool write_back = false;
+
+	dest = prv_get_reg(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "!")) {
+		write_back = true;
+		subtilis_lexer_get(c->l, c->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		tbuf = subtilis_token_get_text(c->t);
+	}
+
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ",")) {
+		subtilis_error_set_expected(err, ",", tbuf, c->l->stream->name,
+					    c->l->line);
+		return;
+	}
+
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, "{")) {
+		subtilis_error_set_expected(err, "{", tbuf, c->l->stream->name,
+					    c->l->line);
+		return;
+	}
+
+	do {
+		reg1 = prv_parse_reg(c, err);
+		reg_list |= 1 << reg1;
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		tbuf = subtilis_token_get_text(c->t);
+		if (c->t->type != SUBTILIS_TOKEN_OPERATOR) {
+			subtilis_error_set_expected(err, "-, } or ,", tbuf,
+						    c->l->stream->name,
+						    c->l->line);
+			return;
+		}
+
+		if (!strcmp(tbuf, ","))
+			continue;
+		if (!strcmp(tbuf, "-")) {
+			prv_parse_mtran_range(c, reg1, &reg_list, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			tbuf = subtilis_token_get_text(c->t);
+			if (c->t->type != SUBTILIS_TOKEN_OPERATOR) {
+				subtilis_error_set_expected(err, "} or ,", tbuf,
+							    c->l->stream->name,
+							    c->l->line);
+				return;
+			}
+			if (!strcmp(tbuf, ","))
+				continue;
+			if (!strcmp(tbuf, "}"))
+				break;
+
+			subtilis_error_set_expected(err, "} or ,", tbuf,
+						    c->l->stream->name,
+						    c->l->line);
+			return;
+		} else if (!strcmp(tbuf, "}")) {
+			break;
+		}
+
+		subtilis_error_set_expected(err, "} or ,", tbuf,
+					    c->l->stream->name, c->l->line);
+		return;
+	} while (true);
+
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mtran(c->arm_s, itype, ccode, dest, reg_list,
+			       mtran_type, write_back, err);
+}
+
 static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
 				  const char *name,
 				  subtilis_arm_instr_type_t itype,
 				  subtilis_arm_ccode_type_t ccode, bool status,
+				  subtilis_arm_mtran_type_t mtran_type,
 				  bool byte, subtilis_error_t *err)
 {
 	switch (itype) {
@@ -923,6 +1075,10 @@ static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
 	case SUBTILIS_ARM_INSTR_STR:
 		prv_parse_stran(c, itype, ccode, byte, err);
 		break;
+	case SUBTILIS_ARM_INSTR_LDM:
+	case SUBTILIS_ARM_INSTR_STM:
+		prv_parse_mtran(c, itype, ccode, mtran_type, err);
+		break;
 	default:
 		subtilis_error_set_not_supported(err, name, c->l->stream->name,
 						 c->l->line);
@@ -943,6 +1099,7 @@ static void prv_parse_identifier(subtilis_arm_ass_context_t *c,
 	size_t ptr;
 	size_t search_len;
 	subtilis_arm_instr_type_t itype;
+	subtilis_arm_mtran_type_t mtran_type = SUBTILIS_ARM_MTRAN_IA;
 	subtilis_arm_ccode_type_t ccode = SUBTILIS_ARM_CCODE_AL;
 	bool status = false;
 	bool byte = false;
@@ -986,11 +1143,17 @@ static void prv_parse_identifier(subtilis_arm_ass_context_t *c,
 
 	itype = keyword_map[index].mnems[max_index].type;
 	status_valid = keyword_map[index].mnems[max_index].status_valid;
-	byte_valid = keyword_map[index].mnems[max_index].byte_valid;
+	byte_valid =
+	    itype == SUBTILIS_ARM_INSTR_LDR || itype == SUBTILIS_ARM_INSTR_STR;
 	ptr = max_length;
 	token_end = strlen(tbuf);
 	if (ptr == token_end) {
-		prv_parse_instruction(c, tbuf, itype, ccode, status, byte, err);
+		if ((itype == SUBTILIS_ARM_INSTR_LDM) ||
+		    (itype == SUBTILIS_ARM_INSTR_STM))
+			prv_parse_label(c, tbuf, err);
+		else
+			prv_parse_instruction(c, tbuf, itype, ccode, status,
+					      mtran_type, byte, err);
 		return;
 	}
 
@@ -1001,28 +1164,39 @@ static void prv_parse_identifier(subtilis_arm_ass_context_t *c,
 			    (tbuf[ptr + 1] == condition_codes[i][1]))
 				break;
 
-		if (i == sizeof(condition_codes) / sizeof(const char *)) {
-			prv_parse_label(c, tbuf, err);
-			return;
+		if (i < sizeof(condition_codes) / sizeof(const char *)) {
+			ptr += 2;
+			ccode = (subtilis_arm_ccode_type_t)i;
 		}
-		ptr += 2;
-		ccode = (subtilis_arm_ccode_type_t)i;
+	}
+
+	if ((ptr + 2 == token_end) && ((itype == SUBTILIS_ARM_INSTR_LDM) ||
+				       (itype == SUBTILIS_ARM_INSTR_STM))) {
+		for (i = 0; i < sizeof(mtran_types) / sizeof(mtran_types[0]);
+		     i++)
+			if (!strcmp(&tbuf[ptr], mtran_types[i]))
+				break;
+
+		if (i < sizeof(mtran_types) / sizeof(mtran_types[0])) {
+			mtran_type = (subtilis_arm_mtran_type_t)i;
+			ptr += 2;
+		}
 	}
 
 	if (ptr + 1 == token_end) {
-		if ((tbuf[ptr] == 'S' && !status_valid) ||
-		    (tbuf[ptr] == 'B' && !byte_valid)) {
+		status = tbuf[ptr] == 'S' && status_valid;
+		byte = tbuf[ptr] == 'B' && byte_valid;
+		if (!status && !byte) {
 			prv_parse_label(c, tbuf, err);
 			return;
 		}
-		status = tbuf[ptr] == 'S' && status_valid;
-		byte = tbuf[ptr] == 'B' && byte_valid;
 	} else if (ptr != token_end) {
 		prv_parse_label(c, tbuf, err);
 		return;
 	}
 
-	prv_parse_instruction(c, tbuf, itype, ccode, status, byte, err);
+	prv_parse_instruction(c, tbuf, itype, ccode, status, mtran_type, byte,
+			      err);
 }
 
 static void prv_parser_main_loop(subtilis_arm_ass_context_t *c,

@@ -251,6 +251,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_ASS_BAD_OFFSET */
 	{"Bad offset: %s\n", 1},
+
+	/* SUBTILIS_ERROR_ASS_BAD_RANGE */
+	{"Bad Range: R%s-R%s\n", 2},
 };
 
 /* clang-format on */

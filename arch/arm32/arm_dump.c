@@ -220,10 +220,10 @@ static void prv_dump_mtran_instr(void *user_data, subtilis_arm_op_t *op,
 	    "IA", "IB", "DA", "DB", "FA", "FD", "EA", "ED",
 	};
 
-	printf("\t%s%s %zu", instr_desc[type], direction[(size_t)instr->type],
-	       instr->op0);
+	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
+	printf("%s R%zu", direction[(size_t)instr->type], instr->op0);
 	if (instr->write_back)
 		printf("!");
 	printf(", {");

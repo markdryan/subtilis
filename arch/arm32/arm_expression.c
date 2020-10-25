@@ -315,8 +315,9 @@ prv_logical_numeric(subtilis_arm_ass_context_t *c, subtilis_arm_exp_val_t *e1,
 	return prv_logical_real(c, e1, e2, rfn, err);
 }
 
-static subtilis_arm_reg_t parse_reg(subtilis_arm_ass_context_t *c,
-				    const char *id, subtilis_error_t *err)
+subtilis_arm_reg_t subtilis_arm_exp_parse_reg(subtilis_arm_ass_context_t *c,
+					      const char *id,
+					      subtilis_error_t *err)
 {
 	size_t reg;
 	size_t name_len;
@@ -353,7 +354,7 @@ static subtilis_arm_exp_val_t *prv_process_id(subtilis_arm_ass_context_t *c,
 {
 	subtilis_arm_reg_t reg;
 
-	reg = parse_reg(c, id, err);
+	reg = subtilis_arm_exp_parse_reg(c, id, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
