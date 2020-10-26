@@ -364,8 +364,15 @@ struct subtilis_arm_instr_t_ {
 
 typedef struct subtilis_arm_instr_t_ subtilis_arm_instr_t;
 
+typedef enum {
+	SUBTILIS_ARM_OP_INSTR,
+	SUBTILIS_ARM_OP_LABEL,
+	SUBTILIS_ARM_OP_PHI,
+	SUBTILIS_ARM_OP_MAX,
+} subtilis_arm_op_type_t;
+
 struct subtilis_arm_op_t_ {
-	subtilis_op_type_t type;
+	subtilis_arm_op_type_t type;
 	union {
 		subtilis_arm_instr_t instr;
 		size_t label;

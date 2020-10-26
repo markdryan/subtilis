@@ -63,7 +63,7 @@ void subtilis_arm_peephole(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	while (ptr != SIZE_MAX) {
 		op = &arm_s->op_pool->ops[ptr];
 
-		if (op->type != SUBTILIS_OP_INSTR) {
+		if (op->type != SUBTILIS_ARM_OP_INSTR) {
 			ptr = op->next;
 			continue;
 		}

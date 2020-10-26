@@ -1901,9 +1901,9 @@ static void prv_init_two_links(subtilis_arm_reg_ud_t *ud, subtilis_arm_ss_t *ss,
 	op1 = &ud->arm_s->op_pool->ops[link1->op];
 	op2 = &ud->arm_s->op_pool->ops[link2->op];
 	ud->ss_terminators[ss_index] = op2;
-	if ((op1->type != SUBTILIS_OP_INSTR) ||
+	if ((op1->type != SUBTILIS_ARM_OP_INSTR) ||
 	    (op1->op.instr.type != SUBTILIS_ARM_INSTR_B) ||
-	    (op2->type != SUBTILIS_OP_LABEL)) {
+	    (op2->type != SUBTILIS_ARM_OP_LABEL)) {
 		subtilis_error_set_assertion_failed(err);
 		goto cleanup;
 	}

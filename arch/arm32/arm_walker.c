@@ -160,11 +160,11 @@ static void prv_arm_walk(subtilis_arm_section_t *arm_s, size_t ptr,
 		op = &arm_s->op_pool->ops[ptr];
 
 		switch (op->type) {
-		case SUBTILIS_OP_LABEL:
+		case SUBTILIS_ARM_OP_LABEL:
 			walker->label_fn(walker->user_data, op, op->op.label,
 					 err);
 			break;
-		case SUBTILIS_OP_INSTR:
+		case SUBTILIS_ARM_OP_INSTR:
 			prv_walk_instr(walker, op, err);
 			break;
 		default:

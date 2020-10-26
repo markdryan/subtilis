@@ -434,7 +434,7 @@ void subtilis_arm_section_add_label(subtilis_arm_section_t *s, size_t label,
 	op = prv_append_op(s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	op->type = SUBTILIS_OP_LABEL;
+	op->type = SUBTILIS_ARM_OP_LABEL;
 	op->op.label = label;
 	s->label_counter++;
 }
@@ -448,7 +448,7 @@ void subtilis_arm_section_insert_label(subtilis_arm_section_t *s, size_t label,
 	op = prv_insert_op(s, pos, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	op->type = SUBTILIS_OP_LABEL;
+	op->type = SUBTILIS_ARM_OP_LABEL;
 	op->op.label = label;
 	s->label_counter++;
 }
@@ -490,7 +490,7 @@ subtilis_arm_section_add_instr(subtilis_arm_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	op->type = SUBTILIS_OP_INSTR;
+	op->type = SUBTILIS_ARM_OP_INSTR;
 	op->op.instr.type = type;
 	return &op->op.instr;
 }
@@ -509,7 +509,7 @@ subtilis_arm_section_insert_instr(subtilis_arm_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	op->type = SUBTILIS_OP_INSTR;
+	op->type = SUBTILIS_ARM_OP_INSTR;
 	op->op.instr.type = type;
 	return &op->op.instr;
 }
