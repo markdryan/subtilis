@@ -38,7 +38,7 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	subtilis_arm_op_pool_t *pool = NULL;
 	subtilis_arm_prog_t *arm_p = NULL;
 	subtilis_arm_vm_t *vm = NULL;
-	uint32_t *code = NULL;
+	uint8_t *code = NULL;
 
 	subtilis_error_init(&err);
 	subtilis_buffer_init(&b, 1024);
@@ -69,12 +69,12 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 
 	/* Insert heap start */
 
-	if (code_size < 2) {
+	if (code_size < 8) {
 		subtilis_error_set_assertion_failed(&err);
 		goto cleanup;
 	}
 
-	code[1] = 0x8000 + (code_size * sizeof(code));
+	((uint32_t *)code)[1] = 0x8000 + code_size;
 
 	//	for (size_t i = 0; i < code_size; i++) {
 	//		printf("0x%x\n",code[i]);
@@ -359,11 +359,11 @@ static int prv_test_encode(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	code = subtilis_arm_encode_buf(arm_p, &code_size, &err);
+	code = (uint32_t *)subtilis_arm_encode_buf(arm_p, &code_size, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	for (i = 0; i < code_size; i++)
+	for (i = 0; i < code_size / 4; i++)
 		if (code[i] != prv_expected_code[i]) {
 			fprintf(stderr, "%zu: expected 0x%x got 0x%x\n", i,
 				prv_expected_code[i], code[i]);

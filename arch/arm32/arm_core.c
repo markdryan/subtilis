@@ -1396,6 +1396,71 @@ void subtilis_arm_add_mtran(subtilis_arm_section_t *s,
 	mtran->write_back = write_back;
 }
 
+void subtilis_arm_add_byte(subtilis_arm_section_t *s, uint8_t byte,
+			   subtilis_error_t *err)
+{
+	subtilis_arm_op_t *op;
+
+	op = prv_append_op(s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op->type = SUBTILIS_ARM_OP_BYTE;
+	op->op.byte = byte;
+}
+
+void subtilis_arm_add_two_bytes(subtilis_arm_section_t *s, uint16_t two_bytes,
+				subtilis_error_t *err)
+{
+	subtilis_arm_op_t *op;
+
+	op = prv_append_op(s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op->type = SUBTILIS_ARM_OP_TWO_BYTE;
+	op->op.two_bytes = two_bytes;
+}
+
+void subtilis_arm_add_four_bytes(subtilis_arm_section_t *s, uint32_t four_bytes,
+				 subtilis_error_t *err)
+{
+	subtilis_arm_op_t *op;
+
+	op = prv_append_op(s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op->type = SUBTILIS_ARM_OP_FOUR_BYTE;
+	op->op.four_bytes = four_bytes;
+}
+
+void subtilis_arm_add_double(subtilis_arm_section_t *s, double dbl,
+			     subtilis_error_t *err)
+{
+	subtilis_arm_op_t *op;
+
+	op = prv_append_op(s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op->type = SUBTILIS_ARM_OP_DOUBLE;
+	op->op.dbl = dbl;
+}
+
+void subtilis_arm_add_doubler(subtilis_arm_section_t *s, double dbl,
+			      subtilis_error_t *err)
+{
+	subtilis_arm_op_t *op;
+
+	op = prv_append_op(s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op->type = SUBTILIS_ARM_OP_DOUBLER;
+	op->op.dbl = dbl;
+}
+
 void subtilis_arm_restore_stack(subtilis_arm_section_t *arm_s,
 				size_t stack_space, subtilis_error_t *err)
 {

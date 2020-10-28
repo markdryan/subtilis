@@ -281,11 +281,17 @@ static void prv_dist_fpa_cptran_instr(void *user_data, subtilis_arm_op_t *op,
 	ud->last_used++;
 }
 
+static void prv_dist_equ(void *user_data, subtilis_arm_op_t *op,
+			 subtilis_error_t *err)
+{
+}
+
 void subtilis_init_fpa_dist_walker(subtlis_arm_walker_t *walker,
 				   void *user_data)
 {
 	walker->user_data = user_data;
 	walker->label_fn = prv_dist_label;
+	walker->equ_fn = prv_dist_equ;
 	walker->data_fn = prv_dist_data_instr;
 	walker->mul_fn = prv_dist_mul_instr;
 	walker->cmp_fn = prv_dist_cmp_instr;
@@ -403,6 +409,7 @@ void subtilis_init_fpa_used_walker(subtlis_arm_walker_t *walker,
 {
 	walker->user_data = user_data;
 	walker->label_fn = prv_dist_label;
+	walker->equ_fn = prv_dist_equ;
 	walker->data_fn = prv_dist_data_instr;
 	walker->mul_fn = prv_dist_mul_instr;
 	walker->cmp_fn = prv_dist_cmp_instr;

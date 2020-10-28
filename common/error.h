@@ -99,6 +99,9 @@ typedef enum {
 	SUBTILIS_ERROR_SYS_CALL_UNKNOWN,
 	SUBTILIS_ERROR_ASS_BAD_OFFSET,
 	SUBTILIS_ERROR_ASS_BAD_RANGE,
+	SUBTILIS_ERROR_ASS_BAD_ALIGNMENT,
+	SUBTILIS_ERROR_ASS_KEYWORD_BAD_USE,
+	SUBTILIS_ERROR_ASS_INT_TOO_BIG,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -315,6 +318,15 @@ void subtilis_error_init(subtilis_error_t *e);
 			       file, line, __FILE__, __LINE__)
 #define subtilis_error_set_ass_bad_range(e, num1, num2, file, line)            \
 	subtilis_error_set_int(e, SUBTILIS_ERROR_ASS_BAD_RANGE, num1, num2,    \
+			       file, line, __FILE__, __LINE__)
+#define subtilis_error_set_ass_bad_alignment(e)                                \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_ASS_BAD_ALIGNMENT,          \
+				 __FILE__, __LINE__)
+#define subtilis_error_set_ass_keyword_bad_use(e, name, file, line)            \
+	subtilis_error_set1(e, SUBTILIS_ERROR_ASS_KEYWORD_BAD_USE, name, file, \
+			    line)
+#define subtilis_error_set_ass_integer_too_big(e, num, file, line)             \
+	subtilis_error_set_int(e, SUBTILIS_ERROR_ASS_INT_TOO_BIG, num, 0,      \
 			       file, line, __FILE__, __LINE__)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,

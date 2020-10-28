@@ -23,7 +23,7 @@
 #include "arm_disass.h"
 #include "arm_vm.h"
 
-subtilis_arm_vm_t *subtilis_arm_vm_new(uint32_t *code, size_t code_size,
+subtilis_arm_vm_t *subtilis_arm_vm_new(uint8_t *code, size_t code_size,
 				       size_t mem_size, subtilis_error_t *err)
 {
 	double dummy_float = 1.0;
@@ -41,8 +41,8 @@ subtilis_arm_vm_t *subtilis_arm_vm_new(uint32_t *code, size_t code_size,
 		goto fail;
 	}
 
-	memcpy(arm_vm->memory, code, sizeof(*code) * code_size);
-	arm_vm->code_size = code_size;
+	memcpy(arm_vm->memory, code, code_size);
+	arm_vm->code_size = code_size / 4;
 	arm_vm->mem_size = mem_size;
 
 	arm_vm->reverse_fpa_consts = (*lower_word) == 0;

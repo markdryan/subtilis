@@ -52,7 +52,7 @@ void subtilis_arm_link_constant_add(subtilis_arm_link_t *link, size_t offset,
 				    subtilis_error_t *err);
 void subtilis_arm_link_section(subtilis_arm_link_t *link, size_t num,
 			       size_t offset);
-void subtilis_arm_link_link(subtilis_arm_link_t *link, uint32_t *buf,
+void subtilis_arm_link_link(subtilis_arm_link_t *link, uint8_t *buf,
 			    size_t buf_size, const size_t *raw_constants,
 			    size_t num_raw_constants, subtilis_error_t *err);
 void subtilis_arm_link_delete(subtilis_arm_link_t *resolve);

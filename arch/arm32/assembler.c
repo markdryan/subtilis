@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "arm_core.h"
@@ -1199,6 +1200,253 @@ static void prv_parse_identifier(subtilis_arm_ass_context_t *c,
 			      err);
 }
 
+typedef bool (*subtilis_arm_ass_valid_int_fn_t)(int32_t);
+
+static int32_t *prv_get_uint32_list(subtilis_arm_ass_context_t *c,
+				    size_t *count,
+				    subtilis_arm_ass_valid_int_fn_t fn,
+				    subtilis_error_t *err)
+{
+	const char *tbuf;
+	int32_t *new_nums;
+	int32_t *nums = NULL;
+	size_t max_nums = 0;
+	size_t num_count = 0;
+
+	do {
+		subtilis_lexer_get(c->l, c->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		if (c->t->type != SUBTILIS_TOKEN_INTEGER) {
+			tbuf = subtilis_token_get_text(c->t);
+			subtilis_error_set_integer_expected(
+			    err, tbuf, c->l->stream->name, c->l->line);
+			goto cleanup;
+		}
+
+		if (fn && !fn(c->t->tok.integer)) {
+			subtilis_error_set_ass_integer_too_big(
+			    err, c->t->tok.integer, c->l->stream->name,
+			    c->l->line);
+			goto cleanup;
+		}
+
+		if (num_count == max_nums) {
+			max_nums += 32;
+			new_nums = realloc(nums, max_nums * sizeof(*nums));
+			if (!new_nums)
+				goto cleanup;
+			nums = new_nums;
+		}
+
+		nums[num_count++] = c->t->tok.integer;
+
+		subtilis_lexer_get(c->l, c->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		tbuf = subtilis_token_get_text(c->t);
+	} while ((c->t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, ","));
+
+	*count = num_count;
+
+	return nums;
+
+cleanup:
+
+	free(nums);
+
+	return NULL;
+}
+
+static bool prv_check_equb(int32_t i) { return !(i < -128 || i > 255); }
+
+static void prv_parse_equb(subtilis_arm_ass_context_t *c, subtilis_error_t *err)
+{
+	int32_t *nums;
+	size_t num_count;
+	size_t i;
+
+	nums = prv_get_uint32_list(c, &num_count, prv_check_equb, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	for (i = 0; i < num_count; i++) {
+		subtilis_arm_add_byte(c->arm_s, (uint8_t)nums[i], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+cleanup:
+
+	free(nums);
+}
+
+static bool prv_check_equw(int32_t i) { return !(i < -32768 || i > 0xffff); }
+
+static void prv_parse_equw(subtilis_arm_ass_context_t *c, subtilis_error_t *err)
+{
+	int32_t *nums;
+	size_t num_count;
+	size_t i;
+
+	nums = prv_get_uint32_list(c, &num_count, prv_check_equw, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	for (i = 0; i < num_count; i++) {
+		subtilis_arm_add_two_bytes(c->arm_s, (uint16_t)nums[i], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+cleanup:
+
+	free(nums);
+}
+
+static void prv_parse_equd(subtilis_arm_ass_context_t *c, subtilis_error_t *err)
+{
+	int32_t *nums;
+	size_t num_count;
+	size_t i;
+
+	nums = prv_get_uint32_list(c, &num_count, NULL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	for (i = 0; i < num_count; i++) {
+		subtilis_arm_add_four_bytes(c->arm_s, nums[i], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+cleanup:
+
+	free(nums);
+}
+
+static double *prv_get_double_list(subtilis_arm_ass_context_t *c, size_t *count,
+				   subtilis_error_t *err)
+{
+	const char *tbuf;
+	double *new_nums;
+	double *nums = NULL;
+	size_t max_nums = 0;
+	size_t num_count = 0;
+
+	do {
+		subtilis_lexer_get(c->l, c->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		if (c->t->type != SUBTILIS_TOKEN_REAL) {
+			tbuf = subtilis_token_get_text(c->t);
+			subtilis_error_set_numeric_expected(
+			    err, tbuf, c->l->stream->name, c->l->line);
+			goto cleanup;
+		}
+
+		if (num_count == max_nums) {
+			max_nums += 32;
+			new_nums = realloc(nums, max_nums * sizeof(*nums));
+			if (!new_nums)
+				goto cleanup;
+			nums = new_nums;
+		}
+
+		nums[num_count++] = c->t->tok.real;
+
+		subtilis_lexer_get(c->l, c->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		tbuf = subtilis_token_get_text(c->t);
+	} while ((c->t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, ","));
+
+	*count = num_count;
+
+	return nums;
+
+cleanup:
+
+	free(nums);
+
+	return NULL;
+}
+
+static void prv_parse_equdbl(subtilis_arm_ass_context_t *c,
+			     subtilis_error_t *err)
+{
+	double *nums;
+	size_t num_count;
+	size_t i;
+
+	nums = prv_get_double_list(c, &num_count, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	for (i = 0; i < num_count; i++) {
+		subtilis_arm_add_double(c->arm_s, nums[i], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+cleanup:
+
+	free(nums);
+}
+
+static void prv_parse_equdblr(subtilis_arm_ass_context_t *c,
+			      subtilis_error_t *err)
+{
+	double *nums;
+	size_t num_count;
+	size_t i;
+
+	nums = prv_get_double_list(c, &num_count, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	for (i = 0; i < num_count; i++) {
+		subtilis_arm_add_doubler(c->arm_s, nums[i], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+cleanup:
+
+	free(nums);
+}
+
+static void prv_parse_keyword(subtilis_arm_ass_context_t *c, const char *name,
+			      const subtilis_token_keyword_t *keyword,
+			      subtilis_error_t *err)
+{
+	switch (keyword->type) {
+	case SUBTILIS_ARM_KEYWORD_EQUB:
+		prv_parse_equb(c, err);
+		break;
+	case SUBTILIS_ARM_KEYWORD_EQUD:
+		prv_parse_equd(c, err);
+		break;
+	case SUBTILIS_ARM_KEYWORD_EQUDBL:
+		prv_parse_equdbl(c, err);
+		break;
+	case SUBTILIS_ARM_KEYWORD_EQUDBLR:
+		prv_parse_equdblr(c, err);
+		break;
+	case SUBTILIS_ARM_KEYWORD_EQUW:
+		prv_parse_equw(c, err);
+		break;
+	default:
+		subtilis_error_set_ass_keyword_bad_use(
+		    err, name, c->l->stream->name, c->l->line);
+		break;
+	}
+}
+
 static void prv_parser_main_loop(subtilis_arm_ass_context_t *c,
 				 subtilis_error_t *err)
 {
@@ -1212,6 +1460,7 @@ static void prv_parser_main_loop(subtilis_arm_ass_context_t *c,
 	while ((c->t->type != SUBTILIS_TOKEN_OPERATOR) && (strcmp(tbuf, "]"))) {
 		switch (c->t->type) {
 		case SUBTILIS_TOKEN_KEYWORD:
+			prv_parse_keyword(c, tbuf, &c->t->tok.keyword, err);
 			break;
 		case SUBTILIS_TOKEN_IDENTIFIER:
 			prv_parse_identifier(c, err);

@@ -2099,6 +2099,11 @@ cleanup:
 	subtilis_arm_subsections_free(&sss);
 }
 
+static void prv_alloc_equ(void *user_data, subtilis_arm_op_t *op,
+			  subtilis_error_t *err)
+{
+}
+
 size_t subtilis_arm_reg_alloc(subtilis_arm_section_t *arm_s,
 			      subtilis_error_t *err)
 {
@@ -2121,6 +2126,7 @@ size_t subtilis_arm_reg_alloc(subtilis_arm_section_t *arm_s,
 
 	walker.user_data = &ud;
 	walker.label_fn = prv_alloc_label;
+	walker.equ_fn = prv_alloc_equ;
 	walker.data_fn = prv_alloc_data_instr;
 	walker.mul_fn = prv_alloc_mul_instr;
 	walker.cmp_fn = prv_alloc_cmp_instr;

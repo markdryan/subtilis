@@ -19,13 +19,13 @@
 
 #include "arm_core.h"
 
-typedef void (*subtilis_arm_encode_plat_t)(uint32_t *code, size_t words_written,
+typedef void (*subtilis_arm_encode_plat_t)(uint8_t *code, size_t bytes_written,
 					   subtilis_error_t *err);
 
 void subtilis_arm_encode(subtilis_arm_prog_t *arm_p, const char *fname,
 			 subtilis_arm_encode_plat_t plat,
 			 subtilis_error_t *err);
-uint32_t *subtilis_arm_encode_buf(subtilis_arm_prog_t *arm_p,
-				  size_t *words_written, subtilis_error_t *err);
+uint8_t *subtilis_arm_encode_buf(subtilis_arm_prog_t *arm_p,
+				 size_t *bytes_written, subtilis_error_t *err);
 
 #endif

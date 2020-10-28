@@ -254,6 +254,15 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_ASS_BAD_RANGE */
 	{"Bad Range: R%s-R%s\n", 2},
+
+	/* SUBTILIS_ERROR_ASS_BAD_ALIGNMENT */
+	{"Bad alignment\n", 0},
+
+	/* SUBTILIS_ERROR_ASS_KEYWORD_BAD_USE */
+	{"%s cannot be used here\n", 1},
+
+	/* SUBTILIS_ERROR_ASS_INTEGER_TOO_BIG */
+	{"%s is too big\n", 1},
 };
 
 /* clang-format on */

@@ -50,7 +50,7 @@ struct subtilis_arm_vm_t_ {
 
 typedef struct subtilis_arm_vm_t_ subtilis_arm_vm_t;
 
-subtilis_arm_vm_t *subtilis_arm_vm_new(uint32_t *code, size_t code_size,
+subtilis_arm_vm_t *subtilis_arm_vm_new(uint8_t *code, size_t code_size,
 				       size_t mem_size, subtilis_error_t *err);
 void subtilis_arm_vm_delete(subtilis_arm_vm_t *vm);
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,

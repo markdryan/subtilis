@@ -26,6 +26,8 @@ typedef struct subtlis_arm_walker_t_ subtlis_arm_walker_t;
 
 struct subtlis_arm_walker_t_ {
 	void *user_data;
+	void (*equ_fn)(void *user_data, subtilis_arm_op_t *op,
+		       subtilis_error_t *err);
 	void (*label_fn)(void *user_data, subtilis_arm_op_t *op, size_t label,
 			 subtilis_error_t *err);
 	void (*data_fn)(void *user_data, subtilis_arm_op_t *op,

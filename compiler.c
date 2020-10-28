@@ -27,14 +27,14 @@
 #include "frontend/basic_keywords.h"
 #include "frontend/parser.h"
 
-static void prv_set_prog_size(uint32_t *code, size_t words_written,
+static void prv_set_prog_size(uint8_t *code, size_t bytes_written,
 			      subtilis_error_t *err)
 {
-	if (words_written < 2) {
+	if (bytes_written < 8) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-	code[1] = 0x8000 + (int32_t)words_written * 4;
+	((uint32_t *)code)[1] = 0x8000 + (int32_t)bytes_written;
 }
 
 int main(int argc, char *argv[])

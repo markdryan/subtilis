@@ -87,8 +87,7 @@ int main(int argc, char *argv[])
 
 	subtilis_arm_disass_dump(code, code_len);
 
-	vm = subtilis_arm_vm_new((uint32_t *)code, code_len / 4, 512 * 1024,
-				 &err);
+	vm = subtilis_arm_vm_new(code, code_len, 512 * 1024, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

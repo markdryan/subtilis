@@ -485,6 +485,30 @@ static void prv_dump_label(void *user_data, subtilis_arm_op_t *op, size_t label,
 	printf(".label_%zu\n", label);
 }
 
+static void prv_dump_equ(void *user_data, subtilis_arm_op_t *op,
+			 subtilis_error_t *err)
+{
+	switch (op->type) {
+	case SUBTILIS_ARM_OP_BYTE:
+		printf("\tEQUB %d\n", op->op.byte);
+		break;
+	case SUBTILIS_ARM_OP_TWO_BYTE:
+		printf("\tEQUW %d\n", op->op.two_bytes);
+		break;
+	case SUBTILIS_ARM_OP_FOUR_BYTE:
+		printf("\tEQUD %d\n", op->op.four_bytes);
+		break;
+	case SUBTILIS_ARM_OP_DOUBLE:
+		printf("\tEQUDBL %f\n", op->op.dbl);
+		break;
+	case SUBTILIS_ARM_OP_DOUBLER:
+		printf("\tEQUDBLR %f\n", op->op.dbl);
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+	}
+}
+
 void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 			       subtilis_arm_section_t *s)
 {
@@ -496,6 +520,7 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 
 	walker.user_data = p;
 	walker.label_fn = prv_dump_label;
+	walker.equ_fn = prv_dump_equ;
 	walker.data_fn = prv_dump_data_instr;
 	walker.mul_fn = prv_dump_mul_instr;
 	walker.cmp_fn = prv_dump_cmp_instr;

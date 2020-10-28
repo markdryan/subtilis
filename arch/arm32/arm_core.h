@@ -367,6 +367,11 @@ typedef struct subtilis_arm_instr_t_ subtilis_arm_instr_t;
 typedef enum {
 	SUBTILIS_ARM_OP_INSTR,
 	SUBTILIS_ARM_OP_LABEL,
+	SUBTILIS_ARM_OP_BYTE,
+	SUBTILIS_ARM_OP_TWO_BYTE,
+	SUBTILIS_ARM_OP_FOUR_BYTE,
+	SUBTILIS_ARM_OP_DOUBLE,
+	SUBTILIS_ARM_OP_DOUBLER,
 	SUBTILIS_ARM_OP_PHI,
 	SUBTILIS_ARM_OP_MAX,
 } subtilis_arm_op_type_t;
@@ -374,6 +379,10 @@ typedef enum {
 struct subtilis_arm_op_t_ {
 	subtilis_arm_op_type_t type;
 	union {
+		uint8_t byte;
+		uint16_t two_bytes;
+		uint32_t four_bytes;
+		double dbl;
 		subtilis_arm_instr_t instr;
 		size_t label;
 	} op;
@@ -690,6 +699,17 @@ bool subtilis_arm_is_fixed(subtilis_arm_reg_t reg);
 #define subtilis_arm_add_mvn_reg(s, cc, st, dst, op2, err)                     \
 	subtilis_arm_add_movmvn_reg(s, SUBTILIS_ARM_INSTR_MVN, cc, st, dst,    \
 				    op2, err)
+
+void subtilis_arm_add_byte(subtilis_arm_section_t *s, uint8_t byte,
+			   subtilis_error_t *err);
+void subtilis_arm_add_two_bytes(subtilis_arm_section_t *s, uint16_t two_bytes,
+				subtilis_error_t *err);
+void subtilis_arm_add_four_bytes(subtilis_arm_section_t *s, uint32_t four_bytes,
+				 subtilis_error_t *err);
+void subtilis_arm_add_double(subtilis_arm_section_t *s, double dbl,
+			     subtilis_error_t *err);
+void subtilis_arm_add_doubler(subtilis_arm_section_t *s, double dbl,
+			      subtilis_error_t *err);
 
 void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 			       subtilis_arm_section_t *s);
