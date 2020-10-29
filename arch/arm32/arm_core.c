@@ -65,7 +65,12 @@ void subtilis_arm_op_pool_reset(subtilis_arm_op_pool_t *pool) { pool->len = 0; }
 
 void subtilis_arm_op_pool_delete(subtilis_arm_op_pool_t *pool)
 {
+	size_t i;
+
 	if (pool) {
+		for (i = 0; i < pool->len; i++)
+			if (pool->ops[i].type == SUBTILIS_ARM_OP_STRING)
+				free(pool->ops[i].op.str);
 		free(pool->ops);
 		free(pool);
 	}
@@ -1459,6 +1464,24 @@ void subtilis_arm_add_doubler(subtilis_arm_section_t *s, double dbl,
 
 	op->type = SUBTILIS_ARM_OP_DOUBLER;
 	op->op.dbl = dbl;
+}
+
+void subtilis_arm_add_string(subtilis_arm_section_t *s, const char *str,
+			     subtilis_error_t *err)
+{
+	subtilis_arm_op_t *op;
+
+	op = prv_append_op(s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op->type = SUBTILIS_ARM_OP_STRING;
+	op->op.str = malloc(strlen(str) + 1);
+	if (!op->op.str) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	strcpy(op->op.str, str);
 }
 
 void subtilis_arm_restore_stack(subtilis_arm_section_t *arm_s,

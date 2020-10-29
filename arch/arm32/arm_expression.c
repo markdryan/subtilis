@@ -783,6 +783,22 @@ static int32_t prv_sub_int32_fn(subtilis_arm_ass_context_t *c, int32_t a,
 	return a - b;
 }
 
+static subtilis_arm_exp_val_t *prv_strcat(subtilis_arm_exp_val_t *e1,
+					  subtilis_arm_exp_val_t *e2,
+					  subtilis_error_t *err)
+
+{
+	subtilis_buffer_remove_terminator(&e1->val.buf);
+	subtilis_buffer_append_buffer(&e1->val.buf, &e2->val.buf, err);
+	subtilis_arm_exp_val_free(e2);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_arm_exp_val_free(e1);
+		return NULL;
+	}
+
+	return e1;
+}
+
 static subtilis_arm_exp_val_t *prv_priority4(subtilis_arm_ass_context_t *c,
 					     subtilis_error_t *err)
 {
@@ -791,6 +807,7 @@ static subtilis_arm_exp_val_t *prv_priority4(subtilis_arm_ass_context_t *c,
 	subtilis_arm_exp_val_t *e2 = NULL;
 	subtilis_ass_int_fn_t int_fn;
 	subtilis_ass_real_fn_t real_fn;
+	bool plus;
 
 	e1 = prv_priority3(c, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -809,11 +826,13 @@ static subtilis_arm_exp_val_t *prv_priority4(subtilis_arm_ass_context_t *c,
 	}
 
 	while (c->t->type == SUBTILIS_TOKEN_OPERATOR) {
+		plus = false;
 		tbuf = subtilis_token_get_text(c->t);
 
 		if (!strcmp(tbuf, "+")) {
 			int_fn = prv_add_int32_fn;
 			real_fn = prv_add_real_fn;
+			plus = true;
 		} else if (!strcmp(tbuf, "-")) {
 			int_fn = prv_sub_int32_fn;
 			real_fn = prv_sub_real_fn;
@@ -829,7 +848,12 @@ static subtilis_arm_exp_val_t *prv_priority4(subtilis_arm_ass_context_t *c,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		e1 = prv_binary_numeric(c, e1, e2, int_fn, real_fn, err);
+		if (plus && e1->type == SUBTILIS_ARM_EXP_TYPE_STRING &&
+		    e2->type == SUBTILIS_ARM_EXP_TYPE_STRING)
+			e1 = prv_strcat(e1, e2, err);
+		else
+			e1 =
+			    prv_binary_numeric(c, e1, e2, int_fn, real_fn, err);
 		e2 = NULL;
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;

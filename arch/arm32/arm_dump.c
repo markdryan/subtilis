@@ -504,6 +504,9 @@ static void prv_dump_equ(void *user_data, subtilis_arm_op_t *op,
 	case SUBTILIS_ARM_OP_DOUBLER:
 		printf("\tEQUDBLR %f\n", op->op.dbl);
 		break;
+	case SUBTILIS_ARM_OP_STRING:
+		printf("\tEQUS \"%s\"\n", op->op.str);
+		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
 	}

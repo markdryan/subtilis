@@ -1382,29 +1382,53 @@ static void prv_encode_equ(void *user_data, subtilis_arm_op_t *op,
 			   subtilis_error_t *err)
 {
 	uint32_t *dbl_ptr;
+	size_t len;
 	subtilis_arm_encode_ud_t *ud = user_data;
 
 	switch (op->type) {
 	case SUBTILIS_ARM_OP_BYTE:
+		prv_ensure_code_size(ud, 1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 		ud->code[ud->bytes_written++] = op->op.byte;
 		break;
 	case SUBTILIS_ARM_OP_TWO_BYTE:
+		prv_ensure_code_size(ud, 2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 		*((uint16_t *)&ud->code[ud->bytes_written]) = op->op.two_bytes;
 		ud->bytes_written += 2;
 		break;
 	case SUBTILIS_ARM_OP_FOUR_BYTE:
+		prv_ensure_code_size(ud, 4, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 		*((uint32_t *)&ud->code[ud->bytes_written]) = op->op.four_bytes;
 		ud->bytes_written += 4;
 		break;
 	case SUBTILIS_ARM_OP_DOUBLE:
+		prv_ensure_code_size(ud, 8, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 		*((double *)&ud->code[ud->bytes_written]) = op->op.dbl;
 		ud->bytes_written += 8;
 		break;
 	case SUBTILIS_ARM_OP_DOUBLER:
+		prv_ensure_code_size(ud, 8, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 		dbl_ptr = (uint32_t *)&op->op.dbl;
 		*((uint32_t *)&ud->code[ud->bytes_written]) = dbl_ptr[1];
 		*((uint32_t *)&ud->code[ud->bytes_written + 4]) = dbl_ptr[0];
 		ud->bytes_written += 8;
+		break;
+	case SUBTILIS_ARM_OP_STRING:
+		len = strlen(op->op.str) + 1;
+		prv_ensure_code_size(ud, len, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		strcpy((char *)&ud->code[ud->bytes_written], op->op.str);
+		ud->bytes_written += len;
 		break;
 	default:
 		subtilis_error_set_assertion_failed(err);

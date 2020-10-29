@@ -172,6 +172,7 @@ static void prv_arm_walk(subtilis_arm_section_t *arm_s, size_t ptr,
 		case SUBTILIS_ARM_OP_FOUR_BYTE:
 		case SUBTILIS_ARM_OP_DOUBLE:
 		case SUBTILIS_ARM_OP_DOUBLER:
+		case SUBTILIS_ARM_OP_STRING:
 			if (!walker->equ_fn) {
 				subtilis_error_set_assertion_failed(err);
 				break;

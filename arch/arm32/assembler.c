@@ -1209,23 +1209,32 @@ static int32_t *prv_get_uint32_list(subtilis_arm_ass_context_t *c,
 {
 	const char *tbuf;
 	int32_t *new_nums;
+	int32_t num;
 	int32_t *nums = NULL;
 	size_t max_nums = 0;
 	size_t num_count = 0;
+	subtilis_arm_exp_val_t *val = NULL;
 
 	do {
-		subtilis_lexer_get(c->l, c->t, err);
+		val = subtilis_arm_exp_val_get(c, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		if (c->t->type != SUBTILIS_TOKEN_INTEGER) {
-			tbuf = subtilis_token_get_text(c->t);
+		if (val->type == SUBTILIS_ARM_EXP_TYPE_INT) {
+			num = val->val.integer;
+		} else if (val->type == SUBTILIS_ARM_EXP_TYPE_REAL) {
+			num = (int32_t)val->val.real;
+		} else {
 			subtilis_error_set_integer_expected(
-			    err, tbuf, c->l->stream->name, c->l->line);
+			    err, subtilis_arm_exp_type_name(val),
+			    c->l->stream->name, c->l->line);
 			goto cleanup;
 		}
 
-		if (fn && !fn(c->t->tok.integer)) {
+		subtilis_arm_exp_val_free(val);
+		val = NULL;
+
+		if (fn && !fn(num)) {
 			subtilis_error_set_ass_integer_too_big(
 			    err, c->t->tok.integer, c->l->stream->name,
 			    c->l->line);
@@ -1240,12 +1249,7 @@ static int32_t *prv_get_uint32_list(subtilis_arm_ass_context_t *c,
 			nums = new_nums;
 		}
 
-		nums[num_count++] = c->t->tok.integer;
-
-		subtilis_lexer_get(c->l, c->t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-
+		nums[num_count++] = num;
 		tbuf = subtilis_token_get_text(c->t);
 	} while ((c->t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, ","));
 
@@ -1255,6 +1259,7 @@ static int32_t *prv_get_uint32_list(subtilis_arm_ass_context_t *c,
 
 cleanup:
 
+	subtilis_arm_exp_val_free(val);
 	free(nums);
 
 	return NULL;
@@ -1332,21 +1337,30 @@ static double *prv_get_double_list(subtilis_arm_ass_context_t *c, size_t *count,
 {
 	const char *tbuf;
 	double *new_nums;
+	double num;
 	double *nums = NULL;
 	size_t max_nums = 0;
 	size_t num_count = 0;
+	subtilis_arm_exp_val_t *val = NULL;
 
 	do {
-		subtilis_lexer_get(c->l, c->t, err);
+		val = subtilis_arm_exp_val_get(c, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		if (c->t->type != SUBTILIS_TOKEN_REAL) {
-			tbuf = subtilis_token_get_text(c->t);
+		if (val->type == SUBTILIS_ARM_EXP_TYPE_INT) {
+			num = (double)val->val.integer;
+		} else if (val->type == SUBTILIS_ARM_EXP_TYPE_REAL) {
+			num = val->val.real;
+		} else {
 			subtilis_error_set_numeric_expected(
-			    err, tbuf, c->l->stream->name, c->l->line);
+			    err, subtilis_arm_exp_type_name(val),
+			    c->l->stream->name, c->l->line);
 			goto cleanup;
 		}
+
+		subtilis_arm_exp_val_free(val);
+		val = NULL;
 
 		if (num_count == max_nums) {
 			max_nums += 32;
@@ -1356,12 +1370,7 @@ static double *prv_get_double_list(subtilis_arm_ass_context_t *c, size_t *count,
 			nums = new_nums;
 		}
 
-		nums[num_count++] = c->t->tok.real;
-
-		subtilis_lexer_get(c->l, c->t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-
+		nums[num_count++] = num;
 		tbuf = subtilis_token_get_text(c->t);
 	} while ((c->t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, ","));
 
@@ -1371,6 +1380,7 @@ static double *prv_get_double_list(subtilis_arm_ass_context_t *c, size_t *count,
 
 cleanup:
 
+	subtilis_arm_exp_val_free(val);
 	free(nums);
 
 	return NULL;
@@ -1420,6 +1430,30 @@ cleanup:
 	free(nums);
 }
 
+static void prv_parse_equs(subtilis_arm_ass_context_t *c, subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+	const char *str;
+
+	val = subtilis_arm_exp_val_get(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (val->type != SUBTILIS_ARM_EXP_TYPE_STRING) {
+		subtilis_error_set_expected(err, "string",
+					    subtilis_arm_exp_type_name(val),
+					    c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	str = subtilis_buffer_get_string(&val->val.buf);
+	subtilis_arm_add_string(c->arm_s, str, err);
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+}
+
 static void prv_parse_keyword(subtilis_arm_ass_context_t *c, const char *name,
 			      const subtilis_token_keyword_t *keyword,
 			      subtilis_error_t *err)
@@ -1436,6 +1470,9 @@ static void prv_parse_keyword(subtilis_arm_ass_context_t *c, const char *name,
 		break;
 	case SUBTILIS_ARM_KEYWORD_EQUDBLR:
 		prv_parse_equdblr(c, err);
+		break;
+	case SUBTILIS_ARM_KEYWORD_EQUS:
+		prv_parse_equs(c, err);
 		break;
 	case SUBTILIS_ARM_KEYWORD_EQUW:
 		prv_parse_equw(c, err);

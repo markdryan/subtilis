@@ -46,6 +46,9 @@ void subtilis_buffer_append_reserve(subtilis_buffer_t *buffer, size_t length,
 				    subtilis_error_t *err);
 void subtilis_buffer_append(subtilis_buffer_t *buffer, const void *data,
 			    size_t length, subtilis_error_t *err);
+void subtilis_buffer_append_buffer(subtilis_buffer_t *target,
+				   subtilis_buffer_t *source,
+				   subtilis_error_t *err);
 void subtilis_buffer_append_string(subtilis_buffer_t *buffer, const char *str,
 				   subtilis_error_t *err);
 void subtilis_buffer_insert(subtilis_buffer_t *buffer, size_t pos,
