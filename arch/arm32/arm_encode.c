@@ -57,7 +57,13 @@ struct subtilis_arm_encode_const_t_ {
 
 typedef struct subtilis_arm_encode_const_t_ subtilis_arm_encode_const_t;
 
+typedef enum {
+	SUBTILIS_ARM_ENCODE_BP_TYPE_BRANCH,
+	SUBTILIS_ARM_ENCODE_BP_TYPE_ADR,
+} subtilis_arm_encode_bp_type_t;
+
 struct subtilis_arm_encode_bp_t_ {
+	subtilis_arm_encode_bp_type_t type;
 	size_t label;
 	size_t code_index;
 };
@@ -372,7 +378,8 @@ static void prv_flush_constants(subtilis_arm_encode_ud_t *ud,
 	prv_reset_pool_state(ud);
 }
 
-static void prv_add_back_patch(subtilis_arm_encode_ud_t *ud, size_t label,
+static void prv_add_back_patch(subtilis_arm_encode_ud_t *ud,
+			       subtilis_arm_encode_bp_type_t type, size_t label,
 			       size_t code_index, subtilis_error_t *err)
 {
 	size_t new_max;
@@ -390,6 +397,7 @@ static void prv_add_back_patch(subtilis_arm_encode_ud_t *ud, size_t label,
 		ud->back_patches = new_bp;
 	}
 	new_bp = &ud->back_patches[ud->back_patch_count++];
+	new_bp->type = type;
 	new_bp->label = label;
 	new_bp->code_index = code_index;
 }
@@ -417,7 +425,8 @@ static void prv_check_pool_adj(subtilis_arm_encode_ud_t *ud, size_t adj,
 
 	word |= SUBTILIS_ARM_CCODE_AL << 28;
 	word |= 0x5 << 25;
-	prv_add_back_patch(ud, ud->max_labels, ud->bytes_written, err);
+	prv_add_back_patch(ud, SUBTILIS_ARM_ENCODE_BP_TYPE_BRANCH,
+			   ud->max_labels, ud->bytes_written, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -835,8 +844,8 @@ static void prv_encode_br_instr(void *user_data, subtilis_arm_op_t *op,
 		subtilis_arm_link_add(ud->link, ud->bytes_written, err);
 		word |= instr->target.label;
 	} else {
-		prv_add_back_patch(ud, instr->target.label, ud->bytes_written,
-				   err);
+		prv_add_back_patch(ud, SUBTILIS_ARM_ENCODE_BP_TYPE_BRANCH,
+				   instr->target.label, ud->bytes_written, err);
 	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -924,6 +933,30 @@ static void prv_encode_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	stran.byte = false;
 	prv_encode_stran_instr(user_data, op, SUBTILIS_ARM_INSTR_LDR, &stran,
 			       err);
+}
+
+static void prv_encode_adr_instr(void *user_data, subtilis_arm_op_t *op,
+				 subtilis_arm_instr_type_t type,
+				 subtilis_arm_adr_instr_t *instr,
+				 subtilis_error_t *err)
+{
+	subtilis_arm_data_instr_t data;
+	subtilis_arm_encode_ud_t *ud = user_data;
+
+	prv_add_back_patch(ud, SUBTILIS_ARM_ENCODE_BP_TYPE_ADR, instr->label,
+			   ud->bytes_written, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	data.ccode = instr->ccode;
+	data.status = false;
+	data.dest = instr->dest;
+	data.op1 = 15;
+	data.op2.type = SUBTILIS_ARM_OP2_I32;
+	data.op2.op.integer = 0;
+
+	prv_encode_data_instr(user_data, op, SUBTILIS_ARM_INSTR_ADD, &data,
+			      err);
 }
 
 static void prv_encode_cmov_instr(void *user_data, subtilis_arm_op_t *op,
@@ -1361,20 +1394,49 @@ static void prv_apply_back_patches(subtilis_arm_encode_ud_t *ud,
 	size_t i;
 	int32_t dist;
 	uint32_t *ptr;
+	uint32_t encoded;
 
 	for (i = 0; i < ud->back_patch_count; i++) {
 		bp = &ud->back_patches[i];
-		dist =
-		    ((ud->label_offsets[bp->label] - bp->code_index) / 4) - 2;
-		if ((dist < -(1 << 23)) || (dist > ((1 << 23) - 1))) {
-			subtilis_error_set_assertion_failed(err);
-			return;
-		}
-		dist &= 0xffffff;
 		ptr = prv_get_word_ptr(ud, bp->code_index, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		*ptr |= dist;
+		switch (bp->type) {
+		case SUBTILIS_ARM_ENCODE_BP_TYPE_BRANCH:
+			dist =
+			    ((ud->label_offsets[bp->label] - bp->code_index) /
+			     4) -
+			    2;
+			if ((dist < -(1 << 23)) || (dist > ((1 << 23) - 1))) {
+				subtilis_error_set_assertion_failed(err);
+				return;
+			}
+			dist &= 0xffffff;
+			*ptr |= dist;
+			break;
+		case SUBTILIS_ARM_ENCODE_BP_TYPE_ADR:
+			dist =
+			    (ud->label_offsets[bp->label] - bp->code_index) - 8;
+
+			if (dist < 0) {
+				/*
+				 * Here we switch the ADD for a SUB.
+				 */
+
+				*ptr &= ~(1 << 23);
+				*ptr |= 1 << 22;
+				dist = -dist;
+			}
+
+			if (!subtilis_arm_encode_imm(dist, &encoded)) {
+				/* TODO: Need a proper error for this */
+				subtilis_error_set_ass_bad_adr(err);
+				return;
+			}
+
+			*ptr |= encoded;
+			break;
+		}
 	}
 }
 
@@ -1453,6 +1515,7 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 	walker.br_fn = prv_encode_br_instr;
 	walker.swi_fn = prv_encode_swi_instr;
 	walker.ldrc_fn = prv_encode_ldrc_instr;
+	walker.adr_fn = prv_encode_adr_instr;
 	walker.cmov_fn = prv_encode_cmov_instr;
 	walker.fpa_data_monadic_fn = prv_encode_fpa_data_monadic_instr;
 	walker.fpa_data_dyadic_fn = prv_encode_fpa_data_dyadic_instr;

@@ -78,6 +78,7 @@ static const subtilis_arm_ass_mnemomic_t a_mnem[] = {
 	{ "ADC", SUBTILIS_ARM_INSTR_ADC, NULL, true },
 	{ "ADD", SUBTILIS_ARM_INSTR_ADD, NULL, true },
 	{ "ADF", SUBTILIS_FPA_INSTR_ADF, NULL, false },
+	{ "ADR", SUBTILIS_ARM_INSTR_ADR, NULL, false },
 	{ "AND", SUBTILIS_ARM_INSTR_AND, NULL, true },
 	{ "ASN", SUBTILIS_FPA_INSTR_ASN, NULL, false },
 	{ "ATN", SUBTILIS_FPA_INSTR_ATN, NULL, false },
@@ -233,14 +234,18 @@ static void prv_parse_label(subtilis_arm_ass_context_t *c, const char *name,
 	size_t index;
 
 	if (subtilis_string_pool_find(c->label_pool, name, &index)) {
-		subtilis_error_set_already_defined(
-		    err, name, c->l->stream->name, c->l->line);
-		return;
+		if (subtilis_bitset_isset(&c->pending_labels, index)) {
+			subtilis_bitset_clear(&c->pending_labels, index);
+		} else {
+			subtilis_error_set_already_defined(
+			    err, name, c->l->stream->name, c->l->line);
+			return;
+		}
+	} else {
+		index = subtilis_string_pool_register(c->label_pool, name, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 	}
-
-	index = subtilis_string_pool_register(c->label_pool, name, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 
 	subtilis_arm_section_add_label(c->arm_s, index, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -427,9 +432,12 @@ static void prv_parse_branch(subtilis_arm_ass_context_t *c, const char *name,
 
 	name = subtilis_buffer_get_string(&val->val.buf);
 	if (!subtilis_string_pool_find(c->label_pool, name, &index)) {
-		subtilis_error_set_expected(err, "label", name,
-					    c->l->stream->name, c->l->line);
-		goto cleanup;
+		index = subtilis_string_pool_register(c->label_pool, name, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		subtilis_bitset_set(&c->pending_labels, index, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 	}
 
 	instr =
@@ -1036,6 +1044,73 @@ static void prv_parse_mtran(subtilis_arm_ass_context_t *c,
 			       mtran_type, write_back, err);
 }
 
+static void prv_parse_adr(subtilis_arm_ass_context_t *c,
+			  subtilis_arm_ccode_type_t ccode,
+			  subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+	const char *str;
+	size_t index;
+	subtilis_arm_reg_t dest;
+	const char *tbuf;
+	const char *bad_reg = "R15";
+
+	val = subtilis_arm_exp_val_get(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (val->type != SUBTILIS_ARM_EXP_TYPE_REG) {
+		subtilis_error_set_expected(err, "register",
+					    subtilis_arm_exp_type_name(val),
+					    c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	dest = val->val.reg;
+	if (dest == 15) {
+		subtilis_error_set_ass_bad_reg(err, bad_reg, c->l->stream->name,
+					       c->l->line);
+		goto cleanup;
+	}
+
+	subtilis_arm_exp_val_free(val);
+	val = NULL;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || (strcmp(tbuf, ","))) {
+		subtilis_error_set_expected(err, ",", tbuf, c->l->stream->name,
+					    c->l->line);
+		goto cleanup;
+	}
+
+	val = subtilis_arm_exp_val_get(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (val->type != SUBTILIS_ARM_EXP_TYPE_ID) {
+		subtilis_error_set_expected(err, "label",
+					    subtilis_arm_exp_type_name(val),
+					    c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	str = subtilis_buffer_get_string(&val->val.buf);
+	if (!subtilis_string_pool_find(c->label_pool, str, &index)) {
+		index = subtilis_string_pool_register(c->label_pool, str, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		subtilis_bitset_set(&c->pending_labels, index, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	subtilis_add_adr(c->arm_s, ccode, dest, index, err);
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+}
+
 static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
 				  const char *name,
 				  subtilis_arm_instr_type_t itype,
@@ -1079,6 +1154,9 @@ static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
 	case SUBTILIS_ARM_INSTR_LDM:
 	case SUBTILIS_ARM_INSTR_STM:
 		prv_parse_mtran(c, itype, ccode, mtran_type, err);
+		break;
+	case SUBTILIS_ARM_INSTR_ADR:
+		prv_parse_adr(c, ccode, err);
 		break;
 	default:
 		subtilis_error_set_not_supported(err, name, c->l->stream->name,
@@ -1524,6 +1602,9 @@ subtilis_arm_section_t *subtilis_arm_asm_parse(
 /* clang-format on */
 {
 	subtilis_arm_ass_context_t context;
+	size_t *pending_labels;
+	size_t pending_labels_num;
+	const char *label_name;
 	subtilis_arm_section_t *arm_s = NULL;
 	subtilis_string_pool_t *label_pool = NULL;
 
@@ -1542,22 +1623,35 @@ subtilis_arm_section_t *subtilis_arm_asm_parse(
 	context.set = set;
 	context.sys_trans = sys_trans;
 	context.label_pool = label_pool;
+	subtilis_bitset_init(&context.pending_labels);
 
 	prv_parser_main_loop(&context, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 15, 14,
-				 err);
+	pending_labels = subtilis_bitset_values(&context.pending_labels,
+						&pending_labels_num, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	if (pending_labels_num > 0) {
+		if (pending_labels[0] > label_pool->length) {
+			subtilis_error_set_assertion_failed(err);
+			goto cleanup;
+		}
+		label_name = label_pool->strings[pending_labels[0]];
+		subtilis_error_set_ass_unknown_label(err, label_name,
+						     l->stream->name, l->line);
+		goto cleanup;
+	}
+
+	subtilis_bitset_free(&context.pending_labels);
 	subtilis_string_pool_delete(label_pool);
 
 	return arm_s;
 
 cleanup:
-
+	subtilis_bitset_free(&context.pending_labels);
 	subtilis_arm_section_delete(arm_s);
 	subtilis_string_pool_delete(label_pool);
 

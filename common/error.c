@@ -263,6 +263,12 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_ASS_INTEGER_TOO_BIG */
 	{"%s is too big\n", 1},
+
+	/* SUBTILIS_ERROR_ASS_MISSING_LABEL */
+	{"%s is referenced but not defined\n", 1},
+
+	/* SUBTILIS_ERROR_ASS_CANNOT_ENCODE */
+	{"Cannot encode ADR statement.  Distance too large\n", 0},
 };
 
 /* clang-format on */

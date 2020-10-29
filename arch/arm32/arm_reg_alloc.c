@@ -1399,6 +1399,20 @@ static void prv_alloc_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	ud->instr_count++;
 }
 
+static void prv_alloc_adr_instr(void *user_data, subtilis_arm_op_t *op,
+				subtilis_arm_instr_type_t type,
+				subtilis_arm_adr_instr_t *instr,
+				subtilis_error_t *err)
+{
+	subtilis_arm_reg_ud_t *ud = user_data;
+
+	prv_allocate_dest(ud, op, &instr->dest, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	ud->instr_count++;
+}
+
 static void prv_alloc_cmov_instr(void *user_data, subtilis_arm_op_t *op,
 				 subtilis_arm_instr_type_t type,
 				 subtilis_arm_cmov_instr_t *instr,
@@ -2136,6 +2150,7 @@ size_t subtilis_arm_reg_alloc(subtilis_arm_section_t *arm_s,
 	walker.br_fn = prv_alloc_br_instr;
 	walker.swi_fn = prv_alloc_swi_instr;
 	walker.ldrc_fn = prv_alloc_ldrc_instr;
+	walker.adr_fn = prv_alloc_adr_instr;
 	walker.cmov_fn = prv_alloc_cmov_instr;
 	walker.fpa_data_monadic_fn = prv_alloc_fpa_data_monadic_instr;
 	walker.fpa_data_dyadic_fn = prv_alloc_fpa_data_dyadic_instr;

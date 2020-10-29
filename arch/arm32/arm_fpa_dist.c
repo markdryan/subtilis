@@ -104,6 +104,16 @@ static void prv_dist_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	ud->last_used++;
 }
 
+static void prv_dist_adr_instr(void *user_data, subtilis_arm_op_t *op,
+			       subtilis_arm_instr_type_t type,
+			       subtilis_arm_adr_instr_t *instr,
+			       subtilis_error_t *err)
+{
+	subtilis_dist_data_t *ud = user_data;
+
+	ud->last_used++;
+}
+
 static void prv_dist_cmov_instr(void *user_data, subtilis_arm_op_t *op,
 				subtilis_arm_instr_type_t type,
 				subtilis_arm_cmov_instr_t *instr,
@@ -419,6 +429,7 @@ void subtilis_init_fpa_used_walker(subtlis_arm_walker_t *walker,
 	walker->br_fn = prv_dist_br_instr;
 	walker->swi_fn = prv_dist_swi_instr;
 	walker->ldrc_fn = prv_dist_ldrc_instr;
+	walker->adr_fn = prv_dist_adr_instr;
 	walker->cmov_fn = prv_dist_cmov_instr;
 	walker->fpa_data_monadic_fn = prv_used_fpa_data_monadic_instr;
 	walker->fpa_data_dyadic_fn = prv_used_fpa_data_dyadic_instr;

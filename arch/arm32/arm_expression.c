@@ -111,6 +111,11 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_new_id(const char *id,
 		subtilis_arm_exp_val_free(e);
 		return NULL;
 	}
+	subtilis_buffer_zero_terminate(&e->val.buf, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_arm_exp_val_free(e);
+		return NULL;
+	}
 
 	return e;
 }
@@ -322,11 +327,14 @@ subtilis_arm_reg_t subtilis_arm_exp_parse_reg(subtilis_arm_ass_context_t *c,
 	size_t reg;
 	size_t name_len;
 
-	if ((id[0] != 'R') && (id[0] != 'r'))
-		return SIZE_MAX;
-
 	name_len = strlen(&id[1]);
 	if (name_len != 1 && name_len != 2)
+		return SIZE_MAX;
+
+	if ((id[0] == 'P') && (id[1] == 'C'))
+		return (subtilis_arm_reg_t)15;
+
+	if ((id[0] != 'R') && (id[0] != 'r'))
 		return SIZE_MAX;
 
 	if (id[1] < '0' || id[1] > '9')

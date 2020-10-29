@@ -747,6 +747,23 @@ size_t subtilis_add_explicit_ldr(subtilis_arm_section_t *s,
 	return label;
 }
 
+void subtilis_add_adr(subtilis_arm_section_t *s,
+		      subtilis_arm_ccode_type_t ccode, subtilis_arm_reg_t dest,
+		      size_t label, subtilis_error_t *err)
+{
+	subtilis_arm_adr_instr_t *adr;
+	subtilis_arm_instr_t *instr;
+
+	instr = subtilis_arm_section_add_instr(s, SUBTILIS_ARM_INSTR_ADR, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	adr = &instr->operands.adr;
+	adr->ccode = ccode;
+	adr->dest = dest;
+	adr->label = label;
+}
+
 size_t subtilis_add_data_imm_ldr_datai(subtilis_arm_section_t *s,
 				       subtilis_arm_instr_type_t itype,
 				       subtilis_arm_ccode_type_t ccode,
