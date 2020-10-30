@@ -267,8 +267,11 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_ASS_MISSING_LABEL */
 	{"%s is referenced but not defined\n", 1},
 
-	/* SUBTILIS_ERROR_ASS_CANNOT_ENCODE */
+	/* SUBTILIS_ERROR_ASS_BAD_ADR */
 	{"Cannot encode ADR statement.  Distance too large\n", 0},
+
+	/* SUBTILIS_ERROR_ASS_BAD_ALIGN */
+	{"Invalid align value %s.  Must be a power of 2, > 0 and <= 1024\n", 1},
 };
 
 /* clang-format on */

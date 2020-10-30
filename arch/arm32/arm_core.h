@@ -383,6 +383,7 @@ typedef enum {
 	SUBTILIS_ARM_OP_DOUBLE,
 	SUBTILIS_ARM_OP_DOUBLER,
 	SUBTILIS_ARM_OP_STRING,
+	SUBTILIS_ARM_OP_ALIGN,
 	SUBTILIS_ARM_OP_PHI,
 	SUBTILIS_ARM_OP_MAX,
 } subtilis_arm_op_type_t;
@@ -393,6 +394,7 @@ struct subtilis_arm_op_t_ {
 		uint8_t byte;
 		uint16_t two_bytes;
 		uint32_t four_bytes;
+		uint32_t alignment;
 		double dbl;
 		subtilis_arm_instr_t instr;
 		size_t label;
@@ -727,6 +729,8 @@ void subtilis_arm_add_doubler(subtilis_arm_section_t *s, double dbl,
 			      subtilis_error_t *err);
 void subtilis_arm_add_string(subtilis_arm_section_t *s, const char *str,
 			     subtilis_error_t *err);
+void subtilis_arm_add_align(subtilis_arm_section_t *s, uint32_t align,
+			    subtilis_error_t *err);
 
 void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 			       subtilis_arm_section_t *s);

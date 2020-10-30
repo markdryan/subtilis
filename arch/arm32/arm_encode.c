@@ -1440,14 +1440,26 @@ static void prv_apply_back_patches(subtilis_arm_encode_ud_t *ud,
 	}
 }
 
-static void prv_encode_equ(void *user_data, subtilis_arm_op_t *op,
-			   subtilis_error_t *err)
+static void prv_encode_directive(void *user_data, subtilis_arm_op_t *op,
+				 subtilis_error_t *err)
 {
 	uint32_t *dbl_ptr;
 	size_t len;
+	size_t i;
 	subtilis_arm_encode_ud_t *ud = user_data;
 
 	switch (op->type) {
+	case SUBTILIS_ARM_OP_ALIGN:
+		len = ud->bytes_written & (op->op.alignment - 1);
+		if (len == 0)
+			return;
+		len = op->op.alignment - len;
+		prv_ensure_code_size(ud, len, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		for (i = 0; i < len; i++)
+			ud->code[ud->bytes_written++] = 0;
+		break;
 	case SUBTILIS_ARM_OP_BYTE:
 		prv_ensure_code_size(ud, 1, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -1505,7 +1517,7 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 
 	walker.user_data = ud;
 	walker.label_fn = prv_encode_label;
-	walker.equ_fn = prv_encode_equ;
+	walker.directive_fn = prv_encode_directive;
 	walker.data_fn = prv_encode_data_instr;
 	walker.mul_fn = prv_encode_mul_instr;
 	walker.cmp_fn = prv_encode_cmp_instr;

@@ -1501,6 +1501,19 @@ void subtilis_arm_add_string(subtilis_arm_section_t *s, const char *str,
 	strcpy(op->op.str, str);
 }
 
+void subtilis_arm_add_align(subtilis_arm_section_t *s, uint32_t align,
+			    subtilis_error_t *err)
+{
+	subtilis_arm_op_t *op;
+
+	op = prv_append_op(s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op->type = SUBTILIS_ARM_OP_ALIGN;
+	op->op.alignment = align;
+}
+
 void subtilis_arm_restore_stack(subtilis_arm_section_t *arm_s,
 				size_t stack_space, subtilis_error_t *err)
 {

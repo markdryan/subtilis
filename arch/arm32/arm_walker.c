@@ -171,17 +171,18 @@ static void prv_arm_walk(subtilis_arm_section_t *arm_s, size_t ptr,
 		case SUBTILIS_ARM_OP_INSTR:
 			prv_walk_instr(walker, op, err);
 			break;
+		case SUBTILIS_ARM_OP_ALIGN:
 		case SUBTILIS_ARM_OP_BYTE:
 		case SUBTILIS_ARM_OP_TWO_BYTE:
 		case SUBTILIS_ARM_OP_FOUR_BYTE:
 		case SUBTILIS_ARM_OP_DOUBLE:
 		case SUBTILIS_ARM_OP_DOUBLER:
 		case SUBTILIS_ARM_OP_STRING:
-			if (!walker->equ_fn) {
+			if (!walker->directive_fn) {
 				subtilis_error_set_assertion_failed(err);
 				break;
 			}
-			walker->equ_fn(walker->user_data, op, err);
+			walker->directive_fn(walker->user_data, op, err);
 			break;
 		default:
 			subtilis_error_set_assertion_failed(err);

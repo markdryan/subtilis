@@ -497,10 +497,13 @@ static void prv_dump_label(void *user_data, subtilis_arm_op_t *op, size_t label,
 	printf(".label_%zu\n", label);
 }
 
-static void prv_dump_equ(void *user_data, subtilis_arm_op_t *op,
-			 subtilis_error_t *err)
+static void prv_dump_directive(void *user_data, subtilis_arm_op_t *op,
+			       subtilis_error_t *err)
 {
 	switch (op->type) {
+	case SUBTILIS_ARM_OP_ALIGN:
+		printf("\tALIGN %d\n", op->op.alignment);
+		break;
 	case SUBTILIS_ARM_OP_BYTE:
 		printf("\tEQUB %d\n", op->op.byte);
 		break;
@@ -535,7 +538,7 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 
 	walker.user_data = p;
 	walker.label_fn = prv_dump_label;
-	walker.equ_fn = prv_dump_equ;
+	walker.directive_fn = prv_dump_directive;
 	walker.data_fn = prv_dump_data_instr;
 	walker.mul_fn = prv_dump_mul_instr;
 	walker.cmp_fn = prv_dump_cmp_instr;

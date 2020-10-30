@@ -104,6 +104,7 @@ typedef enum {
 	SUBTILIS_ERROR_ASS_INT_TOO_BIG,
 	SUBTILIS_ERROR_ASS_MISSING_LABEL,
 	SUBTILIS_ERROR_ASS_BAD_ADR,
+	SUBTILIS_ERROR_ASS_BAD_ALIGN,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -336,6 +337,9 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_ass_bad_adr(e)                                      \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_ASS_BAD_ADR, __FILE__,      \
 				 __LINE__)
+#define subtilis_error_set_ass_bad_align(e, align, file, line)                 \
+	subtilis_error_set_int(e, SUBTILIS_ERROR_ASS_BAD_ALIGN, align, 0,      \
+			       file, line, __FILE__, __LINE__)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,

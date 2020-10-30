@@ -1532,11 +1532,48 @@ cleanup:
 	subtilis_arm_exp_val_free(val);
 }
 
+static void prv_parse_align(subtilis_arm_ass_context_t *c,
+			    subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+	int32_t align;
+
+	val = subtilis_arm_exp_val_get(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (val->type == SUBTILIS_ARM_EXP_TYPE_INT) {
+		align = val->val.integer;
+	} else if (val->type == SUBTILIS_ARM_EXP_TYPE_REAL) {
+		align = (int32_t)val->val.real;
+	} else {
+		subtilis_error_set_numeric_expected(
+		    err, subtilis_arm_exp_type_name(val), c->l->stream->name,
+		    c->l->line);
+		goto cleanup;
+	}
+
+	if (align <= 0 || ((align - 1) & align) != 0 || align > 1024) {
+		subtilis_error_set_ass_bad_align(err, align, c->l->stream->name,
+						 c->l->line);
+		goto cleanup;
+	}
+
+	subtilis_arm_add_align(c->arm_s, (uint32_t)align, err);
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+}
+
 static void prv_parse_keyword(subtilis_arm_ass_context_t *c, const char *name,
 			      const subtilis_token_keyword_t *keyword,
 			      subtilis_error_t *err)
 {
 	switch (keyword->type) {
+	case SUBTILIS_ARM_KEYWORD_ALIGN:
+		prv_parse_align(c, err);
+		break;
 	case SUBTILIS_ARM_KEYWORD_EQUB:
 		prv_parse_equb(c, err);
 		break;
