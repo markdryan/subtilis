@@ -506,6 +506,87 @@ static void prv_parse_arm_data(subtilis_arm_ass_context_t *c,
 	datai->status = status;
 }
 
+static void prv_parse_arm_mul(subtilis_arm_ass_context_t *c,
+			      subtilis_arm_instr_type_t itype,
+			      subtilis_arm_ccode_type_t ccode, bool status,
+			      subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_reg_t op2;
+	const char *tbuf;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_mul_instr_t *mul;
+	subtilis_arm_reg_t op3 = 0;
+	char buffer[32];
+
+	dest = prv_get_reg(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (dest == 15) {
+		sprintf(buffer, "R%zu", dest);
+		subtilis_error_set_ass_bad_reg(err, buffer, c->l->stream->name,
+					       c->l->line);
+		return;
+	}
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) && (strcmp(tbuf, ","))) {
+		subtilis_error_set_expected(err, ",", tbuf, c->l->stream->name,
+					    c->l->line);
+		return;
+	}
+
+	op1 = prv_get_reg(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (dest == op1) {
+		sprintf(buffer, "R%zu", dest);
+		subtilis_error_set_ass_bad_reg(err, buffer, c->l->stream->name,
+					       c->l->line);
+		return;
+	}
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) && (strcmp(tbuf, ","))) {
+		subtilis_error_set_expected(err, ",", tbuf, c->l->stream->name,
+					    c->l->line);
+		return;
+	}
+
+	op2 = prv_get_reg(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (itype == SUBTILIS_ARM_INSTR_MLA) {
+		tbuf = subtilis_token_get_text(c->t);
+		if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) &&
+		    (strcmp(tbuf, ","))) {
+			subtilis_error_set_expected(
+			    err, ",", tbuf, c->l->stream->name, c->l->line);
+			return;
+		}
+
+		op3 = prv_get_reg(c, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	instr = subtilis_arm_section_add_instr(c->arm_s, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	mul = &instr->operands.mul;
+	mul->ccode = ccode;
+	mul->dest = dest;
+	mul->rm = op1;
+	mul->rs = op2;
+	mul->rn = op3;
+	mul->status = status;
+}
+
 static void prv_parse_arm_2_arg(subtilis_arm_ass_context_t *c,
 				subtilis_arm_instr_type_t itype,
 				subtilis_arm_ccode_type_t ccode, bool status,
@@ -1137,6 +1218,10 @@ static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
 	case SUBTILIS_ARM_INSTR_ORR:
 	case SUBTILIS_ARM_INSTR_BIC:
 		prv_parse_arm_data(c, itype, ccode, status, err);
+		break;
+	case SUBTILIS_ARM_INSTR_MUL:
+	case SUBTILIS_ARM_INSTR_MLA:
+		prv_parse_arm_mul(c, itype, ccode, status, err);
 		break;
 	case SUBTILIS_ARM_INSTR_TST:
 	case SUBTILIS_ARM_INSTR_TEQ:

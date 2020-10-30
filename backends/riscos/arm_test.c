@@ -529,7 +529,7 @@ static int prv_test_disass_mul(void)
 		return 1;
 	}
 
-	if ((mul->dest != 0) || (mul->rs != 2) || (mul->rm != 1)) {
+	if ((mul->dest != 0) || (mul->rs != 1) || (mul->rm != 2)) {
 		fprintf(stderr, "[3] bad register values\n");
 		return 1;
 	}

@@ -182,7 +182,12 @@ static void prv_dump_mul_instr(void *user_data, subtilis_arm_op_t *op,
 		printf("%s", ccode_desc[instr->ccode]);
 	if (instr->status)
 		printf("S");
-	printf(" R%zu, R%zu, R%zu\n", instr->dest, instr->rm, instr->rs);
+	if (type == SUBTILIS_ARM_INSTR_MLA)
+		printf(" R%zu, R%zu, R%zu, R%zu\n", instr->dest, instr->rm,
+		       instr->rs, instr->rn);
+	else
+		printf(" R%zu, R%zu, R%zu\n", instr->dest, instr->rm,
+		       instr->rs);
 }
 
 static void prv_dump_stran_instr(void *user_data, subtilis_arm_op_t *op,

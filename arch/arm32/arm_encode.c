@@ -630,8 +630,8 @@ static void prv_encode_mul_instr(void *user_data, subtilis_arm_op_t *op,
 	}
 
 	if (type == SUBTILIS_ARM_INSTR_MLA) {
-		subtilis_error_set_assertion_failed(err);
-		return;
+		word |= 1 << 21;
+		word |= instr->rn << 12;
 	}
 
 	word |= instr->ccode << 28;

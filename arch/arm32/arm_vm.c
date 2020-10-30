@@ -800,6 +800,19 @@ static void prv_process_mul(subtilis_arm_vm_t *arm_vm,
 	arm_vm->regs[15] += 4;
 }
 
+static void prv_process_mla(subtilis_arm_vm_t *arm_vm,
+			    subtilis_arm_mul_instr_t *op, subtilis_error_t *err)
+{
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	arm_vm->regs[op->dest] =
+	    arm_vm->regs[op->rm] * arm_vm->regs[op->rs] + arm_vm->regs[op->rn];
+	arm_vm->regs[15] += 4;
+}
+
 static void prv_process_ldr(subtilis_arm_vm_t *arm_vm,
 			    subtilis_arm_stran_instr_t *op,
 			    subtilis_error_t *err)
@@ -1817,6 +1830,9 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			break;
 		case SUBTILIS_ARM_INSTR_MUL:
 			prv_process_mul(arm_vm, &instr.operands.mul, err);
+			break;
+		case SUBTILIS_ARM_INSTR_MLA:
+			prv_process_mla(arm_vm, &instr.operands.mul, err);
 			break;
 		case SUBTILIS_ARM_INSTR_LDR:
 			prv_process_ldr(arm_vm, &instr.operands.stran, err);
