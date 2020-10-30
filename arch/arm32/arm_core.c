@@ -326,6 +326,22 @@ void subtilis_arm_prog_append_section(subtilis_arm_prog_t *prog,
 	prog->sections[prog->num_sections++] = arm_s;
 }
 
+subtilis_arm_iclass_t subtilis_arm_get_iclass(subtilis_arm_instr_type_t itype,
+					      subtilis_error_t *err)
+{
+	if (itype >= SUBTILIS_ARM_INSTR_AND &&
+	    itype <= SUBTILIS_ARM_INSTR_INT_MAX)
+		return SUBTILIS_ARM_ICLASS_INT;
+
+	if (itype >= SUBTILIS_FPA_INSTR_LDF &&
+	    itype < SUBTILIS_ARM_INSTR_FPA_MAX)
+		return SUBTILIS_ARM_ICLASS_FPA;
+
+	subtilis_error_set_assertion_failed(err);
+
+	return SUBTILIS_ARM_ICLASS_MAX;
+}
+
 void subtilis_arm_prog_delete(subtilis_arm_prog_t *prog)
 {
 	size_t i;

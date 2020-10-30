@@ -1513,10 +1513,16 @@ static void prv_process_fpa_fix(subtilis_arm_vm_t *arm_vm,
 		return;
 	}
 
-	if (arm_vm->fregs[op->op2.reg].size == 4)
-		val = (double)arm_vm->fregs[op->op2.reg].val.real32;
-	else
-		val = arm_vm->fregs[op->op2.reg].val.real64;
+	if (op->immediate) {
+		val = subtilis_fpa_extract_imm(op->op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		if (arm_vm->fregs[op->op2.reg].size == 4)
+			val = (double)arm_vm->fregs[op->op2.reg].val.real32;
+		else
+			val = arm_vm->fregs[op->op2.reg].val.real64;
+	}
 	if (op->rounding == SUBTILIS_FPA_ROUNDING_ZERO)
 		arm_vm->regs[op->dest] = (int32_t)val;
 	else if (op->rounding == SUBTILIS_FPA_ROUNDING_MINUS_INFINITY)

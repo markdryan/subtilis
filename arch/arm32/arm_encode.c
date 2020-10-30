@@ -1243,11 +1243,12 @@ static void prv_encode_fpa_tran_instr(void *user_data, subtilis_arm_op_t *op,
 		word |= instr->op2.reg << 12;
 	} else if (type == SUBTILIS_FPA_INSTR_FIX) {
 		if (instr->immediate) {
-			subtilis_error_set_assertion_failed(err);
-			return;
+			word |= 1 << 3;
+			word |= instr->op2.imm;
+		} else {
+			word |= instr->op2.reg;
 		}
 		word |= instr->dest << 12;
-		word |= instr->op2.reg;
 		word |= 1 << 20;
 	} else {
 		subtilis_error_set_assertion_failed(err);

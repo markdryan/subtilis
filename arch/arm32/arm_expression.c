@@ -136,6 +136,22 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_new_reg(subtilis_arm_reg_t reg,
 	return e;
 }
 
+subtilis_arm_exp_val_t *subtilis_arm_exp_new_freg(subtilis_arm_reg_t reg,
+						  subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *e = malloc(sizeof(*e));
+
+	if (!e) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+
+	e->type = SUBTILIS_ARM_EXP_TYPE_FREG;
+	e->val.reg = reg;
+
+	return e;
+}
+
 static int32_t prv_exp_to_int(subtilis_arm_ass_context_t *c,
 			      subtilis_arm_exp_val_t *e1, subtilis_error_t *err)
 {
@@ -356,6 +372,27 @@ subtilis_arm_reg_t subtilis_arm_exp_parse_reg(subtilis_arm_ass_context_t *c,
 	return (subtilis_arm_reg_t)reg;
 }
 
+subtilis_arm_reg_t subtilis_arm_exp_parse_freg(subtilis_arm_ass_context_t *c,
+					       const char *id,
+					       subtilis_error_t *err)
+{
+	size_t reg;
+	size_t name_len;
+
+	name_len = strlen(&id[1]);
+	if (name_len != 1)
+		return SIZE_MAX;
+
+	if ((id[0] != 'F') && (id[0] != 'f'))
+		return SIZE_MAX;
+
+	if (id[1] < '0' || id[1] > '7')
+		return SIZE_MAX;
+	reg = id[1] - '0';
+
+	return (subtilis_arm_reg_t)reg;
+}
+
 static subtilis_arm_exp_val_t *prv_process_id(subtilis_arm_ass_context_t *c,
 					      const char *id,
 					      subtilis_error_t *err)
@@ -366,10 +403,17 @@ static subtilis_arm_exp_val_t *prv_process_id(subtilis_arm_ass_context_t *c,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	if (reg == SIZE_MAX)
-		return subtilis_arm_exp_new_id(id, err);
+	if (reg != SIZE_MAX)
+		return subtilis_arm_exp_new_reg(reg, err);
 
-	return subtilis_arm_exp_new_reg(reg, err);
+	reg = subtilis_arm_exp_parse_freg(c, id, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (reg != SIZE_MAX)
+		return subtilis_arm_exp_new_freg(reg, err);
+
+	return subtilis_arm_exp_new_id(id, err);
 }
 
 static subtilis_arm_exp_val_t *
@@ -1123,6 +1167,8 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_val_get(subtilis_arm_ass_context_t *c,
 const char *subtilis_arm_exp_type_name(subtilis_arm_exp_val_t *val)
 {
 	switch (val->type) {
+	case SUBTILIS_ARM_EXP_TYPE_FREG:
+		return "floating point register";
 	case SUBTILIS_ARM_EXP_TYPE_REG:
 		return "register";
 	case SUBTILIS_ARM_EXP_TYPE_INT:

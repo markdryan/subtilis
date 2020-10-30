@@ -272,6 +272,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_ASS_BAD_ALIGN */
 	{"Invalid align value %s.  Must be a power of 2, > 0 and <= 1024\n", 1},
+
+	/* SUBTILIS_ERROR_ASS_BAD_REAL_IMM */
+	{"Cannot encode %s into instruction\n", 1},
 };
 
 /* clang-format on */
@@ -316,6 +319,21 @@ void subtilis_error_set_int(subtilis_error_t *e, subtilis_error_type_t type,
 
 	snprintf(num1, sizeof(num1), "%d", data1);
 	snprintf(num2, sizeof(num2), "%d", data2);
+
+	subtilis_error_set_full(e, type, num1, num2, file, line, subtilis_file,
+				subtilis_line);
+}
+
+void subtilis_error_set_dbl(subtilis_error_t *e, subtilis_error_type_t type,
+			    double data1, double data2, const char *file,
+			    unsigned int line, const char *subtilis_file,
+			    unsigned int subtilis_line)
+{
+	char num1[32];
+	char num2[32];
+
+	snprintf(num1, sizeof(num1), "%f", data1);
+	snprintf(num2, sizeof(num2), "%f", data2);
 
 	subtilis_error_set_full(e, type, num1, num2, file, line, subtilis_file,
 				subtilis_line);

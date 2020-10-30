@@ -21,6 +21,7 @@
 #include "assembler.h"
 
 typedef enum {
+	SUBTILIS_ARM_EXP_TYPE_FREG,
 	SUBTILIS_ARM_EXP_TYPE_REG,
 	SUBTILIS_ARM_EXP_TYPE_INT,
 	SUBTILIS_ARM_EXP_TYPE_REAL,
@@ -43,6 +44,9 @@ typedef struct subtilis_arm_exp_val_t_ subtilis_arm_exp_val_t;
 subtilis_arm_reg_t subtilis_arm_exp_parse_reg(subtilis_arm_ass_context_t *c,
 					      const char *id,
 					      subtilis_error_t *err);
+subtilis_arm_reg_t subtilis_arm_exp_parse_freg(subtilis_arm_ass_context_t *c,
+					       const char *id,
+					       subtilis_error_t *err);
 subtilis_arm_exp_val_t *subtilis_arm_exp_pri7(subtilis_arm_ass_context_t *c,
 					      subtilis_error_t *err);
 subtilis_arm_exp_val_t *subtilis_arm_exp_val_get(subtilis_arm_ass_context_t *c,
@@ -55,6 +59,8 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_new_str(subtilis_buffer_t *buf,
 						 subtilis_error_t *err);
 subtilis_arm_exp_val_t *subtilis_arm_exp_new_reg(subtilis_arm_reg_t reg,
 						 subtilis_error_t *err);
+subtilis_arm_exp_val_t *subtilis_arm_exp_new_freg(subtilis_arm_reg_t reg,
+						  subtilis_error_t *err);
 subtilis_arm_exp_val_t *subtilis_arm_exp_new_id(const char *id,
 						subtilis_error_t *err);
 const char *subtilis_arm_exp_type_name(subtilis_arm_exp_val_t *val);
