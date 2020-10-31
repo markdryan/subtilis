@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "arm_expression.h"
+#include "assembler.h"
 
 #include "../../common/buffer.h"
 #include "arm_keywords.h"
@@ -150,6 +151,28 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_new_freg(subtilis_arm_reg_t reg,
 	e->val.reg = reg;
 
 	return e;
+}
+
+subtilis_arm_exp_val_t *subtilis_arm_exp_dup(subtilis_arm_exp_val_t *val,
+					     subtilis_error_t *err)
+{
+	const char *id;
+
+	switch (val->type) {
+	case SUBTILIS_ARM_EXP_TYPE_FREG:
+		return subtilis_arm_exp_new_freg(val->val.reg, err);
+	case SUBTILIS_ARM_EXP_TYPE_REG:
+		return subtilis_arm_exp_new_reg(val->val.reg, err);
+	case SUBTILIS_ARM_EXP_TYPE_INT:
+		return subtilis_arm_exp_new_int32(val->val.integer, err);
+	case SUBTILIS_ARM_EXP_TYPE_REAL:
+		return subtilis_arm_exp_new_real(val->val.real, err);
+	case SUBTILIS_ARM_EXP_TYPE_STRING:
+		return subtilis_arm_exp_new_str(&val->val.buf, err);
+	case SUBTILIS_ARM_EXP_TYPE_ID:
+		id = subtilis_buffer_get_string(&val->val.buf);
+		return subtilis_arm_exp_new_id(id, err);
+	}
 }
 
 static int32_t prv_exp_to_int(subtilis_arm_ass_context_t *c,
@@ -393,11 +416,14 @@ subtilis_arm_reg_t subtilis_arm_exp_parse_freg(subtilis_arm_ass_context_t *c,
 	return (subtilis_arm_reg_t)reg;
 }
 
-static subtilis_arm_exp_val_t *prv_process_id(subtilis_arm_ass_context_t *c,
-					      const char *id,
-					      subtilis_error_t *err)
+/* clang-format off */
+subtilis_arm_exp_val_t *subtilis_arm_exp_process_id(
+	subtilis_arm_ass_context_t *c, const char *id, subtilis_error_t *err)
+/* clang-format on */
+
 {
 	subtilis_arm_reg_t reg;
+	subtilis_arm_exp_val_t *val;
 
 	reg = subtilis_arm_exp_parse_reg(c, id, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -412,6 +438,10 @@ static subtilis_arm_exp_val_t *prv_process_id(subtilis_arm_ass_context_t *c,
 
 	if (reg != SIZE_MAX)
 		return subtilis_arm_exp_new_freg(reg, err);
+
+	val = subtilis_arm_asm_find_def(c, id);
+	if (val)
+		return subtilis_arm_exp_dup(val, err);
 
 	return subtilis_arm_exp_new_id(id, err);
 }
@@ -530,7 +560,7 @@ static subtilis_arm_exp_val_t *prv_priority1(subtilis_arm_ass_context_t *c,
 		}
 		break;
 	case SUBTILIS_TOKEN_IDENTIFIER:
-		e = prv_process_id(c, tbuf, err);
+		e = subtilis_arm_exp_process_id(c, tbuf, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		break;

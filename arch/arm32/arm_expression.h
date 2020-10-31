@@ -18,7 +18,7 @@
 #define __SUBTILIS_ARM_EXPRESSION_H
 
 #include "../../common/buffer.h"
-#include "assembler.h"
+#include "arm_core.h"
 
 typedef enum {
 	SUBTILIS_ARM_EXP_TYPE_FREG,
@@ -40,6 +40,8 @@ struct subtilis_arm_exp_val_t_ {
 };
 
 typedef struct subtilis_arm_exp_val_t_ subtilis_arm_exp_val_t;
+
+typedef struct subtilis_arm_ass_context_t_ subtilis_arm_ass_context_t;
 
 subtilis_arm_reg_t subtilis_arm_exp_parse_reg(subtilis_arm_ass_context_t *c,
 					      const char *id,
@@ -63,7 +65,14 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_new_freg(subtilis_arm_reg_t reg,
 						  subtilis_error_t *err);
 subtilis_arm_exp_val_t *subtilis_arm_exp_new_id(const char *id,
 						subtilis_error_t *err);
+subtilis_arm_exp_val_t *subtilis_arm_exp_dup(subtilis_arm_exp_val_t *val,
+					     subtilis_error_t *err);
 const char *subtilis_arm_exp_type_name(subtilis_arm_exp_val_t *val);
 void subtilis_arm_exp_val_free(subtilis_arm_exp_val_t *val);
+
+/* clang-format off */
+subtilis_arm_exp_val_t *subtilis_arm_exp_process_id(
+	subtilis_arm_ass_context_t *c, const char *id, subtilis_error_t *err);
+/* clang-format on */
 
 #endif

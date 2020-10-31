@@ -21,7 +21,15 @@
 #include "../../common/bitset.h"
 #include "../../common/string_pool.h"
 #include "arm_core.h"
+#include "arm_expression.h"
 #include "arm_swi.h"
+
+struct subtilis_arm_ass_def_t_ {
+	char *name;
+	subtilis_arm_exp_val_t *val;
+};
+
+typedef struct subtilis_arm_ass_def_t_ subtilis_arm_ass_def_t;
 
 struct subtilis_arm_ass_context_t_ {
 	subtilis_arm_section_t *arm_s;
@@ -32,6 +40,9 @@ struct subtilis_arm_ass_context_t_ {
 	subtilis_backend_sys_trans sys_trans;
 	subtilis_string_pool_t *label_pool;
 	subtilis_bitset_t pending_labels;
+	subtilis_arm_ass_def_t *defs;
+	size_t def_count;
+	size_t max_defs;
 };
 
 typedef struct subtilis_arm_ass_context_t_ subtilis_arm_ass_context_t;
@@ -42,5 +53,8 @@ subtilis_arm_section_t *subtilis_arm_asm_parse(
 	subtilis_type_section_t *stype, const subtilis_settings_t *set,
 	subtilis_backend_sys_trans sys_trans, subtilis_error_t *err);
 /* clang-format on */
+
+subtilis_arm_exp_val_t *subtilis_arm_asm_find_def(subtilis_arm_ass_context_t *c,
+						  const char *name);
 
 #endif
