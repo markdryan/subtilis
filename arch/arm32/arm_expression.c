@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "math.h"
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -68,6 +68,32 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_new_real(double val,
 	e->val.real = val;
 
 	return e;
+}
+
+subtilis_arm_exp_val_t *subtilis_arm_exp_new_str_str(const char *str,
+						     subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *e = malloc(sizeof(*e));
+
+	if (!e) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+
+	e->type = SUBTILIS_ARM_EXP_TYPE_STRING;
+	subtilis_buffer_init(&e->val.buf, strlen(str) + 1);
+	subtilis_buffer_append_string(&e->val.buf, str, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_buffer_zero_terminate(&e->val.buf, err);
+
+	return e;
+
+cleanup:
+	subtilis_arm_exp_val_free(e);
+
+	return NULL;
 }
 
 subtilis_arm_exp_val_t *subtilis_arm_exp_new_str(subtilis_buffer_t *buf,
@@ -173,6 +199,10 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_dup(subtilis_arm_exp_val_t *val,
 		id = subtilis_buffer_get_string(&val->val.buf);
 		return subtilis_arm_exp_new_id(id, err);
 	}
+
+	subtilis_error_set_assertion_failed(err);
+
+	return NULL;
 }
 
 static int32_t prv_exp_to_int(subtilis_arm_ass_context_t *c,
@@ -513,6 +543,652 @@ static subtilis_arm_exp_val_t *prv_not(subtilis_arm_ass_context_t *c,
 	return e;
 }
 
+static subtilis_arm_exp_val_t *prv_bracketed_exp(subtilis_arm_ass_context_t *c,
+						 subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_arm_exp_val_t *e = NULL;
+
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if (strcmp(tbuf, "(")) {
+		subtilis_error_set_expected(err, "( ", tbuf, c->l->stream->name,
+					    c->l->line);
+		return NULL;
+	}
+
+	e = prv_process_bktd_exp(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return e;
+
+cleanup:
+
+	subtilis_arm_exp_val_free(e);
+
+	return NULL;
+}
+
+static subtilis_arm_exp_val_t *prv_real_bkt_exp(subtilis_arm_ass_context_t *c,
+						subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+
+	val = prv_bracketed_exp(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	switch (val->type) {
+	case SUBTILIS_ARM_EXP_TYPE_INT:
+		val->type = SUBTILIS_ARM_EXP_TYPE_REAL;
+		val->val.real = (double)val->val.integer;
+		break;
+	case SUBTILIS_ARM_EXP_TYPE_REAL:
+		break;
+	default:
+		subtilis_error_set_numeric_exp_expected(err, c->l->stream->name,
+							c->l->line);
+		goto cleanup;
+	}
+
+	return val;
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+
+	return NULL;
+}
+
+static subtilis_arm_exp_val_t *prv_int_bkt_exp(subtilis_arm_ass_context_t *c,
+					       subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+
+	val = prv_bracketed_exp(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	switch (val->type) {
+	case SUBTILIS_ARM_EXP_TYPE_INT:
+		break;
+	case SUBTILIS_ARM_EXP_TYPE_REAL:
+		val->type = SUBTILIS_ARM_EXP_TYPE_INT;
+		val->val.integer = (int32_t)val->val.real;
+		break;
+	default:
+		subtilis_error_set_numeric_exp_expected(err, c->l->stream->name,
+							c->l->line);
+		goto cleanup;
+	}
+
+	return val;
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+
+	return NULL;
+}
+
+static subtilis_arm_exp_val_t *prv_int(subtilis_arm_ass_context_t *c,
+				       subtilis_error_t *err)
+{
+	return prv_int_bkt_exp(c, err);
+}
+
+static subtilis_arm_exp_val_t *prv_dbl_unary(subtilis_arm_ass_context_t *c,
+					     double (*fn)(double),
+					     subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+
+	val = prv_real_bkt_exp(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	val->val.real = fn(val->val.real);
+
+	return val;
+}
+
+static subtilis_arm_exp_val_t *prv_rad(subtilis_arm_ass_context_t *c,
+				       subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+	const double radian = ((22 / 7.0) / 180);
+
+	val = prv_real_bkt_exp(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	val->val.real = val->val.real * radian;
+
+	return val;
+}
+
+static subtilis_arm_exp_val_t *prv_abs(subtilis_arm_ass_context_t *c,
+				       subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+
+	val = prv_bracketed_exp(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	switch (val->type) {
+	case SUBTILIS_ARM_EXP_TYPE_INT:
+		if (val->val.integer < 0)
+			val->val.integer = -val->val.integer;
+		break;
+	case SUBTILIS_ARM_EXP_TYPE_REAL:
+		if (val->val.real < 0)
+			val->val.real = -val->val.real;
+		break;
+	default:
+		subtilis_error_set_numeric_exp_expected(err, c->l->stream->name,
+							c->l->line);
+		goto cleanup;
+	}
+
+	return val;
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+
+	return NULL;
+}
+
+static subtilis_arm_exp_val_t *prv_chr_str(subtilis_arm_ass_context_t *c,
+					   subtilis_error_t *err)
+{
+	char c_str[2];
+	subtilis_arm_exp_val_t *val;
+	subtilis_arm_exp_val_t *val2 = NULL;
+
+	val = prv_int_bkt_exp(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	c_str[0] = val->val.integer & 255;
+	c_str[1] = 0;
+
+	val2 = subtilis_arm_exp_new_str_str(c_str, err);
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+
+	return val2;
+}
+
+static subtilis_arm_exp_val_t *prv_asc(subtilis_arm_ass_context_t *c,
+				       subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+	subtilis_arm_exp_val_t *val2 = NULL;
+	int32_t v;
+
+	val = prv_bracketed_exp(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (val->type != SUBTILIS_ARM_EXP_TYPE_STRING) {
+		subtilis_error_set_const_string_expected(
+		    err, c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	if (subtilis_buffer_get_size(&val->val.buf) <= 1)
+		v = -1;
+	else
+		v = subtilis_buffer_get_string(&val->val.buf)[0];
+
+	val2 = subtilis_arm_exp_new_int32(v, err);
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+
+	return val2;
+}
+
+static subtilis_arm_exp_val_t *prv_len(subtilis_arm_ass_context_t *c,
+				       subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+	subtilis_arm_exp_val_t *val2 = NULL;
+
+	val = prv_bracketed_exp(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (val->type != SUBTILIS_ARM_EXP_TYPE_STRING) {
+		subtilis_error_set_const_string_expected(
+		    err, c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	val2 = subtilis_arm_exp_new_int32(
+	    subtilis_buffer_get_size(&val->val.buf) - 1, err);
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+
+	return val2;
+}
+
+static subtilis_arm_exp_val_t *prv_sgn(subtilis_arm_ass_context_t *c,
+				       subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+
+	val = prv_bracketed_exp(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	switch (val->type) {
+	case SUBTILIS_ARM_EXP_TYPE_INT:
+		if (val->val.integer < 0)
+			val->val.integer = -1;
+		else if (val->val.integer > 0)
+			val->val.integer = 1;
+		else
+			val->val.integer = 0;
+		break;
+	case SUBTILIS_ARM_EXP_TYPE_REAL:
+		val->type = SUBTILIS_ARM_EXP_TYPE_INT;
+		if (val->val.real < 0)
+			val->val.integer = -1;
+		else if (val->val.real > 0)
+			val->val.integer = 1;
+		else
+			val->val.integer = 0;
+		break;
+	default:
+		subtilis_error_set_numeric_exp_expected(err, c->l->stream->name,
+							c->l->line);
+		goto cleanup;
+	}
+
+	return val;
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+
+	return NULL;
+}
+
+static subtilis_arm_exp_val_t *prv_left_right(subtilis_arm_ass_context_t *c,
+					      int32_t *len,
+					      subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_arm_exp_val_t *val = NULL;
+	subtilis_arm_exp_val_t *val2 = NULL;
+	int32_t length = 1;
+
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if (strcmp(tbuf, "(")) {
+		subtilis_error_set_expected(err, "( ", tbuf, c->l->stream->name,
+					    c->l->line);
+		return NULL;
+	}
+
+	val = subtilis_arm_exp_val_get(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (val->type != SUBTILIS_ARM_EXP_TYPE_STRING) {
+		subtilis_error_set_const_string_expected(
+		    err, c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) ||
+	    (tbuf[0] != ',' && tbuf[0] != ')')) {
+		subtilis_error_set_expected(err, ", or ) ", tbuf,
+					    c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	if (tbuf[0] == ',') {
+		val2 = subtilis_arm_exp_val_get(c, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		length = prv_exp_to_int(c, val2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		tbuf = subtilis_token_get_text(c->t);
+		if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) ||
+		    strcmp(tbuf, ")")) {
+			subtilis_error_set_right_bkt_expected(
+			    err, tbuf, c->l->stream->name, c->l->line);
+			goto cleanup;
+		}
+	}
+
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_arm_exp_val_free(val2);
+
+	*len = length;
+	return val;
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val2);
+	subtilis_arm_exp_val_free(val);
+
+	return NULL;
+}
+
+static subtilis_arm_exp_val_t *prv_left_str(subtilis_arm_ass_context_t *c,
+					    subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+	int32_t start;
+	int32_t len;
+
+	val = prv_left_right(c, &start, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	len = subtilis_buffer_get_size(&val->val.buf) - 1;
+	if (len == 0 || start < 0 || start >= len)
+		return val;
+
+	subtilis_buffer_delete(&val->val.buf, start, len - start, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return val;
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+
+	return NULL;
+}
+
+static subtilis_arm_exp_val_t *prv_right_str(subtilis_arm_ass_context_t *c,
+					     subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+	int32_t start;
+	int32_t len;
+
+	val = prv_left_right(c, &start, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	len = subtilis_buffer_get_size(&val->val.buf) - 1;
+	if (len == 0 || start < 0 || start >= len)
+		return val;
+
+	subtilis_buffer_delete(&val->val.buf, 0, len - start, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	subtilis_buffer_zero_terminate(&val->val.buf, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return val;
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+
+	return NULL;
+}
+
+static subtilis_arm_exp_val_t *prv_mid_str(subtilis_arm_ass_context_t *c,
+					   subtilis_error_t *err)
+{
+	const char *tbuf;
+	int32_t string_len;
+	const char *seed_string;
+	int32_t start;
+	subtilis_arm_exp_val_t *ret_val = NULL;
+	subtilis_arm_exp_val_t *str = NULL;
+	subtilis_arm_exp_val_t *count = NULL;
+	int32_t length = -1;
+
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if (strcmp(tbuf, "(")) {
+		subtilis_error_set_expected(err, "( ", tbuf, c->l->stream->name,
+					    c->l->line);
+		return NULL;
+	}
+
+	str = subtilis_arm_exp_val_get(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (str->type != SUBTILIS_ARM_EXP_TYPE_STRING) {
+		subtilis_error_set_const_string_expected(
+		    err, c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ",")) {
+		subtilis_error_set_expected(err, ",", tbuf, c->l->stream->name,
+					    c->l->line);
+		goto cleanup;
+	}
+
+	count = subtilis_arm_exp_val_get(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	start = prv_exp_to_int(c, count, err);
+	subtilis_arm_exp_val_free(count);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) ||
+	    (strcmp(tbuf, ")") && strcmp(tbuf, ","))) {
+		subtilis_error_set_expected(err, ", or )", tbuf,
+					    c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	if (!strcmp(tbuf, ",")) {
+		count = subtilis_arm_exp_val_get(c, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		length = prv_exp_to_int(c, count, err);
+		subtilis_arm_exp_val_free(count);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		tbuf = subtilis_token_get_text(c->t);
+		if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) ||
+		    strcmp(tbuf, ")")) {
+			subtilis_error_set_right_bkt_expected(
+			    err, tbuf, c->l->stream->name, c->l->line);
+			goto cleanup;
+		}
+	}
+
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	string_len = subtilis_buffer_get_size(&str->val.buf) - 1;
+	if ((string_len == 0) || (start < 0) || (length == 0)) {
+		ret_val = subtilis_arm_exp_new_str_str("", err);
+	} else {
+		seed_string = subtilis_buffer_get_string(&str->val.buf);
+		if (length < 0 || length >= (string_len - start)) {
+			ret_val = subtilis_arm_exp_new_str_str(
+			    &seed_string[start], err);
+		} else {
+			subtilis_buffer_delete(&str->val.buf, 0, start, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+			if (start + length < string_len)
+				subtilis_buffer_delete(
+				    &str->val.buf, length,
+				    string_len - (start + length), err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+			subtilis_buffer_zero_terminate(&str->val.buf, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+
+			ret_val = subtilis_arm_exp_new_str(&str->val.buf, err);
+		}
+	}
+
+cleanup:
+
+	subtilis_arm_exp_val_free(str);
+
+	return ret_val;
+}
+
+static subtilis_arm_exp_val_t *prv_string_str(subtilis_arm_ass_context_t *c,
+					      subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_buffer_t buf;
+	size_t i;
+	size_t string_len;
+	int32_t repeat;
+	const char *seed_string;
+	subtilis_arm_exp_val_t *retval = NULL;
+	subtilis_arm_exp_val_t *count = NULL;
+	subtilis_arm_exp_val_t *string = NULL;
+
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if (strcmp(tbuf, "(")) {
+		subtilis_error_set_expected(err, "( ", tbuf, c->l->stream->name,
+					    c->l->line);
+		return NULL;
+	}
+
+	count = subtilis_arm_exp_val_get(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	repeat = prv_exp_to_int(c, count, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ",")) {
+		subtilis_error_set_expected(err, ",", tbuf, c->l->stream->name,
+					    c->l->line);
+		goto cleanup;
+	}
+
+	string = subtilis_arm_exp_val_get(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (string->type != SUBTILIS_ARM_EXP_TYPE_STRING) {
+		subtilis_error_set_const_string_expected(
+		    err, c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ")")) {
+		subtilis_error_set_right_bkt_expected(
+		    err, tbuf, c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	string_len = subtilis_buffer_get_size(&string->val.buf) - 1;
+	seed_string = subtilis_buffer_get_string(&string->val.buf);
+	subtilis_buffer_init(&buf, (count->val.integer * string_len) + 1);
+
+	for (i = 0; i < repeat; i++) {
+		subtilis_buffer_append(&buf, seed_string, string_len, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+	subtilis_buffer_zero_terminate(&buf, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	retval = subtilis_arm_exp_new_str(&buf, err);
+
+cleanup:
+
+	subtilis_arm_exp_val_free(count);
+	subtilis_arm_exp_val_free(string);
+
+	return retval;
+}
+
+static subtilis_arm_exp_val_t *prv_str_str(subtilis_arm_ass_context_t *c,
+					   subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+	char buf[64];
+	subtilis_arm_exp_val_t *val2 = NULL;
+
+	val = prv_bracketed_exp(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	switch (val->type) {
+	case SUBTILIS_ARM_EXP_TYPE_INT:
+		sprintf(buf, "%d", val->val.integer);
+		break;
+	case SUBTILIS_ARM_EXP_TYPE_REAL:
+		sprintf(buf, "%f", val->val.real);
+		break;
+	default:
+		subtilis_error_set_numeric_exp_expected(err, c->l->stream->name,
+							c->l->line);
+		goto cleanup;
+	}
+
+	val2 = subtilis_arm_exp_new_str_str(buf, err);
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+
+	return val2;
+}
+
 static subtilis_arm_exp_val_t *prv_priority1(subtilis_arm_ass_context_t *c,
 					     subtilis_error_t *err)
 {
@@ -561,77 +1237,66 @@ static subtilis_arm_exp_val_t *prv_priority1(subtilis_arm_ass_context_t *c,
 		break;
 	case SUBTILIS_TOKEN_IDENTIFIER:
 		e = subtilis_arm_exp_process_id(c, tbuf, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
 		break;
 
 	case SUBTILIS_TOKEN_KEYWORD:
 		switch (c->t->tok.keyword.type) {
 		case SUBTILIS_ARM_KEYWORD_TRUE:
 			e = subtilis_arm_exp_new_int32(-1, err);
-			if (!e)
-				goto cleanup;
 			break;
 		case SUBTILIS_ARM_KEYWORD_FALSE:
 			e = subtilis_arm_exp_new_int32(0, err);
-			if (!e)
-				goto cleanup;
 			break;
 		case SUBTILIS_ARM_KEYWORD_NOT:
 			e = prv_not(c, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				goto cleanup;
 			return e;
-		/*
-	case SUBTILIS_KEYWORD_INT:
-		return subtilis_parser_int(p, t, err);
-	case SUBTILIS_KEYWORD_SIN:
-		return subtilis_parser_sin(p, t, err);
-	case SUBTILIS_KEYWORD_COS:
-		return subtilis_parser_cos(p, t, err);
-	case SUBTILIS_KEYWORD_TAN:
-		return subtilis_parser_tan(p, t, err);
-	case SUBTILIS_KEYWORD_ACS:
-		return subtilis_parser_acs(p, t, err);
-	case SUBTILIS_KEYWORD_ASN:
-		return subtilis_parser_asn(p, t, err);
-	case SUBTILIS_KEYWORD_ATN:
-		return subtilis_parser_atn(p, t, err);
-	case SUBTILIS_KEYWORD_SQR:
-		return subtilis_parser_sqr(p, t, err);
-	case SUBTILIS_KEYWORD_EXP:
-		return subtilis_parser_exp(p, t, err);
-	case SUBTILIS_KEYWORD_LOG:
-		return subtilis_parser_log(p, t, SUBTILIS_OP_INSTR_LOG,
-					   log10, err);
-	case SUBTILIS_KEYWORD_LN:
-		return subtilis_parser_log(p, t, SUBTILIS_OP_INSTR_LN,
-					   log, err);
-	case SUBTILIS_KEYWORD_RAD:
-		return subtilis_parser_rad(p, t, err);
-	case SUBTILIS_KEYWORD_ABS:
-		return subtilis_parser_abs(p, t, err);
-	case SUBTILIS_KEYWORD_SGN:
-		return subtilis_parser_sgn(p, t, err);
-	case SUBTILIS_KEYWORD_PI:
-		return subtilis_parser_pi(p, t, err);
-	case SUBTILIS_KEYWORD_CHR_STR:
-		return subtilis_parser_chrstr(p, t, err);
-	case SUBTILIS_KEYWORD_ASC:
-		return subtilis_parser_asc(p, t, err);
-	case SUBTILIS_KEYWORD_LEN:
-		return subtilis_parser_len(p, t, err);
-	case SUBTILIS_KEYWORD_LEFT_STR:
-		return subtilis_parser_left_str_exp(p, t, err);
-	case SUBTILIS_KEYWORD_RIGHT_STR:
-		return subtilis_parser_right_str_exp(p, t, err);
-	case SUBTILIS_KEYWORD_MID_STR:
-		return subtilis_parser_mid_str_exp(p, t, err);
-	case SUBTILIS_KEYWORD_STRING_STR:
-		return subtilis_parser_string_str(p, t, err);
-	case SUBTILIS_KEYWORD_STR_STR:
-		return subtilis_parser_str_str(p, t, err);
-		*/
+		case SUBTILIS_ARM_KEYWORD_INT:
+			return prv_int(c, err);
+		case SUBTILIS_ARM_KEYWORD_SIN:
+			return prv_dbl_unary(c, sin, err);
+		case SUBTILIS_ARM_KEYWORD_COS:
+			return prv_dbl_unary(c, cos, err);
+		case SUBTILIS_ARM_KEYWORD_TAN:
+			return prv_dbl_unary(c, tan, err);
+		case SUBTILIS_ARM_KEYWORD_ACS:
+			return prv_dbl_unary(c, acos, err);
+		case SUBTILIS_ARM_KEYWORD_ASN:
+			return prv_dbl_unary(c, asin, err);
+		case SUBTILIS_ARM_KEYWORD_ATN:
+			return prv_dbl_unary(c, atan, err);
+		case SUBTILIS_ARM_KEYWORD_SQR:
+			return prv_dbl_unary(c, sqrt, err);
+		case SUBTILIS_ARM_KEYWORD_EXP:
+			return prv_dbl_unary(c, exp, err);
+		case SUBTILIS_ARM_KEYWORD_LOG:
+			return prv_dbl_unary(c, log10, err);
+		case SUBTILIS_ARM_KEYWORD_LN:
+			return prv_dbl_unary(c, log, err);
+		case SUBTILIS_ARM_KEYWORD_RAD:
+			return prv_rad(c, err);
+		case SUBTILIS_ARM_KEYWORD_ABS:
+			return prv_abs(c, err);
+		case SUBTILIS_ARM_KEYWORD_SGN:
+			return prv_sgn(c, err);
+		case SUBTILIS_ARM_KEYWORD_PI:
+			e = subtilis_arm_exp_new_real(22 / 7.0, err);
+			break;
+		case SUBTILIS_ARM_KEYWORD_CHR_STR:
+			return prv_chr_str(c, err);
+		case SUBTILIS_ARM_KEYWORD_ASC:
+			return prv_asc(c, err);
+		case SUBTILIS_ARM_KEYWORD_LEN:
+			return prv_len(c, err);
+		case SUBTILIS_ARM_KEYWORD_LEFT_STR:
+			return prv_left_str(c, err);
+		case SUBTILIS_ARM_KEYWORD_RIGHT_STR:
+			return prv_right_str(c, err);
+		case SUBTILIS_ARM_KEYWORD_MID_STR:
+			return prv_mid_str(c, err);
+		case SUBTILIS_ARM_KEYWORD_STRING_STR:
+			return prv_string_str(c, err);
+		case SUBTILIS_ARM_KEYWORD_STR_STR:
+			return prv_str_str(c, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "Unexpected keyword in expression",
@@ -644,6 +1309,9 @@ static subtilis_arm_exp_val_t *prv_priority1(subtilis_arm_ass_context_t *c,
 						c->l->line);
 		goto cleanup;
 	}
+
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
 	subtilis_lexer_get(c->l, c->t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1150,9 +1818,12 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_pri7(subtilis_arm_ass_context_t *c,
 {
 	subtilis_arm_exp_val_t *e1 = NULL;
 	subtilis_arm_exp_val_t *e2 = NULL;
+
+	/* clang-format off */
 	subtilis_arm_exp_val_t *(*fn)(
-	    subtilis_arm_ass_context_t * c, subtilis_arm_exp_val_t * e1,
-	    subtilis_arm_exp_val_t * e2, subtilis_error_t * err);
+	    subtilis_arm_ass_context_t *c, subtilis_arm_exp_val_t *e1,
+	    subtilis_arm_exp_val_t *e2, subtilis_error_t *err);
+	/* clang-format on */
 
 	e1 = prv_priority6(c, err);
 	if (err->type != SUBTILIS_ERROR_OK)

@@ -59,6 +59,8 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_new_real(double val,
 						  subtilis_error_t *err);
 subtilis_arm_exp_val_t *subtilis_arm_exp_new_str(subtilis_buffer_t *buf,
 						 subtilis_error_t *err);
+subtilis_arm_exp_val_t *subtilis_arm_exp_new_str_str(const char *str,
+						     subtilis_error_t *err);
 subtilis_arm_exp_val_t *subtilis_arm_exp_new_reg(subtilis_arm_reg_t reg,
 						 subtilis_error_t *err);
 subtilis_arm_exp_val_t *subtilis_arm_exp_new_freg(subtilis_arm_reg_t reg,

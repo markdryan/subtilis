@@ -1515,6 +1515,7 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 			   subtilis_arm_encode_ud_t *ud, subtilis_error_t *err)
 {
 	subtlis_arm_walker_t walker;
+	subtilis_arm_op_t align_op;
 
 	walker.user_data = ud;
 	walker.label_fn = prv_encode_label;
@@ -1547,6 +1548,14 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 		return;
 
 	prv_apply_back_patches(ud, err);
+
+	/*
+	 * Forcibly align the end of each section to a 4 byte boundary.
+	 */
+
+	align_op.type = SUBTILIS_ARM_OP_ALIGN;
+	align_op.op.alignment = 4;
+	prv_encode_directive(ud, &align_op, err);
 }
 
 static void prv_copy_constant_to_buf(subtilis_arm_prog_t *arm_p,
