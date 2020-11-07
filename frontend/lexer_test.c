@@ -447,6 +447,159 @@ on_error:
 	return 1;
 }
 
+static int prv_check_push(subtilis_lexer_t *l, subtilis_token_t *t)
+{
+	size_t i = 0;
+	subtilis_error_t err;
+
+	subtilis_error_init(&err);
+
+	subtilis_lexer_get(l, t, &err);
+	if (err.type != SUBTILIS_ERROR_OK) {
+		subtilis_error_fprintf(stderr, &err, true);
+		return 1;
+	}
+
+	if (t->type != SUBTILIS_TOKEN_INTEGER) {
+		fprintf(stderr, "Expected token type %d got %d\n",
+			SUBTILIS_TOKEN_INTEGER, t->type);
+		return 1;
+	}
+
+	if (t->tok.integer != 1234) {
+		fprintf(stderr, "Expected value %d got %d\n", 1234,
+			t->tok.integer);
+		return 1;
+	}
+
+	subtilis_lexer_get(l, t, &err);
+	if (err.type != SUBTILIS_ERROR_OK) {
+		subtilis_error_fprintf(stderr, &err, true);
+		return 1;
+	}
+
+	subtilis_lexer_push_block(l, t, &err);
+	if (err.type != SUBTILIS_ERROR_OK) {
+		subtilis_error_fprintf(stderr, &err, true);
+		return 1;
+	}
+
+	for (i = 0; i < 16; i++) {
+		if (t->type != SUBTILIS_TOKEN_IDENTIFIER) {
+			fprintf(stderr, "Expected token type %d got %d\n",
+				SUBTILIS_TOKEN_IDENTIFIER, t->type);
+			return 1;
+		}
+
+		if (strcmp(subtilis_token_get_text(t), "hello")) {
+			fprintf(stderr, "Expected token value %s got %s\n",
+				"hello", subtilis_token_get_text(t));
+			return 1;
+		}
+
+		subtilis_lexer_get(l, t, &err);
+		if (err.type != SUBTILIS_ERROR_OK) {
+			subtilis_error_fprintf(stderr, &err, true);
+			return 1;
+		}
+
+		if (t->type != SUBTILIS_TOKEN_INTEGER) {
+			fprintf(stderr, "Expected token type %d got %d\n",
+				SUBTILIS_TOKEN_INTEGER, t->type);
+			return 1;
+		}
+
+		if (t->tok.integer != 45678) {
+			fprintf(stderr, "Expected value %d got %d\n", 1234,
+				t->tok.integer);
+			return 1;
+		}
+
+		if (i != 15) {
+			subtilis_lexer_set_block_start(l, &err);
+			if (err.type != SUBTILIS_ERROR_OK) {
+				subtilis_error_fprintf(stderr, &err, true);
+				return 1;
+			}
+			subtilis_lexer_get(l, t, &err);
+			if (err.type != SUBTILIS_ERROR_OK) {
+				subtilis_error_fprintf(stderr, &err, true);
+				return 1;
+			}
+		}
+	}
+
+	subtilis_lexer_pop_block(l, &err);
+	if (err.type != SUBTILIS_ERROR_OK) {
+		subtilis_error_fprintf(stderr, &err, true);
+		return 1;
+	}
+
+	subtilis_lexer_get(l, t, &err);
+	if (err.type != SUBTILIS_ERROR_OK) {
+		subtilis_error_fprintf(stderr, &err, true);
+		return 1;
+	}
+
+	if (t->type != SUBTILIS_TOKEN_IDENTIFIER) {
+		fprintf(stderr, "Expected token type %d got %d\n",
+			SUBTILIS_TOKEN_IDENTIFIER, t->type);
+		return 1;
+	}
+
+	if (strcmp(subtilis_token_get_text(t), "goodbye")) {
+		fprintf(stderr, "Expected value %s got %s\n", "goodbye",
+			subtilis_token_get_text(t));
+		return 1;
+	}
+
+	return 0;
+}
+
+static int prv_test_push(void)
+{
+	int j;
+	subtilis_buffer_t buf;
+	subtilis_error_t err;
+	static const char *const test_strings[] = {
+	    "1234 ", "hello ", "45678", "goodbye",
+	};
+	int res = 0;
+
+	printf("lexer_push");
+
+	subtilis_error_init(&err);
+	subtilis_buffer_init(&buf, 4096);
+
+	for (j = 0; j < sizeof(test_strings) / sizeof(const char *); j++) {
+		subtilis_buffer_append_string(&buf, test_strings[j], &err);
+		if (err.type != SUBTILIS_ERROR_OK) {
+			subtilis_error_fprintf(stderr, &err, true);
+			goto on_error;
+		}
+	}
+
+	subtilis_buffer_zero_terminate(&buf, &err);
+	if (err.type != SUBTILIS_ERROR_OK) {
+		subtilis_error_fprintf(stderr, &err, true);
+		goto on_error;
+	}
+
+	res |= prv_test_wrapper(subtilis_buffer_get_string(&buf), 1,
+				prv_check_push);
+
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	subtilis_buffer_free(&buf);
+	return res;
+
+on_error:
+	printf(": [FAIL]\n");
+
+	subtilis_buffer_free(&buf);
+	return 1;
+}
+
 static int prv_check_procedure_call(subtilis_lexer_t *l, subtilis_token_t *t)
 {
 	subtilis_error_t err;
@@ -1266,6 +1419,7 @@ int lexer_test(void)
 	failure |= prv_test_string_unterminated();
 	failure |= prv_test_big_string();
 	failure |= prv_test_unknown();
+	failure |= prv_test_push();
 
 	return failure;
 }
