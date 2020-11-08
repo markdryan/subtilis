@@ -1,0 +1,58 @@
+message$ := "It is practically impossible to teach good programming to students " +
+	    "that have had a prior exposure to BASIC: as potential programmers they " +
+	    "are mentally mutilated beyond hope of regeneration. "
+
+mode 1
+a% := 0
+off
+repeat
+	wait
+	cls
+	PROCSinWave(message$, a%)
+	a% += 1
+	if a% = len(message$) then
+	   a% = 0
+	endif
+	x% := inkey(10)
+until false
+
+
+def PROCSinWave(a$, start%)
+[
+	def str = R2
+	def ptr = R3
+	def counter = R4
+	def strlen = R5
+	def strend = R6
+	def table_ptr = R7
+
+	def screen_width = 40
+
+	LDR str, [R0, 4]
+	ADD ptr, str, R1
+	LDR strlen, [R0]
+	ADD strend, str, strlen
+	MOV counter, 0
+	ADR table_ptr, table
+
+loop_start
+	CMP counter, strlen
+	MOVEQ PC, R14
+	CMP counter, screen_width
+	MOVEQ PC, R14
+	CMP ptr, strend
+	MOVEQ ptr, str
+	SWI 256+31
+	MOV R0, counter
+	SWI "OS_WriteC"
+	LDR R0, [R7, R4, LSL 2]
+	SWI "OS_WriteC"
+	LDRB R0, [R3], 1
+	SWI "OS_WriteC"
+	ADD counter, counter, 1
+	B loop_start
+table
+	for i = 1 to screen_width
+	    EQUD INT(SIN(RAD((i)*8))*16)+15
+	next
+]

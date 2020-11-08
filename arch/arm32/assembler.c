@@ -2300,9 +2300,9 @@ static void prv_parse_def(subtilis_arm_ass_context_t *c, subtilis_error_t *err)
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	tbuf = subtilis_token_get_text(c->t);
 	if (c->t->type != SUBTILIS_TOKEN_IDENTIFIER) {
-		subtilis_error_set_expected(err, "identifier",
-					    subtilis_arm_exp_type_name(val1),
+		subtilis_error_set_expected(err, "identifier", tbuf,
 					    c->l->stream->name, c->l->line);
 		goto cleanup;
 	}
@@ -2362,6 +2362,148 @@ cleanup:
 	subtilis_arm_exp_val_free(val1);
 }
 
+static void prv_parse_for(subtilis_arm_ass_context_t *c, subtilis_error_t *err)
+{
+	size_t var;
+	const char *tbuf;
+	subtilis_arm_exp_val_t *index_var;
+	subtilis_arm_exp_val_t *upto = NULL;
+
+	prv_parse_def(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	var = c->def_count - 1;
+	index_var = c->defs[var].val;
+
+	if ((index_var->type != SUBTILIS_ARM_EXP_TYPE_INT) &&
+	    (index_var->type != SUBTILIS_ARM_EXP_TYPE_REAL)) {
+		subtilis_error_set_expected(
+		    err, "numeric", subtilis_arm_exp_type_name(index_var),
+		    c->l->stream->name, c->l->line);
+		return;
+	}
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_KEYWORD) ||
+	    (c->t->tok.keyword.type != SUBTILIS_ARM_KEYWORD_TO)) {
+		subtilis_error_set_expected(err, "TO", tbuf, c->l->stream->name,
+					    c->l->line);
+		return;
+	}
+
+	upto = subtilis_arm_exp_val_get(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (index_var->type != upto->type) {
+		switch (index_var->type) {
+		case SUBTILIS_ARM_EXP_TYPE_INT:
+			if (upto->type != SUBTILIS_ARM_EXP_TYPE_REAL) {
+				subtilis_error_set_expected(
+				    err, "numeric",
+				    subtilis_arm_exp_type_name(upto),
+				    c->l->stream->name, c->l->line);
+				goto cleanup;
+			}
+			index_var->type = SUBTILIS_ARM_EXP_TYPE_REAL;
+			index_var->val.real = (double)index_var->val.integer;
+			break;
+		case SUBTILIS_ARM_EXP_TYPE_REAL:
+			if (upto->type != SUBTILIS_ARM_EXP_TYPE_INT) {
+				subtilis_error_set_expected(
+				    err, "numeric",
+				    subtilis_arm_exp_type_name(upto),
+				    c->l->stream->name, c->l->line);
+				goto cleanup;
+			}
+			upto->type = SUBTILIS_ARM_EXP_TYPE_REAL;
+			upto->val.real = (double)upto->val.integer;
+			break;
+		default:
+			subtilis_error_set_bad_conversion(
+			    err, subtilis_arm_exp_type_name(index_var),
+			    subtilis_arm_exp_type_name(upto),
+			    c->l->stream->name, c->l->line);
+			goto cleanup;
+		}
+	}
+
+	if (c->num_blocks == c->max_blocks) {
+		if (c->blocks) {
+			subtilis_error_set_too_many_blocks(
+			    err, c->l->stream->name, c->l->line);
+			goto cleanup;
+		}
+		c->blocks = malloc(sizeof(*c->blocks) * 32);
+		if (!c->blocks) {
+			subtilis_error_set_oom(err);
+			goto cleanup;
+		}
+		c->max_blocks = 32;
+	}
+	c->blocks[c->num_blocks].def_start = var;
+	c->blocks[c->num_blocks].upto = upto;
+	c->num_blocks++;
+
+	subtilis_lexer_push_block(c->l, c->t, err);
+	return;
+
+cleanup:
+
+	subtilis_arm_exp_val_free(upto);
+}
+
+static void prv_parse_next(subtilis_arm_ass_context_t *c, subtilis_error_t *err)
+{
+	subtilis_ass_block_t *block;
+	subtilis_arm_exp_val_t *index_var;
+	size_t var;
+	bool finished;
+	size_t i;
+
+	if (c->num_blocks == 0) {
+		subtilis_error_set_keyword_unexpected(
+		    err, "NEXT", c->l->stream->name, c->l->line);
+		return;
+	}
+
+	block = &c->blocks[c->num_blocks - 1];
+	var = block->def_start;
+	index_var = c->defs[var].val;
+
+	switch (block->upto->type) {
+	case SUBTILIS_ARM_EXP_TYPE_INT:
+		index_var->val.integer++;
+		finished = index_var->val.integer > block->upto->val.integer;
+		break;
+	case SUBTILIS_ARM_EXP_TYPE_REAL:
+		index_var->val.real++;
+		finished = index_var->val.real > block->upto->val.real;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	for (i = var + 1; i < c->def_count; i++) {
+		free(c->defs[i].name);
+		subtilis_arm_exp_val_free(c->defs[i].val);
+	}
+	c->def_count = var + 1;
+	if (finished) {
+		c->num_blocks--;
+		subtilis_arm_exp_val_free(c->blocks[c->num_blocks].upto);
+		subtilis_lexer_pop_block(c->l, err);
+	} else {
+		subtilis_lexer_set_block_start(c->l, err);
+	}
+
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_lexer_get(c->l, c->t, err);
+}
+
 static void prv_free_defs(subtilis_arm_ass_context_t *c)
 {
 	size_t i;
@@ -2402,6 +2544,12 @@ static void prv_parse_keyword(subtilis_arm_ass_context_t *c, const char *name,
 	case SUBTILIS_ARM_KEYWORD_EQUW:
 		prv_parse_equw(c, err);
 		break;
+	case SUBTILIS_ARM_KEYWORD_FOR:
+		prv_parse_for(c, err);
+		break;
+	case SUBTILIS_ARM_KEYWORD_NEXT:
+		prv_parse_next(c, err);
+		break;
 	default:
 		subtilis_error_set_ass_keyword_bad_use(
 		    err, name, c->l->stream->name, c->l->line);
@@ -2440,9 +2588,28 @@ static void prv_parser_main_loop(subtilis_arm_ass_context_t *c,
 		tbuf = subtilis_token_get_text(c->t);
 	}
 
-	if (!(c->t->type == SUBTILIS_TOKEN_OPERATOR && !strcmp(tbuf, "]")))
+	if (!(c->t->type == SUBTILIS_TOKEN_OPERATOR && !strcmp(tbuf, "]"))) {
 		subtilis_error_set_expected(err, "label or keyword", tbuf,
 					    c->l->stream->name, c->l->line);
+		return;
+	}
+
+	if (c->num_blocks != 0)
+		subtilis_error_set_compund_not_term(err, c->l->stream->name,
+						    c->l->line);
+}
+
+static void prv_context_free(subtilis_arm_ass_context_t *c)
+{
+	size_t i;
+
+	prv_free_defs(c);
+	subtilis_bitset_free(&c->pending_labels);
+	subtilis_string_pool_delete(c->label_pool);
+
+	for (i = 0; i < c->num_blocks; i++)
+		subtilis_arm_exp_val_free(c->blocks[i].upto);
+	free(c->blocks);
 }
 
 /* clang-format off */
@@ -2477,6 +2644,9 @@ subtilis_arm_section_t *subtilis_arm_asm_parse(
 	context.def_count = 0;
 	context.max_defs = 0;
 	context.defs = NULL;
+	context.blocks = NULL;
+	context.num_blocks = 0;
+	context.max_blocks = 0;
 	subtilis_bitset_init(&context.pending_labels);
 
 	prv_parser_main_loop(&context, err);
@@ -2499,17 +2669,13 @@ subtilis_arm_section_t *subtilis_arm_asm_parse(
 		goto cleanup;
 	}
 
-	prv_free_defs(&context);
-	subtilis_bitset_free(&context.pending_labels);
-	subtilis_string_pool_delete(label_pool);
+	prv_context_free(&context);
 
 	return arm_s;
 
 cleanup:
-	prv_free_defs(&context);
-	subtilis_bitset_free(&context.pending_labels);
+	prv_context_free(&context);
 	subtilis_arm_section_delete(arm_s);
-	subtilis_string_pool_delete(label_pool);
 
 	return NULL;
 }

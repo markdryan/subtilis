@@ -39,6 +39,7 @@ typedef enum {
 	SUBTILIS_ERROR_BAD_FN_NAME,
 	SUBTILIS_ERROR_ASSERTION_FAILED,
 	SUBTILIS_ERROR_KEYWORD_EXPECTED,
+	SUBTILIS_ERROR_KEYWORD_UNEXPECTED,
 	SUBTILIS_ERROR_ID_EXPECTED,
 	SUBTILIS_ERROR_NOT_SUPPORTED,
 	SUBTILIS_ERROR_ASSIGNMENT_OP_EXPECTED,
@@ -164,6 +165,9 @@ void subtilis_error_init(subtilis_error_t *e);
 				 __LINE__)
 #define subtilis_error_set_keyword_expected(e, str, file, line)                \
 	subtilis_error_set1(e, SUBTILIS_ERROR_KEYWORD_EXPECTED, str, file, line)
+#define subtilis_error_set_keyword_unexpected(e, str, file, line)              \
+	subtilis_error_set1(e, SUBTILIS_ERROR_KEYWORD_UNEXPECTED, str, file,   \
+			    line)
 #define subtilis_error_set_not_supported(e, str, file, line)                   \
 	subtilis_error_set1(e, SUBTILIS_ERROR_NOT_SUPPORTED, str, file, line)
 #define subtilis_error_set_id_expected(e, str, file, line)                     \

@@ -31,6 +31,13 @@ struct subtilis_arm_ass_def_t_ {
 
 typedef struct subtilis_arm_ass_def_t_ subtilis_arm_ass_def_t;
 
+struct subtilis_ass_block_t_ {
+	size_t def_start;
+	subtilis_arm_exp_val_t *upto;
+};
+
+typedef struct subtilis_ass_block_t_ subtilis_ass_block_t;
+
 struct subtilis_arm_ass_context_t_ {
 	subtilis_arm_section_t *arm_s;
 	subtilis_lexer_t *l;
@@ -43,6 +50,9 @@ struct subtilis_arm_ass_context_t_ {
 	subtilis_arm_ass_def_t *defs;
 	size_t def_count;
 	size_t max_defs;
+	subtilis_ass_block_t *blocks;
+	size_t num_blocks;
+	size_t max_blocks;
 };
 
 typedef struct subtilis_arm_ass_context_t_ subtilis_arm_ass_context_t;
