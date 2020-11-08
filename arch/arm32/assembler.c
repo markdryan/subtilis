@@ -2377,7 +2377,9 @@ static void prv_parse_for(subtilis_arm_ass_context_t *c, subtilis_error_t *err)
 	index_var = c->defs[var].val;
 
 	if ((index_var->type != SUBTILIS_ARM_EXP_TYPE_INT) &&
-	    (index_var->type != SUBTILIS_ARM_EXP_TYPE_REAL)) {
+	    (index_var->type != SUBTILIS_ARM_EXP_TYPE_REAL) &&
+	    (index_var->type != SUBTILIS_ARM_EXP_TYPE_FREG) &&
+	    (index_var->type != SUBTILIS_ARM_EXP_TYPE_REG)) {
 		subtilis_error_set_expected(
 		    err, "numeric", subtilis_arm_exp_type_name(index_var),
 		    c->l->stream->name, c->l->line);
@@ -2480,6 +2482,11 @@ static void prv_parse_next(subtilis_arm_ass_context_t *c, subtilis_error_t *err)
 	case SUBTILIS_ARM_EXP_TYPE_REAL:
 		index_var->val.real++;
 		finished = index_var->val.real > block->upto->val.real;
+		break;
+	case SUBTILIS_ARM_EXP_TYPE_FREG:
+	case SUBTILIS_ARM_EXP_TYPE_REG:
+		index_var->val.reg++;
+		finished = index_var->val.reg > block->upto->val.reg;
 		break;
 	default:
 		subtilis_error_set_assertion_failed(err);

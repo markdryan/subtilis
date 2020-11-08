@@ -642,7 +642,37 @@ cleanup:
 static subtilis_arm_exp_val_t *prv_int(subtilis_arm_ass_context_t *c,
 				       subtilis_error_t *err)
 {
-	return prv_int_bkt_exp(c, err);
+	subtilis_arm_exp_val_t *val;
+
+	val = prv_bracketed_exp(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	switch (val->type) {
+	case SUBTILIS_ARM_EXP_TYPE_INT:
+		break;
+	case SUBTILIS_ARM_EXP_TYPE_REAL:
+		val->type = SUBTILIS_ARM_EXP_TYPE_INT;
+		val->val.integer = (int32_t)val->val.real;
+		break;
+	case SUBTILIS_ARM_EXP_TYPE_FREG:
+	case SUBTILIS_ARM_EXP_TYPE_REG:
+		val->type = SUBTILIS_ARM_EXP_TYPE_INT;
+		val->val.integer = (int32_t)val->val.reg;
+		break;
+	default:
+		subtilis_error_set_numeric_exp_expected(err, c->l->stream->name,
+							c->l->line);
+		goto cleanup;
+	}
+
+	return val;
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+
+	return NULL;
 }
 
 static subtilis_arm_exp_val_t *prv_dbl_unary(subtilis_arm_ass_context_t *c,
