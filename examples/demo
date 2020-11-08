@@ -45,9 +45,9 @@ loop_start
 	SWI 256+31
 	MOV R0, counter
 	SWI "OS_WriteC"
-	LDR R0, [R7, R4, LSL 2]
+	LDR R0, [table_ptr, counter, LSL 2]
 	SWI "OS_WriteC"
-	LDRB R0, [R3], 1
+	LDRB R0, [ptr], 1
 	SWI "OS_WriteC"
 	ADD counter, counter, 1
 	B loop_start
