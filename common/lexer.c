@@ -1012,7 +1012,6 @@ void subtilis_lexer_get(subtilis_lexer_t *l, subtilis_token_t *t,
 	bool rem;
 
 	do {
-		prv_reinit_token(t);
 		if (l->next) {
 			/*
 			 * We transfer ownership of our buffer.
@@ -1023,6 +1022,7 @@ void subtilis_lexer_get(subtilis_lexer_t *l, subtilis_token_t *t,
 			l->next = NULL;
 			rem = false;
 		} else {
+			prv_reinit_token(t);
 			prv_skip_white(l, err);
 			if ((err->type != SUBTILIS_ERROR_OK) ||
 			    (l->index == l->buf_end))
