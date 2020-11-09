@@ -7,7 +7,6 @@ a% := 0
 off
 repeat
 	wait
-	cls
 	PROCSinWave(message$, a%)
 	a% += 1
 	if a% = len(message$) then
