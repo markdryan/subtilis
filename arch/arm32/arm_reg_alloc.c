@@ -154,12 +154,6 @@
  * |                  |
  * |------------------|
  * |   return value   |
- * |------------------|     -------------------------------------------
- * |   int arg n      |     This section is optional and only exists
- * |------------------|     if there are more than 4 integer arguments.
- * |   int arg n-1    |     Arguments are pushed in reverse order.
- * |----------------- |     Each argument consumes 4 bytes.
- * |   int arg 4      |
  * |----------------- |     -------------------------------------------
  * |   real arg n     |     This section is optional and only exists
  * |                  |     if there are more than 4 real arguments.
@@ -169,6 +163,12 @@
  * |----------------- |
  * |   real arg 4     |
  * |                  |
+ * |------------------|     -------------------------------------------
+ * |   int arg n      |     This section is optional and only exists
+ * |------------------|     if there are more than 4 integer arguments.
+ * |   int arg n-1    |     Arguments are pushed in reverse order.
+ * |----------------- |     Each argument consumes 4 bytes.
+ * |   int arg 4      |
  * |----------------- |     -------------------------------------------
  * |  spilt int reg 1 |     This section is optional and exists if the
  * |----------------- |     register allocator needed to spill any
