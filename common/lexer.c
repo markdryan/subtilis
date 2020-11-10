@@ -907,9 +907,9 @@ subtilis_token_t *subtilis_token_dup(const subtilis_token_t *src,
 	t = subtilis_token_new(err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	*t = *src;
+	t->type = src->type;
+	t->tok = src->tok;
 	buf_size = subtilis_buffer_get_size(&src->buf);
-	subtilis_buffer_init(&t->buf, buf_size);
 	subtilis_buffer_append(&t->buf, subtilis_buffer_get_string(&src->buf),
 			       buf_size, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
