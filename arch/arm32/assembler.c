@@ -649,6 +649,47 @@ static void prv_parse_arm_2_arg(subtilis_arm_ass_context_t *c,
 	datai->status = status;
 }
 
+static void prv_parse_cmp(subtilis_arm_ass_context_t *c,
+			  subtilis_arm_instr_type_t itype,
+			  subtilis_arm_ccode_type_t ccode, bool status,
+			  bool teqp, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_op2_t op2;
+	const char *tbuf;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_data_instr_t *datai;
+
+	dest = prv_get_reg(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) && (strcmp(tbuf, ","))) {
+		subtilis_error_set_expected(err, ",", tbuf, c->l->stream->name,
+					    c->l->line);
+		return;
+	}
+
+	prv_get_op2(c, &op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr = subtilis_arm_section_add_instr(c->arm_s, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai = &instr->operands.data;
+	datai->ccode = ccode;
+	if (teqp)
+		datai->dest = 15;
+	else
+		datai->dest = 0;
+	datai->op1 = dest;
+	datai->op2 = op2;
+	datai->status = status;
+}
+
 static void prv_parse_swi(subtilis_arm_ass_context_t *c,
 			  subtilis_arm_ccode_type_t ccode,
 			  subtilis_error_t *err)
@@ -1221,7 +1262,7 @@ static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
 				  subtilis_arm_instr_type_t itype,
 				  subtilis_arm_ccode_type_t ccode, bool status,
 				  subtilis_arm_mtran_type_t mtran_type,
-				  bool byte, subtilis_error_t *err)
+				  bool byte, bool teqp, subtilis_error_t *err)
 {
 	switch (itype) {
 	case SUBTILIS_ARM_INSTR_B:
@@ -1251,7 +1292,7 @@ static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
 	case SUBTILIS_ARM_INSTR_TEQ:
 	case SUBTILIS_ARM_INSTR_CMP:
 	case SUBTILIS_ARM_INSTR_CMN:
-		prv_parse_arm_2_arg(c, itype, ccode, true, err);
+		prv_parse_cmp(c, itype, ccode, true, teqp, err);
 		break;
 	case SUBTILIS_ARM_INSTR_SWI:
 		prv_parse_swi(c, ccode, err);
@@ -1887,6 +1928,7 @@ static void prv_parse_identifier(subtilis_arm_ass_context_t *c,
 	subtilis_arm_ccode_type_t ccode = SUBTILIS_ARM_CCODE_AL;
 	bool status = false;
 	bool byte = false;
+	bool teqp = false;
 	size_t max_length = 0;
 	size_t max_index = SIZE_MAX;
 
@@ -1943,6 +1985,8 @@ static void prv_parse_identifier(subtilis_arm_ass_context_t *c,
 		       itype != SUBTILIS_ARM_INSTR_CMN &&
 		       itype != SUBTILIS_ARM_INSTR_LDM &&
 		       itype != SUBTILIS_ARM_INSTR_LDM &&
+		       itype != SUBTILIS_ARM_INSTR_TST &&
+		       itype != SUBTILIS_ARM_INSTR_TEQ &&
 		       itype != SUBTILIS_ARM_INSTR_B;
 	byte_valid =
 	    itype == SUBTILIS_ARM_INSTR_LDR || itype == SUBTILIS_ARM_INSTR_STR;
@@ -1953,7 +1997,7 @@ static void prv_parse_identifier(subtilis_arm_ass_context_t *c,
 			prv_parse_label(c, tbuf, err);
 		else
 			prv_parse_instruction(c, tbuf, itype, ccode, status,
-					      mtran_type, byte, err);
+					      mtran_type, byte, false, err);
 		return;
 	}
 
@@ -1986,7 +2030,8 @@ static void prv_parse_identifier(subtilis_arm_ass_context_t *c,
 	if (ptr + 1 == token_end) {
 		status = tbuf[ptr] == 'S' && status_valid;
 		byte = tbuf[ptr] == 'B' && byte_valid;
-		if (!status && !byte) {
+		teqp = tbuf[ptr] == 'P' && itype == SUBTILIS_ARM_INSTR_TEQ;
+		if (!status && !byte && !teqp) {
 			prv_parse_label(c, tbuf, err);
 			return;
 		}
@@ -1996,7 +2041,7 @@ static void prv_parse_identifier(subtilis_arm_ass_context_t *c,
 	}
 
 	prv_parse_instruction(c, tbuf, itype, ccode, status, mtran_type, byte,
-			      err);
+			      teqp, err);
 }
 
 typedef bool (*subtilis_arm_ass_valid_int_fn_t)(int32_t);

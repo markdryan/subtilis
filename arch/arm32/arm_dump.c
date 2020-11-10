@@ -331,6 +331,8 @@ static void prv_dump_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
+	if ((instr->dest == 15) && (type == SUBTILIS_ARM_INSTR_TEQ))
+		printf("P");
 	printf(" R%zu, ", instr->op1);
 	prv_dump_op2(&instr->op2);
 	printf("\n");
