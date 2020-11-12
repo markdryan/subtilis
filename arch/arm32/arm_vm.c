@@ -1194,6 +1194,7 @@ static void prv_process_fpa_ldf(subtilis_arm_vm_t *arm_vm,
 	size_t addr;
 	uint32_t *ptr;
 	uint64_t dbl;
+	double *dbl_cast;
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
@@ -1212,7 +1213,8 @@ static void prv_process_fpa_ldf(subtilis_arm_vm_t *arm_vm,
 			ptr = (uint32_t *)&arm_vm->memory[addr];
 			dbl = ptr[0];
 			dbl = (dbl << 32) | ptr[1];
-			prv_set_fpa_f64(arm_vm, op->dest, *((double *)&dbl));
+			dbl_cast = (double *)&dbl;
+			prv_set_fpa_f64(arm_vm, op->dest, *dbl_cast);
 		} else {
 			prv_set_fpa_f64(arm_vm, op->dest,
 					*((double *)&arm_vm->memory[addr]));

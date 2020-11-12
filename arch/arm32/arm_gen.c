@@ -857,7 +857,7 @@ void subtilis_arm_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 	size_t ldf_site = INT_MAX;
 	size_t int_args = 0;
 	size_t real_args = 0;
-	int save_real_start;
+	int save_real_start = INT_MAX;
 	size_t int_arg_ops[SUBTILIS_IR_MAX_ARGS_PER_TYPE - 4];
 	size_t real_arg_ops[SUBTILIS_IR_MAX_ARGS_PER_TYPE - 4];
 

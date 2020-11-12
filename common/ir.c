@@ -1621,6 +1621,7 @@ void subtilis_ir_match(subtilis_ir_section_t *s, subtilis_ir_rule_t *rules,
 		}
 		for (i = 0; i < rule_count; i++) {
 			state.regs_count = 0;
+			state.fregs_count = 0;
 			state.labels_count = 0;
 			for (j = 0;
 			     j < rules[i].matches_count && pc + j < s->len;

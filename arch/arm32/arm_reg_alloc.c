@@ -1102,10 +1102,10 @@ static void prv_alloc_mov_instr(void *user_data, subtilis_arm_op_t *op,
 				subtilis_arm_data_instr_t *instr,
 				subtilis_error_t *err)
 {
-	int dist_op2;
 	int dist_op2_shift;
 	subtilis_arm_reg_t *reg;
 	subtilis_arm_reg_t *shift_reg;
+	int dist_op2 = -1;
 	subtilis_arm_reg_ud_t *ud = user_data;
 
 	reg = prv_ensure_op2(ud, op, &instr->op2, &dist_op2, err);
@@ -1188,12 +1188,12 @@ static void prv_alloc_mul_instr(void *user_data, subtilis_arm_op_t *op,
 				subtilis_arm_mul_instr_t *instr,
 				subtilis_error_t *err)
 {
-	int dist_rm;
-	int dist_rs;
 	size_t vreg_rm;
 	bool fixed_reg_rm;
 	size_t vreg_rs;
 	bool fixed_reg_rs;
+	int dist_rm = -1;
+	int dist_rs = -1;
 	subtilis_arm_reg_ud_t *ud = user_data;
 
 	vreg_rm = instr->rm;
@@ -1245,12 +1245,12 @@ static void prv_alloc_stran_instr(void *user_data, subtilis_arm_op_t *op,
 				  subtilis_error_t *err)
 {
 	int dist_dest;
-	int dist_base;
 	int dist_op2;
 	size_t vreg_dest;
 	size_t vreg_base;
-	bool fixed_reg_dest;
 	bool fixed_reg_base;
+	bool fixed_reg_dest = false;
+	int dist_base = -1;
 	subtilis_arm_reg_t *reg = NULL;
 	subtilis_arm_reg_ud_t *ud = user_data;
 
@@ -1521,7 +1521,7 @@ static void prv_alloc_fpa_data_dyadic_instr(void *user_data,
 					    subtilis_error_t *err)
 {
 	int dist_op1;
-	int dist_op2;
+	int dist_op2 = -1;
 	size_t vreg_op1;
 	size_t vreg_op2;
 	subtilis_arm_reg_ud_t *ud = user_data;
@@ -1566,8 +1566,8 @@ static void prv_alloc_fpa_data_monadic_instr(void *user_data,
 					     subtilis_fpa_data_instr_t *instr,
 					     subtilis_error_t *err)
 {
-	int dist_op2;
 	size_t vreg_op2;
+	int dist_op2 = -1;
 	subtilis_arm_reg_ud_t *ud = user_data;
 
 	if (!instr->immediate) {
@@ -1602,9 +1602,9 @@ static void prv_alloc_fpa_stran_instr(void *user_data, subtilis_arm_op_t *op,
 {
 	int dist_dest;
 	int dist_base;
-	size_t vreg_dest;
 	size_t vreg_base;
 	bool fixed_reg_base;
+	size_t vreg_dest = 0;
 	subtilis_arm_reg_ud_t *ud = user_data;
 
 	/*

@@ -127,9 +127,11 @@ size_t subtilis_constant_pool_mem_size(subtilis_constant_pool_t *pool,
 	size_t mem_size = 0;
 	size_t *constants;
 
-	constants = malloc(sizeof(*pool) * pool->size);
-	if (!constants)
+	constants = malloc(sizeof(*constants) * pool->size);
+	if (!constants) {
 		subtilis_error_set_oom(err);
+		return 0;
+	}
 
 	for (i = 0; i < pool->size; i++) {
 		constants[i] = mem_size;
