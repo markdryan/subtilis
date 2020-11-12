@@ -111,7 +111,7 @@ TESTS =\
 	vm_heap.c
 
 CFLAGS ?= -O3
-CFLAGS += -Wall -Werror -MMD
+CFLAGS += -Wall -MMD
 
 basicc: $(COMPILER:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
