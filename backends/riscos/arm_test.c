@@ -219,14 +219,14 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	dest = 7;
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_LDM,
 			       SUBTILIS_ARM_CCODE_AL, dest, 0x1,
-			       SUBTILIS_ARM_MTRAN_FA, true, err);
+			       SUBTILIS_ARM_MTRAN_FA, true, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	/* STMFA R7!, {R0} */
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_STM,
 			       SUBTILIS_ARM_CCODE_AL, dest, 0x1,
-			       SUBTILIS_ARM_MTRAN_FA, true, err);
+			       SUBTILIS_ARM_MTRAN_FA, true, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -234,14 +234,14 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	dest = 0;
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_LDM,
 			       SUBTILIS_ARM_CCODE_AL, dest, 0x1F8,
-			       SUBTILIS_ARM_MTRAN_ED, true, err);
+			       SUBTILIS_ARM_MTRAN_ED, true, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	/* STMED R0!, {r3-r8} */
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_STM,
 			       SUBTILIS_ARM_CCODE_AL, dest, 0x1F8,
-			       SUBTILIS_ARM_MTRAN_ED, true, err);
+			       SUBTILIS_ARM_MTRAN_ED, true, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -249,14 +249,14 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	dest = 1;
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_LDM,
 			       SUBTILIS_ARM_CCODE_AL, dest, 0x8000,
-			       SUBTILIS_ARM_MTRAN_FD, true, err);
+			       SUBTILIS_ARM_MTRAN_FD, true, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	/* STMFD R1!, {r14} */
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_STM,
 			       SUBTILIS_ARM_CCODE_AL, dest, 0x4000,
-			       SUBTILIS_ARM_MTRAN_FD, true, err);
+			       SUBTILIS_ARM_MTRAN_FD, true, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -264,14 +264,14 @@ static void prv_add_ops(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	dest = 13;
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_LDM,
 			       SUBTILIS_ARM_CCODE_AL, dest, 0xf,
-			       SUBTILIS_ARM_MTRAN_EA, false, err);
+			       SUBTILIS_ARM_MTRAN_EA, false, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	/* STMEA R13, {r0-r3} */
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_STM,
 			       SUBTILIS_ARM_CCODE_AL, dest, 0xf,
-			       SUBTILIS_ARM_MTRAN_EA, false, err);
+			       SUBTILIS_ARM_MTRAN_EA, false, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

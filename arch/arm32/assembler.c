@@ -1106,6 +1106,7 @@ static void prv_parse_mtran(subtilis_arm_ass_context_t *c,
 	subtilis_arm_reg_t reg1;
 	size_t reg_list = 0;
 	bool write_back = false;
+	bool status = false;
 
 	dest = prv_get_reg(c, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1186,8 +1187,15 @@ static void prv_parse_mtran(subtilis_arm_ass_context_t *c,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "^")) {
+		status = true;
+		subtilis_lexer_get(c->l, c->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 	subtilis_arm_add_mtran(c->arm_s, itype, ccode, dest, reg_list,
-			       mtran_type, write_back, err);
+			       mtran_type, write_back, status, err);
 }
 
 static void prv_parse_adr(subtilis_arm_ass_context_t *c,

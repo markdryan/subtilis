@@ -66,7 +66,7 @@ static void prv_memseti32_core(subtilis_ir_section_t *s,
 
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_STM,
 			       SUBTILIS_ARM_CCODE_AL, 0, 255 << 2,
-			       SUBTILIS_ARM_MTRAN_IA, true, err);
+			       SUBTILIS_ARM_MTRAN_IA, true, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -466,13 +466,13 @@ void subtilis_arm_mem_memcpy(subtilis_ir_section_t *s,
 
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_LDM,
 			       SUBTILIS_ARM_CCODE_AL, src_reg, 255 << 2,
-			       SUBTILIS_ARM_MTRAN_IA, true, err);
+			       SUBTILIS_ARM_MTRAN_IA, true, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_STM,
 			       SUBTILIS_ARM_CCODE_AL, dest_reg, 255 << 2,
-			       SUBTILIS_ARM_MTRAN_IA, true, err);
+			       SUBTILIS_ARM_MTRAN_IA, true, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -700,13 +700,13 @@ void subtilis_arm_mem_memcmp(subtilis_ir_section_t *s,
 
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_LDM,
 			       SUBTILIS_ARM_CCODE_AL, a1_reg, 0x3c,
-			       SUBTILIS_ARM_MTRAN_IA, true, err);
+			       SUBTILIS_ARM_MTRAN_IA, true, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_LDM,
 			       SUBTILIS_ARM_CCODE_AL, a2_reg, 0x3c0,
-			       SUBTILIS_ARM_MTRAN_IA, true, err);
+			       SUBTILIS_ARM_MTRAN_IA, true, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

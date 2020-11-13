@@ -246,7 +246,10 @@ static void prv_dump_mtran_instr(void *user_data, subtilis_arm_op_t *op,
 		if ((1 << i) & instr->reg_list)
 			printf(", R%zu", i);
 	}
-	printf("}\n");
+	printf("}");
+	if (instr->status)
+		printf("^");
+	printf("\n");
 }
 
 static void prv_dump_br_instr(void *user_data, subtilis_arm_op_t *op,

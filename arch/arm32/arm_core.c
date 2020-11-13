@@ -1418,7 +1418,7 @@ void subtilis_arm_add_mtran(subtilis_arm_section_t *s,
 			    subtilis_arm_ccode_type_t ccode,
 			    subtilis_arm_reg_t op0, size_t reg_list,
 			    subtilis_arm_mtran_type_t type, bool write_back,
-			    subtilis_error_t *err)
+			    bool status, subtilis_error_t *err)
 {
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_mtran_instr_t *mtran;
@@ -1432,6 +1432,7 @@ void subtilis_arm_add_mtran(subtilis_arm_section_t *s,
 	mtran->reg_list = reg_list;
 	mtran->type = type;
 	mtran->write_back = write_back;
+	mtran->status = status;
 }
 
 void subtilis_arm_add_byte(subtilis_arm_section_t *s, uint8_t byte,

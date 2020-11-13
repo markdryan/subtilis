@@ -808,10 +808,11 @@ static void prv_encode_mtran_instr(void *user_data, subtilis_arm_op_t *op,
 		break;
 	}
 
-	/* TODO: Do not support writing to status bits. */
-
 	if (instr->write_back)
 		word |= 1 << 21;
+
+	if (instr->status)
+		word |= 1 << 22;
 
 	if (type == SUBTILIS_ARM_INSTR_LDM)
 		word |= 1 << 20;

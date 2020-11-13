@@ -227,6 +227,7 @@ struct subtilis_arm_mtran_instr_t_ {
 	size_t reg_list; // bitmap
 	subtilis_arm_mtran_type_t type;
 	bool write_back;
+	bool status;
 };
 
 typedef struct subtilis_arm_mtran_instr_t_ subtilis_arm_mtran_instr_t;
@@ -702,7 +703,7 @@ void subtilis_arm_add_mtran(subtilis_arm_section_t *s,
 			    subtilis_arm_ccode_type_t ccode,
 			    subtilis_arm_reg_t op0, size_t reg_list,
 			    subtilis_arm_mtran_type_t type, bool write_back,
-			    subtilis_error_t *err);
+			    bool status, subtilis_error_t *err);
 
 bool subtilis_arm_is_fixed(subtilis_arm_reg_t reg);
 
