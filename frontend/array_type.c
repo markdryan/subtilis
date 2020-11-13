@@ -796,13 +796,13 @@ subtilis_array_index_calc(subtilis_parser_t *p, const char *var_name,
 			  subtilis_error_t *err)
 {
 	int i;
-	int dyn_start;
 	int32_t dim_size;
 	size_t last_index;
-	int32_t block_size;
 	subtilis_exp_t *one;
 	int32_t offset;
 	int32_t last_offset;
+	int32_t block_size = 0;
+	int dyn_start = 0;
 	subtilis_exp_t *blocke = NULL;
 	subtilis_exp_t *sizee = NULL;
 	subtilis_exp_t *edup = NULL;

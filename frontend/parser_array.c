@@ -603,7 +603,7 @@ static void prv_parse_string_initialiser(subtilis_parser_t *p,
 	const subtilis_type_t *type = &s->t;
 	bool dynamic = false;
 	size_t max_elements = 1;
-	size_t entries;
+	size_t entries = 0;
 	size_t i = 0;
 
 	ee = prv_parse_const_string_list(p, e, t, &entries, err);

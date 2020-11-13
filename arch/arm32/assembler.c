@@ -1570,7 +1570,7 @@ static void prv_parse_fpa_stran_pre(subtilis_arm_ass_context_t *c,
 {
 	const char *tbuf;
 	uint8_t offset;
-	bool sub;
+	bool sub = false;
 	subtilis_fpa_stran_instr_t *stran;
 	subtilis_arm_instr_t *instr;
 	bool write_back = false;
@@ -2122,8 +2122,8 @@ static bool prv_check_equb(int32_t i) { return !(i < -128 || i > 255); }
 static void prv_parse_equb(subtilis_arm_ass_context_t *c, subtilis_error_t *err)
 {
 	int32_t *nums;
-	size_t num_count;
 	size_t i;
+	size_t num_count = 0;
 
 	nums = prv_get_uint32_list(c, &num_count, prv_check_equb, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -2145,8 +2145,8 @@ static bool prv_check_equw(int32_t i) { return !(i < -32768 || i > 0xffff); }
 static void prv_parse_equw(subtilis_arm_ass_context_t *c, subtilis_error_t *err)
 {
 	int32_t *nums;
-	size_t num_count;
 	size_t i;
+	size_t num_count = 0;
 
 	nums = prv_get_uint32_list(c, &num_count, prv_check_equw, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -2166,8 +2166,8 @@ cleanup:
 static void prv_parse_equd(subtilis_arm_ass_context_t *c, subtilis_error_t *err)
 {
 	int32_t *nums;
-	size_t num_count;
 	size_t i;
+	size_t num_count = 0;
 
 	nums = prv_get_uint32_list(c, &num_count, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK)

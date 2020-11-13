@@ -375,10 +375,10 @@ prv_def_parameters(subtilis_parser_t *p, subtilis_token_t *t,
 	const char *tbuf;
 	subtilis_type_t *new_params;
 	size_t new_max;
-	const subtilis_symbol_t *symbol;
 	subtilis_type_t ptype;
 	subtilis_type_t id_type;
 	size_t i;
+	const subtilis_symbol_t *symbol = NULL;
 	size_t max_params = 0;
 	size_t num_params = 0;
 	size_t num_iparams = 0;

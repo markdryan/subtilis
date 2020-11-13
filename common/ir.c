@@ -1249,6 +1249,9 @@ static const char *prv_parse_operands(const char *rule,
 	char *end_ptr = 0;
 	subtilis_ir_label_match_t label;
 
+	label.op_match = SUBTILIS_OP_MATCH_ANY;
+	label.label = SIZE_MAX;
+
 	details = &class_details[op_desc[match->op.instr.type].cls];
 
 	for (j = 0; j < details->op_count; j++) {

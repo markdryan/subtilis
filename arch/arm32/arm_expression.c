@@ -1481,8 +1481,8 @@ static subtilis_arm_exp_val_t *prv_priority3(subtilis_arm_ass_context_t *c,
 	subtilis_arm_exp_val_t *e1 = NULL;
 	subtilis_arm_exp_val_t *e2 = NULL;
 	subtilis_token_type_t tt;
-	int keyword;
 	char op[4];
+	int keyword = SUBTILIS_ARM_KEYWORD_MAX;
 
 	e1 = prv_priority2(c, err);
 	if (err->type != SUBTILIS_ERROR_OK)

@@ -2606,6 +2606,9 @@ static void prv_string_str_non_const_common(subtilis_parser_t *p,
 	subtilis_exp_t *dup = NULL;
 	subtilis_exp_t *one = NULL;
 
+	not_eq_one_label.label = SIZE_MAX;
+	eq_one_label.label = SIZE_MAX;
+
 	lt_one.label = subtilis_ir_section_new_label(p->current);
 	gte_one.label = subtilis_ir_section_new_label(p->current);
 	if (check_for_one) {
@@ -3049,12 +3052,15 @@ subtilis_exp_t *subtilis_string_type_add(subtilis_parser_t *p,
 	subtilis_ir_operand_t a1_data;
 	subtilis_ir_operand_t a2_data;
 	const subtilis_symbol_t *s;
-	size_t dest_reg;
 	size_t tmp;
-	char *a1_tmp;
-	char *a2_tmp;
 	bool a2_gt_0;
+	char *a1_tmp = NULL;
+	char *a2_tmp = NULL;
+	size_t dest_reg = SIZE_MAX;
 	char *tmp_name = NULL;
+
+	a2_data.reg = SIZE_MAX;
+	a2_size.reg = SIZE_MAX;
 
 	op2.integer = SUBTIILIS_STRING_SIZE_OFF;
 	a1_size.reg = subtilis_ir_section_add_instr(
@@ -3170,6 +3176,8 @@ void subtilis_string_type_add_eq(subtilis_parser_t *p, size_t store_reg,
 	subtilis_ir_operand_t copy_label;
 	subtilis_ir_operand_t ptr;
 
+	a2_data.reg = SIZE_MAX;
+	a2_size.reg = SIZE_MAX;
 	ptr.reg = p->current->reg_counter++;
 
 	a1_gt_zero_label.label = subtilis_ir_section_new_label(p->current);
