@@ -19,13 +19,138 @@
 
 #include "../../arch/arm32/arm_disass.h"
 #include "../../arch/arm32/arm_encode.h"
+#include "../../arch/arm32/arm_keywords.h"
 #include "../../arch/arm32/arm_vm.h"
 #include "../../arch/arm32/fpa_gen.h"
 #include "../../frontend/parser_test.h"
+#include "../../test_cases/bad_test_cases.h"
 #include "../../test_cases/test_cases.h"
 #include "arm_test.h"
 #include "riscos_arm.h"
 #include "riscos_arm2.h"
+
+/* clang-format off */
+static const subtilis_test_case_t riscos_arm_test_cases[] = {
+	{"sys_write0_str",
+	 "sys \"OS_Write0\", \"hello world\"\n"
+	 "print \"\"\n",
+	 "hello world\n",
+	},
+	{"sys_write0_int",
+	 "sys 2, \"hello world\"\n"
+	 "print \"\"\n",
+	 "hello world\n",
+	},
+	{"sys_write0_str",
+	 "a$ = \"hello world\"\n"
+	 "sys \"OS_Write0\", \"hello world\"\n"
+	 "print \"\"\n",
+	 "hello world\n",
+	},
+	{"sys_get_env",
+	 "a% := 1\n"
+	 "b% = 0\n"
+	 "c% = 0\n"
+	 "sys \"OS_GetEnv\" to a%, b%, c%\n"
+	 "print b% > 0\n"
+	 "sys \"OS_GetEnv\" to b%, a%, c%\n"
+	 "print a% > 0\n",
+	 "-1\n-1\n",
+	},
+	{"sys_write_c",
+	 "sys 256+33\n"
+	 "print \"\"\n",
+	 "!\n"
+	},
+	{"sys_os_convert_integer",
+	 "dim a%(10)\n"
+	 "local free%\n"
+	 "sys \"OS_ConvertInteger4\", 1999, a%(), 44 to ,,free%\n"
+	 "sys \"OS_Write0\", a%()\n"
+	 "print \"\""
+	 "print free%\n",
+	 "1999\n40\n",
+	},
+	{
+	"sys_failed",
+	"dim a%(1)\n"
+	"onerror print err enderror\n"
+	"local free%\n"
+	"sys \"XOS_ConvertInteger4\", 1999, a%(), 2 to ,,free%\n"
+	"print \"Shouldn't get here\"\n",
+	"484\n",
+	},
+	{"riscos_int",
+	 "PRINT FNInt%\n"
+	 "def FNInt%\n"
+	 "[\n"
+	 "def float = 3.14\n"
+
+	 "MOV R0, INT(float)\n"
+	 "MOV PC, R14\n"
+	 "]\n",
+	 "3\n"
+	},
+};
+
+static const subtilis_bad_test_case_t riscos_arm_bad_test_cases[] = {
+	{"sys_non_const_id",
+	 "a$ = \"hello\"\n"
+	 "b$ = \"OS_Write0\"\n"
+	 "sys b$, a$",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
+	{"sys_bad_out_type",
+	 "local a%\n"
+	 "local b%\n"
+	 "local c\n"
+	 "sys \"OS_GetEnv\" to a%, b%, c\n",
+	 SUBTILIS_ERROR_INTEGER_VARIABLE_EXPECTED,
+	},
+	{"sys_bad_out_type_2",
+	 "local a%\n"
+	 "local b%\n"
+	 "local c\n"
+	 "sys \"OS_GetEnv\" to a%, b%, c\n",
+	 SUBTILIS_ERROR_INTEGER_VARIABLE_EXPECTED,
+	},
+	{"sys_bad_out_type_3",
+	 "local a%\n"
+	 "local b%\n"
+	 "local c$\n"
+	 "sys \"OS_GetEnv\" to a%, b%, c$\n",
+	 SUBTILIS_ERROR_INTEGER_VARIABLE_EXPECTED,
+	},
+	{"sys_bad_missing_out_arg",
+	 "sys \"OS_GetEnv\" to\n",
+	 SUBTILIS_ERROR_UNKNOWN_VARIABLE,
+	},
+	{"sys_bad_missing_out_arg_2",
+	 "sys \"OS_GetEnv\" to ,,\n",
+	 SUBTILIS_ERROR_UNKNOWN_VARIABLE,
+	},
+	{"sys_no_in_args",
+	 "sys \"OS_GetEnv\" ,,,\n",
+	 SUBTILIS_ERROR_EXP_EXPECTED,
+	},
+	{"sys_invalid_in_reg",
+	 "sys \"OS_Write0\" ,,,\"hello\"\n",
+	 SUBTILIS_ERROR_SYS_BAD_ARGS,
+	},
+	{"sys_invalid_out_reg",
+	 "local a%\n"
+	 "sys \"OS_GetEnv\" to ,,,a%\n",
+	 SUBTILIS_ERROR_SYS_BAD_ARGS,
+	},
+	{"sys_int_as_array",
+	 "local a%\n"
+	 "local free%\n"
+	 "sys \"OS_ConvertInteger4\", 1999, a%(), 44 to ,,free%\n",
+	 SUBTILIS_ERROR_NOT_ARRAY,
+	},
+};
+
+/* clang-format on */
 
 static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 			    subtilis_error_type_t expected_err,
@@ -43,6 +168,12 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	subtilis_error_init(&err);
 	subtilis_buffer_init(&b, 1024);
 
+	pool = subtilis_arm_op_pool_new(&err);
+	if (err.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	p->backend.backend_data = pool;
+
 	subtilis_parse(p, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);
@@ -50,10 +181,6 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	}
 
 	//	subtilis_ir_prog_dump(p->prog);
-
-	pool = subtilis_arm_op_pool_new(&err);
-	if (err.type != SUBTILIS_ERROR_OK)
-		goto cleanup;
 
 	arm_p = subtilis_riscos_generate(
 	    pool, p->prog, riscos_arm2_rules, riscos_arm2_rules_count,
@@ -118,18 +245,85 @@ static int prv_test_examples(void)
 	size_t i;
 	int pass;
 	const subtilis_test_case_t *test;
+	subtilis_backend_t backend;
 	int ret = 0;
+
+	backend.caps = SUBTILIS_RISCOS_ARM_CAPS;
+	backend.sys_trans = subtilis_riscos_sys_trans;
+	backend.sys_check = subtilis_riscos_sys_check;
+	backend.backend_data = NULL;
+	backend.asm_parse = subtilis_riscos_asm_parse;
+	backend.asm_free = subtilis_riscos_asm_free;
 
 	for (i = 0; i < SUBTILIS_TEST_CASE_ID_MAX; i++) {
 		test = &test_cases[i];
 		printf("arm_%s", test->name);
 		pass = parser_test_wrapper(
-		    test->source, SUBTILIS_RISCOS_ARM_CAPS, prv_test_example,
+		    test->source, &backend, prv_test_example,
+		    subtilis_arm_keywords_list, SUBTILIS_ARM_KEYWORD_TOKENS,
 		    SUBTILIS_ERROR_OK, test->result, test->mem_leaks_ok);
 		ret |= pass;
 	}
 
 	return ret;
+}
+
+static int prv_test_riscos_arm_examples(void)
+{
+	size_t i;
+	int pass;
+	const subtilis_test_case_t *test;
+	subtilis_backend_t backend;
+	int ret = 0;
+
+	backend.caps = SUBTILIS_RISCOS_ARM_CAPS;
+	backend.sys_trans = subtilis_riscos_sys_trans;
+	backend.sys_check = subtilis_riscos_sys_check;
+	backend.backend_data = NULL;
+	backend.asm_parse = subtilis_riscos_asm_parse;
+	backend.asm_free = subtilis_riscos_asm_free;
+
+	for (i = 0;
+	     i < sizeof(riscos_arm_test_cases) / sizeof(subtilis_test_case_t);
+	     i++) {
+		test = &riscos_arm_test_cases[i];
+		printf("arm_%s", test->name);
+		pass = parser_test_wrapper(
+		    test->source, &backend, prv_test_example,
+		    subtilis_arm_keywords_list, SUBTILIS_ARM_KEYWORD_TOKENS,
+		    SUBTILIS_ERROR_OK, test->result, test->mem_leaks_ok);
+		ret |= pass;
+	}
+
+	return ret;
+}
+
+static int prv_test_bad_cases(void)
+{
+	size_t i;
+	subtilis_backend_t backend;
+	const subtilis_bad_test_case_t *test;
+	int retval = 0;
+
+	backend.caps = SUBTILIS_RISCOS_ARM_CAPS;
+	backend.sys_trans = subtilis_riscos_sys_trans;
+	backend.sys_check = subtilis_riscos_sys_check;
+	backend.backend_data = NULL;
+	backend.asm_parse = subtilis_riscos_asm_parse;
+	backend.asm_free = subtilis_riscos_asm_free;
+
+	for (i = 0; i < sizeof(riscos_arm_bad_test_cases) /
+			    sizeof(riscos_arm_bad_test_cases[0]);
+	     i++) {
+		test = &riscos_arm_bad_test_cases[i];
+		printf("arm_bad_%s", test->name);
+		retval |= parser_test_wrapper(
+		    test->source, &backend, parser_test_check_eval_res,
+		    subtilis_arm_keywords_list, SUBTILIS_ARM_KEYWORD_TOKENS,
+		    test->err, "", false);
+	}
+
+	return retval;
 }
 
 /* clang-format off */
@@ -838,6 +1032,8 @@ int arm_test(void)
 	res = prv_test_examples();
 	res |= prv_test_encode();
 	res |= prv_test_disass();
+	res |= prv_test_riscos_arm_examples();
+	res |= prv_test_bad_cases();
 
 	return res;
 }

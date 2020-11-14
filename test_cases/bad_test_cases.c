@@ -504,60 +504,6 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"print val(\"2\", 11)\n",
 	SUBTILIS_ERROR_BAD_VAL_ARG,
 	},
-	{"sys_non_const_id",
-	 "a$ = \"hello\"\n"
-	 "b$ = \"OS_Write0\"\n"
-	 "sys b$, a$",
-	 SUBTILIS_ERROR_EXPECTED,
-	},
-	{"sys_bad_out_type",
-	 "local a%\n"
-	 "local b%\n"
-	 "local c\n"
-	 "sys \"OS_GetEnv\" to a%, b%, c\n",
-	 SUBTILIS_ERROR_INTEGER_VARIABLE_EXPECTED,
-	},
-	{"sys_bad_out_type_2",
-	 "local a%\n"
-	 "local b%\n"
-	 "local c\n"
-	 "sys \"OS_GetEnv\" to a%, b%, c\n",
-	 SUBTILIS_ERROR_INTEGER_VARIABLE_EXPECTED,
-	},
-	{"sys_bad_out_type_3",
-	 "local a%\n"
-	 "local b%\n"
-	 "local c$\n"
-	 "sys \"OS_GetEnv\" to a%, b%, c$\n",
-	 SUBTILIS_ERROR_INTEGER_VARIABLE_EXPECTED,
-	},
-	{"sys_bad_missing_out_arg",
-	 "sys \"OS_GetEnv\" to\n",
-	 SUBTILIS_ERROR_UNKNOWN_VARIABLE,
-	},
-	{"sys_bad_missing_out_arg_2",
-	 "sys \"OS_GetEnv\" to ,,\n",
-	 SUBTILIS_ERROR_UNKNOWN_VARIABLE,
-	},
-	{"sys_no_in_args",
-	 "sys \"OS_GetEnv\" ,,,\n",
-	 SUBTILIS_ERROR_EXP_EXPECTED,
-	},
-	{"sys_invalid_in_reg",
-	 "sys \"OS_Write0\" ,,,\"hello\"\n",
-	 SUBTILIS_ERROR_SYS_BAD_ARGS,
-	},
-	{"sys_invalid_out_reg",
-	 "local a%\n"
-	 "sys \"OS_GetEnv\" to ,,,a%\n",
-	 SUBTILIS_ERROR_SYS_BAD_ARGS,
-	},
-	{"sys_int_as_array",
-	 "local a%\n"
-	 "local free%\n"
-	 "sys \"OS_ConvertInteger4\", 1999, a%(), 44 to ,,free%\n",
-	 SUBTILIS_ERROR_NOT_ARRAY,
-	},
 	{"defproc1",
 	 "PROCMark\n"
 	 "DEFPROCMark\n"

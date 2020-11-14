@@ -24,69 +24,12 @@
 #include "parser.h"
 #include "vm.h"
 
-/*
- * We'll just implement a few RiscOS SWIs to test the SWI mechanism.
- */
-
-static size_t prv_sys_trans(const char *call_name)
-{
-	bool x_flag = call_name[0] == 'X';
-
-	if (x_flag)
-		call_name++;
-
-	if (!strcmp(call_name, "OS_Write0"))
-		return 2 | ((x_flag) ? 0x20000 : 0);
-
-	if (!strcmp(call_name, "OS_GetEnv"))
-		return 0x10 | ((x_flag) ? 0x20000 : 0);
-
-	if (!strcmp(call_name, "OS_ConvertInteger4"))
-		return 0xdc | ((x_flag) ? 0x20000 : 0);
-
-	return SIZE_MAX;
-}
-
-static bool prv_sys_check(size_t call_id, uint32_t *in_regs, uint32_t *out_regs,
-			  bool *check_for_errors)
-{
-	size_t code = call_id & ~((size_t)0x20000);
-
-	if ((code >= 256 + 32) && (code < 512)) {
-		*in_regs = 0;
-		*out_regs = 0;
-		*check_for_errors = call_id & 0x20000;
-		return true;
-	}
-
-	switch (call_id) {
-	case 2 + 0x20000:
-	case 2:
-		*in_regs = 1;
-		*out_regs = 1;
-		*check_for_errors = call_id & 0x20000;
-		return true;
-	case 0x10:
-	case 0x10 + 0x20000:
-		*in_regs = 0;
-		*out_regs = 7;
-		*check_for_errors = call_id & 0x20000;
-		return true;
-	case 0xdc:
-	case 0xdc + 0x20000:
-		*in_regs = 7;
-		*out_regs = 7;
-		*check_for_errors = call_id & 0x20000;
-		return true;
-	default:
-		return false;
-	}
-}
-
-int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
+int parser_test_wrapper(const char *text, const subtilis_backend_t *backend,
 			int (*fn)(subtilis_lexer_t *, subtilis_parser_t *,
 				  subtilis_error_type_t, const char *expected,
 				  bool mem_leaks_ok),
+			const subtilis_keyword_t *ass_keywords,
+			size_t num_ass_keywords,
 			subtilis_error_type_t expected_err,
 			const char *expected, bool mem_leaks_ok)
 {
@@ -94,7 +37,6 @@ int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 	subtilis_error_t err;
 	int retval;
 	subtilis_settings_t settings;
-	subtilis_backend_t backend;
 	subtilis_lexer_t *l = NULL;
 	subtilis_parser_t *p = NULL;
 
@@ -105,7 +47,7 @@ int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 
 	l = subtilis_lexer_new(&s, SUBTILIS_CONFIG_LEXER_BUF_SIZE,
 			       subtilis_keywords_list, SUBTILIS_KEYWORD_TOKENS,
-			       NULL, 0, &err);
+			       ass_keywords, num_ass_keywords, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		s.close(s.handle, &err);
 		goto fail;
@@ -114,11 +56,8 @@ int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
 	settings.handle_escapes = true;
 	settings.ignore_graphics_errors = true;
 	settings.check_mem_leaks = !mem_leaks_ok;
-	backend.caps = caps;
-	backend.sys_trans = prv_sys_trans;
-	backend.sys_check = prv_sys_check;
 
-	p = subtilis_parser_new(l, &backend, &settings, &err);
+	p = subtilis_parser_new(l, backend, &settings, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto fail;
 
@@ -149,6 +88,7 @@ static void prv_check_for_error(subtilis_lexer_t *l,
 		return;
 
 	if (expected_err != err->type) {
+		subtilis_error_fprintf(stderr, err, true);
 		subtilis_error_set_bad_error(err, expected_err, err->type,
 					     l->stream->name, l->line);
 		return;
@@ -156,9 +96,9 @@ static void prv_check_for_error(subtilis_lexer_t *l,
 	subtilis_error_init(err);
 }
 
-static int prv_check_eval_res(subtilis_lexer_t *l, subtilis_parser_t *p,
-			      subtilis_error_type_t expected_err,
-			      const char *expected, bool mem_leaks_ok)
+int parser_test_check_eval_res(subtilis_lexer_t *l, subtilis_parser_t *p,
+			       subtilis_error_type_t expected_err,
+			       const char *expected, bool mem_leaks_ok)
 {
 	subtilis_buffer_t b;
 	subtilis_error_t err;
@@ -224,26 +164,34 @@ cleanup:
 
 static int prv_test_let(void)
 {
+	subtilis_backend_t backend;
+
+	memset(&backend, 0, sizeof(backend));
+	backend.caps = SUBTILIS_BACKEND_INTER_CAPS;
+
 	const char *let_test = "LET b% = 99\n"
 			       "PRINT 10 + 10 + b%\n";
 
 	printf("parser_let");
-	return parser_test_wrapper(let_test, SUBTILIS_BACKEND_INTER_CAPS,
-				   prv_check_eval_res, SUBTILIS_ERROR_OK,
-				   "119\n", false);
+	return parser_test_wrapper(let_test, &backend,
+				   parser_test_check_eval_res, NULL, 0,
+				   SUBTILIS_ERROR_OK, "119\n", false);
 }
 
 static int prv_test_expressions(void)
 {
 	size_t i;
+	subtilis_backend_t backend;
 	int retval = 0;
+
+	memset(&backend, 0, sizeof(backend));
+	backend.caps = SUBTILIS_BACKEND_INTER_CAPS;
 
 	for (i = 0; i < SUBTILIS_TEST_CASE_ID_MAX; i++) {
 		printf("parser_%s", test_cases[i].name);
 		retval |= parser_test_wrapper(
-		    test_cases[i].source, SUBTILIS_BACKEND_INTER_CAPS,
-		    prv_check_eval_res, SUBTILIS_ERROR_OK, test_cases[i].result,
-		    false);
+		    test_cases[i].source, &backend, parser_test_check_eval_res,
+		    NULL, 0, SUBTILIS_ERROR_OK, test_cases[i].result, false);
 	}
 
 	return retval;
@@ -252,13 +200,18 @@ static int prv_test_expressions(void)
 static int prv_test_bad_cases(void)
 {
 	size_t i;
+	subtilis_backend_t backend;
 	int retval = 0;
+
+	memset(&backend, 0, sizeof(backend));
+	backend.caps = SUBTILIS_BACKEND_INTER_CAPS;
 
 	for (i = 0; i < SUBTILIS_BAD_TEST_CASE_ID_MAX; i++) {
 		printf("parser_bad_%s", bad_test_cases[i].name);
-		retval |= parser_test_wrapper(
-		    bad_test_cases[i].source, SUBTILIS_BACKEND_INTER_CAPS,
-		    prv_check_eval_res, bad_test_cases[i].err, "", false);
+		retval |=
+		    parser_test_wrapper(bad_test_cases[i].source, &backend,
+					parser_test_check_eval_res, NULL, 0,
+					bad_test_cases[i].err, "", false);
 	}
 
 	return retval;
@@ -266,10 +219,15 @@ static int prv_test_bad_cases(void)
 
 static int prv_test_print(void)
 {
+	subtilis_backend_t backend;
+
+	memset(&backend, 0, sizeof(backend));
+	backend.caps = SUBTILIS_BACKEND_INTER_CAPS;
+
 	printf("parser_print");
-	return parser_test_wrapper(
-	    "PRINT (10 * 3 * 3 + 1) DIV 2", SUBTILIS_BACKEND_INTER_CAPS,
-	    prv_check_eval_res, SUBTILIS_ERROR_OK, "45\n", false);
+	return parser_test_wrapper("PRINT (10 * 3 * 3 + 1) DIV 2", &backend,
+				   parser_test_check_eval_res, NULL, 0,
+				   SUBTILIS_ERROR_OK, "45\n", false);
 }
 
 int parser_test(void)
