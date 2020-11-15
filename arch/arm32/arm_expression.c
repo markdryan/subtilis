@@ -35,6 +35,7 @@ typedef double (*subtilis_ass_real_fn_t)(subtilis_arm_ass_context_t *, double,
 					 double, subtilis_error_t *);
 typedef int32_t (*subtilis_ass_log_int_fn_t)(int32_t, int32_t);
 typedef int32_t (*subtilis_ass_log_real_fn_t)(double, double);
+typedef int32_t (*subtilis_ass_log_str_fn_t)(const char *, const char *);
 
 static subtilis_arm_exp_val_t *prv_priority1(subtilis_arm_ass_context_t *c,
 					     subtilis_error_t *err);
@@ -389,6 +390,21 @@ prv_logical_numeric(subtilis_arm_ass_context_t *c, subtilis_arm_exp_val_t *e1,
 	return prv_logical_real(c, e1, e2, rfn, err);
 }
 
+static subtilis_arm_exp_val_t *prv_logical_str(subtilis_arm_ass_context_t *c,
+					       subtilis_arm_exp_val_t *e1,
+					       subtilis_arm_exp_val_t *e2,
+					       subtilis_ass_log_str_fn_t fn,
+					       subtilis_error_t *err)
+{
+	const char *str1 = subtilis_buffer_get_string(&e1->val.buf);
+	const char *str2 = subtilis_buffer_get_string(&e2->val.buf);
+
+	e1->type = SUBTILIS_ARM_EXP_TYPE_INT;
+	e1->val.integer = fn(str1, str2);
+	subtilis_arm_exp_val_free(e2);
+	return e1;
+}
+
 subtilis_arm_reg_t subtilis_arm_exp_parse_reg(subtilis_arm_ass_context_t *c,
 					      const char *id,
 					      subtilis_error_t *err)
@@ -439,8 +455,11 @@ subtilis_arm_reg_t subtilis_arm_exp_parse_freg(subtilis_arm_ass_context_t *c,
 	if ((id[0] != 'F') && (id[0] != 'f'))
 		return SIZE_MAX;
 
-	if (id[1] < '0' || id[1] > '7')
+	if (id[1] < '0' || id[1] > '7') {
+		subtilis_error_set_ass_bad_reg(err, id, c->l->stream->name,
+					       c->l->line);
 		return SIZE_MAX;
+	}
 	reg = id[1] - '0';
 
 	return (subtilis_arm_reg_t)reg;
@@ -1687,6 +1706,36 @@ static int32_t prv_lte_int32_fn(int32_t a, int32_t b)
 	return a <= b ? -1 : 0;
 }
 
+static int32_t prv_equal_str_fn(const char *a, const char *b)
+{
+	return strcmp(a, b) ? 0 : -1;
+}
+
+static int32_t prv_not_equal_str_fn(const char *a, const char *b)
+{
+	return strcmp(a, b) ? -1 : 0;
+}
+
+static int32_t prv_gt_str_fn(const char *a, const char *b)
+{
+	return strcmp(a, b) > 0 ? -1 : 0;
+}
+
+static int32_t prv_lt_str_fn(const char *a, const char *b)
+{
+	return strcmp(a, b) < 0 ? -1 : 0;
+}
+
+static int32_t prv_gte_str_fn(const char *a, const char *b)
+{
+	return strcmp(a, b) >= 0 ? -1 : 0;
+}
+
+static int32_t prv_lte_str_fn(const char *a, const char *b)
+{
+	return strcmp(a, b) <= 0 ? -1 : 0;
+}
+
 static int32_t prv_lsl_int32_fn(subtilis_arm_ass_context_t *c, int32_t a,
 				int32_t b, subtilis_error_t *err)
 {
@@ -1713,6 +1762,7 @@ static subtilis_arm_exp_val_t *prv_priority5(subtilis_arm_ass_context_t *c,
 	subtilis_arm_exp_val_t *e2 = NULL;
 	subtilis_ass_log_int_fn_t log_int_fn = NULL;
 	subtilis_ass_log_real_fn_t log_real_fn = NULL;
+	subtilis_ass_log_str_fn_t log_str_fn = NULL;
 	subtilis_ass_int_fn_t int_fn = NULL;
 
 	e1 = prv_priority4(c, err);
@@ -1725,21 +1775,27 @@ static subtilis_arm_exp_val_t *prv_priority5(subtilis_arm_ass_context_t *c,
 		if (!strcmp(tbuf, "=")) {
 			log_int_fn = prv_equal_int32_fn;
 			log_real_fn = prv_equal_real_fn;
+			log_str_fn = prv_equal_str_fn;
 		} else if (!strcmp(tbuf, "<>")) {
 			log_int_fn = prv_not_equal_int32_fn;
 			log_real_fn = prv_not_equal_real_fn;
+			log_str_fn = prv_not_equal_str_fn;
 		} else if (!strcmp(tbuf, ">")) {
 			log_int_fn = prv_gt_int32_fn;
 			log_real_fn = prv_gt_real_fn;
+			log_str_fn = prv_gt_str_fn;
 		} else if (!strcmp(tbuf, "<=")) {
 			log_int_fn = prv_lte_int32_fn;
 			log_real_fn = prv_lte_real_fn;
+			log_str_fn = prv_lte_str_fn;
 		} else if (!strcmp(tbuf, "<")) {
 			log_int_fn = prv_lt_int32_fn;
 			log_real_fn = prv_lt_real_fn;
+			log_str_fn = prv_lt_str_fn;
 		} else if (!strcmp(tbuf, ">=")) {
 			log_int_fn = prv_gte_int32_fn;
 			log_real_fn = prv_gte_real_fn;
+			log_str_fn = prv_gte_str_fn;
 		} else if (!strcmp(tbuf, "<<")) {
 			int_fn = prv_lsl_int32_fn;
 		} else if (!strcmp(tbuf, ">>")) {
@@ -1757,11 +1813,17 @@ static subtilis_arm_exp_val_t *prv_priority5(subtilis_arm_ass_context_t *c,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		if (int_fn)
+		if (int_fn) {
 			e1 = prv_binary_int(c, e1, e2, int_fn, err);
-		else
-			e1 = prv_logical_numeric(c, e1, e2, log_int_fn,
-						 log_real_fn, err);
+		} else {
+			if ((e1->type == SUBTILIS_ARM_EXP_TYPE_STRING) &&
+			    (e1->type == e2->type) && log_str_fn)
+				e1 =
+				    prv_logical_str(c, e1, e2, log_str_fn, err);
+			else
+				e1 = prv_logical_numeric(c, e1, e2, log_int_fn,
+							 log_real_fn, err);
+		}
 
 		e2 = NULL;
 		if (err->type != SUBTILIS_ERROR_OK)

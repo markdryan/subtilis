@@ -241,6 +241,7 @@ typedef enum {
 struct subtilis_arm_br_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	bool link;
+	bool local;
 	subtilis_arm_br_link_type_t link_type;
 	union {
 		size_t label;

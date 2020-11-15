@@ -840,8 +840,9 @@ static void prv_encode_br_instr(void *user_data, subtilis_arm_op_t *op,
 
 	word |= instr->ccode << 28;
 	word |= 0x5 << 25;
-	if (instr->link) {
+	if (instr->link)
 		word |= 1 << 24;
+	if (instr->link && !instr->local) {
 		subtilis_arm_link_add(ud->link, ud->bytes_written, err);
 		word |= instr->target.label;
 	} else {

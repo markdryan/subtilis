@@ -86,7 +86,6 @@ static const subtilis_arm_ass_mnemomic_t a_mnem[] = {
 
 static const subtilis_arm_ass_mnemomic_t b_mnem[] = {
 	{ "B", SUBTILIS_ARM_INSTR_B, NULL, },
-	{ "BL", SUBTILIS_ARM_INSTR_B, NULL, },
 	{ "BIC", SUBTILIS_ARM_INSTR_BIC, NULL, },
 };
 
@@ -426,6 +425,12 @@ static subtilis_arm_reg_t prv_parse_reg(subtilis_arm_ass_context_t *c,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
+	if (reg == SIZE_MAX) {
+		subtilis_error_set_ass_bad_reg(err, tbuf, c->l->stream->name,
+					       c->l->line);
+		return SIZE_MAX;
+	}
+
 	subtilis_lexer_get(c->l, c->t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
@@ -442,7 +447,9 @@ static void prv_parse_branch(subtilis_arm_ass_context_t *c, const char *name,
 	subtilis_arm_br_instr_t *br;
 	size_t index;
 	subtilis_arm_exp_val_t *val;
-	bool link = (strlen(name) > 1) && (name[1] == 'l' || name[1] == 'L');
+	size_t name_len = strlen(name);
+	bool link = ((name_len == 2) || (name_len == 4)) &&
+		    (name[1] == 'l' || name[1] == 'L');
 
 	val = subtilis_arm_exp_val_get(c, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -472,6 +479,7 @@ static void prv_parse_branch(subtilis_arm_ass_context_t *c, const char *name,
 	br = &instr->operands.br;
 	br->ccode = ccode;
 	br->link = link;
+	br->local = true;
 	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
 	br->target.label = index;
 
@@ -627,7 +635,7 @@ static void prv_parse_arm_2_arg(subtilis_arm_ass_context_t *c,
 		return;
 
 	tbuf = subtilis_token_get_text(c->t);
-	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) && (strcmp(tbuf, ","))) {
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || (strcmp(tbuf, ","))) {
 		subtilis_error_set_expected(err, ",", tbuf, c->l->stream->name,
 					    c->l->line);
 		return;
@@ -1986,6 +1994,12 @@ static void prv_parse_identifier(subtilis_arm_ass_context_t *c,
 				       token_end - max_length, err);
 		return;
 	}
+
+	/* Special case for BL */
+
+	if ((itype == SUBTILIS_ARM_INSTR_B) && (token_end > 1) &&
+	    (token_end != 3) && (tbuf[1] == 'L'))
+		max_length++;
 
 	status_valid = itype != SUBTILIS_ARM_INSTR_LDR &&
 		       itype != SUBTILIS_ARM_INSTR_STR &&
