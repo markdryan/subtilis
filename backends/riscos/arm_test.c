@@ -736,6 +736,16 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	  "EQUDBLR 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0.0\n"
 	  "]\n",
 	  "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
+	},
+	{"assembler_fpa_cptran",
+	 "PRINT FNWFSRFS%(7)\n"
+	 "def FNWFSRFS%(a%)\n"
+	 "[\n"
+	 "WFS R0\n"
+	 "RFS R0\n"
+	 "MOV PC, R14\n"
+	 "]\n",
+	 "7\n",
 	}
 };
 
@@ -866,6 +876,58 @@ static const subtilis_bad_test_case_t riscos_arm_bad_test_cases[] = {
 	{"assembler_bad_range3",
 	 "def PROCBad [ STMFD R0!, {R1,}]\n",
 	 SUBTILIS_ERROR_ASS_BAD_REG,
+	},
+	{"assembler_bad_adr1",
+	 "def PROCBad [ ADR 0, label label ]\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
+	{"assembler_bad_adr2",
+	 "def PROCBad [ ADR R15, label label ]\n",
+	 SUBTILIS_ERROR_ASS_BAD_REG,
+	},
+	{"assembler_bad_adr3",
+	 "def PROCBad [ ADR R1, R0 label ]\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
+	{"assembler_bad_adr4",
+	 "def PROCBad [ ADR R1 ]\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
+	{"assembler_bad_adr4",
+	 "def PROCBad [ ADR R1, ]\n",
+	 SUBTILIS_ERROR_EXP_EXPECTED,
+	},
+	{"assembler_bad_mtran1",
+	 "def PROCBad [ STMIA ]\n",
+	 SUBTILIS_ERROR_EXP_EXPECTED,
+	},
+	{"assembler_bad_mtran2",
+	 "def PROCBad [ STMIA R0]\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
+	{"assembler_bad_mtran3",
+	 "def PROCBad [ STMIA R0!]\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
+	{"assembler_bad_mtran4",
+	 "def PROCBad [ STMIA R0!,]\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
+	{"assembler_bad_mtran5",
+	 "def PROCBad [ STMIA R0!,{]\n",
+	 SUBTILIS_ERROR_ASS_BAD_REG,
+	},
+	{"assembler_bad_mtran6",
+	 "def PROCBad [ STMIA R0!,{R0]\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
+	{"assembler_bad_mtran7",
+	 "def PROCBad [ STMIA R0! R0]\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
+	{"assembler_bad_mtran8",
+	 "def PROCBad [ STMIA R0!, R0 R0]\n",
+	 SUBTILIS_ERROR_EXPECTED,
 	},
 };
 
