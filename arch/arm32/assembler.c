@@ -1713,13 +1713,13 @@ static void prv_parse_fpa_stran(subtilis_arm_ass_context_t *c,
 
 	tbuf = subtilis_token_get_text(c->t);
 	if (c->t->type == SUBTILIS_TOKEN_OPERATOR) {
-		if (tbuf[0] == ',') {
+		if (!strcmp(tbuf, ",")) {
 			prv_parse_fpa_stran_pre(c, itype, ccode, size, dest,
 						base, err);
 			return;
 		}
 
-		if (tbuf[0] == ']') {
+		if (!strcmp(tbuf, "]")) {
 			prv_parse_fpa_stran_post(c, itype, ccode, size, dest,
 						 base, err);
 			return;
@@ -2391,7 +2391,7 @@ static void prv_parse_def(subtilis_arm_ass_context_t *c, subtilis_error_t *err)
 		return;
 
 	tbuf = subtilis_token_get_text(c->t);
-	if (c->t->type != SUBTILIS_TOKEN_OPERATOR || tbuf[0] != '=') {
+	if (c->t->type != SUBTILIS_TOKEN_OPERATOR || strcmp(tbuf, "=")) {
 		subtilis_error_set_expected(err, "=", tbuf, c->l->stream->name,
 					    c->l->line);
 		goto cleanup;

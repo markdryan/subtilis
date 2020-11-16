@@ -910,13 +910,13 @@ static subtilis_arm_exp_val_t *prv_left_right(subtilis_arm_ass_context_t *c,
 
 	tbuf = subtilis_token_get_text(c->t);
 	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) ||
-	    (tbuf[0] != ',' && tbuf[0] != ')')) {
+	    (strcmp(tbuf, ",") && strcmp(tbuf, ")"))) {
 		subtilis_error_set_expected(err, ", or ) ", tbuf,
 					    c->l->stream->name, c->l->line);
 		goto cleanup;
 	}
 
-	if (tbuf[0] == ',') {
+	if (!strcmp(tbuf, ",")) {
 		val2 = subtilis_arm_exp_val_get(c, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
