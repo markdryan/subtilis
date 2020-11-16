@@ -96,9 +96,9 @@ static void prv_check_for_error(subtilis_lexer_t *l,
 	subtilis_error_init(err);
 }
 
-int parser_test_check_eval_res(subtilis_lexer_t *l, subtilis_parser_t *p,
-			       subtilis_error_type_t expected_err,
-			       const char *expected, bool mem_leaks_ok)
+static int prv_check_eval_res(subtilis_lexer_t *l, subtilis_parser_t *p,
+			      subtilis_error_type_t expected_err,
+			      const char *expected, bool mem_leaks_ok)
 {
 	subtilis_buffer_t b;
 	subtilis_error_t err;
@@ -173,9 +173,8 @@ static int prv_test_let(void)
 			       "PRINT 10 + 10 + b%\n";
 
 	printf("parser_let");
-	return parser_test_wrapper(let_test, &backend,
-				   parser_test_check_eval_res, NULL, 0,
-				   SUBTILIS_ERROR_OK, "119\n", false);
+	return parser_test_wrapper(let_test, &backend, prv_check_eval_res, NULL,
+				   0, SUBTILIS_ERROR_OK, "119\n", false);
 }
 
 static int prv_test_expressions(void)
@@ -190,8 +189,8 @@ static int prv_test_expressions(void)
 	for (i = 0; i < SUBTILIS_TEST_CASE_ID_MAX; i++) {
 		printf("parser_%s", test_cases[i].name);
 		retval |= parser_test_wrapper(
-		    test_cases[i].source, &backend, parser_test_check_eval_res,
-		    NULL, 0, SUBTILIS_ERROR_OK, test_cases[i].result, false);
+		    test_cases[i].source, &backend, prv_check_eval_res, NULL, 0,
+		    SUBTILIS_ERROR_OK, test_cases[i].result, false);
 	}
 
 	return retval;
@@ -208,10 +207,9 @@ static int prv_test_bad_cases(void)
 
 	for (i = 0; i < SUBTILIS_BAD_TEST_CASE_ID_MAX; i++) {
 		printf("parser_bad_%s", bad_test_cases[i].name);
-		retval |=
-		    parser_test_wrapper(bad_test_cases[i].source, &backend,
-					parser_test_check_eval_res, NULL, 0,
-					bad_test_cases[i].err, "", false);
+		retval |= parser_test_wrapper(
+		    bad_test_cases[i].source, &backend, prv_check_eval_res,
+		    NULL, 0, bad_test_cases[i].err, "", false);
 	}
 
 	return retval;
@@ -226,7 +224,7 @@ static int prv_test_print(void)
 
 	printf("parser_print");
 	return parser_test_wrapper("PRINT (10 * 3 * 3 + 1) DIV 2", &backend,
-				   parser_test_check_eval_res, NULL, 0,
+				   prv_check_eval_res, NULL, 0,
 				   SUBTILIS_ERROR_OK, "45\n", false);
 }
 
