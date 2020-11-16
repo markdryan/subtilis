@@ -429,7 +429,7 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	 "loop   SWI \"OS_WriteC\"\n"
 	 "SUBS R1, R1, 1\n"
 	 "BNE loop\n"
-	 "MOV PC, R14	\n"
+	 "MOV PC, R14\n"
 	 "]\n",
 	 "!!!!!!!!!!",
 	},
@@ -645,7 +645,7 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	 "]\n"
 	 "DEF FNLnFixed\n"
 	 "[\n"
-	 "  def constant = LN(10)\n" 
+	 "  def constant = LN(10)\n"
 	 "  ADR R0, value\n"
 	 "  LDFD F0, [R0]\n"
 	 "  MOV PC, R14\n"
@@ -952,9 +952,9 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 
 cleanup:
 
-	if (retval != 0)
+	if (retval != 0) {
 		subtilis_error_fprintf(stdout, &err, true);
-	else if (err.type != expected_err) {
+	} else if (err.type != expected_err) {
 		fprintf(stderr, "expected error %u got %u\n", expected_err,
 			err.type);
 		retval = 1;

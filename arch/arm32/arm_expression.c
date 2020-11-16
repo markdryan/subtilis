@@ -396,13 +396,14 @@ static subtilis_arm_exp_val_t *prv_logical_str(subtilis_arm_ass_context_t *c,
 					       subtilis_ass_log_str_fn_t fn,
 					       subtilis_error_t *err)
 {
+	subtilis_arm_exp_val_t *e;
 	const char *str1 = subtilis_buffer_get_string(&e1->val.buf);
 	const char *str2 = subtilis_buffer_get_string(&e2->val.buf);
 
-	e1->type = SUBTILIS_ARM_EXP_TYPE_INT;
-	e1->val.integer = fn(str1, str2);
+	e = subtilis_arm_exp_new_int32(fn(str1, str2), err);
+	subtilis_arm_exp_val_free(e1);
 	subtilis_arm_exp_val_free(e2);
-	return e1;
+	return e;
 }
 
 subtilis_arm_reg_t subtilis_arm_exp_parse_reg(subtilis_arm_ass_context_t *c,
@@ -1188,14 +1189,19 @@ static subtilis_arm_exp_val_t *prv_string_str(subtilis_arm_ass_context_t *c,
 
 	for (i = 0; i < repeat; i++) {
 		subtilis_buffer_append(&buf, seed_string, string_len, err);
-		if (err->type != SUBTILIS_ERROR_OK)
+		if (err->type != SUBTILIS_ERROR_OK) {
+			subtilis_buffer_free(&buf);
 			goto cleanup;
+		}
 	}
 	subtilis_buffer_zero_terminate(&buf, err);
-	if (err->type != SUBTILIS_ERROR_OK)
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_buffer_free(&buf);
 		goto cleanup;
+	}
 
 	retval = subtilis_arm_exp_new_str(&buf, err);
+	subtilis_buffer_free(&buf);
 
 cleanup:
 

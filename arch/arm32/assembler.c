@@ -2694,9 +2694,9 @@ subtilis_arm_section_t *subtilis_arm_asm_parse(
 /* clang-format on */
 {
 	subtilis_arm_ass_context_t context;
-	size_t *pending_labels;
 	size_t pending_labels_num;
 	const char *label_name;
+	size_t *pending_labels = NULL;
 	subtilis_arm_section_t *arm_s = NULL;
 	subtilis_string_pool_t *label_pool = NULL;
 
@@ -2748,6 +2748,7 @@ subtilis_arm_section_t *subtilis_arm_asm_parse(
 	return arm_s;
 
 cleanup:
+	free(pending_labels);
 	prv_context_free(&context);
 	subtilis_arm_section_delete(arm_s);
 

@@ -701,6 +701,7 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 
 	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "[")) {
 		prv_parser_assembly(p, t, name, stype, err);
+		subtilis_type_section_delete(stype);
 		goto on_error;
 	}
 
