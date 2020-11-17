@@ -61,7 +61,6 @@ static void prv_add_builtin(subtilis_parser_t *p, char *name,
 		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
 			goto on_error;
 		subtilis_error_init(err);
-		subtilis_type_section_delete(ts);
 	}
 
 	return;

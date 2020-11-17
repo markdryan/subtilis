@@ -701,6 +701,8 @@ static subtilis_ir_section_t *prv_ir_prog_section_new(
 	s->cleanup_stack_reg = s->reg_counter++;
 	s->freg_counter += tp->fp_regs;
 	s->ftype = ftype;
+	s->type = tp;
+	tp = NULL;
 
 	name_index = subtilis_string_pool_register(p->string_pool, name, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -731,11 +733,10 @@ static subtilis_ir_section_t *prv_ir_prog_section_new(
 		}
 		p->num_sections = name_index + 1;
 	}
-	s->type = tp;
 	s->locals = locals;
 	s->end_label = subtilis_ir_section_new_label(s);
 	s->nofree_label = subtilis_ir_section_new_label(s);
-	switch (tp->return_type.type) {
+	switch (s->type->return_type.type) {
 	case SUBTILIS_TYPE_VOID:
 		s->ret_reg = SIZE_MAX;
 		break;
@@ -760,6 +761,7 @@ static subtilis_ir_section_t *prv_ir_prog_section_new(
 
 cleanup:
 
+	subtilis_type_section_delete(tp);
 	prv_ir_section_delete(s);
 
 	return NULL;
