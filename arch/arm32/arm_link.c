@@ -94,13 +94,25 @@ void subtilis_arm_link_section(subtilis_arm_link_t *link, size_t num,
 	link->sections[num] = offset;
 }
 
-void subtilis_arm_link_link(subtilis_arm_link_t *link, uint32_t *buf,
+static uint32_t *prv_get_word_ptr(uint8_t *buf, size_t index,
+				  subtilis_error_t *err)
+{
+	if (index & 3) {
+		subtilis_error_set_ass_bad_alignment(err);
+		return NULL;
+	}
+
+	return (uint32_t *)&buf[index];
+}
+
+void subtilis_arm_link_link(subtilis_arm_link_t *link, uint8_t *buf,
 			    size_t buf_size, const size_t *raw_constants,
 			    size_t num_raw_constants, subtilis_error_t *err)
 {
 	size_t i;
 	size_t si;
 	size_t index;
+	uint32_t *ptr;
 	subtilis_arm_link_constant_t *cnst;
 
 	for (i = 0; i < link->num_externals; i++) {
@@ -109,7 +121,10 @@ void subtilis_arm_link_link(subtilis_arm_link_t *link, uint32_t *buf,
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
-		si = buf[index] & 0xffffff;
+		ptr = prv_get_word_ptr(buf, index, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		si = *ptr & 0xffffff;
 		if (si >= link->num_sections) {
 			subtilis_error_set_assertion_failed(err);
 			return;
@@ -119,8 +134,8 @@ void subtilis_arm_link_link(subtilis_arm_link_t *link, uint32_t *buf,
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
-		buf[index] &= 0xff000000;
-		buf[index] |= (link->sections[si] - (index + 2)) & 0xffffff;
+		*ptr &= 0xff000000;
+		*ptr |= ((link->sections[si] - (index + 8)) / 4) & 0xffffff;
 	}
 
 	for (i = 0; i < link->num_constants; i++) {
@@ -133,10 +148,12 @@ void subtilis_arm_link_link(subtilis_arm_link_t *link, uint32_t *buf,
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
-		buf[cnst->constant_offset] =
-		    (raw_constants[cnst->index] - cnst->code_index) * 4;
+		ptr = prv_get_word_ptr(buf, cnst->constant_offset, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		*ptr = (raw_constants[cnst->index] - cnst->code_index);
 		/* Adjust for PC relative addressing. */
-		buf[cnst->constant_offset] -= 12;
+		*ptr -= 12;
 	}
 }
 

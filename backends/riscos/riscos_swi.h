@@ -20,18 +20,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-struct subtilis_riscos_swi_t_ {
-	uint32_t num;
-	const char *name;
-	uint32_t in_regs;
-	uint32_t out_regs;
-};
+#include "../../arch/arm32/arm_swi.h"
 
-typedef struct subtilis_riscos_swi_t_ subtilis_riscos_swi_t;
+extern const size_t subtilis_riscos_known_swis;
 
-extern size_t subtilis_riscos_known_swis;
-
-extern subtilis_riscos_swi_t subtilis_riscos_swi_list[];
-extern size_t subtilis_riscos_swi_index[];
+extern const subtilis_arm_swi_t subtilis_riscos_swi_list[];
+extern const size_t subtilis_riscos_swi_index[];
 
 #endif

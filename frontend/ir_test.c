@@ -435,6 +435,11 @@ static int prv_check_matcher(subtilis_lexer_t *l, subtilis_parser_t *p,
 
 static int prv_test_matcher(void)
 {
+	subtilis_backend_t backend;
+
+	memset(&backend, 0, sizeof(backend));
+	backend.caps = SUBTILIS_BACKEND_INTER_CAPS;
+
 	const char *source = "LET x% = 1\n"
 			     "LET y% = 0\n"
 			     "IF x% < 1 THEN\n"
@@ -442,9 +447,8 @@ static int prv_test_matcher(void)
 			     "ENDIF\n";
 
 	printf("ir_test_matcher");
-	return parser_test_wrapper(source, SUBTILIS_BACKEND_INTER_CAPS,
-				   prv_check_matcher, SUBTILIS_ERROR_OK, NULL,
-				   false);
+	return parser_test_wrapper(source, &backend, prv_check_matcher, NULL, 0,
+				   SUBTILIS_ERROR_OK, NULL, false);
 }
 
 int ir_test(void)

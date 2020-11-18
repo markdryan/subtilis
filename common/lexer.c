@@ -38,22 +38,40 @@ static void prv_process_negative_decimal(subtilis_lexer_t *l,
 					 subtilis_error_t *err);
 
 subtilis_lexer_t *subtilis_lexer_new(subtilis_stream_t *s, size_t buf_size,
+				     const subtilis_keyword_t *basic_keywords,
+				     size_t num_basic_keywords,
+				     const subtilis_keyword_t *ass_keywords,
+				     size_t num_ass_keywords,
 				     subtilis_error_t *err)
 {
 	subtilis_lexer_t *l;
 
-	l = malloc(sizeof(subtilis_lexer_t) + (buf_size - 1));
+	l = malloc(sizeof(*l));
 	if (!l) {
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
 
+	l->buffer = malloc(buf_size);
+	if (!l->buffer) {
+		free(l);
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+
+	l->keywords = basic_keywords;
+	l->num_keywords = num_basic_keywords;
+	l->basic_keywords = basic_keywords;
+	l->num_basic_keywords = num_basic_keywords;
+	l->ass_keywords = ass_keywords;
+	l->num_ass_keywords = num_ass_keywords;
 	l->buf_size = buf_size;
 	l->buf_end = 0;
 	l->stream = s;
 	l->line = 1;
 	l->character = 1;
 	l->index = 0;
+	l->num_blocks = 0;
 	l->next = NULL;
 
 	return l;
@@ -61,11 +79,38 @@ subtilis_lexer_t *subtilis_lexer_new(subtilis_stream_t *s, size_t buf_size,
 
 void subtilis_lexer_delete(subtilis_lexer_t *l, subtilis_error_t *err)
 {
+	size_t i;
+
 	if (l) {
 		subtilis_token_delete(l->next);
 		l->stream->close(l->stream->handle, err);
+		free(l->buffer);
+
+		for (i = 0; i < l->num_blocks; i++)
+			subtilis_token_delete(l->blocks[i].t);
+
 		free(l);
 	}
+}
+
+void subtilis_lexer_set_ass_keywords(subtilis_lexer_t *l, bool ass,
+				     subtilis_error_t *err)
+{
+	if (!ass) {
+		l->keywords = l->basic_keywords;
+		l->num_keywords = l->num_basic_keywords;
+		return;
+	}
+
+	if (!l->ass_keywords) {
+		subtilis_error_set_not_supported(
+		    err, "Assembly language on this target is", l->stream->name,
+		    l->line);
+		return;
+	}
+
+	l->keywords = l->ass_keywords;
+	l->num_keywords = l->num_ass_keywords;
 }
 
 /* subtilis_token_new will reserve SUBTILIS_MAX_TOKEN_SIZE + 1 in bytes for the
@@ -132,15 +177,39 @@ const char *subtilis_token_get_text_with_err(subtilis_token_t *t,
 
 static void prv_ensure_input(subtilis_lexer_t *l, subtilis_error_t *err)
 {
+	size_t new_buf_size;
+	char *new_buffer;
+
 	if (l->index < l->buf_end)
 		return;
 
-	l->buf_end =
-	    l->stream->read(l->buffer, l->buf_size, l->stream->handle, err);
-	if (err->type != SUBTILIS_ERROR_OK)
+	if (l->num_blocks == 0) {
+		l->buf_end = l->stream->read(l->buffer, l->buf_size,
+					     l->stream->handle, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		l->index = 0;
 		return;
+	}
 
-	l->index = 0;
+	/* We can't overwrite the existing data in the buffer because we
+	 * have stacked blocks.  So we're just going to have to make our
+	 * buffer bigger and append to it.  This feature is currently only
+	 * used by the assemblers.
+	 */
+
+	new_buf_size = l->buf_size + SUBTILIS_CONFIG_LEXER_BUF_SIZE_INC;
+	new_buffer = realloc(l->buffer, new_buf_size);
+	if (!new_buffer) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+
+	l->buf_size = new_buf_size;
+	l->buffer = new_buffer;
+	l->buf_end += l->stream->read(&l->buffer[l->index],
+				      SUBTILIS_CONFIG_LEXER_BUF_SIZE_INC,
+				      l->stream->handle, err);
 }
 
 static void prv_check_token_buffer(subtilis_lexer_t *l, subtilis_token_t *t,
@@ -166,7 +235,8 @@ static bool prv_is_simple_operator(char c)
 {
 	return c == '/' || c == '*' || c == '(' || c == ')' || c == '=' ||
 	       c == ',' || c == ';' || c == '^' || c == '[' || c == ']' ||
-	       c == '|' || c == '~' || c == '?' || c == '$';
+	       c == '|' || c == '~' || c == '?' || c == '$' || c == '!' ||
+	       c == '{' || c == '}';
 }
 
 static bool prv_is_separator(char c)
@@ -644,10 +714,8 @@ static bool prv_process_keyword(subtilis_lexer_t *l, char ch,
 	// TODO: bsearch may not be efficient for large files.
 
 	key.str = tbuf;
-	kw =
-	    bsearch(&key, subtilis_keywords_list,
-		    sizeof(subtilis_keywords_list) / sizeof(subtilis_keyword_t),
-		    sizeof(subtilis_keyword_t), prv_compare_keyword);
+	kw = bsearch(&key, l->keywords, l->num_keywords, sizeof(*l->keywords),
+		     prv_compare_keyword);
 
 	if (kw) {
 		if (kw->type == SUBTILIS_KEYWORD_REM) {
@@ -830,6 +898,28 @@ void subtilis_token_claim(subtilis_token_t *dest, subtilis_token_t *src)
 	subtilis_buffer_init(&src->buf, 1);
 }
 
+subtilis_token_t *subtilis_token_dup(const subtilis_token_t *src,
+				     subtilis_error_t *err)
+{
+	size_t buf_size;
+	subtilis_token_t *t;
+
+	t = subtilis_token_new(err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	t->type = src->type;
+	t->tok = src->tok;
+	buf_size = subtilis_buffer_get_size(&src->buf);
+	subtilis_buffer_append(&t->buf, subtilis_buffer_get_string(&src->buf),
+			       buf_size, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_token_delete(t);
+		t = NULL;
+	}
+
+	return t;
+}
+
 void subtilis_token_delete(subtilis_token_t *t)
 {
 	if (!t)
@@ -862,13 +952,66 @@ void subtilis_dump_token(subtilis_token_t *t)
 		printf("[%d %s]\n", t->type, tbuf);
 }
 
+void subtilis_lexer_push_block(subtilis_lexer_t *l, const subtilis_token_t *t,
+			       subtilis_error_t *err)
+{
+	subtilis_token_t *t_dup;
+
+	if (l->num_blocks == SUBTILIS_LEXER_MAX_BLOCKS) {
+		subtilis_error_set_too_many_blocks(err, l->stream->name,
+						   l->line);
+		return;
+	}
+
+	if (l->next) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	t_dup = subtilis_token_dup(t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	l->blocks[l->num_blocks].index = l->index;
+	l->blocks[l->num_blocks].t = t_dup;
+	l->blocks[l->num_blocks].line = l->line;
+	l->num_blocks++;
+}
+
+void subtilis_lexer_set_block_start(subtilis_lexer_t *l, subtilis_error_t *err)
+{
+	if (l->num_blocks == 0) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (l->next) {
+		subtilis_token_delete(l->next);
+		l->next = NULL;
+	}
+
+	l->index = l->blocks[l->num_blocks - 1].index;
+	l->line = l->blocks[l->num_blocks - 1].line;
+	l->next = subtilis_token_dup(l->blocks[l->num_blocks - 1].t, err);
+}
+
+void subtilis_lexer_pop_block(subtilis_lexer_t *l, subtilis_error_t *err)
+{
+	if (l->num_blocks == 0) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	l->num_blocks--;
+	subtilis_token_delete(l->blocks[l->num_blocks].t);
+}
+
 void subtilis_lexer_get(subtilis_lexer_t *l, subtilis_token_t *t,
 			subtilis_error_t *err)
 {
 	bool rem;
 
 	do {
-		prv_reinit_token(t);
 		if (l->next) {
 			/*
 			 * We transfer ownership of our buffer.
@@ -879,6 +1022,7 @@ void subtilis_lexer_get(subtilis_lexer_t *l, subtilis_token_t *t,
 			l->next = NULL;
 			rem = false;
 		} else {
+			prv_reinit_token(t);
 			prv_skip_white(l, err);
 			if ((err->type != SUBTILIS_ERROR_OK) ||
 			    (l->index == l->buf_end))

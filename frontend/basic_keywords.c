@@ -16,7 +16,7 @@
 
 #include <stdbool.h>
 
-#include "keywords.h"
+#include "basic_keywords.h"
 
 /* clang-format off */
 const subtilis_keyword_t subtilis_keywords_list[] = {

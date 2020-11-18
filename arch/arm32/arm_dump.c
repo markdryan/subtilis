@@ -65,6 +65,7 @@ static const char *const instr_desc[] = {
 	"SWI",  // SUBTILIS_ARM_INSTR_SWI
 	"LDR",  // SUBTILIS_ARM_INSTR_LDRC
 	"CMOV",  // SUBTILIS_ARM_INSTR_CMOV
+	"ADR",  // SUBTILIS_ARM_INSTR_ADR
 	"LDF",  // SUBTILIS_FPA_INSTR_LDF
 	"STF",  // SUBTILIS_FPA_INSTR_STF
 	"LDR",  // SUBTILIS_FPA_INSTR_LDRC
@@ -181,7 +182,12 @@ static void prv_dump_mul_instr(void *user_data, subtilis_arm_op_t *op,
 		printf("%s", ccode_desc[instr->ccode]);
 	if (instr->status)
 		printf("S");
-	printf(" R%zu, R%zu, R%zu\n", instr->dest, instr->rm, instr->rs);
+	if (type == SUBTILIS_ARM_INSTR_MLA)
+		printf(" R%zu, R%zu, R%zu, R%zu\n", instr->dest, instr->rm,
+		       instr->rs, instr->rn);
+	else
+		printf(" R%zu, R%zu, R%zu\n", instr->dest, instr->rm,
+		       instr->rs);
 }
 
 static void prv_dump_stran_instr(void *user_data, subtilis_arm_op_t *op,
@@ -220,10 +226,10 @@ static void prv_dump_mtran_instr(void *user_data, subtilis_arm_op_t *op,
 	    "IA", "IB", "DA", "DB", "FA", "FD", "EA", "ED",
 	};
 
-	printf("\t%s%s %zu", instr_desc[type], direction[(size_t)instr->type],
-	       instr->op0);
+	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
+	printf("%s R%zu", direction[(size_t)instr->type], instr->op0);
 	if (instr->write_back)
 		printf("!");
 	printf(", {");
@@ -240,7 +246,10 @@ static void prv_dump_mtran_instr(void *user_data, subtilis_arm_op_t *op,
 		if ((1 << i) & instr->reg_list)
 			printf(", R%zu", i);
 	}
-	printf("}\n");
+	printf("}");
+	if (instr->status)
+		printf("^");
+	printf("\n");
 }
 
 static void prv_dump_br_instr(void *user_data, subtilis_arm_op_t *op,
@@ -288,6 +297,17 @@ static void prv_dump_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	printf(" R%zu, label_%zu\n", instr->dest, instr->label);
 }
 
+static void prv_dump_adr_instr(void *user_data, subtilis_arm_op_t *op,
+			       subtilis_arm_instr_type_t type,
+			       subtilis_arm_adr_instr_t *instr,
+			       subtilis_error_t *err)
+{
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf(" R%zu, label_%zu\n", instr->dest, instr->label);
+}
+
 static void prv_dump_cmov_instr(void *user_data, subtilis_arm_op_t *op,
 				subtilis_arm_instr_type_t type,
 				subtilis_arm_cmov_instr_t *instr,
@@ -314,6 +334,8 @@ static void prv_dump_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
+	if ((instr->dest == 15) && (type == SUBTILIS_ARM_INSTR_TEQ))
+		printf("P");
 	printf(" R%zu, ", instr->op1);
 	prv_dump_op2(&instr->op2);
 	printf("\n");
@@ -427,17 +449,13 @@ static void prv_dump_fpa_tran_instr(void *user_data, subtilis_arm_op_t *op,
 	printf("\t%s", instr_desc[type]);
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
-	printf("%s%s", prv_fpa_size(instr->size),
-	       prv_extract_rounding(instr->rounding));
-	if (type == SUBTILIS_FPA_INSTR_FLT) {
-		printf(" F%zu, ", instr->dest);
-		if (instr->immediate)
-			printf("#%f", prv_extract_imm(instr->op2));
-		else
-			printf("R%zu", instr->op2.reg);
-	} else {
-		printf(" R%zu, F%zu", instr->dest, instr->op2.reg);
-	}
+	if (type == SUBTILIS_FPA_INSTR_FLT)
+		printf("%s", prv_fpa_size(instr->size));
+	printf("%s", prv_extract_rounding(instr->rounding));
+	if (type == SUBTILIS_FPA_INSTR_FLT || !instr->immediate)
+		printf(" F%zu, R%zu", instr->dest, instr->op2.reg);
+	else
+		printf(" R%zu, #%f", instr->dest, prv_extract_imm(instr->op2));
 	printf("\n");
 }
 
@@ -485,6 +503,36 @@ static void prv_dump_label(void *user_data, subtilis_arm_op_t *op, size_t label,
 	printf(".label_%zu\n", label);
 }
 
+static void prv_dump_directive(void *user_data, subtilis_arm_op_t *op,
+			       subtilis_error_t *err)
+{
+	switch (op->type) {
+	case SUBTILIS_ARM_OP_ALIGN:
+		printf("\tALIGN %d\n", op->op.alignment);
+		break;
+	case SUBTILIS_ARM_OP_BYTE:
+		printf("\tEQUB %d\n", op->op.byte);
+		break;
+	case SUBTILIS_ARM_OP_TWO_BYTE:
+		printf("\tEQUW %d\n", op->op.two_bytes);
+		break;
+	case SUBTILIS_ARM_OP_FOUR_BYTE:
+		printf("\tEQUD %d\n", op->op.four_bytes);
+		break;
+	case SUBTILIS_ARM_OP_DOUBLE:
+		printf("\tEQUDBL %f\n", op->op.dbl);
+		break;
+	case SUBTILIS_ARM_OP_DOUBLER:
+		printf("\tEQUDBLR %f\n", op->op.dbl);
+		break;
+	case SUBTILIS_ARM_OP_STRING:
+		printf("\tEQUS \"%s\"\n", op->op.str);
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+	}
+}
+
 void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 			       subtilis_arm_section_t *s)
 {
@@ -496,6 +544,7 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 
 	walker.user_data = p;
 	walker.label_fn = prv_dump_label;
+	walker.directive_fn = prv_dump_directive;
 	walker.data_fn = prv_dump_data_instr;
 	walker.mul_fn = prv_dump_mul_instr;
 	walker.cmp_fn = prv_dump_cmp_instr;
@@ -505,6 +554,7 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 	walker.br_fn = prv_dump_br_instr;
 	walker.swi_fn = prv_dump_swi_instr;
 	walker.ldrc_fn = prv_dump_ldrc_instr;
+	walker.adr_fn = prv_dump_adr_instr;
 	walker.cmov_fn = prv_dump_cmov_instr;
 	walker.fpa_data_monadic_fn = prv_dump_fpa_data_monadic_instr;
 	walker.fpa_data_dyadic_fn = prv_dump_fpa_data_dyadic_instr;

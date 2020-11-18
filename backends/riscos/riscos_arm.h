@@ -124,5 +124,11 @@ void subtilis_riscos_arm_syscall(subtilis_ir_section_t *s, size_t start,
 size_t subtilis_riscos_sys_trans(const char *call_name);
 bool subtilis_riscos_sys_check(size_t call_id, uint32_t *in_regs,
 			       uint32_t *out_regs, bool *handle_errors);
+void subtilis_riscos_asm_free(void *asm_code);
+void *subtilis_riscos_asm_parse(subtilis_lexer_t *l, subtilis_token_t *t,
+				void *backend_data,
+				subtilis_type_section_t *stype,
+				const subtilis_settings_t *set,
+				subtilis_error_t *err);
 
 #endif

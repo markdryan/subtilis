@@ -69,7 +69,7 @@ void subtilis_parser_if(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_ir_operand_t true_label;
 	subtilis_ir_operand_t false_label;
 	subtilis_ir_operand_t end_label;
-	subtilis_keyword_type_t key_type;
+	int key_type;
 
 	e = subtilis_parser_conditional_exp(p, t, &cond, err);
 	if (err->type != SUBTILIS_ERROR_OK)

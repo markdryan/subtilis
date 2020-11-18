@@ -39,6 +39,7 @@ typedef enum {
 	SUBTILIS_ERROR_BAD_FN_NAME,
 	SUBTILIS_ERROR_ASSERTION_FAILED,
 	SUBTILIS_ERROR_KEYWORD_EXPECTED,
+	SUBTILIS_ERROR_KEYWORD_UNEXPECTED,
 	SUBTILIS_ERROR_ID_EXPECTED,
 	SUBTILIS_ERROR_NOT_SUPPORTED,
 	SUBTILIS_ERROR_ASSIGNMENT_OP_EXPECTED,
@@ -94,6 +95,18 @@ typedef enum {
 	SUBTILIS_ERROR_INTEGER_VARIABLE_EXPECTED,
 	SUBTILIS_ERROR_DEFPROC_SHOULD_BE_DEF_PROC,
 	SUBTILIS_ERROR_DEFFN_SHOULD_BE_DEF_FN,
+	SUBTILIS_ERROR_ASS_BAD_REG,
+	SUBTILIS_ERROR_ASS_INTEGER_ENCODE,
+	SUBTILIS_ERROR_SYS_CALL_UNKNOWN,
+	SUBTILIS_ERROR_ASS_BAD_OFFSET,
+	SUBTILIS_ERROR_ASS_BAD_RANGE,
+	SUBTILIS_ERROR_ASS_BAD_ALIGNMENT,
+	SUBTILIS_ERROR_ASS_KEYWORD_BAD_USE,
+	SUBTILIS_ERROR_ASS_INT_TOO_BIG,
+	SUBTILIS_ERROR_ASS_MISSING_LABEL,
+	SUBTILIS_ERROR_ASS_BAD_ADR,
+	SUBTILIS_ERROR_ASS_BAD_ALIGN,
+	SUBTILIS_ERROR_ASS_BAD_REAL_IMM,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -152,6 +165,9 @@ void subtilis_error_init(subtilis_error_t *e);
 				 __LINE__)
 #define subtilis_error_set_keyword_expected(e, str, file, line)                \
 	subtilis_error_set1(e, SUBTILIS_ERROR_KEYWORD_EXPECTED, str, file, line)
+#define subtilis_error_set_keyword_unexpected(e, str, file, line)              \
+	subtilis_error_set1(e, SUBTILIS_ERROR_KEYWORD_UNEXPECTED, str, file,   \
+			    line)
 #define subtilis_error_set_not_supported(e, str, file, line)                   \
 	subtilis_error_set1(e, SUBTILIS_ERROR_NOT_SUPPORTED, str, file, line)
 #define subtilis_error_set_id_expected(e, str, file, line)                     \
@@ -298,6 +314,40 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_deffn_should_be_def_fn(e, file, line)               \
 	subtilis_error_set_syntax(e, SUBTILIS_ERROR_DEFFN_SHOULD_BE_DEF_FN,    \
 				  file, line, __FILE__, __LINE__)
+#define subtilis_error_set_ass_bad_reg(e, reg, file, line)                     \
+	subtilis_error_set1(e, SUBTILIS_ERROR_ASS_BAD_REG, reg, file, line)
+#define subtilis_error_set_ass_integer_encode(e, num, file, line)              \
+	subtilis_error_set_int(e, SUBTILIS_ERROR_ASS_INTEGER_ENCODE, num, 0,   \
+			       file, line, __FILE__, __LINE__)
+#define subtilis_error_set_sys_call_unknown(e, str, file, line)                \
+	subtilis_error_set1(e, SUBTILIS_ERROR_SYS_CALL_UNKNOWN, str, file, line)
+#define subtilis_error_set_ass_bad_offset(e, offset, file, line)               \
+	subtilis_error_set_int(e, SUBTILIS_ERROR_ASS_BAD_OFFSET, offset, 0,    \
+			       file, line, __FILE__, __LINE__)
+#define subtilis_error_set_ass_bad_range(e, num1, num2, file, line)            \
+	subtilis_error_set_int(e, SUBTILIS_ERROR_ASS_BAD_RANGE, num1, num2,    \
+			       file, line, __FILE__, __LINE__)
+#define subtilis_error_set_ass_bad_alignment(e)                                \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_ASS_BAD_ALIGNMENT,          \
+				 __FILE__, __LINE__)
+#define subtilis_error_set_ass_keyword_bad_use(e, name, file, line)            \
+	subtilis_error_set1(e, SUBTILIS_ERROR_ASS_KEYWORD_BAD_USE, name, file, \
+			    line)
+#define subtilis_error_set_ass_integer_too_big(e, num, file, line)             \
+	subtilis_error_set_int(e, SUBTILIS_ERROR_ASS_INT_TOO_BIG, num, 0,      \
+			       file, line, __FILE__, __LINE__)
+#define subtilis_error_set_ass_unknown_label(e, str, file, line)               \
+	subtilis_error_set1(e, SUBTILIS_ERROR_ASS_MISSING_LABEL, str, file,    \
+			    line)
+#define subtilis_error_set_ass_bad_adr(e)                                      \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_ASS_BAD_ADR, __FILE__,      \
+				 __LINE__)
+#define subtilis_error_set_ass_bad_align(e, align, file, line)                 \
+	subtilis_error_set_int(e, SUBTILIS_ERROR_ASS_BAD_ALIGN, align, 0,      \
+			       file, line, __FILE__, __LINE__)
+#define subtilis_error_set_ass_bad_real_imm(e, num, file, line)                \
+	subtilis_error_set_dbl(e, SUBTILIS_ERROR_ASS_BAD_REAL_IMM, num, 0.0,   \
+			       file, line, __FILE__, __LINE__)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,
@@ -306,6 +356,10 @@ void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     unsigned int subtilis_line);
 void subtilis_error_set_int(subtilis_error_t *e, subtilis_error_type_t type,
 			    int data1, int data2, const char *file,
+			    unsigned int line, const char *subtilis_file,
+			    unsigned int subtilis_line);
+void subtilis_error_set_dbl(subtilis_error_t *e, subtilis_error_type_t type,
+			    double data1, double data2, const char *file,
 			    unsigned int line, const char *subtilis_file,
 			    unsigned int subtilis_line);
 void subtilis_error_set_basic(subtilis_error_t *e, subtilis_error_type_t type,

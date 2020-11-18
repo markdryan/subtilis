@@ -5,7 +5,7 @@ COMMON =\
 	lexer.c \
 	error.c \
 	utils.c \
-	keywords.c \
+	basic_keywords.c \
 	buffer.c \
 	parser.c \
 	parser_array.c \
@@ -69,7 +69,10 @@ ARM =\
 	arm_sub_section.c \
 	arm_peephole.c \
 	arm_mem.c \
-	arm_heap.c
+	arm_heap.c \
+	arm_keywords.c \
+	assembler.c \
+	arm_expression.c
 
 COMPILER =\
 	compiler.c
@@ -108,7 +111,7 @@ TESTS =\
 	vm_heap.c
 
 CFLAGS ?= -O3
-CFLAGS += -Wall -Werror -MMD
+CFLAGS += -Wall -MMD
 
 basicc: $(COMPILER:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm

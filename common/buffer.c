@@ -108,6 +108,19 @@ void subtilis_buffer_append(subtilis_buffer_t *buffer, const void *data,
 	(void)memcpy(buffer->buffer->data + old_size, data, length);
 }
 
+void subtilis_buffer_append_buffer(subtilis_buffer_t *target,
+				   subtilis_buffer_t *source,
+				   subtilis_error_t *err)
+{
+	subtilis_fixed_buffer_t *b = source->buffer;
+
+	if (!b)
+		return;
+
+	subtilis_buffer_append(target, b->data,
+			       subtilis_buffer_get_size(source), err);
+}
+
 void subtilis_buffer_append_string(subtilis_buffer_t *buffer, const char *str,
 				   subtilis_error_t *err)
 {

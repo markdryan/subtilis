@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Mark Ryan
+ * Copyright (c) 2020 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_KEYWORD_H__
-#define __SUBTILIS_KEYWORD_H__
+#ifndef __SUBTILIS_BASIC_KEYWORD_H__
+#define __SUBTILIS_BASIC_KEYWORD_H__
 
-#include <stdbool.h>
+#include "../common/keywords.h"
 
-typedef enum {
-	SUBTILIS_KEYWORD_ABS,
+/* clang-format off */
+enum {
+	SUBTILIS_KEYWORD_ABS = SUBTILIS_KEYWORD_COMMON_MAX,
 	SUBTILIS_KEYWORD_ACS,
 	SUBTILIS_KEYWORD_ADVAL,
 	SUBTILIS_KEYWORD_AND,
@@ -66,7 +67,6 @@ typedef enum {
 	SUBTILIS_KEYWORD_EXT_HASH,
 	SUBTILIS_KEYWORD_FALSE,
 	SUBTILIS_KEYWORD_FILL,
-	SUBTILIS_KEYWORD_FN,
 	SUBTILIS_KEYWORD_FOR,
 	SUBTILIS_KEYWORD_GCOL,
 	SUBTILIS_KEYWORD_GET,
@@ -111,12 +111,10 @@ typedef enum {
 	SUBTILIS_KEYWORD_POS,
 	SUBTILIS_KEYWORD_PRINT,
 	SUBTILIS_KEYWORD_PRINT_HASH,
-	SUBTILIS_KEYWORD_PROC,
 	SUBTILIS_KEYWORD_PTR_HASH,
 	SUBTILIS_KEYWORD_QUIT,
 	SUBTILIS_KEYWORD_RAD,
 	SUBTILIS_KEYWORD_RECTANGLE,
-	SUBTILIS_KEYWORD_REM,
 	SUBTILIS_KEYWORD_REPEAT,
 	SUBTILIS_KEYWORD_REPORT,
 	SUBTILIS_KEYWORD_REPORT_STR,
@@ -157,15 +155,9 @@ typedef enum {
 	SUBTILIS_KEYWORD_WHILE,
 	SUBTILIS_KEYWORD_WIDTH,
 	SUBTILIS_KEYWORD_MAX
-} subtilis_keyword_type_t;
-
-struct _subtilis_keyword_t {
-	const char *str;
-	subtilis_keyword_type_t type;
-	bool supported;
 };
 
-typedef struct _subtilis_keyword_t subtilis_keyword_t;
+/* clang-format on */
 
 /*
  * PROC and FN are upper case only.

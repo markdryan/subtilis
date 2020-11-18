@@ -1,0 +1,12 @@
+def PROCRegs
+[
+	for i = R0 TO R11
+	    MOV i, int(i)
+        next
+
+	for j = F1 TO F7
+	    MVFD j, int(j) mod 6
+	next
+
+	MOV PC, R14
+]

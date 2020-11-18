@@ -94,6 +94,12 @@ typedef enum {
 } subtilis_arm_ccode_type_t;
 
 typedef enum {
+	SUBTILIS_ARM_ICLASS_INT,
+	SUBTILIS_ARM_ICLASS_FPA,
+	SUBTILIS_ARM_ICLASS_MAX,
+} subtilis_arm_iclass_t;
+
+typedef enum {
 	SUBTILIS_ARM_INSTR_AND = 0,
 	SUBTILIS_ARM_INSTR_EOR = 1,
 	SUBTILIS_ARM_INSTR_SUB = 2,
@@ -120,6 +126,9 @@ typedef enum {
 	SUBTILIS_ARM_INSTR_SWI,
 	SUBTILIS_ARM_INSTR_LDRC,
 	SUBTILIS_ARM_INSTR_CMOV,
+	SUBTILIS_ARM_INSTR_ADR,
+
+	SUBTILIS_ARM_INSTR_INT_MAX = SUBTILIS_ARM_INSTR_ADR,
 
 	SUBTILIS_FPA_INSTR_LDF,
 	SUBTILIS_FPA_INSTR_STF,
@@ -161,14 +170,11 @@ typedef enum {
 	SUBTILIS_FPA_INSTR_CNFE,
 	SUBTILIS_FPA_INSTR_WFS,
 	SUBTILIS_FPA_INSTR_RFS,
+
+	SUBTILIS_ARM_INSTR_FPA_MAX,
+
 	SUBTILIS_ARM_INSTR_MAX,
 } subtilis_arm_instr_type_t;
-
-/*
- * TODO: Maybe we should get rid of the stack versions of these
- * instructions as we'll lose the stack information when we
- * dissasemlble.
- */
 
 typedef enum {
 	SUBTILIS_ARM_MTRAN_IA,
@@ -221,6 +227,7 @@ struct subtilis_arm_mtran_instr_t_ {
 	size_t reg_list; // bitmap
 	subtilis_arm_mtran_type_t type;
 	bool write_back;
+	bool status;
 };
 
 typedef struct subtilis_arm_mtran_instr_t_ subtilis_arm_mtran_instr_t;
@@ -234,6 +241,7 @@ typedef enum {
 struct subtilis_arm_br_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	bool link;
+	bool local;
 	subtilis_arm_br_link_type_t link_type;
 	union {
 		size_t label;
@@ -260,6 +268,14 @@ struct subtilis_arm_ldrc_instr_t_ {
 };
 
 typedef struct subtilis_arm_ldrc_instr_t_ subtilis_arm_ldrc_instr_t;
+
+struct subtilis_arm_adr_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_reg_t dest;
+	size_t label;
+};
+
+typedef struct subtilis_arm_adr_instr_t_ subtilis_arm_adr_instr_t;
 
 struct subtilis_arm_cmov_instr_t_ {
 	subtilis_arm_reg_t dest;
@@ -301,7 +317,7 @@ typedef struct subtilis_fpa_data_instr_t_ subtilis_fpa_data_instr_t;
 
 struct subtilis_fpa_stran_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
-	size_t size; /* Currently always set to 8 */
+	size_t size;
 	subtilis_arm_reg_t dest;
 	subtilis_arm_reg_t base;
 	uint8_t offset;
@@ -315,7 +331,7 @@ typedef struct subtilis_fpa_stran_instr_t_ subtilis_fpa_stran_instr_t;
 struct subtilis_fpa_tran_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	subtilis_arm_reg_t dest;
-	bool immediate; /* Currently always set to false */
+	bool immediate;
 	subtilis_fpa_op2_t op2;
 	size_t size;
 	subtilis_fpa_rounding_t rounding;
@@ -358,6 +374,7 @@ struct subtilis_arm_instr_t_ {
 		subtilis_arm_br_instr_t br;
 		subtilis_arm_swi_instr_t swi;
 		subtilis_arm_ldrc_instr_t ldrc;
+		subtilis_arm_adr_instr_t adr;
 		subtilis_arm_cmov_instr_t cmov;
 		subtilis_fpa_data_instr_t fpa_data;
 		subtilis_fpa_stran_instr_t fpa_stran;
@@ -370,11 +387,31 @@ struct subtilis_arm_instr_t_ {
 
 typedef struct subtilis_arm_instr_t_ subtilis_arm_instr_t;
 
+typedef enum {
+	SUBTILIS_ARM_OP_INSTR,
+	SUBTILIS_ARM_OP_LABEL,
+	SUBTILIS_ARM_OP_BYTE,
+	SUBTILIS_ARM_OP_TWO_BYTE,
+	SUBTILIS_ARM_OP_FOUR_BYTE,
+	SUBTILIS_ARM_OP_DOUBLE,
+	SUBTILIS_ARM_OP_DOUBLER,
+	SUBTILIS_ARM_OP_STRING,
+	SUBTILIS_ARM_OP_ALIGN,
+	SUBTILIS_ARM_OP_PHI,
+	SUBTILIS_ARM_OP_MAX,
+} subtilis_arm_op_type_t;
+
 struct subtilis_arm_op_t_ {
-	subtilis_op_type_t type;
+	subtilis_arm_op_type_t type;
 	union {
+		uint8_t byte;
+		uint16_t two_bytes;
+		uint32_t four_bytes;
+		uint32_t alignment;
+		double dbl;
 		subtilis_arm_instr_t instr;
 		size_t label;
+		char *str;
 	} op;
 	size_t next;
 	size_t prev;
@@ -506,9 +543,14 @@ subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 			      size_t locals, subtilis_error_t *err);
 /* clang-format on */
 
+void subtilis_arm_prog_append_section(subtilis_arm_prog_t *prog,
+				      subtilis_arm_section_t *arm_s,
+				      subtilis_error_t *err);
+
 void subtilis_arm_section_max_regs(subtilis_arm_section_t *s, size_t *int_regs,
 				   size_t *real_regs);
-
+subtilis_arm_iclass_t subtilis_arm_get_iclass(subtilis_arm_instr_type_t itype,
+					      subtilis_error_t *err);
 void subtilis_arm_prog_delete(subtilis_arm_prog_t *prog);
 void subtilis_arm_section_add_call_site(subtilis_arm_section_t *s,
 					size_t stm_site, size_t ldm_site,
@@ -552,6 +594,9 @@ size_t subtilis_add_explicit_ldr(subtilis_arm_section_t *s,
 				 subtilis_arm_ccode_type_t ccode,
 				 subtilis_arm_reg_t dest, int32_t op2,
 				 bool link_time, subtilis_error_t *err);
+void subtilis_add_adr(subtilis_arm_section_t *s,
+		      subtilis_arm_ccode_type_t ccode, subtilis_arm_reg_t dest,
+		      size_t label, subtilis_error_t *err);
 size_t subtilis_add_data_imm_ldr_datai(subtilis_arm_section_t *s,
 				       subtilis_arm_instr_type_t itype,
 				       subtilis_arm_ccode_type_t ccode,
@@ -659,7 +704,7 @@ void subtilis_arm_add_mtran(subtilis_arm_section_t *s,
 			    subtilis_arm_ccode_type_t ccode,
 			    subtilis_arm_reg_t op0, size_t reg_list,
 			    subtilis_arm_mtran_type_t type, bool write_back,
-			    subtilis_error_t *err);
+			    bool status, subtilis_error_t *err);
 
 bool subtilis_arm_is_fixed(subtilis_arm_reg_t reg);
 
@@ -685,6 +730,21 @@ bool subtilis_arm_is_fixed(subtilis_arm_reg_t reg);
 #define subtilis_arm_add_mvn_reg(s, cc, st, dst, op2, err)                     \
 	subtilis_arm_add_movmvn_reg(s, SUBTILIS_ARM_INSTR_MVN, cc, st, dst,    \
 				    op2, err)
+
+void subtilis_arm_add_byte(subtilis_arm_section_t *s, uint8_t byte,
+			   subtilis_error_t *err);
+void subtilis_arm_add_two_bytes(subtilis_arm_section_t *s, uint16_t two_bytes,
+				subtilis_error_t *err);
+void subtilis_arm_add_four_bytes(subtilis_arm_section_t *s, uint32_t four_bytes,
+				 subtilis_error_t *err);
+void subtilis_arm_add_double(subtilis_arm_section_t *s, double dbl,
+			     subtilis_error_t *err);
+void subtilis_arm_add_doubler(subtilis_arm_section_t *s, double dbl,
+			      subtilis_error_t *err);
+void subtilis_arm_add_string(subtilis_arm_section_t *s, const char *str,
+			     subtilis_error_t *err);
+void subtilis_arm_add_align(subtilis_arm_section_t *s, uint32_t align,
+			    subtilis_error_t *err);
 
 void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 			       subtilis_arm_section_t *s);

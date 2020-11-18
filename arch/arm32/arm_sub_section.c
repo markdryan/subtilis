@@ -184,13 +184,13 @@ static void prv_finalize_sub_section(subtilis_arm_ss_t *ss,
 	subtilis_bitset_claim(&ss->int_inputs, &regs_used.int_regs);
 	subtilis_bitset_claim(&ss->real_inputs, &regs_used.real_regs);
 
-	if (((op->type != SUBTILIS_OP_INSTR) ||
+	if (((op->type != SUBTILIS_ARM_OP_INSTR) ||
 	     (op->op.instr.type != SUBTILIS_ARM_INSTR_B) ||
 	     (op->op.instr.operands.br.ccode != SUBTILIS_ARM_CCODE_AL)) &&
 	    (op->next != SIZE_MAX)) {
 		ptr = op->next;
 		op = &arm_s->op_pool->ops[ptr];
-		if (op->type == SUBTILIS_OP_LABEL)
+		if (op->type == SUBTILIS_ARM_OP_LABEL)
 			prv_add_link(ss, arm_s, ptr, op->op.label, err);
 	}
 
@@ -378,7 +378,7 @@ void subtilis_arm_subsections_calculate(subtilis_arm_subsections_t *sss,
 	count = 0;
 	while (ptr != SIZE_MAX) {
 		op = &arm_s->op_pool->ops[ptr];
-		if (op->type == SUBTILIS_OP_LABEL) {
+		if (op->type == SUBTILIS_ARM_OP_LABEL) {
 			prv_finalize_sub_section(ss, arm_s, op->prev, count,
 						 err);
 			if (err->type != SUBTILIS_ERROR_OK)
@@ -396,7 +396,7 @@ void subtilis_arm_subsections_calculate(subtilis_arm_subsections_t *sss,
 			prv_sss_link_map_insert(sss, ss_ptr, label, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-		} else if ((op->type == SUBTILIS_OP_INSTR) &&
+		} else if ((op->type == SUBTILIS_ARM_OP_INSTR) &&
 			   (op->op.instr.type == SUBTILIS_ARM_INSTR_B) &&
 			   (!op->op.instr.operands.br.link) &&
 			   (op->op.instr.operands.br.ccode !=
@@ -408,7 +408,7 @@ void subtilis_arm_subsections_calculate(subtilis_arm_subsections_t *sss,
 				return;
 			if (op->next != SIZE_MAX) {
 				next = &arm_s->op_pool->ops[op->next];
-				if (next->type != SUBTILIS_OP_LABEL) {
+				if (next->type != SUBTILIS_ARM_OP_LABEL) {
 					subtilis_arm_section_insert_label(
 					    arm_s, arm_s->label_counter, next,
 					    err);
@@ -553,7 +553,7 @@ void subtilis_arm_subsections_dump(subtilis_arm_subsections_t *sss,
 			subtilis_bitset_dump(&ss->links[j].real_save);
 			op = &arm_s->op_pool->ops[ss->links[j].op];
 			printf("\tOP ptr %zu: ", ss->links[j].op);
-			if (op->type == SUBTILIS_OP_LABEL)
+			if (op->type == SUBTILIS_ARM_OP_LABEL)
 				printf("label_%zu\n", op->op.label);
 			else
 				subtilis_arm_instr_dump(&op->op.instr);
@@ -565,7 +565,7 @@ void subtilis_arm_subsections_dump(subtilis_arm_subsections_t *sss,
 		ptr = ss->start;
 		while (ptr != SIZE_MAX) {
 			op = &arm_s->op_pool->ops[ptr];
-			if (op->type == SUBTILIS_OP_LABEL)
+			if (op->type == SUBTILIS_ARM_OP_LABEL)
 				printf("label_%zu\n", op->op.label);
 			else
 				subtilis_arm_instr_dump(&op->op.instr);

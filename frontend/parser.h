@@ -19,10 +19,11 @@
 
 #include "../common/backend.h"
 #include "../common/ir.h"
+#include "../common/lexer.h"
 #include "../common/settings.h"
 #include "../common/sizet_vector.h"
+#include "basic_keywords.h"
 #include "call.h"
-#include "lexer.h"
 #include "symbol_table.h"
 
 struct subtilis_parser_t_ {
@@ -53,8 +54,7 @@ void subtilis_parse(subtilis_parser_t *p, subtilis_error_t *err);
 void subtilis_parser_delete(subtilis_parser_t *p);
 void subtilis_parser_statement(subtilis_parser_t *p, subtilis_token_t *t,
 			       subtilis_error_t *err);
-subtilis_keyword_type_t subtilis_parser_if_compound(subtilis_parser_t *p,
-						    subtilis_token_t *t,
-						    subtilis_error_t *err);
+int subtilis_parser_if_compound(subtilis_parser_t *p, subtilis_token_t *t,
+				subtilis_error_t *err);
 
 #endif

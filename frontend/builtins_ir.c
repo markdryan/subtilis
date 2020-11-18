@@ -2481,8 +2481,6 @@ static subtilis_ir_section_t *prv_add_args(subtilis_parser_t *p,
 	current = subtilis_ir_prog_section_new(
 	    p->prog, name, 0, ts, SUBTILIS_BUILTINS_MAX, "builtin", 0,
 	    p->eflag_offset, p->error_offset, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		subtilis_type_section_delete(ts);
 
 	return current;
 }

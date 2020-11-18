@@ -1,0 +1,25 @@
+MODE 1
+PROCbanner
+
+def PROCbanner
+[
+	def screen_width = 40
+	def header = STRING$(screen_width,"*")
+	def gap = STRING$(13," ")
+
+	ADR R0, header_label
+	SWI "OS_Write0"
+	SWI "OS_NewLine"
+	ADR R0, message
+	SWI "OS_Write0"
+	SWI "OS_NewLine"
+	ADR R0, header_label
+	SWI "OS_Write0"
+	SWI "OS_NewLine"
+	MOV PC, R14
+
+header_label
+	EQUS header
+message
+	EQUS "*" + gap + "Hello World!" + gap + "*"
+]

@@ -76,6 +76,10 @@ static void prv_walk_instr(subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 		walker->ldrc_fn(walker->user_data, op, instr->type,
 				&instr->operands.ldrc, err);
 		break;
+	case SUBTILIS_ARM_INSTR_ADR:
+		walker->adr_fn(walker->user_data, op, instr->type,
+			       &instr->operands.adr, err);
+		break;
 	case SUBTILIS_ARM_INSTR_CMOV:
 		walker->cmov_fn(walker->user_data, op, instr->type,
 				&instr->operands.cmov, err);
@@ -160,12 +164,25 @@ static void prv_arm_walk(subtilis_arm_section_t *arm_s, size_t ptr,
 		op = &arm_s->op_pool->ops[ptr];
 
 		switch (op->type) {
-		case SUBTILIS_OP_LABEL:
+		case SUBTILIS_ARM_OP_LABEL:
 			walker->label_fn(walker->user_data, op, op->op.label,
 					 err);
 			break;
-		case SUBTILIS_OP_INSTR:
+		case SUBTILIS_ARM_OP_INSTR:
 			prv_walk_instr(walker, op, err);
+			break;
+		case SUBTILIS_ARM_OP_ALIGN:
+		case SUBTILIS_ARM_OP_BYTE:
+		case SUBTILIS_ARM_OP_TWO_BYTE:
+		case SUBTILIS_ARM_OP_FOUR_BYTE:
+		case SUBTILIS_ARM_OP_DOUBLE:
+		case SUBTILIS_ARM_OP_DOUBLER:
+		case SUBTILIS_ARM_OP_STRING:
+			if (!walker->directive_fn) {
+				subtilis_error_set_assertion_failed(err);
+				break;
+			}
+			walker->directive_fn(walker->user_data, op, err);
 			break;
 		default:
 			subtilis_error_set_assertion_failed(err);

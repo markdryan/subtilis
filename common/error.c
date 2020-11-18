@@ -74,6 +74,9 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_KEYWORD_EXPECTED */
 	{"Keyword expected, found %s.\n", 1},
 
+	/* SUBTILIS_ERROR_KEYWORD_UNEXPECTED */
+	{"Unexpected keyword %s.\n", 1},
+
 	/* SUBTILIS_ID_EXPECTED */
 	{"Identifer expected found %s.\n", 1},
 
@@ -239,6 +242,42 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_DEFFN_SHOULD_BE_DEF_FN */
 	{"Unexpected identifier.  Did you mean DEF FN?\n", 0},
+
+	/* SUBTILIS_ERROR_ASS_BAD_REG */
+	{"%s is not a valid register name\n", 1},
+
+	/* SUBTILIS_ERROR_ASS_INTEGER_ENCODE */
+	{"%s cannot be encoded\n", 1},
+
+	/* SUBTILIS_ERROR_SYS_CALL_UNKNOWN */
+	{"Unknown sysy call: %s\n", 1},
+
+	/* SUBTILIS_ERROR_ASS_BAD_OFFSET */
+	{"Bad offset: %s\n", 1},
+
+	/* SUBTILIS_ERROR_ASS_BAD_RANGE */
+	{"Bad Range: R%s-R%s\n", 2},
+
+	/* SUBTILIS_ERROR_ASS_BAD_ALIGNMENT */
+	{"Bad alignment\n", 0},
+
+	/* SUBTILIS_ERROR_ASS_KEYWORD_BAD_USE */
+	{"%s cannot be used here\n", 1},
+
+	/* SUBTILIS_ERROR_ASS_INTEGER_TOO_BIG */
+	{"%s is too big\n", 1},
+
+	/* SUBTILIS_ERROR_ASS_MISSING_LABEL */
+	{"%s is referenced but not defined\n", 1},
+
+	/* SUBTILIS_ERROR_ASS_BAD_ADR */
+	{"Cannot encode ADR statement.  Distance too large\n", 0},
+
+	/* SUBTILIS_ERROR_ASS_BAD_ALIGN */
+	{"Invalid align value %s.  Must be a power of 2, > 0 and <= 1024\n", 1},
+
+	/* SUBTILIS_ERROR_ASS_BAD_REAL_IMM */
+	{"Cannot encode %s into instruction\n", 1},
 };
 
 /* clang-format on */
@@ -283,6 +322,21 @@ void subtilis_error_set_int(subtilis_error_t *e, subtilis_error_type_t type,
 
 	snprintf(num1, sizeof(num1), "%d", data1);
 	snprintf(num2, sizeof(num2), "%d", data2);
+
+	subtilis_error_set_full(e, type, num1, num2, file, line, subtilis_file,
+				subtilis_line);
+}
+
+void subtilis_error_set_dbl(subtilis_error_t *e, subtilis_error_type_t type,
+			    double data1, double data2, const char *file,
+			    unsigned int line, const char *subtilis_file,
+			    unsigned int subtilis_line)
+{
+	char num1[32];
+	char num2[32];
+
+	snprintf(num1, sizeof(num1), "%f", data1);
+	snprintf(num2, sizeof(num2), "%f", data2);
 
 	subtilis_error_set_full(e, type, num1, num2, file, line, subtilis_file,
 				subtilis_line);

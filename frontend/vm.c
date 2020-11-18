@@ -152,7 +152,7 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_prog_t *p,
 	    subtilis_vm_heap_new_block(const_size, SUBTILIS_VM_HEAP_SIZE);
 	if (!vm->heap.free_list) {
 		subtilis_error_set_oom(err);
-		return NULL;
+		goto fail;
 	}
 
 	return vm;

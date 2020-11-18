@@ -20,10 +20,12 @@
 #include "parser.h"
 
 int parser_test(void);
-int parser_test_wrapper(const char *text, subtilis_backend_caps_t caps,
+int parser_test_wrapper(const char *text, const subtilis_backend_t *backend,
 			int (*fn)(subtilis_lexer_t *, subtilis_parser_t *,
 				  subtilis_error_type_t, const char *expected,
 				  bool mem_leaks_ok),
+			const subtilis_keyword_t *ass_keywords,
+			size_t num_ass_keywords,
 			subtilis_error_type_t expected_err,
 			const char *expected, bool mem_leaks_ok);
 

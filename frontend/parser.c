@@ -171,7 +171,7 @@ void subtilis_parser_statement(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	subtilis_keyword_fn fn;
 	const char *tbuf;
-	subtilis_keyword_type_t key_type;
+	int key_type;
 
 	if ((p->current->endproc) &&
 	    !((t->type == SUBTILIS_TOKEN_KEYWORD) &&
@@ -206,14 +206,13 @@ void subtilis_parser_statement(subtilis_parser_t *p, subtilis_token_t *t,
 	fn(p, t, err);
 }
 
-subtilis_keyword_type_t subtilis_parser_if_compound(subtilis_parser_t *p,
-						    subtilis_token_t *t,
-						    subtilis_error_t *err)
+int subtilis_parser_if_compound(subtilis_parser_t *p, subtilis_token_t *t,
+				subtilis_error_t *err)
 {
 	const char *tbuf;
 	subtilis_keyword_fn fn;
 	subtilis_ir_operand_t var_reg;
-	subtilis_keyword_type_t key_type = SUBTILIS_KEYWORD_MAX;
+	int key_type = SUBTILIS_KEYWORD_MAX;
 	unsigned int start;
 
 	subtilis_symbol_table_level_up(p->local_st, p->l, err);
@@ -510,11 +509,16 @@ cleanup:
 
 /* The ordering of this table is very important.  The functions it
  * contains must correspond to the enumerated types in
- * subtilis_keyword_type_t
+ * keywords.h and basic_keywords.h.  Note the first three keywords
+ * are common keywords the lexer knows about and so come from
+ * keywords.h.
  */
 
 /* clang-format off */
 static const subtilis_keyword_fn keyword_fns[] = {
+	NULL, /* SUBTILIS_KEYWORD_FN */
+	prv_proc, /* SUBTILIS_KEYWORD_PROC */
+	NULL, /* SUBTILIS_KEYWORD_REM */
 	NULL, /* SUBTILIS_KEYWORD_ABS */
 	NULL, /* SUBTILIS_KEYWORD_ACS */
 	NULL, /* SUBTILIS_KEYWORD_ADVAL */
@@ -561,7 +565,6 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_EXT_HASH */
 	NULL, /* SUBTILIS_KEYWORD_FALSE */
 	subtilis_parser_fill, /* SUBTILIS_KEYWORD_FILL */
-	NULL, /* SUBTILIS_KEYWORD_FN */
 	subtilis_parser_for, /* SUBTILIS_KEYWORD_FOR */
 	subtilis_parser_gcol, /* SUBTILIS_KEYWORD_GCOL */
 	NULL, /* SUBTILIS_KEYWORD_GET */
@@ -606,12 +609,10 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_POS */
 	subtilis_parser_print, /* SUBTILIS_KEYWORD_PRINT */
 	NULL, /* SUBTILIS_KEYWORD_PRINT_HASH */
-	prv_proc, /* SUBTILIS_KEYWORD_PROC */
 	NULL, /* SUBTILIS_KEYWORD_PTR_HASH */
 	NULL, /* SUBTILIS_KEYWORD_QUIT */
 	NULL, /* SUBTILIS_KEYWORD_RAD */
 	subtilis_parser_rectangle, /* SUBTILIS_KEYWORD_RECTANGLE */
-	NULL, /* SUBTILIS_KEYWORD_REM */
 	subtilis_parser_repeat, /* SUBTILIS_KEYWORD_REPEAT */
 	NULL, /* SUBTILIS_KEYWORD_REPORT */
 	NULL, /* SUBTILIS_KEYWORD_REPORT_STR */

@@ -23,7 +23,7 @@ static void prv_decode_mul(subtilis_arm_instr_t *instr, uint32_t encoded,
 
 	if (encoded & (1 << 21)) {
 		instr->type = SUBTILIS_ARM_INSTR_MLA;
-		mul->rn = (encoded >> 15) & 0x0f;
+		mul->rn = (encoded >> 12) & 0x0f;
 	} else {
 		instr->type = SUBTILIS_ARM_INSTR_MUL;
 	}
@@ -33,8 +33,8 @@ static void prv_decode_mul(subtilis_arm_instr_t *instr, uint32_t encoded,
 
 	mul->dest = (encoded >> 16) & 0x0f;
 
-	mul->rm = (encoded >> 8) & 0x0f;
-	mul->rs = encoded & 0x0f;
+	mul->rs = (encoded >> 8) & 0x0f;
+	mul->rm = encoded & 0x0f;
 }
 
 static void prv_decode_swi(subtilis_arm_instr_t *instr, uint32_t encoded,

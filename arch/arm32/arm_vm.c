@@ -23,7 +23,7 @@
 #include "arm_disass.h"
 #include "arm_vm.h"
 
-subtilis_arm_vm_t *subtilis_arm_vm_new(uint32_t *code, size_t code_size,
+subtilis_arm_vm_t *subtilis_arm_vm_new(uint8_t *code, size_t code_size,
 				       size_t mem_size, subtilis_error_t *err)
 {
 	double dummy_float = 1.0;
@@ -41,8 +41,8 @@ subtilis_arm_vm_t *subtilis_arm_vm_new(uint32_t *code, size_t code_size,
 		goto fail;
 	}
 
-	memcpy(arm_vm->memory, code, sizeof(*code) * code_size);
-	arm_vm->code_size = code_size;
+	memcpy(arm_vm->memory, code, code_size);
+	arm_vm->code_size = code_size / 4;
 	arm_vm->mem_size = mem_size;
 
 	arm_vm->reverse_fpa_consts = (*lower_word) == 0;
@@ -800,6 +800,19 @@ static void prv_process_mul(subtilis_arm_vm_t *arm_vm,
 	arm_vm->regs[15] += 4;
 }
 
+static void prv_process_mla(subtilis_arm_vm_t *arm_vm,
+			    subtilis_arm_mul_instr_t *op, subtilis_error_t *err)
+{
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	arm_vm->regs[op->dest] =
+	    arm_vm->regs[op->rm] * arm_vm->regs[op->rs] + arm_vm->regs[op->rn];
+	arm_vm->regs[15] += 4;
+}
+
 static void prv_process_ldr(subtilis_arm_vm_t *arm_vm,
 			    subtilis_arm_stran_instr_t *op,
 			    subtilis_error_t *err)
@@ -1181,6 +1194,7 @@ static void prv_process_fpa_ldf(subtilis_arm_vm_t *arm_vm,
 	size_t addr;
 	uint32_t *ptr;
 	uint64_t dbl;
+	double *dbl_cast;
 
 	if (!prv_match_ccode(arm_vm, op->ccode)) {
 		arm_vm->regs[15] += 4;
@@ -1199,7 +1213,8 @@ static void prv_process_fpa_ldf(subtilis_arm_vm_t *arm_vm,
 			ptr = (uint32_t *)&arm_vm->memory[addr];
 			dbl = ptr[0];
 			dbl = (dbl << 32) | ptr[1];
-			prv_set_fpa_f64(arm_vm, op->dest, *((double *)&dbl));
+			dbl_cast = (double *)&dbl;
+			prv_set_fpa_f64(arm_vm, op->dest, *dbl_cast);
 		} else {
 			prv_set_fpa_f64(arm_vm, op->dest,
 					*((double *)&arm_vm->memory[addr]));
@@ -1500,10 +1515,16 @@ static void prv_process_fpa_fix(subtilis_arm_vm_t *arm_vm,
 		return;
 	}
 
-	if (arm_vm->fregs[op->op2.reg].size == 4)
-		val = (double)arm_vm->fregs[op->op2.reg].val.real32;
-	else
-		val = arm_vm->fregs[op->op2.reg].val.real64;
+	if (op->immediate) {
+		val = subtilis_fpa_extract_imm(op->op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		if (arm_vm->fregs[op->op2.reg].size == 4)
+			val = (double)arm_vm->fregs[op->op2.reg].val.real32;
+		else
+			val = arm_vm->fregs[op->op2.reg].val.real64;
+	}
 	if (op->rounding == SUBTILIS_FPA_ROUNDING_ZERO)
 		arm_vm->regs[op->dest] = (int32_t)val;
 	else if (op->rounding == SUBTILIS_FPA_ROUNDING_MINUS_INFINITY)
@@ -1817,6 +1838,9 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			break;
 		case SUBTILIS_ARM_INSTR_MUL:
 			prv_process_mul(arm_vm, &instr.operands.mul, err);
+			break;
+		case SUBTILIS_ARM_INSTR_MLA:
+			prv_process_mla(arm_vm, &instr.operands.mul, err);
 			break;
 		case SUBTILIS_ARM_INSTR_LDR:
 			prv_process_ldr(arm_vm, &instr.operands.stran, err);

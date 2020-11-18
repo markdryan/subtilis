@@ -132,9 +132,9 @@ static bool prv_check_mov_imm(subtilis_arm_section_t *s,
 			return false;
 		}
 
-		if (op->type != SUBTILIS_OP_INSTR) {
+		if (op->type != SUBTILIS_ARM_OP_INSTR) {
 			fprintf(stderr, "Expected instruction %d, found %d\n",
-				SUBTILIS_OP_INSTR, op->type);
+				SUBTILIS_ARM_OP_INSTR, op->type);
 			return false;
 		}
 

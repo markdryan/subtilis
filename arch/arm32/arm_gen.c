@@ -857,7 +857,7 @@ void subtilis_arm_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 	size_t ldf_site = INT_MAX;
 	size_t int_args = 0;
 	size_t real_args = 0;
-	int save_real_start;
+	int save_real_start = INT_MAX;
 	size_t int_arg_ops[SUBTILIS_IR_MAX_ARGS_PER_TYPE - 4];
 	size_t real_arg_ops[SUBTILIS_IR_MAX_ARGS_PER_TYPE - 4];
 
@@ -883,7 +883,7 @@ void subtilis_arm_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_STM,
 			       SUBTILIS_ARM_CCODE_AL, op0, 1 << 14 | 1 << 11,
-			       SUBTILIS_ARM_MTRAN_FD, true, err);
+			       SUBTILIS_ARM_MTRAN_FD, true, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -933,7 +933,7 @@ void subtilis_arm_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 
 	subtilis_arm_add_mtran(arm_s, SUBTILIS_ARM_INSTR_LDM,
 			       SUBTILIS_ARM_CCODE_AL, op0, 1 << 14 | 1 << 11,
-			       SUBTILIS_ARM_MTRAN_FD, true, err);
+			       SUBTILIS_ARM_MTRAN_FD, true, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

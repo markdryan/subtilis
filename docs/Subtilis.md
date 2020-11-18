@@ -1018,12 +1018,31 @@ Returns the number of free bytes available in the heap.  Only makes sense on pla
 amount of memory allocated to a program is fixed when it's run.  On platforms where there's
 no memory restriction on an application, the maximum integer value is returned.
 
+## Assembler
+
+Subtilis implements an assembler, as all good BASIC implementations should.  It differs considerably from the assembler in BBC BASIC, however.  Assembly happens at compile time rather than at runtime and the syntax of Subtilis's assembler is significantly different to that of BBC BASIC.  Assembly code is included directly inside Subtilis source files and not in separate assembly only files.  A function or a procedure must be written entirely on one of the two languages.  It is not possible to mix BASIC and assembly in the same function or procedure.  Inline assembly is not permitted.
+
+Assembly language functions and procedures are defined in the same way as BASIC functions, using the DEF PROC or DEF FN keywords.  The bodies of the functions are different, however.  The assembly language directly follows the DEF statement and is enclosed in square brackets.  Assembly language functions or procedures do not end with <- or ENDPROC.  Here's a brief example that returns the integer value 1.
+
+```
+def FNOne%
+[
+	MOV R0, 1
+	MOV PC, R14
+]
+```
+
+The function can be called from BASIC using the normal function calling syntax, e.g.,
+
+```
+PRINT FNOne%
+```
+
+As Assembly language is really a platform specific feature the assemblers (currently, there's only one) are documented separately.
+
+* [The 32 bit ARM assembler](https://github.com/markdryan/subtilis/blob/master/docs/ARM32Asm.md)
+
 ## Unimplemented Language Features
-
-### Assembler
-
-There's no assembler, either inline or otherwise.  I have most of the code for this so it
-will be implemented at some point.
 
 ### Other missing items
 
@@ -1056,5 +1075,6 @@ The tooling is very basic and needs a huge amount of work
 * There's no linker so we're limited to a single source file right now.
 * There's no error recovery so you only get a single error message before the compiler bombs out.
 * There's no optimizer
-* No assembler
 * The compiler is too slow.  It takes 13 seconds to compile a very simple program on the A3000 (8 Mhz ARM2).
+
+
