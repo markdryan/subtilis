@@ -452,10 +452,15 @@ static void prv_dump_fpa_tran_instr(void *user_data, subtilis_arm_op_t *op,
 	if (type == SUBTILIS_FPA_INSTR_FLT)
 		printf("%s", prv_fpa_size(instr->size));
 	printf("%s", prv_extract_rounding(instr->rounding));
-	if (type == SUBTILIS_FPA_INSTR_FLT || !instr->immediate)
-		printf(" F%zu, R%zu", instr->dest, instr->op2.reg);
-	else
-		printf(" R%zu, #%f", instr->dest, prv_extract_imm(instr->op2));
+	if (type == SUBTILIS_FPA_INSTR_FLT) {
+		printf(" F%zu, ", instr->dest);
+		if (instr->immediate)
+			printf("#%f", prv_extract_imm(instr->op2));
+		else
+			printf("R%zu", instr->op2.reg);
+	} else {
+		printf(" R%zu, F%zu", instr->dest, instr->op2.reg);
+	}
 	printf("\n");
 }
 
