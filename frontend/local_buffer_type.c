@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "local_buffer_type_if.h"
 #include "type_if.h"
 
 /*

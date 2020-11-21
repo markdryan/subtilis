@@ -123,7 +123,8 @@ subtilis_exp_t *subtilis_parser_int(subtilis_parser_t *p, subtilis_token_t *t,
 		return NULL;
 
 	if (e->type.type == SUBTILIS_TYPE_CONST_REAL) {
-		e2 = subtilis_exp_new_int32(floor(e->exp.ir_op.real), err);
+		e2 = subtilis_exp_new_int32((int32_t)floor(e->exp.ir_op.real),
+					    err);
 	} else {
 		reg = subtilis_ir_section_add_instr2(
 		    p->current, SUBTILIS_OP_INSTR_MOV_FPRD_I32, e->exp.ir_op,

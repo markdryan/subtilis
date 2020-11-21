@@ -234,7 +234,7 @@ static const subtilis_ir_class_info_t class_details[] = {
 	{1, { SUBTILIS_IR_OPERAND_I32} },
 	{1, { SUBTILIS_IR_OPERAND_REAL} },
 	{1, { SUBTILIS_IR_OPERAND_LABEL} },
-	{0, { 0} },
+	{0, { SUBTILIS_IR_OPERAND_REGISTER} },
 };
 
 /* clang-format on */

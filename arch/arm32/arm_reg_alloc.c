@@ -2287,12 +2287,12 @@ void subtilis_arm_regs_used_before_from_tov(subtilis_arm_section_t *arm_s,
 	prv_free_arm_reg_ud(&ud);
 }
 
-void subtilis_arm_regs_used_before_from_to(subtilis_arm_section_t *arm_s,
-					   subtilis_arm_op_t *from,
-					   subtilis_arm_op_t *op,
-					   size_t int_args, size_t real_args,
-					   subtilis_regs_used_t *regs_used,
-					   subtilis_error_t *err)
+static void prv_arm_regs_used_before_from_to(subtilis_arm_section_t *arm_s,
+					     subtilis_arm_op_t *from,
+					     subtilis_arm_op_t *op,
+					     size_t int_args, size_t real_args,
+					     subtilis_regs_used_t *regs_used,
+					     subtilis_error_t *err)
 {
 	size_t i;
 	subtilis_arm_reg_ud_t ud;
@@ -2338,8 +2338,8 @@ void subtilis_arm_regs_used_before(subtilis_arm_section_t *arm_s,
 	subtilis_arm_op_t *from;
 
 	from = &arm_s->op_pool->ops[arm_s->first_op];
-	subtilis_arm_regs_used_before_from_to(arm_s, from, op, int_args,
-					      real_args, regs_used, err);
+	prv_arm_regs_used_before_from_to(arm_s, from, op, int_args, real_args,
+					 regs_used, err);
 }
 
 static bool prv_is_reg_used_after_to(subtilis_arm_reg_ud_t *ud, size_t reg_num,
