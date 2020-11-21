@@ -874,9 +874,9 @@ cleanup:
 	p->current = old_current;
 }
 
-void subtilis_builtins_ir_dec_to_str(subtilis_parser_t *p,
-				     subtilis_ir_section_t *current,
-				     subtilis_error_t *err)
+static void prv_builtins_ir_dec_to_str(subtilis_parser_t *p,
+				       subtilis_ir_section_t *current,
+				       subtilis_error_t *err)
 {
 	subtilis_ir_operand_t arg_int;
 	subtilis_ir_operand_t arg_buf;
@@ -1138,9 +1138,9 @@ cleanup:
 	subtilis_exp_delete(val);
 }
 
-void subtilis_builtins_ir_hex_to_str(subtilis_parser_t *p,
-				     subtilis_ir_section_t *current,
-				     subtilis_error_t *err)
+static void prv_builtins_ir_hex_to_str(subtilis_parser_t *p,
+				       subtilis_ir_section_t *current,
+				       subtilis_error_t *err)
 {
 	subtilis_ir_operand_t arg_int;
 	subtilis_ir_operand_t arg_buf;
@@ -2011,9 +2011,9 @@ static void prv_compute_whole_int_part(subtilis_parser_t *p,
 					  whole_start_label, err);
 }
 
-void subtilis_builtins_ir_str_to_int32(subtilis_parser_t *p,
-				       subtilis_ir_section_t *current,
-				       subtilis_error_t *err)
+static void prv_builtins_ir_str_to_int32(subtilis_parser_t *p,
+					 subtilis_ir_section_t *current,
+					 subtilis_error_t *err)
 {
 	subtilis_ir_section_t *old_current;
 	subtilis_ir_operand_t str;
@@ -2357,9 +2357,9 @@ static void prv_compute_whole_hex_part(subtilis_parser_t *p,
 					  whole_start_label, err);
 }
 
-void subtilis_builtins_ir_hexstr_to_int32(subtilis_parser_t *p,
-					  subtilis_ir_section_t *current,
-					  subtilis_error_t *err)
+static void prv_builtins_ir_hexstr_to_int32(subtilis_parser_t *p,
+					    subtilis_ir_section_t *current,
+					    subtilis_error_t *err)
 {
 	subtilis_ir_section_t *old_current;
 	subtilis_ir_operand_t str;
@@ -2530,7 +2530,7 @@ subtilis_exp_t *subtilis_builtin_ir_call_dec_to_str(subtilis_parser_t *p,
 			return NULL;
 		subtilis_error_init(err);
 	} else {
-		subtilis_builtins_ir_dec_to_str(p, fn, err);
+		prv_builtins_ir_dec_to_str(p, fn, err);
 	}
 
 	return subtilis_parser_call_2_arg_fn(
@@ -2557,7 +2557,7 @@ subtilis_exp_t *subtilis_builtin_ir_call_hex_to_str(subtilis_parser_t *p,
 			return NULL;
 		subtilis_error_init(err);
 	} else {
-		subtilis_builtins_ir_hex_to_str(p, fn, err);
+		prv_builtins_ir_hex_to_str(p, fn, err);
 	}
 
 	return subtilis_parser_call_2_arg_fn(
@@ -2632,7 +2632,7 @@ subtilis_exp_t *subtilis_builtin_ir_call_hexstr_to_int32(subtilis_parser_t *p,
 			return NULL;
 		subtilis_error_init(err);
 	} else {
-		subtilis_builtins_ir_hexstr_to_int32(p, fn, err);
+		prv_builtins_ir_hexstr_to_int32(p, fn, err);
 	}
 
 	return subtilis_parser_call_1_arg_fn(
@@ -2658,7 +2658,7 @@ subtilis_exp_t *subtilis_builtin_ir_call_str_to_int32(subtilis_parser_t *p,
 			return NULL;
 		subtilis_error_init(err);
 	} else {
-		subtilis_builtins_ir_str_to_int32(p, fn, err);
+		prv_builtins_ir_str_to_int32(p, fn, err);
 	}
 
 	return subtilis_parser_call_2_arg_fn(

@@ -55,8 +55,6 @@ struct subtilis_arm_ass_context_t_ {
 	size_t max_blocks;
 };
 
-typedef struct subtilis_arm_ass_context_t_ subtilis_arm_ass_context_t;
-
 /* clang-format off */
 subtilis_arm_section_t *subtilis_arm_asm_parse(
 	subtilis_lexer_t *l, subtilis_token_t *t, subtilis_arm_op_pool_t *pool,

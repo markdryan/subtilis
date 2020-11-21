@@ -1390,6 +1390,29 @@ static void prv_encode_fpa_cptran_instr(void *user_data, subtilis_arm_op_t *op,
 	prv_add_word(ud, word, err);
 }
 
+static int32_t prv_compute_dist(size_t first, size_t second, size_t limit,
+				subtilis_error_t *err)
+{
+	size_t tmp;
+	int32_t mul = 1;
+	size_t diff;
+
+	if (first < second) {
+		tmp = first;
+		first = second;
+		second = tmp;
+		mul = -1;
+	}
+
+	diff = first - second;
+	if (diff > limit) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+
+	return (int32_t)(diff * mul);
+}
+
 static void prv_apply_back_patches(subtilis_arm_encode_ud_t *ud,
 				   subtilis_error_t *err)
 {
@@ -1406,21 +1429,22 @@ static void prv_apply_back_patches(subtilis_arm_encode_ud_t *ud,
 			return;
 		switch (bp->type) {
 		case SUBTILIS_ARM_ENCODE_BP_TYPE_BRANCH:
-			dist =
-			    ((ud->label_offsets[bp->label] - bp->code_index) /
-			     4) -
-			    2;
-			if ((dist < -(1 << 23)) || (dist > ((1 << 23) - 1))) {
-				subtilis_error_set_assertion_failed(err);
+			dist = prv_compute_dist(ud->label_offsets[bp->label],
+						bp->code_index, (1 << 23), err);
+			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-			}
+			dist = (dist / 4) - 2;
 			dist &= 0xffffff;
 			*ptr |= dist;
 			break;
 		case SUBTILIS_ARM_ENCODE_BP_TYPE_ADR:
 			dist =
-			    (ud->label_offsets[bp->label] - bp->code_index) - 8;
+			    prv_compute_dist(ud->label_offsets[bp->label],
+					     bp->code_index, 0xffffffff, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
 
+			dist -= 8;
 			if (dist < 0) {
 				/*
 				 * Here we switch the ADD for a SUB.
