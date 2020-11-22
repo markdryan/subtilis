@@ -34,4 +34,6 @@ void *subtilis_riscos_arm2_asm_parse(subtilis_lexer_t *l, subtilis_token_t *t,
 				     const subtilis_settings_t *set,
 				     subtilis_error_t *err);
 
+#define SUBTILIS_RISCOS_ARM2_PROGRAM_START 0x8000
+
 #endif

@@ -46,12 +46,14 @@ struct subtilis_arm_vm_t_ {
 	bool overflow_flag;
 	bool quit;
 	bool reverse_fpa_consts;
+	int32_t start_address;
 };
 
 typedef struct subtilis_arm_vm_t_ subtilis_arm_vm_t;
 
 subtilis_arm_vm_t *subtilis_arm_vm_new(uint8_t *code, size_t code_size,
-				       size_t mem_size, subtilis_error_t *err);
+				       size_t mem_size, int32_t start_address,
+				       subtilis_error_t *err);
 void subtilis_arm_vm_delete(subtilis_arm_vm_t *vm);
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			 subtilis_error_t *err);

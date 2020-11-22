@@ -31,7 +31,7 @@ subtilis_riscos_generate(
 	const subtilis_ir_rule_raw_t *rules_raw,
 	size_t rule_count, size_t globals,
 	subtilis_riscos_fp_preamble_t fp_premable,
-	subtilis_error_t *err);
+	int32_t start_address, subtilis_error_t *err);
 /* clang-format on */
 
 #define SUBTILIS_RISCOS_PRINT_BUFFER 0

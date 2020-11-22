@@ -24,7 +24,8 @@
 #include "arm_vm.h"
 
 subtilis_arm_vm_t *subtilis_arm_vm_new(uint8_t *code, size_t code_size,
-				       size_t mem_size, subtilis_error_t *err)
+				       size_t mem_size, int32_t start_address,
+				       subtilis_error_t *err)
 {
 	double dummy_float = 1.0;
 	uint32_t *lower_word = (uint32_t *)((void *)&dummy_float);
@@ -46,6 +47,7 @@ subtilis_arm_vm_t *subtilis_arm_vm_new(uint8_t *code, size_t code_size,
 	arm_vm->mem_size = mem_size;
 
 	arm_vm->reverse_fpa_consts = (*lower_word) == 0;
+	arm_vm->start_address = start_address;
 
 	return arm_vm;
 
@@ -66,7 +68,7 @@ void subtilis_arm_vm_delete(subtilis_arm_vm_t *vm)
 
 static size_t prv_calc_pc(subtilis_arm_vm_t *vm)
 {
-	return (size_t)(((vm->regs[15] - 0x8000) - 8) / 4);
+	return (size_t)(((vm->regs[15] - vm->start_address) - 8) / 4);
 }
 
 static bool prv_match_ccode(subtilis_arm_vm_t *arm_vm,
@@ -115,7 +117,7 @@ static bool prv_match_ccode(subtilis_arm_vm_t *arm_vm,
 static uint8_t *prv_get_vm_address(subtilis_arm_vm_t *arm_vm, int32_t addr,
 				   size_t buf_size, subtilis_error_t *err)
 {
-	addr -= 0x8000;
+	addr -= arm_vm->start_address;
 	if (addr < 0 || addr + buf_size > arm_vm->mem_size) {
 		subtilis_error_set_assertion_failed(err);
 		return NULL;
@@ -673,7 +675,7 @@ static size_t prv_compute_stran_addr(subtilis_arm_vm_t *arm_vm,
 		arm_vm->regs[op->base] += offset;
 	}
 
-	addr -= 0x8000;
+	addr -= arm_vm->start_address;
 	if (addr + 4 > arm_vm->mem_size) {
 		subtilis_error_set_assertion_failed(err);
 		return 0;
@@ -720,7 +722,7 @@ static size_t prv_compute_fpa_stran_addr(subtilis_arm_vm_t *arm_vm,
 			arm_vm->regs[op->base] += offset;
 	}
 
-	addr -= 0x8000;
+	addr -= arm_vm->start_address;
 
 	if (addr + op->size > arm_vm->mem_size) {
 		subtilis_error_set_assertion_failed(err);
@@ -921,7 +923,7 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	case 0x10:
 		/* OS_GetEnv */
 		arm_vm->regs[0] = 0;
-		arm_vm->regs[1] = 0x8000 + arm_vm->mem_size - 4;
+		arm_vm->regs[1] = arm_vm->start_address + arm_vm->mem_size - 4;
 		arm_vm->regs[2] = 0;
 		break;
 	case 0xd4 + 0x20000:
@@ -936,7 +938,8 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			*((uint32_t *)&arm_vm->memory[arm_vm->mem_size - 4]) =
 			    SUBTILIS_ERROR_CODE_BUFFER_OVERFLOW;
 			arm_vm->overflow_flag = true;
-			arm_vm->regs[0] = arm_vm->mem_size - 4 + 0x8000;
+			arm_vm->regs[0] =
+			    arm_vm->mem_size - 4 + arm_vm->start_address;
 			break;
 		}
 		addr =
@@ -1005,7 +1008,7 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	case 0x7:
 		/* OS_Word  */
 		if (arm_vm->regs[0] == 1) {
-			ptr = arm_vm->regs[1] - 0x8000;
+			ptr = arm_vm->regs[1] - arm_vm->start_address;
 			*((int32_t *)&arm_vm->memory[ptr]) =
 			    subtilis_get_i32_time();
 		}
@@ -1064,7 +1067,7 @@ static void prv_process_stm(subtilis_arm_vm_t *arm_vm,
 		return;
 	}
 
-	addr = arm_vm->regs[op->op0] - 0x8000;
+	addr = arm_vm->regs[op->op0] - arm_vm->start_address;
 	switch (op->type) {
 	case SUBTILIS_ARM_MTRAN_FA:
 	case SUBTILIS_ARM_MTRAN_IB:
@@ -1103,7 +1106,7 @@ static void prv_process_stm(subtilis_arm_vm_t *arm_vm,
 	}
 
 	if (op->write_back)
-		arm_vm->regs[op->op0] = addr + 0x8000;
+		arm_vm->regs[op->op0] = addr + arm_vm->start_address;
 
 	arm_vm->regs[15] += 4;
 }
@@ -1139,7 +1142,7 @@ static void prv_process_ldm(subtilis_arm_vm_t *arm_vm,
 		return;
 	}
 
-	addr = arm_vm->regs[op->op0] - 0x8000;
+	addr = arm_vm->regs[op->op0] - arm_vm->start_address;
 
 	switch (op->type) {
 	case SUBTILIS_ARM_MTRAN_FA:
@@ -1179,7 +1182,7 @@ static void prv_process_ldm(subtilis_arm_vm_t *arm_vm,
 	}
 
 	if (op->write_back)
-		arm_vm->regs[op->op0] = addr + 0x8000;
+		arm_vm->regs[op->op0] = addr + arm_vm->start_address;
 
 	// TODO: Is this correct? We dont do this for other loads
 
@@ -1785,7 +1788,7 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	arm_vm->zero_flag = false;
 	arm_vm->carry_flag = false;
 	arm_vm->overflow_flag = false;
-	arm_vm->regs[15] = 0x8000 + 8;
+	arm_vm->regs[15] = arm_vm->start_address + 8;
 
 	pc = prv_calc_pc(arm_vm);
 	while (!arm_vm->quit && pc < arm_vm->code_size) {

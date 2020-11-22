@@ -2690,7 +2690,8 @@ static void prv_context_free(subtilis_arm_ass_context_t *c)
 subtilis_arm_section_t *subtilis_arm_asm_parse(
 	subtilis_lexer_t *l, subtilis_token_t *t, subtilis_arm_op_pool_t *pool,
 	subtilis_type_section_t *stype, const subtilis_settings_t *set,
-	subtilis_backend_sys_trans sys_trans, subtilis_error_t *err)
+	subtilis_backend_sys_trans sys_trans, int32_t start_address,
+	subtilis_error_t *err)
 /* clang-format on */
 {
 	subtilis_arm_ass_context_t context;
@@ -2704,7 +2705,8 @@ subtilis_arm_section_t *subtilis_arm_asm_parse(
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	arm_s = subtilis_arm_section_new(pool, stype, 0, 0, 0, 0, set, err);
+	arm_s = subtilis_arm_section_new(pool, stype, 0, 0, 0, 0, set,
+					 start_address, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 

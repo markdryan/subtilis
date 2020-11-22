@@ -34,7 +34,8 @@ static void prv_set_prog_size(uint8_t *code, size_t bytes_written,
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-	((uint32_t *)code)[1] = 0x8000 + (int32_t)bytes_written;
+	((uint32_t *)code)[1] =
+	    SUBTILIS_RISCOS_ARM2_PROGRAM_START + (int32_t)bytes_written;
 }
 
 int main(int argc, char *argv[])
@@ -94,7 +95,8 @@ int main(int argc, char *argv[])
 
 	arm_p = subtilis_riscos_generate(
 	    pool, p->prog, riscos_arm2_rules, riscos_arm2_rules_count,
-	    p->st->max_allocated, subtilis_fpa_gen_preamble, &err);
+	    p->st->max_allocated, subtilis_fpa_gen_preamble,
+	    SUBTILIS_RISCOS_ARM2_PROGRAM_START, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

@@ -55,8 +55,8 @@ static void prv_deref(subtilis_ir_section_t *s, subtilis_arm_section_t *arm_s,
  *R13-8192  |------------------| -------------------------------------------
  *          |   Heap           | Heap, used for strings, arrays and structures
  * codeend  |------------------| -------------------------------------------
- *          |   Code           | Program code ( Heap start at 0x8004)
- * 0x8000   |------------------| -------------------------------------------
+ *          |   Code           | Program code ( Heap start at code_start + 4)
+ * codestart|------------------| -------------------------------------------
  */
 
 static void prv_add_escape_handler(subtilis_arm_section_t *arm_s,
@@ -209,7 +209,7 @@ static void prv_load_heap_pointer(subtilis_arm_section_t *arm_s,
 				  subtilis_error_t *err)
 {
 	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, reg,
-				 0x8000, err);
+				 arm_s->start_address, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -510,7 +510,7 @@ subtilis_riscos_generate(
 	const subtilis_ir_rule_raw_t *rules_raw,
 	size_t rule_count, size_t globals,
 	subtilis_riscos_fp_preamble_t fp_premable,
-	subtilis_error_t *err)
+	int32_t start_address, subtilis_error_t *err)
 /* clang-format on */
 {
 	subtilis_ir_rule_t *parsed;
@@ -531,7 +531,8 @@ subtilis_riscos_generate(
 
 	arm_p =
 	    subtilis_arm_prog_new(p->num_sections + 2, op_pool, p->string_pool,
-				  p->constant_pool, p->settings, err);
+				  p->constant_pool, p->settings, start_address,
+				  err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

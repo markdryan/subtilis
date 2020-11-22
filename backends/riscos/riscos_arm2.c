@@ -325,5 +325,6 @@ void *subtilis_riscos_arm2_asm_parse(subtilis_lexer_t *l, subtilis_token_t *t,
 	subtilis_arm_op_pool_t *pool = backend_data;
 
 	return subtilis_arm_asm_parse(l, t, pool, stype, set,
-				      subtilis_riscos_arm2_sys_trans, err);
+				      subtilis_riscos_arm2_sys_trans,
+				      SUBTILIS_RISCOS_ARM2_PROGRAM_START, err);
 }

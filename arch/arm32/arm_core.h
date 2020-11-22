@@ -489,6 +489,7 @@ struct subtilis_arm_section_t_ {
 	subtilis_type_section_t *stype;
 	const subtilis_settings_t *settings;
 	size_t no_cleanup_label;
+	int32_t start_address;
 };
 
 typedef struct subtilis_arm_section_t_ subtilis_arm_section_t;
@@ -502,6 +503,7 @@ struct subtilis_arm_prog_t_ {
 	subtilis_arm_op_pool_t *op_pool;
 	bool reverse_fpa_consts;
 	const subtilis_settings_t *settings;
+	int32_t start_address;
 };
 
 typedef struct subtilis_arm_prog_t_ subtilis_arm_prog_t;
@@ -523,6 +525,7 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 						 size_t label_counter,
 						 size_t locals,
 						 const subtilis_settings_t *set,
+						 int32_t start_address,
 						 subtilis_error_t *err);
 /* clang-format on */
 
@@ -533,6 +536,7 @@ subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 					   subtilis_string_pool_t *string_pool,
 					   subtilis_constant_pool_t *cnst_pool,
 					   const subtilis_settings_t *settings,
+					   int32_t start_address,
 					   subtilis_error_t *err);
 /* clang-format off */
 subtilis_arm_section_t *
