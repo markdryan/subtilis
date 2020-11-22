@@ -4,7 +4,7 @@ COMPONENT = riscos
 
 OBJS = riscos_arm riscos_arm2 riscos_swi
 
-CFLAGS ?= -Wxla
+CFLAGS ?= -Wxla -Otime
 
 INSTDIR ?= <Obey$Dir>
 

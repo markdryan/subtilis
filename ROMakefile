@@ -5,7 +5,7 @@ COMPONENT = basicc
 OBJS = compiler
 LIBS = backends.riscos.o.riscos arch.arm32.o.arm32 frontend.o.frontend common.o.common
 
-CFLAGS ?= -Wxla
+CFLAGS ?= -Wxla -Otime
 
 INSTDIR ?= <Obey$Dir>
 
