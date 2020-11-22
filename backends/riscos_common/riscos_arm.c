@@ -27,7 +27,6 @@
 #include "../../arch/arm32/assembler.h"
 #include "../../common/error_codes.h"
 #include "riscos_arm.h"
-#include "riscos_swi.h"
 
 static void prv_alloc(subtilis_ir_section_t *s, subtilis_arm_section_t *arm_s,
 		      subtilis_error_t *err);
@@ -2136,34 +2135,6 @@ void subtilis_riscos_arm_block_adjust(subtilis_ir_section_t *s, size_t start,
 				   -4, false, err);
 }
 
-static int prv_sys_string_lookup(const void *av, const void *bv)
-{
-	const char *a = (const char *)av;
-	size_t *b = (size_t *)bv;
-
-	return strcmp(a, subtilis_riscos_swi_list[*b].name);
-}
-
-size_t subtilis_riscos_sys_trans(const char *call_name)
-{
-	size_t *found;
-	size_t error_bit = 0;
-
-	if (call_name[0] == 'X') {
-		call_name++;
-		error_bit = 0x20000;
-	}
-
-	found = bsearch(call_name, &subtilis_riscos_swi_index[0],
-			subtilis_riscos_known_swis, sizeof(*found),
-			prv_sys_string_lookup);
-
-	if (!found)
-		return SIZE_MAX;
-
-	return subtilis_riscos_swi_list[*found].num | error_bit;
-}
-
 static int prv_sys_num_lookup(const void *av, const void *bv)
 {
 	size_t *a = (size_t *)av;
@@ -2177,7 +2148,9 @@ static int prv_sys_num_lookup(const void *av, const void *bv)
 }
 
 bool subtilis_riscos_sys_check(size_t call_id, uint32_t *in_regs,
-			       uint32_t *out_regs, bool *handle_errors)
+			       uint32_t *out_regs, bool *handle_errors,
+			       const subtilis_arm_swi_t *swi_list,
+			       size_t swi_count)
 {
 	subtilis_arm_swi_t *found;
 
@@ -2193,8 +2166,7 @@ bool subtilis_riscos_sys_check(size_t call_id, uint32_t *in_regs,
 		return true;
 	}
 
-	found = bsearch(&call_id, &subtilis_riscos_swi_list[0],
-			subtilis_riscos_known_swis, sizeof(*found),
+	found = bsearch(&call_id, &swi_list[0], swi_count, sizeof(*found),
 			prv_sys_num_lookup);
 
 	if (!found)
@@ -2206,15 +2178,17 @@ bool subtilis_riscos_sys_check(size_t call_id, uint32_t *in_regs,
 	return true;
 }
 
-static uint32_t prv_check_out_regs(size_t call_id, subtilis_error_t *err)
+static uint32_t prv_check_out_regs(size_t call_id,
+				   const subtilis_arm_swi_t *swi_list,
+				   size_t swi_count,
+				   subtilis_error_t *err)
 {
 	subtilis_arm_swi_t *found;
 
 	if (call_id >= 0x100 && call_id <= 0x1ff)
 		return 0;
 
-	found = bsearch(&call_id, &subtilis_riscos_swi_list[0],
-			subtilis_riscos_known_swis, sizeof(*found),
+	found = bsearch(&call_id, &swi_list[0], swi_count, sizeof(*found),
 			prv_sys_num_lookup);
 
 	if (!found) {
@@ -2226,7 +2200,10 @@ static uint32_t prv_check_out_regs(size_t call_id, subtilis_error_t *err)
 }
 
 void subtilis_riscos_arm_syscall(subtilis_ir_section_t *s, size_t start,
-				 void *user_data, subtilis_error_t *err)
+				 void *user_data,
+				 const subtilis_arm_swi_t *swi_list,
+				 size_t swi_count,
+				 subtilis_error_t *err)
 {
 	uint32_t out_regs;
 	size_t in_reg;
@@ -2241,7 +2218,7 @@ void subtilis_riscos_arm_syscall(subtilis_ir_section_t *s, size_t start,
 	size_t call_id = sys_call->call_id & ~(0x20000);
 	size_t flags_reg;
 
-	out_regs = prv_check_out_regs(call_id, err);
+	out_regs = prv_check_out_regs(call_id, swi_list, swi_count, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -2329,16 +2306,4 @@ void subtilis_riscos_asm_free(void *asm_code)
 	subtilis_arm_section_t *arm_s = asm_code;
 
 	subtilis_arm_section_delete(arm_s);
-}
-
-void *subtilis_riscos_asm_parse(subtilis_lexer_t *l, subtilis_token_t *t,
-				void *backend_data,
-				subtilis_type_section_t *stype,
-				const subtilis_settings_t *set,
-				subtilis_error_t *err)
-{
-	subtilis_arm_op_pool_t *pool = backend_data;
-
-	return subtilis_arm_asm_parse(l, t, pool, stype, set,
-				      subtilis_riscos_sys_trans, err);
 }

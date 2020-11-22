@@ -18,6 +18,7 @@
 #define __SUBTILIS_RISCOS_ARM_H
 
 #include "../../arch/arm32/arm_core.h"
+#include "../../arch/arm32/arm_swi.h"
 #include "../../common/backend_caps.h"
 
 typedef void (*subtilis_riscos_fp_preamble_t)(subtilis_arm_section_t *arm_s,
@@ -115,20 +116,19 @@ void subtilis_riscos_arm_block_free_space(subtilis_ir_section_t *s,
 void subtilis_riscos_arm_block_adjust(subtilis_ir_section_t *s, size_t start,
 				      void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_syscall(subtilis_ir_section_t *s, size_t start,
-				 void *user_data, subtilis_error_t *err);
+				 void *user_data,
+				 const subtilis_arm_swi_t *swi_list,
+				 size_t swi_count,
+				 subtilis_error_t *err);
 
 #define SUBTILIS_RISCOS_ARM_CAPS                                               \
 	(SUBTILIS_BACKEND_HAVE_I32_TO_DEC | SUBTILIS_BACKEND_HAVE_I32_TO_HEX | \
 	 SUBTILIS_BACKEND_REVERSE_DOUBLES | SUBTILIS_BACKEND_HAVE_TINT)
 
-size_t subtilis_riscos_sys_trans(const char *call_name);
 bool subtilis_riscos_sys_check(size_t call_id, uint32_t *in_regs,
-			       uint32_t *out_regs, bool *handle_errors);
+			       uint32_t *out_regs, bool *handle_errors,
+			       const subtilis_arm_swi_t *swi_list,
+			       size_t swi_count);
 void subtilis_riscos_asm_free(void *asm_code);
-void *subtilis_riscos_asm_parse(subtilis_lexer_t *l, subtilis_token_t *t,
-				void *backend_data,
-				subtilis_type_section_t *stype,
-				const subtilis_settings_t *set,
-				subtilis_error_t *err);
 
 #endif

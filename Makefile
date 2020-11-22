@@ -1,4 +1,4 @@
-VPATH = common frontend test_cases arch/arm32 backends/riscos
+VPATH = common frontend test_cases arch/arm32 backends/riscos backends/riscos_common
 
 COMMON =\
 	stream.c \
@@ -49,11 +49,15 @@ COMMON =\
 	reference_type.c \
 	local_buffer_type.c
 
+RISCOS_COMMON =\
+	riscos_arm.c
+
+RISCOS_ARM2 =\
+	riscos_swi.c \
+	riscos_arm2.c
+
 ARM =\
 	arm_core.c \
-	riscos_swi.c \
-	riscos_arm.c \
-	riscos_arm2.c \
 	arm_gen.c \
 	arm_walker.c \
 	arm_reg_alloc.c \
@@ -113,7 +117,7 @@ TESTS =\
 CFLAGS ?= -O3
 CFLAGS += -Wall -MMD
 
-basicc: $(COMPILER:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o)
+subtro: $(COMPILER:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(RISCOS_ARM2:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 inter: $(INTER:%.c=%.o) $(COMMON:%.c=%.o)
@@ -122,16 +126,18 @@ inter: $(INTER:%.c=%.o) $(COMMON:%.c=%.o)
 runarm: $(RUNARM:%.c=%.o) $(COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
-unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o)
+unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(RISCOS_ARM2:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 clean:
-	rm basicc *.o *.d unit_tests
+	rm subtro *.o *.d unit_tests
 
 check: unit_tests
 	./unit_tests
 
 -include $(ARM:%.c=%.d)
+-include $(RISCOS_COMMON:%.c=%.d)
+-include $(RISCOS_ARM2:%.c=%.d)
 -include $(COMPILER:%.c=%.d)
 -include $(COMMON:%.c=%.d)
 -include $(INTER:%.c=%.d)

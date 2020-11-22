@@ -21,4 +21,17 @@
 
 extern const subtilis_ir_rule_raw_t riscos_arm2_rules[];
 extern const size_t riscos_arm2_rules_count;
+
+size_t subtilis_riscos_arm2_sys_trans(const char *call_name);
+bool subtilis_riscos_arm2_sys_check(size_t call_id, uint32_t *in_regs,
+				    uint32_t *out_regs, bool *handle_errors);
+void subtilis_riscos_arm2_syscall(subtilis_ir_section_t *s, size_t start,
+				  void *user_data, subtilis_error_t *err);
+
+void *subtilis_riscos_arm2_asm_parse(subtilis_lexer_t *l, subtilis_token_t *t,
+				     void *backend_data,
+				     subtilis_type_section_t *stype,
+				     const subtilis_settings_t *set,
+				     subtilis_error_t *err);
+
 #endif

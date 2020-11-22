@@ -1,8 +1,8 @@
 # Makefile for basicc
 
-COMPONENT = riscos_arm2
+COMPONENT = riscos_common
 
-OBJS = riscos_arm2 riscos_swi
+OBJS = riscos_arm
 
 CFLAGS ?= -Wxla -Otime
 

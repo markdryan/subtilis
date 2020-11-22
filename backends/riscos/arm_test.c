@@ -25,8 +25,8 @@
 #include "../../frontend/parser_test.h"
 #include "../../test_cases/bad_test_cases.h"
 #include "../../test_cases/test_cases.h"
+#include "../riscos_common/riscos_arm.h"
 #include "arm_test.h"
-#include "riscos_arm.h"
 #include "riscos_arm2.h"
 
 /* clang-format off */
@@ -1040,10 +1040,10 @@ static int prv_test_examples(void)
 	int ret = 0;
 
 	backend.caps = SUBTILIS_RISCOS_ARM_CAPS;
-	backend.sys_trans = subtilis_riscos_sys_trans;
-	backend.sys_check = subtilis_riscos_sys_check;
+	backend.sys_trans = subtilis_riscos_arm2_sys_trans;
+	backend.sys_check = subtilis_riscos_arm2_sys_check;
 	backend.backend_data = NULL;
-	backend.asm_parse = subtilis_riscos_asm_parse;
+	backend.asm_parse = subtilis_riscos_arm2_asm_parse;
 	backend.asm_free = subtilis_riscos_asm_free;
 
 	for (i = 0; i < SUBTILIS_TEST_CASE_ID_MAX; i++) {
@@ -1068,10 +1068,10 @@ static int prv_test_riscos_arm_examples(void)
 	int ret = 0;
 
 	backend.caps = SUBTILIS_RISCOS_ARM_CAPS;
-	backend.sys_trans = subtilis_riscos_sys_trans;
-	backend.sys_check = subtilis_riscos_sys_check;
+	backend.sys_trans = subtilis_riscos_arm2_sys_trans;
+	backend.sys_check = subtilis_riscos_arm2_sys_check;
 	backend.backend_data = NULL;
-	backend.asm_parse = subtilis_riscos_asm_parse;
+	backend.asm_parse = subtilis_riscos_arm2_asm_parse;
 	backend.asm_free = subtilis_riscos_asm_free;
 
 	for (i = 0;
@@ -1098,10 +1098,10 @@ static int prv_test_riscos_fpa_examples(void)
 	int ret = 0;
 
 	backend.caps = SUBTILIS_RISCOS_ARM_CAPS;
-	backend.sys_trans = subtilis_riscos_sys_trans;
-	backend.sys_check = subtilis_riscos_sys_check;
+	backend.sys_trans = subtilis_riscos_arm2_sys_trans;
+	backend.sys_check = subtilis_riscos_arm2_sys_check;
 	backend.backend_data = NULL;
-	backend.asm_parse = subtilis_riscos_asm_parse;
+	backend.asm_parse = subtilis_riscos_arm2_asm_parse;
 	backend.asm_free = subtilis_riscos_asm_free;
 
 	for (i = 0;
@@ -1127,10 +1127,10 @@ static int prv_test_bad_cases(void)
 	int retval = 0;
 
 	backend.caps = SUBTILIS_RISCOS_ARM_CAPS;
-	backend.sys_trans = subtilis_riscos_sys_trans;
-	backend.sys_check = subtilis_riscos_sys_check;
+	backend.sys_trans = subtilis_riscos_arm2_sys_trans;
+	backend.sys_check = subtilis_riscos_arm2_sys_check;
 	backend.backend_data = NULL;
-	backend.asm_parse = subtilis_riscos_asm_parse;
+	backend.asm_parse = subtilis_riscos_arm2_asm_parse;
 	backend.asm_free = subtilis_riscos_asm_free;
 
 	for (i = 0; i < sizeof(riscos_arm_bad_test_cases) /

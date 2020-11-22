@@ -20,8 +20,8 @@
 #include "arch/arm32/arm_encode.h"
 #include "arch/arm32/arm_keywords.h"
 #include "arch/arm32/fpa_gen.h"
-#include "backends/riscos/riscos_arm.h"
 #include "backends/riscos/riscos_arm2.h"
+#include "backends/riscos_common/riscos_arm.h"
 #include "common/error.h"
 #include "common/lexer.h"
 #include "frontend/basic_keywords.h"
@@ -76,10 +76,10 @@ int main(int argc, char *argv[])
 		goto cleanup;
 
 	backend.caps = SUBTILIS_RISCOS_ARM_CAPS;
-	backend.sys_trans = subtilis_riscos_sys_trans;
-	backend.sys_check = subtilis_riscos_sys_check;
+	backend.sys_trans = subtilis_riscos_arm2_sys_trans;
+	backend.sys_check = subtilis_riscos_arm2_sys_check;
 	backend.backend_data = pool;
-	backend.asm_parse = subtilis_riscos_asm_parse;
+	backend.asm_parse = subtilis_riscos_arm2_asm_parse;
 	backend.asm_free = subtilis_riscos_asm_free;
 
 	p = subtilis_parser_new(l, &backend, &settings, &err);
