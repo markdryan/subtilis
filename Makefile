@@ -78,8 +78,8 @@ ARM =\
 	assembler.c \
 	arm_expression.c
 
-COMPILER =\
-	compiler.c
+SUBTRO =\
+	subtro.c
 
 INTER =\
 	inter.c \
@@ -118,7 +118,7 @@ TESTS =\
 CFLAGS ?= -O3
 CFLAGS += -Wall -MMD
 
-subtro: $(COMPILER:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(RISCOS_ARM2:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
+subtro: $(SUBTRO:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(RISCOS_ARM2:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 inter: $(INTER:%.c=%.o) $(COMMON:%.c=%.o)

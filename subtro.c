@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 	subtilis_arm_op_pool_t *pool = NULL;
 
 	if (argc != 2) {
-		fprintf(stderr, "Usage: basicc file\n");
+		fprintf(stderr, "Usage: subtro file\n");
 		return 1;
 	}
 

@@ -9,12 +9,12 @@ git clone git@github.com:markdryan/subtilis.git
 make -j
 ```
 
-You will end up with a binary called basicc (this name will change at some point)
+You will end up with a binary called subtro (this name will change at some point)
 
-The basicc program accepts no options (yet) and only accepts one parameter, a path to a Subtilis program.  To build your first Subtilis program type
+The subtro program accepts no options (yet) and only accepts one parameter, a path to a Subtilis program.  To build your first Subtilis program type
 
 ```
-./basicc examples/circle_shrink
+./subtro examples/circle_shrink
 ```
 
 This will create a file called RunImage in your local directory.  RunImage is a static, absolute binary.  Copy this binary to an Archimedes, set the file type to Absolute and then click on it to run it.  There are no shared libraries to worry about.
