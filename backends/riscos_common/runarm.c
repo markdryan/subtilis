@@ -20,7 +20,6 @@
 #include "../../arch/arm32/arm_disass.h"
 #include "../../arch/arm32/arm_vm.h"
 #include "../../common/buffer.h"
-#include "riscos_arm2.h"
 
 const size_t block_size = 16 * 1024;
 
@@ -49,7 +48,7 @@ void prv_read_code(FILE *f, subtilis_buffer_t *b, subtilis_error_t *err)
 	b->buffer->end = total_read;
 }
 
-int main(int argc, char *argv[])
+int runarm_main(int argc, char *argv[], uint32_t start_address)
 {
 	subtilis_error_t err;
 	subtilis_buffer_t b;
@@ -89,7 +88,7 @@ int main(int argc, char *argv[])
 	subtilis_arm_disass_dump(code, code_len);
 
 	vm = subtilis_arm_vm_new(code, code_len, 512 * 1024,
-				 SUBTILIS_RISCOS_ARM2_PROGRAM_START, &err);
+				 start_address, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

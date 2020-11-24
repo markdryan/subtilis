@@ -86,7 +86,8 @@ INTER =\
 	vm.c \
 	vm_heap.c
 
-RUNARM =\
+RUNRO =\
+	runro.c \
 	runarm.c \
 	arm_vm.c \
 	arm_disass.c \
@@ -123,7 +124,7 @@ subtro: $(COMPILER:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(RISCOS_ARM2:%.c=%
 inter: $(INTER:%.c=%.o) $(COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
-runarm: $(RUNARM:%.c=%.o) $(COMMON:%.c=%.o)
+runro: $(RUNRO:%.c=%.o) $(COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(RISCOS_ARM2:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
