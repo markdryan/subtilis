@@ -211,7 +211,6 @@ void subtilis_vfp_gen_if_gte(subtilis_ir_section_t *s, size_t start,
 	subtilis_error_set_assertion_failed(err);
 }
 
-
 void subtilis_vfp_gen_gtir(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err)
 {
@@ -359,5 +358,4 @@ void subtilis_vfp_gen_exp(subtilis_ir_section_t *s, size_t start,
 void subtilis_vfp_gen_preamble(subtilis_arm_section_t *arm_s,
 			       subtilis_error_t *err)
 {
-
 }

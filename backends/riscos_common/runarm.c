@@ -87,8 +87,8 @@ int runarm_main(int argc, char *argv[], uint32_t start_address)
 
 	subtilis_arm_disass_dump(code, code_len);
 
-	vm = subtilis_arm_vm_new(code, code_len, 512 * 1024,
-				 start_address, &err);
+	vm = subtilis_arm_vm_new(code, code_len, 512 * 1024, start_address,
+				 &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

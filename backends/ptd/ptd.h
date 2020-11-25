@@ -29,8 +29,7 @@ void subtilis_ptd_syscall(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 
 void *subtilis_ptd_asm_parse(subtilis_lexer_t *l, subtilis_token_t *t,
-			     void *backend_data,
-			     subtilis_type_section_t *stype,
+			     void *backend_data, subtilis_type_section_t *stype,
 			     const subtilis_settings_t *set,
 			     subtilis_error_t *err);
 

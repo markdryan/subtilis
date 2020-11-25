@@ -529,10 +529,9 @@ subtilis_riscos_generate(
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_p =
-	    subtilis_arm_prog_new(p->num_sections + 2, op_pool, p->string_pool,
-				  p->constant_pool, p->settings, start_address,
-				  err);
+	arm_p = subtilis_arm_prog_new(p->num_sections + 2, op_pool,
+				      p->string_pool, p->constant_pool,
+				      p->settings, start_address, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1997,8 +1996,7 @@ bool subtilis_riscos_sys_check(size_t call_id, uint32_t *in_regs,
 
 static uint32_t prv_check_out_regs(size_t call_id,
 				   const subtilis_arm_swi_t *swi_list,
-				   size_t swi_count,
-				   subtilis_error_t *err)
+				   size_t swi_count, subtilis_error_t *err)
 {
 	subtilis_arm_swi_t *found;
 
@@ -2019,8 +2017,7 @@ static uint32_t prv_check_out_regs(size_t call_id,
 void subtilis_riscos_arm_syscall(subtilis_ir_section_t *s, size_t start,
 				 void *user_data,
 				 const subtilis_arm_swi_t *swi_list,
-				 size_t swi_count,
-				 subtilis_error_t *err)
+				 size_t swi_count, subtilis_error_t *err)
 {
 	uint32_t out_regs;
 	size_t in_reg;

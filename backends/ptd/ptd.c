@@ -25,7 +25,6 @@
 #include "ptd.h"
 #include "ptd_swi.h"
 
-
 /* clang-format off */
 
 const subtilis_ir_rule_raw_t ptd_rules[] = {
@@ -270,7 +269,6 @@ const size_t ptd_rules_count = sizeof(ptd_rules) /
 	sizeof(subtilis_ir_rule_raw_t);
 /* clang-format on */
 
-
 static int prv_sys_string_lookup(const void *av, const void *bv)
 {
 	const char *a = (const char *)av;
@@ -302,22 +300,20 @@ size_t subtilis_ptd_sys_trans(const char *call_name)
 bool subtilis_ptd_sys_check(size_t call_id, uint32_t *in_regs,
 			    uint32_t *out_regs, bool *handle_errors)
 {
-	return subtilis_riscos_sys_check(
-	    call_id, in_regs, out_regs, handle_errors, subtilis_ptd_swi_list,
-	    subtilis_ptd_known_swis);
+	return subtilis_riscos_sys_check(call_id, in_regs, out_regs,
+					 handle_errors, subtilis_ptd_swi_list,
+					 subtilis_ptd_known_swis);
 }
 
 void subtilis_ptd_syscall(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err)
 {
-	subtilis_riscos_arm_syscall(s, start, user_data,
-				    subtilis_ptd_swi_list,
+	subtilis_riscos_arm_syscall(s, start, user_data, subtilis_ptd_swi_list,
 				    subtilis_ptd_known_swis, err);
 }
 
 void *subtilis_ptd_asm_parse(subtilis_lexer_t *l, subtilis_token_t *t,
-			     void *backend_data,
-			     subtilis_type_section_t *stype,
+			     void *backend_data, subtilis_type_section_t *stype,
 			     const subtilis_settings_t *set,
 			     subtilis_error_t *err)
 {
