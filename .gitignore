@@ -1,5 +1,7 @@
 *~
 subtro
+subtptd
+subtptd,ff8
 subtro,ff8
 unit_tests,ff8
 *.o
@@ -11,3 +13,4 @@ unit_tests
 *,e1f
 inter
 runro
+runptd

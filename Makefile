@@ -1,4 +1,4 @@
-VPATH = common frontend test_cases arch/arm32 backends/riscos backends/riscos_common
+VPATH = common frontend test_cases arch/arm32 backends/riscos backends/ptd backends/riscos_common
 
 COMMON =\
 	stream.c \
@@ -56,6 +56,10 @@ RISCOS_ARM2 =\
 	riscos_swi.c \
 	riscos_arm2.c
 
+PTD =\
+	ptd_swi.c \
+	ptd.c
+
 ARM =\
 	arm_core.c \
 	arm_gen.c \
@@ -68,7 +72,6 @@ ARM =\
 	arm2_div.c \
 	arm_dump.c \
 	fpa.c \
-	fpa_gen.c \
 	bitset.c \
 	arm_sub_section.c \
 	arm_peephole.c \
@@ -78,8 +81,17 @@ ARM =\
 	assembler.c \
 	arm_expression.c
 
+FPA =\
+	fpa_gen.c
+
+VFP =\
+	vfp_gen.c \
+
 SUBTRO =\
 	subtro.c
+
+SUBTPTD =\
+	subtptd.c
 
 INTER =\
 	inter.c \
@@ -87,7 +99,12 @@ INTER =\
 	vm_heap.c
 
 RUNRO =\
-	runro.c \
+	runro.c
+
+RUNPTD =\
+	runptd.c
+
+RUNARM =\
 	runarm.c \
 	arm_vm.c \
 	arm_disass.c \
@@ -118,21 +135,32 @@ TESTS =\
 CFLAGS ?= -O3
 CFLAGS += -Wall -MMD
 
-subtro: $(SUBTRO:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(RISCOS_ARM2:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
+.PHONY: all
+all: subtro subtptd
+
+subtro: $(SUBTRO:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(FPA:%.c=%.o) $(RISCOS_ARM2:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
+	$(CC) $(CFLAGS) -o $@ $^ -lm
+
+subtptd: $(SUBTPTD:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(VFP:%.c=%.o) $(PTD:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 inter: $(INTER:%.c=%.o) $(COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
-runro: $(RUNRO:%.c=%.o) $(COMMON:%.c=%.o)
+runro: $(RUNRO:%.c=%.o) $(RUNARM:%.c=%.o) $(COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
-unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(RISCOS_ARM2:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
+runptd: $(RUNPTD:%.c=%.o) $(RUNARM:%.c=%.o) $(COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
+unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(FPA:%.c=%.o) $(RISCOS_ARM2:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
+	$(CC) $(CFLAGS) -o $@ $^ -lm
+
+.PHONY: clean
 clean:
-	rm subtro *.o *.d unit_tests
+	rm subtro subtptd *.o *.d unit_tests
 
+.PHONY: check
 check: unit_tests
 	./unit_tests
 

@@ -34,6 +34,17 @@ void *subtilis_riscos_arm2_asm_parse(subtilis_lexer_t *l, subtilis_token_t *t,
 				     const subtilis_settings_t *set,
 				     subtilis_error_t *err);
 
+void subtilis_riscos_arm_gcol_tint(subtilis_ir_section_t *s, size_t start,
+				   void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_tint(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err);
+void subtilis_riscos_tcol_tint(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_error_t *err);
+
 #define SUBTILIS_RISCOS_ARM2_PROGRAM_START 0x8000
+
+#define SUBTILIS_RISCOS_ARM_CAPS                                               \
+	(SUBTILIS_BACKEND_HAVE_I32_TO_DEC | SUBTILIS_BACKEND_HAVE_I32_TO_HEX | \
+	 SUBTILIS_BACKEND_REVERSE_DOUBLES | SUBTILIS_BACKEND_HAVE_TINT)
 
 #endif

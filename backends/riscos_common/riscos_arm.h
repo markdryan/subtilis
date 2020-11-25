@@ -54,8 +54,6 @@ void subtilis_riscos_arm_vpos(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_gcol(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
-void subtilis_riscos_arm_gcol_tint(subtilis_ir_section_t *s, size_t start,
-				   void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_origin(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_gettime(subtilis_ir_section_t *s, size_t start,
@@ -83,10 +81,14 @@ void subtilis_riscos_arm_vdui(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_vdu(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
+void subtilis_riscos_arm_point_tint(subtilis_ir_section_t *s, size_t start,
+				    void *user_data, size_t res_reg,
+				    subtilis_error_t *err);
+void subtilis_riscos_handle_graphics_error(subtilis_arm_section_t *arm_s,
+					   subtilis_ir_section_t *s,
+					   subtilis_error_t *err);
 void subtilis_riscos_arm_point(subtilis_ir_section_t *s, size_t start,
 			       void *user_data, subtilis_error_t *err);
-void subtilis_riscos_arm_tint(subtilis_ir_section_t *s, size_t start,
-			      void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_end(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_testesc(subtilis_ir_section_t *s, size_t start,
@@ -99,8 +101,6 @@ void subtilis_riscos_arm_getref(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err);
 void subtilis_riscos_tcol(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
-void subtilis_riscos_tcol_tint(subtilis_ir_section_t *s, size_t start,
-			       void *user_data, subtilis_error_t *err);
 void subtilis_riscos_palette(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_riscos_arm_i32_to_dec(subtilis_ir_section_t *s, size_t start,
@@ -120,10 +120,6 @@ void subtilis_riscos_arm_syscall(subtilis_ir_section_t *s, size_t start,
 				 const subtilis_arm_swi_t *swi_list,
 				 size_t swi_count,
 				 subtilis_error_t *err);
-
-#define SUBTILIS_RISCOS_ARM_CAPS                                               \
-	(SUBTILIS_BACKEND_HAVE_I32_TO_DEC | SUBTILIS_BACKEND_HAVE_I32_TO_HEX | \
-	 SUBTILIS_BACKEND_REVERSE_DOUBLES | SUBTILIS_BACKEND_HAVE_TINT)
 
 bool subtilis_riscos_sys_check(size_t call_id, uint32_t *in_regs,
 			       uint32_t *out_regs, bool *handle_errors,
