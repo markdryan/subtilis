@@ -21,16 +21,13 @@
 #include "../../arch/arm32/arm_swi.h"
 #include "../../common/backend_caps.h"
 
-typedef void (*subtilis_riscos_fp_preamble_t)(subtilis_arm_section_t *arm_s,
-					      subtilis_error_t *err);
-
 /* clang-format off */
 subtilis_arm_prog_t *
 subtilis_riscos_generate(
 	subtilis_arm_op_pool_t *pool, subtilis_ir_prog_t *p,
 	const subtilis_ir_rule_raw_t *rules_raw,
 	size_t rule_count, size_t globals,
-	subtilis_riscos_fp_preamble_t fp_premable,
+	const subtilis_arm_fp_if_t *fp_if,
 	int32_t start_address, subtilis_error_t *err);
 /* clang-format on */
 

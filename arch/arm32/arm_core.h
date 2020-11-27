@@ -508,6 +508,15 @@ struct subtilis_arm_prog_t_ {
 
 typedef struct subtilis_arm_prog_t_ subtilis_arm_prog_t;
 
+typedef void (*subtilis_arm_fp_preamble_t)(subtilis_arm_section_t *arm_s,
+					   subtilis_error_t *err);
+
+struct subtilis_arm_fp_if_t_ {
+	subtilis_arm_fp_preamble_t preamble_fn;
+};
+
+typedef struct subtilis_arm_fp_if_t_ subtilis_arm_fp_if_t;
+
 subtilis_arm_op_pool_t *subtilis_arm_op_pool_new(subtilis_error_t *err);
 size_t subtilis_arm_op_pool_alloc(subtilis_arm_op_pool_t *pool,
 				  subtilis_error_t *err);

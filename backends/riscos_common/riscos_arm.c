@@ -219,7 +219,7 @@ static void prv_load_heap_pointer(subtilis_arm_section_t *arm_s,
 }
 
 static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
-			     subtilis_riscos_fp_preamble_t fp_premable,
+			     subtilis_arm_fp_preamble_t fp_premable,
 			     subtilis_error_t *err)
 {
 	subtilis_arm_reg_t dest;
@@ -509,7 +509,7 @@ subtilis_riscos_generate(
 	subtilis_arm_op_pool_t *op_pool, subtilis_ir_prog_t *p,
 	const subtilis_ir_rule_raw_t *rules_raw,
 	size_t rule_count, size_t globals,
-	subtilis_riscos_fp_preamble_t fp_premable,
+	const subtilis_arm_fp_if_t *fp_if,
 	int32_t start_address, subtilis_error_t *err)
 /* clang-format on */
 {
@@ -541,7 +541,7 @@ subtilis_riscos_generate(
 					      s->locals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	prv_add_preamble(arm_s, globals, fp_premable, err);
+	prv_add_preamble(arm_s, globals, fp_if->preamble_fn, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 	prv_add_section(s, arm_s, parsed, rule_count, err);

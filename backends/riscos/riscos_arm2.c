@@ -272,6 +272,11 @@ const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /
 	sizeof(subtilis_ir_rule_raw_t);
 /* clang-format on */
 
+void subtilis_riscos_arm2_fp_if_init(subtilis_arm_fp_if_t *fp_if)
+{
+	fp_if->preamble_fn = subtilis_fpa_gen_preamble;
+}
+
 static int prv_sys_string_lookup(const void *av, const void *bv)
 {
 	const char *a = (const char *)av;

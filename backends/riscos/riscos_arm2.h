@@ -17,10 +17,13 @@
 #ifndef __SUBTILIS_RISCOS_ARM2_H
 #define __SUBTILIS_RISCOS_ARM2_H
 
+#include "../../arch/arm32/arm_core.h"
 #include "../../common/ir.h"
 
 extern const subtilis_ir_rule_raw_t riscos_arm2_rules[];
 extern const size_t riscos_arm2_rules_count;
+
+void subtilis_riscos_arm2_fp_if_init(subtilis_arm_fp_if_t *fp_if);
 
 size_t subtilis_riscos_arm2_sys_trans(const char *call_name);
 bool subtilis_riscos_arm2_sys_check(size_t call_id, uint32_t *in_regs,

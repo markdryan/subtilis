@@ -940,6 +940,7 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	subtilis_error_t err;
 	subtilis_buffer_t b;
 	size_t code_size;
+	subtilis_arm_fp_if_t fp_if;
 	int retval = 1;
 	subtilis_arm_op_pool_t *pool = NULL;
 	subtilis_arm_prog_t *arm_p = NULL;
@@ -963,11 +964,12 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	}
 
 	//	subtilis_ir_prog_dump(p->prog);
+	subtilis_riscos_arm2_fp_if_init(&fp_if);
 
 	arm_p = subtilis_riscos_generate(
 	    pool, p->prog, riscos_arm2_rules, riscos_arm2_rules_count,
-	    p->st->max_allocated, subtilis_fpa_gen_preamble,
-	    SUBTILIS_RISCOS_ARM2_PROGRAM_START, &err);
+	    p->st->max_allocated, &fp_if, SUBTILIS_RISCOS_ARM2_PROGRAM_START,
+	    &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

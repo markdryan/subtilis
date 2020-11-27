@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
 	subtilis_stream_t s;
 	subtilis_settings_t settings;
 	subtilis_backend_t backend;
+	subtilis_arm_fp_if_t fp_if;
 	subtilis_lexer_t *l = NULL;
 	subtilis_parser_t *p = NULL;
 	subtilis_arm_prog_t *arm_p = NULL;
@@ -83,6 +84,8 @@ int main(int argc, char *argv[])
 	backend.asm_parse = subtilis_riscos_arm2_asm_parse;
 	backend.asm_free = subtilis_riscos_asm_free;
 
+	subtilis_riscos_arm2_fp_if_init(&fp_if);
+
 	p = subtilis_parser_new(l, &backend, &settings, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -95,8 +98,8 @@ int main(int argc, char *argv[])
 
 	arm_p = subtilis_riscos_generate(
 	    pool, p->prog, riscos_arm2_rules, riscos_arm2_rules_count,
-	    p->st->max_allocated, subtilis_fpa_gen_preamble,
-	    SUBTILIS_RISCOS_ARM2_PROGRAM_START, &err);
+	    p->st->max_allocated, &fp_if, SUBTILIS_RISCOS_ARM2_PROGRAM_START,
+	    &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
