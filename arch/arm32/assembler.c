@@ -2705,7 +2705,7 @@ subtilis_arm_section_t *subtilis_arm_asm_parse(
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	arm_s = subtilis_arm_section_new(pool, stype, 0, 0, 0, 0, set,
+	arm_s = subtilis_arm_section_new(pool, stype, 0, 0, 0, 0, set, NULL,
 					 start_address, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;

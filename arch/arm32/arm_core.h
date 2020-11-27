@@ -467,6 +467,8 @@ struct subtilis_arm_constants_t_ {
 	size_t max_real;
 };
 
+typedef struct subtilis_arm_fp_if_t_ subtilis_arm_fp_if_t;
+
 struct subtilis_arm_section_t_ {
 	size_t reg_counter;
 	size_t freg_counter;
@@ -490,6 +492,7 @@ struct subtilis_arm_section_t_ {
 	const subtilis_settings_t *settings;
 	size_t no_cleanup_label;
 	int32_t start_address;
+	const subtilis_arm_fp_if_t *fp_if;
 };
 
 typedef struct subtilis_arm_section_t_ subtilis_arm_section_t;
@@ -504,6 +507,7 @@ struct subtilis_arm_prog_t_ {
 	bool reverse_fpa_consts;
 	const subtilis_settings_t *settings;
 	int32_t start_address;
+	const subtilis_arm_fp_if_t *fp_if;
 };
 
 typedef struct subtilis_arm_prog_t_ subtilis_arm_prog_t;
@@ -514,8 +518,6 @@ typedef void (*subtilis_arm_fp_preamble_t)(subtilis_arm_section_t *arm_s,
 struct subtilis_arm_fp_if_t_ {
 	subtilis_arm_fp_preamble_t preamble_fn;
 };
-
-typedef struct subtilis_arm_fp_if_t_ subtilis_arm_fp_if_t;
 
 subtilis_arm_op_pool_t *subtilis_arm_op_pool_new(subtilis_error_t *err);
 size_t subtilis_arm_op_pool_alloc(subtilis_arm_op_pool_t *pool,
@@ -534,17 +536,16 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 						 size_t label_counter,
 						 size_t locals,
 						 const subtilis_settings_t *set,
+						 const subtilis_arm_fp_if_t *fp,
 						 int32_t start_address,
 						 subtilis_error_t *err);
-/* clang-format on */
-
-void subtilis_arm_section_delete(subtilis_arm_section_t *s);
 
 subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 					   subtilis_arm_op_pool_t *op_pool,
 					   subtilis_string_pool_t *string_pool,
 					   subtilis_constant_pool_t *cnst_pool,
 					   const subtilis_settings_t *settings,
+					   const subtilis_arm_fp_if_t *fp_if,
 					   int32_t start_address,
 					   subtilis_error_t *err);
 /* clang-format off */
@@ -555,6 +556,7 @@ subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 			      size_t label_counter,
 			      size_t locals, subtilis_error_t *err);
 /* clang-format on */
+void subtilis_arm_section_delete(subtilis_arm_section_t *s);
 
 void subtilis_arm_prog_append_section(subtilis_arm_prog_t *prog,
 				      subtilis_arm_section_t *arm_s,

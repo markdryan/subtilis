@@ -124,6 +124,7 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 						 size_t label_counter,
 						 size_t locals,
 						 const subtilis_settings_t *set,
+						 const subtilis_arm_fp_if_t *fp,
 						 int32_t start_address,
 						 subtilis_error_t *err)
 /* clang-format on */
@@ -144,6 +145,7 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 	s->locals = locals;
 	s->op_pool = pool;
 	s->settings = set;
+	s->fp_if = fp;
 	s->no_cleanup_label = s->label_counter++;
 	s->start_address = start_address;
 
@@ -250,13 +252,17 @@ void subtilis_arm_section_add_ret_site(subtilis_arm_section_t *s, size_t op,
 	s->ret_sites[s->ret_site_count++] = op;
 }
 
+/* clang-format off */
 subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 					   subtilis_arm_op_pool_t *op_pool,
 					   subtilis_string_pool_t *string_pool,
 					   subtilis_constant_pool_t *cnst_pool,
 					   const subtilis_settings_t *settings,
+					   const subtilis_arm_fp_if_t *fp_if,
 					   int32_t start_address,
 					   subtilis_error_t *err)
+/* clang-format on */
+
 {
 	double dummy_float = 1.0;
 	uint32_t *lower_word = (uint32_t *)((void *)&dummy_float);
@@ -282,6 +288,7 @@ subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 	/* Slightly weird but on ARM FPA the words of a double are big endian */
 	arm_p->reverse_fpa_consts = (*lower_word) == 0;
 	arm_p->settings = settings;
+	arm_p->fp_if = fp_if;
 	arm_p->start_address = start_address;
 
 	return arm_p;
@@ -309,7 +316,7 @@ subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 
 	arm_s = subtilis_arm_section_new(
 	    prog->op_pool, stype, reg_counter, freg_counter, label_counter,
-	    locals, prog->settings, prog->start_address, err);
+	    locals, prog->settings, prog->fp_if, prog->start_address, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 

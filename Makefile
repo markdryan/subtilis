@@ -165,10 +165,15 @@ check: unit_tests
 	./unit_tests
 
 -include $(ARM:%.c=%.d)
+-include $(FPA:%.c=%.d)
+-include $(VFP:%.c=%.d)
+-include $(PTD:%.c=%.d)
 -include $(RISCOS_COMMON:%.c=%.d)
 -include $(RISCOS_ARM2:%.c=%.d)
--include $(COMPILER:%.c=%.d)
+-include $(SUBTRO:%.c=%.d)
+-include $(SUBTPTD:%.c=%.d)
 -include $(COMMON:%.c=%.d)
 -include $(INTER:%.c=%.d)
--include $(RUNARM:%.c=%.d)
+-include $(RUNRO:%.c=%.d)
+-include $(RUNPTD:%.c=%.d)
 -include $(TESTS:%.c=%.d)
