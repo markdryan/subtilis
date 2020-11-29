@@ -40,6 +40,8 @@
 #define SUBTILIS_ARM_REG_MIN_FPA_REGS 4
 #define SUBTILIS_ARM_REG_MAX_FPA_REGS 8
 
+typedef struct subtlis_arm_walker_t_ subtlis_arm_walker_t;
+
 typedef size_t subtilis_arm_reg_t;
 
 typedef enum {
@@ -598,15 +600,67 @@ typedef void (*subtilis_arm_fp_mov_reg)(subtilis_arm_section_t *arm_s,
 					subtilis_arm_reg_t src,
 					subtilis_error_t *err);
 
+/* clang-format off */
+
+/*
+ * Inserts code to load or store a spilled register.  This is used when the
+ * offset is greater than the stran instructions for the appropriate register
+ * class can support.  The new code is inserted after op current in the code
+ * stream.
+ */
+
+typedef void (*subtilis_arm_fp_spill_imm_t)(subtilis_arm_section_t *s,
+					     subtilis_arm_op_t *current,
+					     subtilis_arm_instr_type_t itype,
+					     subtilis_arm_ccode_type_t ccode,
+					     subtilis_arm_reg_t dest,
+					     subtilis_arm_reg_t base,
+					     subtilis_arm_reg_t spill_reg,
+					     int32_t offset,
+					     subtilis_error_t *err);
+
+/*
+ * Inserts code to load or store a spilled register.  The new code is inserted
+ * after op current in the code stream.
+ */
+
+typedef void (*subtilis_arm_fp_stran_imm_t)(subtilis_arm_section_t *s,
+					     subtilis_arm_op_t *current,
+					     subtilis_arm_instr_type_t itype,
+					     subtilis_arm_ccode_type_t ccode,
+					     subtilis_arm_reg_t dest,
+					     subtilis_arm_reg_t base,
+					     int32_t offset,
+					     subtilis_error_t *err);
+
+/* clang-format on */
+
+/*
+ * Returns true if reg is a fixed registers.
+ */
+
+typedef bool (*subtilis_arm_fp_is_fixed_t)(subtilis_arm_reg_t reg);
+
+typedef void (*subtilis_arm_fp_init_walker_t)(subtlis_arm_walker_t *walker,
+					      void *user_data);
+
 struct subtilis_arm_fp_if_t_ {
 	size_t max_regs;
+	int32_t max_offset;
+	subtilis_arm_instr_type_t store_type;
+	subtilis_arm_instr_type_t load_type;
 	subtilis_arm_fp_preamble_t preamble_fn;
 	subtilis_arm_fp_preserve_regs_t preserve_regs_fn;
 	subtilis_arm_fp_restore_regs_t restore_regs_fn;
 	subtilis_arm_fp_pres_update_t update_regs_fn;
 	subtilis_arm_fp_update_offs_t update_offs_fn;
-	subtilis_arm_fp_store_double_t store_dbl;
-	subtilis_arm_fp_mov_reg mov_reg;
+	subtilis_arm_fp_store_double_t store_dbl_fn;
+	subtilis_arm_fp_mov_reg mov_reg_fn;
+	subtilis_arm_fp_spill_imm_t spill_imm_fn;
+	subtilis_arm_fp_stran_imm_t stran_imm_fn;
+	subtilis_arm_fp_is_fixed_t is_fixed_fn;
+	subtilis_arm_fp_init_walker_t init_dist_walker_fn;
+	subtilis_arm_fp_init_walker_t init_used_walker_fn;
 };
 
 subtilis_arm_op_pool_t *subtilis_arm_op_pool_new(subtilis_error_t *err);

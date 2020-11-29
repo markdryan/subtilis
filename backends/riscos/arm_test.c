@@ -964,7 +964,7 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	}
 
 	//	subtilis_ir_prog_dump(p->prog);
-	subtilis_riscos_arm2_fp_if_init(&fp_if);
+	subtilis_arm_fpa_if_init(&fp_if);
 
 	arm_p = subtilis_riscos_generate(
 	    pool, p->prog, riscos_arm2_rules, riscos_arm2_rules_count,

@@ -792,8 +792,8 @@ static void prv_stack_args(subtilis_arm_section_t *arm_s,
 			continue;
 		offset += 8;
 		reg_num = call->args[i - 1].reg;
-		arm_s->fp_if->store_dbl(arm_s, subtilis_arm_ir_to_freg(reg_num),
-					op0, offset, err);
+		arm_s->fp_if->store_dbl_fn(
+		    arm_s, subtilis_arm_ir_to_freg(reg_num), op0, offset, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		real_arg_ops[stack_ops++] = arm_s->last_op;
@@ -817,7 +817,7 @@ static void prv_stack_args(subtilis_arm_section_t *arm_s,
 			continue;
 		arg_dest = arg;
 		arg_src = subtilis_arm_ir_to_freg(call->args[i].reg);
-		arm_s->fp_if->mov_reg(arm_s, arg_dest, arg_src, err);
+		arm_s->fp_if->mov_reg_fn(arm_s, arg_dest, arg_src, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		arg++;

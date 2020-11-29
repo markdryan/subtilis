@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
-#include "arm_reg_alloc.h"
+#include <string.h>
 
-static subtilis_arm_section_t *prv_create_section(subtilis_arm_op_pool_t *pool,
-						  subtilis_error_t *err)
+#include "arm_reg_alloc.h"
+#include "fpa_gen.h"
+
+static subtilis_arm_section_t *
+prv_create_section(subtilis_arm_op_pool_t *pool,
+		   const subtilis_arm_fp_if_t *fp_if, subtilis_error_t *err)
 {
 	subtilis_arm_section_t *s;
 	subtilis_arm_reg_t dest;
@@ -29,7 +33,7 @@ static subtilis_arm_section_t *prv_create_section(subtilis_arm_op_pool_t *pool,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	s = subtilis_arm_section_new(pool, stype, 0, 0, 0, 0, NULL, NULL,
+	s = subtilis_arm_section_new(pool, stype, 0, 0, 0, 0, NULL, fp_if,
 				     0x8000, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
@@ -77,12 +81,13 @@ on_error:
 static int prv_test_arm_regs_used_before(void)
 {
 	subtilis_error_t err;
+	subtilis_regs_used_t regs_used_before;
+	subtilis_arm_fp_if_t fp_if;
+	size_t op_ptr;
+	size_t i;
 	subtilis_arm_section_t *s = NULL;
 	subtilis_arm_op_pool_t *pool = NULL;
 	int retval = 1;
-	subtilis_regs_used_t regs_used_before;
-	size_t op_ptr;
-	size_t i;
 	size_t expected[] = {
 	    0x0, 0x0, 0x100, 0x110,
 	};
@@ -91,11 +96,13 @@ static int prv_test_arm_regs_used_before(void)
 
 	printf("arm_reg_used_before");
 
+	subtilis_arm_fpa_if_init(&fp_if);
+
 	pool = subtilis_arm_op_pool_new(&err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	s = prv_create_section(pool, &err);
+	s = prv_create_section(pool, &fp_if, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -131,12 +138,13 @@ on_error:
 static int prv_test_arm_regs_used_after(void)
 {
 	subtilis_error_t err;
-	subtilis_arm_section_t *s = NULL;
-	subtilis_arm_op_pool_t *pool = NULL;
-	int retval = 1;
+	subtilis_arm_fp_if_t fp_if;
 	subtilis_regs_used_t regs_used_after;
 	size_t op_ptr;
 	size_t i;
+	subtilis_arm_section_t *s = NULL;
+	subtilis_arm_op_pool_t *pool = NULL;
+	int retval = 1;
 	size_t expected[] = {
 	    0x510, 0x410, 0x410, 0x400,
 	};
@@ -145,11 +153,13 @@ static int prv_test_arm_regs_used_after(void)
 
 	printf("arm_reg_used_after");
 
+	subtilis_arm_fpa_if_init(&fp_if);
+
 	pool = subtilis_arm_op_pool_new(&err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	s = prv_create_section(pool, &err);
+	s = prv_create_section(pool, &fp_if, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto on_error;
 

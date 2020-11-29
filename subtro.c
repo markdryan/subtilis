@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 	backend.asm_parse = subtilis_riscos_arm2_asm_parse;
 	backend.asm_free = subtilis_riscos_asm_free;
 
-	subtilis_riscos_arm2_fp_if_init(&fp_if);
+	subtilis_arm_fpa_if_init(&fp_if);
 
 	p = subtilis_parser_new(l, &backend, &settings, &err);
 	if (err.type != SUBTILIS_ERROR_OK)

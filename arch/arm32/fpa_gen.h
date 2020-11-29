@@ -152,5 +152,6 @@ void subtilis_fpa_store_double(subtilis_arm_section_t *arm_s,
 void subtilis_fpa_mov_reg(subtilis_arm_section_t *arm_s,
 			  subtilis_arm_reg_t dest, subtilis_arm_reg_t src,
 			  subtilis_error_t *err);
+void subtilis_arm_fpa_if_init(subtilis_arm_fp_if_t *fp_if);
 
 #endif

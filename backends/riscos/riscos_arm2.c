@@ -272,18 +272,6 @@ const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /
 	sizeof(subtilis_ir_rule_raw_t);
 /* clang-format on */
 
-void subtilis_riscos_arm2_fp_if_init(subtilis_arm_fp_if_t *fp_if)
-{
-	fp_if->max_regs = SUBTILIS_ARM_REG_MAX_FPA_REGS;
-	fp_if->preamble_fn = subtilis_fpa_gen_preamble;
-	fp_if->preserve_regs_fn = subtilis_fpa_preserve_regs;
-	fp_if->restore_regs_fn = subtilis_fpa_restore_regs;
-	fp_if->update_regs_fn = subtilis_fpa_preserve_update;
-	fp_if->update_offs_fn = subtilis_fpa_update_offsets;
-	fp_if->store_dbl = subtilis_fpa_store_double;
-	fp_if->mov_reg = subtilis_fpa_mov_reg;
-}
-
 static int prv_sys_string_lookup(const void *av, const void *bv)
 {
 	const char *a = (const char *)av;

@@ -22,8 +22,6 @@
 #include "../../common/error.h"
 #include "arm_core.h"
 
-typedef struct subtlis_arm_walker_t_ subtlis_arm_walker_t;
-
 struct subtlis_arm_walker_t_ {
 	void *user_data;
 	void (*directive_fn)(void *user_data, subtilis_arm_op_t *op,

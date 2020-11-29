@@ -23,8 +23,6 @@
 extern const subtilis_ir_rule_raw_t ptd_rules[];
 extern const size_t ptd_rules_count;
 
-void subtilis_ptd_fp_if_init(subtilis_arm_fp_if_t *fp_if);
-
 size_t subtilis_ptd_sys_trans(const char *call_name);
 bool subtilis_ptd_sys_check(size_t call_id, uint32_t *in_regs,
 			    uint32_t *out_regs, bool *handle_errors);

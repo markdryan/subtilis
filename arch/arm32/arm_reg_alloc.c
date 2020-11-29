@@ -261,8 +261,6 @@ typedef void (*subtilis_arm_reg_stran_imm_t)(subtilis_arm_section_t *s,
 
 /* clang-format on */
 
-typedef bool (*subtilis_arm_reg_is_fixed_t)(subtilis_arm_reg_t reg);
-
 typedef enum {
 	SUBTILIS_SPILL_POINT_LOAD,
 	SUBTILIS_SPILL_POINT_STORE,
@@ -293,7 +291,7 @@ struct subtilis_arm_reg_class_t_ {
 	subtilis_arm_reg_stran_imm_t stran_imm;
 	subtilis_arm_instr_type_t store_type;
 	subtilis_arm_instr_type_t load_type;
-	subtilis_arm_reg_is_fixed_t is_fixed;
+	subtilis_arm_fp_is_fixed_t is_fixed;
 	subtilis_spill_point_t *spill_points;
 	size_t spill_points_count;
 	size_t spill_points_max;
@@ -402,7 +400,7 @@ static subtilis_arm_reg_class_t *prv_new_regs(
 	subtilis_arm_reg_stran_imm_t stran_imm,
 	subtilis_arm_instr_type_t store_type,
 	subtilis_arm_instr_type_t load_type,
-	subtilis_arm_reg_is_fixed_t is_fixed, subtilis_error_t *err)
+	subtilis_arm_fp_is_fixed_t is_fixed, subtilis_error_t *err)
 
 /* clang-format on */
 {
@@ -563,6 +561,11 @@ static void prv_init_arm_reg_ud(subtilis_arm_reg_ud_t *ud,
 
 	subtilis_arm_section_max_regs(arm_s, &max_int_regs, &max_real_regs);
 
+	if (!arm_s->fp_if) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
 	ud->int_regs = prv_new_regs(
 	    max_int_regs, SUBTILIS_ARM_REG_MAX_INT_REGS,
 	    SUBTILIS_ARM_INT_VIRT_REG_START, sizeof(int32_t),
@@ -573,11 +576,11 @@ static void prv_init_arm_reg_ud(subtilis_arm_reg_ud_t *ud,
 		return;
 
 	ud->real_regs = prv_new_regs(
-	    max_real_regs, SUBTILIS_ARM_REG_MAX_FPA_REGS,
-	    SUBTILIS_ARM_FPA_VIRT_REG_START, sizeof(double),
-	    arm_s->stype->fp_regs, 1023, subtilis_fpa_insert_stran_spill_imm,
-	    subtilis_fpa_insert_stran_imm, SUBTILIS_FPA_INSTR_STF,
-	    SUBTILIS_FPA_INSTR_LDF, subtilis_fpa_is_fixed, err);
+	    max_real_regs, arm_s->fp_if->max_regs, arm_s->fp_if->max_regs,
+	    sizeof(double), arm_s->stype->fp_regs, arm_s->fp_if->max_offset,
+	    arm_s->fp_if->spill_imm_fn, arm_s->fp_if->stran_imm_fn,
+	    arm_s->fp_if->store_type, arm_s->fp_if->load_type,
+	    arm_s->fp_if->is_fixed_fn, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		prv_free_regs(ud->int_regs);
 		return;
@@ -591,12 +594,12 @@ static void prv_init_arm_reg_ud(subtilis_arm_reg_ud_t *ud,
 
 	subtilis_init_int_dist_walker(&ud->int_regs->dist_walker,
 				      &ud->dist_data);
-	subtilis_init_fpa_dist_walker(&ud->real_regs->dist_walker,
-				      &ud->dist_data);
+	arm_s->fp_if->init_dist_walker_fn(&ud->real_regs->dist_walker,
+					  &ud->dist_data);
 	subtilis_init_int_used_walker(&ud->int_regs->used_walker,
 				      &ud->dist_data);
-	subtilis_init_fpa_used_walker(&ud->real_regs->used_walker,
-				      &ud->dist_data);
+	arm_s->fp_if->init_used_walker_fn(&ud->real_regs->used_walker,
+					  &ud->dist_data);
 }
 
 static int prv_calculate_dist(subtilis_arm_reg_ud_t *ud, size_t reg_num,

@@ -16,6 +16,7 @@
 
 #include <limits.h>
 
+#include "../../arch/arm32/arm_fpa_dist.h"
 #include "../../common/error_codes.h"
 #include "arm_core.h"
 #include "arm_gen.h"
@@ -914,4 +915,24 @@ void subtilis_fpa_mov_reg(subtilis_arm_section_t *arm_s,
 {
 	subtilis_fpa_add_mov(arm_s, SUBTILIS_ARM_CCODE_AL,
 			     SUBTILIS_FPA_ROUNDING_NEAREST, dest, src, err);
+}
+
+void subtilis_arm_fpa_if_init(subtilis_arm_fp_if_t *fp_if)
+{
+	fp_if->max_regs = SUBTILIS_ARM_REG_MAX_FPA_REGS;
+	fp_if->max_offset = 1023;
+	fp_if->store_type = SUBTILIS_FPA_INSTR_STF;
+	fp_if->load_type = SUBTILIS_FPA_INSTR_LDF;
+	fp_if->preamble_fn = subtilis_fpa_gen_preamble;
+	fp_if->preserve_regs_fn = subtilis_fpa_preserve_regs;
+	fp_if->restore_regs_fn = subtilis_fpa_restore_regs;
+	fp_if->update_regs_fn = subtilis_fpa_preserve_update;
+	fp_if->update_offs_fn = subtilis_fpa_update_offsets;
+	fp_if->store_dbl_fn = subtilis_fpa_store_double;
+	fp_if->mov_reg_fn = subtilis_fpa_mov_reg;
+	fp_if->spill_imm_fn = subtilis_fpa_insert_stran_spill_imm;
+	fp_if->stran_imm_fn = subtilis_fpa_insert_stran_imm;
+	fp_if->is_fixed_fn = subtilis_fpa_is_fixed;
+	fp_if->init_dist_walker_fn = subtilis_init_fpa_dist_walker;
+	fp_if->init_used_walker_fn = subtilis_init_fpa_used_walker;
 }

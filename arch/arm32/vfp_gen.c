@@ -404,3 +404,54 @@ void subtilis_vfp_mov_reg(subtilis_arm_section_t *arm_s,
 {
 	subtilis_error_set_assertion_failed(err);
 }
+
+bool subtilis_vfp_is_fixed(size_t reg) { return false; }
+
+/* clang-format off */
+void subtilis_vfp_insert_stran_spill_imm(subtilis_arm_section_t *s,
+					 subtilis_arm_op_t *current,
+					 subtilis_arm_instr_type_t itype,
+					 subtilis_arm_ccode_type_t ccode,
+					 subtilis_arm_reg_t dest,
+					 subtilis_arm_reg_t base,
+					 subtilis_arm_reg_t spill_reg,
+					 int32_t offset, subtilis_error_t *err)
+{
+	/* clang-format on */
+
+	subtilis_error_set_assertion_failed(err);
+}
+
+void subtilis_vfp_insert_stran_imm(subtilis_arm_section_t *s,
+				   subtilis_arm_op_t *current,
+				   subtilis_arm_instr_type_t itype,
+				   subtilis_arm_ccode_type_t ccode,
+				   subtilis_arm_reg_t dest,
+				   subtilis_arm_reg_t base, int32_t offset,
+				   subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+void subtilis_arm_vfp_if_init(subtilis_arm_fp_if_t *fp_if)
+{
+	fp_if->max_regs = 16; /* TODO: needs constant */
+
+	/* TODO: These are wrong */
+	fp_if->max_offset = 1023;
+	fp_if->store_type = SUBTILIS_FPA_INSTR_STF;
+	fp_if->load_type = SUBTILIS_FPA_INSTR_LDF;
+
+	fp_if->preamble_fn = subtilis_vfp_gen_preamble;
+	fp_if->preserve_regs_fn = subtilis_vfp_preserve_regs;
+	fp_if->restore_regs_fn = subtilis_vfp_restore_regs;
+	fp_if->update_regs_fn = subtilis_vfp_preserve_update;
+	fp_if->update_offs_fn = subtilis_vfp_update_offsets;
+	fp_if->store_dbl_fn = subtilis_vfp_store_double;
+	fp_if->mov_reg_fn = subtilis_vfp_mov_reg;
+	fp_if->spill_imm_fn = subtilis_vfp_insert_stran_spill_imm;
+	fp_if->stran_imm_fn = subtilis_vfp_insert_stran_imm;
+	fp_if->is_fixed_fn = subtilis_vfp_is_fixed;
+	fp_if->init_dist_walker_fn = NULL;
+	fp_if->init_used_walker_fn = NULL;
+}
