@@ -271,7 +271,14 @@ const size_t ptd_rules_count = sizeof(ptd_rules) /
 
 void subtilis_ptd_fp_if_init(subtilis_arm_fp_if_t *fp_if)
 {
+	fp_if->max_regs = 16; /* TODO: needs constant */
 	fp_if->preamble_fn = subtilis_vfp_gen_preamble;
+	fp_if->preserve_regs_fn = subtilis_vfp_preserve_regs;
+	fp_if->restore_regs_fn = subtilis_vfp_restore_regs;
+	fp_if->update_regs_fn = subtilis_vfp_preserve_update;
+	fp_if->update_offs_fn = subtilis_vfp_update_offsets;
+	fp_if->store_dbl = subtilis_vfp_store_double;
+	fp_if->mov_reg = subtilis_vfp_mov_reg;
 }
 
 static int prv_sys_string_lookup(const void *av, const void *bv)

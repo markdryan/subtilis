@@ -135,5 +135,22 @@ void subtilis_vfp_gen_pow(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_vfp_gen_exp(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
+size_t subtilis_vfp_preserve_regs(subtilis_arm_section_t *arm_s,
+				  int save_real_start, subtilis_error_t *err);
+size_t subtilis_vfp_restore_regs(subtilis_arm_section_t *arm_s,
+				 int save_real_start, subtilis_error_t *err);
+void subtilis_vfp_preserve_update(subtilis_arm_section_t *arm_s,
+				  subtilis_arm_call_site_t *call_site,
+				  size_t real_regs_saved, size_t real_regs_used,
+				  subtilis_error_t *err);
+void subtilis_vfp_update_offsets(subtilis_arm_section_t *arm_s,
+				 subtilis_arm_call_site_t *call_site,
+				 size_t bytes_saved, subtilis_error_t *err);
+void subtilis_vfp_store_double(subtilis_arm_section_t *arm_s,
+			       subtilis_arm_reg_t dest, subtilis_arm_reg_t base,
+			       size_t offset, subtilis_error_t *err);
+void subtilis_vfp_mov_reg(subtilis_arm_section_t *arm_s,
+			  subtilis_arm_reg_t dest, subtilis_arm_reg_t src,
+			  subtilis_error_t *err);
 
 #endif

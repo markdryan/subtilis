@@ -34,6 +34,12 @@
 #define SUBTILIS_ARM_INT_VIRT_REG_START 16
 #define SUBTILIS_ARM_FPA_VIRT_REG_START 8
 
+#define SUBTILIS_ARM_REG_MIN_INT_REGS 4
+#define SUBTILIS_ARM_REG_MAX_INT_REGS 11
+
+#define SUBTILIS_ARM_REG_MIN_FPA_REGS 4
+#define SUBTILIS_ARM_REG_MAX_FPA_REGS 8
+
 typedef size_t subtilis_arm_reg_t;
 
 typedef enum {
@@ -512,11 +518,95 @@ struct subtilis_arm_prog_t_ {
 
 typedef struct subtilis_arm_prog_t_ subtilis_arm_prog_t;
 
+/*
+ * Insert code for initialising the FP control registers.
+ */
+
 typedef void (*subtilis_arm_fp_preamble_t)(subtilis_arm_section_t *arm_s,
 					   subtilis_error_t *err);
 
+/*
+ * Generate instructions to push all the floating point registers that aren't
+ * used to pass parameters to the stack. This function is called by the code
+ * generator before register allocation has taken place.  At this stage we don't
+ * know which registers will need to be preserved when a function is called so
+ * we push them all and then disable some of the pushes later on.
+ */
+
+typedef size_t (*subtilis_arm_fp_preserve_regs_t)(subtilis_arm_section_t *arm_s,
+						  int save_real_start,
+						  subtilis_error_t *err);
+
+/*
+ * Generate instruction to pop all the saved floating point registers from the
+ * stack that were not used to pass parameters to the previous function call.
+ * This function is called by the code generator before register allocation
+ * has taken place.  At this stage we don't know which registers will need to
+ * be preserved when a function is called so we pop them all and then disable
+ * some of the pop later on.
+ */
+
+typedef size_t (*subtilis_arm_fp_restore_regs_t)(subtilis_arm_section_t *arm_s,
+						 int save_real_start,
+						 subtilis_error_t *err);
+
+/*
+ * Called once register allocation is complete to disable the push and pop code
+ * from subtilis_arm_fp_preserve_regs_t and subtilis_arm_fp_restore_regs_t
+ * that is not needed.  If multi store and load registers are used the
+ * instructions
+ * can be updated directly.  If separate registers are used for each push and
+ * pop
+ * the ccode should be set to NV and the peephole optimiser will remove them.
+ */
+typedef void (*subtilis_arm_fp_pres_update_t)(subtilis_arm_section_t *arm_s,
+					      subtilis_arm_call_site_t *cs,
+					      size_t real_regs_saved,
+					      size_t real_regs_used,
+					      subtilis_error_t *err);
+
+/*
+ * As we don't know how may callee saved registers are pushed and popped to the
+ * stack at code generation time, we don't know the corret offsets to use for
+ * the parameters that do not fit into registers.  Once register allocation is
+ * finished we know this information and we pass it to this function in the
+ * bytes_saved parameter.  Floating point backends then need to update the
+ * instructions that store these parameters.
+ */
+
+typedef void (*subtilis_arm_fp_update_offs_t)(subtilis_arm_section_t *arm_s,
+					      subtilis_arm_call_site_t *cs,
+					      size_t bytes_saved,
+					      subtilis_error_t *err);
+
+/*
+ * Stores a single double stored in dest to the location pointed to by base +
+ * offset.
+ */
+typedef void (*subtilis_arm_fp_store_double_t)(subtilis_arm_section_t *arm_s,
+					       subtilis_arm_reg_t dest,
+					       subtilis_arm_reg_t base,
+					       size_t offset,
+					       subtilis_error_t *err);
+
+/*
+ * Moves a double from one floating point register to another.
+ */
+
+typedef void (*subtilis_arm_fp_mov_reg)(subtilis_arm_section_t *arm_s,
+					subtilis_arm_reg_t dest,
+					subtilis_arm_reg_t src,
+					subtilis_error_t *err);
+
 struct subtilis_arm_fp_if_t_ {
+	size_t max_regs;
 	subtilis_arm_fp_preamble_t preamble_fn;
+	subtilis_arm_fp_preserve_regs_t preserve_regs_fn;
+	subtilis_arm_fp_restore_regs_t restore_regs_fn;
+	subtilis_arm_fp_pres_update_t update_regs_fn;
+	subtilis_arm_fp_update_offs_t update_offs_fn;
+	subtilis_arm_fp_store_double_t store_dbl;
+	subtilis_arm_fp_mov_reg mov_reg;
 };
 
 subtilis_arm_op_pool_t *subtilis_arm_op_pool_new(subtilis_error_t *err);
