@@ -29,7 +29,7 @@ typedef struct subtilis_dist_data_t_ subtilis_dist_data_t;
 
 struct subtilis_regs_used_t_ {
 	size_t int_regs;
-	size_t fpa_regs;
+	size_t real_regs;
 };
 
 typedef struct subtilis_regs_used_t_ subtilis_regs_used_t;

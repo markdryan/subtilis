@@ -34,10 +34,10 @@
 #define SUBTILIS_ARM_INT_VIRT_REG_START 16
 #define SUBTILIS_ARM_FPA_VIRT_REG_START 8
 
-#define SUBTILIS_ARM_REG_MIN_INT_REGS 4
+#define SUBTILIS_ARM_REG_MAX_ARGS 4
+
 #define SUBTILIS_ARM_REG_MAX_INT_REGS 11
 
-#define SUBTILIS_ARM_REG_MIN_FPA_REGS 4
 #define SUBTILIS_ARM_REG_MAX_FPA_REGS 8
 
 typedef struct subtlis_arm_walker_t_ subtlis_arm_walker_t;

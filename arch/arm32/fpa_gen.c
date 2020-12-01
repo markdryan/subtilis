@@ -840,9 +840,9 @@ void subtilis_fpa_preserve_update(subtilis_arm_section_t *arm_s,
 	size_t i;
 	size_t fpa_reg_count;
 
-	if (real_regs_saved > SUBTILIS_ARM_REG_MIN_FPA_REGS)
-		real_regs_saved = SUBTILIS_ARM_REG_MAX_FPA_REGS -
-				  SUBTILIS_ARM_REG_MIN_FPA_REGS;
+	if (real_regs_saved > SUBTILIS_ARM_REG_MAX_ARGS)
+		real_regs_saved =
+		    SUBTILIS_ARM_REG_MAX_FPA_REGS - SUBTILIS_ARM_REG_MAX_ARGS;
 	else
 		real_regs_saved =
 		    SUBTILIS_ARM_REG_MAX_FPA_REGS - real_regs_saved;
