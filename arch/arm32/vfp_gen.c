@@ -454,4 +454,5 @@ void subtilis_arm_vfp_if_init(subtilis_arm_fp_if_t *fp_if)
 	fp_if->is_fixed_fn = subtilis_vfp_is_fixed;
 	fp_if->init_dist_walker_fn = NULL;
 	fp_if->init_used_walker_fn = NULL;
+	fp_if->init_real_alloc_fn = NULL;
 }

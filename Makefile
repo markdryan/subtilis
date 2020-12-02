@@ -82,7 +82,8 @@ ARM =\
 	arm_expression.c
 
 FPA =\
-	fpa_gen.c
+	fpa_gen.c \
+	fpa_alloc.c
 
 VFP =\
 	vfp_gen.c \

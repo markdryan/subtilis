@@ -661,6 +661,7 @@ struct subtilis_arm_fp_if_t_ {
 	subtilis_arm_fp_is_fixed_t is_fixed_fn;
 	subtilis_arm_fp_init_walker_t init_dist_walker_fn;
 	subtilis_arm_fp_init_walker_t init_used_walker_fn;
+	subtilis_arm_fp_init_walker_t init_real_alloc_fn;
 };
 
 subtilis_arm_op_pool_t *subtilis_arm_op_pool_new(subtilis_error_t *err);
