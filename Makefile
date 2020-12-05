@@ -66,7 +66,6 @@ ARM =\
 	arm_walker.c \
 	arm_reg_alloc.c \
 	arm_int_dist.c \
-	arm_fpa_dist.c \
 	arm_encode.c \
 	arm_link.c \
 	arm2_div.c \
@@ -83,10 +82,14 @@ ARM =\
 
 FPA =\
 	fpa_gen.c \
-	fpa_alloc.c
+	fpa_alloc.c \
+	arm_fpa_dist.c
 
 VFP =\
 	vfp_gen.c \
+	vfp_alloc.c \
+	arm_vfp_dist.c
+
 
 SUBTRO =\
 	subtro.c

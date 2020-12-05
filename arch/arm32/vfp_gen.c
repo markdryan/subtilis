@@ -19,6 +19,8 @@
 #include "../../common/error_codes.h"
 #include "arm_core.h"
 #include "arm_gen.h"
+#include "arm_vfp_dist.h"
+#include "vfp_alloc.h"
 #include "vfp_gen.h"
 
 void subtilis_vfp_gen_movr(subtilis_ir_section_t *s, size_t start,
@@ -452,7 +454,7 @@ void subtilis_arm_vfp_if_init(subtilis_arm_fp_if_t *fp_if)
 	fp_if->spill_imm_fn = subtilis_vfp_insert_stran_spill_imm;
 	fp_if->stran_imm_fn = subtilis_vfp_insert_stran_imm;
 	fp_if->is_fixed_fn = subtilis_vfp_is_fixed;
-	fp_if->init_dist_walker_fn = NULL;
-	fp_if->init_used_walker_fn = NULL;
-	fp_if->init_real_alloc_fn = NULL;
+	fp_if->init_dist_walker_fn = subtilis_init_vfp_dist_walker;
+	fp_if->init_used_walker_fn = subtilis_init_vfp_used_walker;
+	fp_if->init_real_alloc_fn = subtilis_vfp_alloc_init_walker;
 }

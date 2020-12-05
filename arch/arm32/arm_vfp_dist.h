@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef SUBTILIS_FPA_ALLOC_H__
-#define SUBTILIS_FPA_ALLOC_H__
+#ifndef __SUBTILIS_ARM_VFP_DIST_H
+#define __SUBTILIS_ARM_VFP_DIST_H
 
 #include "arm_walker.h"
 
-void subtilis_fpa_alloc_init_walker(subtlis_arm_walker_t *walker,
-				    void *user_data);
+void subtilis_init_vfp_dist_walker(subtlis_arm_walker_t *walker,
+				   void *user_data);
+void subtilis_init_vfp_used_walker(subtlis_arm_walker_t *walker,
+				   void *user_data);
 
 #endif

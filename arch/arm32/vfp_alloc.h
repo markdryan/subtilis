@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Mark Ryan
+ * Copyright (c) 2018 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef SUBTILIS_FPA_ALLOC_H__
-#define SUBTILIS_FPA_ALLOC_H__
+#ifndef SUBTILIS_VFP_ALLOC_H__
+#define SUBTILIS_VFP_ALLOC_H__
 
 #include "arm_walker.h"
 
-void subtilis_fpa_alloc_init_walker(subtlis_arm_walker_t *walker,
+void subtilis_vfp_alloc_init_walker(subtlis_arm_walker_t *walker,
 				    void *user_data);
 
 #endif
