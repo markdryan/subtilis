@@ -38,4 +38,9 @@ void *subtilis_ptd_asm_parse(subtilis_lexer_t *l, subtilis_token_t *t,
 
 #define SUBTILIS_PTD_CAPS 0
 
+void subtilis_ptd_arm_on(subtilis_ir_section_t *s, size_t start,
+			 void *user_data, subtilis_error_t *err);
+void subtilis_ptd_arm_off(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
+
 #endif

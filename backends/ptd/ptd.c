@@ -223,8 +223,8 @@ const subtilis_ir_rule_raw_t ptd_rules[] = {
 	 {"gettime *\n", subtilis_riscos_arm_gettime},
 	 {"cls\n", subtilis_riscos_arm_cls},
 	 {"clg\n", subtilis_riscos_arm_clg},
-	 {"on\n", subtilis_riscos_arm_on},
-	 {"off\n", subtilis_riscos_arm_off},
+	 {"on\n", subtilis_ptd_arm_on},
+	 {"off\n", subtilis_ptd_arm_off},
 	 {"wait\n", subtilis_riscos_arm_wait},
 	 {"sin *, *\n", subtilis_vfp_gen_sin},
 	 {"cos *, *\n", subtilis_vfp_gen_cos},
@@ -322,4 +322,37 @@ void *subtilis_ptd_asm_parse(subtilis_lexer_t *l, subtilis_token_t *t,
 	return subtilis_arm_asm_parse(l, t, pool, stype, set,
 				      subtilis_ptd_sys_trans,
 				      SUBTILIS_PTD_PROGRAM_START, err);
+}
+
+static void prv_cursor_on_off(subtilis_ir_section_t *s, void *user_data,
+			      uint32_t swtch, subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_arm_section_t *arm_s = user_data;
+	uint32_t ar[] = {23, 1, 0, 0, 0, 0, 0, 0, 0, 0};
+
+	ar[3] = swtch;
+
+	for (i = 0; i < sizeof(ar) / sizeof(ar[0]); i++) {
+		/* read_mask = 0 */
+		/* write_mask = 0 */
+		subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL,
+				     256 + ar[i] + 0x20000, 0, 0, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	subtilis_riscos_handle_graphics_error(arm_s, s, err);
+}
+
+void subtilis_ptd_arm_on(subtilis_ir_section_t *s, size_t start,
+			 void *user_data, subtilis_error_t *err)
+{
+	prv_cursor_on_off(s, user_data, 1, err);
+}
+
+void subtilis_ptd_arm_off(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	prv_cursor_on_off(s, user_data, 0, err);
 }
