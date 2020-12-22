@@ -57,7 +57,9 @@ void subtilis_arm_peephole(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_data_instr_t *data;
 	subtilis_fpa_data_instr_t *fpa_data;
+	subtilis_vfp_copy_instr_t *vfp_copy;
 	subtilis_fpa_stran_instr_t *fpa_stran;
+	subtilis_vfp_stran_instr_t *vfp_stran;
 
 	ptr = arm_s->first_op;
 	while (ptr != SIZE_MAX) {
@@ -87,10 +89,25 @@ void subtilis_arm_peephole(subtilis_arm_section_t *arm_s, subtilis_error_t *err)
 				continue;
 			}
 			break;
+		case SUBTILIS_VFP_INSTR_FCPYD:
+			vfp_copy = &instr->operands.vfp_copy;
+			if (vfp_copy->src == vfp_copy->dest) {
+				ptr = prv_remove_op(arm_s, ptr, op);
+				continue;
+			}
+			break;
 		case SUBTILIS_FPA_INSTR_LDF:
 		case SUBTILIS_FPA_INSTR_STF:
 			fpa_stran = &instr->operands.fpa_stran;
 			if (fpa_stran->ccode == SUBTILIS_ARM_CCODE_NV) {
+				ptr = prv_remove_op(arm_s, ptr, op);
+				continue;
+			}
+			break;
+		case SUBTILIS_VFP_INSTR_FSTD:
+		case SUBTILIS_VFP_INSTR_FLDD:
+			vfp_stran = &instr->operands.vfp_stran;
+			if (vfp_stran->ccode == SUBTILIS_ARM_CCODE_NV) {
 				ptr = prv_remove_op(arm_s, ptr, op);
 				continue;
 			}

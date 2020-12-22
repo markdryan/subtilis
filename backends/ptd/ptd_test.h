@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef SUBTILIS_RISCOS_COMMON_RUNARM_H__
-#define SUBTILIS_RISCOS_COMMON_RUNARM_H__
+#ifndef __SUBTILIS_PTD_TEST_H
+#define __SUBTILIS_PTD_TEST_H
 
-#include <stdbool.h>
-#include <stdint.h>
-
-int runarm_main(int argc, char *argv[], uint32_t start_address, bool vfp);
+int ptd_test(void);
 
 #endif

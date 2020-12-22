@@ -162,6 +162,11 @@ void subtilis_arm_reg_alloc_alloc(subtilis_arm_reg_ud_t *ud,
 				  subtilis_arm_reg_t *reg,
 				  subtilis_arm_reg_t restricted,
 				  subtilis_error_t *err);
+void subtilis_arm_reg_alloc_alloc_fp_dest(subtilis_arm_reg_ud_t *ud,
+					  subtilis_arm_op_t *op,
+					  subtilis_arm_reg_t *dest,
+					  subtilis_error_t *err);
+
 int subtilis_arm_reg_alloc_calculate_dist(subtilis_arm_reg_ud_t *ud,
 					  size_t reg_num, subtilis_arm_op_t *op,
 					  subtlis_arm_walker_t *walker,

@@ -920,10 +920,16 @@ void subtilis_fpa_mov_reg(subtilis_arm_section_t *arm_s,
 
 void subtilis_arm_fpa_if_init(subtilis_arm_fp_if_t *fp_if)
 {
+	double dummy_float = 1.0;
+	uint32_t *lower_word = (uint32_t *)((void *)&dummy_float);
+
 	fp_if->max_regs = SUBTILIS_ARM_REG_MAX_FPA_REGS;
 	fp_if->max_offset = 1023;
 	fp_if->store_type = SUBTILIS_FPA_INSTR_STF;
 	fp_if->load_type = SUBTILIS_FPA_INSTR_LDF;
+
+	/* Slightly weird but on ARM FPA the words of a double are big endian */
+	fp_if->reverse_fpa_consts = (*lower_word) == 0;
 	fp_if->preamble_fn = subtilis_fpa_gen_preamble;
 	fp_if->preserve_regs_fn = subtilis_fpa_preserve_regs;
 	fp_if->restore_regs_fn = subtilis_fpa_restore_regs;

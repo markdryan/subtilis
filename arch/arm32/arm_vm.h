@@ -30,9 +30,17 @@ struct subtilis_arm_vm_freg_t_ {
 
 typedef struct subtilis_arm_vm_freg_t_ subtilis_arm_vm_freg_t;
 
+union subtilis_arm_vm_vfpregs_t_ {
+	double d[16];
+	float f[32];
+};
+
+typedef union subtilis_arm_vm_vfpregs_t_ subtilis_arm_vm_vfpregs_t;
+
 struct subtilis_arm_vm_t_ {
 	int32_t regs[16];
 	subtilis_arm_vm_freg_t fregs[8];
+	subtilis_arm_vm_vfpregs_t vpfregs;
 	uint32_t fpa_status;
 	uint8_t *memory;
 	size_t mem_size;
@@ -47,13 +55,15 @@ struct subtilis_arm_vm_t_ {
 	bool quit;
 	bool reverse_fpa_consts;
 	int32_t start_address;
+	uint32_t fpscr;
+	bool vfp;
 };
 
 typedef struct subtilis_arm_vm_t_ subtilis_arm_vm_t;
 
 subtilis_arm_vm_t *subtilis_arm_vm_new(uint8_t *code, size_t code_size,
 				       size_t mem_size, int32_t start_address,
-				       subtilis_error_t *err);
+				       bool vfp, subtilis_error_t *err);
 void subtilis_arm_vm_delete(subtilis_arm_vm_t *vm);
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			 subtilis_error_t *err);

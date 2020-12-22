@@ -148,6 +148,88 @@ static void prv_walk_instr(subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 		walker->fpa_cptran_fn(walker->user_data, op, instr->type,
 				      &instr->operands.fpa_cptran, err);
 		break;
+	case SUBTILIS_VFP_INSTR_FSTS:
+	case SUBTILIS_VFP_INSTR_FLDS:
+	case SUBTILIS_VFP_INSTR_FSTD:
+	case SUBTILIS_VFP_INSTR_FLDD:
+		walker->vfp_stran_fn(walker->user_data, op, instr->type,
+				     &instr->operands.vfp_stran, err);
+		break;
+	case SUBTILIS_VFP_INSTR_FCPYS:
+	case SUBTILIS_VFP_INSTR_FCPYD:
+	case SUBTILIS_VFP_INSTR_FNEGS:
+	case SUBTILIS_VFP_INSTR_FNEGD:
+	case SUBTILIS_VFP_INSTR_FABSS:
+	case SUBTILIS_VFP_INSTR_FABSD:
+		walker->vfp_copy_fn(walker->user_data, op, instr->type,
+				    &instr->operands.vfp_copy, err);
+		break;
+	case SUBTILIS_VFP_INSTR_LDRC:
+		walker->vfp_ldrc_fn(walker->user_data, op, instr->type,
+				    &instr->operands.vfp_ldrc, err);
+		break;
+	case SUBTILIS_VFP_INSTR_FSITOS:
+	case SUBTILIS_VFP_INSTR_FSITOD:
+	case SUBTILIS_VFP_INSTR_FTOSIS:
+	case SUBTILIS_VFP_INSTR_FTOSID:
+	case SUBTILIS_VFP_INSTR_FTOUIS:
+	case SUBTILIS_VFP_INSTR_FTOUID:
+	case SUBTILIS_VFP_INSTR_FTOSIZS:
+	case SUBTILIS_VFP_INSTR_FTOSIZD:
+	case SUBTILIS_VFP_INSTR_FTOUIZS:
+	case SUBTILIS_VFP_INSTR_FTOUIZD:
+	case SUBTILIS_VFP_INSTR_FUITOD:
+	case SUBTILIS_VFP_INSTR_FUITOS:
+		walker->vfp_tran_fn(walker->user_data, op, instr->type,
+				    &instr->operands.vfp_tran, err);
+		break;
+	case SUBTILIS_VFP_INSTR_FMSR:
+	case SUBTILIS_VFP_INSTR_FMRS:
+		walker->vfp_cptran_fn(walker->user_data, op, instr->type,
+				      &instr->operands.vfp_cptran, err);
+		break;
+	case SUBTILIS_VFP_INSTR_FMACS:
+	case SUBTILIS_VFP_INSTR_FMACD:
+	case SUBTILIS_VFP_INSTR_FNMACS:
+	case SUBTILIS_VFP_INSTR_FNMACD:
+	case SUBTILIS_VFP_INSTR_FMSCS:
+	case SUBTILIS_VFP_INSTR_FMSCD:
+	case SUBTILIS_VFP_INSTR_FNMSCS:
+	case SUBTILIS_VFP_INSTR_FNMSCD:
+	case SUBTILIS_VFP_INSTR_FMULS:
+	case SUBTILIS_VFP_INSTR_FMULD:
+	case SUBTILIS_VFP_INSTR_FNMULS:
+	case SUBTILIS_VFP_INSTR_FNMULD:
+	case SUBTILIS_VFP_INSTR_FADDS:
+	case SUBTILIS_VFP_INSTR_FADDD:
+	case SUBTILIS_VFP_INSTR_FSUBS:
+	case SUBTILIS_VFP_INSTR_FSUBD:
+	case SUBTILIS_VFP_INSTR_FDIVS:
+	case SUBTILIS_VFP_INSTR_FDIVD:
+		walker->vfp_data_fn(walker->user_data, op, instr->type,
+				    &instr->operands.vfp_data, err);
+		break;
+	case SUBTILIS_VFP_INSTR_FCMPS:
+	case SUBTILIS_VFP_INSTR_FCMPD:
+	case SUBTILIS_VFP_INSTR_FCMPES:
+	case SUBTILIS_VFP_INSTR_FCMPED:
+	case SUBTILIS_VFP_INSTR_FCMPZS:
+	case SUBTILIS_VFP_INSTR_FCMPZD:
+	case SUBTILIS_VFP_INSTR_FCMPEZS:
+	case SUBTILIS_VFP_INSTR_FCMPEZD:
+		walker->vfp_cmp_fn(walker->user_data, op, instr->type,
+				   &instr->operands.vfp_cmp, err);
+		break;
+	case SUBTILIS_VFP_INSTR_FSQRTD:
+	case SUBTILIS_VFP_INSTR_FSQRTS:
+		walker->vfp_sqrt_fn(walker->user_data, op, instr->type,
+				    &instr->operands.vfp_sqrt, err);
+		break;
+	case SUBTILIS_VFP_INSTR_FMXR:
+	case SUBTILIS_VFP_INSTR_FMRX:
+		walker->vfp_sysreg_fn(walker->user_data, op, instr->type,
+				      &instr->operands.vfp_sysreg, err);
+		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
 		break;

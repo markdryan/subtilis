@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 		goto cleanup;
 
 	//	printf("\n\n");
-	//	subtilis_arm_prog_dump(arm_p);
+	subtilis_arm_prog_dump(arm_p);
 
 	subtilis_arm_encode(arm_p, "RunImage", prv_set_prog_size, &err);
 	if (err.type != SUBTILIS_ERROR_OK)

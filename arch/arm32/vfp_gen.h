@@ -154,26 +154,6 @@ void subtilis_vfp_mov_reg(subtilis_arm_section_t *arm_s,
 			  subtilis_error_t *err);
 bool subtilis_vfp_is_fixed(size_t reg);
 
-/* clang-format off */
-void subtilis_vfp_insert_stran_spill_imm(subtilis_arm_section_t *s,
-					 subtilis_arm_op_t *current,
-					 subtilis_arm_instr_type_t itype,
-					 subtilis_arm_ccode_type_t ccode,
-					 subtilis_arm_reg_t dest,
-					 subtilis_arm_reg_t base,
-					 subtilis_arm_reg_t spill_reg,
-					 int32_t offset, subtilis_error_t *err);
-
-/* clang-format on */
-
-void subtilis_vfp_insert_stran_imm(subtilis_arm_section_t *s,
-				   subtilis_arm_op_t *current,
-				   subtilis_arm_instr_type_t itype,
-				   subtilis_arm_ccode_type_t ccode,
-				   subtilis_arm_reg_t dest,
-				   subtilis_arm_reg_t base, int32_t offset,
-				   subtilis_error_t *err);
-
 void subtilis_arm_vfp_if_init(subtilis_arm_fp_if_t *fp_if);
 
 #endif

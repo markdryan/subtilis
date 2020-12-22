@@ -995,7 +995,8 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	//		printf("0x%x\n",code[i]);
 	///	}
 	vm = subtilis_arm_vm_new(code, code_size, 512 * 1024,
-				 SUBTILIS_RISCOS_ARM2_PROGRAM_START, &err);
+				 SUBTILIS_RISCOS_ARM2_PROGRAM_START, false,
+				 &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1420,7 +1421,7 @@ static int prv_test_disass_data(void)
 
 	/* MOVEQ R0, r1 */
 
-	subtilis_arm_disass(&instr, prv_expected_code[0], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[0], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1451,7 +1452,7 @@ static int prv_test_disass_data(void)
 	}
 
 	/* MVNSNE R0, r1 */
-	subtilis_arm_disass(&instr, prv_expected_code[1], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[1], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1482,7 +1483,7 @@ static int prv_test_disass_data(void)
 	}
 
 	/* CMPGT R0, R1 */
-	subtilis_arm_disass(&instr, prv_expected_code[2], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[2], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1523,7 +1524,7 @@ static int prv_test_disass_mul(void)
 
 	subtilis_error_init(&err);
 
-	subtilis_arm_disass(&instr, prv_expected_code[3], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[3], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1566,7 +1567,7 @@ static int prv_test_disass_stran(void)
 	subtilis_error_init(&err);
 
 	/* LDRCS R0, [R2, #16] */
-	subtilis_arm_disass(&instr, prv_expected_code[4], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[4], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1612,7 +1613,7 @@ static int prv_test_disass_stran(void)
 	}
 
 	/* STRCS R0, [R2], R1, LSL #2 */
-	subtilis_arm_disass(&instr, prv_expected_code[15], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[15], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1665,7 +1666,7 @@ static int prv_test_disass_swi(void)
 
 	subtilis_error_init(&err);
 
-	subtilis_arm_disass(&instr, prv_expected_code[5], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[5], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1703,7 +1704,7 @@ static int prv_test_disass_b(void)
 
 	subtilis_error_init(&err);
 
-	subtilis_arm_disass(&instr, prv_expected_code[6], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[6], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1748,7 +1749,7 @@ static int prv_check_mtran(size_t index, bool write_back,
 	subtilis_error_t err;
 
 	subtilis_error_init(&err);
-	subtilis_arm_disass(&instr, prv_expected_code[index], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[index], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;

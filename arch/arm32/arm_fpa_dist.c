@@ -296,6 +296,78 @@ static void prv_dist_directive(void *user_data, subtilis_arm_op_t *op,
 {
 }
 
+static void prv_dist_vfp_stran_instr(void *user_data, subtilis_arm_op_t *op,
+				     subtilis_arm_instr_type_t type,
+				     subtilis_vfp_stran_instr_t *instr,
+				     subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_dist_vfp_copy_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_vfp_copy_instr_t *instr,
+				    subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_dist_vfp_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_vfp_ldrc_instr_t *instr,
+				    subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_dist_vfp_tran_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_vfp_tran_instr_t *instr,
+				    subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_dist_vfp_cptran_instr(void *user_data, subtilis_arm_op_t *op,
+				      subtilis_arm_instr_type_t type,
+				      subtilis_vfp_cptran_instr_t *instr,
+				      subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_dist_vfp_data_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_vfp_data_instr_t *instr,
+				    subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_dist_vfp_cmp_instr(void *user_data, subtilis_arm_op_t *op,
+				   subtilis_arm_instr_type_t type,
+				   subtilis_vfp_cmp_instr_t *instr,
+				   subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_dist_vfp_sqrt_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_vfp_sqrt_instr_t *instr,
+				    subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_dist_vfp_sysreg_instr(void *user_data, subtilis_arm_op_t *op,
+				      subtilis_arm_instr_type_t type,
+				      subtilis_vfp_sysreg_instr_t *instr,
+				      subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
 void subtilis_init_fpa_dist_walker(subtlis_arm_walker_t *walker,
 				   void *user_data)
 {
@@ -319,6 +391,15 @@ void subtilis_init_fpa_dist_walker(subtlis_arm_walker_t *walker,
 	walker->fpa_cmp_fn = prv_dist_fpa_cmp_instr;
 	walker->fpa_ldrc_fn = prv_dist_fpa_ldrc_instr;
 	walker->fpa_cptran_fn = prv_dist_fpa_cptran_instr;
+	walker->vfp_stran_fn = prv_dist_vfp_stran_instr;
+	walker->vfp_copy_fn = prv_dist_vfp_copy_instr;
+	walker->vfp_ldrc_fn = prv_dist_vfp_ldrc_instr;
+	walker->vfp_tran_fn = prv_dist_vfp_tran_instr;
+	walker->vfp_cptran_fn = prv_dist_vfp_cptran_instr;
+	walker->vfp_data_fn = prv_dist_vfp_data_instr;
+	walker->vfp_cmp_fn = prv_dist_vfp_cmp_instr;
+	walker->vfp_sqrt_fn = prv_dist_vfp_sqrt_instr;
+	walker->vfp_sysreg_fn = prv_dist_vfp_sysreg_instr;
 }
 
 static void prv_used_fpa_data_dyadic_instr(void *user_data,
@@ -438,4 +519,14 @@ void subtilis_init_fpa_used_walker(subtlis_arm_walker_t *walker,
 	walker->fpa_cmp_fn = prv_used_fpa_cmp_instr;
 	walker->fpa_ldrc_fn = prv_dist_fpa_ldrc_instr;
 	walker->fpa_cptran_fn = prv_dist_fpa_cptran_instr;
+	walker->vfp_stran_fn = prv_dist_vfp_stran_instr;
+	walker->vfp_stran_fn = prv_dist_vfp_stran_instr;
+	walker->vfp_copy_fn = prv_dist_vfp_copy_instr;
+	walker->vfp_ldrc_fn = prv_dist_vfp_ldrc_instr;
+	walker->vfp_tran_fn = prv_dist_vfp_tran_instr;
+	walker->vfp_cptran_fn = prv_dist_vfp_cptran_instr;
+	walker->vfp_data_fn = prv_dist_vfp_data_instr;
+	walker->vfp_cmp_fn = prv_dist_vfp_cmp_instr;
+	walker->vfp_sqrt_fn = prv_dist_vfp_sqrt_instr;
+	walker->vfp_sysreg_fn = prv_dist_vfp_sysreg_instr;
 }

@@ -1016,6 +1016,26 @@ void subtilis_arm_reg_alloc_alloc_dest(subtilis_arm_reg_ud_t *ud,
 	prv_allocate_dest_restricted(ud, op, dest, SIZE_MAX, err);
 }
 
+void subtilis_arm_reg_alloc_alloc_fp_dest(subtilis_arm_reg_ud_t *ud,
+					  subtilis_arm_op_t *op,
+					  subtilis_arm_reg_t *dest,
+					  subtilis_error_t *err)
+{
+	int dist_dest;
+	size_t vreg_dest = *dest;
+
+	subtilis_arm_reg_alloc_alloc(ud, op, ud->int_regs, ud->real_regs, dest,
+				     SIZE_MAX, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	dist_dest = subtilis_arm_reg_alloc_calculate_dist(
+	    ud, vreg_dest, op, &ud->real_regs->dist_walker, ud->real_regs);
+	if (dist_dest == -1)
+		ud->real_regs->phys_to_virt[*dest] = INT_MAX;
+	ud->real_regs->next[*dest] = dist_dest;
+}
+
 static void prv_alloc_mov_instr(void *user_data, subtilis_arm_op_t *op,
 				subtilis_arm_instr_type_t type,
 				subtilis_arm_data_instr_t *instr,

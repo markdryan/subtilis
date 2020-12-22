@@ -39,73 +39,128 @@ static const char *const ccode_desc[] = {
 };
 
 static const char *const instr_desc[] = {
-	"AND",  // SUBTILIS_ARM_INSTR_AND
-	"EOR",  // SUBTILIS_ARM_INSTR_EOR
-	"SUB",  // SUBTILIS_ARM_INSTR_SUB
-	"RSB",  // SUBTILIS_ARM_INSTR_RSB
-	"ADD",  // SUBTILIS_ARM_INSTR_ADD
-	"ADC",  // SUBTILIS_ARM_INSTR_ADC
-	"SBC",  // SUBTILIS_ARM_INSTR_SBC
-	"RSC",  // SUBTILIS_ARM_INSTR_RSC
-	"TST",  // SUBTILIS_ARM_INSTR_TST
-	"TEQ",  // SUBTILIS_ARM_INSTR_TEQ
-	"CMP",  // SUBTILIS_ARM_INSTR_CMP
-	"CMN",  // SUBTILIS_ARM_INSTR_CMN
-	"ORR",  // SUBTILIS_ARM_INSTR_ORR
-	"MOV",  // SUBTILIS_ARM_INSTR_MOV
-	"BIC",  // SUBTILIS_ARM_INSTR_BIC
-	"MVN",  // SUBTILIS_ARM_INSTR_MVN
-	"MUL",  // SUBTILIS_ARM_INSTR_MUL
-	"MLA",  // SUBTILIS_ARM_INSTR_MLA
-	"LDR",  // SUBTILIS_ARM_INSTR_LDR
-	"STR",  // SUBTILIS_ARM_INSTR_STR
-	"LDM",  // SUBTILIS_ARM_INSTR_LDM
-	"STM",  // SUBTILIS_ARM_INSTR_STM
-	"B",    // SUBTILIS_ARM_INSTR_B
-	"SWI",  // SUBTILIS_ARM_INSTR_SWI
-	"LDR",  // SUBTILIS_ARM_INSTR_LDRC
-	"CMOV",  // SUBTILIS_ARM_INSTR_CMOV
-	"ADR",  // SUBTILIS_ARM_INSTR_ADR
-	"LDF",  // SUBTILIS_FPA_INSTR_LDF
-	"STF",  // SUBTILIS_FPA_INSTR_STF
-	"LDR",  // SUBTILIS_FPA_INSTR_LDRC
-	"MVF",  // SUBTILIS_FPA_INSTR_MVF
-	"MNF",  // SUBTILIS_FPA_INSTR_MVF
-	"ADF",  // SUBTILIS_FPA_INSTR_ADF
-	"MUF",  // SUBTILIS_FPA_INSTR_MUF
-	"SUF",  // SUBTILIS_FPA_INSTR_SUF
-	"RSF",  // SUBTILIS_FPA_INSTR_RSF
-	"DVF",  // SUBTILIS_FPA_INSTR_DVF
-	"RDF",  // SUBTILIS_FPA_INSTR_RDF
-	"POW",  // SUBTILIS_FPA_INSTR_POW
-	"RPW",  // SUBTILIS_FPA_INSTR_RPW
-	"RMF",  // SUBTILIS_FPA_INSTR_RMF
-	"FML",  // SUBTILIS_FPA_INSTR_FML
-	"FDV",  // SUBTILIS_FPA_INSTR_FDV
-	"FRD",  // SUBTILIS_FPA_INSTR_FRD
-	"POL",  // SUBTILIS_FPA_INSTR_POL
-	"ABS",  // SUBTILIS_FPA_INSTR_ABS
-	"RND",  // SUBTILIS_FPA_INSTR_RND
-	"SQT",  // SUBTILIS_FPA_INSTR_SQT
-	"LOG",  // SUBTILIS_FPA_INSTR_LOG
-	"LGN",  // SUBTILIS_FPA_INSTR_LGN
-	"EXP",  // SUBTILIS_FPA_INSTR_EXP
-	"SIN",  // SUBTILIS_FPA_INSTR_SIN
-	"COS",  // SUBTILIS_FPA_INSTR_COS
-	"TAN",  // SUBTILIS_FPA_INSTR_TAN
-	"ASN",  // SUBTILIS_FPA_INSTR_ASN
-	"ACS",  // SUBTILIS_FPA_INSTR_ACS
-	"ATN",  // SUBTILIS_FPA_INSTR_ATN
-	"URD",  // SUBTILIS_FPA_INSTR_URD
-	"NRM",  // SUBTILIS_FPA_INSTR_NRM
-	"FLT",  // SUBTILIS_FPA_INSTR_FLT
-	"FIX",  // SUBTILIS_FPA_INSTR_FIX
-	"CMF",  // SUBTILIS_FPA_INSTR_CMF
-	"CNF",  // SUBTILIS_FPA_INSTR_CNF
-	"CMFE", // SUBTILIS_FPA_INSTR_CMFE
-	"CNFE", // SUBTILIS_FPA_INSTR_CNFE
-	"WFS",  // SUBTILIS_FPA_INSTR_WFS
-	"RFS",  // SUBTILIS_FPA_INSTR_RFS
+	"AND",    // SUBTILIS_ARM_INSTR_AND
+	"EOR",    // SUBTILIS_ARM_INSTR_EOR
+	"SUB",    // SUBTILIS_ARM_INSTR_SUB
+	"RSB",    // SUBTILIS_ARM_INSTR_RSB
+	"ADD",    // SUBTILIS_ARM_INSTR_ADD
+	"ADC",    // SUBTILIS_ARM_INSTR_ADC
+	"SBC",    // SUBTILIS_ARM_INSTR_SBC
+	"RSC",    // SUBTILIS_ARM_INSTR_RSC
+	"TST",    // SUBTILIS_ARM_INSTR_TST
+	"TEQ",    // SUBTILIS_ARM_INSTR_TEQ
+	"CMP",    // SUBTILIS_ARM_INSTR_CMP
+	"CMN",    // SUBTILIS_ARM_INSTR_CMN
+	"ORR",    // SUBTILIS_ARM_INSTR_ORR
+	"MOV",    // SUBTILIS_ARM_INSTR_MOV
+	"BIC",    // SUBTILIS_ARM_INSTR_BIC
+	"MVN",    // SUBTILIS_ARM_INSTR_MVN
+	"MUL",    // SUBTILIS_ARM_INSTR_MUL
+	"MLA",    // SUBTILIS_ARM_INSTR_MLA
+	"LDR",    // SUBTILIS_ARM_INSTR_LDR
+	"STR",    // SUBTILIS_ARM_INSTR_STR
+	"LDM",    // SUBTILIS_ARM_INSTR_LDM
+	"STM",    // SUBTILIS_ARM_INSTR_STM
+	"B",      // SUBTILIS_ARM_INSTR_B
+	"SWI",    // SUBTILIS_ARM_INSTR_SWI
+	"LDR",    // SUBTILIS_ARM_INSTR_LDRC
+	"CMOV",   // SUBTILIS_ARM_INSTR_CMOV
+	"ADR",    // SUBTILIS_ARM_INSTR_ADR
+	"LDF",    // SUBTILIS_FPA_INSTR_LDF
+	"STF",    // SUBTILIS_FPA_INSTR_STF
+	"LDR",    // SUBTILIS_FPA_INSTR_LDRC
+	"MVF",    // SUBTILIS_FPA_INSTR_MVF
+	"MNF",    // SUBTILIS_FPA_INSTR_MVF
+	"ADF",    // SUBTILIS_FPA_INSTR_ADF
+	"MUF",    // SUBTILIS_FPA_INSTR_MUF
+	"SUF",    // SUBTILIS_FPA_INSTR_SUF
+	"RSF",    // SUBTILIS_FPA_INSTR_RSF
+	"DVF",    // SUBTILIS_FPA_INSTR_DVF
+	"RDF",    // SUBTILIS_FPA_INSTR_RDF
+	"POW",    // SUBTILIS_FPA_INSTR_POW
+	"RPW",    // SUBTILIS_FPA_INSTR_RPW
+	"RMF",    // SUBTILIS_FPA_INSTR_RMF
+	"FML",    // SUBTILIS_FPA_INSTR_FML
+	"FDV",    // SUBTILIS_FPA_INSTR_FDV
+	"FRD",    // SUBTILIS_FPA_INSTR_FRD
+	"POL",    // SUBTILIS_FPA_INSTR_POL
+	"ABS",    // SUBTILIS_FPA_INSTR_ABS
+	"RND",    // SUBTILIS_FPA_INSTR_RND
+	"SQT",    // SUBTILIS_FPA_INSTR_SQT
+	"LOG",    // SUBTILIS_FPA_INSTR_LOG
+	"LGN",    // SUBTILIS_FPA_INSTR_LGN
+	"EXP",    // SUBTILIS_FPA_INSTR_EXP
+	"SIN",    // SUBTILIS_FPA_INSTR_SIN
+	"COS",    // SUBTILIS_FPA_INSTR_COS
+	"TAN",    // SUBTILIS_FPA_INSTR_TAN
+	"ASN",    // SUBTILIS_FPA_INSTR_ASN
+	"ACS",    // SUBTILIS_FPA_INSTR_ACS
+	"ATN",    // SUBTILIS_FPA_INSTR_ATN
+	"URD",    // SUBTILIS_FPA_INSTR_URD
+	"NRM",    // SUBTILIS_FPA_INSTR_NRM
+	"FLT",    // SUBTILIS_FPA_INSTR_FLT
+	"FIX",    // SUBTILIS_FPA_INSTR_FIX
+	"CMF",    // SUBTILIS_FPA_INSTR_CMF
+	"CNF",    // SUBTILIS_FPA_INSTR_CNF
+	"CMFE",   // SUBTILIS_FPA_INSTR_CMFE
+	"CNFE",   // SUBTILIS_FPA_INSTR_CNFE
+	"WFS",    // SUBTILIS_FPA_INSTR_WFS
+	"RFS",    // SUBTILIS_FPA_INSTR_RFS
+	"FSTS",   // SUBTILIS_VFP_INSTR_FSTS
+	"FLDS",   // SUBTILIS_VFP_INSTR_FLDS
+	"FSTD",   // SUBTILIS_VFP_INSTR_FSTD
+	"FLDD",   // SUBTILIS_VFP_INSTR_FLDD
+	"FCPYS",  // SUBTILIS_VFP_INSTR_FCPYS
+	"FCPYD",  // SUBTILIS_VFP_INSTR_FCPYD
+	"FNGES",  // SUBTILIS_VFP_INSTR_FNEGS
+	"FNEGD",  // SUBTILIS_VFP_INSTR_FNEGD
+	"FABSS",  // SUBTILIS_VFP_INSTR_FABSS
+	"FABSD",  // SUBTILIS_VFP_INSTR_FABSD
+	"LDRD",   // SUBTILIS_VFP_INSTR_LDRC
+	"FSITOD", // SUBTILIS_VFP_INSTR_FSITOD
+	"FSITOS", // SUBTILIS_VFP_INSTR_FSITOS
+	"FTOSIS", // SUBTILIS_VFP_INSTR_FTOSIS
+	"FTOSID", // SUBTILIS_VFP_INSTR_FTOSID
+	"FTOUIS", // SUBTILIS_VFP_INSTR_FTOUIS
+	"FTOUID", // SUBTILIS_VFP_INSTR_FTOUID
+	"FTOSIZS",// SUBTILIS_VFP_INSTR_FTOSIZS
+	"FTOSIZD",// SUBTILIS_VFP_INSTR_FTOSIZD
+	"FTOUIZS",// SUBTILIS_VFP_INSTR_FTOUIZS
+	"FTOUIZD",// SUBTILIS_VFP_INSTR_FTOUIZD
+	"FUITOD", // SUBTILIS_VFP_INSTR_FUITOD
+	"FUITOS", // SUBTILIS_VFP_INSTR_FUITOS
+	"FMSR",   // SUBTILIS_VFP_INSTR_FMSR
+	"FMRS",   // SUBTILIS_VFP_INSTR_FMRS
+	"FMACS",  // SUBTILIS_VFP_INSTR_FMACS
+	"FMACD",  // SUBTILIS_VFP_INSTR_FMACD
+	"FNMACS", // SUBTILIS_VFP_INSTR_FNMACS
+	"FNMACD", // SUBTILIS_VFP_INSTR_FNMACD
+	"FMSCS",  // SUBTILIS_VFP_INSTR_FMSCS
+	"FMSCD",  // SUBTILIS_VFP_INSTR_FMSCD
+	"FNMSCS", // SUBTILIS_VFP_INSTR_FNMSCS
+	"FNMSCD", // SUBTILIS_VFP_INSTR_FNMSCD
+	"FMULS",  // SUBTILIS_VFP_INSTR_FMULS
+	"FMULD",  // SUBTILIS_VFP_INSTR_FMULD
+	"FNMULS", // SUBTILIS_VFP_INSTR_FNMULS
+	"FNMULD", // SUBTILIS_VFP_INSTR_FNMULD
+	"FADDS",  // SUBTILIS_VFP_INSTR_FADDS
+	"FADDD",  // SUBTILIS_VFP_INSTR_FADDD
+	"FSUBS",  // SUBTILIS_VFP_INSTR_FSUBS
+	"FSUBD",  // SUBTILIS_VFP_INSTR_FSUBD
+	"FDIVS",  // SUBTILIS_VFP_INSTR_FDIVS
+	"FDIVD",  // SUBTILIS_VFP_INSTR_FDIVD
+	"FCMPS",  // SUBTILIS_VFP_INSTR_FCMPS
+	"FCMPD",  // SUBTILIS_VFP_INSTR_FCMPD
+	"FCMPES", // SUBTILIS_VFP_INSTR_FCMPES
+	"FCMPED", // SUBTILIS_VFP_INSTR_FCMPED
+	"FCMPZS", // SUBTILIS_VFP_INSTR_FCMPZS
+	"FCMPZD", // SUBTILIS_VFP_INSTR_FCMPZD
+	"FCMPEZS",// SUBTILIS_VFP_INSTR_FCMPEZS
+	"FCMPEZD",// SUBTILIS_VFP_INSTR_FCMPEZD
+	"FSQRTD", // SUBTILIS_VFP_INSTR_FSQRTD,
+	"FSQRTS", // SUBTILIS_VFP_INSTR_FSQRTS,
+	"FMXR",   // SUBTILIS_VFP_INSTR_FMXR,
+	"FMRX",   // SUBTILIS_VFP_INSTR_FMRX,
 };
 
 static const char *const shift_desc[] = {
@@ -538,6 +593,249 @@ static void prv_dump_directive(void *user_data, subtilis_arm_op_t *op,
 	}
 }
 
+static void prv_dump_vfp_stran_instr(void *user_data, subtilis_arm_op_t *op,
+				     subtilis_arm_instr_type_t type,
+				     subtilis_vfp_stran_instr_t *instr,
+				     subtilis_error_t *err)
+{
+	const char *sub = instr->subtract ? "-" : "";
+	const char *reg_type = "D";
+
+	if (type == SUBTILIS_VFP_INSTR_FSTS || type == SUBTILIS_VFP_INSTR_FLDS)
+		reg_type = "S";
+
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf(" %s%zu", reg_type, instr->dest);
+	if (instr->pre_indexed)
+		printf(", [R%zu, %s#%d]", instr->base, sub, instr->offset * 4);
+	else
+		printf(", [R%zu], %s#%d", instr->base, sub, instr->offset * 4);
+	if (instr->write_back)
+		printf("!");
+	printf("\n");
+}
+
+static void prv_dump_vfp_copy_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_vfp_copy_instr_t *instr,
+				    subtilis_error_t *err)
+{
+	const char *reg_type;
+
+	switch (type) {
+	case SUBTILIS_VFP_INSTR_FCPYS:
+	case SUBTILIS_VFP_INSTR_FNEGS:
+	case SUBTILIS_VFP_INSTR_FABSS:
+		reg_type = "S";
+		return;
+	default:
+		reg_type = "D";
+		break;
+	}
+
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf(" %s%zu, %s%zu\n", reg_type, instr->dest, reg_type, instr->src);
+}
+
+static void prv_dump_vfp_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_vfp_ldrc_instr_t *instr,
+				    subtilis_error_t *err)
+{
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf(" D%zu, label_%zu\n", instr->dest, instr->label);
+}
+
+static void prv_dump_vfp_tran_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_vfp_tran_instr_t *instr,
+				    subtilis_error_t *err)
+{
+	const char *dest_reg_type = "S";
+	const char *src_reg_type = "S";
+	subtilis_arm_reg_t src_reg = instr->src;
+	subtilis_arm_reg_t dest_reg = instr->dest;
+
+	switch (type) {
+	case SUBTILIS_VFP_INSTR_FTOSIS:
+	case SUBTILIS_VFP_INSTR_FTOUIS:
+	case SUBTILIS_VFP_INSTR_FTOUIZS:
+	case SUBTILIS_VFP_INSTR_FTOSIZS:
+	case SUBTILIS_VFP_INSTR_FSITOS:
+	case SUBTILIS_VFP_INSTR_FUITOS:
+		break;
+	case SUBTILIS_VFP_INSTR_FSITOD:
+	case SUBTILIS_VFP_INSTR_FUITOD:
+		dest_reg_type = "D";
+		if (instr->use_dregs)
+			src_reg *= 2;
+		break;
+	case SUBTILIS_VFP_INSTR_FTOSID:
+	case SUBTILIS_VFP_INSTR_FTOUID:
+	case SUBTILIS_VFP_INSTR_FTOSIZD:
+	case SUBTILIS_VFP_INSTR_FTOUIZD:
+		src_reg_type = "D";
+		if (instr->use_dregs)
+			dest_reg *= 2;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf(" %s%zu, %s%zu\n", dest_reg_type, dest_reg, src_reg_type,
+	       src_reg);
+}
+
+static void prv_dump_vfp_cptran_instr(void *user_data, subtilis_arm_op_t *op,
+				      subtilis_arm_instr_type_t type,
+				      subtilis_vfp_cptran_instr_t *instr,
+				      subtilis_error_t *err)
+{
+	subtilis_arm_reg_t reg;
+
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+
+	if (type == SUBTILIS_VFP_INSTR_FMSR) {
+		reg = instr->use_dregs ? instr->dest * 2 : instr->dest;
+		printf(" S%zu, R%zu\n", reg, instr->src);
+	} else {
+		reg = instr->use_dregs ? instr->src * 2 : instr->src;
+		printf(" R%zu, S%zu\n", instr->dest, reg);
+	}
+}
+
+static void prv_dump_vfp_data_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_vfp_data_instr_t *instr,
+				    subtilis_error_t *err)
+{
+	const char *reg;
+
+	switch (type) {
+	case SUBTILIS_VFP_INSTR_FMACS:
+	case SUBTILIS_VFP_INSTR_FNMACS:
+	case SUBTILIS_VFP_INSTR_FMSCS:
+	case SUBTILIS_VFP_INSTR_FNMSCS:
+	case SUBTILIS_VFP_INSTR_FMULS:
+	case SUBTILIS_VFP_INSTR_FNMULS:
+	case SUBTILIS_VFP_INSTR_FADDS:
+	case SUBTILIS_VFP_INSTR_FSUBS:
+	case SUBTILIS_VFP_INSTR_FDIVS:
+		reg = "S";
+		break;
+	default:
+		reg = "D";
+		break;
+	}
+
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+
+	printf(" %s%zu, %s%zu, %s%zu\n", reg, instr->dest, reg, instr->op1, reg,
+	       instr->op2);
+}
+
+static void prv_dump_vfp_cmp_instr(void *user_data, subtilis_arm_op_t *op,
+				   subtilis_arm_instr_type_t type,
+				   subtilis_vfp_cmp_instr_t *instr,
+				   subtilis_error_t *err)
+{
+	const char *reg = "D";
+	bool op2 = false;
+
+	printf("\t%s", instr_desc[type]);
+
+	switch (type) {
+	case SUBTILIS_VFP_INSTR_FCMPES:
+	case SUBTILIS_VFP_INSTR_FCMPS:
+		reg = "S";
+		op2 = true;
+		break;
+	case SUBTILIS_VFP_INSTR_FCMPD:
+	case SUBTILIS_VFP_INSTR_FCMPED:
+		op2 = true;
+		break;
+	case SUBTILIS_VFP_INSTR_FCMPZS:
+	case SUBTILIS_VFP_INSTR_FCMPEZS:
+		reg = "S";
+		break;
+	default:
+		break;
+	}
+
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+
+	printf(" %s%zu", reg, instr->op1);
+	if (op2)
+		printf(", %s%zu", reg, instr->op2);
+	printf("\n");
+}
+
+static void prv_dump_vfp_sqrt_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_vfp_sqrt_instr_t *instr,
+				    subtilis_error_t *err)
+{
+	const char *reg = (type == SUBTILIS_VFP_INSTR_FSQRTD) ? "D" : "S";
+
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+
+	printf(" %s%zu, %s%zu\n", reg, instr->dest, reg, instr->op1);
+}
+
+static void prv_dump_vfp_sysreg_instr(void *user_data, subtilis_arm_op_t *op,
+				      subtilis_arm_instr_type_t type,
+				      subtilis_vfp_sysreg_instr_t *instr,
+				      subtilis_error_t *err)
+{
+	const char *sysreg;
+
+	if ((type == SUBTILIS_VFP_INSTR_FMRX) && (instr->arm_reg == 15) &&
+	    (instr->sysreg == SUBTILIS_VFP_SYSREG_FPSCR)) {
+		printf("\tFMSTAT\n");
+		if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+			printf("%s", ccode_desc[instr->ccode]);
+		return;
+	}
+
+	switch (instr->sysreg) {
+	case SUBTILIS_VFP_SYSREG_FPSID:
+		sysreg = "FPSID";
+		break;
+	case SUBTILIS_VFP_SYSREG_FPSCR:
+		sysreg = "FPSCR";
+		break;
+	case SUBTILIS_VFP_SYSREG_FPEXC:
+		sysreg = "FPEXC";
+		break;
+	}
+
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+
+	if (type == SUBTILIS_VFP_INSTR_FMRX)
+		printf(" R%zu, %s\n", instr->arm_reg, sysreg);
+	else
+		printf(" %s, R%zu\n", sysreg, instr->arm_reg);
+}
+
 void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 			       subtilis_arm_section_t *s)
 {
@@ -568,6 +866,15 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 	walker.fpa_cmp_fn = prv_dump_fpa_cmp_instr;
 	walker.fpa_ldrc_fn = prv_dump_fpa_ldrc_instr;
 	walker.fpa_cptran_fn = prv_dump_fpa_cptran_instr;
+	walker.vfp_stran_fn = prv_dump_vfp_stran_instr;
+	walker.vfp_copy_fn = prv_dump_vfp_copy_instr;
+	walker.vfp_ldrc_fn = prv_dump_vfp_ldrc_instr;
+	walker.vfp_tran_fn = prv_dump_vfp_tran_instr;
+	walker.vfp_cptran_fn = prv_dump_vfp_cptran_instr;
+	walker.vfp_data_fn = prv_dump_vfp_data_instr;
+	walker.vfp_cmp_fn = prv_dump_vfp_cmp_instr;
+	walker.vfp_sqrt_fn = prv_dump_vfp_sqrt_instr;
+	walker.vfp_sysreg_fn = prv_dump_vfp_sysreg_instr;
 
 	subtilis_arm_walk(s, &walker, &err);
 
@@ -720,6 +1027,89 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 	case SUBTILIS_FPA_INSTR_RFS:
 		prv_dump_fpa_cptran_instr(NULL, NULL, instr->type,
 					  &instr->operands.fpa_cptran, NULL);
+		break;
+	case SUBTILIS_VFP_INSTR_FSTS:
+	case SUBTILIS_VFP_INSTR_FLDS:
+	case SUBTILIS_VFP_INSTR_FSTD:
+	case SUBTILIS_VFP_INSTR_FLDD:
+		prv_dump_vfp_stran_instr(NULL, NULL, instr->type,
+					 &instr->operands.vfp_stran, NULL);
+		break;
+	case SUBTILIS_VFP_INSTR_FCPYS:
+	case SUBTILIS_VFP_INSTR_FCPYD:
+	case SUBTILIS_VFP_INSTR_FNEGS:
+	case SUBTILIS_VFP_INSTR_FNEGD:
+	case SUBTILIS_VFP_INSTR_FABSS:
+	case SUBTILIS_VFP_INSTR_FABSD:
+		prv_dump_vfp_copy_instr(NULL, NULL, instr->type,
+					&instr->operands.vfp_copy, NULL);
+		break;
+	case SUBTILIS_VFP_INSTR_LDRC:
+		prv_dump_vfp_ldrc_instr(NULL, NULL, instr->type,
+					&instr->operands.vfp_ldrc, NULL);
+		break;
+	case SUBTILIS_VFP_INSTR_FSITOS:
+	case SUBTILIS_VFP_INSTR_FSITOD:
+	case SUBTILIS_VFP_INSTR_FTOSIS:
+	case SUBTILIS_VFP_INSTR_FTOSID:
+	case SUBTILIS_VFP_INSTR_FTOUIS:
+	case SUBTILIS_VFP_INSTR_FTOUID:
+	case SUBTILIS_VFP_INSTR_FTOSIZS:
+	case SUBTILIS_VFP_INSTR_FTOSIZD:
+	case SUBTILIS_VFP_INSTR_FTOUIZS:
+	case SUBTILIS_VFP_INSTR_FTOUIZD:
+	case SUBTILIS_VFP_INSTR_FUITOD:
+	case SUBTILIS_VFP_INSTR_FUITOS:
+		prv_dump_vfp_tran_instr(NULL, NULL, instr->type,
+					&instr->operands.vfp_tran, NULL);
+
+		break;
+	case SUBTILIS_VFP_INSTR_FMSR:
+	case SUBTILIS_VFP_INSTR_FMRS:
+		prv_dump_vfp_cptran_instr(NULL, NULL, instr->type,
+					  &instr->operands.vfp_cptran, NULL);
+		break;
+	case SUBTILIS_VFP_INSTR_FMACS:
+	case SUBTILIS_VFP_INSTR_FMACD:
+	case SUBTILIS_VFP_INSTR_FNMACS:
+	case SUBTILIS_VFP_INSTR_FNMACD:
+	case SUBTILIS_VFP_INSTR_FMSCS:
+	case SUBTILIS_VFP_INSTR_FMSCD:
+	case SUBTILIS_VFP_INSTR_FNMSCS:
+	case SUBTILIS_VFP_INSTR_FNMSCD:
+	case SUBTILIS_VFP_INSTR_FMULS:
+	case SUBTILIS_VFP_INSTR_FMULD:
+	case SUBTILIS_VFP_INSTR_FNMULS:
+	case SUBTILIS_VFP_INSTR_FNMULD:
+	case SUBTILIS_VFP_INSTR_FADDS:
+	case SUBTILIS_VFP_INSTR_FADDD:
+	case SUBTILIS_VFP_INSTR_FSUBS:
+	case SUBTILIS_VFP_INSTR_FSUBD:
+	case SUBTILIS_VFP_INSTR_FDIVS:
+	case SUBTILIS_VFP_INSTR_FDIVD:
+		prv_dump_vfp_data_instr(NULL, NULL, instr->type,
+					&instr->operands.vfp_data, NULL);
+		break;
+	case SUBTILIS_VFP_INSTR_FCMPS:
+	case SUBTILIS_VFP_INSTR_FCMPD:
+	case SUBTILIS_VFP_INSTR_FCMPES:
+	case SUBTILIS_VFP_INSTR_FCMPED:
+	case SUBTILIS_VFP_INSTR_FCMPZS:
+	case SUBTILIS_VFP_INSTR_FCMPZD:
+	case SUBTILIS_VFP_INSTR_FCMPEZS:
+	case SUBTILIS_VFP_INSTR_FCMPEZD:
+		prv_dump_vfp_cmp_instr(NULL, NULL, instr->type,
+				       &instr->operands.vfp_cmp, NULL);
+		break;
+	case SUBTILIS_VFP_INSTR_FSQRTD:
+	case SUBTILIS_VFP_INSTR_FSQRTS:
+		prv_dump_vfp_sqrt_instr(NULL, NULL, instr->type,
+					&instr->operands.vfp_sqrt, NULL);
+		break;
+	case SUBTILIS_VFP_INSTR_FMXR:
+	case SUBTILIS_VFP_INSTR_FMRX:
+		prv_dump_vfp_sysreg_instr(NULL, NULL, instr->type,
+					  &instr->operands.vfp_sysreg, NULL);
 		break;
 	default:
 		printf("\tUNKNOWN INSTRUCTION\n");

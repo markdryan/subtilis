@@ -19,26 +19,6 @@
 
 #include <limits.h>
 
-static void prv_allocate_fpa_dest(subtilis_arm_reg_ud_t *ud,
-				  subtilis_arm_op_t *op,
-				  subtilis_arm_reg_t *dest,
-				  subtilis_error_t *err)
-{
-	int dist_dest;
-	size_t vreg_dest = *dest;
-
-	subtilis_arm_reg_alloc_alloc(ud, op, ud->int_regs, ud->real_regs, dest,
-				     SIZE_MAX, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	dist_dest = subtilis_arm_reg_alloc_calculate_dist(
-	    ud, vreg_dest, op, &ud->real_regs->dist_walker, ud->real_regs);
-	if (dist_dest == -1)
-		ud->real_regs->phys_to_virt[*dest] = INT_MAX;
-	ud->real_regs->next[*dest] = dist_dest;
-}
-
 static void prv_alloc_fpa_data_dyadic_instr(void *user_data,
 					    subtilis_arm_op_t *op,
 					    subtilis_arm_instr_type_t type,
@@ -76,7 +56,7 @@ static void prv_alloc_fpa_data_dyadic_instr(void *user_data,
 	if (dist_op1 == -1)
 		ud->real_regs->phys_to_virt[instr->op1] = INT_MAX;
 
-	prv_allocate_fpa_dest(ud, op, &instr->dest, err);
+	subtilis_arm_reg_alloc_alloc_fp_dest(ud, op, &instr->dest, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -110,7 +90,7 @@ static void prv_alloc_fpa_data_monadic_instr(void *user_data,
 			ud->real_regs->phys_to_virt[instr->op2.reg] = INT_MAX;
 	}
 
-	prv_allocate_fpa_dest(ud, op, &instr->dest, err);
+	subtilis_arm_reg_alloc_alloc_fp_dest(ud, op, &instr->dest, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -176,7 +156,7 @@ static void prv_alloc_fpa_stran_instr(void *user_data, subtilis_arm_op_t *op,
 			ud->real_regs->phys_to_virt[instr->dest] = INT_MAX;
 		ud->real_regs->next[instr->dest] = dist_dest;
 	} else {
-		prv_allocate_fpa_dest(ud, op, &instr->dest, err);
+		subtilis_arm_reg_alloc_alloc_fp_dest(ud, op, &instr->dest, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
@@ -233,7 +213,7 @@ static void prv_alloc_fpa_tran_instr(void *user_data, subtilis_arm_op_t *op,
 				    INT_MAX;
 		}
 
-		prv_allocate_fpa_dest(ud, op, &instr->dest, err);
+		subtilis_arm_reg_alloc_alloc_fp_dest(ud, op, &instr->dest, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
@@ -291,7 +271,7 @@ static void prv_alloc_fpa_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 {
 	subtilis_arm_reg_ud_t *ud = user_data;
 
-	prv_allocate_fpa_dest(ud, op, &instr->dest, err);
+	subtilis_arm_reg_alloc_alloc_fp_dest(ud, op, &instr->dest, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -333,6 +313,70 @@ static void prv_alloc_fpa_cptran_instr(void *user_data, subtilis_arm_op_t *op,
 	ud->instr_count++;
 }
 
+static void prv_alloc_vfp_stran_instr(void *user_data, subtilis_arm_op_t *op,
+				      subtilis_arm_instr_type_t type,
+				      subtilis_vfp_stran_instr_t *instr,
+				      subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_alloc_vfp_copy_instr(void *user_data, subtilis_arm_op_t *op,
+				     subtilis_arm_instr_type_t type,
+				     subtilis_vfp_copy_instr_t *instr,
+				     subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_alloc_vfp_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
+				     subtilis_arm_instr_type_t type,
+				     subtilis_vfp_ldrc_instr_t *instr,
+				     subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_alloc_vfp_cptran_instr(void *user_data, subtilis_arm_op_t *op,
+				       subtilis_arm_instr_type_t type,
+				       subtilis_vfp_cptran_instr_t *instr,
+				       subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_alloc_vfp_data_instr(void *user_data, subtilis_arm_op_t *op,
+				     subtilis_arm_instr_type_t type,
+				     subtilis_vfp_data_instr_t *instr,
+				     subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_alloc_vfp_cmp_instr(void *user_data, subtilis_arm_op_t *op,
+				    subtilis_arm_instr_type_t type,
+				    subtilis_vfp_cmp_instr_t *instr,
+				    subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_alloc_vfp_sqrt_instr(void *user_data, subtilis_arm_op_t *op,
+				     subtilis_arm_instr_type_t type,
+				     subtilis_vfp_sqrt_instr_t *instr,
+				     subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_alloc_vfp_sysreg_instr(void *user_data, subtilis_arm_op_t *op,
+				       subtilis_arm_instr_type_t type,
+				       subtilis_vfp_sysreg_instr_t *instr,
+				       subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
 void subtilis_fpa_alloc_init_walker(subtlis_arm_walker_t *walker,
 				    void *user_data)
 {
@@ -343,4 +387,12 @@ void subtilis_fpa_alloc_init_walker(subtlis_arm_walker_t *walker,
 	walker->fpa_cmp_fn = prv_alloc_fpa_cmp_instr;
 	walker->fpa_ldrc_fn = prv_alloc_fpa_ldrc_instr;
 	walker->fpa_cptran_fn = prv_alloc_fpa_cptran_instr;
+	walker->vfp_stran_fn = prv_alloc_vfp_stran_instr;
+	walker->vfp_copy_fn = prv_alloc_vfp_copy_instr;
+	walker->vfp_ldrc_fn = prv_alloc_vfp_ldrc_instr;
+	walker->vfp_cptran_fn = prv_alloc_vfp_cptran_instr;
+	walker->vfp_data_fn = prv_alloc_vfp_data_instr;
+	walker->vfp_cmp_fn = prv_alloc_vfp_cmp_instr;
+	walker->vfp_sqrt_fn = prv_alloc_vfp_sqrt_instr;
+	walker->vfp_sysreg_fn = prv_alloc_vfp_sysreg_instr;
 }

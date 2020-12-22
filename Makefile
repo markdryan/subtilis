@@ -88,7 +88,8 @@ FPA =\
 VFP =\
 	vfp_gen.c \
 	vfp_alloc.c \
-	arm_vfp_dist.c
+	arm_vfp_dist.c \
+	vfp.c
 
 
 SUBTRO =\
@@ -130,6 +131,7 @@ TESTS =\
 	arm_core_test.c \
 	arm_vm.c \
 	arm_test.c \
+	ptd_test.c \
 	arm_reg_alloc_test.c \
 	arm_disass.c \
 	fpa_test.c \
@@ -157,7 +159,7 @@ runro: $(RUNRO:%.c=%.o) $(RUNARM:%.c=%.o) $(COMMON:%.c=%.o)
 runptd: $(RUNPTD:%.c=%.o) $(RUNARM:%.c=%.o) $(COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
-unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(FPA:%.c=%.o) $(RISCOS_ARM2:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
+unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(FPA:%.c=%.o) $(VFP:%.c=%.o)  $(PTD:%.c=%.o) $(RISCOS_ARM2:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 .PHONY: clean

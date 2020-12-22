@@ -113,7 +113,7 @@ subtilis_arm_reg_t subtilis_arm_acquire_new_reg(subtilis_arm_section_t *s)
 
 subtilis_arm_reg_t subtilis_arm_acquire_new_freg(subtilis_arm_section_t *s)
 {
-	return subtilis_arm_ir_to_freg(s->freg_counter++);
+	return subtilis_arm_ir_to_real_reg(s, s->freg_counter++);
 }
 
 /* clang-format off */
@@ -166,7 +166,7 @@ void subtilis_arm_section_max_regs(subtilis_arm_section_t *s, size_t *int_regs,
 	*int_regs = subtilis_arm_ir_to_arm_reg(s->reg_counter);
 	if (*int_regs < SUBTILIS_ARM_INT_VIRT_REG_START)
 		*int_regs = SUBTILIS_ARM_INT_VIRT_REG_START;
-	*real_regs = subtilis_arm_ir_to_freg(s->freg_counter);
+	*real_regs = subtilis_arm_ir_to_real_reg(s, s->freg_counter);
 }
 
 static void prv_free_constants(subtilis_arm_constants_t *constants)
@@ -264,8 +264,6 @@ subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 /* clang-format on */
 
 {
-	double dummy_float = 1.0;
-	uint32_t *lower_word = (uint32_t *)((void *)&dummy_float);
 	subtilis_arm_prog_t *arm_p = malloc(sizeof(*arm_p));
 
 	if (!arm_p) {
@@ -285,8 +283,6 @@ subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 	arm_p->string_pool = subtilis_string_pool_clone(string_pool);
 	arm_p->constant_pool = subtilis_constant_pool_clone(cnst_pool);
 
-	/* Slightly weird but on ARM FPA the words of a double are big endian */
-	arm_p->reverse_fpa_consts = (*lower_word) == 0;
 	arm_p->settings = settings;
 	arm_p->fp_if = fp_if;
 	arm_p->start_address = start_address;
@@ -345,8 +341,12 @@ subtilis_arm_iclass_t subtilis_arm_get_iclass(subtilis_arm_instr_type_t itype,
 		return SUBTILIS_ARM_ICLASS_INT;
 
 	if (itype >= SUBTILIS_FPA_INSTR_LDF &&
-	    itype < SUBTILIS_ARM_INSTR_FPA_MAX)
+	    itype <= SUBTILIS_ARM_INSTR_FPA_MAX)
 		return SUBTILIS_ARM_ICLASS_FPA;
+
+	if (itype >= SUBTILIS_VFP_INSTR_FSTS &&
+	    itype <= SUBTILIS_ARM_INSTR_VFP_MAX)
+		return SUBTILIS_ARM_ICLASS_VFP;
 
 	subtilis_error_set_assertion_failed(err);
 
@@ -394,11 +394,30 @@ subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg)
 	return arm_reg;
 }
 
+subtilis_arm_reg_t subtilis_arm_ir_to_real_reg(subtilis_arm_section_t *s,
+					       size_t ir_reg)
+{
+	subtilis_arm_reg_t arm_reg;
+
+	arm_reg = ir_reg + s->fp_if->max_regs;
+
+	return arm_reg;
+}
+
 subtilis_arm_reg_t subtilis_arm_ir_to_freg(size_t ir_reg)
 {
 	subtilis_arm_reg_t arm_reg;
 
-	arm_reg = ir_reg + SUBTILIS_ARM_FPA_VIRT_REG_START;
+	arm_reg = ir_reg + SUBTILIS_ARM_REG_MAX_FPA_REGS;
+
+	return arm_reg;
+}
+
+subtilis_arm_reg_t subtilis_arm_ir_to_dreg(size_t ir_reg)
+{
+	subtilis_arm_reg_t arm_reg;
+
+	arm_reg = ir_reg + SUBTILIS_ARM_REG_MAX_VFP_DBL_REGS;
 
 	return arm_reg;
 }
@@ -1554,4 +1573,28 @@ void subtilis_arm_restore_stack(subtilis_arm_section_t *arm_s,
 		datai = &arm_s->op_pool->ops[rs].op.instr.operands.data;
 		datai->op2.op.integer = stack_space;
 	}
+}
+
+void subtilis_arm_add_real_constant(subtilis_arm_section_t *s, size_t label,
+				    double num, subtilis_error_t *err)
+{
+	subtilis_arm_real_constant_t *c;
+	subtilis_arm_real_constant_t *new_constants;
+	size_t new_max;
+
+	if (s->constants.real_count == s->constants.max_real) {
+		new_max = s->constants.max_real + 64;
+		new_constants =
+		    realloc(s->constants.real,
+			    new_max * sizeof(subtilis_arm_real_constant_t));
+		if (!new_constants) {
+			subtilis_error_set_oom(err);
+			return;
+		}
+		s->constants.max_real = new_max;
+		s->constants.real = new_constants;
+	}
+	c = &s->constants.real[s->constants.real_count++];
+	c->real = num;
+	c->label = label;
 }

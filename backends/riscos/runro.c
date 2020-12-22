@@ -20,5 +20,6 @@
 
 int main(int argc, char *argv[])
 {
-	return runarm_main(argc, argv, SUBTILIS_RISCOS_ARM2_PROGRAM_START);
+	return runarm_main(argc, argv, SUBTILIS_RISCOS_ARM2_PROGRAM_START,
+			   false);
 }
