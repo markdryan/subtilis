@@ -2281,6 +2281,14 @@ static void prv_process_vfp_fdivs(subtilis_arm_vm_t *arm_vm,
 				  subtilis_vfp_data_instr_t *op,
 				  subtilis_error_t *err)
 {
+	if (arm_vm->vpfregs.f[op->op2] == 0.0) {
+		arm_vm->fpscr |= 2;
+#ifdef INFINITY
+		arm_vm->vpfregs.f[op->dest] = INFINITY;
+#endif
+		return;
+	}
+
 	arm_vm->vpfregs.f[op->dest] =
 	    arm_vm->vpfregs.f[op->op1] / arm_vm->vpfregs.f[op->op2];
 }
@@ -2289,6 +2297,14 @@ static void prv_process_vfp_fdivd(subtilis_arm_vm_t *arm_vm,
 				  subtilis_vfp_data_instr_t *op,
 				  subtilis_error_t *err)
 {
+	if (arm_vm->vpfregs.d[op->op2] == 0.0) {
+		arm_vm->fpscr |= 2;
+#ifdef INFINITY
+		arm_vm->vpfregs.f[op->dest] = INFINITY;
+#endif
+		return;
+	}
+
 	arm_vm->vpfregs.d[op->dest] =
 	    arm_vm->vpfregs.d[op->op1] / arm_vm->vpfregs.d[op->op2];
 }

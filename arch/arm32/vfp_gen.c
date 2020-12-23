@@ -193,28 +193,24 @@ static void prv_check_divbyzero(subtilis_arm_section_t *arm_s,
 				subtilis_arm_reg_t res, int32_t error_code,
 				subtilis_error_t *err)
 {
-	subtilis_arm_reg_t dest1;
-	subtilis_arm_reg_t dest2;
+	subtilis_arm_reg_t status;
+	subtilis_arm_reg_t dest;
 	subtilis_arm_instr_t *instr;
+	subtilis_arm_data_instr_t *datai;
 	subtilis_arm_br_instr_t *br;
 	size_t label = arm_s->label_counter++;
 
-	dest1 = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
-	dest2 = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	dest = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	status = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
 
-	subtilis_vfp_add_tran_dbl(arm_s, SUBTILIS_VFP_INSTR_FMRRD,
-				  SUBTILIS_ARM_CCODE_AL, dest1, dest2, res, 0,
-				  err);
+	subtilis_vfp_add_sysreg(arm_s, SUBTILIS_VFP_INSTR_FMRX,
+				SUBTILIS_ARM_CCODE_AL,
+				SUBTILIS_VFP_SYSREG_FPSCR, status, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
-				 SUBTILIS_ARM_CCODE_AL, dest1, 0, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
-				 SUBTILIS_ARM_CCODE_EQ, dest2, 0x7ff00000, err);
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_TST,
+				 SUBTILIS_ARM_CCODE_AL, status, 2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -224,13 +220,31 @@ static void prv_check_divbyzero(subtilis_arm_section_t *arm_s,
 		return;
 
 	br = &instr->operands.br;
-	br->ccode = SUBTILIS_ARM_CCODE_NE;
+	br->ccode = SUBTILIS_ARM_CCODE_EQ;
 	br->link = false;
 	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
 	br->target.label = label;
 
-	subtilis_arm_gen_sete(arm_s, s, SUBTILIS_ARM_CCODE_AL, dest1,
-			      error_code, err);
+	subtilis_arm_gen_sete(arm_s, s, SUBTILIS_ARM_CCODE_AL, dest, error_code,
+			      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_BIC, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai = &instr->operands.data;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->dest = status;
+	datai->op1 = status;
+	datai->op2.type = SUBTILIS_ARM_OP2_I32;
+	datai->op2.op.integer = 2;
+
+	subtilis_vfp_add_sysreg(arm_s, SUBTILIS_VFP_INSTR_FMXR,
+				SUBTILIS_ARM_CCODE_AL,
+				SUBTILIS_VFP_SYSREG_FPSCR, status, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
