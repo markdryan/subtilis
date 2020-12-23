@@ -327,6 +327,66 @@ void subtilis_vfp_gen_rsubir(subtilis_ir_section_t *s, size_t start,
 			      err);
 }
 
+void subtilis_vfp_gen_fma_right(subtilis_ir_section_t *s, size_t start,
+				void *user_data, subtilis_error_t *err)
+{
+	subtilis_ir_inst_t *mul = &s->ops[start]->op.instr;
+	subtilis_ir_inst_t *add = &s->ops[start + 1]->op.instr;
+	subtilis_arm_reg_t dest = subtilis_arm_ir_to_dreg(add->operands[0].reg);
+	subtilis_arm_reg_t op1 = subtilis_arm_ir_to_dreg(mul->operands[1].reg);
+	subtilis_arm_reg_t op2 = subtilis_arm_ir_to_dreg(mul->operands[2].reg);
+	subtilis_arm_reg_t op3 = subtilis_arm_ir_to_dreg(add->operands[1].reg);
+	subtilis_arm_section_t *arm_s = user_data;
+
+	subtilis_vfp_add_copy(arm_s, SUBTILIS_ARM_CCODE_AL,
+			      SUBTILIS_VFP_INSTR_FCPYD, dest, op3, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_vfp_add_data(arm_s, SUBTILIS_VFP_INSTR_FMACD,
+			      SUBTILIS_ARM_CCODE_AL, dest, op1, op2, err);
+}
+
+void subtilis_vfp_gen_fma_left(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_error_t *err)
+{
+	subtilis_ir_inst_t *mul = &s->ops[start]->op.instr;
+	subtilis_ir_inst_t *add = &s->ops[start + 1]->op.instr;
+	subtilis_arm_reg_t dest = subtilis_arm_ir_to_dreg(add->operands[0].reg);
+	subtilis_arm_reg_t op1 = subtilis_arm_ir_to_dreg(mul->operands[1].reg);
+	subtilis_arm_reg_t op2 = subtilis_arm_ir_to_dreg(mul->operands[2].reg);
+	subtilis_arm_reg_t op3 = subtilis_arm_ir_to_dreg(add->operands[2].reg);
+	subtilis_arm_section_t *arm_s = user_data;
+
+	subtilis_vfp_add_copy(arm_s, SUBTILIS_ARM_CCODE_AL,
+			      SUBTILIS_VFP_INSTR_FCPYD, dest, op3, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_vfp_add_data(arm_s, SUBTILIS_VFP_INSTR_FMACD,
+			      SUBTILIS_ARM_CCODE_AL, dest, op1, op2, err);
+}
+
+void subtilis_vfp_gen_nfma_right(subtilis_ir_section_t *s, size_t start,
+				 void *user_data, subtilis_error_t *err)
+{
+	subtilis_ir_inst_t *mul = &s->ops[start]->op.instr;
+	subtilis_ir_inst_t *add = &s->ops[start + 1]->op.instr;
+	subtilis_arm_reg_t dest = subtilis_arm_ir_to_dreg(add->operands[0].reg);
+	subtilis_arm_reg_t op1 = subtilis_arm_ir_to_dreg(mul->operands[1].reg);
+	subtilis_arm_reg_t op2 = subtilis_arm_ir_to_dreg(mul->operands[2].reg);
+	subtilis_arm_reg_t op3 = subtilis_arm_ir_to_dreg(add->operands[1].reg);
+	subtilis_arm_section_t *arm_s = user_data;
+
+	subtilis_vfp_add_copy(arm_s, SUBTILIS_ARM_CCODE_AL,
+			      SUBTILIS_VFP_INSTR_FCPYD, dest, op3, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_vfp_add_data(arm_s, SUBTILIS_VFP_INSTR_FNMACD,
+			      SUBTILIS_ARM_CCODE_AL, dest, op1, op2, err);
+}
+
 void subtilis_vfp_gen_mulr(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err)
 {

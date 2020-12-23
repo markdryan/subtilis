@@ -347,6 +347,8 @@ static void prv_alloc_vfp_data_instr(void *user_data, subtilis_arm_op_t *op,
 	int dist_op1;
 	size_t vreg_op2;
 	int dist_op2;
+	size_t vreg_dest;
+	int dist_dest;
 	subtilis_arm_reg_ud_t *ud = user_data;
 
 	switch (type) {
@@ -387,10 +389,34 @@ static void prv_alloc_vfp_data_instr(void *user_data, subtilis_arm_op_t *op,
 	if (dist_op1 == -1)
 		ud->real_regs->phys_to_virt[instr->op1] = INT_MAX;
 
-	subtilis_arm_reg_alloc_alloc_fp_dest(ud, op, &instr->dest, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+	/*
+	 * Special case here for FMA.  We need to ensure the destination
+	 * register not allocate it as it is read from as well as written to.
+	 */
 
+	switch (type) {
+	case SUBTILIS_VFP_INSTR_FMACD:
+	case SUBTILIS_VFP_INSTR_FNMACD:
+	case SUBTILIS_VFP_INSTR_FMSCD:
+	case SUBTILIS_VFP_INSTR_FNMSCD:
+		vreg_dest = instr->dest;
+		(void)subtilis_arm_reg_alloc_ensure(
+		    ud, op, ud->int_regs, ud->real_regs, &instr->dest, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		dist_dest = subtilis_arm_reg_alloc_calculate_dist(
+		    ud, vreg_dest, op, &ud->real_regs->dist_walker,
+		    ud->real_regs);
+		if (dist_dest == -1)
+			ud->real_regs->phys_to_virt[instr->dest] = INT_MAX;
+		ud->real_regs->next[instr->dest] = dist_dest;
+		break;
+	default:
+		subtilis_arm_reg_alloc_alloc_fp_dest(ud, op, &instr->dest, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		break;
+	}
 	ud->real_regs->next[instr->op1] = dist_op1;
 	ud->real_regs->next[instr->op2] = dist_op2;
 

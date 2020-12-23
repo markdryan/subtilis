@@ -42,6 +42,12 @@ void subtilis_vfp_gen_subir(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_error_t *err);
 void subtilis_vfp_gen_rsubir(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
+void subtilis_vfp_gen_fma_right(subtilis_ir_section_t *s, size_t start,
+				void *user_data, subtilis_error_t *err);
+void subtilis_vfp_gen_fma_left(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_error_t *err);
+void subtilis_vfp_gen_nfma_right(subtilis_ir_section_t *s, size_t start,
+				 void *user_data, subtilis_error_t *err);
 void subtilis_vfp_gen_mulr(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err);
 void subtilis_vfp_gen_mulir(subtilis_ir_section_t *s, size_t start,

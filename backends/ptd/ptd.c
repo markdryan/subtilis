@@ -209,6 +209,12 @@ const subtilis_ir_rule_raw_t ptd_rules[] = {
 	 {"subr *, *, *\n", subtilis_vfp_gen_subr},
 	 {"subir *, *, *\n", subtilis_vfp_gen_subir},
 	 {"rsubir *, *, *\n", subtilis_vfp_gen_rsubir},
+	 {"mulr f_1, *, *\n"
+	 "addr *, *, f_1\n", subtilis_vfp_gen_fma_right},
+	 {"mulr f_1, *, *\n"
+	 "addr *, f_1, *\n", subtilis_vfp_gen_fma_left},
+	 {"mulr f_1, *, *\n"
+	 "subr *, *, f_1\n", subtilis_vfp_gen_nfma_right},
 	 {"mulr *, *, *\n", subtilis_vfp_gen_mulr},
 	 {"mulir *, *, *\n", subtilis_vfp_gen_mulir},
 	 {"divr *, *, *\n", subtilis_vfp_gen_divr},

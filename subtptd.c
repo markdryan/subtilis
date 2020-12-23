@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	//	subtilis_ir_prog_dump(p->prog);
+	subtilis_ir_prog_dump(p->prog);
 
 	arm_p = subtilis_riscos_generate(
 	    pool, p->prog, ptd_rules, ptd_rules_count, p->st->max_allocated,

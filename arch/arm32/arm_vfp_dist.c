@@ -394,6 +394,19 @@ static void prv_dist_vfp_data_instr(void *user_data, subtilis_arm_op_t *op,
 	case SUBTILIS_VFP_INSTR_FDIVS:
 		subtilis_error_set_assertion_failed(err);
 		return;
+	case SUBTILIS_VFP_INSTR_FMACD:
+	case SUBTILIS_VFP_INSTR_FNMACD:
+	case SUBTILIS_VFP_INSTR_FMSCD:
+	case SUBTILIS_VFP_INSTR_FNMSCD:
+		/*
+		 * Special case, in which the destination register is also the
+		 * source register.
+		 */
+
+		if (instr->dest == ud->reg_num) {
+			subtilis_error_set_walker_failed(err);
+			return;
+		}
 	default:
 		break;
 	}
