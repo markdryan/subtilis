@@ -664,6 +664,48 @@ static void prv_vfp_disass_extensiond(subtilis_arm_instr_t *instr,
 	}
 }
 
+static void prv_vfp_disass_tran_dbl(subtilis_arm_instr_t *instr,
+				    uint32_t encoded, subtilis_error_t *err)
+{
+	subtilis_vfp_tran_dbl_instr_t *tran_dbl = &instr->operands.vfp_tran_dbl;
+
+	switch (encoded & 0xf400af0) {
+	case 0xc400b10:
+		instr->type = SUBTILIS_VFP_INSTR_FMDRR;
+		tran_dbl->dest1 = encoded & 0xf;
+		tran_dbl->dest2 = 0;
+		tran_dbl->src1 = (encoded >> 12) & 0xf;
+		tran_dbl->src2 = (encoded >> 16) & 0xf;
+		break;
+	case 0xc500b10:
+		instr->type = SUBTILIS_VFP_INSTR_FMRRD;
+		tran_dbl->dest1 = (encoded >> 12) & 0xf;
+		tran_dbl->dest2 = (encoded >> 16) & 0xf;
+		tran_dbl->src1 = encoded & 0xf;
+		tran_dbl->src2 = 0;
+		break;
+	case 0xc400a10:
+		instr->type = SUBTILIS_VFP_INSTR_FMRRS;
+		tran_dbl->dest1 = (encoded >> 12) & 0xf;
+		tran_dbl->dest2 = (encoded >> 16) & 0xf;
+		tran_dbl->src1 = ((encoded & 0xf) << 1) | ((encoded >> 5) & 1);
+		tran_dbl->src2 = tran_dbl->src1 + 1;
+		break;
+	case 0xc500a10:
+		instr->type = SUBTILIS_VFP_INSTR_FMSRR;
+		tran_dbl->dest1 = ((encoded & 0xf) << 1) | ((encoded >> 5) & 1);
+		tran_dbl->dest2 = tran_dbl->dest1 + 1;
+		tran_dbl->src1 = (encoded >> 12) & 0xf;
+		tran_dbl->src2 = (encoded >> 16) & 0xf;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	tran_dbl->ccode = (subtilis_arm_ccode_type_t)(encoded >> 28);
+}
+
 static void prv_vfp_disass_stran(subtilis_arm_instr_t *instr, uint32_t encoded,
 				 subtilis_error_t *err)
 {
@@ -796,6 +838,11 @@ static bool prv_vfp_disass(subtilis_arm_instr_t *instr, uint32_t encoded,
 			prv_vfp_disass_sysreg(instr, encoded, err);
 		else
 			prv_vfp_disass_cptrans(instr, encoded, err);
+		return true;
+	}
+
+	if ((encoded & 0xf400af0) == 0xc400a10) {
+		prv_vfp_disass_tran_dbl(instr, encoded, err);
 		return true;
 	}
 

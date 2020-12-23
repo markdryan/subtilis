@@ -156,7 +156,6 @@ static int prv_test_ptd_examples(void)
 		case SUBTILIS_TEST_CASE_ID_ERROR_LOGRANGE:
 		case SUBTILIS_TEST_CASE_ID_POW:
 		case SUBTILIS_TEST_CASE_ID_STR_EXP:
-		case SUBTILIS_TEST_CASE_ID_ERROR_DIV_BY_ZERO:
 			continue;
 		default:
 			break;

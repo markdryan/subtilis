@@ -1632,6 +1632,68 @@ static void prv_encode_vfp_tran_instr(void *user_data, subtilis_arm_op_t *op,
 	prv_add_word(ud, word, err);
 }
 
+static void prv_encode_vfp_tran_dbl_instr(void *user_data,
+					  subtilis_arm_op_t *op,
+					  subtilis_arm_instr_type_t type,
+					  subtilis_vfp_tran_dbl_instr_t *instr,
+					  subtilis_error_t *err)
+{
+	uint32_t word;
+	subtilis_arm_encode_ud_t *ud = user_data;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	switch (type) {
+	case SUBTILIS_VFP_INSTR_FMDRR:
+		word = 0xc400b10;
+		word |= instr->dest1 & 0xf;
+		word |= (instr->src1 & 0xf) << 12;
+		word |= (instr->src2 & 0xf) << 16;
+		break;
+	case SUBTILIS_VFP_INSTR_FMRRD:
+		word = 0xc500b10;
+		word |= instr->src1 & 0xf;
+		word |= (instr->dest1 & 0xf) << 12;
+		word |= (instr->dest2 & 0xf) << 16;
+		break;
+	case SUBTILIS_VFP_INSTR_FMSRR:
+		if (instr->dest1 + 1 != instr->dest2) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		word = 0xc400a10;
+		word |= (instr->dest1 >> 1) & 0xf;
+		word |= (instr->dest1 & 1) << 5;
+		word |= (instr->src1 & 0xf) << 12;
+		word |= (instr->src2 & 0xf) << 16;
+		break;
+	case SUBTILIS_VFP_INSTR_FMRRS:
+		if (instr->src1 + 1 != instr->src2) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		word = 0xc500a10;
+		word |= (instr->src1 >> 1) & 0xf;
+		word |= (instr->src1 & 1) << 5;
+		word |= (instr->dest1 & 0xf) << 12;
+		word |= (instr->dest2 & 0xf) << 16;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	word |= instr->ccode << 28;
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
 static void prv_encode_vfp_cptran_instr(void *user_data, subtilis_arm_op_t *op,
 					subtilis_arm_instr_type_t type,
 					subtilis_vfp_cptran_instr_t *instr,
@@ -2101,6 +2163,7 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 	walker.vfp_copy_fn = prv_encode_vfp_copy_instr;
 	walker.vfp_ldrc_fn = prv_encode_vfp_ldrc_instr;
 	walker.vfp_tran_fn = prv_encode_vfp_tran_instr;
+	walker.vfp_tran_dbl_fn = prv_encode_vfp_tran_dbl_instr;
 	walker.vfp_cptran_fn = prv_encode_vfp_cptran_instr;
 	walker.vfp_data_fn = prv_encode_vfp_data_instr;
 	walker.vfp_cmp_fn = prv_encode_vfp_cmp_instr;

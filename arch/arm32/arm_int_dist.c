@@ -436,6 +436,27 @@ static void prv_dist_vfp_tran_instr(void *user_data, subtilis_arm_op_t *op,
 	ud->last_used++;
 }
 
+static void prv_dist_vfp_tran_dbl_instr(void *user_data, subtilis_arm_op_t *op,
+					subtilis_arm_instr_type_t type,
+					subtilis_vfp_tran_dbl_instr_t *instr,
+					subtilis_error_t *err)
+{
+	subtilis_dist_data_t *ud = user_data;
+
+	if (type != SUBTILIS_VFP_INSTR_FMRRD) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if ((instr->dest1 == ud->reg_num) || (instr->dest2 == ud->reg_num)) {
+		ud->last_used = -1;
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
+	ud->last_used++;
+}
+
 static void prv_dist_vfp_cptran_instr(void *user_data, subtilis_arm_op_t *op,
 				      subtilis_arm_instr_type_t type,
 				      subtilis_vfp_cptran_instr_t *instr,
@@ -537,6 +558,7 @@ void subtilis_init_int_dist_walker(subtlis_arm_walker_t *walker,
 	walker->vfp_copy_fn = prv_dist_vfp_copy_instr;
 	walker->vfp_ldrc_fn = prv_dist_vfp_ldrc_instr;
 	walker->vfp_tran_fn = prv_dist_vfp_tran_instr;
+	walker->vfp_tran_dbl_fn = prv_dist_vfp_tran_dbl_instr;
 	walker->vfp_cptran_fn = prv_dist_vfp_cptran_instr;
 	walker->vfp_data_fn = prv_dist_vfp_data_instr;
 	walker->vfp_cmp_fn = prv_dist_vfp_cmp_instr;
@@ -757,6 +779,7 @@ void subtilis_init_int_used_walker(subtlis_arm_walker_t *walker,
 	walker->vfp_copy_fn = prv_dist_vfp_copy_instr;
 	walker->vfp_ldrc_fn = prv_dist_vfp_ldrc_instr;
 	walker->vfp_tran_fn = prv_dist_vfp_tran_instr;
+	walker->vfp_tran_dbl_fn = prv_dist_vfp_tran_dbl_instr;
 	walker->vfp_cptran_fn = prv_used_vfp_cptran_instr;
 	walker->vfp_data_fn = prv_dist_vfp_data_instr;
 	walker->vfp_cmp_fn = prv_dist_vfp_cmp_instr;

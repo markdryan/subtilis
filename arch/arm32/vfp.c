@@ -324,3 +324,26 @@ void subtilis_vfp_add_sysreg(subtilis_arm_section_t *s,
 	sysregi->sysreg = sysreg;
 	sysregi->arm_reg = reg;
 }
+
+void subtilis_vfp_add_tran_dbl(subtilis_arm_section_t *s,
+			       subtilis_arm_instr_type_t itype,
+			       subtilis_arm_ccode_type_t ccode,
+			       subtilis_arm_reg_t dest1,
+			       subtilis_arm_reg_t dest2,
+			       subtilis_arm_reg_t src1, subtilis_arm_reg_t src2,
+			       subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_vfp_tran_dbl_instr_t *tran;
+
+	instr = subtilis_arm_section_add_instr(s, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tran = &instr->operands.vfp_tran_dbl;
+	tran->ccode = ccode;
+	tran->dest1 = dest1;
+	tran->dest2 = dest2;
+	tran->src1 = src1;
+	tran->src2 = src2;
+}

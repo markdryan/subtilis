@@ -2353,6 +2353,80 @@ static void prv_process_vfp_sqrt(subtilis_arm_vm_t *arm_vm, bool dbl,
 	arm_vm->regs[15] += 4;
 }
 
+static void prv_process_vfp_fmrrd(subtilis_arm_vm_t *arm_vm,
+				  subtilis_vfp_tran_dbl_instr_t *op,
+				  subtilis_error_t *err)
+{
+	uint32_t *dbl;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	dbl = (uint32_t *)&arm_vm->vpfregs.d[op->src1];
+	arm_vm->regs[op->dest1] = dbl[0];
+	arm_vm->regs[op->dest2] = dbl[1];
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_vfp_fmdrr(subtilis_arm_vm_t *arm_vm,
+				  subtilis_vfp_tran_dbl_instr_t *op,
+				  subtilis_error_t *err)
+{
+	uint32_t *dbl;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	dbl = (uint32_t *)&arm_vm->vpfregs.d[op->dest1];
+	dbl[0] = arm_vm->regs[op->src1];
+	dbl[1] = arm_vm->regs[op->src2];
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_vfp_fmsrr(subtilis_arm_vm_t *arm_vm,
+				  subtilis_vfp_tran_dbl_instr_t *op,
+				  subtilis_error_t *err)
+{
+	uint32_t *flt;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	flt = (uint32_t *)&arm_vm->vpfregs.f[op->dest1];
+	*flt = arm_vm->regs[op->src1];
+	flt = (uint32_t *)&arm_vm->vpfregs.f[op->dest1 + 1];
+	*flt = arm_vm->regs[op->src2];
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_vfp_fmrrs(subtilis_arm_vm_t *arm_vm,
+				  subtilis_vfp_tran_dbl_instr_t *op,
+				  subtilis_error_t *err)
+{
+	uint32_t *flt;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	flt = (uint32_t *)&arm_vm->vpfregs.f[op->src1];
+	arm_vm->regs[op->dest1] = *flt;
+	flt = (uint32_t *)&arm_vm->vpfregs.f[op->src1 + 1];
+	arm_vm->regs[op->dest2] = *flt;
+
+	arm_vm->regs[15] += 4;
+}
+
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			 subtilis_error_t *err)
 {
@@ -2759,6 +2833,23 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			prv_process_vfp_fmrx(arm_vm, &instr.operands.vfp_sysreg,
 					     err);
 			break;
+		case SUBTILIS_VFP_INSTR_FMDRR:
+			prv_process_vfp_fmdrr(
+			    arm_vm, &instr.operands.vfp_tran_dbl, err);
+			break;
+		case SUBTILIS_VFP_INSTR_FMRRD:
+			prv_process_vfp_fmrrd(
+			    arm_vm, &instr.operands.vfp_tran_dbl, err);
+			break;
+		case SUBTILIS_VFP_INSTR_FMSRR:
+			prv_process_vfp_fmsrr(
+			    arm_vm, &instr.operands.vfp_tran_dbl, err);
+			break;
+		case SUBTILIS_VFP_INSTR_FMRRS:
+			prv_process_vfp_fmrrs(
+			    arm_vm, &instr.operands.vfp_tran_dbl, err);
+			break;
+
 		default:
 			printf("instr type %d\n", instr.type);
 			subtilis_error_set_assertion_failed(err);

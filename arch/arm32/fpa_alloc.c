@@ -337,6 +337,22 @@ static void prv_alloc_vfp_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	subtilis_error_set_assertion_failed(err);
 }
 
+static void prv_alloc_vfp_tran_instr(void *user_data, subtilis_arm_op_t *op,
+				     subtilis_arm_instr_type_t type,
+				     subtilis_vfp_tran_instr_t *instr,
+				     subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
+static void prv_alloc_vfp_tran_dbl_instr(void *user_data, subtilis_arm_op_t *op,
+					 subtilis_arm_instr_type_t type,
+					 subtilis_vfp_tran_dbl_instr_t *instr,
+					 subtilis_error_t *err)
+{
+	subtilis_error_set_assertion_failed(err);
+}
+
 static void prv_alloc_vfp_cptran_instr(void *user_data, subtilis_arm_op_t *op,
 				       subtilis_arm_instr_type_t type,
 				       subtilis_vfp_cptran_instr_t *instr,
@@ -390,6 +406,8 @@ void subtilis_fpa_alloc_init_walker(subtlis_arm_walker_t *walker,
 	walker->vfp_stran_fn = prv_alloc_vfp_stran_instr;
 	walker->vfp_copy_fn = prv_alloc_vfp_copy_instr;
 	walker->vfp_ldrc_fn = prv_alloc_vfp_ldrc_instr;
+	walker->vfp_tran_fn = prv_alloc_vfp_tran_instr;
+	walker->vfp_tran_dbl_fn = prv_alloc_vfp_tran_dbl_instr;
 	walker->vfp_cptran_fn = prv_alloc_vfp_cptran_instr;
 	walker->vfp_data_fn = prv_alloc_vfp_data_instr;
 	walker->vfp_cmp_fn = prv_alloc_vfp_cmp_instr;

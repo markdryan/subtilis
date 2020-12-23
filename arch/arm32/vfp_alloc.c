@@ -248,6 +248,43 @@ static void prv_alloc_vfp_tran_instr(void *user_data, subtilis_arm_op_t *op,
 	ud->instr_count++;
 }
 
+static void prv_alloc_vfp_tran_dbl_instr(void *user_data, subtilis_arm_op_t *op,
+					 subtilis_arm_instr_type_t type,
+					 subtilis_vfp_tran_dbl_instr_t *instr,
+					 subtilis_error_t *err)
+{
+	size_t vreg_src;
+	int dist_src;
+	subtilis_arm_reg_ud_t *ud = user_data;
+
+	if (type != SUBTILIS_VFP_INSTR_FMRRD) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	vreg_src = instr->src1;
+	(void)subtilis_arm_reg_alloc_ensure(ud, op, ud->int_regs, ud->real_regs,
+					    &instr->src1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	dist_src = subtilis_arm_reg_alloc_calculate_dist(
+	    ud, vreg_src, op, &ud->real_regs->dist_walker, ud->real_regs);
+	if (dist_src == -1)
+		ud->real_regs->phys_to_virt[instr->src1] = INT_MAX;
+
+	subtilis_arm_reg_alloc_alloc_dest(ud, op, &instr->dest1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_reg_alloc_alloc_dest(ud, op, &instr->dest2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	ud->real_regs->next[instr->src1] = dist_src;
+
+	ud->instr_count++;
+}
+
 static void prv_alloc_vfp_cptran_instr(void *user_data, subtilis_arm_op_t *op,
 				       subtilis_arm_instr_type_t type,
 				       subtilis_vfp_cptran_instr_t *instr,
@@ -497,6 +534,7 @@ void subtilis_vfp_alloc_init_walker(subtlis_arm_walker_t *walker,
 	walker->vfp_copy_fn = prv_alloc_vfp_copy_instr;
 	walker->vfp_ldrc_fn = prv_alloc_vfp_ldrc_instr;
 	walker->vfp_tran_fn = prv_alloc_vfp_tran_instr;
+	walker->vfp_tran_dbl_fn = prv_alloc_vfp_tran_dbl_instr;
 	walker->vfp_cptran_fn = prv_alloc_vfp_cptran_instr;
 	walker->vfp_data_fn = prv_alloc_vfp_data_instr;
 	walker->vfp_cmp_fn = prv_alloc_vfp_cmp_instr;

@@ -245,6 +245,11 @@ typedef enum {
 	SUBTILIS_VFP_INSTR_FMXR,
 	SUBTILIS_VFP_INSTR_FMRX,
 
+	SUBTILIS_VFP_INSTR_FMDRR,
+	SUBTILIS_VFP_INSTR_FMRRD,
+	SUBTILIS_VFP_INSTR_FMSRR,
+	SUBTILIS_VFP_INSTR_FMRRS,
+
 	/*
 	 *	SUBTILIS_ARM_INSTR_VFP_FSTMS,
 	 *	SUBTILIS_ARM_INSTR_VFP_FLDMS,
@@ -478,6 +483,16 @@ struct subtilis_vfp_tran_instr_t_ {
 
 typedef struct subtilis_vfp_tran_instr_t_ subtilis_vfp_tran_instr_t;
 
+struct subtilis_vfp_tran_dbl_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_reg_t dest1;
+	subtilis_arm_reg_t dest2;
+	subtilis_arm_reg_t src1;
+	subtilis_arm_reg_t src2;
+};
+
+typedef struct subtilis_vfp_tran_dbl_instr_t_ subtilis_vfp_tran_dbl_instr_t;
+
 typedef struct subtilis_vfp_tran_instr_t_ subtilis_vfp_cptran_instr_t;
 
 struct subtilis_vfp_data_instr_t_ {
@@ -541,6 +556,7 @@ struct subtilis_arm_instr_t_ {
 		subtilis_vfp_copy_instr_t vfp_copy;
 		subtilis_vfp_ldrc_instr_t vfp_ldrc;
 		subtilis_vfp_tran_instr_t vfp_tran;
+		subtilis_vfp_tran_dbl_instr_t vfp_tran_dbl;
 		subtilis_vfp_cptran_instr_t vfp_cptran;
 		subtilis_vfp_data_instr_t vfp_data;
 		subtilis_vfp_cmp_instr_t vfp_cmp;
@@ -1240,6 +1256,14 @@ void subtilis_vfp_add_tran(subtilis_arm_section_t *s,
 			   subtilis_arm_ccode_type_t ccode, bool use_dregs,
 			   subtilis_arm_reg_t dest, subtilis_arm_reg_t src,
 			   subtilis_error_t *err);
+
+void subtilis_vfp_add_tran_dbl(subtilis_arm_section_t *s,
+			       subtilis_arm_instr_type_t itype,
+			       subtilis_arm_ccode_type_t ccode,
+			       subtilis_arm_reg_t dest1,
+			       subtilis_arm_reg_t dest2,
+			       subtilis_arm_reg_t src1, subtilis_arm_reg_t src2,
+			       subtilis_error_t *err);
 
 void subtilis_vfp_add_cptran(subtilis_arm_section_t *s,
 			     subtilis_arm_instr_type_t itype,

@@ -230,6 +230,13 @@ static void prv_walk_instr(subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 		walker->vfp_sysreg_fn(walker->user_data, op, instr->type,
 				      &instr->operands.vfp_sysreg, err);
 		break;
+	case SUBTILIS_VFP_INSTR_FMDRR:
+	case SUBTILIS_VFP_INSTR_FMRRD:
+	case SUBTILIS_VFP_INSTR_FMSRR:
+	case SUBTILIS_VFP_INSTR_FMRRS:
+		walker->vfp_tran_dbl_fn(walker->user_data, op, instr->type,
+					&instr->operands.vfp_tran_dbl, err);
+		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
 		break;

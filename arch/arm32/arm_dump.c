@@ -161,6 +161,10 @@ static const char *const instr_desc[] = {
 	"FSQRTS", // SUBTILIS_VFP_INSTR_FSQRTS,
 	"FMXR",   // SUBTILIS_VFP_INSTR_FMXR,
 	"FMRX",   // SUBTILIS_VFP_INSTR_FMRX,
+	"FMDRR",  // SUBTILIS_VFP_INSTR_FMDRR,
+	"FMRRD",  // SUBTILIS_VFP_INSTR_FMRRD,
+	"FMSRR",  // SUBTILIS_VFP_INSTR_FMSRR,
+	"FMRRS",  // SUBTILIS_VFP_INSTR_FMRRS,
 };
 
 static const char *const shift_desc[] = {
@@ -696,6 +700,37 @@ static void prv_dump_vfp_tran_instr(void *user_data, subtilis_arm_op_t *op,
 	       src_reg);
 }
 
+static void prv_dump_vfp_tran_dbl_instr(void *user_data, subtilis_arm_op_t *op,
+					subtilis_arm_instr_type_t type,
+					subtilis_vfp_tran_dbl_instr_t *instr,
+					subtilis_error_t *err)
+{
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+
+	switch (type) {
+	case SUBTILIS_VFP_INSTR_FMDRR:
+		printf(" D%zu, R%zu, R%zu\n", instr->dest1, instr->src1,
+		       instr->src2);
+		break;
+	case SUBTILIS_VFP_INSTR_FMRRD:
+		printf(" R%zu, R%zu, D%zu\n", instr->dest1, instr->dest2,
+		       instr->src1);
+		break;
+	case SUBTILIS_VFP_INSTR_FMSRR:
+		printf(" S%zu, S%zu, R%zu, R%zu\n", instr->dest1, instr->dest2,
+		       instr->src1, instr->src2);
+		break;
+	case SUBTILIS_VFP_INSTR_FMRRS:
+		printf(" R%zu, R%zu, S%zu, S%zu\n", instr->dest1, instr->dest2,
+		       instr->src1, instr->src2);
+		break;
+	default:
+		break;
+	}
+}
+
 static void prv_dump_vfp_cptran_instr(void *user_data, subtilis_arm_op_t *op,
 				      subtilis_arm_instr_type_t type,
 				      subtilis_vfp_cptran_instr_t *instr,
@@ -870,6 +905,7 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 	walker.vfp_copy_fn = prv_dump_vfp_copy_instr;
 	walker.vfp_ldrc_fn = prv_dump_vfp_ldrc_instr;
 	walker.vfp_tran_fn = prv_dump_vfp_tran_instr;
+	walker.vfp_tran_dbl_fn = prv_dump_vfp_tran_dbl_instr;
 	walker.vfp_cptran_fn = prv_dump_vfp_cptran_instr;
 	walker.vfp_data_fn = prv_dump_vfp_data_instr;
 	walker.vfp_cmp_fn = prv_dump_vfp_cmp_instr;
@@ -1062,7 +1098,14 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 	case SUBTILIS_VFP_INSTR_FUITOS:
 		prv_dump_vfp_tran_instr(NULL, NULL, instr->type,
 					&instr->operands.vfp_tran, NULL);
-
+		break;
+	case SUBTILIS_VFP_INSTR_FMDRR:
+	case SUBTILIS_VFP_INSTR_FMRRD:
+	case SUBTILIS_VFP_INSTR_FMSRR:
+	case SUBTILIS_VFP_INSTR_FMRRS:
+		prv_dump_vfp_tran_dbl_instr(NULL, NULL, instr->type,
+					    &instr->operands.vfp_tran_dbl,
+					    NULL);
 		break;
 	case SUBTILIS_VFP_INSTR_FMSR:
 	case SUBTILIS_VFP_INSTR_FMRS:

@@ -188,6 +188,55 @@ void subtilis_vfp_gen_callr(subtilis_ir_section_t *s, size_t start,
 			      SUBTILIS_VFP_INSTR_FCPYD, dest, op1, err);
 }
 
+static void prv_check_divbyzero(subtilis_arm_section_t *arm_s,
+				subtilis_ir_section_t *s,
+				subtilis_arm_reg_t res, int32_t error_code,
+				subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest1;
+	subtilis_arm_reg_t dest2;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_br_instr_t *br;
+	size_t label = arm_s->label_counter++;
+
+	dest1 = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	dest2 = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+
+	subtilis_vfp_add_tran_dbl(arm_s, SUBTILIS_VFP_INSTR_FMRRD,
+				  SUBTILIS_ARM_CCODE_AL, dest1, dest2, res, 0,
+				  err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_AL, dest1, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_EQ, dest2, 0x7ff00000, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_NE;
+	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
+	br->target.label = label;
+
+	subtilis_arm_gen_sete(arm_s, s, SUBTILIS_ARM_CCODE_AL, dest1,
+			      error_code, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_section_add_label(arm_s, label, err);
+}
+
 static void prv_data_simple(subtilis_ir_section_t *s,
 			    subtilis_arm_instr_type_t itype, size_t start,
 			    void *user_data, subtilis_error_t *err)
@@ -293,7 +342,16 @@ void subtilis_vfp_gen_mulir(subtilis_ir_section_t *s, size_t start,
 void subtilis_vfp_gen_divr(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err)
 {
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+	subtilis_arm_reg_t dest =
+	    subtilis_arm_ir_to_dreg(instr->operands[0].reg);
+	subtilis_arm_section_t *arm_s = user_data;
+
 	prv_data_simple(s, SUBTILIS_VFP_INSTR_FDIVD, start, user_data, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	prv_check_divbyzero(arm_s, s, dest, SUBTILIS_ERROR_CODE_DIV_BY_ZERO,
+			    err);
 }
 
 void subtilis_vfp_gen_divir(subtilis_ir_section_t *s, size_t start,
@@ -305,8 +363,17 @@ void subtilis_vfp_gen_divir(subtilis_ir_section_t *s, size_t start,
 void subtilis_vfp_gen_rdivir(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err)
 {
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+	subtilis_arm_reg_t dest =
+	    subtilis_arm_ir_to_dreg(instr->operands[0].reg);
+	subtilis_arm_section_t *arm_s = user_data;
+
 	prv_data_imm_reversed(s, SUBTILIS_VFP_INSTR_FDIVD, start, user_data,
 			      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	prv_check_divbyzero(arm_s, s, dest, SUBTILIS_ERROR_CODE_DIV_BY_ZERO,
+			    err);
 }
 
 void subtilis_vfp_gen_storeor(subtilis_ir_section_t *s, size_t start,
