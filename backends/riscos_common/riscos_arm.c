@@ -122,13 +122,15 @@ static void prv_add_escape_handler(subtilis_arm_section_t *arm_s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 1,
-				 err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+	/*
+	 * We're going to store the value of R11 into the escape variable.  If
+	 * we get here we know that R11 is non zero, i.e., it has at least one
+	 * bit set.  By using the value in R11 we don't need to corrupt any
+	 * registers.
+	 */
 
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR,
-				   SUBTILIS_ARM_CCODE_AL, 0, 12,
+				   SUBTILIS_ARM_CCODE_AL, 11, 12,
 				   RISCOS_ARM_GLOBAL_ESC_FLAG, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
