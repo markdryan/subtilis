@@ -337,7 +337,7 @@ static void prv_cursor_on_off(subtilis_ir_section_t *s, void *user_data,
 	subtilis_arm_section_t *arm_s = user_data;
 	uint32_t ar[] = {23, 1, 0, 0, 0, 0, 0, 0, 0, 0};
 
-	ar[3] = swtch;
+	ar[2] = swtch;
 
 	for (i = 0; i < sizeof(ar) / sizeof(ar[0]); i++) {
 		/* read_mask = 0 */
