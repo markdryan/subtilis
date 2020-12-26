@@ -71,6 +71,7 @@ ARM =\
 	arm2_div.c \
 	arm_dump.c \
 	fpa.c \
+	vfp.c \
 	bitset.c \
 	arm_sub_section.c \
 	arm_peephole.c \
@@ -88,8 +89,7 @@ FPA =\
 VFP =\
 	vfp_gen.c \
 	vfp_alloc.c \
-	arm_vfp_dist.c \
-	vfp.c
+	arm_vfp_dist.c
 
 
 SUBTRO =\
