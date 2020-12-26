@@ -16,9 +16,9 @@ the test in the Subtilis project.
 
 The tentative plan for the project is to first create a compiler for a subset of
 the existing BBC BASIC V features and then figure out a way of adding modern
-constructs to the lanuage.  To start with there will probably only be two target
-OSes, RISCOS 3 and RISCOS 4, and one CPU family, ARM 2 or greater.  Ultimately
-the goal is to create a backend for the native ARM processor mode of PiTubeDirect.
+constructs to the lanuage.  To start with there will probably only be three target
+OSes, RISCOS 3 and RISCOS 4 and the native ARM processor mode of
+[PiTubeDirect](https://github.com/hoglet67/PiTubeDirect).
 
 Subtilis is not a BBC BASIC compiler and it never will be.  It ressembles and is
 inspired by BBC BASIC, but it will not compile BBC BASIC programs.  It is likely
