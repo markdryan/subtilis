@@ -2029,14 +2029,11 @@ void subtilis_riscos_arm_syscall(subtilis_ir_section_t *s, size_t start,
 	size_t in_reg;
 	size_t out_reg;
 	size_t i;
-	subtilis_arm_instr_t *instr;
 	subtilis_arm_reg_t one;
-	subtilis_arm_data_instr_t *datai;
 	subtilis_arm_ccode_type_t ccode = SUBTILIS_ARM_CCODE_AL;
 	subtilis_arm_section_t *arm_s = user_data;
 	subtilis_ir_sys_call_t *sys_call = &s->ops[start]->op.sys_call;
 	size_t call_id = sys_call->call_id & ~(0x20000);
-	size_t flags_reg;
 
 	out_regs = prv_check_out_regs(call_id, swi_list, swi_count, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -2086,38 +2083,6 @@ void subtilis_riscos_arm_syscall(subtilis_ir_section_t *s, size_t start,
 			    false, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-	}
-
-	if (sys_call->flags_reg != SIZE_MAX) {
-		if (sys_call->flags_local)
-			flags_reg =
-			    subtilis_arm_ir_to_arm_reg(sys_call->flags_reg);
-		else
-			flags_reg =
-			    subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
-		subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false,
-					 flags_reg, 0xf << 28, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-
-		instr = subtilis_arm_section_add_instr(
-		    arm_s, SUBTILIS_ARM_INSTR_AND, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-		datai = &instr->operands.data;
-		datai->ccode = SUBTILIS_ARM_CCODE_AL;
-		datai->status = false;
-		datai->dest = flags_reg;
-		datai->op1 = flags_reg;
-		datai->op2.type = SUBTILIS_ARM_OP2_REG;
-		datai->op2.op.reg = 15;
-
-		if (!sys_call->flags_local)
-			subtilis_arm_add_stran_imm(
-			    arm_s, SUBTILIS_ARM_INSTR_STR,
-			    SUBTILIS_ARM_CCODE_AL, flags_reg,
-			    subtilis_arm_ir_to_arm_reg(sys_call->flags_reg), 0,
-			    false, err);
 	}
 }
 
