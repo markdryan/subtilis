@@ -185,6 +185,39 @@ static void prv_decode_datai(subtilis_arm_instr_t *instr, uint32_t encoded,
 	prv_decode_op2(encoded, &datai->op2);
 }
 
+static void prv_decode_mrs(subtilis_arm_instr_t *instr, uint32_t encoded,
+			   subtilis_error_t *err)
+{
+	subtilis_arm_flags_instr_t *flags = &instr->operands.flags;
+
+	instr->type = SUBTILIS_ARM_INSTR_MRS;
+	flags->fields = 0;
+	flags->ccode = encoded >> 28;
+	flags->flag_reg = (encoded & (1 << 22)) ? SUBTILIS_ARM_FLAGS_SPSR
+						: SUBTILIS_ARM_FLAGS_CPSR;
+	flags->op2_reg = true;
+	flags->op.reg = (encoded >> 12) & 0xf;
+}
+
+static void prv_decode_msr(subtilis_arm_instr_t *instr, uint32_t encoded,
+			   subtilis_error_t *err)
+{
+	subtilis_arm_flags_instr_t *flags = &instr->operands.flags;
+
+	instr->type = SUBTILIS_ARM_INSTR_MSR;
+	flags->fields = (encoded >> 16) & 0xf;
+	flags->ccode = encoded >> 28;
+	flags->flag_reg = (encoded & (1 << 22)) ? SUBTILIS_ARM_FLAGS_SPSR
+						: SUBTILIS_ARM_FLAGS_CPSR;
+	if ((encoded & 1 << 25)) {
+		flags->op.integer = encoded & 0xfff;
+		flags->op2_reg = false;
+	} else {
+		flags->op2_reg = true;
+		flags->op.reg = (encoded >> 12) & 0xf;
+	}
+}
+
 static void prv_decode_fpa_stran(subtilis_arm_instr_t *instr, uint32_t encoded,
 				 subtilis_error_t *err)
 {
@@ -892,6 +925,16 @@ void subtilis_arm_disass(subtilis_arm_instr_t *instr, uint32_t encoded,
 	mask = (encoded & (0x3 << 26)) >> 26;
 	if (mask == 1) {
 		prv_decode_stran(instr, encoded, err);
+		return;
+	}
+
+	if ((encoded & 0x0fbf0fff) == (1 << 24)) {
+		prv_decode_mrs(instr, encoded, err);
+		return;
+	}
+
+	if ((encoded & 0x0db0f000) == 0x01200000) {
+		prv_decode_msr(instr, encoded, err);
 		return;
 	}
 

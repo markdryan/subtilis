@@ -1598,3 +1598,57 @@ void subtilis_arm_add_real_constant(subtilis_arm_section_t *s, size_t label,
 	c->real = num;
 	c->label = label;
 }
+
+void subtilis_arm_add_flags(subtilis_arm_section_t *s,
+			    subtilis_arm_instr_type_t itype,
+			    subtilis_arm_ccode_type_t ccode,
+			    subtilis_arm_flags_t flag_reg, uint32_t fields,
+			    subtilis_arm_reg_t reg, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_flags_instr_t *flags;
+
+	instr = subtilis_arm_section_add_instr(s, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	flags = &instr->operands.flags;
+	flags->ccode = ccode;
+	flags = &instr->operands.flags;
+	flags->flag_reg = flag_reg;
+	flags->fields = fields;
+	flags->op2_reg = true;
+	flags->op.reg = reg;
+}
+
+void subtilis_arm_add_flags_imm(subtilis_arm_section_t *s,
+				subtilis_arm_instr_type_t itype,
+				subtilis_arm_ccode_type_t ccode,
+				subtilis_arm_flags_t flag_reg, uint32_t fields,
+				int32_t imm, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_flags_instr_t *flags;
+	uint32_t encoded;
+	subtilis_arm_reg_t mov_dest;
+
+	instr = subtilis_arm_section_add_instr(s, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	flags = &instr->operands.flags;
+	flags->ccode = ccode;
+	flags->flag_reg = flag_reg;
+	flags->fields = fields;
+
+	if (!subtilis_arm_encode_imm(imm, &encoded)) {
+		mov_dest = subtilis_arm_acquire_new_reg(s);
+		subtilis_arm_add_mov_imm(s, ccode, false, mov_dest, imm, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		flags->op2_reg = true;
+		flags->op.reg = mov_dest;
+	} else {
+		flags->op2_reg = false;
+		flags->op.integer = encoded;
+	}
+}

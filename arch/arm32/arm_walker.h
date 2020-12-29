@@ -62,6 +62,10 @@ struct subtlis_arm_walker_t_ {
 	void (*adr_fn)(void *user_data, subtilis_arm_op_t *op,
 		       subtilis_arm_instr_type_t type,
 		       subtilis_arm_adr_instr_t *instr, subtilis_error_t *err);
+	void (*flags_fn)(void *user_data, subtilis_arm_op_t *op,
+			 subtilis_arm_instr_type_t type,
+			 subtilis_arm_flags_instr_t *instr,
+			 subtilis_error_t *err);
 	void (*cmov_fn)(void *user_data, subtilis_arm_op_t *op,
 			subtilis_arm_instr_type_t type,
 			subtilis_arm_cmov_instr_t *instr,

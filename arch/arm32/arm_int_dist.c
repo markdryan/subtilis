@@ -280,6 +280,27 @@ static void prv_dist_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	ud->last_used++;
 }
 
+static void prv_dist_flags_instr(void *user_data, subtilis_arm_op_t *op,
+				 subtilis_arm_instr_type_t type,
+				 subtilis_arm_flags_instr_t *instr,
+				 subtilis_error_t *err)
+{
+	subtilis_dist_data_t *ud = user_data;
+
+	if (type == SUBTILIS_ARM_INSTR_MRS) {
+		if (instr->op.reg == ud->reg_num) {
+			ud->last_used = -1;
+			subtilis_error_set_walker_failed(err);
+			return;
+		}
+	} else if ((instr->flag_reg) && (instr->op.reg == ud->reg_num)) {
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
+	ud->last_used++;
+}
+
 static void prv_dist_label(void *user_data, subtilis_arm_op_t *op, size_t label,
 			   subtilis_error_t *err)
 {
@@ -547,6 +568,7 @@ void subtilis_init_int_dist_walker(subtlis_arm_walker_t *walker,
 	walker->swi_fn = prv_dist_swi_instr;
 	walker->ldrc_fn = prv_dist_ldrc_instr;
 	walker->cmov_fn = prv_dist_cmov_instr;
+	walker->flags_fn = prv_dist_flags_instr;
 	walker->fpa_data_monadic_fn = prv_dist_fpa_data_monadic_instr;
 	walker->fpa_data_dyadic_fn = prv_dist_fpa_data_dyadic_instr;
 	walker->fpa_stran_fn = prv_dist_fpa_stran_instr;
@@ -679,6 +701,23 @@ static void prv_used_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	ud->last_used++;
 }
 
+static void prv_used_flags_instr(void *user_data, subtilis_arm_op_t *op,
+				 subtilis_arm_instr_type_t type,
+				 subtilis_arm_flags_instr_t *instr,
+				 subtilis_error_t *err)
+{
+	subtilis_dist_data_t *ud = user_data;
+
+	if ((instr->op.reg == ud->reg_num) &&
+	    (type == SUBTILIS_ARM_INSTR_MRS)) {
+		ud->last_used = -1;
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
+	ud->last_used++;
+}
+
 static void prv_used_fpa_stran_instr(void *user_data, subtilis_arm_op_t *op,
 				     subtilis_arm_instr_type_t type,
 				     subtilis_fpa_stran_instr_t *instr,
@@ -768,6 +807,7 @@ void subtilis_init_int_used_walker(subtlis_arm_walker_t *walker,
 	walker->ldrc_fn = prv_dist_ldrc_instr;
 	walker->adr_fn = prv_dist_adr_instr;
 	walker->cmov_fn = prv_used_cmov_instr;
+	walker->flags_fn = prv_used_flags_instr;
 	walker->fpa_data_monadic_fn = prv_dist_fpa_data_monadic_instr;
 	walker->fpa_data_dyadic_fn = prv_dist_fpa_data_dyadic_instr;
 	walker->fpa_stran_fn = prv_used_fpa_stran_instr;

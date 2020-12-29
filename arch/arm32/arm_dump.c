@@ -66,6 +66,8 @@ static const char *const instr_desc[] = {
 	"LDR",    // SUBTILIS_ARM_INSTR_LDRC
 	"CMOV",   // SUBTILIS_ARM_INSTR_CMOV
 	"ADR",    // SUBTILIS_ARM_INSTR_ADR
+	"MSR",	  // SUBTILIS_ARM_INSTR_MSR
+	"MRS",    // SUBTILIS_ARM_INSTR_MRS
 	"LDF",    // SUBTILIS_FPA_INSTR_LDF
 	"STF",    // SUBTILIS_FPA_INSTR_STF
 	"LDR",    // SUBTILIS_FPA_INSTR_LDRC
@@ -398,6 +400,42 @@ static void prv_dump_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	printf(" R%zu, ", instr->op1);
 	prv_dump_op2(&instr->op2);
 	printf("\n");
+}
+
+static void prv_dump_flags_instr(void *user_data, subtilis_arm_op_t *op,
+				 subtilis_arm_instr_type_t type,
+				 subtilis_arm_flags_instr_t *instr,
+				 subtilis_error_t *err)
+{
+	const char *flags_reg;
+	char fields[5];
+	size_t field_count = 0;
+
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	flags_reg =
+	    instr->flag_reg == SUBTILIS_ARM_FLAGS_CPSR ? "CPSR" : "SPSR";
+
+	if (type == SUBTILIS_ARM_INSTR_MSR) {
+		if (instr->fields & SUBTILIS_ARM_FLAGS_FIELD_CONTROL)
+			fields[field_count++] = 'c';
+		if (instr->fields & SUBTILIS_ARM_FLAGS_FIELD_EXTENSION)
+			fields[field_count++] = 'x';
+		if (instr->fields & SUBTILIS_ARM_FLAGS_FIELD_STATUS)
+			fields[field_count++] = 's';
+		if (instr->fields & SUBTILIS_ARM_FLAGS_FIELD_FLAGS)
+			fields[field_count++] = 'f';
+		fields[field_count] = 0;
+		if (instr->op2_reg)
+			printf(" %s_%s, R%zu\n", flags_reg, fields,
+			       instr->op.reg);
+		else
+			printf(" %s_%s, #%d\n", flags_reg, fields,
+			       instr->op.integer);
+	} else {
+		printf(" R%zu, %s\n", instr->op.reg, flags_reg);
+	}
 }
 
 static const char *prv_fpa_size(size_t size)
@@ -894,6 +932,7 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 	walker.ldrc_fn = prv_dump_ldrc_instr;
 	walker.adr_fn = prv_dump_adr_instr;
 	walker.cmov_fn = prv_dump_cmov_instr;
+	walker.flags_fn = prv_dump_flags_instr;
 	walker.fpa_data_monadic_fn = prv_dump_fpa_data_monadic_instr;
 	walker.fpa_data_dyadic_fn = prv_dump_fpa_data_dyadic_instr;
 	walker.fpa_stran_fn = prv_dump_fpa_stran_instr;
@@ -1002,6 +1041,11 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 	case SUBTILIS_ARM_INSTR_SWI:
 		prv_dump_swi_instr(NULL, NULL, instr->type,
 				   &instr->operands.swi, NULL);
+		break;
+	case SUBTILIS_ARM_INSTR_MSR:
+	case SUBTILIS_ARM_INSTR_MRS:
+		prv_dump_flags_instr(NULL, NULL, instr->type,
+				     &instr->operands.flags, NULL);
 		break;
 	case SUBTILIS_FPA_INSTR_LDF:
 	case SUBTILIS_FPA_INSTR_STF:

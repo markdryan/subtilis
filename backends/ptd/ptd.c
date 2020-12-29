@@ -314,8 +314,51 @@ bool subtilis_ptd_sys_check(size_t call_id, uint32_t *in_regs,
 void subtilis_ptd_syscall(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err)
 {
+	size_t flags_reg;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_data_instr_t *datai;
+	subtilis_ir_sys_call_t *sys_call = &s->ops[start]->op.sys_call;
+	subtilis_arm_section_t *arm_s = user_data;
+
 	subtilis_riscos_arm_syscall(s, start, user_data, subtilis_ptd_swi_list,
 				    subtilis_ptd_known_swis, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	if (sys_call->flags_reg != SIZE_MAX) {
+		if (sys_call->flags_local)
+			flags_reg =
+			    subtilis_arm_ir_to_arm_reg(sys_call->flags_reg);
+		else
+			flags_reg =
+			    subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+
+		subtilis_arm_add_flags(
+		    arm_s, SUBTILIS_ARM_INSTR_MRS, SUBTILIS_ARM_CCODE_AL,
+		    SUBTILIS_ARM_FLAGS_CPSR, 0, flags_reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		instr = subtilis_arm_section_add_instr(
+		    arm_s, SUBTILIS_ARM_INSTR_MOV, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		datai = &instr->operands.data;
+		datai->ccode = SUBTILIS_ARM_CCODE_AL;
+		datai->status = false;
+		datai->dest = flags_reg;
+		datai->op2.type = SUBTILIS_ARM_OP2_SHIFTED;
+		datai->op2.op.shift.reg = flags_reg;
+		datai->op2.op.shift.shift_reg = false;
+		datai->op2.op.shift.shift.integer = 28;
+		datai->op2.op.shift.type = SUBTILIS_ARM_SHIFT_LSR;
+
+		if (!sys_call->flags_local)
+			subtilis_arm_add_stran_imm(
+			    arm_s, SUBTILIS_ARM_INSTR_STR,
+			    SUBTILIS_ARM_CCODE_AL, flags_reg,
+			    subtilis_arm_ir_to_arm_reg(sys_call->flags_reg), 0,
+			    false, err);
+	}
 }
 
 void *subtilis_ptd_asm_parse(subtilis_lexer_t *l, subtilis_token_t *t,

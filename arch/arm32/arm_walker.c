@@ -80,6 +80,11 @@ static void prv_walk_instr(subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 		walker->adr_fn(walker->user_data, op, instr->type,
 			       &instr->operands.adr, err);
 		break;
+	case SUBTILIS_ARM_INSTR_MSR:
+	case SUBTILIS_ARM_INSTR_MRS:
+		walker->flags_fn(walker->user_data, op, instr->type,
+				 &instr->operands.flags, err);
+		break;
 	case SUBTILIS_ARM_INSTR_CMOV:
 		walker->cmov_fn(walker->user_data, op, instr->type,
 				&instr->operands.cmov, err);

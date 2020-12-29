@@ -1023,6 +1023,43 @@ static void prv_encode_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	prv_encode_data_instr(user_data, op, type, instr, err);
 }
 
+static void prv_encode_flags_instr(void *user_data, subtilis_arm_op_t *op,
+				   subtilis_arm_instr_type_t type,
+				   subtilis_arm_flags_instr_t *instr,
+				   subtilis_error_t *err)
+{
+	subtilis_arm_encode_ud_t *ud = user_data;
+	uint32_t word;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (type == SUBTILIS_ARM_INSTR_MRS) {
+		word = 0x01000000;
+		word |= (instr->op.reg & 0xf) << 12;
+	} else {
+		word = 0x01200000;
+		if (instr->flag_reg) {
+			word |= instr->op.reg & 0xf;
+		} else {
+			word |= 1 << 25;
+			word |= (instr->op.integer & 0xfff);
+		}
+		word |= (instr->fields & 0xf) << 16;
+	}
+
+	if (instr->flag_reg == SUBTILIS_ARM_FLAGS_SPSR)
+		word |= 1 << 22;
+	word |= instr->ccode << 28;
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
 static void prv_encode_fpa_rounding(subtilis_fpa_rounding_t rounding,
 				    uint32_t *word)
 {
@@ -2152,6 +2189,7 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 	walker.ldrc_fn = prv_encode_ldrc_instr;
 	walker.adr_fn = prv_encode_adr_instr;
 	walker.cmov_fn = prv_encode_cmov_instr;
+	walker.flags_fn = prv_encode_flags_instr;
 	walker.fpa_data_monadic_fn = prv_encode_fpa_data_monadic_instr;
 	walker.fpa_data_dyadic_fn = prv_encode_fpa_data_dyadic_instr;
 	walker.fpa_stran_fn = prv_encode_fpa_stran_instr;

@@ -1200,6 +1200,57 @@ static void prv_process_ldm(subtilis_arm_vm_t *arm_vm,
 		arm_vm->regs[15] += 4;
 }
 
+static void prv_process_msr(subtilis_arm_vm_t *arm_vm,
+			    subtilis_arm_flags_instr_t *op,
+			    subtilis_error_t *err)
+{
+	uint32_t word;
+	uint32_t mask = 0;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	if (op->flag_reg == SUBTILIS_ARM_FLAGS_SPSR) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	word = op->op2_reg ? arm_vm->regs[op->op.reg] : op->op.integer;
+	if (op->fields & SUBTILIS_ARM_FLAGS_FIELD_CONTROL)
+		mask |= 0xff;
+	if (op->fields & SUBTILIS_ARM_FLAGS_FIELD_EXTENSION)
+		mask |= 0xff00;
+	if (op->fields & SUBTILIS_ARM_FLAGS_FIELD_STATUS)
+		mask |= 0xff0000;
+	if (op->fields & SUBTILIS_ARM_FLAGS_FIELD_FLAGS)
+		mask |= 0xff000000;
+
+	arm_vm->fpscr = word & mask;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_mrs(subtilis_arm_vm_t *arm_vm,
+			    subtilis_arm_flags_instr_t *op,
+			    subtilis_error_t *err)
+{
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	if (op->flag_reg == SUBTILIS_ARM_FLAGS_SPSR) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	arm_vm->regs[op->op.reg] = arm_vm->fpscr;
+
+	arm_vm->regs[15] += 4;
+}
+
 static void prv_process_fpa_ldf(subtilis_arm_vm_t *arm_vm,
 				subtilis_fpa_stran_instr_t *op,
 				subtilis_error_t *err)
@@ -2531,6 +2582,12 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			break;
 		case SUBTILIS_ARM_INSTR_LDM:
 			prv_process_ldm(arm_vm, &instr.operands.mtran, err);
+			break;
+		case SUBTILIS_ARM_INSTR_MSR:
+			prv_process_msr(arm_vm, &instr.operands.flags, err);
+			break;
+		case SUBTILIS_ARM_INSTR_MRS:
+			prv_process_mrs(arm_vm, &instr.operands.flags, err);
 			break;
 		case SUBTILIS_FPA_INSTR_LDF:
 			prv_process_fpa_ldf(arm_vm, &instr.operands.fpa_stran,
