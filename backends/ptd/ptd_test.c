@@ -172,4 +172,183 @@ static int prv_test_ptd_examples(void)
 	return ret;
 }
 
-int ptd_test(void) { return prv_test_ptd_examples(); }
+/* clang-format off */
+static const subtilis_test_case_t riscos_vfp_test_cases[] = {
+	{
+	"assembler_vfp_loop",
+	"PROCFPLoop(10)\n"
+	"\n"
+	"def PROCFPLoop(a)\n"
+	"[\n"
+	"    MOV R0, 33\n"
+	"    ADR R1, value\n"
+	"    FLDD D1, [R1]"
+	"start\n"
+	"   SWI \"OS_WriteC\"\n"
+	"   FSUBD D0, D0, D1\n"
+	"   FCMPZD D0\n"
+	"   FMSTAT\n"
+	"   BGT start\n"
+	"   MOV PC, R14\n"
+	"value"
+	"   EQUDBL 0.5\n"
+	"]\n",
+	"!!!!!!!!!!!!!!!!!!!!",
+	},
+	{"assembler_vfp_sqr",
+	"PROCCheck(SQR(2), FNSQR(2))\n"
+	"PROCCheck(SQR(2), FNSQRFixed)\n"
+	"DEF FNSQR(a) [ FSQRTD D0, D0 MOV PC, R14 ]\n"
+	"DEF FNSQRFixed\n"
+	"[\n"
+	"  ADR R0, value\n"
+	"  FLDD D0, [R0]\n"
+	"  MOV PC, R14\n"
+	"value EQUDBL SQR(2)\n"
+	"]\n"
+	"DEF PROCCheck(a, e)\n"
+	"LET a = e - a\n"
+	"IF a < 0.0 THEN LET a = -a ENDIF\n"
+	"PRINT a < 0.001\n"
+	"ENDPROC\n",
+	"-1\n-1\n"},
+	{"assembler_vfp_abs",
+	"PROCCheck(FNAbs(-1), 1)\n"
+	"PROCCheck(FNAbsFixed, 1)\n"
+	"DEF FNAbs(a) [ FABSD D0, D0 MOV PC, R14 ]\n"
+	"DEF FNAbsFixed\n"
+	"[\n"
+	"  ADR R0, value\n"
+	"  FLDD D0, [R0]\n"
+	"  MOV PC, R14\n"
+	"value EQUDBL ABS(-1)\n"
+	"]\n"
+	"DEF PROCCheck(a, e)\n"
+	"LET a = e - a\n"
+	"IF a < 0.0 THEN LET a = -a ENDIF\n"
+	"PRINT a < 0.001\n"
+	"ENDPROC\n",
+	"-1\n-1\n"},
+	{"assembler_fpa_conv",
+	"PRINT FNFPAConv%(10)\n"
+	"def FNFPAConv%(a%)\n"
+	"[\n"
+	"FMSR S0, R0\n"
+	"FSITOD D0, S0\n"
+	"ADR R0, value1\n"
+	"FLDD D1, [R0]\n"
+	"ADR R0, value2\n"
+	"FLDD D2, [R0]\n"
+	"FMULD D0, D0, D1\n"
+	"FDIVD D0, D0, D2\n"
+	"FTOSID S0, D0\n"
+	"FMRS R0, S0\n"
+	"MOV PC, R14\n"
+	"value1\n"
+	"EQUDBL 2.0"
+	"value2\n"
+	"EQUDBL 5.0"
+	"]\n",
+	"4\n"},
+	{"assembler_vfp_array",
+	"local dim a(9)\n"
+	"PROCInitRealArray(a())\n"
+	"for i% := 0 to dim(a(),1)\n"
+	"print a(i%)\n"
+	"next\n"
+	"\n"
+	"def PROCInitRealArray(a(1))\n"
+	"[\n"
+	"def array=R1\n"
+	"LDR array, [R0, 4]\n"
+	"ADR R0, nums\n"
+	"SUB R0, R0, 8\n"
+	"loop\n"
+	"\n"
+	"FLDD D0, [R0, 8]!\n"
+	"FCMPZD D0\n"
+	"FMRX R15, FPSCR\n"
+	"MOVEQ PC, R14\n"
+	"FSTD D0, [array], 8\n"
+	"B loop\n"
+	"nums\n"
+	"EQUDBL 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0.0\n"
+	"]\n",
+	"1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"},
+	{
+	"assembler_vfp_cptran",
+	"PRINT FNWFSRFS%(7)\n"
+	"def FNWFSRFS%(a%)\n"
+	"[\n"
+	"FMXR FPSCR, R0\n"
+	"FMRX R0, FPSCR\n"
+	"MOV PC, R14\n"
+	"]\n",
+	"7\n",
+	},
+	{
+	"assembler_vfp_double_reg_tran",
+	"dim a%(1)\n"
+	"PROCDblToInts(329, a%())\n"
+	"print FNIntsToDnl(a%())\n"
+	"def PROCDblToInts(num, a%(1))\n"
+	"[\n"
+	"	LDR R1, [R0, 4]\n"
+	"	FMRRD R2, R3, D0\n"
+	"	STR R2, [R0]!\n"
+	"	STR R3, [R0]\n"
+	"	MOV PC, R14\n"
+	"]\n"
+	"def FNIntsToDnl(a%(1))\n"
+	"[\n"
+	"  LDR R1, [R0, 4]\n"
+	"  LDR R2, [R0]!\n"
+	"  LDR R3, [R0]\n"
+	"  FMDRR D0, R2, R3\n"
+	"  MOV PC, R14\n"
+	"]\n",
+	"329\n",
+	},
+};
+
+/* clang-format on */
+
+static int prv_test_riscos_vfp_examples(void)
+{
+	size_t i;
+	int pass;
+	const subtilis_test_case_t *test;
+	subtilis_backend_t backend;
+	int ret = 0;
+
+	backend.caps = SUBTILIS_PTD_CAPS;
+	backend.sys_trans = subtilis_ptd_sys_trans;
+	backend.sys_check = subtilis_ptd_sys_check;
+	backend.backend_data = NULL;
+	backend.asm_parse = subtilis_ptd_asm_parse;
+	backend.asm_free = subtilis_riscos_asm_free;
+
+	for (i = 0;
+	     i < sizeof(riscos_vfp_test_cases) / sizeof(subtilis_test_case_t);
+	     i++) {
+		test = &riscos_vfp_test_cases[i];
+		printf("ptd_%s", test->name);
+		pass = parser_test_wrapper(
+		    test->source, &backend, prv_test_example,
+		    subtilis_arm_keywords_list, SUBTILIS_ARM_KEYWORD_TOKENS,
+		    SUBTILIS_ERROR_OK, test->result, test->mem_leaks_ok);
+		ret |= pass;
+	}
+
+	return ret;
+}
+
+int ptd_test(void)
+{
+	int ret = 0;
+
+	ret |= prv_test_ptd_examples();
+	ret |= prv_test_riscos_vfp_examples();
+
+	return ret;
+}

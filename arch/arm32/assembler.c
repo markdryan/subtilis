@@ -149,6 +149,7 @@ static const subtilis_arm_ass_mnemomic_t f_mnem[] = {
 	{ "FMULD", SUBTILIS_VFP_INSTR_FMULD, NULL, },
 	{ "FMULS", SUBTILIS_VFP_INSTR_FMULS, NULL, },
 	{ "FMXR", SUBTILIS_VFP_INSTR_FMXR, NULL, },
+	{ "FMSTAT", SUBTILIS_VFP_INSTR_FMRX, NULL, },
 	{ "FNEGD", SUBTILIS_VFP_INSTR_FNEGD, NULL, },
 	{ "FNEGS", SUBTILIS_VFP_INSTR_FNEGS, NULL, },
 	{ "FNMACD", SUBTILIS_VFP_INSTR_FNMACD, NULL, },
@@ -2340,6 +2341,16 @@ static void prv_parse_vfp_sysreg(subtilis_arm_ass_context_t *c,
 	subtilis_arm_reg_t sysreg;
 	subtilis_arm_reg_t reg;
 	const char *tbuf;
+
+	if (!strcmp(name, "FMSTAT")) {
+		subtilis_vfp_add_sysreg(c->arm_s, itype, ccode,
+					SUBTILIS_VFP_SYSREG_FPSCR, 15, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_lexer_get(c->l, c->t, err);
+		return;
+	}
 
 	if (itype == SUBTILIS_VFP_INSTR_FMXR)
 		sysreg = prv_get_vfp_sysreg(c, err);
