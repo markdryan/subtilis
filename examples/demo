@@ -34,7 +34,7 @@ def PROCSinWave(a$, start%)
 	MOV counter, 0
 	ADR table_ptr, table
 
-loop_start
+loop_start:
 	CMP counter, strlen
 	MOVEQ PC, R14
 	CMP counter, screen_width
@@ -50,7 +50,7 @@ loop_start
 	SWI "OS_WriteC"
 	ADD counter, counter, 1
 	B loop_start
-table
+table:
 	for i = 1 to screen_width
 	    EQUD INT(SIN(RAD((i)*8))*16)+15
 	next

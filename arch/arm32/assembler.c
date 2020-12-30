@@ -294,6 +294,15 @@ static void prv_parse_label(subtilis_arm_ass_context_t *c, const char *name,
 			    subtilis_error_t *err)
 {
 	size_t index;
+	const char *tbuf;
+	char *name_cpy;
+
+	name_cpy = malloc(strlen(name + 1));
+	if (!name_cpy) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	strcpy(name_cpy, name);
 
 	if (subtilis_string_pool_find(c->label_pool, name, &index)) {
 		if (subtilis_bitset_isset(&c->pending_labels, index)) {
@@ -301,19 +310,33 @@ static void prv_parse_label(subtilis_arm_ass_context_t *c, const char *name,
 		} else {
 			subtilis_error_set_already_defined(
 			    err, name, c->l->stream->name, c->l->line);
-			return;
+			goto cleanup;
 		}
 	} else {
 		index = subtilis_string_pool_register(c->label_pool, name, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+			goto cleanup;
 	}
 
 	subtilis_arm_section_add_label(c->arm_s, index, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		goto cleanup;
 
 	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ":")) {
+		subtilis_error_set_label_missing_colon(
+		    err, name_cpy, c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	subtilis_lexer_get(c->l, c->t, err);
+
+cleanup:
+
+	free(name_cpy);
 }
 
 static void prv_get_op2(subtilis_arm_ass_context_t *c, subtilis_arm_op2_t *op2,

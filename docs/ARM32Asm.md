@@ -84,6 +84,10 @@ The following built-in functions are supported:
 * RAD, ABS, SGN, PI
 * CHR$, ASC, LEN, LEFT$, RIGHT$, MID$, STRING$, STR$ (currently STR$~ isn't supported).
 
+## Labels
+
+Labels are identifiers which are not keywords or mnemomics.  They must be followed by a ':'.
+
 ## DEF
 
 The DEF keyword can be used to define constants anywhere within an assembly language function.  The constants are local to the function in which they are defined.  They are visible from the
