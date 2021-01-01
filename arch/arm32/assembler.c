@@ -299,7 +299,7 @@ static void prv_parse_label(subtilis_arm_ass_context_t *c, const char *name,
 	const char *tbuf;
 	char *name_cpy;
 
-	name_cpy = malloc(strlen(name + 1));
+	name_cpy = malloc(strlen(name) + 1);
 	if (!name_cpy) {
 		subtilis_error_set_oom(err);
 		return;
