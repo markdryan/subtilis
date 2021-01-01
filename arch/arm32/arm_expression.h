@@ -23,6 +23,9 @@
 typedef enum {
 	SUBTILIS_ARM_EXP_TYPE_FREG,
 	SUBTILIS_ARM_EXP_TYPE_REG,
+	SUBTILIS_ARM_EXP_TYPE_SREG,
+	SUBTILIS_ARM_EXP_TYPE_DREG,
+	SUBTILIS_ARM_EXP_TYPE_SYSREG,
 	SUBTILIS_ARM_EXP_TYPE_INT,
 	SUBTILIS_ARM_EXP_TYPE_REAL,
 	SUBTILIS_ARM_EXP_TYPE_STRING,
@@ -49,6 +52,14 @@ subtilis_arm_reg_t subtilis_arm_exp_parse_reg(subtilis_arm_ass_context_t *c,
 subtilis_arm_reg_t subtilis_arm_exp_parse_freg(subtilis_arm_ass_context_t *c,
 					       const char *id,
 					       subtilis_error_t *err);
+subtilis_arm_reg_t subtilis_arm_exp_parse_sreg(subtilis_arm_ass_context_t *c,
+					       const char *id,
+					       subtilis_error_t *err);
+subtilis_arm_reg_t subtilis_arm_exp_parse_dreg(subtilis_arm_ass_context_t *c,
+					       const char *id,
+					       subtilis_error_t *err);
+subtilis_arm_reg_t subtilis_arm_exp_parse_sysreg(subtilis_arm_ass_context_t *c,
+						 const char *id);
 subtilis_arm_exp_val_t *subtilis_arm_exp_pri7(subtilis_arm_ass_context_t *c,
 					      subtilis_error_t *err);
 subtilis_arm_exp_val_t *subtilis_arm_exp_val_get(subtilis_arm_ass_context_t *c,
@@ -65,6 +76,12 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_new_reg(subtilis_arm_reg_t reg,
 						 subtilis_error_t *err);
 subtilis_arm_exp_val_t *subtilis_arm_exp_new_freg(subtilis_arm_reg_t reg,
 						  subtilis_error_t *err);
+subtilis_arm_exp_val_t *subtilis_arm_exp_new_dreg(subtilis_arm_reg_t reg,
+						  subtilis_error_t *err);
+subtilis_arm_exp_val_t *subtilis_arm_exp_new_sreg(subtilis_arm_reg_t reg,
+						  subtilis_error_t *err);
+subtilis_arm_exp_val_t *subtilis_arm_exp_new_sysreg(subtilis_arm_reg_t reg,
+						    subtilis_error_t *err);
 subtilis_arm_exp_val_t *subtilis_arm_exp_new_id(const char *id,
 						subtilis_error_t *err);
 subtilis_arm_exp_val_t *subtilis_arm_exp_dup(subtilis_arm_exp_val_t *val,

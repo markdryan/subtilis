@@ -135,5 +135,23 @@ void subtilis_fpa_gen_pow(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_fpa_gen_exp(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
+size_t subtilis_fpa_preserve_regs(subtilis_arm_section_t *arm_s,
+				  int save_real_start, subtilis_error_t *err);
+size_t subtilis_fpa_restore_regs(subtilis_arm_section_t *arm_s,
+				 int save_real_start, subtilis_error_t *err);
+void subtilis_fpa_preserve_update(subtilis_arm_section_t *arm_s,
+				  subtilis_arm_call_site_t *call_site,
+				  size_t real_regs_saved, size_t real_regs_used,
+				  subtilis_error_t *err);
+void subtilis_fpa_update_offsets(subtilis_arm_section_t *arm_s,
+				 subtilis_arm_call_site_t *call_site,
+				 size_t bytes_saved, subtilis_error_t *err);
+void subtilis_fpa_store_double(subtilis_arm_section_t *arm_s,
+			       subtilis_arm_reg_t dest, subtilis_arm_reg_t base,
+			       size_t offset, subtilis_error_t *err);
+void subtilis_fpa_mov_reg(subtilis_arm_section_t *arm_s,
+			  subtilis_arm_reg_t dest, subtilis_arm_reg_t src,
+			  subtilis_error_t *err);
+void subtilis_arm_fpa_if_init(subtilis_arm_fp_if_t *fp_if);
 
 #endif

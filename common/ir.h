@@ -968,7 +968,7 @@ typedef enum {
 	 * Copies the contents of a floating point register into a 32
 	 * bit integer register.  The number is truncated by the copy.
 	 *
-	 * f0 = r0
+	 * r0 = f0
 	 */
 
 	SUBTILIS_OP_INSTR_MOV_FP_I32,

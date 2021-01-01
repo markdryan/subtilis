@@ -48,7 +48,7 @@ void prv_read_code(FILE *f, subtilis_buffer_t *b, subtilis_error_t *err)
 	b->buffer->end = total_read;
 }
 
-int main(int argc, char *argv[])
+int runarm_main(int argc, char *argv[], uint32_t start_address, bool vfp)
 {
 	subtilis_error_t err;
 	subtilis_buffer_t b;
@@ -85,9 +85,10 @@ int main(int argc, char *argv[])
 	code = &b.buffer->data[b.buffer->start];
 	code_len = subtilis_buffer_get_size(&b);
 
-	subtilis_arm_disass_dump(code, code_len);
+	subtilis_arm_disass_dump(code, code_len, vfp);
 
-	vm = subtilis_arm_vm_new(code, code_len, 512 * 1024, &err);
+	vm = subtilis_arm_vm_new(code, code_len, 512 * 1024, start_address, vfp,
+				 &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

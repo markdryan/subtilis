@@ -155,7 +155,8 @@ static void prv_init_encode_ud(subtilis_arm_encode_ud_t *ud,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	ud->reverse_fpa_consts = arm_p->reverse_fpa_consts;
+	ud->reverse_fpa_consts =
+	    arm_p->fp_if && arm_p->fp_if->reverse_fpa_consts;
 
 	return;
 
@@ -1022,6 +1023,43 @@ static void prv_encode_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	prv_encode_data_instr(user_data, op, type, instr, err);
 }
 
+static void prv_encode_flags_instr(void *user_data, subtilis_arm_op_t *op,
+				   subtilis_arm_instr_type_t type,
+				   subtilis_arm_flags_instr_t *instr,
+				   subtilis_error_t *err)
+{
+	subtilis_arm_encode_ud_t *ud = user_data;
+	uint32_t word;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (type == SUBTILIS_ARM_INSTR_MRS) {
+		word = 0x01000000;
+		word |= (instr->op.reg & 0xf) << 12;
+	} else {
+		word = 0x01200000;
+		if (instr->flag_reg) {
+			word |= instr->op.reg & 0xf;
+		} else {
+			word |= 1 << 25;
+			word |= (instr->op.integer & 0xfff);
+		}
+		word |= (instr->fields & 0xf) << 16;
+	}
+
+	if (instr->flag_reg == SUBTILIS_ARM_FLAGS_SPSR)
+		word |= 1 << 22;
+	word |= instr->ccode << 28;
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
 static void prv_encode_fpa_rounding(subtilis_fpa_rounding_t rounding,
 				    uint32_t *word)
 {
@@ -1390,6 +1428,631 @@ static void prv_encode_fpa_cptran_instr(void *user_data, subtilis_arm_op_t *op,
 	prv_add_word(ud, word, err);
 }
 
+static void prv_encode_vfp_stran_instr(void *user_data, subtilis_arm_op_t *op,
+				       subtilis_arm_instr_type_t type,
+				       subtilis_vfp_stran_instr_t *instr,
+				       subtilis_error_t *err)
+{
+	uint32_t copro = 0xb;
+	uint32_t dest = instr->dest & 0x1f;
+	subtilis_arm_encode_ud_t *ud = user_data;
+	uint32_t word = 6 << 25;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	word |= instr->ccode << 28;
+	word |= (0xC | (instr->pre_indexed ? 1 : 0)) << 24;
+	if (!instr->subtract)
+		word |= 1 << 23;
+
+	if ((type == SUBTILIS_VFP_INSTR_FSTS) ||
+	    (type == SUBTILIS_VFP_INSTR_FLDS)) {
+		word |= (dest & 1) << 22;
+		dest = dest >> 1;
+		copro--;
+	}
+
+	if (instr->write_back)
+		word |= 1 << 21;
+
+	if (type == SUBTILIS_VFP_INSTR_FLDS || type == SUBTILIS_VFP_INSTR_FLDD)
+		word |= 1 << 20;
+
+	word |= instr->base << 16;
+	word |= dest << 12;
+	word |= copro << 8;
+	word |= instr->offset;
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
+static uint32_t prv_encode_src_dest(subtilis_arm_reg_t src,
+				    subtilis_arm_reg_t dest, bool float32_src,
+				    bool float32_dest)
+{
+	uint32_t word = 0;
+
+	if (float32_src) {
+		word |= (src >> 1) & 0xf;
+		word |= (src & 1) << 5;
+	} else {
+		word |= src & 0xf;
+	}
+	if (float32_dest) {
+		word |= ((dest >> 1) & 0xf) << 12;
+		word |= (dest & 1) << 22;
+	} else {
+		word |= (dest & 0xf) << 12;
+	}
+
+	return word;
+}
+
+static void prv_encode_vfp_copy_instr(void *user_data, subtilis_arm_op_t *op,
+				      subtilis_arm_instr_type_t type,
+				      subtilis_vfp_copy_instr_t *instr,
+				      subtilis_error_t *err)
+{
+	uint32_t word;
+	bool float32 = false;
+	subtilis_arm_encode_ud_t *ud = user_data;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	switch (type) {
+	case SUBTILIS_VFP_INSTR_FCPYS:
+		word = 0xeb00a40;
+		float32 = true;
+		break;
+	case SUBTILIS_VFP_INSTR_FCPYD:
+		word = 0xeb00b40;
+		break;
+	case SUBTILIS_VFP_INSTR_FNEGS:
+		word = 0xeb10a40;
+		float32 = true;
+		break;
+	case SUBTILIS_VFP_INSTR_FNEGD:
+		word = 0xeb10b40;
+		break;
+	case SUBTILIS_VFP_INSTR_FABSS:
+		word = 0xeb00ac0;
+		float32 = true;
+		break;
+	case SUBTILIS_VFP_INSTR_FABSD:
+		word = 0xeb00bc0;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	word |= instr->ccode << 28;
+	word |= prv_encode_src_dest(instr->src, instr->dest, float32, float32);
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
+static void prv_encode_vfp_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
+				      subtilis_arm_instr_type_t type,
+				      subtilis_vfp_ldrc_instr_t *instr,
+				      subtilis_error_t *err)
+{
+	subtilis_vfp_stran_instr_t stran;
+	subtilis_arm_encode_ud_t *ud = user_data;
+
+	/*
+	 * adj is the number of additional bytes that can be written
+	 * without causing a pool flush.  8 for the double and 4
+	 * for the ldr instruction.
+	 */
+
+	size_t adj = 12;
+
+	prv_check_pool_adj(ud, adj, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (ud->ldrc_real == SIZE_MAX)
+		ud->ldrc_real = ud->bytes_written;
+
+	prv_add_const(ud, instr->label, ud->bytes_written,
+		      SUBTILIS_ARM_ENCODE_BP_LDRF, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	stran.ccode = instr->ccode;
+	stran.dest = instr->dest;
+	stran.base = 15;
+	stran.offset = 0;
+	stran.pre_indexed = true;
+	stran.write_back = false;
+	stran.subtract = false;
+	prv_encode_vfp_stran_instr(user_data, op, SUBTILIS_VFP_INSTR_FLDD,
+				   &stran, err);
+}
+
+static void prv_encode_vfp_tran_instr(void *user_data, subtilis_arm_op_t *op,
+				      subtilis_arm_instr_type_t type,
+				      subtilis_vfp_tran_instr_t *instr,
+				      subtilis_error_t *err)
+{
+	uint32_t word;
+	bool float32_src = true;
+	bool float32_dest = true;
+	subtilis_arm_reg_t src = instr->src;
+	subtilis_arm_reg_t dest = instr->dest;
+	subtilis_arm_encode_ud_t *ud = user_data;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	switch (type) {
+	case SUBTILIS_VFP_INSTR_FTOSIS:
+		word = 0xebd0a40;
+		break;
+	case SUBTILIS_VFP_INSTR_FTOUIS:
+		word = 0xebc0a40;
+		break;
+	case SUBTILIS_VFP_INSTR_FTOUIZS:
+		word = 0xebc0ac0;
+		break;
+	case SUBTILIS_VFP_INSTR_FTOSIZS:
+		word = 0xebd0ac0;
+		break;
+	case SUBTILIS_VFP_INSTR_FSITOS:
+		word = 0xeb80ac0;
+		break;
+	case SUBTILIS_VFP_INSTR_FUITOS:
+		word = 0xeb80a40;
+		break;
+	case SUBTILIS_VFP_INSTR_FSITOD:
+		word = 0xeb80bc0;
+		float32_dest = false;
+		if (instr->use_dregs)
+			src *= 2;
+		break;
+	case SUBTILIS_VFP_INSTR_FTOSID:
+		word = 0xebd0b40;
+		float32_src = false;
+		if (instr->use_dregs)
+			dest *= 2;
+		break;
+	case SUBTILIS_VFP_INSTR_FTOUID:
+		word = 0xebc0b40;
+		float32_src = false;
+		if (instr->use_dregs)
+			dest *= 2;
+		break;
+	case SUBTILIS_VFP_INSTR_FTOSIZD:
+		word = 0xebd0bc0;
+		float32_src = false;
+		if (instr->use_dregs)
+			dest *= 2;
+		break;
+	case SUBTILIS_VFP_INSTR_FTOUIZD:
+		word = 0xebc0bc0;
+		float32_src = false;
+		if (instr->use_dregs)
+			dest *= 2;
+		break;
+	case SUBTILIS_VFP_INSTR_FUITOD:
+		word = 0xebc0bc0;
+		float32_dest = false;
+		if (instr->use_dregs)
+			src *= 2;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	word |= instr->ccode << 28;
+	word |= prv_encode_src_dest(src, dest, float32_src, float32_dest);
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
+static void prv_encode_vfp_tran_dbl_instr(void *user_data,
+					  subtilis_arm_op_t *op,
+					  subtilis_arm_instr_type_t type,
+					  subtilis_vfp_tran_dbl_instr_t *instr,
+					  subtilis_error_t *err)
+{
+	uint32_t word;
+	subtilis_arm_encode_ud_t *ud = user_data;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	switch (type) {
+	case SUBTILIS_VFP_INSTR_FMDRR:
+		word = 0xc400b10;
+		word |= instr->dest1 & 0xf;
+		word |= (instr->src1 & 0xf) << 12;
+		word |= (instr->src2 & 0xf) << 16;
+		break;
+	case SUBTILIS_VFP_INSTR_FMRRD:
+		word = 0xc500b10;
+		word |= instr->src1 & 0xf;
+		word |= (instr->dest1 & 0xf) << 12;
+		word |= (instr->dest2 & 0xf) << 16;
+		break;
+	case SUBTILIS_VFP_INSTR_FMSRR:
+		if (instr->dest1 + 1 != instr->dest2) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		word = 0xc400a10;
+		word |= (instr->dest1 >> 1) & 0xf;
+		word |= (instr->dest1 & 1) << 5;
+		word |= (instr->src1 & 0xf) << 12;
+		word |= (instr->src2 & 0xf) << 16;
+		break;
+	case SUBTILIS_VFP_INSTR_FMRRS:
+		if (instr->src1 + 1 != instr->src2) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		word = 0xc500a10;
+		word |= (instr->src1 >> 1) & 0xf;
+		word |= (instr->src1 & 1) << 5;
+		word |= (instr->dest1 & 0xf) << 12;
+		word |= (instr->dest2 & 0xf) << 16;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	word |= instr->ccode << 28;
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
+static void prv_encode_vfp_cptran_instr(void *user_data, subtilis_arm_op_t *op,
+					subtilis_arm_instr_type_t type,
+					subtilis_vfp_cptran_instr_t *instr,
+					subtilis_error_t *err)
+{
+	uint32_t word;
+	subtilis_arm_reg_t src = instr->src;
+	subtilis_arm_reg_t dest = instr->dest;
+	subtilis_arm_encode_ud_t *ud = user_data;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (type == SUBTILIS_VFP_INSTR_FMSR) {
+		if (instr->use_dregs)
+			dest *= 2;
+		word = 0xe000a10;
+		word |= (src & 0xf) << 12;
+		word |= ((dest >> 1) & 0xf) << 16;
+		word |= (dest & 1) << 7;
+	} else {
+		if (instr->use_dregs)
+			src *= 2;
+		word = 0xe100a10;
+		word |= (dest & 0xf) << 12;
+		word |= ((src >> 1) & 0xf) << 16;
+		word |= (src & 1) << 7;
+	}
+
+	word |= instr->ccode << 28;
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
+static void prv_encode_vfp_data_instr(void *user_data, subtilis_arm_op_t *op,
+				      subtilis_arm_instr_type_t type,
+				      subtilis_vfp_data_instr_t *instr,
+				      subtilis_error_t *err)
+{
+	uint32_t word = 0;
+	bool float32 = false;
+	subtilis_arm_encode_ud_t *ud = user_data;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	switch (type) {
+	case SUBTILIS_VFP_INSTR_FMACS:
+		word |= 0xe000a00;
+		float32 = true;
+		break;
+	case SUBTILIS_VFP_INSTR_FMACD:
+		word |= 0xe000b00;
+		break;
+	case SUBTILIS_VFP_INSTR_FNMACS:
+		word |= 0xe000a40;
+		float32 = true;
+		break;
+	case SUBTILIS_VFP_INSTR_FNMACD:
+		word |= 0xe000b40;
+		break;
+	case SUBTILIS_VFP_INSTR_FMSCS:
+		word |= 0xe100a00;
+		float32 = true;
+		break;
+	case SUBTILIS_VFP_INSTR_FMSCD:
+		word |= 0xe100b00;
+		break;
+	case SUBTILIS_VFP_INSTR_FNMSCS:
+		word |= 0xe100a40;
+		float32 = true;
+		break;
+	case SUBTILIS_VFP_INSTR_FNMSCD:
+		word |= 0xe100b40;
+		break;
+	case SUBTILIS_VFP_INSTR_FMULS:
+		word |= 0xe200a00;
+		float32 = true;
+		break;
+	case SUBTILIS_VFP_INSTR_FMULD:
+		word |= 0xe200b00;
+		break;
+	case SUBTILIS_VFP_INSTR_FNMULS:
+		word |= 0xe200a40;
+		float32 = true;
+		break;
+	case SUBTILIS_VFP_INSTR_FNMULD:
+		word |= 0xe200b40;
+		break;
+	case SUBTILIS_VFP_INSTR_FADDS:
+		word |= 0xe300a00;
+		float32 = true;
+		break;
+	case SUBTILIS_VFP_INSTR_FADDD:
+		word |= 0xe300b00;
+		break;
+	case SUBTILIS_VFP_INSTR_FSUBS:
+		word |= 0xe300a40;
+		float32 = true;
+		break;
+	case SUBTILIS_VFP_INSTR_FSUBD:
+		word |= 0xe300b40;
+		break;
+	case SUBTILIS_VFP_INSTR_FDIVS:
+		word |= 0xe800a00;
+		float32 = true;
+		break;
+	case SUBTILIS_VFP_INSTR_FDIVD:
+		word |= 0xe800b00;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	word |= instr->ccode << 28;
+
+	if (float32) {
+		word |= ((instr->op1 >> 1) & 0xf) << 16;
+		word |= (instr->op1 & 1) << 7;
+
+		word |= (instr->op2 >> 1) & 0xf;
+		word |= (instr->op2 & 1) << 5;
+
+		word |= ((instr->dest >> 1) & 0xf) << 12;
+		word |= (instr->dest & 1) << 22;
+	} else {
+		word |= (instr->op1 & 0xf) << 16;
+		word |= instr->op2 & 0xf;
+		word |= (instr->dest & 0xf) << 12;
+	}
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
+static void prv_encode_vfp_cmp_instr(void *user_data, subtilis_arm_op_t *op,
+				     subtilis_arm_instr_type_t type,
+				     subtilis_vfp_cmp_instr_t *instr,
+				     subtilis_error_t *err)
+{
+	uint32_t word = 0;
+	bool float32 = false;
+	bool two_ops = false;
+	subtilis_arm_encode_ud_t *ud = user_data;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	switch (type) {
+	case SUBTILIS_VFP_INSTR_FCMPS:
+		two_ops = true;
+		float32 = true;
+		word |= 0xeb40a40;
+		break;
+	case SUBTILIS_VFP_INSTR_FCMPD:
+		two_ops = true;
+		word |= 0xeb40b40;
+		break;
+	case SUBTILIS_VFP_INSTR_FCMPES:
+		two_ops = true;
+		float32 = true;
+		word |= 0xeb40ac0;
+		break;
+	case SUBTILIS_VFP_INSTR_FCMPED:
+		two_ops = true;
+		word |= 0xeb40bc0;
+		break;
+	case SUBTILIS_VFP_INSTR_FCMPZS:
+		float32 = true;
+		word |= 0xeb50a40;
+		break;
+	case SUBTILIS_VFP_INSTR_FCMPZD:
+		word |= 0xeb50b40;
+		break;
+	case SUBTILIS_VFP_INSTR_FCMPEZS:
+		two_ops = true;
+		word |= 0xeb50ac0;
+		break;
+	case SUBTILIS_VFP_INSTR_FCMPEZD:
+		word |= 0xeb50bc0;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	word |= instr->ccode << 28;
+
+	if (float32) {
+		if (two_ops) {
+			word |= (instr->op2 >> 1) & 0xf;
+			word |= (instr->op2 & 1) << 5;
+		}
+
+		word |= ((instr->op1 >> 1) & 0xf) << 12;
+		word |= (instr->op1 & 1) << 22;
+	} else {
+		if (two_ops)
+			word |= instr->op2 & 0xf;
+		word |= (instr->op1 & 0xf) << 12;
+	}
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
+static void prv_encode_vfp_sqrt_instr(void *user_data, subtilis_arm_op_t *op,
+				      subtilis_arm_instr_type_t type,
+				      subtilis_vfp_sqrt_instr_t *instr,
+				      subtilis_error_t *err)
+{
+	uint32_t word;
+	subtilis_arm_encode_ud_t *ud = user_data;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (type == SUBTILIS_VFP_INSTR_FSQRTD) {
+		word = 0xeb10bc0;
+		word |= instr->op1 & 0xf;
+		word |= (instr->dest & 0xf) << 12;
+	} else {
+		word = 0xeb10ac0;
+		word |= (instr->op1 >> 1) & 0xf;
+		word |= (instr->op1 & 1) << 5;
+		word |= ((instr->dest >> 1) & 0xf) << 12;
+		word |= (instr->dest & 1) << 22;
+	}
+
+	word |= instr->ccode << 28;
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
+static void prv_encode_vfp_sysreg_instr(void *user_data, subtilis_arm_op_t *op,
+					subtilis_arm_instr_type_t type,
+					subtilis_vfp_sysreg_instr_t *instr,
+					subtilis_error_t *err)
+{
+	uint32_t word;
+	subtilis_arm_encode_ud_t *ud = user_data;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (type == SUBTILIS_VFP_INSTR_FMRX)
+		word = 0xef00a10;
+	else
+		word = 0xee00a10;
+
+	word |= (instr->arm_reg & 0xf) << 12;
+	switch (instr->sysreg) {
+	case SUBTILIS_VFP_SYSREG_FPSID:
+		break;
+	case SUBTILIS_VFP_SYSREG_FPSCR:
+		word |= 1 << 16;
+		break;
+	case SUBTILIS_VFP_SYSREG_FPEXC:
+		word |= 8 << 16;
+		break;
+	}
+
+	word |= instr->ccode << 28;
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
+static void prv_encode_vfp_cvt_instr(void *user_data, subtilis_arm_op_t *op,
+				     subtilis_arm_instr_type_t type,
+				     subtilis_vfp_cvt_instr_t *instr,
+				     subtilis_error_t *err)
+{
+	uint32_t word;
+	subtilis_arm_encode_ud_t *ud = user_data;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (type == SUBTILIS_VFP_INSTR_FCVTDS) {
+		word = 0xeb70ac0;
+		word |= (instr->dest << 12);
+		word |= (instr->op1 >> 1) | ((instr->op1 & 1) << 5);
+	} else {
+		word = 0xeb70bc0;
+		word |= instr->op1 & 0xf;
+		word |=
+		    ((instr->dest & 0x1e) << 11) | ((instr->dest & 1) << 22);
+	}
+	word |= instr->ccode << 28;
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
 static int32_t prv_compute_dist(size_t first, size_t second, size_t limit,
 				subtilis_error_t *err)
 {
@@ -1523,6 +2186,14 @@ static void prv_encode_directive(void *user_data, subtilis_arm_op_t *op,
 		*((uint32_t *)&ud->code[ud->bytes_written + 4]) = dbl_ptr[0];
 		ud->bytes_written += 8;
 		break;
+	case SUBTILIS_ARM_OP_FLOAT:
+		prv_ensure_code_size(ud, 4, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		*((uint32_t *)&ud->code[ud->bytes_written]) =
+		    *((uint32_t *)&op->op.flt);
+		ud->bytes_written += 4;
+		break;
 	case SUBTILIS_ARM_OP_STRING:
 		len = strlen(op->op.str) + 1;
 		prv_ensure_code_size(ud, len, err);
@@ -1557,6 +2228,7 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 	walker.ldrc_fn = prv_encode_ldrc_instr;
 	walker.adr_fn = prv_encode_adr_instr;
 	walker.cmov_fn = prv_encode_cmov_instr;
+	walker.flags_fn = prv_encode_flags_instr;
 	walker.fpa_data_monadic_fn = prv_encode_fpa_data_monadic_instr;
 	walker.fpa_data_dyadic_fn = prv_encode_fpa_data_dyadic_instr;
 	walker.fpa_stran_fn = prv_encode_fpa_stran_instr;
@@ -1564,6 +2236,17 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 	walker.fpa_cmp_fn = prv_encode_fpa_cmp_instr;
 	walker.fpa_ldrc_fn = prv_encode_fpa_ldrc_instr;
 	walker.fpa_cptran_fn = prv_encode_fpa_cptran_instr;
+	walker.vfp_stran_fn = prv_encode_vfp_stran_instr;
+	walker.vfp_copy_fn = prv_encode_vfp_copy_instr;
+	walker.vfp_ldrc_fn = prv_encode_vfp_ldrc_instr;
+	walker.vfp_tran_fn = prv_encode_vfp_tran_instr;
+	walker.vfp_tran_dbl_fn = prv_encode_vfp_tran_dbl_instr;
+	walker.vfp_cptran_fn = prv_encode_vfp_cptran_instr;
+	walker.vfp_data_fn = prv_encode_vfp_data_instr;
+	walker.vfp_cmp_fn = prv_encode_vfp_cmp_instr;
+	walker.vfp_sqrt_fn = prv_encode_vfp_sqrt_instr;
+	walker.vfp_sysreg_fn = prv_encode_vfp_sysreg_instr;
+	walker.vfp_cvt_fn = prv_encode_vfp_cvt_instr;
 
 	subtilis_arm_walk(arm_s, &walker, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1595,7 +2278,7 @@ static void prv_copy_constant_to_buf(subtilis_arm_prog_t *arm_p,
 	size_t null_bytes_needed;
 	uint8_t *bptr;
 
-	if (data->dbl && arm_p->reverse_fpa_consts) {
+	if (data->dbl && arm_p->fp_if && arm_p->fp_if->reverse_fpa_consts) {
 		ptr = prv_get_word_ptr(ud, ud->bytes_written, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;

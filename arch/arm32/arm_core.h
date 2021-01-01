@@ -26,13 +26,23 @@
 /*
  * Two register namespaces overlap for each register type, int or real.
  * For integers register numbers < 16 are fixed and will not be altered
- * by the register allocator.  FPA register numbers < 8 are fixed.
- * All other register numbers are floating and will need to be allocated
- * to a fixed register during register allocation.
+ * by the register allocator.  FPA register numbers < 8 are fixed.  VFP
+ * numbers < 16 are fixed (32 bit floating point operations are not supported
+ * by the compiler).  All other register numbers are floating and will need to
+ * be allocated to a fixed register during register allocation.
  */
 
 #define SUBTILIS_ARM_INT_VIRT_REG_START 16
-#define SUBTILIS_ARM_FPA_VIRT_REG_START 8
+
+#define SUBTILIS_ARM_REG_MAX_ARGS 4
+
+#define SUBTILIS_ARM_REG_MAX_INT_REGS 11
+
+#define SUBTILIS_ARM_REG_MAX_FPA_REGS 8
+
+#define SUBTILIS_ARM_REG_MAX_VFP_DBL_REGS 16
+
+typedef struct subtlis_arm_walker_t_ subtlis_arm_walker_t;
 
 typedef size_t subtilis_arm_reg_t;
 
@@ -96,6 +106,7 @@ typedef enum {
 typedef enum {
 	SUBTILIS_ARM_ICLASS_INT,
 	SUBTILIS_ARM_ICLASS_FPA,
+	SUBTILIS_ARM_ICLASS_VFP,
 	SUBTILIS_ARM_ICLASS_MAX,
 } subtilis_arm_iclass_t;
 
@@ -127,8 +138,10 @@ typedef enum {
 	SUBTILIS_ARM_INSTR_LDRC,
 	SUBTILIS_ARM_INSTR_CMOV,
 	SUBTILIS_ARM_INSTR_ADR,
+	SUBTILIS_ARM_INSTR_MSR,
+	SUBTILIS_ARM_INSTR_MRS,
 
-	SUBTILIS_ARM_INSTR_INT_MAX = SUBTILIS_ARM_INSTR_ADR,
+	SUBTILIS_ARM_INSTR_INT_MAX = SUBTILIS_ARM_INSTR_MRS,
 
 	SUBTILIS_FPA_INSTR_LDF,
 	SUBTILIS_FPA_INSTR_STF,
@@ -171,7 +184,87 @@ typedef enum {
 	SUBTILIS_FPA_INSTR_WFS,
 	SUBTILIS_FPA_INSTR_RFS,
 
-	SUBTILIS_ARM_INSTR_FPA_MAX,
+	SUBTILIS_ARM_INSTR_FPA_MAX = SUBTILIS_FPA_INSTR_RFS,
+
+	SUBTILIS_VFP_INSTR_FSTS,
+	SUBTILIS_VFP_INSTR_FLDS,
+	SUBTILIS_VFP_INSTR_FSTD,
+	SUBTILIS_VFP_INSTR_FLDD,
+	SUBTILIS_VFP_INSTR_FCPYS,
+	SUBTILIS_VFP_INSTR_FCPYD,
+	SUBTILIS_VFP_INSTR_FNEGS,
+	SUBTILIS_VFP_INSTR_FNEGD,
+	SUBTILIS_VFP_INSTR_FABSS,
+	SUBTILIS_VFP_INSTR_FABSD,
+	SUBTILIS_VFP_INSTR_LDRC,
+	SUBTILIS_VFP_INSTR_FSITOD,
+	SUBTILIS_VFP_INSTR_FSITOS,
+	SUBTILIS_VFP_INSTR_FTOSIS,
+	SUBTILIS_VFP_INSTR_FTOSID,
+	SUBTILIS_VFP_INSTR_FTOUIS,
+	SUBTILIS_VFP_INSTR_FTOUID,
+	SUBTILIS_VFP_INSTR_FTOSIZS,
+	SUBTILIS_VFP_INSTR_FTOSIZD,
+	SUBTILIS_VFP_INSTR_FTOUIZS,
+	SUBTILIS_VFP_INSTR_FTOUIZD,
+	SUBTILIS_VFP_INSTR_FUITOD,
+	SUBTILIS_VFP_INSTR_FUITOS,
+	SUBTILIS_VFP_INSTR_FMSR,
+	SUBTILIS_VFP_INSTR_FMRS,
+
+	SUBTILIS_VFP_INSTR_FMACS,
+	SUBTILIS_VFP_INSTR_FMACD,
+	SUBTILIS_VFP_INSTR_FNMACS,
+	SUBTILIS_VFP_INSTR_FNMACD,
+	SUBTILIS_VFP_INSTR_FMSCS,
+	SUBTILIS_VFP_INSTR_FMSCD,
+	SUBTILIS_VFP_INSTR_FNMSCS,
+	SUBTILIS_VFP_INSTR_FNMSCD,
+	SUBTILIS_VFP_INSTR_FMULS,
+	SUBTILIS_VFP_INSTR_FMULD,
+	SUBTILIS_VFP_INSTR_FNMULS,
+	SUBTILIS_VFP_INSTR_FNMULD,
+	SUBTILIS_VFP_INSTR_FADDS,
+	SUBTILIS_VFP_INSTR_FADDD,
+	SUBTILIS_VFP_INSTR_FSUBS,
+	SUBTILIS_VFP_INSTR_FSUBD,
+	SUBTILIS_VFP_INSTR_FDIVS,
+	SUBTILIS_VFP_INSTR_FDIVD,
+
+	SUBTILIS_VFP_INSTR_FCMPS,
+	SUBTILIS_VFP_INSTR_FCMPD,
+	SUBTILIS_VFP_INSTR_FCMPES,
+	SUBTILIS_VFP_INSTR_FCMPED,
+
+	SUBTILIS_VFP_INSTR_FCMPZS,
+	SUBTILIS_VFP_INSTR_FCMPZD,
+	SUBTILIS_VFP_INSTR_FCMPEZS,
+	SUBTILIS_VFP_INSTR_FCMPEZD,
+
+	SUBTILIS_VFP_INSTR_FSQRTD,
+	SUBTILIS_VFP_INSTR_FSQRTS,
+
+	SUBTILIS_VFP_INSTR_FMXR,
+	SUBTILIS_VFP_INSTR_FMRX,
+
+	SUBTILIS_VFP_INSTR_FMDRR,
+	SUBTILIS_VFP_INSTR_FMRRD,
+	SUBTILIS_VFP_INSTR_FMSRR,
+	SUBTILIS_VFP_INSTR_FMRRS,
+
+	SUBTILIS_VFP_INSTR_FCVTDS,
+	SUBTILIS_VFP_INSTR_FCVTSD,
+
+	/*
+	 *	SUBTILIS_ARM_INSTR_VFP_FSTMS,
+	 *	SUBTILIS_ARM_INSTR_VFP_FLDMS,
+	 *	SUBTILIS_ARM_INSTR_VFP_FSTMD,
+	 *	SUBTILIS_ARM_INSTR_VFP_FLDMD,
+	 *	SUBTILIS_ARM_INSTR_VFP_FSTMX,
+	 *	SUBTILIS_ARM_INSTR_VFP_FLDMX,
+	 */
+
+	SUBTILIS_ARM_INSTR_VFP_MAX,
 
 	SUBTILIS_ARM_INSTR_MAX,
 } subtilis_arm_instr_type_t;
@@ -290,6 +383,31 @@ struct subtilis_arm_cmov_instr_t_ {
 typedef struct subtilis_arm_cmov_instr_t_ subtilis_arm_cmov_instr_t;
 
 typedef enum {
+	SUBTILIS_ARM_FLAGS_CPSR,
+	SUBTILIS_ARM_FLAGS_SPSR,
+} subtilis_arm_flags_t;
+
+enum subtilis_arm_flags_field {
+	SUBTILIS_ARM_FLAGS_FIELD_CONTROL = 1 << 16,
+	SUBTILIS_ARM_FLAGS_FIELD_EXTENSION = 1 << 17,
+	SUBTILIS_ARM_FLAGS_FIELD_STATUS = 1 << 18,
+	SUBTILIS_ARM_FLAGS_FIELD_FLAGS = 1 << 19,
+};
+
+struct subtilis_arm_flags_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_flags_t flag_reg;
+	uint32_t fields;
+	bool op2_reg;
+	union {
+		subtilis_arm_reg_t reg;
+		uint32_t integer;
+	} op;
+};
+
+typedef struct subtilis_arm_flags_instr_t_ subtilis_arm_flags_instr_t;
+
+typedef enum {
 	SUBTILIS_FPA_ROUNDING_NEAREST,
 	SUBTILIS_FPA_ROUNDING_PLUS_INFINITY,
 	SUBTILIS_FPA_ROUNDING_MINUS_INFINITY,
@@ -364,6 +482,96 @@ struct subtilis_fpa_ldrc_instr_t_ {
 
 typedef struct subtilis_fpa_ldrc_instr_t_ subtilis_fpa_ldrc_instr_t;
 
+struct subtilis_vfp_stran_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t base;
+	uint8_t offset;
+	bool pre_indexed;
+	bool write_back;
+	bool subtract;
+};
+
+typedef struct subtilis_vfp_stran_instr_t_ subtilis_vfp_stran_instr_t;
+
+struct subtilis_vfp_copy_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t src;
+};
+
+typedef struct subtilis_vfp_copy_instr_t_ subtilis_vfp_copy_instr_t;
+
+typedef struct subtilis_fpa_ldrc_instr_t_ subtilis_vfp_ldrc_instr_t;
+
+struct subtilis_vfp_tran_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	bool use_dregs;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t src;
+};
+
+typedef struct subtilis_vfp_tran_instr_t_ subtilis_vfp_tran_instr_t;
+
+struct subtilis_vfp_tran_dbl_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_reg_t dest1;
+	subtilis_arm_reg_t dest2;
+	subtilis_arm_reg_t src1;
+	subtilis_arm_reg_t src2;
+};
+
+typedef struct subtilis_vfp_tran_dbl_instr_t_ subtilis_vfp_tran_dbl_instr_t;
+
+typedef struct subtilis_vfp_tran_instr_t_ subtilis_vfp_cptran_instr_t;
+
+struct subtilis_vfp_data_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_reg_t op2;
+};
+
+typedef struct subtilis_vfp_data_instr_t_ subtilis_vfp_data_instr_t;
+
+struct subtilis_vfp_cmp_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_reg_t op2;
+};
+
+typedef struct subtilis_vfp_cmp_instr_t_ subtilis_vfp_cmp_instr_t;
+
+struct subtilis_vfp_sqrt_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+};
+
+typedef struct subtilis_vfp_sqrt_instr_t_ subtilis_vfp_sqrt_instr_t;
+
+typedef enum {
+	SUBTILIS_VFP_SYSREG_FPSID,
+	SUBTILIS_VFP_SYSREG_FPSCR,
+	SUBTILIS_VFP_SYSREG_FPEXC,
+} subtilis_vfp_sysreg_t;
+
+struct subtilis_vfp_sysreg_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_vfp_sysreg_t sysreg;
+	subtilis_arm_reg_t arm_reg;
+};
+
+typedef struct subtilis_vfp_sysreg_instr_t_ subtilis_vfp_sysreg_instr_t;
+
+struct subtilis_vfp_cvt_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+};
+
+typedef struct subtilis_vfp_cvt_instr_t_ subtilis_vfp_cvt_instr_t;
+
 struct subtilis_arm_instr_t_ {
 	subtilis_arm_instr_type_t type;
 	union {
@@ -376,12 +584,24 @@ struct subtilis_arm_instr_t_ {
 		subtilis_arm_ldrc_instr_t ldrc;
 		subtilis_arm_adr_instr_t adr;
 		subtilis_arm_cmov_instr_t cmov;
+		subtilis_arm_flags_instr_t flags;
 		subtilis_fpa_data_instr_t fpa_data;
 		subtilis_fpa_stran_instr_t fpa_stran;
 		subtilis_fpa_tran_instr_t fpa_tran;
 		subtilis_fpa_cmp_instr_t fpa_cmp;
 		subtilis_fpa_ldrc_instr_t fpa_ldrc;
 		subtilis_fpa_cptran_instr_t fpa_cptran;
+		subtilis_vfp_stran_instr_t vfp_stran;
+		subtilis_vfp_copy_instr_t vfp_copy;
+		subtilis_vfp_ldrc_instr_t vfp_ldrc;
+		subtilis_vfp_tran_instr_t vfp_tran;
+		subtilis_vfp_tran_dbl_instr_t vfp_tran_dbl;
+		subtilis_vfp_cptran_instr_t vfp_cptran;
+		subtilis_vfp_data_instr_t vfp_data;
+		subtilis_vfp_cmp_instr_t vfp_cmp;
+		subtilis_vfp_sqrt_instr_t vfp_sqrt;
+		subtilis_vfp_sysreg_instr_t vfp_sysreg;
+		subtilis_vfp_cvt_instr_t vfp_cvt;
 	} operands;
 };
 
@@ -395,6 +615,7 @@ typedef enum {
 	SUBTILIS_ARM_OP_FOUR_BYTE,
 	SUBTILIS_ARM_OP_DOUBLE,
 	SUBTILIS_ARM_OP_DOUBLER,
+	SUBTILIS_ARM_OP_FLOAT,
 	SUBTILIS_ARM_OP_STRING,
 	SUBTILIS_ARM_OP_ALIGN,
 	SUBTILIS_ARM_OP_PHI,
@@ -409,6 +630,7 @@ struct subtilis_arm_op_t_ {
 		uint32_t four_bytes;
 		uint32_t alignment;
 		double dbl;
+		float flt;
 		subtilis_arm_instr_t instr;
 		size_t label;
 		char *str;
@@ -467,6 +689,8 @@ struct subtilis_arm_constants_t_ {
 	size_t max_real;
 };
 
+typedef struct subtilis_arm_fp_if_t_ subtilis_arm_fp_if_t;
+
 struct subtilis_arm_section_t_ {
 	size_t reg_counter;
 	size_t freg_counter;
@@ -489,6 +713,8 @@ struct subtilis_arm_section_t_ {
 	subtilis_type_section_t *stype;
 	const subtilis_settings_t *settings;
 	size_t no_cleanup_label;
+	int32_t start_address;
+	const subtilis_arm_fp_if_t *fp_if;
 };
 
 typedef struct subtilis_arm_section_t_ subtilis_arm_section_t;
@@ -500,11 +726,158 @@ struct subtilis_arm_prog_t_ {
 	subtilis_string_pool_t *string_pool;
 	subtilis_constant_pool_t *constant_pool;
 	subtilis_arm_op_pool_t *op_pool;
-	bool reverse_fpa_consts;
 	const subtilis_settings_t *settings;
+	int32_t start_address;
+	const subtilis_arm_fp_if_t *fp_if;
 };
 
 typedef struct subtilis_arm_prog_t_ subtilis_arm_prog_t;
+
+/*
+ * Insert code for initialising the FP control registers.
+ */
+
+typedef void (*subtilis_arm_fp_preamble_t)(subtilis_arm_section_t *arm_s,
+					   subtilis_error_t *err);
+
+/*
+ * Generate instructions to push all the floating point registers that aren't
+ * used to pass parameters to the stack. This function is called by the code
+ * generator before register allocation has taken place.  At this stage we don't
+ * know which registers will need to be preserved when a function is called so
+ * we push them all and then disable some of the pushes later on.
+ */
+
+typedef size_t (*subtilis_arm_fp_preserve_regs_t)(subtilis_arm_section_t *arm_s,
+						  int save_real_start,
+						  subtilis_error_t *err);
+
+/*
+ * Generate instruction to pop all the saved floating point registers from the
+ * stack that were not used to pass parameters to the previous function call.
+ * This function is called by the code generator before register allocation
+ * has taken place.  At this stage we don't know which registers will need to
+ * be preserved when a function is called so we pop them all and then disable
+ * some of the pop later on.
+ */
+
+typedef size_t (*subtilis_arm_fp_restore_regs_t)(subtilis_arm_section_t *arm_s,
+						 int save_real_start,
+						 subtilis_error_t *err);
+
+/*
+ * Called once register allocation is complete to disable the push and pop code
+ * from subtilis_arm_fp_preserve_regs_t and subtilis_arm_fp_restore_regs_t
+ * that is not needed.  If multi store and load registers are used the
+ * instructions
+ * can be updated directly.  If separate registers are used for each push and
+ * pop
+ * the ccode should be set to NV and the peephole optimiser will remove them.
+ */
+typedef void (*subtilis_arm_fp_pres_update_t)(subtilis_arm_section_t *arm_s,
+					      subtilis_arm_call_site_t *cs,
+					      size_t real_regs_saved,
+					      size_t real_regs_used,
+					      subtilis_error_t *err);
+
+/*
+ * As we don't know how may callee saved registers are pushed and popped to the
+ * stack at code generation time, we don't know the corret offsets to use for
+ * the parameters that do not fit into registers.  Once register allocation is
+ * finished we know this information and we pass it to this function in the
+ * bytes_saved parameter.  Floating point backends then need to update the
+ * instructions that store these parameters.
+ */
+
+typedef void (*subtilis_arm_fp_update_offs_t)(subtilis_arm_section_t *arm_s,
+					      subtilis_arm_call_site_t *cs,
+					      size_t bytes_saved,
+					      subtilis_error_t *err);
+
+/*
+ * Stores a single double stored in dest to the location pointed to by base +
+ * offset.
+ */
+typedef void (*subtilis_arm_fp_store_double_t)(subtilis_arm_section_t *arm_s,
+					       subtilis_arm_reg_t dest,
+					       subtilis_arm_reg_t base,
+					       size_t offset,
+					       subtilis_error_t *err);
+
+/*
+ * Moves a double from one floating point register to another.
+ */
+
+typedef void (*subtilis_arm_fp_mov_reg)(subtilis_arm_section_t *arm_s,
+					subtilis_arm_reg_t dest,
+					subtilis_arm_reg_t src,
+					subtilis_error_t *err);
+
+/* clang-format off */
+
+/*
+ * Inserts code to load or store a spilled register.  This is used when the
+ * offset is greater than the stran instructions for the appropriate register
+ * class can support.  The new code is inserted after op current in the code
+ * stream.
+ */
+
+typedef void (*subtilis_arm_fp_spill_imm_t)(subtilis_arm_section_t *s,
+					     subtilis_arm_op_t *current,
+					     subtilis_arm_instr_type_t itype,
+					     subtilis_arm_ccode_type_t ccode,
+					     subtilis_arm_reg_t dest,
+					     subtilis_arm_reg_t base,
+					     subtilis_arm_reg_t spill_reg,
+					     int32_t offset,
+					     subtilis_error_t *err);
+
+/*
+ * Inserts code to load or store a spilled register.  The new code is inserted
+ * after op current in the code stream.
+ */
+
+typedef void (*subtilis_arm_fp_stran_imm_t)(subtilis_arm_section_t *s,
+					     subtilis_arm_op_t *current,
+					     subtilis_arm_instr_type_t itype,
+					     subtilis_arm_ccode_type_t ccode,
+					     subtilis_arm_reg_t dest,
+					     subtilis_arm_reg_t base,
+					     int32_t offset,
+					     subtilis_error_t *err);
+
+/* clang-format on */
+
+/*
+ * Returns true if reg is a fixed registers.
+ */
+
+typedef bool (*subtilis_arm_fp_is_fixed_t)(subtilis_arm_reg_t reg);
+
+typedef void (*subtilis_arm_fp_init_walker_t)(subtlis_arm_walker_t *walker,
+					      void *user_data);
+
+struct subtilis_arm_fp_if_t_ {
+	size_t max_regs;
+	int32_t max_offset;
+	bool reverse_fpa_consts;
+	subtilis_arm_reg_t virt_reg_start;
+	subtilis_arm_instr_type_t store_type;
+	subtilis_arm_instr_type_t load_type;
+	subtilis_arm_fp_preamble_t preamble_fn;
+	subtilis_arm_fp_preserve_regs_t preserve_regs_fn;
+	subtilis_arm_fp_restore_regs_t restore_regs_fn;
+	subtilis_arm_fp_pres_update_t update_regs_fn;
+	subtilis_arm_fp_update_offs_t update_offs_fn;
+	subtilis_arm_fp_store_double_t store_dbl_fn;
+	subtilis_arm_fp_mov_reg mov_reg_fn;
+	subtilis_arm_fp_spill_imm_t spill_imm_fn;
+	subtilis_arm_fp_stran_imm_t stran_imm_fn;
+	subtilis_arm_fp_is_fixed_t is_fixed_fn;
+	subtilis_arm_fp_init_walker_t init_dist_walker_fn;
+	subtilis_arm_fp_init_walker_t init_used_walker_fn;
+	subtilis_arm_fp_init_walker_t init_real_alloc_fn;
+};
 
 subtilis_arm_op_pool_t *subtilis_arm_op_pool_new(subtilis_error_t *err);
 size_t subtilis_arm_op_pool_alloc(subtilis_arm_op_pool_t *pool,
@@ -523,16 +896,17 @@ subtilis_arm_section_t *subtilis_arm_section_new(subtilis_arm_op_pool_t *pool,
 						 size_t label_counter,
 						 size_t locals,
 						 const subtilis_settings_t *set,
+						 const subtilis_arm_fp_if_t *fp,
+						 int32_t start_address,
 						 subtilis_error_t *err);
-/* clang-format on */
-
-void subtilis_arm_section_delete(subtilis_arm_section_t *s);
 
 subtilis_arm_prog_t *subtilis_arm_prog_new(size_t max_sections,
 					   subtilis_arm_op_pool_t *op_pool,
 					   subtilis_string_pool_t *string_pool,
 					   subtilis_constant_pool_t *cnst_pool,
 					   const subtilis_settings_t *settings,
+					   const subtilis_arm_fp_if_t *fp_if,
+					   int32_t start_address,
 					   subtilis_error_t *err);
 /* clang-format off */
 subtilis_arm_section_t *
@@ -542,6 +916,7 @@ subtilis_arm_prog_section_new(subtilis_arm_prog_t *prog,
 			      size_t label_counter,
 			      size_t locals, subtilis_error_t *err);
 /* clang-format on */
+void subtilis_arm_section_delete(subtilis_arm_section_t *s);
 
 void subtilis_arm_prog_append_section(subtilis_arm_prog_t *prog,
 				      subtilis_arm_section_t *arm_s,
@@ -589,7 +964,10 @@ uint32_t subtilis_arm_encode_nearest(int32_t num, subtilis_error_t *err);
 bool subtilis_arm_encode_lvl2_imm(int32_t num, uint32_t *encoded1,
 				  uint32_t *encoded2);
 subtilis_arm_reg_t subtilis_arm_ir_to_arm_reg(size_t ir_reg);
+subtilis_arm_reg_t subtilis_arm_ir_to_real_reg(subtilis_arm_section_t *s,
+					       size_t ir_reg);
 subtilis_arm_reg_t subtilis_arm_ir_to_freg(size_t ir_reg);
+subtilis_arm_reg_t subtilis_arm_ir_to_dreg(size_t ir_reg);
 size_t subtilis_add_explicit_ldr(subtilis_arm_section_t *s,
 				 subtilis_arm_ccode_type_t ccode,
 				 subtilis_arm_reg_t dest, int32_t op2,
@@ -731,6 +1109,18 @@ bool subtilis_arm_is_fixed(subtilis_arm_reg_t reg);
 	subtilis_arm_add_movmvn_reg(s, SUBTILIS_ARM_INSTR_MVN, cc, st, dst,    \
 				    op2, err)
 
+void subtilis_arm_add_flags(subtilis_arm_section_t *s,
+			    subtilis_arm_instr_type_t itype,
+			    subtilis_arm_ccode_type_t ccode,
+			    subtilis_arm_flags_t flag_reg, uint32_t fields,
+			    subtilis_arm_reg_t reg, subtilis_error_t *err);
+
+void subtilis_arm_add_flags_imm(subtilis_arm_section_t *s,
+				subtilis_arm_instr_type_t itype,
+				subtilis_arm_ccode_type_t ccode,
+				subtilis_arm_flags_t flag_reg, uint32_t fields,
+				int32_t imm, subtilis_error_t *err);
+
 void subtilis_arm_add_byte(subtilis_arm_section_t *s, uint8_t byte,
 			   subtilis_error_t *err);
 void subtilis_arm_add_two_bytes(subtilis_arm_section_t *s, uint16_t two_bytes,
@@ -741,6 +1131,8 @@ void subtilis_arm_add_double(subtilis_arm_section_t *s, double dbl,
 			     subtilis_error_t *err);
 void subtilis_arm_add_doubler(subtilis_arm_section_t *s, double dbl,
 			      subtilis_error_t *err);
+void subtilis_arm_add_float(subtilis_arm_section_t *s, float f,
+			    subtilis_error_t *err);
 void subtilis_arm_add_string(subtilis_arm_section_t *s, const char *str,
 			     subtilis_error_t *err);
 void subtilis_arm_add_align(subtilis_arm_section_t *s, uint32_t align,
@@ -753,6 +1145,13 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr);
 
 void subtilis_arm_restore_stack(subtilis_arm_section_t *arm_s,
 				size_t stack_space, subtilis_error_t *err);
+
+/* Some generic FP functions. */
+
+size_t subtilis_arm_get_real_label(subtilis_arm_section_t *s, double op2,
+				   subtilis_error_t *err);
+void subtilis_arm_add_real_constant(subtilis_arm_section_t *s, size_t label,
+				    double num, subtilis_error_t *err);
 
 /* FPA functions implemented in fpa.c */
 
@@ -871,5 +1270,96 @@ bool subtilis_fpa_is_fixed(subtilis_arm_reg_t reg);
 	subtilis_fpa_add_cmfcnf_imm(s, cc, SUBTILIS_FPA_INSTR_CNFE,            \
 				    SUBTILIS_FPA_INSTR_CMFE, round, dst, op2,  \
 				    err)
+
+void subtilis_vfp_add_copy(subtilis_arm_section_t *s,
+			   subtilis_arm_ccode_type_t ccode,
+			   subtilis_arm_instr_type_t type,
+			   subtilis_arm_reg_t dest, subtilis_arm_reg_t src,
+			   subtilis_error_t *err);
+
+void subtilis_vfp_add_copy_imm(subtilis_arm_section_t *s,
+			       subtilis_arm_ccode_type_t ccode,
+			       subtilis_arm_reg_t dest, double src,
+			       subtilis_error_t *err);
+
+void subtilis_vfp_add_stran(subtilis_arm_section_t *s,
+			    subtilis_arm_instr_type_t itype,
+			    subtilis_arm_ccode_type_t ccode,
+			    subtilis_arm_reg_t dest, subtilis_arm_reg_t base,
+			    int32_t offset, subtilis_error_t *err);
+
+/* clang-format off */
+void subtilis_vfp_insert_stran_spill_imm(subtilis_arm_section_t *s,
+					 subtilis_arm_op_t *current,
+					 subtilis_arm_instr_type_t itype,
+					 subtilis_arm_ccode_type_t ccode,
+					 subtilis_arm_reg_t dest,
+					 subtilis_arm_reg_t base,
+					 subtilis_arm_reg_t spill_reg,
+					 int32_t offset, subtilis_error_t *err);
+
+void subtilis_vfp_insert_stran_imm(subtilis_arm_section_t *s,
+				   subtilis_arm_op_t *current,
+				   subtilis_arm_instr_type_t itype,
+				   subtilis_arm_ccode_type_t ccode,
+				   subtilis_arm_reg_t dest,
+				   subtilis_arm_reg_t base, int32_t offset,
+				   subtilis_error_t *err);
+/* clang-format on */
+
+void subtilis_vfp_add_tran(subtilis_arm_section_t *s,
+			   subtilis_arm_instr_type_t itype,
+			   subtilis_arm_ccode_type_t ccode, bool use_dregs,
+			   subtilis_arm_reg_t dest, subtilis_arm_reg_t src,
+			   subtilis_error_t *err);
+
+void subtilis_vfp_add_tran_dbl(subtilis_arm_section_t *s,
+			       subtilis_arm_instr_type_t itype,
+			       subtilis_arm_ccode_type_t ccode,
+			       subtilis_arm_reg_t dest1,
+			       subtilis_arm_reg_t dest2,
+			       subtilis_arm_reg_t src1, subtilis_arm_reg_t src2,
+			       subtilis_error_t *err);
+
+void subtilis_vfp_add_cptran(subtilis_arm_section_t *s,
+			     subtilis_arm_instr_type_t itype,
+			     subtilis_arm_ccode_type_t ccode, bool use_dregs,
+			     subtilis_arm_reg_t dest, subtilis_arm_reg_t src,
+			     subtilis_error_t *err);
+
+void subtilis_vfp_add_data(subtilis_arm_section_t *s,
+			   subtilis_arm_instr_type_t itype,
+			   subtilis_arm_ccode_type_t ccode,
+			   subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			   subtilis_arm_reg_t op2, subtilis_error_t *err);
+
+void subtilis_vfp_add_cmp(subtilis_arm_section_t *s,
+			  subtilis_arm_instr_type_t itype,
+			  subtilis_arm_ccode_type_t ccode,
+			  subtilis_arm_reg_t op1, subtilis_arm_reg_t op2,
+			  subtilis_error_t *err);
+
+void subtilis_vfp_add_cmpz(subtilis_arm_section_t *s,
+			   subtilis_arm_instr_type_t itype,
+			   subtilis_arm_ccode_type_t ccode,
+			   subtilis_arm_reg_t op1, subtilis_error_t *err);
+
+void subtilis_vfp_add_sqrt(subtilis_arm_section_t *s,
+			   subtilis_arm_instr_type_t itype,
+			   subtilis_arm_ccode_type_t ccode,
+			   subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			   subtilis_error_t *err);
+
+void subtilis_vfp_add_sysreg(subtilis_arm_section_t *s,
+			     subtilis_arm_instr_type_t itype,
+			     subtilis_arm_ccode_type_t ccode,
+			     subtilis_vfp_sysreg_t sysreg,
+			     subtilis_arm_reg_t reg, subtilis_error_t *err);
+
+void subtilis_vfp_add_cvt(subtilis_arm_section_t *s,
+			  subtilis_arm_instr_type_t itype,
+			  subtilis_arm_ccode_type_t ccode,
+			  subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			  subtilis_error_t *err);
 
 #endif

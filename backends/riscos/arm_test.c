@@ -25,8 +25,8 @@
 #include "../../frontend/parser_test.h"
 #include "../../test_cases/bad_test_cases.h"
 #include "../../test_cases/test_cases.h"
+#include "../riscos_common/riscos_arm.h"
 #include "arm_test.h"
-#include "riscos_arm.h"
 #include "riscos_arm2.h"
 
 /* clang-format off */
@@ -110,9 +110,9 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	 "SWI \"OS_NewLine\"\n"
 	 "MOV PC, R14\n"
 	 "\n"
-	 "header_label\n"
+	 "header_label:\n"
 	 "EQUS header\n"
-	 "message\n"
+	 "message:\n"
 	 "EQUS \"*\" + gap + \"Hello World!\" + gap + \"*\"\n"
 	 "]\n",
 	 "****************************************\n"
@@ -124,16 +124,16 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	"def PROCprint\n"
 	"[\n"
 	"    B start\n"
-	"three\n"
+	"three:\n"
 	"    EQUS \"123\"\n"
-	"start\n"
+	"start:\n"
 	"    ADR R0, hello_world\n"
 	"    SWI \"OS_Write0\"\n"
 	"    ADR R0, three\n"
 	"    SWI \"OS_Write0\"\n"
 	"    MOV PC, R14\n"
-	"    hello_world\n"
-	"EQUS \"Hello  World\"\n"
+	"hello_world:\n"
+	"    EQUS \"Hello  World\"\n"
 	"]\n",
 	"Hello  World123",
 	},
@@ -160,7 +160,7 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	 "ADR R0, string\n"
 	 "SWI \"OS_Write0\"\n"
 	 "MOV PC, R14\n"
-	 "string\n"
+	 "string:\n"
 	 "EQUS str\n"
 	 "]\n"
 	 "\n"
@@ -180,9 +180,9 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	 "SWI \"OS_Write0\"\n"
 	 "SWI \"OS_NewLine\"\n"
 	 "MOV PC, R14\n"
-	 "label1\n"
+	 "label1:\n"
 	 "EQUS LEFT$(message, 7)\n"
-	 "label2\n"
+	 "label2:\n"
 	 "EQUS LEFT$(message)\n"
 	 "]\n"
 	 "\n"
@@ -196,9 +196,9 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	 "SWI \"OS_Write0\"\n"
 	 "SWI \"OS_NewLine\"\n"
 	 "MOV PC, R14\n"
-	 "label1\n"
+	 "label1:\n"
 	 "EQUS right$(message, 7)\n"
-	 "label2\n"
+	 "label2:\n"
 	 "EQUS right$(message)\n"
 	 "]\n"
 	 "\n"
@@ -208,7 +208,7 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	 "SWI \"OS_Write0\"\n"
 	 "SWI \"OS_NewLine\"\n"
 	 "MOV PC, R14\n"
-	 "label1\n"
+	 "label1:\n"
 	 "EQUS STR$(PI)\n"
 	 "]\n"
 	 "\n"
@@ -218,7 +218,7 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	 "SWI \"OS_Write0\"\n"
 	 "SWI \"OS_NewLine\"\n"
 	 "MOV PC, R14\n"
-	 "label1\n"
+	 "label1:\n"
 	 "EQUS STRING$(5,\"*\")+\"==\"+STRING$(5,\"*\")\n"
 	 "]\n"
 	 "\n"
@@ -249,21 +249,21 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	 "SWI \"OS_Write0\"\n"
 	 "SWI \"OS_NewLine\"\n"
 	 "MOV PC, R14\n"
-	 "label1\n"
+	 "label1:\n"
 	 "EQUS MID$(\"Hello World\", 5)\n"
-	 "label2\n"
+	 "label2:\n"
 	 "EQUS MID$(\"Hello World\", 5, 3)\n"
-	 "label3\n"
+	 "label3:\n"
 	 "EQUS MID$(\"Hello World\", 5, 0)\n"
-	 "label4\n"
+	 "label4:\n"
 	 "EQUS MID$(\"Hello World\", 5, -1)\n"
-	 "label5\n"
+	 "label5:\n"
 	 "EQUS MID$(\"Hello World\", 5, 6)\n"
-	 "label6\n"
+	 "label6:\n"
 	 "EQUS MID$(\"Hello World\", -1)\n"
-	 "label7\n"
+	 "label7:\n"
 	 "EQUS MID$(\"Hello World\", 0)\n"
-	 "label8\n"
+	 "label8:\n"
 	 "EQUS MID$(\"Hello World\", 0, -1)\n"
 	 "]\n",
 	 "1\n!33\nHello W\nH\no World\nd\n3.142857\n*****==*****\n"
@@ -298,10 +298,10 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	  "ADR R0, str\n"
 	  "SWI \"OS_Write0\"\n"
 	  "B end\n"
-	  "str\n"
+	  "str:\n"
 	  "EQUS \"A\"\n"
 	  "ALIGN 4\n"
-	  "end\n"
+	  "end:\n"
 	  "MOV PC, R14\n"
 	  "]\n",
 	  "A",
@@ -313,14 +313,14 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	  "MOV R0, 0\n"
 	  "MOV R4, 0\n"
 	  "ADR R3, nums\n"
-	  "start\n"
+	  "start:\n"
 	  "LDR R2, [R3, R4, LSL 2]\n"
 	  "ADD R0, R0, R2\n"
 	  "ADD R4, R4, 1\n"
 	  "CMP R4, 10\n"
 	  "BLT start\n"
 	  "MOV PC, R14\n"
-	  "nums\n"
+	  "nums:\n"
 	  "for i = 1 to 10\n"
 	  "EQUD i\n"
 	  "next\n"
@@ -331,7 +331,7 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	  "PRINT FNFac%(6)\n"
 	  "def FNFac%(a%)\n"
 	  "[\n"
-	  "fac\n"
+	  "fac:\n"
 	  "CMP R0, 1\n"
 	  "MOVLE PC, R14\n"
 	  "MOV R1, R0\n"
@@ -354,7 +354,7 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	  "ADR R0, label\n"
 	  "LDR R0, [R0]\n"
 	  "MOV PC, R14\n"
-	  "label EQUD intexp\n"
+	  "label: EQUD intexp\n"
 	  "]\n",
 	  "-1\n"
 	},
@@ -366,7 +366,7 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	  "ADR R0, label\n"
 	  "LDR R0, [R0]\n"
 	  "MOV PC, R14\n"
-	  "label\n"
+	  "label:\n"
 	  "EQUD (\"h\" <> \"H\") AND NOT (5 >= 10) EOR (\"hello\" = \"hello\")\n"
 	  "]\n",
 	  "-1\n"
@@ -379,7 +379,7 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	  "ADR R0, label\n"
 	  "LDR R0, [R0]\n"
 	  "MOV PC, R14\n"
-	  "label\n"
+	  "label:\n"
 	  "EQUD (2.0 > -10.0) AND  (1.0 <= 1.0) AND NOT (5.0 >= 10.0)\n"
 	  "]\n",
 	  "-1\n"
@@ -393,19 +393,19 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	  "LDR R2, [R0, 4]\n"
 	  "ADR R0, label\n"
 	  "MOV R1, 0\n"
-	  "loop\n"
+	  "loop:\n"
 	  "LDRB R3, [R0, R1]\n"
 	  "STRB R3, [R2], 1\n"
 	  "ADD R1, R1, 1\n"
 	  "CMP R3, 0\n"
 	  "BNE loop\n"
 	  "MOV PC, R14\n"
-	  "label EQUB ASC(\"G\"), ASC(\"o\"), ASC(\"o\"), ASC(\"d\")\n"
+	  "label: EQUB ASC(\"G\"), ASC(\"o\"), ASC(\"o\"), ASC(\"d\")\n"
 	  "EQUB ASC(\"b\"), ASC(\"y\"), ASC(\"e\"), 0\n"
 	  "]\n",
 	  "Goodbye\n",
 	},
-	{"assember_equw",
+	{"assembler_equw",
 	 "PROCEQUW\n"
 	 "def PROCEQUW\n"
 	 "[\n"
@@ -415,7 +415,7 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	 "SWI \"OS_WriteC\"\n"
 	 "next\n"
 	 "MOV PC, R14\n"
-	 "label\n"
+	 "label:\n"
 	 "EQUW &2021, &2022\n"
 	 "]\n",
 	 "! \" "
@@ -426,7 +426,7 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	 "[\n"
 	 "MOV R0, ASC(\"!\")\n"
 	 "MOV R1, 10\n"
-	 "loop   SWI \"OS_WriteC\"\n"
+	 "loop: SWI \"OS_WriteC\"\n"
 	 "SUBS R1, R1, 1\n"
 	 "BNE loop\n"
 	 "MOV PC, R14\n"
@@ -438,14 +438,14 @@ static const subtilis_test_case_t riscos_arm_test_cases[] = {
 	 "def PROCMixedLoop\n"
 	 "[\n"
 	 "ADR R1, label\n"
-	 "loop\n"
+	 "loop:\n"
 	 "LDR R0, [R1], 4\n"
 	 "CMP R0, 0\n"
 	 "MOVEQ PC, R14\n"
 	 "ADD R0, R0, ASC(\"0\")\n"
 	 "SWI \"OS_WriteC\"\n"
 	 "B loop\n"
-	 "label for i = 1.4 to 9 EQUD i next\n"
+	 "label: for i = 1.4 to 9 EQUD i next\n"
 	 "EQUD 0\n"
 	 "]\n",
 	 "12345678",
@@ -486,7 +486,7 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	"def PROCFPLoop(a)\n"
 	"[\n"
 	"    MOV R0, 33\n"
-	"start\n"
+	"start:\n"
 	"   SWI \"OS_WriteC\"\n"
 	"   SUFD F0, F0, 0.5\n"
 	"   CMF F0, 0\n"
@@ -524,14 +524,14 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	  "  ADR R0, value\n"
 	  "  LDFD F0, [R0]\n"
 	  "  MOV PC, R14\n"
-	  "value EQUDBLR COS(RAD(60))\n"
+	  "value: EQUDBLR COS(RAD(60))\n"
 	  "]\n"
 	  "DEF FNSIN60\n"
 	  "[\n"
 	  "  ADR R0, value\n"
 	  "  LDFD F0, [R0]\n"
 	  "  MOV PC, R14\n"
-	  "value EQUDBLR SIN(RAD(60))\n"
+	  "value: EQUDBLR SIN(RAD(60))\n"
 	  "]\n",
 	 "-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n"},
 	{ "assembler_fpa_trig",
@@ -573,35 +573,35 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	  "  ADR R0, value\n"
 	  "  LDFD F0, [R0]\n"
 	  "  MOV PC, R14\n"
-	  "value EQUDBLR TAN(RAD(45))\n"
+	  "value: EQUDBLR TAN(RAD(45))\n"
 	  "]\n"
 	  "DEF FNASNFixed\n"
 	  "[\n"
 	  "  ADR R0, value\n"
 	  "  LDFD F0, [R0]\n"
 	  "  MOV PC, R14\n"
-	  "value EQUDBLR ASN(0.5)\n"
+	  "value: EQUDBLR ASN(0.5)\n"
 	  "]\n"
 	  "DEF FNACSFixed\n"
 	  "[\n"
 	  "  ADR R0, value\n"
 	  "  LDFD F0, [R0]\n"
 	  "  MOV PC, R14\n"
-	  "value EQUDBLR ACS(0.3)\n"
+	  "value: EQUDBLR ACS(0.3)\n"
 	  "]\n"
 	  "DEF FNATNFixed\n"
 	  "[\n"
 	  "  ADR R0, value\n"
 	  "  LDFD F0, [R0]\n"
 	  "  MOV PC, R14\n"
-	  "value EQUDBLR ATN(0.8)\n"
+	  "value: EQUDBLR ATN(0.8)\n"
 	  "]\n"
 	  "DEF FNPIFixed\n"
 	  "[\n"
 	  "  ADR R0, value\n"
 	  "  LDFD F0, [R0]\n"
 	  "  MOV PC, R14\n"
-	  "value EQUDBLR PI\n"
+	  "value: EQUDBLR PI\n"
 	  "]\n",
 	  "1\n1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n"
 	},
@@ -614,7 +614,7 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	 "  ADR R0, value\n"
 	 "  LDFD F0, [R0]\n"
 	 "  MOV PC, R14\n"
-	 "value EQUDBLR SQR(2)\n"
+	 "value: EQUDBLR SQR(2)\n"
 	 "]\n"
 	 "DEF PROCCheck(a, e)\n"
 	 "LET a = e - a\n"
@@ -641,7 +641,7 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	 "  ADR R0, value\n"
 	 "  LDFD F0, [R0]\n"
 	 "  MOV PC, R14\n"
-	 "value EQUDBLR LOG(1000)\n"
+	 "value: EQUDBLR LOG(1000)\n"
 	 "]\n"
 	 "DEF FNLnFixed\n"
 	 "[\n"
@@ -649,7 +649,7 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	 "  ADR R0, value\n"
 	 "  LDFD F0, [R0]\n"
 	 "  MOV PC, R14\n"
-	 "value EQUDBLR constant\n"
+	 "value: EQUDBLR constant\n"
 	 "]\n",
 	 "3\n-1\n3\n-1\n"},
 	{"assembler_fpa_exp",
@@ -661,7 +661,7 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	 "  ADR R0, value\n"
 	 "  LDFD F0, [R0]\n"
 	 "  MOV PC, R14\n"
-	 "value EQUDBLR EXP(1)\n"
+	 "value: EQUDBLR EXP(1)\n"
 	 "]\n"
 	 "DEF PROCCheck(a, e)\n"
 	 "LET a = e - a\n"
@@ -678,7 +678,7 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	 "  ADR R0, value\n"
 	 "  LDFD F0, [R0]\n"
 	 "  MOV PC, R14\n"
-	 "value EQUDBLR ABS(-1)\n"
+	 "value: EQUDBLR ABS(-1)\n"
 	 "]\n"
 	 "DEF PROCCheck(a, e)\n"
 	 "LET a = e - a\n"
@@ -695,7 +695,7 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	  "ADR R0, label\n"
 	  "LDFD F0, [R0]\n"
 	  "MOV PC, R14\n"
-	  "label EQUDBLR PI * 360 / exp(1) + 10 - 5\n"
+	  "label: EQUDBLR PI * 360 / exp(1) + 10 - 5\n"
 	  "]\n",
 	  "-1\n"
 	},
@@ -725,14 +725,14 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	  "LDR array, [R0, 4]\n"
 	  "ADR R0, nums\n"
 	  "SUB R0, R0, 8\n"
-	  "loop\n"
+	  "loop:\n"
 	  "\n"
 	  "LDFD F0, [R0, 8]!\n"
 	  "CMF F0, 0.0\n"
 	  "MOVEQ PC, R14\n"
 	  "STFD F0, [array], 8\n"
 	  "B loop\n"
-	  "nums\n"
+	  "nums:\n"
 	  "EQUDBLR 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0.0\n"
 	  "]\n",
 	  "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
@@ -833,7 +833,7 @@ static const subtilis_bad_test_case_t riscos_arm_bad_test_cases[] = {
 	 "[\n"
 	 "ADR R0, label\n"
 	 "for i = 1 to 512 EQUDBL 0.0 next\n"
-	 "label equd 0\n"
+	 "label: equd 0\n"
 	 "]\n",
 	 SUBTILIS_ERROR_ASS_BAD_ADR,
 	},
@@ -940,6 +940,7 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	subtilis_error_t err;
 	subtilis_buffer_t b;
 	size_t code_size;
+	subtilis_arm_fp_if_t fp_if;
 	int retval = 1;
 	subtilis_arm_op_pool_t *pool = NULL;
 	subtilis_arm_prog_t *arm_p = NULL;
@@ -963,10 +964,12 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	}
 
 	//	subtilis_ir_prog_dump(p->prog);
+	subtilis_arm_fpa_if_init(&fp_if);
 
 	arm_p = subtilis_riscos_generate(
 	    pool, p->prog, riscos_arm2_rules, riscos_arm2_rules_count,
-	    p->st->max_allocated, subtilis_fpa_gen_preamble, &err);
+	    p->st->max_allocated, &fp_if, SUBTILIS_RISCOS_ARM2_PROGRAM_START,
+	    &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -986,12 +989,14 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 		goto cleanup;
 	}
 
-	((uint32_t *)code)[1] = 0x8000 + code_size;
+	((uint32_t *)code)[1] = SUBTILIS_RISCOS_ARM2_PROGRAM_START + code_size;
 
 	//	for (size_t i = 0; i < code_size; i++) {
 	//		printf("0x%x\n",code[i]);
 	///	}
-	vm = subtilis_arm_vm_new(code, code_size, 512 * 1024, &err);
+	vm = subtilis_arm_vm_new(code, code_size, 512 * 1024,
+				 SUBTILIS_RISCOS_ARM2_PROGRAM_START, false,
+				 &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1040,10 +1045,10 @@ static int prv_test_examples(void)
 	int ret = 0;
 
 	backend.caps = SUBTILIS_RISCOS_ARM_CAPS;
-	backend.sys_trans = subtilis_riscos_sys_trans;
-	backend.sys_check = subtilis_riscos_sys_check;
+	backend.sys_trans = subtilis_riscos_arm2_sys_trans;
+	backend.sys_check = subtilis_riscos_arm2_sys_check;
 	backend.backend_data = NULL;
-	backend.asm_parse = subtilis_riscos_asm_parse;
+	backend.asm_parse = subtilis_riscos_arm2_asm_parse;
 	backend.asm_free = subtilis_riscos_asm_free;
 
 	for (i = 0; i < SUBTILIS_TEST_CASE_ID_MAX; i++) {
@@ -1068,10 +1073,10 @@ static int prv_test_riscos_arm_examples(void)
 	int ret = 0;
 
 	backend.caps = SUBTILIS_RISCOS_ARM_CAPS;
-	backend.sys_trans = subtilis_riscos_sys_trans;
-	backend.sys_check = subtilis_riscos_sys_check;
+	backend.sys_trans = subtilis_riscos_arm2_sys_trans;
+	backend.sys_check = subtilis_riscos_arm2_sys_check;
 	backend.backend_data = NULL;
-	backend.asm_parse = subtilis_riscos_asm_parse;
+	backend.asm_parse = subtilis_riscos_arm2_asm_parse;
 	backend.asm_free = subtilis_riscos_asm_free;
 
 	for (i = 0;
@@ -1098,10 +1103,10 @@ static int prv_test_riscos_fpa_examples(void)
 	int ret = 0;
 
 	backend.caps = SUBTILIS_RISCOS_ARM_CAPS;
-	backend.sys_trans = subtilis_riscos_sys_trans;
-	backend.sys_check = subtilis_riscos_sys_check;
+	backend.sys_trans = subtilis_riscos_arm2_sys_trans;
+	backend.sys_check = subtilis_riscos_arm2_sys_check;
 	backend.backend_data = NULL;
-	backend.asm_parse = subtilis_riscos_asm_parse;
+	backend.asm_parse = subtilis_riscos_arm2_asm_parse;
 	backend.asm_free = subtilis_riscos_asm_free;
 
 	for (i = 0;
@@ -1127,10 +1132,10 @@ static int prv_test_bad_cases(void)
 	int retval = 0;
 
 	backend.caps = SUBTILIS_RISCOS_ARM_CAPS;
-	backend.sys_trans = subtilis_riscos_sys_trans;
-	backend.sys_check = subtilis_riscos_sys_check;
+	backend.sys_trans = subtilis_riscos_arm2_sys_trans;
+	backend.sys_check = subtilis_riscos_arm2_sys_check;
 	backend.backend_data = NULL;
-	backend.asm_parse = subtilis_riscos_asm_parse;
+	backend.asm_parse = subtilis_riscos_arm2_asm_parse;
 	backend.asm_free = subtilis_riscos_asm_free;
 
 	for (i = 0; i < sizeof(riscos_arm_bad_test_cases) /
@@ -1356,8 +1361,9 @@ static int prv_test_encode(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	arm_p = subtilis_arm_prog_new(1, op_pool, string_pool, const_pool,
-				      false, &err);
+	arm_p = subtilis_arm_prog_new(1, op_pool, string_pool, const_pool, NULL,
+				      NULL, SUBTILIS_RISCOS_ARM2_PROGRAM_START,
+				      &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1415,7 +1421,7 @@ static int prv_test_disass_data(void)
 
 	/* MOVEQ R0, r1 */
 
-	subtilis_arm_disass(&instr, prv_expected_code[0], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[0], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1446,7 +1452,7 @@ static int prv_test_disass_data(void)
 	}
 
 	/* MVNSNE R0, r1 */
-	subtilis_arm_disass(&instr, prv_expected_code[1], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[1], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1477,7 +1483,7 @@ static int prv_test_disass_data(void)
 	}
 
 	/* CMPGT R0, R1 */
-	subtilis_arm_disass(&instr, prv_expected_code[2], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[2], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1518,7 +1524,7 @@ static int prv_test_disass_mul(void)
 
 	subtilis_error_init(&err);
 
-	subtilis_arm_disass(&instr, prv_expected_code[3], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[3], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1561,7 +1567,7 @@ static int prv_test_disass_stran(void)
 	subtilis_error_init(&err);
 
 	/* LDRCS R0, [R2, #16] */
-	subtilis_arm_disass(&instr, prv_expected_code[4], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[4], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1607,7 +1613,7 @@ static int prv_test_disass_stran(void)
 	}
 
 	/* STRCS R0, [R2], R1, LSL #2 */
-	subtilis_arm_disass(&instr, prv_expected_code[15], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[15], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1660,7 +1666,7 @@ static int prv_test_disass_swi(void)
 
 	subtilis_error_init(&err);
 
-	subtilis_arm_disass(&instr, prv_expected_code[5], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[5], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1698,7 +1704,7 @@ static int prv_test_disass_b(void)
 
 	subtilis_error_init(&err);
 
-	subtilis_arm_disass(&instr, prv_expected_code[6], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[6], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;
@@ -1743,7 +1749,7 @@ static int prv_check_mtran(size_t index, bool write_back,
 	subtilis_error_t err;
 
 	subtilis_error_init(&err);
-	subtilis_arm_disass(&instr, prv_expected_code[index], &err);
+	subtilis_arm_disass(&instr, prv_expected_code[index], false, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stdout, &err, true);
 		return 1;

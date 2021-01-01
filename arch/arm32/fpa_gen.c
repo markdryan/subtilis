@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
-#include "fpa_gen.h"
+#include <limits.h>
+
+#include "../../arch/arm32/arm_fpa_dist.h"
 #include "../../common/error_codes.h"
 #include "arm_core.h"
 #include "arm_gen.h"
+#include "fpa_alloc.h"
+#include "fpa_gen.h"
 
 void subtilis_fpa_gen_movr(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err)
@@ -792,4 +796,151 @@ void subtilis_fpa_gen_preamble(subtilis_arm_section_t *arm_s,
 
 	subtilis_fpa_add_cptran(arm_s, SUBTILIS_FPA_INSTR_WFS,
 				SUBTILIS_ARM_CCODE_AL, status, err);
+}
+
+size_t subtilis_fpa_preserve_regs(subtilis_arm_section_t *arm_s,
+				  int save_real_start, subtilis_error_t *err)
+{
+	int i;
+	size_t stf_site = INT_MAX;
+
+	for (i = save_real_start; i < SUBTILIS_ARM_REG_MAX_FPA_REGS; i++) {
+		subtilis_fpa_push_reg(arm_s, SUBTILIS_ARM_CCODE_NV, i, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return INT_MAX;
+		if (stf_site == INT_MAX)
+			stf_site = arm_s->last_op;
+	}
+
+	return stf_site;
+}
+
+size_t subtilis_fpa_restore_regs(subtilis_arm_section_t *arm_s,
+				 int save_real_start, subtilis_error_t *err)
+{
+	int i;
+	size_t ldf_site = INT_MAX;
+
+	for (i = SUBTILIS_ARM_REG_MAX_FPA_REGS - 1; i >= save_real_start; i--) {
+		subtilis_fpa_pop_reg(arm_s, SUBTILIS_ARM_CCODE_NV, i, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return INT_MAX;
+		if (ldf_site == INT_MAX)
+			ldf_site = arm_s->last_op;
+	}
+
+	return ldf_site;
+}
+
+void subtilis_fpa_preserve_update(subtilis_arm_section_t *arm_s,
+				  subtilis_arm_call_site_t *call_site,
+				  size_t real_regs_saved, size_t real_regs_used,
+				  subtilis_error_t *err)
+{
+	subtilis_arm_op_t *op;
+	size_t i;
+	size_t fpa_reg_count;
+
+	if (real_regs_saved > SUBTILIS_ARM_REG_MAX_ARGS)
+		real_regs_saved =
+		    SUBTILIS_ARM_REG_MAX_FPA_REGS - SUBTILIS_ARM_REG_MAX_ARGS;
+	else
+		real_regs_saved =
+		    SUBTILIS_ARM_REG_MAX_FPA_REGS - real_regs_saved;
+
+	fpa_reg_count = SUBTILIS_ARM_REG_MAX_FPA_REGS - real_regs_saved;
+	op = &arm_s->op_pool->ops[call_site->stf_site];
+
+	for (; fpa_reg_count < SUBTILIS_ARM_REG_MAX_FPA_REGS; fpa_reg_count++) {
+		if (real_regs_used & (1 << fpa_reg_count)) {
+			op->op.instr.operands.fpa_stran.ccode =
+			    SUBTILIS_ARM_CCODE_AL;
+		}
+		op = &arm_s->op_pool->ops[op->next];
+	}
+
+	fpa_reg_count = SUBTILIS_ARM_REG_MAX_FPA_REGS - 1;
+	op = &arm_s->op_pool->ops[call_site->ldf_site];
+	for (i = 0; i < real_regs_saved; i++) {
+		if (real_regs_used & (1 << fpa_reg_count))
+			op->op.instr.operands.fpa_stran.ccode =
+			    SUBTILIS_ARM_CCODE_AL;
+		op = &arm_s->op_pool->ops[op->next];
+		fpa_reg_count--;
+	}
+}
+
+void subtilis_fpa_update_offsets(subtilis_arm_section_t *arm_s,
+				 subtilis_arm_call_site_t *call_site,
+				 size_t bytes_saved, subtilis_error_t *err)
+{
+	size_t i;
+	size_t ptr;
+	subtilis_arm_op_t *op;
+	subtilis_fpa_stran_instr_t *ft;
+
+	for (i = 0; i < call_site->real_args - 4; i++) {
+		ptr = call_site->real_arg_ops[i];
+		op = &arm_s->op_pool->ops[ptr];
+		ft = &op->op.instr.operands.fpa_stran;
+		ft->offset += bytes_saved / 4;
+	}
+}
+
+void subtilis_fpa_store_double(subtilis_arm_section_t *arm_s,
+			       subtilis_arm_reg_t dest, subtilis_arm_reg_t base,
+			       size_t offset, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_fpa_stran_instr_t *fstran;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_FPA_INSTR_STF, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	fstran = &instr->operands.fpa_stran;
+	fstran->ccode = SUBTILIS_ARM_CCODE_AL;
+	fstran->dest = dest;
+	fstran->base = base;
+	fstran->offset = offset / 4;
+	fstran->size = 8;
+	fstran->pre_indexed = true;
+	fstran->write_back = false;
+	fstran->subtract = true;
+}
+
+void subtilis_fpa_mov_reg(subtilis_arm_section_t *arm_s,
+			  subtilis_arm_reg_t dest, subtilis_arm_reg_t src,
+			  subtilis_error_t *err)
+{
+	subtilis_fpa_add_mov(arm_s, SUBTILIS_ARM_CCODE_AL,
+			     SUBTILIS_FPA_ROUNDING_NEAREST, dest, src, err);
+}
+
+void subtilis_arm_fpa_if_init(subtilis_arm_fp_if_t *fp_if)
+{
+	double dummy_float = 1.0;
+	uint32_t *lower_word = (uint32_t *)((void *)&dummy_float);
+
+	fp_if->max_regs = SUBTILIS_ARM_REG_MAX_FPA_REGS;
+	fp_if->max_offset = 1023;
+	fp_if->store_type = SUBTILIS_FPA_INSTR_STF;
+	fp_if->load_type = SUBTILIS_FPA_INSTR_LDF;
+
+	/* Slightly weird but on ARM FPA the words of a double are big endian */
+	fp_if->reverse_fpa_consts = (*lower_word) == 0;
+	fp_if->preamble_fn = subtilis_fpa_gen_preamble;
+	fp_if->preserve_regs_fn = subtilis_fpa_preserve_regs;
+	fp_if->restore_regs_fn = subtilis_fpa_restore_regs;
+	fp_if->update_regs_fn = subtilis_fpa_preserve_update;
+	fp_if->update_offs_fn = subtilis_fpa_update_offsets;
+	fp_if->store_dbl_fn = subtilis_fpa_store_double;
+	fp_if->mov_reg_fn = subtilis_fpa_mov_reg;
+	fp_if->spill_imm_fn = subtilis_fpa_insert_stran_spill_imm;
+	fp_if->stran_imm_fn = subtilis_fpa_insert_stran_imm;
+	fp_if->is_fixed_fn = subtilis_fpa_is_fixed;
+	fp_if->init_dist_walker_fn = subtilis_init_fpa_dist_walker;
+	fp_if->init_used_walker_fn = subtilis_init_fpa_used_walker;
+	fp_if->init_real_alloc_fn = subtilis_fpa_alloc_init_walker;
 }

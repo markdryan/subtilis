@@ -22,8 +22,6 @@
 #include "../../common/error.h"
 #include "arm_core.h"
 
-typedef struct subtlis_arm_walker_t_ subtlis_arm_walker_t;
-
 struct subtlis_arm_walker_t_ {
 	void *user_data;
 	void (*directive_fn)(void *user_data, subtilis_arm_op_t *op,
@@ -64,6 +62,10 @@ struct subtlis_arm_walker_t_ {
 	void (*adr_fn)(void *user_data, subtilis_arm_op_t *op,
 		       subtilis_arm_instr_type_t type,
 		       subtilis_arm_adr_instr_t *instr, subtilis_error_t *err);
+	void (*flags_fn)(void *user_data, subtilis_arm_op_t *op,
+			 subtilis_arm_instr_type_t type,
+			 subtilis_arm_flags_instr_t *instr,
+			 subtilis_error_t *err);
 	void (*cmov_fn)(void *user_data, subtilis_arm_op_t *op,
 			subtilis_arm_instr_type_t type,
 			subtilis_arm_cmov_instr_t *instr,
@@ -96,6 +98,50 @@ struct subtlis_arm_walker_t_ {
 			      subtilis_arm_instr_type_t type,
 			      subtilis_fpa_cptran_instr_t *instr,
 			      subtilis_error_t *err);
+	void (*vfp_stran_fn)(void *user_data, subtilis_arm_op_t *op,
+			     subtilis_arm_instr_type_t type,
+			     subtilis_vfp_stran_instr_t *instr,
+			     subtilis_error_t *err);
+	void (*vfp_copy_fn)(void *user_data, subtilis_arm_op_t *op,
+			    subtilis_arm_instr_type_t type,
+			    subtilis_vfp_copy_instr_t *instr,
+			    subtilis_error_t *err);
+	void (*vfp_ldrc_fn)(void *user_data, subtilis_arm_op_t *op,
+			    subtilis_arm_instr_type_t type,
+			    subtilis_vfp_ldrc_instr_t *instr,
+			    subtilis_error_t *err);
+	void (*vfp_tran_fn)(void *user_data, subtilis_arm_op_t *op,
+			    subtilis_arm_instr_type_t type,
+			    subtilis_vfp_tran_instr_t *instr,
+			    subtilis_error_t *err);
+	void (*vfp_tran_dbl_fn)(void *user_data, subtilis_arm_op_t *op,
+				subtilis_arm_instr_type_t type,
+				subtilis_vfp_tran_dbl_instr_t *instr,
+				subtilis_error_t *err);
+	void (*vfp_cptran_fn)(void *user_data, subtilis_arm_op_t *op,
+			      subtilis_arm_instr_type_t type,
+			      subtilis_vfp_cptran_instr_t *instr,
+			      subtilis_error_t *err);
+	void (*vfp_data_fn)(void *user_data, subtilis_arm_op_t *op,
+			    subtilis_arm_instr_type_t type,
+			    subtilis_vfp_data_instr_t *instr,
+			    subtilis_error_t *err);
+	void (*vfp_cmp_fn)(void *user_data, subtilis_arm_op_t *op,
+			   subtilis_arm_instr_type_t type,
+			   subtilis_vfp_cmp_instr_t *instr,
+			   subtilis_error_t *err);
+	void (*vfp_sqrt_fn)(void *user_data, subtilis_arm_op_t *op,
+			    subtilis_arm_instr_type_t type,
+			    subtilis_vfp_sqrt_instr_t *instr,
+			    subtilis_error_t *err);
+	void (*vfp_sysreg_fn)(void *user_data, subtilis_arm_op_t *op,
+			      subtilis_arm_instr_type_t type,
+			      subtilis_vfp_sysreg_instr_t *instr,
+			      subtilis_error_t *err);
+	void (*vfp_cvt_fn)(void *user_data, subtilis_arm_op_t *op,
+			   subtilis_arm_instr_type_t type,
+			   subtilis_vfp_cvt_instr_t *instr,
+			   subtilis_error_t *err);
 };
 
 void subtilis_arm_walk(subtilis_arm_section_t *arm_s,

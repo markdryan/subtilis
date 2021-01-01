@@ -1,6 +1,8 @@
 *~
-basicc
-basicc,ff8
+subtro
+subtptd
+subtptd,ff8
+subtro,ff8
 unit_tests,ff8
 *.o
 *.d
@@ -10,4 +12,5 @@ default.profraw
 unit_tests
 *,e1f
 inter
-runarm
+runro
+runptd

@@ -278,6 +278,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_ASS_BAD_REAL_IMM */
 	{"Cannot encode %s into instruction\n", 1},
+
+	/* SUBTILIS_ERROR_ASS_LABEL_MISSING_COLON */
+	{"Missing ':' after label %s\n", 1},
 };
 
 /* clang-format on */

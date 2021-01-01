@@ -1,4 +1,4 @@
-VPATH = common frontend test_cases arch/arm32 backends/riscos
+VPATH = common frontend test_cases arch/arm32 backends/riscos backends/ptd backends/riscos_common
 
 COMMON =\
 	stream.c \
@@ -49,22 +49,29 @@ COMMON =\
 	reference_type.c \
 	local_buffer_type.c
 
+RISCOS_COMMON =\
+	riscos_arm.c
+
+RISCOS_ARM2 =\
+	riscos_swi.c \
+	riscos_arm2.c
+
+PTD =\
+	ptd_swi.c \
+	ptd.c
+
 ARM =\
 	arm_core.c \
-	riscos_swi.c \
-	riscos_arm.c \
-	riscos_arm2.c \
 	arm_gen.c \
 	arm_walker.c \
 	arm_reg_alloc.c \
 	arm_int_dist.c \
-	arm_fpa_dist.c \
 	arm_encode.c \
 	arm_link.c \
 	arm2_div.c \
 	arm_dump.c \
 	fpa.c \
-	fpa_gen.c \
+	vfp.c \
 	bitset.c \
 	arm_sub_section.c \
 	arm_peephole.c \
@@ -74,13 +81,33 @@ ARM =\
 	assembler.c \
 	arm_expression.c
 
-COMPILER =\
-	compiler.c
+FPA =\
+	fpa_gen.c \
+	fpa_alloc.c \
+	arm_fpa_dist.c
+
+VFP =\
+	vfp_gen.c \
+	vfp_alloc.c \
+	arm_vfp_dist.c
+
+
+SUBTRO =\
+	subtro.c
+
+SUBTPTD =\
+	subtptd.c
 
 INTER =\
 	inter.c \
 	vm.c \
 	vm_heap.c
+
+RUNRO =\
+	runro.c
+
+RUNPTD =\
+	runptd.c
 
 RUNARM =\
 	runarm.c \
@@ -104,6 +131,7 @@ TESTS =\
 	arm_core_test.c \
 	arm_vm.c \
 	arm_test.c \
+	ptd_test.c \
 	arm_reg_alloc_test.c \
 	arm_disass.c \
 	fpa_test.c \
@@ -113,27 +141,45 @@ TESTS =\
 CFLAGS ?= -O3
 CFLAGS += -Wall -MMD
 
-basicc: $(COMPILER:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o)
+.PHONY: all
+all: subtro subtptd
+
+subtro: $(SUBTRO:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(FPA:%.c=%.o) $(RISCOS_ARM2:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
+	$(CC) $(CFLAGS) -o $@ $^ -lm
+
+subtptd: $(SUBTPTD:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(VFP:%.c=%.o) $(PTD:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 inter: $(INTER:%.c=%.o) $(COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
-runarm: $(RUNARM:%.c=%.o) $(COMMON:%.c=%.o)
+runro: $(RUNRO:%.c=%.o) $(RUNARM:%.c=%.o) $(COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
-unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o)
+runptd: $(RUNPTD:%.c=%.o) $(RUNARM:%.c=%.o) $(COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
+unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(FPA:%.c=%.o) $(VFP:%.c=%.o)  $(PTD:%.c=%.o) $(RISCOS_ARM2:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
+	$(CC) $(CFLAGS) -o $@ $^ -lm
+
+.PHONY: clean
 clean:
-	rm basicc *.o *.d unit_tests
+	rm subtro subtptd *.o *.d unit_tests
 
+.PHONY: check
 check: unit_tests
 	./unit_tests
 
 -include $(ARM:%.c=%.d)
--include $(COMPILER:%.c=%.d)
+-include $(FPA:%.c=%.d)
+-include $(VFP:%.c=%.d)
+-include $(PTD:%.c=%.d)
+-include $(RISCOS_COMMON:%.c=%.d)
+-include $(RISCOS_ARM2:%.c=%.d)
+-include $(SUBTRO:%.c=%.d)
+-include $(SUBTPTD:%.c=%.d)
 -include $(COMMON:%.c=%.d)
 -include $(INTER:%.c=%.d)
--include $(RUNARM:%.c=%.d)
+-include $(RUNRO:%.c=%.d)
+-include $(RUNPTD:%.c=%.d)
 -include $(TESTS:%.c=%.d)

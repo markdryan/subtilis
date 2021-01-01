@@ -20,8 +20,8 @@
 #include "arm_core.h"
 
 void subtilis_arm_disass(subtilis_arm_instr_t *instr, uint32_t encoded,
-			 subtilis_error_t *err);
+			 bool vfp, subtilis_error_t *err);
 
-void subtilis_arm_disass_dump(uint8_t *code, size_t len);
+void subtilis_arm_disass_dump(uint8_t *code, size_t len, bool vfp);
 
 #endif

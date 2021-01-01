@@ -20,40 +20,12 @@
 
 bool subtilis_fpa_is_fixed(size_t reg)
 {
-	return reg < SUBTILIS_ARM_FPA_VIRT_REG_START;
+	return reg < SUBTILIS_ARM_REG_MAX_FPA_REGS;
 }
 
-static void prv_add_real_constant(subtilis_arm_section_t *s, size_t label,
-				  double num, subtilis_error_t *err)
+size_t subtilis_arm_get_real_label(subtilis_arm_section_t *s, double op2,
+				   subtilis_error_t *err)
 {
-	subtilis_arm_real_constant_t *c;
-	subtilis_arm_real_constant_t *new_constants;
-	size_t new_max;
-
-	if (s->constants.real_count == s->constants.max_real) {
-		new_max = s->constants.max_real + 64;
-		new_constants =
-		    realloc(s->constants.real,
-			    new_max * sizeof(subtilis_arm_real_constant_t));
-		if (!new_constants) {
-			subtilis_error_set_oom(err);
-			return;
-		}
-		s->constants.max_real = new_max;
-		s->constants.real = new_constants;
-	}
-	c = &s->constants.real[s->constants.real_count++];
-	c->real = num;
-	c->label = label;
-}
-
-static size_t prv_add_real_ldr(subtilis_arm_section_t *s,
-			       subtilis_arm_ccode_type_t ccode,
-			       subtilis_arm_reg_t dest, double op2,
-			       subtilis_error_t *err)
-{
-	subtilis_fpa_ldrc_instr_t *ldrc;
-	subtilis_arm_instr_t *instr;
 	size_t label;
 	size_t i;
 
@@ -65,10 +37,22 @@ static size_t prv_add_real_ldr(subtilis_arm_section_t *s,
 		label = s->constants.real[i].label;
 	} else {
 		label = s->label_counter++;
-		prv_add_real_constant(s, label, op2, err);
+		subtilis_arm_add_real_constant(s, label, op2, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return 0;
 	}
+
+	return label;
+}
+
+static size_t prv_add_real_ldr(subtilis_arm_section_t *s,
+			       subtilis_arm_ccode_type_t ccode,
+			       subtilis_arm_reg_t dest, double op2,
+			       subtilis_error_t *err)
+{
+	subtilis_fpa_ldrc_instr_t *ldrc;
+	subtilis_arm_instr_t *instr;
+	size_t label = subtilis_arm_get_real_label(s, op2, err);
 
 	instr = subtilis_arm_section_add_instr(s, SUBTILIS_FPA_INSTR_LDRC, err);
 	if (err->type != SUBTILIS_ERROR_OK)

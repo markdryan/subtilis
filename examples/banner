@@ -18,8 +18,8 @@ def PROCbanner
 	SWI "OS_NewLine"
 	MOV PC, R14
 
-header_label
+header_label:
 	EQUS header
-message
+message:
 	EQUS "*" + gap + "Hello World!" + gap + "*"
 ]

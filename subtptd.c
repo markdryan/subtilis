@@ -19,9 +19,9 @@
 
 #include "arch/arm32/arm_encode.h"
 #include "arch/arm32/arm_keywords.h"
-#include "arch/arm32/fpa_gen.h"
-#include "backends/riscos/riscos_arm.h"
-#include "backends/riscos/riscos_arm2.h"
+#include "arch/arm32/vfp_gen.h"
+#include "backends/ptd/ptd.h"
+#include "backends/riscos_common/riscos_arm.h"
 #include "common/error.h"
 #include "common/lexer.h"
 #include "frontend/basic_keywords.h"
@@ -34,7 +34,8 @@ static void prv_set_prog_size(uint8_t *code, size_t bytes_written,
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-	((uint32_t *)code)[1] = 0x8000 + (int32_t)bytes_written;
+	((uint32_t *)code)[1] =
+	    SUBTILIS_PTD_PROGRAM_START + (int32_t)bytes_written;
 }
 
 int main(int argc, char *argv[])
@@ -43,13 +44,14 @@ int main(int argc, char *argv[])
 	subtilis_stream_t s;
 	subtilis_settings_t settings;
 	subtilis_backend_t backend;
+	subtilis_arm_fp_if_t fp_if;
 	subtilis_lexer_t *l = NULL;
 	subtilis_parser_t *p = NULL;
 	subtilis_arm_prog_t *arm_p = NULL;
 	subtilis_arm_op_pool_t *pool = NULL;
 
 	if (argc != 2) {
-		fprintf(stderr, "Usage: basicc file\n");
+		fprintf(stderr, "Usage: subtptd file\n");
 		return 1;
 	}
 
@@ -75,12 +77,14 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	backend.caps = SUBTILIS_RISCOS_ARM_CAPS;
-	backend.sys_trans = subtilis_riscos_sys_trans;
-	backend.sys_check = subtilis_riscos_sys_check;
+	backend.caps = SUBTILIS_PTD_CAPS;
+	backend.sys_trans = subtilis_ptd_sys_trans;
+	backend.sys_check = subtilis_ptd_sys_check;
 	backend.backend_data = pool;
-	backend.asm_parse = subtilis_riscos_asm_parse;
+	backend.asm_parse = subtilis_ptd_asm_parse;
 	backend.asm_free = subtilis_riscos_asm_free;
+
+	subtilis_arm_vfp_if_init(&fp_if);
 
 	p = subtilis_parser_new(l, &backend, &settings, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
@@ -90,16 +94,16 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	//	subtilis_ir_prog_dump(p->prog);
+	subtilis_ir_prog_dump(p->prog);
 
 	arm_p = subtilis_riscos_generate(
-	    pool, p->prog, riscos_arm2_rules, riscos_arm2_rules_count,
-	    p->st->max_allocated, subtilis_fpa_gen_preamble, &err);
+	    pool, p->prog, ptd_rules, ptd_rules_count, p->st->max_allocated,
+	    &fp_if, SUBTILIS_PTD_PROGRAM_START, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
 	//	printf("\n\n");
-	//	subtilis_arm_prog_dump(arm_p);
+	subtilis_arm_prog_dump(arm_p);
 
 	subtilis_arm_encode(arm_p, "RunImage", prv_set_prog_size, &err);
 	if (err.type != SUBTILIS_ERROR_OK)

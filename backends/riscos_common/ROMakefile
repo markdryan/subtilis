@@ -1,0 +1,15 @@
+# Makefile for basicc
+
+COMPONENT = riscos_common
+
+OBJS = riscos_arm
+
+CFLAGS ?= -Wxla -Otime
+
+INSTDIR ?= <Obey$Dir>
+
+include CLibrary
+
+clean::
+        ${WIPE} ${INSTLIB} ${WFLAGS}
+

@@ -1,9 +1,9 @@
 # Makefile for basicc
 
-COMPONENT = basicc
+COMPONENT = subtro
 
-OBJS = compiler
-LIBS = backends.riscos.o.riscos arch.arm32.o.arm32 frontend.o.frontend common.o.common
+OBJS = subtro
+LIBS = backends.riscos.o.riscos_arm2 backends.riscos_common.o.riscos_common arch.arm32.o.arm32 frontend.o.frontend common.o.common
 
 CFLAGS ?= -Wxla -Otime
 

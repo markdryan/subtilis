@@ -15,10 +15,11 @@ REM R0 points to the end of screen memory
 	MOV R1, 4 
 	MOV R2, 1
 
-store_words
+store_words:
 	ADD R2, R2, R2, ROR 1
 	STR R2, [R0, -R1]
 	ADD R1, R1, 4
 	CMP R1, &28000
 	BCC store_words
+	MOV PC, R14
 ]
