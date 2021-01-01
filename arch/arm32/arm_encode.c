@@ -1461,7 +1461,7 @@ static void prv_encode_vfp_stran_instr(void *user_data, subtilis_arm_op_t *op,
 		word |= 1 << 20;
 
 	word |= instr->base << 16;
-	word |= instr->dest << 12;
+	word |= dest << 12;
 	word |= copro << 8;
 	word |= instr->offset;
 
@@ -2022,6 +2022,37 @@ static void prv_encode_vfp_sysreg_instr(void *user_data, subtilis_arm_op_t *op,
 	prv_add_word(ud, word, err);
 }
 
+static void prv_encode_vfp_cvt_instr(void *user_data, subtilis_arm_op_t *op,
+				     subtilis_arm_instr_type_t type,
+				     subtilis_vfp_cvt_instr_t *instr,
+				     subtilis_error_t *err)
+{
+	uint32_t word;
+	subtilis_arm_encode_ud_t *ud = user_data;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (type == SUBTILIS_VFP_INSTR_FCVTDS) {
+		word = 0xeb70ac0;
+		word |= (instr->dest << 12);
+		word |= (instr->op1 >> 1) | ((instr->op1 & 1) << 5);
+	} else {
+		word = 0xeb70bc0;
+		word |= instr->op1 & 0xf;
+		word |=
+		    ((instr->dest & 0x1e) << 11) | ((instr->dest & 1) << 22);
+	}
+	word |= instr->ccode << 28;
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
 static int32_t prv_compute_dist(size_t first, size_t second, size_t limit,
 				subtilis_error_t *err)
 {
@@ -2155,6 +2186,14 @@ static void prv_encode_directive(void *user_data, subtilis_arm_op_t *op,
 		*((uint32_t *)&ud->code[ud->bytes_written + 4]) = dbl_ptr[0];
 		ud->bytes_written += 8;
 		break;
+	case SUBTILIS_ARM_OP_FLOAT:
+		prv_ensure_code_size(ud, 4, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		*((uint32_t *)&ud->code[ud->bytes_written]) =
+		    *((uint32_t *)&op->op.flt);
+		ud->bytes_written += 4;
+		break;
 	case SUBTILIS_ARM_OP_STRING:
 		len = strlen(op->op.str) + 1;
 		prv_ensure_code_size(ud, len, err);
@@ -2207,6 +2246,7 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 	walker.vfp_cmp_fn = prv_encode_vfp_cmp_instr;
 	walker.vfp_sqrt_fn = prv_encode_vfp_sqrt_instr;
 	walker.vfp_sysreg_fn = prv_encode_vfp_sysreg_instr;
+	walker.vfp_cvt_fn = prv_encode_vfp_cvt_instr;
 
 	subtilis_arm_walk(arm_s, &walker, err);
 	if (err->type != SUBTILIS_ERROR_OK)

@@ -144,6 +144,7 @@ There are 6 assembler directives that can be used to store data directly in the 
 
 * EQUB    - Stores a byte
 * EQUD    - Stores a 32 bit integer
+* EQUF    - Stores a 32 bit float
 * EQUDBL  - Stores a 64 bit double
 * EQUDBLR - Stores a 64 bit double in which the two 32 bit words are reversed.  This is the format expected by the FPA instructions.
 * EQUS    - Stores a string followed by a zero, e.g., EQUS "hi", stores 3 bytes.

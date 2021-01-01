@@ -242,6 +242,11 @@ static void prv_walk_instr(subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 		walker->vfp_tran_dbl_fn(walker->user_data, op, instr->type,
 					&instr->operands.vfp_tran_dbl, err);
 		break;
+	case SUBTILIS_VFP_INSTR_FCVTDS:
+	case SUBTILIS_VFP_INSTR_FCVTSD:
+		walker->vfp_cvt_fn(walker->user_data, op, instr->type,
+				   &instr->operands.vfp_cvt, err);
+		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
 		break;
@@ -271,6 +276,7 @@ static void prv_arm_walk(subtilis_arm_section_t *arm_s, size_t ptr,
 		case SUBTILIS_ARM_OP_FOUR_BYTE:
 		case SUBTILIS_ARM_OP_DOUBLE:
 		case SUBTILIS_ARM_OP_DOUBLER:
+		case SUBTILIS_ARM_OP_FLOAT:
 		case SUBTILIS_ARM_OP_STRING:
 			if (!walker->directive_fn) {
 				subtilis_error_set_assertion_failed(err);

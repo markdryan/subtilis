@@ -863,9 +863,32 @@ static void prv_vfp_disass_data(subtilis_arm_instr_t *instr, uint32_t encoded,
 	data->ccode = encoded >> 28;
 }
 
+static void prv_vfp_disass_cvt(subtilis_arm_instr_t *instr, uint32_t encoded,
+			       subtilis_error_t *err)
+{
+	subtilis_vfp_cvt_instr_t *cvt = &instr->operands.vfp_cvt;
+
+	if (encoded & 0x100) {
+		instr->type = SUBTILIS_VFP_INSTR_FCVTSD;
+		cvt->op1 = encoded & 0xf;
+		cvt->dest = ((encoded >> 11) & 0x1e) | ((encoded >> 22) & 1);
+	} else {
+		instr->type = SUBTILIS_VFP_INSTR_FCVTDS;
+		cvt->op1 = (encoded & 0xf) << 1 | ((encoded >> 5) & 1);
+		cvt->dest = (encoded >> 12) & 0xf;
+	}
+
+	cvt->ccode = encoded >> 28;
+}
+
 static bool prv_vfp_disass(subtilis_arm_instr_t *instr, uint32_t encoded,
 			   subtilis_error_t *err)
 {
+	if ((encoded & 0xeb70ac0) == 0xeb70ac0) {
+		prv_vfp_disass_cvt(instr, encoded, err);
+		return true;
+	}
+
 	if ((encoded & 0xf000a10) == 0xe000a10) {
 		if (((encoded >> 21) & 0x7) == 0x7)
 			prv_vfp_disass_sysreg(instr, encoded, err);

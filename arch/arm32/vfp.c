@@ -347,3 +347,22 @@ void subtilis_vfp_add_tran_dbl(subtilis_arm_section_t *s,
 	tran->src1 = src1;
 	tran->src2 = src2;
 }
+
+void subtilis_vfp_add_cvt(subtilis_arm_section_t *s,
+			  subtilis_arm_instr_type_t itype,
+			  subtilis_arm_ccode_type_t ccode,
+			  subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			  subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_vfp_cvt_instr_t *cvt;
+
+	instr = subtilis_arm_section_add_instr(s, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	cvt = &instr->operands.vfp_cvt;
+	cvt->ccode = ccode;
+	cvt->dest = dest;
+	cvt->op1 = op1;
+}

@@ -2494,6 +2494,34 @@ static void prv_process_vfp_fmrrs(subtilis_arm_vm_t *arm_vm,
 	arm_vm->regs[15] += 4;
 }
 
+static void prv_process_vfp_fcvtds(subtilis_arm_vm_t *arm_vm,
+				   subtilis_vfp_cvt_instr_t *op,
+				   subtilis_error_t *err)
+{
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	arm_vm->vpfregs.d[op->dest] = (double)arm_vm->vpfregs.f[op->op1];
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_vfp_fcvtsd(subtilis_arm_vm_t *arm_vm,
+				   subtilis_vfp_cvt_instr_t *op,
+				   subtilis_error_t *err)
+{
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	arm_vm->vpfregs.f[op->dest] = (float)arm_vm->vpfregs.d[op->op1];
+
+	arm_vm->regs[15] += 4;
+}
+
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			 subtilis_error_t *err)
 {
@@ -2922,7 +2950,14 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			prv_process_vfp_fmrrs(
 			    arm_vm, &instr.operands.vfp_tran_dbl, err);
 			break;
-
+		case SUBTILIS_VFP_INSTR_FCVTDS:
+			prv_process_vfp_fcvtds(arm_vm, &instr.operands.vfp_cvt,
+					       err);
+			break;
+		case SUBTILIS_VFP_INSTR_FCVTSD:
+			prv_process_vfp_fcvtsd(arm_vm, &instr.operands.vfp_cvt,
+					       err);
+			break;
 		default:
 			printf("instr type %d\n", instr.type);
 			subtilis_error_set_assertion_failed(err);

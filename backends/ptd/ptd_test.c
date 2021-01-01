@@ -229,7 +229,7 @@ static const subtilis_test_case_t riscos_vfp_test_cases[] = {
 	"PRINT a < 0.001\n"
 	"ENDPROC\n",
 	"-1\n-1\n"},
-	{"assembler_fpa_conv",
+	{"assembler_vfp_conv",
 	"PRINT FNFPAConv%(10)\n"
 	"def FNFPAConv%(a%)\n"
 	"[\n"
@@ -309,6 +309,95 @@ static const subtilis_test_case_t riscos_vfp_test_cases[] = {
 	"]\n",
 	"329\n",
 	},
+	{
+	"assembler_vfp_float_loop",
+	"PROCFPLoop(10)\n"
+	"\n"
+	"def PROCFPLoop(a)\n"
+	"[\n"
+	"  MOV R0, 33\n"
+	"  FCVTSD S0, D0\n"
+	"  ADR R1, value\n"
+	"  FLDS S1, [R1]\n"
+	"start:\n"
+	"  SWI \"OS_WriteC\"\n"
+	"  FSUBS S0, S0, S1\n"
+	"  FCMPZS S0\n"
+	"  FMSTAT\n"
+	"  BGT start\n"
+	"  MOV PC, R14\n"
+	"value:\n"
+	"  EQUF 0.5\n"
+	"]\n",
+	"!!!!!!!!!!!!!!!!!!!!",
+	},
+	{"assembler_vfp_float_sqr",
+	"PROCCheck(SQR(2), FNSQR(2))\n"
+	"PROCCheck(SQR(2), FNSQRFixed)\n"
+	"DEF FNSQR(a)\n"
+	"[\n"
+	"  FCVTSD S0, D0\n"
+	"  FSQRTS S0, S0\n"
+	"  FCVTDS D0, S0\n"
+	"  MOV PC, R14\n"
+	"]\n"
+	"DEF FNSQRFixed\n"
+	"[\n"
+	"  ADR R0, value\n"
+	"  FLDS S0, [R0]\n"
+	"  FCVTDS D0, S0\n"
+	"  MOV PC, R14\n"
+	"value: EQUF SQR(2)\n"
+	"]\n"
+	"DEF PROCCheck(a, e)\n"
+	"LET a = e - a\n"
+	"IF a < 0.0 THEN LET a = -a ENDIF\n"
+	"PRINT a < 0.001\n"
+	"ENDPROC\n",
+	"-1\n-1\n"},
+	{"assembler_vfp_float_abs",
+	"PROCCheck(FNAbs(-1), 1)\n"
+	"PROCCheck(FNAbsFixed, 1)\n"
+	"DEF FNAbs(a)\n"
+	"[\n"
+	"  FCVTSD S0, D0\n"
+	"  FABSS S0, S0\n"
+	"  FCVTDS D0, S0\n"
+	"  MOV PC, R14\n"
+	"]\n"
+	"DEF FNAbsFixed\n"
+	"[\n"
+	"  ADR R0, value\n"
+	"  FLDS S0, [R0]\n"
+	"  FCVTDS D0, S0\n"
+	"  MOV PC, R14\n"
+	"value: EQUF ABS(-1)\n"
+	"]\n"
+	"DEF PROCCheck(a, e)\n"
+	"LET a = e - a\n"
+	"IF a < 0.0 THEN LET a = -a ENDIF\n"
+	"PRINT a < 0.001\n"
+	"ENDPROC\n",
+	"-1\n-1\n"},
+	{"assembler_vfp_conv",
+	"PRINT FNFPAConv%(10)\n"
+	"def FNFPAConv%(a%)\n"
+	"[\n"
+	"FMSR S0, R0\n"
+	"ADR R0, value1\n"
+	"FLDS S1, [R0]\n"
+	"ADR R0, value2\n"
+	"FLDS S2, [R0]\n"
+	"FMULS S0, S0, S1\n"
+	"FDIVS S0, S0, S2\n"
+	"FMRS R0, S0\n"
+	"MOV PC, R14\n"
+	"value1:\n"
+	"EQUF 2.0"
+	"value2:\n"
+	"EQUF 5.0"
+	"]\n",
+	"4\n"},
 };
 
 /* clang-format on */

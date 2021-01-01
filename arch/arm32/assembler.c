@@ -126,6 +126,8 @@ static const subtilis_arm_ass_mnemomic_t f_mnem[] = {
 
 	{ "FCPYD", SUBTILIS_VFP_INSTR_FCPYD, NULL, },
 	{ "FCPYS", SUBTILIS_VFP_INSTR_FCPYS, NULL, },
+	{ "FCVTSD", SUBTILIS_VFP_INSTR_FCVTSD, NULL, },
+	{ "FCVTDS", SUBTILIS_VFP_INSTR_FCVTDS, NULL, },
 	{ "FDIVD", SUBTILIS_VFP_INSTR_FDIVD, NULL, },
 	{ "FDIVS", SUBTILIS_VFP_INSTR_FDIVS, NULL },
 
@@ -2322,6 +2324,52 @@ static void prv_parse_vfp_cmp(subtilis_arm_ass_context_t *c, const char *name,
 	}
 }
 
+static void prv_parse_vfp_cvt(subtilis_arm_ass_context_t *c, const char *name,
+			      subtilis_arm_instr_type_t itype,
+			      subtilis_arm_ccode_type_t ccode,
+			      subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+	const char *tbuf;
+
+	if (itype == SUBTILIS_VFP_INSTR_FCVTDS) {
+		dest = prv_get_vfp_dreg(c, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		tbuf = subtilis_token_get_text(c->t);
+		if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) ||
+		    (strcmp(tbuf, ","))) {
+			subtilis_error_set_expected(
+			    err, ",", tbuf, c->l->stream->name, c->l->line);
+			return;
+		}
+
+		op1 = prv_get_vfp_sreg(c, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		dest = prv_get_vfp_sreg(c, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		tbuf = subtilis_token_get_text(c->t);
+		if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) ||
+		    (strcmp(tbuf, ","))) {
+			subtilis_error_set_expected(
+			    err, ",", tbuf, c->l->stream->name, c->l->line);
+			return;
+		}
+
+		op1 = prv_get_vfp_dreg(c, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	subtilis_vfp_add_cvt(c->arm_s, itype, ccode, dest, op1, err);
+}
+
 static void prv_parse_vfp_sqrt(subtilis_arm_ass_context_t *c, const char *name,
 			       subtilis_arm_instr_type_t itype,
 			       subtilis_arm_ccode_type_t ccode,
@@ -2771,6 +2819,10 @@ static void prv_parse_vfp_instruction(subtilis_arm_ass_context_t *c,
 	case SUBTILIS_VFP_INSTR_FCMPEZD:
 		prv_parse_vfp_cmp(c, name, itype, ccode, err);
 		return;
+	case SUBTILIS_VFP_INSTR_FCVTDS:
+	case SUBTILIS_VFP_INSTR_FCVTSD:
+		prv_parse_vfp_cvt(c, name, itype, ccode, err);
+		return;
 	case SUBTILIS_VFP_INSTR_FSQRTD:
 	case SUBTILIS_VFP_INSTR_FSQRTS:
 		prv_parse_vfp_sqrt(c, name, itype, ccode, err);
@@ -3206,6 +3258,27 @@ cleanup:
 	free(nums);
 }
 
+static void prv_parse_equf(subtilis_arm_ass_context_t *c, subtilis_error_t *err)
+{
+	double *nums;
+	size_t num_count;
+	size_t i;
+
+	nums = prv_get_double_list(c, &num_count, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	for (i = 0; i < num_count; i++) {
+		subtilis_arm_add_float(c->arm_s, (float)nums[i], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+cleanup:
+
+	free(nums);
+}
+
 static void prv_parse_equs(subtilis_arm_ass_context_t *c, subtilis_error_t *err)
 {
 	subtilis_arm_exp_val_t *val;
@@ -3526,6 +3599,9 @@ static void prv_parse_keyword(subtilis_arm_ass_context_t *c, const char *name,
 		break;
 	case SUBTILIS_ARM_KEYWORD_EQUDBL:
 		prv_parse_equdbl(c, err);
+		break;
+	case SUBTILIS_ARM_KEYWORD_EQUF:
+		prv_parse_equf(c, err);
 		break;
 	case SUBTILIS_ARM_KEYWORD_EQUDBLR:
 		prv_parse_equdblr(c, err);

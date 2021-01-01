@@ -252,6 +252,9 @@ typedef enum {
 	SUBTILIS_VFP_INSTR_FMSRR,
 	SUBTILIS_VFP_INSTR_FMRRS,
 
+	SUBTILIS_VFP_INSTR_FCVTDS,
+	SUBTILIS_VFP_INSTR_FCVTSD,
+
 	/*
 	 *	SUBTILIS_ARM_INSTR_VFP_FSTMS,
 	 *	SUBTILIS_ARM_INSTR_VFP_FLDMS,
@@ -561,6 +564,14 @@ struct subtilis_vfp_sysreg_instr_t_ {
 
 typedef struct subtilis_vfp_sysreg_instr_t_ subtilis_vfp_sysreg_instr_t;
 
+struct subtilis_vfp_cvt_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+};
+
+typedef struct subtilis_vfp_cvt_instr_t_ subtilis_vfp_cvt_instr_t;
+
 struct subtilis_arm_instr_t_ {
 	subtilis_arm_instr_type_t type;
 	union {
@@ -590,6 +601,7 @@ struct subtilis_arm_instr_t_ {
 		subtilis_vfp_cmp_instr_t vfp_cmp;
 		subtilis_vfp_sqrt_instr_t vfp_sqrt;
 		subtilis_vfp_sysreg_instr_t vfp_sysreg;
+		subtilis_vfp_cvt_instr_t vfp_cvt;
 	} operands;
 };
 
@@ -603,6 +615,7 @@ typedef enum {
 	SUBTILIS_ARM_OP_FOUR_BYTE,
 	SUBTILIS_ARM_OP_DOUBLE,
 	SUBTILIS_ARM_OP_DOUBLER,
+	SUBTILIS_ARM_OP_FLOAT,
 	SUBTILIS_ARM_OP_STRING,
 	SUBTILIS_ARM_OP_ALIGN,
 	SUBTILIS_ARM_OP_PHI,
@@ -617,6 +630,7 @@ struct subtilis_arm_op_t_ {
 		uint32_t four_bytes;
 		uint32_t alignment;
 		double dbl;
+		float flt;
 		subtilis_arm_instr_t instr;
 		size_t label;
 		char *str;
@@ -1117,6 +1131,8 @@ void subtilis_arm_add_double(subtilis_arm_section_t *s, double dbl,
 			     subtilis_error_t *err);
 void subtilis_arm_add_doubler(subtilis_arm_section_t *s, double dbl,
 			      subtilis_error_t *err);
+void subtilis_arm_add_float(subtilis_arm_section_t *s, float f,
+			    subtilis_error_t *err);
 void subtilis_arm_add_string(subtilis_arm_section_t *s, const char *str,
 			     subtilis_error_t *err);
 void subtilis_arm_add_align(subtilis_arm_section_t *s, uint32_t align,
@@ -1339,5 +1355,11 @@ void subtilis_vfp_add_sysreg(subtilis_arm_section_t *s,
 			     subtilis_arm_ccode_type_t ccode,
 			     subtilis_vfp_sysreg_t sysreg,
 			     subtilis_arm_reg_t reg, subtilis_error_t *err);
+
+void subtilis_vfp_add_cvt(subtilis_arm_section_t *s,
+			  subtilis_arm_instr_type_t itype,
+			  subtilis_arm_ccode_type_t ccode,
+			  subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			  subtilis_error_t *err);
 
 #endif

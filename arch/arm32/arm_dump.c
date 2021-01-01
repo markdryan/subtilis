@@ -159,14 +159,16 @@ static const char *const instr_desc[] = {
 	"FCMPZD", // SUBTILIS_VFP_INSTR_FCMPZD
 	"FCMPEZS",// SUBTILIS_VFP_INSTR_FCMPEZS
 	"FCMPEZD",// SUBTILIS_VFP_INSTR_FCMPEZD
-	"FSQRTD", // SUBTILIS_VFP_INSTR_FSQRTD,
-	"FSQRTS", // SUBTILIS_VFP_INSTR_FSQRTS,
-	"FMXR",   // SUBTILIS_VFP_INSTR_FMXR,
-	"FMRX",   // SUBTILIS_VFP_INSTR_FMRX,
-	"FMDRR",  // SUBTILIS_VFP_INSTR_FMDRR,
-	"FMRRD",  // SUBTILIS_VFP_INSTR_FMRRD,
-	"FMSRR",  // SUBTILIS_VFP_INSTR_FMSRR,
-	"FMRRS",  // SUBTILIS_VFP_INSTR_FMRRS,
+	"FSQRTD", // SUBTILIS_VFP_INSTR_FSQRTD
+	"FSQRTS", // SUBTILIS_VFP_INSTR_FSQRTS
+	"FMXR",   // SUBTILIS_VFP_INSTR_FMXR
+	"FMRX",   // SUBTILIS_VFP_INSTR_FMRX
+	"FMDRR",  // SUBTILIS_VFP_INSTR_FMDRR
+	"FMRRD",  // SUBTILIS_VFP_INSTR_FMRRD
+	"FMSRR",  // SUBTILIS_VFP_INSTR_FMSRR
+	"FMRRS",  // SUBTILIS_VFP_INSTR_FMRRS
+	"FCVTDS", // SUBTILIS_VFP_INSTR_FCVTDS
+	"FCVTSD", // SUBTILIS_VFP_INSTR_FCVTSD
 };
 
 static const char *const shift_desc[] = {
@@ -627,6 +629,9 @@ static void prv_dump_directive(void *user_data, subtilis_arm_op_t *op,
 	case SUBTILIS_ARM_OP_DOUBLER:
 		printf("\tEQUDBLR %f\n", op->op.dbl);
 		break;
+	case SUBTILIS_ARM_OP_FLOAT:
+		printf("\tEQUF %f\n", op->op.flt);
+		break;
 	case SUBTILIS_ARM_OP_STRING:
 		printf("\tEQUS \"%s\"\n", op->op.str);
 		break;
@@ -909,6 +914,21 @@ static void prv_dump_vfp_sysreg_instr(void *user_data, subtilis_arm_op_t *op,
 		printf(" %s, R%zu\n", sysreg, instr->arm_reg);
 }
 
+static void prv_dump_vfp_cvt_instr(void *user_data, subtilis_arm_op_t *op,
+				   subtilis_arm_instr_type_t type,
+				   subtilis_vfp_cvt_instr_t *instr,
+				   subtilis_error_t *err)
+{
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+
+	if (type == SUBTILIS_VFP_INSTR_FCVTDS)
+		printf(" D%zu, S%zu\n", instr->dest, instr->op1);
+	else
+		printf(" S%zu, D%zu\n", instr->dest, instr->op1);
+}
+
 void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 			       subtilis_arm_section_t *s)
 {
@@ -950,6 +970,7 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 	walker.vfp_cmp_fn = prv_dump_vfp_cmp_instr;
 	walker.vfp_sqrt_fn = prv_dump_vfp_sqrt_instr;
 	walker.vfp_sysreg_fn = prv_dump_vfp_sysreg_instr;
+	walker.vfp_cvt_fn = prv_dump_vfp_cvt_instr;
 
 	subtilis_arm_walk(s, &walker, &err);
 
@@ -1197,6 +1218,11 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 	case SUBTILIS_VFP_INSTR_FMRX:
 		prv_dump_vfp_sysreg_instr(NULL, NULL, instr->type,
 					  &instr->operands.vfp_sysreg, NULL);
+		break;
+	case SUBTILIS_VFP_INSTR_FCVTDS:
+	case SUBTILIS_VFP_INSTR_FCVTSD:
+		prv_dump_vfp_cvt_instr(NULL, NULL, instr->type,
+				       &instr->operands.vfp_cvt, NULL);
 		break;
 	default:
 		printf("\tUNKNOWN INSTRUCTION\n");

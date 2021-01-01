@@ -1530,6 +1530,19 @@ void subtilis_arm_add_doubler(subtilis_arm_section_t *s, double dbl,
 	op->op.dbl = dbl;
 }
 
+void subtilis_arm_add_float(subtilis_arm_section_t *s, float f,
+			    subtilis_error_t *err)
+{
+	subtilis_arm_op_t *op;
+
+	op = prv_append_op(s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op->type = SUBTILIS_ARM_OP_FLOAT;
+	op->op.flt = f;
+}
+
 void subtilis_arm_add_string(subtilis_arm_section_t *s, const char *str,
 			     subtilis_error_t *err)
 {
