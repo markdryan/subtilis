@@ -2409,8 +2409,8 @@ static void prv_parse_vfp_sysreg(subtilis_arm_ass_context_t *c,
 				 subtilis_arm_ccode_type_t ccode,
 				 subtilis_error_t *err)
 {
-	subtilis_arm_reg_t sysreg;
-	subtilis_arm_reg_t reg;
+	subtilis_arm_reg_t sysreg = SIZE_MAX;
+	subtilis_arm_reg_t reg = SIZE_MAX;
 	const char *tbuf;
 
 	if (!strcmp(name, "FMSTAT")) {
