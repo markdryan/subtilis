@@ -2190,8 +2190,8 @@ static void prv_encode_directive(void *user_data, subtilis_arm_op_t *op,
 		prv_ensure_code_size(ud, 4, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		*((uint32_t *)&ud->code[ud->bytes_written]) =
-		    *((uint32_t *)&op->op.flt);
+		dbl_ptr = (uint32_t *)&op->op.flt;
+		*((uint32_t *)&ud->code[ud->bytes_written]) = *dbl_ptr;
 		ud->bytes_written += 4;
 		break;
 	case SUBTILIS_ARM_OP_STRING:
