@@ -5,6 +5,8 @@ Dir <Obey$Dir>.frontend
 amu -f ROMakefile clean
 Dir <Obey$Dir>.arch.arm32
 amu -f ROMakefile clean
+Dir <Obey$Dir>.backends.riscos_common
+amu -f ROMakefile clean
 Dir <Obey$Dir>.backends.riscos
 amu -f ROMakefile clean
 Dir <Obey$Dir>

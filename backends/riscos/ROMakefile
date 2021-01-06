@@ -1,6 +1,6 @@
 # Makefile for basicc
 
-COMPONENT = riscos_arm2
+COMPONENT = riscos
 
 OBJS = riscos_arm2 riscos_swi
 
