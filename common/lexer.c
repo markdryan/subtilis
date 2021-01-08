@@ -15,6 +15,7 @@
  */
 
 #include <errno.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -941,7 +942,7 @@ void subtilis_dump_token(subtilis_token_t *t)
 	const char *tbuf = subtilis_token_get_text(t);
 
 	if (t->type == SUBTILIS_TOKEN_INTEGER)
-		printf("[%d %d %s]\n", t->type, t->tok.integer, tbuf);
+		printf("[%d %" PRIu32 " %s]\n", t->type, t->tok.integer, tbuf);
 	else if (t->type == SUBTILIS_TOKEN_REAL)
 		printf("[%d %f %s]\n", t->type, t->tok.real, tbuf);
 	else if (t->type == SUBTILIS_TOKEN_KEYWORD)

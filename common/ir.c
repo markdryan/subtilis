@@ -15,6 +15,7 @@
  */
 
 #include <errno.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -892,11 +893,11 @@ static void prv_dump_instr(subtilis_ir_inst_t *instr)
 		       instr->operands[1].reg, instr->operands[2].reg);
 		break;
 	case SUBTILIS_OP_CLASS_REG_REG_I32:
-		printf("r%zu, r%zu, #%d", instr->operands[0].reg,
+		printf("r%zu, r%zu, #%" PRIi32, instr->operands[0].reg,
 		       instr->operands[1].reg, instr->operands[2].integer);
 		break;
 	case SUBTILIS_OP_CLASS_FREG_REG_I32:
-		printf("f%zu, r%zu, #%d", instr->operands[0].reg,
+		printf("f%zu, r%zu, #%" PRIi32, instr->operands[0].reg,
 		       instr->operands[1].reg, instr->operands[2].integer);
 		break;
 	case SUBTILIS_OP_CLASS_FREG_FREG_REAL:
@@ -920,7 +921,7 @@ static void prv_dump_instr(subtilis_ir_inst_t *instr)
 		       instr->operands[1].reg, instr->operands[2].reg);
 		break;
 	case SUBTILIS_OP_CLASS_REG_I32:
-		printf("r%zu, #%d", instr->operands[0].reg,
+		printf("r%zu, #%" PRIi32, instr->operands[0].reg,
 		       instr->operands[1].integer);
 		break;
 	case SUBTILIS_OP_CLASS_FREG_REAL:
@@ -950,7 +951,7 @@ static void prv_dump_instr(subtilis_ir_inst_t *instr)
 		printf("f%zu", instr->operands[0].reg);
 		break;
 	case SUBTILIS_OP_CLASS_I32:
-		printf("%d", instr->operands[0].integer);
+		printf("%" PRIi32, instr->operands[0].integer);
 		break;
 	case SUBTILIS_OP_CLASS_REAL:
 		printf("%lf", instr->operands[0].real);

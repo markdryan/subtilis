@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <inttypes.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1334,7 +1335,7 @@ static subtilis_arm_exp_val_t *prv_str_str(subtilis_arm_ass_context_t *c,
 
 	switch (val->type) {
 	case SUBTILIS_ARM_EXP_TYPE_INT:
-		sprintf(buf, "%d", val->val.integer);
+		sprintf(buf, "%" PRIi32, val->val.integer);
 		break;
 	case SUBTILIS_ARM_EXP_TYPE_REAL:
 		sprintf(buf, "%f", val->val.real);
