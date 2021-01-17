@@ -3030,10 +3030,12 @@ const subtilis_test_case_t test_cases[] = {
 	 "print ~100\n"
 	 "a% = 100\n"
 	 "print ~a%\n"
+	 "a% = 0\n"
+	 "print ~a%\n"
 	 "print ~15.8\n"
 	 "a = 15.8\n"
 	 "print ~a\n",
-	 "64\n64\nF\nF\n"
+	 "64\n64\n0\nF\nF\n"
 	},
 	{"good_val",
 	 "PROCCheck(val(\"-12.23\"), -12.23)\n"
