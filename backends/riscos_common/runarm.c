@@ -30,7 +30,11 @@ void prv_read_code(FILE *f, subtilis_buffer_t *b, subtilis_error_t *err)
 	size_t buf_size = block_size;
 
 	do {
-		subtilis_buffer_reserve(b, buf_size, err);
+		if (!b->buffer)
+			subtilis_buffer_reserve(b, buf_size, err);
+		else
+			subtilis_buffer_reserve(
+			    b, b->buffer->max_size + buf_size, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 

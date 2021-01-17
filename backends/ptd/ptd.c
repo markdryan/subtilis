@@ -166,7 +166,7 @@ const subtilis_ir_rule_raw_t ptd_rules[] = {
 	 {"neqi32 *, *, *\n", subtilis_arm_gen_neqi32},
 	 {"neqr *, *, *\n", subtilis_vfp_gen_neqr},
 	 {"gtei32 *, *, *\n", subtilis_arm_gen_gtei32},
-	 {"gtr *, *, *\n", subtilis_vfp_gen_gtr},
+	 {"gter *, *, *\n", subtilis_vfp_gen_gter},
 	 {"ltei32 *, *, *\n", subtilis_arm_gen_ltei32},
 	 {"lter *, *, *\n", subtilis_vfp_gen_lter},
 	 {"mov *, *", subtilis_arm_gen_mov},

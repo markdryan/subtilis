@@ -1156,6 +1156,8 @@ static void prv_builtins_ir_hex_to_str(subtilis_parser_t *p,
 	subtilis_ir_operand_t end_label;
 	subtilis_ir_operand_t main_loop_label;
 	subtilis_ir_operand_t not_zero_label;
+	subtilis_ir_operand_t all_zero_label;
+	subtilis_ir_operand_t not_all_zero_label;
 	subtilis_ir_operand_t zero_label;
 	subtilis_ir_section_t *old_current;
 
@@ -1171,6 +1173,8 @@ static void prv_builtins_ir_hex_to_str(subtilis_parser_t *p,
 
 	end_label.label = current->end_label;
 
+	all_zero_label.label = subtilis_ir_section_new_label(current);
+	not_all_zero_label.label = subtilis_ir_section_new_label(current);
 	main_loop_label.label = subtilis_ir_section_new_label(current);
 	zero_label.label = subtilis_ir_section_new_label(current);
 	not_zero_label.label = subtilis_ir_section_new_label(current);
@@ -1179,6 +1183,38 @@ static void prv_builtins_ir_hex_to_str(subtilis_parser_t *p,
 
 	arg_int.reg = SUBTILIS_IR_REG_TEMP_START;
 	arg_buf.reg = SUBTILIS_IR_REG_TEMP_START + 1;
+
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_JMPC,
+					  arg_int, not_all_zero_label,
+					  all_zero_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(current, all_zero_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op2.integer = '0';
+	chr.reg = subtilis_ir_section_add_instr2(
+	    current, SUBTILIS_OP_INSTR_MOVI_I32, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op2.integer = 0;
+	subtilis_ir_section_add_instr_reg(current, SUBTILIS_OP_INSTR_STOREO_I8,
+					  chr, arg_buf, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.integer = 1;
+	subtilis_ir_section_add_instr_no_reg(
+	    current, SUBTILIS_OP_INSTR_RETI_I32, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(current, not_all_zero_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
 	arg_buf_copy.reg = subtilis_ir_section_add_instr2(
 	    current, SUBTILIS_OP_INSTR_MOV, arg_buf, err);

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <inttypes.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -136,7 +137,7 @@ static subtilis_exp_t *prv_to_string_const(subtilis_parser_t *p,
 					   subtilis_error_t *err)
 {
 	char buf[32];
-	size_t len = sprintf(buf, "%d", e->exp.ir_op.integer) + 1;
+	size_t len = sprintf(buf, "%" PRIi32, e->exp.ir_op.integer) + 1;
 
 	e->type.type = SUBTILIS_TYPE_CONST_STRING;
 	subtilis_buffer_init(&e->exp.str, 128);
@@ -154,7 +155,7 @@ static subtilis_exp_t *prv_to_hex_string_const(subtilis_parser_t *p,
 					       subtilis_error_t *err)
 {
 	char buf[32];
-	size_t len = sprintf(buf, "%X", e->exp.ir_op.integer) + 1;
+	size_t len = sprintf(buf, "%" PRIX32, e->exp.ir_op.integer) + 1;
 
 	e->type.type = SUBTILIS_TYPE_CONST_STRING;
 	subtilis_buffer_init(&e->exp.str, 128);

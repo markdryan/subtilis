@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <inttypes.h>
+
 #include "arm_core.h"
 #include "arm_walker.h"
 
@@ -189,7 +191,7 @@ static void prv_dump_op2(subtilis_arm_op2_t *op2)
 		printf("R%zu", op2->op.reg);
 		break;
 	case SUBTILIS_ARM_OP2_I32:
-		printf("#%d", op2->op.integer);
+		printf("#%" PRIu32, op2->op.integer);
 		break;
 	default:
 		if (op2->op.shift.shift_reg)
@@ -197,7 +199,7 @@ static void prv_dump_op2(subtilis_arm_op2_t *op2)
 			       shift_desc[op2->op.shift.type],
 			       op2->op.shift.shift.reg);
 		else
-			printf("R%zu, %s #%d", op2->op.shift.reg,
+			printf("R%zu, %s #%" PRIi32, op2->op.shift.reg,
 			       shift_desc[op2->op.shift.type],
 			       op2->op.shift.shift.integer);
 
@@ -330,11 +332,11 @@ static void prv_dump_br_instr(void *user_data, subtilis_arm_op_t *op,
 			printf(" %s\n",
 			       p->string_pool->strings[instr->target.label]);
 		else
-			printf(" %d\n", (int32_t)instr->target.label);
+			printf(" %" PRIi32 "\n", (int32_t)instr->target.label);
 	} else if (p) {
 		printf(" label_%zu\n", instr->target.label);
 	} else {
-		printf(" %d\n", (int32_t)instr->target.label);
+		printf(" %" PRIi32 "\n", (int32_t)instr->target.label);
 	}
 }
 
@@ -433,7 +435,7 @@ static void prv_dump_flags_instr(void *user_data, subtilis_arm_op_t *op,
 			printf(" %s_%s, R%zu\n", flags_reg, fields,
 			       instr->op.reg);
 		else
-			printf(" %s_%s, #%d\n", flags_reg, fields,
+			printf(" %s_%s, #%" PRIu32 "\n", flags_reg, fields,
 			       instr->op.integer);
 	} else {
 		printf(" R%zu, %s\n", instr->op.reg, flags_reg);
@@ -612,7 +614,7 @@ static void prv_dump_directive(void *user_data, subtilis_arm_op_t *op,
 {
 	switch (op->type) {
 	case SUBTILIS_ARM_OP_ALIGN:
-		printf("\tALIGN %d\n", op->op.alignment);
+		printf("\tALIGN %" PRIu32 "\n", op->op.alignment);
 		break;
 	case SUBTILIS_ARM_OP_BYTE:
 		printf("\tEQUB %d\n", op->op.byte);
@@ -621,7 +623,7 @@ static void prv_dump_directive(void *user_data, subtilis_arm_op_t *op,
 		printf("\tEQUW %d\n", op->op.two_bytes);
 		break;
 	case SUBTILIS_ARM_OP_FOUR_BYTE:
-		printf("\tEQUD %d\n", op->op.four_bytes);
+		printf("\tEQUD %" PRIu32 "\n", op->op.four_bytes);
 		break;
 	case SUBTILIS_ARM_OP_DOUBLE:
 		printf("\tEQUDBL %f\n", op->op.dbl);
@@ -902,6 +904,9 @@ static void prv_dump_vfp_sysreg_instr(void *user_data, subtilis_arm_op_t *op,
 	case SUBTILIS_VFP_SYSREG_FPEXC:
 		sysreg = "FPEXC";
 		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
 	}
 
 	printf("\t%s", instr_desc[type]);
@@ -980,7 +985,7 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 	}
 	for (i = 0; i < s->constants.ui32_count; i++) {
 		printf(".label_%zu\n", s->constants.ui32[i].label);
-		printf("\tEQUD &%x\n", s->constants.ui32[i].integer);
+		printf("\tEQUD &%" PRIx32 "\n", s->constants.ui32[i].integer);
 	}
 }
 

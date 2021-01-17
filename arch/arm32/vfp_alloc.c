@@ -431,8 +431,8 @@ static void prv_alloc_vfp_cmp_instr(void *user_data, subtilis_arm_op_t *op,
 	size_t vreg_op1;
 	int dist_op1;
 	size_t vreg_op2;
-	int dist_op2;
 	subtilis_arm_reg_ud_t *ud = user_data;
+	int dist_op2 = -1;
 
 	switch (type) {
 	case SUBTILIS_VFP_INSTR_FCMPS:

@@ -15,6 +15,7 @@
  */
 
 #include <errno.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -400,7 +401,7 @@ void subtilis_error_set_hex(subtilis_error_t *e, subtilis_error_type_t type,
 {
 	char buf[32];
 
-	sprintf(buf, "0x%x", num);
+	sprintf(buf, "0x%" PRIx32, num);
 	subtilis_error_set1(e, type, buf, subtilis_file, subtilis_line);
 }
 
