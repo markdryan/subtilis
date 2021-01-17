@@ -448,8 +448,15 @@ const subtilis_test_case_t test_cases[] = {
 	  "ELSE\n"
 	  "PRINT FALSE\n"
 	  "ENDIF\n"
+	  "PRINT a < b\n"
+	  "PRINT a <= a\n"
+	  "PRINT a > b\n"
+	  "PRINT b >= b\n"
+	  "PRINT a = b\n"
+	  "PRINT a <> b\n"
 	  "ENDPROC\n",
-	  "-1\n0\n0\n0\n-1\n0\n-1\n-1\n-1\n0\n-1\n0\n-1\n"},
+	  "-1\n0\n0\n0\n-1\n0\n-1\n-1\n-1\n0\n-1\n0\n"
+	  "-1\n-1\n-1\n0\n-1\n0\n-1\n"},
 	{ "repeat",
 	  "LET i% = 0\n"
 	  "REPEAT\n"
