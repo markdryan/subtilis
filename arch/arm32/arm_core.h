@@ -266,6 +266,9 @@ typedef enum {
 
 	SUBTILIS_ARM_INSTR_VFP_MAX,
 
+	SUBTILIS_ARM_STRAN_MISC_LDR = SUBTILIS_ARM_INSTR_VFP_MAX,
+	SUBTILIS_ARM_STRAN_MISC_STR,
+
 	SUBTILIS_ARM_INSTR_MAX,
 } subtilis_arm_instr_type_t;
 
@@ -313,6 +316,30 @@ struct subtilis_arm_stran_instr_t_ {
 };
 
 typedef struct subtilis_arm_stran_instr_t_ subtilis_arm_stran_instr_t;
+
+typedef enum {
+	SUBTILIS_ARM_STRAN_MISC_SB,
+	SUBTILIS_ARM_STRAN_MISC_SH,
+	SUBTILIS_ARM_STRAN_MISC_H,
+	SUBTILIS_ARM_STRAN_MISC_D,
+} subtilis_arm_stran_misc_type_t;
+
+struct subtilis_arm_stran_misc_instr_t_ {
+	subtilis_arm_stran_misc_type_t type;
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t base;
+	bool reg_offset;
+	union {
+		int8_t imm;
+		subtilis_arm_reg_t reg;
+	} offset;
+	bool pre_indexed;
+	bool write_back;
+	bool subtract;
+};
+
+typedef struct subtilis_arm_stran_misc_instr_t_ subtilis_arm_stran_misc_instr_t;
 
 struct subtilis_arm_mtran_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
@@ -602,6 +629,7 @@ struct subtilis_arm_instr_t_ {
 		subtilis_vfp_sqrt_instr_t vfp_sqrt;
 		subtilis_vfp_sysreg_instr_t vfp_sysreg;
 		subtilis_vfp_cvt_instr_t vfp_cvt;
+		subtilis_arm_stran_misc_instr_t stran_misc;
 	} operands;
 };
 

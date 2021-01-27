@@ -24,6 +24,16 @@
 
 typedef void (*subtilis_arm_ass_fn_t)(void *);
 
+struct subtilis_arm_ass_modifiers_t_ {
+	bool status;
+	bool byte;
+	bool teqp;
+	bool hword;
+	bool dword;
+};
+
+typedef struct subtilis_arm_ass_modifiers_t_ subtilis_arm_ass_modifiers_t;
+
 struct subtilis_arm_ass_mnemomic_t_ {
 	const char *name;
 	subtilis_arm_instr_type_t type;
@@ -1037,11 +1047,171 @@ static void prv_parse_stran_pre_off(subtilis_arm_ass_context_t *c,
 	stran->subtract = subtract;
 }
 
+static void prv_parse_stran_misc_int_offset(subtilis_arm_ass_context_t *c,
+					    subtilis_arm_exp_val_t *val,
+					    int8_t *offset, bool *subtract,
+					    subtilis_error_t *err)
+{
+	int32_t off;
+
+	if (val->val.integer < 0) {
+		*subtract = true;
+		off = -val->val.integer;
+	} else {
+		off = val->val.integer;
+	}
+	if (off > 255)
+		subtilis_error_set_ass_bad_offset(
+		    err, val->val.integer, c->l->stream->name, c->l->line);
+	*offset = off;
+}
+
+static void
+prv_stran_misc_set_type(subtilis_arm_stran_misc_instr_t *stran_misc,
+			const subtilis_arm_ass_modifiers_t *modifiers,
+			subtilis_error_t *err)
+{
+	if (modifiers->byte && modifiers->status) {
+		stran_misc->type = SUBTILIS_ARM_STRAN_MISC_SB;
+	} else if (modifiers->hword) {
+		if (modifiers->status)
+			stran_misc->type = SUBTILIS_ARM_STRAN_MISC_SH;
+		else
+			stran_misc->type = SUBTILIS_ARM_STRAN_MISC_H;
+	} else if (modifiers->dword) {
+		stran_misc->type = SUBTILIS_ARM_STRAN_MISC_D;
+	} else {
+		subtilis_error_set_assertion_failed(err);
+	}
+}
+
+static void prv_stran_misc_zero(subtilis_arm_ass_context_t *c,
+				subtilis_arm_instr_type_t itype,
+				subtilis_arm_ccode_type_t ccode,
+				subtilis_arm_reg_t dest,
+				const subtilis_arm_ass_modifiers_t *modifiers,
+				subtilis_arm_reg_t base, subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_stran_misc_instr_t *stran_misc;
+	bool write_back = false;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type == SUBTILIS_TOKEN_OPERATOR) && (!strcmp(tbuf, "!"))) {
+		write_back = true;
+
+		subtilis_lexer_get(c->l, c->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	instr = subtilis_arm_section_add_instr(c->arm_s, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	stran_misc = &instr->operands.stran_misc;
+
+	prv_stran_misc_set_type(stran_misc, modifiers, err);
+	if (err->type)
+		return;
+
+	stran_misc->ccode = ccode;
+	stran_misc->dest = dest;
+	stran_misc->base = base;
+	stran_misc->reg_offset = false;
+	stran_misc->offset.imm = 0;
+	stran_misc->pre_indexed = true;
+	stran_misc->write_back = write_back;
+	stran_misc->subtract = false;
+}
+
+static void prv_stran_misc_pre(subtilis_arm_ass_context_t *c,
+			       subtilis_arm_instr_type_t itype,
+			       subtilis_arm_ccode_type_t ccode,
+			       subtilis_arm_reg_t dest, subtilis_arm_reg_t base,
+			       const subtilis_arm_ass_modifiers_t *modifiers,
+			       subtilis_arm_exp_val_t *val,
+			       subtilis_error_t *err)
+{
+	const char *tbuf;
+	int8_t int_offset;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_stran_misc_instr_t *stran_misc;
+	subtilis_arm_reg_t reg;
+	bool reg_offset;
+	bool write_back = false;
+	bool subtract = false;
+
+	if (val->type == SUBTILIS_ARM_EXP_TYPE_INT) {
+		prv_parse_stran_misc_int_offset(c, val, &int_offset, &subtract,
+						err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		reg_offset = false;
+	} else if (val->type == SUBTILIS_ARM_EXP_TYPE_REG) {
+		reg_offset = true;
+		reg = val->val.reg;
+	} else {
+		subtilis_error_set_expected(err, "integer or register",
+					    subtilis_arm_exp_type_name(val),
+					    c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || (strcmp(tbuf, "]"))) {
+		subtilis_error_set_expected(err, "]", tbuf, c->l->stream->name,
+					    c->l->line);
+		goto cleanup;
+	}
+
+	subtilis_lexer_get(c->l, c->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type == SUBTILIS_TOKEN_OPERATOR) && (!strcmp(tbuf, "!"))) {
+		write_back = true;
+
+		subtilis_lexer_get(c->l, c->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	instr = subtilis_arm_section_add_instr(c->arm_s, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	stran_misc = &instr->operands.stran_misc;
+
+	prv_stran_misc_set_type(stran_misc, modifiers, err);
+	if (err->type)
+		goto cleanup;
+
+	stran_misc->ccode = ccode;
+	stran_misc->dest = dest;
+	stran_misc->base = base;
+	stran_misc->reg_offset = reg_offset;
+	if (reg_offset)
+		stran_misc->offset.reg = reg;
+	else
+		stran_misc->offset.imm = int_offset;
+	stran_misc->pre_indexed = true;
+	stran_misc->write_back = write_back;
+	stran_misc->subtract = subtract;
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+}
+
 static void prv_parse_stran_pre(subtilis_arm_ass_context_t *c,
 				subtilis_arm_instr_type_t itype,
 				subtilis_arm_ccode_type_t ccode,
 				subtilis_arm_reg_t dest,
-				subtilis_arm_reg_t base, bool byte,
+				subtilis_arm_reg_t base,
+				const subtilis_arm_ass_modifiers_t *modifiers,
 				subtilis_error_t *err)
 {
 	subtilis_arm_exp_val_t *val;
@@ -1056,6 +1226,13 @@ static void prv_parse_stran_pre(subtilis_arm_ass_context_t *c,
 	val = prv_get_offset(c, &subtract, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	if (itype == SUBTILIS_ARM_STRAN_MISC_LDR ||
+	    itype == SUBTILIS_ARM_STRAN_MISC_STR) {
+		prv_stran_misc_pre(c, itype, ccode, dest, base, modifiers, val,
+				   err);
+		return;
+	}
 
 	tbuf = subtilis_token_get_text(c->t);
 	if (val->type == SUBTILIS_ARM_EXP_TYPE_INT) {
@@ -1107,8 +1284,69 @@ static void prv_parse_stran_pre(subtilis_arm_ass_context_t *c,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	prv_parse_stran_pre_off(c, itype, ccode, dest, base, byte, offset,
-				subtract, err);
+	prv_parse_stran_pre_off(c, itype, ccode, dest, base, modifiers->byte,
+				offset, subtract, err);
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+}
+
+/* clang-format off */
+static void prv_stran_misc_post(subtilis_arm_ass_context_t *c,
+				subtilis_arm_instr_type_t itype,
+				subtilis_arm_ccode_type_t ccode,
+				subtilis_arm_reg_t dest,
+				subtilis_arm_reg_t base,
+				const subtilis_arm_ass_modifiers_t *modifiers,
+				subtilis_arm_exp_val_t *val,
+				subtilis_error_t *err)
+/* clang-format on */
+{
+	int8_t int_offset;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_stran_misc_instr_t *stran_misc;
+	subtilis_arm_reg_t reg;
+	bool reg_offset;
+	bool subtract = false;
+
+	if (val->type == SUBTILIS_ARM_EXP_TYPE_INT) {
+		prv_parse_stran_misc_int_offset(c, val, &int_offset, &subtract,
+						err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		reg_offset = false;
+	} else if (val->type == SUBTILIS_ARM_EXP_TYPE_REG) {
+		reg_offset = true;
+		reg = val->val.reg;
+	} else {
+		subtilis_error_set_expected(err, "integer or register",
+					    subtilis_arm_exp_type_name(val),
+					    c->l->stream->name, c->l->line);
+		goto cleanup;
+	}
+
+	instr = subtilis_arm_section_add_instr(c->arm_s, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	stran_misc = &instr->operands.stran_misc;
+
+	prv_stran_misc_set_type(stran_misc, modifiers, err);
+	if (err->type)
+		goto cleanup;
+
+	stran_misc->ccode = ccode;
+	stran_misc->dest = dest;
+	stran_misc->base = base;
+	stran_misc->reg_offset = reg_offset;
+	if (reg_offset)
+		stran_misc->offset.reg = reg;
+	else
+		stran_misc->offset.imm = int_offset;
+	stran_misc->pre_indexed = false;
+	stran_misc->write_back = true;
+	stran_misc->subtract = subtract;
 
 cleanup:
 
@@ -1119,7 +1357,8 @@ static void prv_parse_stran_post(subtilis_arm_ass_context_t *c,
 				 subtilis_arm_instr_type_t itype,
 				 subtilis_arm_ccode_type_t ccode,
 				 subtilis_arm_reg_t dest,
-				 subtilis_arm_reg_t base, bool byte,
+				 subtilis_arm_reg_t base,
+				 const subtilis_arm_ass_modifiers_t *modifiers,
 				 subtilis_error_t *err)
 {
 	const char *tbuf;
@@ -1135,10 +1374,17 @@ static void prv_parse_stran_post(subtilis_arm_ass_context_t *c,
 
 	tbuf = subtilis_token_get_text(c->t);
 	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || (strcmp(tbuf, ","))) {
-		offset.type = SUBTILIS_ARM_OP2_I32;
-		offset.op.integer = 0;
-		prv_parse_stran_pre_off(c, itype, ccode, dest, base, byte,
-					offset, false, err);
+		if (itype == SUBTILIS_ARM_STRAN_MISC_LDR ||
+		    itype == SUBTILIS_ARM_STRAN_MISC_STR) {
+			prv_stran_misc_zero(c, itype, ccode, dest, modifiers,
+					    base, err);
+		} else {
+			offset.type = SUBTILIS_ARM_OP2_I32;
+			offset.op.integer = 0;
+			prv_parse_stran_pre_off(c, itype, ccode, dest, base,
+						modifiers->byte, offset, false,
+						err);
+		}
 		return;
 	}
 
@@ -1149,6 +1395,13 @@ static void prv_parse_stran_post(subtilis_arm_ass_context_t *c,
 	val = prv_get_offset(c, &subtract, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	if (itype == SUBTILIS_ARM_STRAN_MISC_LDR ||
+	    itype == SUBTILIS_ARM_STRAN_MISC_STR) {
+		prv_stran_misc_post(c, itype, ccode, dest, base, modifiers, val,
+				    err);
+		return;
+	}
 
 	tbuf = subtilis_token_get_text(c->t);
 	if (val->type == SUBTILIS_ARM_EXP_TYPE_INT) {
@@ -1182,7 +1435,7 @@ static void prv_parse_stran_post(subtilis_arm_ass_context_t *c,
 	stran->offset = offset;
 	stran->pre_indexed = false;
 	stran->write_back = true;
-	stran->byte = byte;
+	stran->byte = modifiers->byte;
 	stran->subtract = subtract;
 
 cleanup:
@@ -1192,16 +1445,25 @@ cleanup:
 
 static void prv_parse_stran(subtilis_arm_ass_context_t *c,
 			    subtilis_arm_instr_type_t itype,
-			    subtilis_arm_ccode_type_t ccode, bool byte,
+			    subtilis_arm_ccode_type_t ccode,
+			    const subtilis_arm_ass_modifiers_t *modifiers,
 			    subtilis_error_t *err)
 {
 	subtilis_arm_reg_t dest;
 	subtilis_arm_reg_t base;
 	const char *tbuf;
+	char buffer[32];
 
 	dest = prv_get_reg(c, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	if (modifiers->dword && (dest & 1)) {
+		sprintf(buffer, "R%zu", dest);
+		subtilis_error_set_ass_bad_reg(err, buffer, c->l->stream->name,
+					       c->l->line);
+		return;
+	}
 
 	tbuf = subtilis_token_get_text(c->t);
 	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || (strcmp(tbuf, ","))) {
@@ -1228,13 +1490,13 @@ static void prv_parse_stran(subtilis_arm_ass_context_t *c,
 	tbuf = subtilis_token_get_text(c->t);
 	if (c->t->type == SUBTILIS_TOKEN_OPERATOR) {
 		if (!strcmp(tbuf, "]")) {
-			prv_parse_stran_post(c, itype, ccode, dest, base, byte,
-					     err);
+			prv_parse_stran_post(c, itype, ccode, dest, base,
+					     modifiers, err);
 			return;
 		}
 		if (!strcmp(tbuf, ",")) {
-			prv_parse_stran_pre(c, itype, ccode, dest, base, byte,
-					    err);
+			prv_parse_stran_pre(c, itype, ccode, dest, base,
+					    modifiers, err);
 			return;
 		}
 	}
@@ -1436,9 +1698,10 @@ cleanup:
 static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
 				  const char *name,
 				  subtilis_arm_instr_type_t itype,
-				  subtilis_arm_ccode_type_t ccode, bool status,
+				  subtilis_arm_ccode_type_t ccode,
+				  const subtilis_arm_ass_modifiers_t *modifiers,
 				  subtilis_arm_mtran_type_t mtran_type,
-				  bool byte, bool teqp, subtilis_error_t *err)
+				  subtilis_error_t *err)
 {
 	switch (itype) {
 	case SUBTILIS_ARM_INSTR_B:
@@ -1446,7 +1709,7 @@ static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
 		break;
 	case SUBTILIS_ARM_INSTR_MOV:
 	case SUBTILIS_ARM_INSTR_MVN:
-		prv_parse_arm_2_arg(c, itype, ccode, status, err);
+		prv_parse_arm_2_arg(c, itype, ccode, modifiers->status, err);
 		break;
 	case SUBTILIS_ARM_INSTR_AND:
 	case SUBTILIS_ARM_INSTR_EOR:
@@ -1458,24 +1721,30 @@ static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
 	case SUBTILIS_ARM_INSTR_RSC:
 	case SUBTILIS_ARM_INSTR_ORR:
 	case SUBTILIS_ARM_INSTR_BIC:
-		prv_parse_arm_data(c, itype, ccode, status, err);
+		prv_parse_arm_data(c, itype, ccode, modifiers->status, err);
 		break;
 	case SUBTILIS_ARM_INSTR_MUL:
 	case SUBTILIS_ARM_INSTR_MLA:
-		prv_parse_arm_mul(c, itype, ccode, status, err);
+		prv_parse_arm_mul(c, itype, ccode, modifiers->status, err);
 		break;
 	case SUBTILIS_ARM_INSTR_TST:
 	case SUBTILIS_ARM_INSTR_TEQ:
 	case SUBTILIS_ARM_INSTR_CMP:
 	case SUBTILIS_ARM_INSTR_CMN:
-		prv_parse_cmp(c, itype, ccode, true, teqp, err);
+		prv_parse_cmp(c, itype, ccode, true, modifiers->teqp, err);
 		break;
 	case SUBTILIS_ARM_INSTR_SWI:
 		prv_parse_swi(c, ccode, err);
 		break;
 	case SUBTILIS_ARM_INSTR_LDR:
 	case SUBTILIS_ARM_INSTR_STR:
-		prv_parse_stran(c, itype, ccode, byte, err);
+		if (modifiers->status || modifiers->dword || modifiers->hword) {
+			if (itype == SUBTILIS_ARM_INSTR_LDR)
+				itype = SUBTILIS_ARM_STRAN_MISC_LDR;
+			else
+				itype = SUBTILIS_ARM_STRAN_MISC_STR;
+		}
+		prv_parse_stran(c, itype, ccode, modifiers, err);
 		break;
 	case SUBTILIS_ARM_INSTR_LDM:
 	case SUBTILIS_ARM_INSTR_STM:
@@ -2892,15 +3161,15 @@ static void prv_parse_identifier(subtilis_arm_ass_context_t *c,
 	size_t token_end;
 	bool status_valid;
 	bool byte_valid;
+	bool hword_valid;
+	bool dword_valid;
 	size_t ptr;
 	size_t search_len;
 	subtilis_arm_instr_type_t itype;
 	subtilis_arm_iclass_t iclass;
+	subtilis_arm_ass_modifiers_t modifiers = {false};
 	subtilis_arm_mtran_type_t mtran_type = SUBTILIS_ARM_MTRAN_IA;
 	subtilis_arm_ccode_type_t ccode = SUBTILIS_ARM_CCODE_AL;
-	bool status = false;
-	bool byte = false;
-	bool teqp = false;
 	size_t max_length = 0;
 	size_t max_index = SIZE_MAX;
 
@@ -2974,14 +3243,17 @@ static void prv_parse_identifier(subtilis_arm_ass_context_t *c,
 		       itype != SUBTILIS_ARM_INSTR_B;
 	byte_valid =
 	    itype == SUBTILIS_ARM_INSTR_LDR || itype == SUBTILIS_ARM_INSTR_STR;
+	hword_valid = byte_valid;
+	dword_valid = hword_valid;
+
 	ptr = max_length;
 	if (ptr == token_end) {
 		if ((itype == SUBTILIS_ARM_INSTR_LDM) ||
 		    (itype == SUBTILIS_ARM_INSTR_STM))
 			prv_parse_label(c, tbuf, err);
 		else
-			prv_parse_instruction(c, tbuf, itype, ccode, status,
-					      mtran_type, byte, false, err);
+			prv_parse_instruction(c, tbuf, itype, ccode, &modifiers,
+					      mtran_type, err);
 		return;
 	}
 
@@ -3012,10 +3284,28 @@ static void prv_parse_identifier(subtilis_arm_ass_context_t *c,
 	}
 
 	if (ptr + 1 == token_end) {
-		status = tbuf[ptr] == 'S' && status_valid;
-		byte = tbuf[ptr] == 'B' && byte_valid;
-		teqp = tbuf[ptr] == 'P' && itype == SUBTILIS_ARM_INSTR_TEQ;
-		if (!status && !byte && !teqp) {
+		modifiers.status = tbuf[ptr] == 'S' && status_valid;
+		modifiers.byte = tbuf[ptr] == 'B' && byte_valid;
+		modifiers.hword = tbuf[ptr] == 'H' && hword_valid;
+		modifiers.dword = tbuf[ptr] == 'D' && dword_valid;
+		modifiers.teqp =
+		    tbuf[ptr] == 'P' && itype == SUBTILIS_ARM_INSTR_TEQ;
+		if (!modifiers.status && !modifiers.byte && !modifiers.teqp &&
+		    !modifiers.hword && !modifiers.dword) {
+			prv_parse_label(c, tbuf, err);
+			return;
+		}
+	} else if ((ptr + 2 == token_end) &&
+		   (status_valid || itype == SUBTILIS_ARM_INSTR_LDR) &&
+		   (byte_valid || hword_valid)) {
+		if (tbuf[ptr] != 'S') {
+			prv_parse_label(c, tbuf, err);
+			return;
+		}
+		modifiers.status = true;
+		modifiers.byte = tbuf[ptr + 1] == 'B';
+		modifiers.hword = tbuf[ptr + 1] == 'H';
+		if (!modifiers.byte && !modifiers.hword) {
 			prv_parse_label(c, tbuf, err);
 			return;
 		}
@@ -3024,8 +3314,8 @@ static void prv_parse_identifier(subtilis_arm_ass_context_t *c,
 		return;
 	}
 
-	prv_parse_instruction(c, tbuf, itype, ccode, status, mtran_type, byte,
-			      teqp, err);
+	prv_parse_instruction(c, tbuf, itype, ccode, &modifiers, mtran_type,
+			      err);
 }
 
 typedef bool (*subtilis_arm_ass_valid_int_fn_t)(int32_t);
