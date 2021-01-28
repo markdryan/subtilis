@@ -929,6 +929,18 @@ static const subtilis_bad_test_case_t riscos_arm_bad_test_cases[] = {
 	 "def PROCBad [ STMIA R0!, R0 R0]\n",
 	 SUBTILIS_ERROR_EXPECTED,
 	},
+	{"assembler_bad_ldrs",
+	 "def PROCBadLDRS [ LDRS R0, [R1] ]\n",
+	 SUBTILIS_ERROR_ASS_LABEL_MISSING_COLON,
+	},
+	{"assembler_bad_ldrsd",
+	 "def PROCBadLDRS [ LDRSD R0, [R1] ]\n",
+	 SUBTILIS_ERROR_ASS_LABEL_MISSING_COLON,
+	},
+	{"assembler_bad_reg_ldrd",
+	 "def PROCBadLDRS [ LDRD R1, [R1] ]\n",
+	 SUBTILIS_ERROR_ASS_BAD_REG,
+	},
 };
 
 /* clang-format on */

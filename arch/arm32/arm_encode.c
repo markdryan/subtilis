@@ -2053,6 +2053,72 @@ static void prv_encode_vfp_cvt_instr(void *user_data, subtilis_arm_op_t *op,
 	prv_add_word(ud, word, err);
 }
 
+static void prv_encode_stran_misc_instr(void *user_data, subtilis_arm_op_t *op,
+					subtilis_arm_instr_type_t type,
+					subtilis_arm_stran_misc_instr_t *instr,
+					subtilis_error_t *err)
+{
+	subtilis_arm_encode_ud_t *ud = user_data;
+	uint32_t word = 0x90;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if ((instr->base > 15) || (instr->dest > 15)) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	word |= instr->ccode << 28;
+	if (instr->pre_indexed)
+		word |= 1 << 24;
+
+	if (instr->write_back)
+		word |= 1 << 21;
+	if (!instr->subtract)
+		word |= 1 << 23;
+	word |= instr->base << 16;
+	word |= instr->dest << 12;
+
+	switch (instr->type) {
+	case SUBTILIS_ARM_STRAN_MISC_SB:
+		word |= 1 << 6;
+		if (type == SUBTILIS_ARM_STRAN_MISC_LDR)
+			word |= 1 << 20;
+		break;
+	case SUBTILIS_ARM_STRAN_MISC_SH:
+		word |= 1 << 6;
+		word |= 1 << 5;
+		if (type == SUBTILIS_ARM_STRAN_MISC_LDR)
+			word |= 1 << 20;
+		break;
+	case SUBTILIS_ARM_STRAN_MISC_H:
+		if (type == SUBTILIS_ARM_STRAN_MISC_LDR)
+			word |= 1 << 20;
+		word |= 1 << 5;
+		break;
+	case SUBTILIS_ARM_STRAN_MISC_D:
+		word |= 1 << 6;
+		if (type == SUBTILIS_ARM_STRAN_MISC_STR)
+			word |= 1 << 5;
+		break;
+	}
+
+	if (instr->reg_offset) {
+		word |= instr->offset.reg;
+	} else {
+		word |= 1 << 22;
+		word |= instr->offset.imm & 0xf;
+		word |= (instr->offset.imm & 0xf0) << 8;
+	}
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	prv_add_word(ud, word, err);
+}
+
 static int32_t prv_compute_dist(size_t first, size_t second, size_t limit,
 				subtilis_error_t *err)
 {
@@ -2247,6 +2313,7 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 	walker.vfp_sqrt_fn = prv_encode_vfp_sqrt_instr;
 	walker.vfp_sysreg_fn = prv_encode_vfp_sysreg_instr;
 	walker.vfp_cvt_fn = prv_encode_vfp_cvt_instr;
+	walker.stran_misc_fn = prv_encode_stran_misc_instr;
 
 	subtilis_arm_walk(arm_s, &walker, err);
 	if (err->type != SUBTILIS_ERROR_OK)

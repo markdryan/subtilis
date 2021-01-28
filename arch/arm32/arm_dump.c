@@ -171,6 +171,8 @@ static const char *const instr_desc[] = {
 	"FMRRS",  // SUBTILIS_VFP_INSTR_FMRRS
 	"FCVTDS", // SUBTILIS_VFP_INSTR_FCVTDS
 	"FCVTSD", // SUBTILIS_VFP_INSTR_FCVTSD
+	"LDR",    // SUBTILIS_ARM_STRAN_MISC_LDR
+	"STR",    // SUBTILIS_ARM_STRAN_MISC_STR
 };
 
 static const char *const shift_desc[] = {
@@ -934,6 +936,51 @@ static void prv_dump_vfp_cvt_instr(void *user_data, subtilis_arm_op_t *op,
 		printf(" S%zu, D%zu\n", instr->dest, instr->op1);
 }
 
+static void prv_dump_stran_misc_instr(void *user_data, subtilis_arm_op_t *op,
+				      subtilis_arm_instr_type_t type,
+				      subtilis_arm_stran_misc_instr_t *instr,
+				      subtilis_error_t *err)
+{
+	const char *itype = "";
+	const char *sub = instr->subtract ? "-" : "";
+
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	switch (instr->type) {
+	case SUBTILIS_ARM_STRAN_MISC_SB:
+		itype = "SB";
+		break;
+	case SUBTILIS_ARM_STRAN_MISC_SH:
+		itype = "SH";
+		break;
+	case SUBTILIS_ARM_STRAN_MISC_H:
+		itype = "H";
+		break;
+	case SUBTILIS_ARM_STRAN_MISC_D:
+		itype = "D";
+		break;
+	}
+	printf("%s R%zu", itype, instr->dest);
+	if (instr->pre_indexed) {
+		printf(", [R%zu, %s", instr->base, sub);
+		if (instr->reg_offset)
+			printf("R%zu", instr->offset.reg);
+		else
+			printf("%d", instr->offset.imm);
+		printf("]");
+		if (instr->write_back)
+			printf("!");
+	} else {
+		printf(", [R%zu], %s", instr->base, sub);
+		if (instr->reg_offset)
+			printf("R%zu", instr->offset.reg);
+		else
+			printf("%d", instr->offset.imm);
+	}
+	printf("\n");
+}
+
 void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 			       subtilis_arm_section_t *s)
 {
@@ -976,6 +1023,7 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 	walker.vfp_sqrt_fn = prv_dump_vfp_sqrt_instr;
 	walker.vfp_sysreg_fn = prv_dump_vfp_sysreg_instr;
 	walker.vfp_cvt_fn = prv_dump_vfp_cvt_instr;
+	walker.stran_misc_fn = prv_dump_stran_misc_instr;
 
 	subtilis_arm_walk(s, &walker, &err);
 
@@ -1228,6 +1276,11 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 	case SUBTILIS_VFP_INSTR_FCVTSD:
 		prv_dump_vfp_cvt_instr(NULL, NULL, instr->type,
 				       &instr->operands.vfp_cvt, NULL);
+		break;
+	case SUBTILIS_ARM_STRAN_MISC_LDR:
+	case SUBTILIS_ARM_STRAN_MISC_STR:
+		prv_dump_stran_misc_instr(NULL, NULL, instr->type,
+					  &instr->operands.stran_misc, NULL);
 		break;
 	default:
 		printf("\tUNKNOWN INSTRUCTION\n");

@@ -218,6 +218,59 @@ static void prv_decode_msr(subtilis_arm_instr_t *instr, uint32_t encoded,
 	}
 }
 
+static void prv_decode_stran_misc(subtilis_arm_instr_t *instr, uint32_t encoded,
+				  subtilis_error_t *err)
+{
+	subtilis_arm_stran_misc_instr_t *stran_misc =
+	    &instr->operands.stran_misc;
+	uint32_t type = ((encoded & (1 << 20)) >> 18) | ((encoded >> 5) & 3);
+
+	switch (type) {
+	case 1:
+		instr->type = SUBTILIS_ARM_STRAN_MISC_STR;
+		stran_misc->type = SUBTILIS_ARM_STRAN_MISC_H;
+		break;
+	case 2:
+		instr->type = SUBTILIS_ARM_STRAN_MISC_LDR;
+		stran_misc->type = SUBTILIS_ARM_STRAN_MISC_D;
+		break;
+	case 3:
+		instr->type = SUBTILIS_ARM_STRAN_MISC_STR;
+		stran_misc->type = SUBTILIS_ARM_STRAN_MISC_D;
+		break;
+	case 5:
+		instr->type = SUBTILIS_ARM_STRAN_MISC_LDR;
+		stran_misc->type = SUBTILIS_ARM_STRAN_MISC_H;
+		break;
+	case 6:
+		instr->type = SUBTILIS_ARM_STRAN_MISC_LDR;
+		stran_misc->type = SUBTILIS_ARM_STRAN_MISC_SB;
+		break;
+	case 7:
+		instr->type = SUBTILIS_ARM_STRAN_MISC_LDR;
+		stran_misc->type = SUBTILIS_ARM_STRAN_MISC_SH;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (encoded & 22) {
+		stran_misc->offset.imm =
+		    (encoded & 0xf) | ((encoded >> 8) & 0xf);
+		stran_misc->reg_offset = false;
+	} else {
+		stran_misc->offset.reg = encoded & 0xf;
+		stran_misc->reg_offset = true;
+	}
+
+	stran_misc->ccode = encoded >> 28;
+	stran_misc->write_back = (encoded & (1 << 21)) != 0;
+	stran_misc->subtract = (encoded & (1 << 23)) == 0;
+	stran_misc->dest = (encoded >> 12) & 0x0f;
+	stran_misc->base = (encoded >> 16) & 0x0f;
+}
+
 static void prv_decode_fpa_stran(subtilis_arm_instr_t *instr, uint32_t encoded,
 				 subtilis_error_t *err)
 {
@@ -958,6 +1011,13 @@ void subtilis_arm_disass(subtilis_arm_instr_t *instr, uint32_t encoded,
 
 	if ((encoded & 0x0db0f000) == 0x01200000) {
 		prv_decode_msr(instr, encoded, err);
+		return;
+	}
+
+	if ((((encoded & 0x0e400090) == 0x400090) ||
+	     (encoded & 0x0e400f90) == 0x90) &&
+	    ((encoded & 0x60) != 0)) {
+		prv_decode_stran_misc(instr, encoded, err);
 		return;
 	}
 

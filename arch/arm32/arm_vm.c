@@ -685,6 +685,53 @@ static size_t prv_compute_stran_addr(subtilis_arm_vm_t *arm_vm,
 	return addr;
 }
 
+static size_t prv_compute_stran_misc_addr(subtilis_arm_vm_t *arm_vm,
+					  subtilis_arm_stran_misc_instr_t *op,
+					  subtilis_error_t *err)
+{
+	int32_t offset;
+	size_t addr;
+	size_t size;
+
+	switch (op->type) {
+	case SUBTILIS_ARM_STRAN_MISC_SB:
+		size = 1;
+		break;
+	case SUBTILIS_ARM_STRAN_MISC_SH:
+	case SUBTILIS_ARM_STRAN_MISC_H:
+		size = 2;
+		break;
+	case SUBTILIS_ARM_STRAN_MISC_D:
+		size = 8;
+		break;
+	}
+
+	if (!op->reg_offset)
+		offset = (int32_t)op->offset.imm;
+	else
+		offset = arm_vm->regs[op->offset.reg];
+
+	if (op->subtract)
+		offset = -offset;
+
+	if (op->pre_indexed) {
+		addr = arm_vm->regs[op->base] + offset;
+		if (op->write_back)
+			arm_vm->regs[op->base] = (int32_t)addr;
+	} else {
+		addr = arm_vm->regs[op->base];
+		arm_vm->regs[op->base] += offset;
+	}
+
+	addr -= arm_vm->start_address;
+	if (addr + size > arm_vm->mem_size) {
+		subtilis_error_set_assertion_failed(err);
+		return 0;
+	}
+
+	return addr;
+}
+
 static void prv_set_fpa_f32(subtilis_arm_vm_t *arm_vm, size_t reg, float val)
 {
 	arm_vm->fregs[reg].val.real32 = val;
@@ -767,8 +814,18 @@ static void prv_process_mov(subtilis_arm_vm_t *arm_vm,
 		}
 	}
 
-	arm_vm->regs[op->dest] = op2;
-	arm_vm->regs[15] += 4;
+	/*
+	 * TODO: Check the behaviour is correct when we move values other than
+	 * PC into PC.
+	 */
+
+	if ((op->dest == 15) && ((op->op2.type == SUBTILIS_ARM_OP2_REG) &&
+				 (op->op2.op.reg == 15))) {
+		arm_vm->regs[15] += 8;
+	} else {
+		arm_vm->regs[op->dest] = op2;
+		arm_vm->regs[15] += 4;
+	}
 }
 
 static void prv_process_mvn(subtilis_arm_vm_t *arm_vm,
@@ -865,6 +922,83 @@ static void prv_process_str(subtilis_arm_vm_t *arm_vm,
 		    arm_vm->regs[op->dest] & 255;
 	else
 		*((int32_t *)&arm_vm->memory[addr]) = arm_vm->regs[op->dest];
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_stran_misc_ldr(subtilis_arm_vm_t *arm_vm,
+				       subtilis_arm_stran_misc_instr_t *op,
+				       subtilis_error_t *err)
+{
+	size_t addr;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	addr = prv_compute_stran_misc_addr(arm_vm, op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	switch (op->type) {
+	case SUBTILIS_ARM_STRAN_MISC_SB:
+		arm_vm->regs[op->dest] = *((int8_t *)&arm_vm->memory[addr]);
+		break;
+	case SUBTILIS_ARM_STRAN_MISC_SH:
+		arm_vm->regs[op->dest] = *((int16_t *)&arm_vm->memory[addr]);
+		break;
+	case SUBTILIS_ARM_STRAN_MISC_H:
+		arm_vm->regs[op->dest] = *((uint16_t *)&arm_vm->memory[addr]);
+		break;
+	case SUBTILIS_ARM_STRAN_MISC_D:
+		if (op->dest & 1) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		arm_vm->regs[op->dest] = *((uint32_t *)&arm_vm->memory[addr]);
+		arm_vm->regs[op->dest + 1] =
+		    *((uint32_t *)&arm_vm->memory[addr + 4]);
+		break;
+	}
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_stran_misc_str(subtilis_arm_vm_t *arm_vm,
+				       subtilis_arm_stran_misc_instr_t *op,
+				       subtilis_error_t *err)
+{
+	size_t addr;
+
+	if (!prv_match_ccode(arm_vm, op->ccode)) {
+		arm_vm->regs[15] += 4;
+		return;
+	}
+
+	addr = prv_compute_stran_misc_addr(arm_vm, op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	switch (op->type) {
+	case SUBTILIS_ARM_STRAN_MISC_SB:
+	case SUBTILIS_ARM_STRAN_MISC_SH:
+		subtilis_error_set_assertion_failed(err);
+		break;
+	case SUBTILIS_ARM_STRAN_MISC_H:
+		*((uint16_t *)&arm_vm->memory[addr]) =
+		    (uint16_t)arm_vm->regs[op->dest];
+		break;
+	case SUBTILIS_ARM_STRAN_MISC_D:
+		if (op->dest & 1) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		*((uint32_t *)&arm_vm->memory[addr]) = arm_vm->regs[op->dest];
+		*((uint32_t *)&arm_vm->memory[addr + 4]) =
+		    arm_vm->regs[op->dest + 1];
+		break;
+	}
+
 	arm_vm->regs[15] += 4;
 }
 
@@ -2957,6 +3091,14 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		case SUBTILIS_VFP_INSTR_FCVTSD:
 			prv_process_vfp_fcvtsd(arm_vm, &instr.operands.vfp_cvt,
 					       err);
+			break;
+		case SUBTILIS_ARM_STRAN_MISC_LDR:
+			prv_process_stran_misc_ldr(
+			    arm_vm, &instr.operands.stran_misc, err);
+			break;
+		case SUBTILIS_ARM_STRAN_MISC_STR:
+			prv_process_stran_misc_str(
+			    arm_vm, &instr.operands.stran_misc, err);
 			break;
 		default:
 			printf("instr type %d\n", instr.type);

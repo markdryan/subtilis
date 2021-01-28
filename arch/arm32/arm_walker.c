@@ -247,6 +247,15 @@ static void prv_walk_instr(subtlis_arm_walker_t *walker, subtilis_arm_op_t *op,
 		walker->vfp_cvt_fn(walker->user_data, op, instr->type,
 				   &instr->operands.vfp_cvt, err);
 		break;
+	case SUBTILIS_ARM_STRAN_MISC_LDR:
+	case SUBTILIS_ARM_STRAN_MISC_STR:
+		if (!walker->stran_misc_fn) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		walker->stran_misc_fn(walker->user_data, op, instr->type,
+				      &instr->operands.stran_misc, err);
+		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
 		break;
