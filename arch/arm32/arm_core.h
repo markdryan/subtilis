@@ -269,6 +269,43 @@ typedef enum {
 	SUBTILIS_ARM_STRAN_MISC_LDR = SUBTILIS_ARM_INSTR_VFP_MAX,
 	SUBTILIS_ARM_STRAN_MISC_STR,
 
+	SUBTILIS_ARM_SIMD_QADD16,
+	SUBTILIS_ARM_SIMD_QADD8,
+	SUBTILIS_ARM_SIMD_QADDSUBX,
+	SUBTILIS_ARM_SIMD_QSUB16,
+	SUBTILIS_ARM_SIMD_QSUB8,
+	SUBTILIS_ARM_SIMD_QSUBADDX,
+	SUBTILIS_ARM_SIMD_SADD16,
+	SUBTILIS_ARM_SIMD_SADD8,
+	SUBTILIS_ARM_SIMD_SADDSUBX,
+	SUBTILIS_ARM_SIMD_SSUB16,
+	SUBTILIS_ARM_SIMD_SSUB8,
+	SUBTILIS_ARM_SIMD_SSUBADDX,
+	SUBTILIS_ARM_SIMD_SHADD16,
+	SUBTILIS_ARM_SIMD_SHADD8,
+	SUBTILIS_ARM_SIMD_SHADDSUBX,
+	SUBTILIS_ARM_SIMD_SHSUB16,
+	SUBTILIS_ARM_SIMD_SHSUB8,
+	SUBTILIS_ARM_SIMD_SHSUBADDX,
+	SUBTILIS_ARM_SIMD_UADD16,
+	SUBTILIS_ARM_SIMD_UADD8,
+	SUBTILIS_ARM_SIMD_UADDSUBX,
+	SUBTILIS_ARM_SIMD_USUB16,
+	SUBTILIS_ARM_SIMD_USUB8,
+	SUBTILIS_ARM_SIMD_USUBADDX,
+	SUBTILIS_ARM_SIMD_UHADD16,
+	SUBTILIS_ARM_SIMD_UHADD8,
+	SUBTILIS_ARM_SIMD_UHADDSUBX,
+	SUBTILIS_ARM_SIMD_UHSUB16,
+	SUBTILIS_ARM_SIMD_UHSUB8,
+	SUBTILIS_ARM_SIMD_UHSUBADDX,
+	SUBTILIS_ARM_SIMD_UQADD16,
+	SUBTILIS_ARM_SIMD_UQADD8,
+	SUBTILIS_ARM_SIMD_UQADDSUBX,
+	SUBTILIS_ARM_SIMD_UQSUB16,
+	SUBTILIS_ARM_SIMD_UQSUB8,
+	SUBTILIS_ARM_SIMD_UQSUBADDX,
+
 	SUBTILIS_ARM_INSTR_MAX,
 } subtilis_arm_instr_type_t;
 
@@ -433,6 +470,15 @@ struct subtilis_arm_flags_instr_t_ {
 };
 
 typedef struct subtilis_arm_flags_instr_t_ subtilis_arm_flags_instr_t;
+
+struct subtilis_arm_reg_only_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_reg_t op2;
+};
+
+typedef struct subtilis_arm_reg_only_instr_t_ subtilis_arm_reg_only_instr_t;
 
 typedef enum {
 	SUBTILIS_FPA_ROUNDING_NEAREST,
@@ -630,6 +676,7 @@ struct subtilis_arm_instr_t_ {
 		subtilis_vfp_sysreg_instr_t vfp_sysreg;
 		subtilis_vfp_cvt_instr_t vfp_cvt;
 		subtilis_arm_stran_misc_instr_t stran_misc;
+		subtilis_arm_reg_only_instr_t reg_only;
 	} operands;
 };
 
@@ -1148,6 +1195,12 @@ void subtilis_arm_add_flags_imm(subtilis_arm_section_t *s,
 				subtilis_arm_ccode_type_t ccode,
 				subtilis_arm_flags_t flag_reg, uint32_t fields,
 				int32_t imm, subtilis_error_t *err);
+
+void subtilis_arm_add_reg_only(subtilis_arm_section_t *s,
+			       subtilis_arm_instr_type_t itype,
+			       subtilis_arm_ccode_type_t ccode,
+			       subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			       subtilis_arm_reg_t op2, subtilis_error_t *err);
 
 void subtilis_arm_add_byte(subtilis_arm_section_t *s, uint8_t byte,
 			   subtilis_error_t *err);

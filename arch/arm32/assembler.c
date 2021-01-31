@@ -222,6 +222,15 @@ static const subtilis_arm_ass_mnemomic_t p_mnem[] = {
 	{ "POW", SUBTILIS_FPA_INSTR_POW, NULL, },
 };
 
+static const subtilis_arm_ass_mnemomic_t q_mnem[] = {
+	{ "QADD16", SUBTILIS_ARM_SIMD_QADD16, NULL, },
+	{ "QADD8", SUBTILIS_ARM_SIMD_QADD8, NULL, },
+	{ "QADDSUBX", SUBTILIS_ARM_SIMD_QADDSUBX, NULL, },
+	{ "QSUB16", SUBTILIS_ARM_SIMD_QSUB16, NULL, },
+	{ "QSUB8", SUBTILIS_ARM_SIMD_QSUB8, NULL, },
+	{ "QSUBADDX", SUBTILIS_ARM_SIMD_QSUBADDX, NULL, },
+};
+
 static const subtilis_arm_ass_mnemomic_t r_mnem[] = {
 	{ "RDF", SUBTILIS_FPA_INSTR_RDF, NULL, },
 	{ "RFS", SUBTILIS_FPA_INSTR_RFS, NULL, },
@@ -234,9 +243,21 @@ static const subtilis_arm_ass_mnemomic_t r_mnem[] = {
 };
 
 static const subtilis_arm_ass_mnemomic_t s_mnem[] = {
+	{ "SADD16", SUBTILIS_ARM_SIMD_SADD16, NULL, },
+	{ "SADD8", SUBTILIS_ARM_SIMD_SADD8, NULL, },
+	{ "SADDSUBX", SUBTILIS_ARM_SIMD_SADDSUBX, NULL, },
 	{ "SBC", SUBTILIS_ARM_INSTR_SBC, NULL, },
+	{ "SHADD16", SUBTILIS_ARM_SIMD_SHADD16, NULL, },
+	{ "SHADD8", SUBTILIS_ARM_SIMD_SHADD8, NULL, },
+	{ "SHADDSUBX", SUBTILIS_ARM_SIMD_SHADDSUBX, NULL, },
+	{ "SHSUB16", SUBTILIS_ARM_SIMD_SHSUB16, NULL, },
+	{ "SHSUB8", SUBTILIS_ARM_SIMD_SHSUB8, NULL, },
+	{ "SHSUBADDX", SUBTILIS_ARM_SIMD_SHSUBADDX, NULL, },
 	{ "SIN", SUBTILIS_FPA_INSTR_SIN, NULL, },
 	{ "SQT", SUBTILIS_FPA_INSTR_SQT, NULL, },
+	{ "SSUB16", SUBTILIS_ARM_SIMD_SSUB16, NULL, },
+	{ "SSUB8", SUBTILIS_ARM_SIMD_SSUB8, NULL, },
+	{ "SSUBADDX", SUBTILIS_ARM_SIMD_SSUBADDX, NULL, },
 	{ "STF", SUBTILIS_FPA_INSTR_STF, NULL, },
 	{ "STM", SUBTILIS_ARM_INSTR_STM, NULL, },
 	{ "STR", SUBTILIS_ARM_INSTR_STR, NULL, },
@@ -252,7 +273,25 @@ static const subtilis_arm_ass_mnemomic_t t_mnem[] = {
 };
 
 static const subtilis_arm_ass_mnemomic_t u_mnem[] = {
+	{ "UADD16", SUBTILIS_ARM_SIMD_UADD16, NULL, },
+	{ "UADD8", SUBTILIS_ARM_SIMD_UADD8, NULL, },
+	{ "UADDSUBX", SUBTILIS_ARM_SIMD_UADDSUBX, NULL, },
+	{ "UHADD16", SUBTILIS_ARM_SIMD_UHADD16, NULL, },
+	{ "UHADD8", SUBTILIS_ARM_SIMD_UHADD8, NULL, },
+	{ "UHADDSUBX", SUBTILIS_ARM_SIMD_UHADDSUBX, NULL, },
+	{ "UHSUB16", SUBTILIS_ARM_SIMD_UHSUB16, NULL, },
+	{ "UHSUB8", SUBTILIS_ARM_SIMD_UHSUB8, NULL, },
+	{ "UHSUBADDX", SUBTILIS_ARM_SIMD_UHSUBADDX, NULL, },
+	{ "UQADD16", SUBTILIS_ARM_SIMD_UQADD16, NULL, },
+	{ "UQADD8", SUBTILIS_ARM_SIMD_UQADD8, NULL, },
+	{ "UQADDSUBX", SUBTILIS_ARM_SIMD_UQADDSUBX, NULL, },
+	{ "UQSUB16", SUBTILIS_ARM_SIMD_UQSUB16, NULL, },
+	{ "UQSUB8", SUBTILIS_ARM_SIMD_UQSUB8, NULL, },
+	{ "UQSUBADDX", SUBTILIS_ARM_SIMD_UQSUBADDX, NULL, },
 	{ "URD", SUBTILIS_FPA_INSTR_URD, NULL, },
+	{ "USUB16", SUBTILIS_ARM_SIMD_USUB16, NULL, },
+	{ "USUB8", SUBTILIS_ARM_SIMD_USUB8, NULL, },
+	{ "USUBADDX", SUBTILIS_ARM_SIMD_USUBADDX, NULL, },
 };
 
 static const subtilis_arm_ass_mnemomic_t w_mnem[] = {
@@ -288,11 +327,11 @@ static const subtilis_arm_ass_mnem_key_t keyword_map[] = {
 	{ n_mnem, sizeof(n_mnem) / sizeof(n_mnem[0]), 3},
 	{ o_mnem, sizeof(o_mnem) / sizeof(o_mnem[0]), 3},
 	{ p_mnem, sizeof(p_mnem) / sizeof(p_mnem[0]), 3},
-	{ NULL, 0, 0 }, /* Q */
+	{ q_mnem, sizeof(q_mnem) / sizeof(q_mnem[0]), 8},
 	{ r_mnem, sizeof(r_mnem) / sizeof(r_mnem[0]), 3},
-	{ s_mnem, sizeof(s_mnem) / sizeof(s_mnem[0]), 3},
+	{ s_mnem, sizeof(s_mnem) / sizeof(s_mnem[0]), 9},
 	{ t_mnem, sizeof(t_mnem) / sizeof(t_mnem[0]), 3},
-	{ u_mnem, sizeof(u_mnem) / sizeof(u_mnem[0]), 3},
+	{ u_mnem, sizeof(u_mnem) / sizeof(u_mnem[0]), 9},
 	{ NULL, 0, 0 }, /* V */
 	{ w_mnem, sizeof(w_mnem) / sizeof(w_mnem[0]), 3},
 	{ NULL, 0, 0 }, /* X */
@@ -1695,6 +1734,45 @@ cleanup:
 	subtilis_arm_exp_val_free(val);
 }
 
+static void prv_parse_reg_only(subtilis_arm_ass_context_t *c,
+			       subtilis_arm_instr_type_t itype,
+			       subtilis_arm_ccode_type_t ccode,
+			       subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+	subtilis_arm_reg_t op2;
+	const char *tbuf;
+
+	dest = prv_get_reg(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ",")) {
+		subtilis_error_set_expected(err, ",", tbuf, c->l->stream->name,
+					    c->l->line);
+		return;
+	}
+
+	op1 = prv_get_reg(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ",")) {
+		subtilis_error_set_expected(err, ",", tbuf, c->l->stream->name,
+					    c->l->line);
+		return;
+	}
+
+	op2 = prv_get_reg(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_reg_only(c->arm_s, itype, ccode, dest, op1, op2, err);
+}
+
 static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
 				  const char *name,
 				  subtilis_arm_instr_type_t itype,
@@ -1752,6 +1830,44 @@ static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
 		break;
 	case SUBTILIS_ARM_INSTR_ADR:
 		prv_parse_adr(c, ccode, err);
+		break;
+	case SUBTILIS_ARM_SIMD_QADD16:
+	case SUBTILIS_ARM_SIMD_QADD8:
+	case SUBTILIS_ARM_SIMD_QADDSUBX:
+	case SUBTILIS_ARM_SIMD_QSUB16:
+	case SUBTILIS_ARM_SIMD_QSUB8:
+	case SUBTILIS_ARM_SIMD_QSUBADDX:
+	case SUBTILIS_ARM_SIMD_SADD16:
+	case SUBTILIS_ARM_SIMD_SADD8:
+	case SUBTILIS_ARM_SIMD_SADDSUBX:
+	case SUBTILIS_ARM_SIMD_SSUB16:
+	case SUBTILIS_ARM_SIMD_SSUB8:
+	case SUBTILIS_ARM_SIMD_SSUBADDX:
+	case SUBTILIS_ARM_SIMD_SHADD16:
+	case SUBTILIS_ARM_SIMD_SHADD8:
+	case SUBTILIS_ARM_SIMD_SHADDSUBX:
+	case SUBTILIS_ARM_SIMD_SHSUB16:
+	case SUBTILIS_ARM_SIMD_SHSUB8:
+	case SUBTILIS_ARM_SIMD_SHSUBADDX:
+	case SUBTILIS_ARM_SIMD_UADD16:
+	case SUBTILIS_ARM_SIMD_UADD8:
+	case SUBTILIS_ARM_SIMD_UADDSUBX:
+	case SUBTILIS_ARM_SIMD_USUB16:
+	case SUBTILIS_ARM_SIMD_USUB8:
+	case SUBTILIS_ARM_SIMD_USUBADDX:
+	case SUBTILIS_ARM_SIMD_UHADD16:
+	case SUBTILIS_ARM_SIMD_UHADD8:
+	case SUBTILIS_ARM_SIMD_UHADDSUBX:
+	case SUBTILIS_ARM_SIMD_UHSUB16:
+	case SUBTILIS_ARM_SIMD_UHSUB8:
+	case SUBTILIS_ARM_SIMD_UHSUBADDX:
+	case SUBTILIS_ARM_SIMD_UQADD16:
+	case SUBTILIS_ARM_SIMD_UQADD8:
+	case SUBTILIS_ARM_SIMD_UQADDSUBX:
+	case SUBTILIS_ARM_SIMD_UQSUB16:
+	case SUBTILIS_ARM_SIMD_UQSUB8:
+	case SUBTILIS_ARM_SIMD_UQSUBADDX:
+		prv_parse_reg_only(c, itype, ccode, err);
 		break;
 	default:
 		subtilis_error_set_not_supported(err, name, c->l->stream->name,
