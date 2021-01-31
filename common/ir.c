@@ -805,7 +805,7 @@ void subtilis_ir_prog_asm_section_new(
 				    SUBTILIS_BUILTINS_MAX, file, line,
 				    eflag_offset, error_offset, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
-		s->asm_free_fn(asm_code);
+		asm_free(asm_code);
 		return;
 	}
 

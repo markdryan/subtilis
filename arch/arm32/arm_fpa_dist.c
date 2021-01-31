@@ -430,6 +430,7 @@ void subtilis_init_fpa_dist_walker(subtlis_arm_walker_t *walker,
 	walker->vfp_sysreg_fn = prv_dist_vfp_sysreg_instr;
 	walker->vfp_cvt_fn = prv_dist_vfp_cvt_instr;
 	walker->stran_misc_fn = NULL;
+	walker->simd_fn = NULL;
 }
 
 static void prv_used_fpa_data_dyadic_instr(void *user_data,
@@ -563,4 +564,5 @@ void subtilis_init_fpa_used_walker(subtlis_arm_walker_t *walker,
 	walker->vfp_sysreg_fn = prv_dist_vfp_sysreg_instr;
 	walker->vfp_cvt_fn = prv_dist_vfp_cvt_instr;
 	walker->stran_misc_fn = NULL;
+	walker->simd_fn = NULL;
 }

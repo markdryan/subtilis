@@ -2656,6 +2656,917 @@ static void prv_process_vfp_fcvtsd(subtilis_arm_vm_t *arm_vm,
 	arm_vm->regs[15] += 4;
 }
 
+static void prv_clamp_int16(int32_t *a, int32_t *b)
+{
+	if (*a > 32767)
+		*a = 32767;
+
+	if (*a < -32768)
+		*a = -32768;
+
+	if (*b > 32767)
+		*b = 32767;
+
+	if (*b < -32768)
+		*b = -32768;
+}
+
+static void prv_clamp_uint16(uint32_t *a, uint32_t *b)
+{
+	if (*a > 0xffff)
+		*a = 0xffff;
+
+	if (*b > 0xffff)
+		*b = 0xffff;
+}
+
+static void prv_clamp_int8(int32_t *a, int32_t *b, int32_t *c, int32_t *d)
+{
+	if (*a > 127)
+		*a = 127;
+
+	if (*a < -128)
+		*a = -128;
+
+	if (*b > 127)
+		*b = 127;
+
+	if (*b < -128)
+		*b = -128;
+
+	if (*c > 127)
+		*c = 127;
+
+	if (*c < -128)
+		*c = -128;
+
+	if (*d > 127)
+		*d = 127;
+
+	if (*d < -128)
+		*d = -128;
+}
+
+static void prv_clamp_uint8(uint32_t *a, uint32_t *b, uint32_t *c, uint32_t *d)
+{
+	if (*a > 0xff)
+		*a = 0xff;
+
+	if (*b > 0xff)
+		*b = 0xff;
+
+	if (*c > 0xff)
+		*c = 0xff;
+
+	if (*d > 0xff)
+		*d = 0xff;
+}
+
+static void prv_extract_int16(int32_t in, int32_t *a, int32_t *b)
+{
+	*a = in & 0xffff;
+	*b = (in >> 16) & 0xffff;
+
+	if (*a & 0x8000)
+		*a |= 0xffff0000;
+
+	if (*b & 0x8000)
+		*b |= 0xffff0000;
+}
+
+static void prv_extract_int8(int32_t in, int32_t *a, int32_t *b, int32_t *c,
+			     int32_t *d)
+{
+	*a = in & 0xff;
+	*b = (in >> 8) & 0xff;
+	*c = (in >> 16) & 0xff;
+	*d = (in >> 24) & 0xff;
+
+	if (*a & 0x80)
+		*a |= 0xffffff00;
+
+	if (*b & 0x80)
+		*b |= 0xffffff00;
+
+	if (*c & 0x80)
+		*c |= 0xffffff00;
+
+	if (*d & 0x80)
+		*d |= 0xffffff00;
+}
+
+static void prv_add_int16(subtilis_arm_vm_t *arm_vm,
+			  subtilis_arm_reg_only_instr_t *op, int32_t *r1,
+			  int32_t *r2)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+
+	prv_extract_int16(arm_vm->regs[op->op1], &a, &b);
+	prv_extract_int16(arm_vm->regs[op->op2], &c, &d);
+
+	*r1 = a + c;
+	*r2 = b + d;
+}
+
+static void prv_sub_int16(subtilis_arm_vm_t *arm_vm,
+			  subtilis_arm_reg_only_instr_t *op, int32_t *r1,
+			  int32_t *r2)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+
+	prv_extract_int16(arm_vm->regs[op->op1], &a, &b);
+	prv_extract_int16(arm_vm->regs[op->op2], &c, &d);
+
+	*r1 = a - c;
+	*r2 = b - d;
+}
+
+static void prv_add_uint16(subtilis_arm_vm_t *arm_vm,
+			   subtilis_arm_reg_only_instr_t *op, uint32_t *r1,
+			   uint32_t *r2)
+{
+	uint32_t a = ((uint32_t)arm_vm->regs[op->op1]) & 0xffff;
+	uint32_t b = ((uint32_t)arm_vm->regs[op->op1]) >> 16;
+	uint32_t c = ((uint32_t)arm_vm->regs[op->op2]) & 0xffff;
+	uint32_t d = ((uint32_t)arm_vm->regs[op->op2]) >> 16;
+
+	*r1 = a + c;
+	*r2 = b + d;
+}
+
+static void prv_sub_uint16(subtilis_arm_vm_t *arm_vm,
+			   subtilis_arm_reg_only_instr_t *op, uint32_t *r1,
+			   uint32_t *r2)
+{
+	uint32_t a = ((uint32_t)arm_vm->regs[op->op1]) & 0xffff;
+	uint32_t b = ((uint32_t)arm_vm->regs[op->op1]) >> 16;
+	uint32_t c = ((uint32_t)arm_vm->regs[op->op2]) & 0xffff;
+	uint32_t d = ((uint32_t)arm_vm->regs[op->op2]) >> 16;
+
+	*r1 = a - c;
+	*r2 = b - d;
+}
+
+static void prv_add_int8(subtilis_arm_vm_t *arm_vm,
+			 subtilis_arm_reg_only_instr_t *op, int32_t *r1,
+			 int32_t *r2, int32_t *r3, int32_t *r4)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+	int32_t e;
+	int32_t f;
+	int32_t g;
+	int32_t h;
+
+	prv_extract_int8(arm_vm->regs[op->op1], &a, &b, &c, &d);
+	prv_extract_int8(arm_vm->regs[op->op2], &e, &f, &g, &h);
+
+	*r1 = a + e;
+	*r2 = b + f;
+	*r3 = c + g;
+	*r4 = d + h;
+}
+
+static void prv_sub_int8(subtilis_arm_vm_t *arm_vm,
+			 subtilis_arm_reg_only_instr_t *op, int32_t *r1,
+			 int32_t *r2, int32_t *r3, int32_t *r4)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+	int32_t e;
+	int32_t f;
+	int32_t g;
+	int32_t h;
+
+	prv_extract_int8(arm_vm->regs[op->op1], &a, &b, &c, &d);
+	prv_extract_int8(arm_vm->regs[op->op2], &e, &f, &g, &h);
+
+	*r1 = a - e;
+	*r2 = b - f;
+	*r3 = c - g;
+	*r4 = d - h;
+}
+
+static void prv_add_uint8(subtilis_arm_vm_t *arm_vm,
+			  subtilis_arm_reg_only_instr_t *op, uint32_t *r1,
+			  uint32_t *r2, uint32_t *r3, uint32_t *r4)
+{
+	uint32_t a = ((uint32_t)arm_vm->regs[op->op1]) & 0xff;
+	uint32_t b = (((uint32_t)arm_vm->regs[op->op1]) >> 8) & 0xff;
+	uint32_t c = (((uint32_t)arm_vm->regs[op->op1]) >> 16) & 0xff;
+	uint32_t d = (((uint32_t)arm_vm->regs[op->op1]) >> 24);
+	uint32_t e = ((uint32_t)arm_vm->regs[op->op2]) & 0xff;
+	uint32_t f = (((uint32_t)arm_vm->regs[op->op2]) >> 8) & 0xff;
+	uint32_t g = (((uint32_t)arm_vm->regs[op->op2]) >> 16) & 0xff;
+	uint32_t h = (((uint32_t)arm_vm->regs[op->op2]) >> 24);
+
+	*r1 = a + e;
+	*r2 = b + f;
+	*r3 = c + g;
+	*r4 = d + h;
+}
+
+static void prv_sub_uint8(subtilis_arm_vm_t *arm_vm,
+			  subtilis_arm_reg_only_instr_t *op, uint32_t *r1,
+			  uint32_t *r2, uint32_t *r3, uint32_t *r4)
+{
+	uint32_t a = ((uint32_t)arm_vm->regs[op->op1]) & 0xff;
+	uint32_t b = ((uint32_t)(arm_vm->regs[op->op1]) >> 8) & 0xff;
+	uint32_t c = ((uint32_t)(arm_vm->regs[op->op1]) >> 16) & 0xff;
+	uint32_t d = ((uint32_t)(arm_vm->regs[op->op1]) >> 24);
+	uint32_t e = ((uint32_t)arm_vm->regs[op->op2]) & 0xff;
+	uint32_t f = ((uint32_t)(arm_vm->regs[op->op2]) >> 8) & 0xff;
+	uint32_t g = ((uint32_t)(arm_vm->regs[op->op2]) >> 16) & 0xff;
+	uint32_t h = ((uint32_t)(arm_vm->regs[op->op2]) >> 24);
+
+	*r1 = a - e;
+	*r2 = b - f;
+	*r3 = c - g;
+	*r4 = d - h;
+}
+
+static void prv_process_qadd16(subtilis_arm_vm_t *arm_vm,
+			       subtilis_arm_reg_only_instr_t *op,
+			       subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+
+	prv_add_int16(arm_vm, op, &a, &b);
+	prv_clamp_int16(&a, &b);
+
+	arm_vm->regs[op->dest] = (b << 16) | (a & 0xffff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_qadd8(subtilis_arm_vm_t *arm_vm,
+			      subtilis_arm_reg_only_instr_t *op,
+			      subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+
+	prv_add_int8(arm_vm, op, &a, &b, &c, &d);
+	prv_clamp_int8(&a, &b, &c, &d);
+
+	arm_vm->regs[op->dest] = (d << 24) | (c << 16) | (b << 8) | a;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_qaddsubx(subtilis_arm_vm_t *arm_vm,
+				 subtilis_arm_reg_only_instr_t *op,
+				 subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+
+	prv_extract_int16(arm_vm->regs[op->op1], &a, &b);
+	prv_extract_int16(arm_vm->regs[op->op2], &c, &d);
+
+	a = a - c;
+	b = b + d;
+
+	prv_clamp_int16(&a, &b);
+
+	arm_vm->regs[op->dest] = (b << 16) | (a & 0xffff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_qsub16(subtilis_arm_vm_t *arm_vm,
+			       subtilis_arm_reg_only_instr_t *op,
+			       subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+
+	prv_sub_int16(arm_vm, op, &a, &b);
+	prv_clamp_int16(&a, &b);
+
+	arm_vm->regs[op->dest] = (b << 16) | (a & 0xffff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_qsub8(subtilis_arm_vm_t *arm_vm,
+			      subtilis_arm_reg_only_instr_t *op,
+			      subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+
+	prv_sub_int8(arm_vm, op, &a, &b, &c, &d);
+	prv_clamp_int8(&a, &b, &c, &d);
+
+	arm_vm->regs[op->dest] = ((d & 0xff) << 24) | ((c & 0xff) << 16) |
+				 ((b & 0xff) << 8) | (a & 0xff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_qsubaddx(subtilis_arm_vm_t *arm_vm,
+				 subtilis_arm_reg_only_instr_t *op,
+				 subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+
+	prv_extract_int16(arm_vm->regs[op->op1], &a, &b);
+	prv_extract_int16(arm_vm->regs[op->op2], &c, &d);
+
+	a = a + c;
+	b = b - d;
+
+	prv_clamp_int16(&a, &b);
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_sadd16(subtilis_arm_vm_t *arm_vm,
+			       subtilis_arm_reg_only_instr_t *op,
+			       subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+	uint32_t flags = 0;
+
+	prv_add_int16(arm_vm, op, &a, &b);
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+	flags = (a >= 0 ? 3 : 0) | (b >= 0 ? 0xc : 0);
+	arm_vm->fpscr |= flags << 16;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_sadd8(subtilis_arm_vm_t *arm_vm,
+			      subtilis_arm_reg_only_instr_t *op,
+			      subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+	uint32_t flags = 0;
+
+	prv_add_int8(arm_vm, op, &a, &b, &c, &d);
+
+	arm_vm->regs[op->dest] =
+	    ((d & 0xff) << 24) | ((c & 0xff) << 16) | ((b & 0xff) << 8) | a;
+	flags = (a >= 0 ? 1 : 0) | ((b >= 0) ? 2 : 0) | (c >= 0 ? 4 : 0) |
+		((d >= 0) ? 8 : 0);
+	arm_vm->fpscr |= flags << 16;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_saddsubx(subtilis_arm_vm_t *arm_vm,
+				 subtilis_arm_reg_only_instr_t *op,
+				 subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+	uint32_t flags = 0;
+
+	prv_extract_int16(arm_vm->regs[op->op1], &a, &b);
+	prv_extract_int16(arm_vm->regs[op->op2], &c, &d);
+
+	a = a - d;
+	b = b + c;
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+	flags = (a > 0xffff ? 3 : 0) | (b > 0xffff ? 0xc : 0);
+	arm_vm->fpscr |= flags << 16;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_ssub16(subtilis_arm_vm_t *arm_vm,
+			       subtilis_arm_reg_only_instr_t *op,
+			       subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+	uint32_t flags = 0;
+
+	prv_sub_int16(arm_vm, op, &a, &b);
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+	flags = (a >= 0 ? 3 : 0) | (b >= 0 ? 0xc : 0);
+	arm_vm->fpscr |= flags << 16;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_ssub8(subtilis_arm_vm_t *arm_vm,
+			      subtilis_arm_reg_only_instr_t *op,
+			      subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+	uint32_t flags = 0;
+
+	prv_sub_int8(arm_vm, op, &a, &b, &c, &d);
+
+	arm_vm->regs[op->dest] =
+	    ((d & 0xff) << 24) | ((c & 0xff) << 16) | ((b & 0xff) << 8) | a;
+	flags = (a >= 0 ? 1 : 0) | ((b >= 0) ? 2 : 0) | (c >= 0 ? 4 : 0) |
+		((d >= 0) ? 8 : 0);
+	arm_vm->fpscr |= flags << 16;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_ssubaddx(subtilis_arm_vm_t *arm_vm,
+				 subtilis_arm_reg_only_instr_t *op,
+				 subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+	uint32_t flags = 0;
+
+	prv_extract_int16(arm_vm->regs[op->op1], &a, &b);
+	prv_extract_int16(arm_vm->regs[op->op2], &c, &d);
+
+	a = a + d;
+	b = b - c;
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+	flags = (a > 0xffff ? 3 : 0) | (b > 0xffff ? 0xc : 0);
+	arm_vm->fpscr |= flags << 16;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_shadd16(subtilis_arm_vm_t *arm_vm,
+				subtilis_arm_reg_only_instr_t *op,
+				subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+
+	prv_add_int16(arm_vm, op, &a, &b);
+	a /= 2;
+	b /= 2;
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_shadd8(subtilis_arm_vm_t *arm_vm,
+			       subtilis_arm_reg_only_instr_t *op,
+			       subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+
+	prv_add_int8(arm_vm, op, &a, &b, &c, &d);
+	a /= 2;
+	b /= 2;
+	c /= 2;
+	d /= 2;
+
+	arm_vm->regs[op->dest] = ((d & 0xff) << 24) | ((c & 0xff) << 16) |
+				 ((b & 0xff) << 8) | (a & 0xff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_shaddsubx(subtilis_arm_vm_t *arm_vm,
+				  subtilis_arm_reg_only_instr_t *op,
+				  subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+
+	prv_extract_int16(arm_vm->regs[op->op1], &a, &b);
+	prv_extract_int16(arm_vm->regs[op->op2], &c, &d);
+
+	a = (a - d) / 2;
+	b = (b + c) / 2;
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_shsub16(subtilis_arm_vm_t *arm_vm,
+				subtilis_arm_reg_only_instr_t *op,
+				subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+
+	prv_sub_int16(arm_vm, op, &a, &b);
+	a /= 2;
+	b /= 2;
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_shsub8(subtilis_arm_vm_t *arm_vm,
+			       subtilis_arm_reg_only_instr_t *op,
+			       subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+
+	prv_sub_int8(arm_vm, op, &a, &b, &c, &d);
+
+	a /= 2;
+	b /= 2;
+	c /= 2;
+	d /= 2;
+
+	arm_vm->regs[op->dest] = ((d & 0xff) << 24) | ((c & 0xff) << 16) |
+				 ((b & 0xff) << 8) | (a & 0xff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_shsubaddx(subtilis_arm_vm_t *arm_vm,
+				  subtilis_arm_reg_only_instr_t *op,
+				  subtilis_error_t *err)
+{
+	int32_t a;
+	int32_t b;
+	int32_t c;
+	int32_t d;
+
+	prv_extract_int16(arm_vm->regs[op->op1], &a, &b);
+	prv_extract_int16(arm_vm->regs[op->op2], &c, &d);
+
+	a = (a + d) / 2;
+	b = (b - c) / 2;
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_uadd16(subtilis_arm_vm_t *arm_vm,
+			       subtilis_arm_reg_only_instr_t *op,
+			       subtilis_error_t *err)
+{
+	uint32_t a;
+	uint32_t b;
+	uint32_t flags = 0;
+
+	prv_add_uint16(arm_vm, op, &a, &b);
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+	flags = (a > 0xffff ? 3 : 0) | (b > 0xffff ? 0xc : 0);
+	arm_vm->fpscr |= flags << 16;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_uadd8(subtilis_arm_vm_t *arm_vm,
+			      subtilis_arm_reg_only_instr_t *op,
+			      subtilis_error_t *err)
+{
+	uint32_t a;
+	uint32_t b;
+	uint32_t c;
+	uint32_t d;
+	uint32_t flags = 0;
+
+	prv_add_uint8(arm_vm, op, &a, &b, &c, &d);
+
+	arm_vm->regs[op->dest] =
+	    ((d & 0xff) << 24) | ((c & 0xff) << 16) | ((b & 0xff) << 8) | a;
+	flags = (a >= 0xff ? 1 : 0) | ((b >= 0xff) ? 2 : 0) |
+		(c >= 0xff ? 4 : 0) | ((d >= 0xff) ? 8 : 0);
+	arm_vm->fpscr |= flags << 16;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_uaddsubx(subtilis_arm_vm_t *arm_vm,
+				 subtilis_arm_reg_only_instr_t *op,
+				 subtilis_error_t *err)
+{
+	uint32_t a = ((uint32_t)arm_vm->regs[op->op1]) & 0xffff;
+	uint32_t b = ((uint32_t)arm_vm->regs[op->op1]) >> 16;
+	uint32_t c = ((uint32_t)arm_vm->regs[op->op2]) & 0xffff;
+	uint32_t d = ((uint32_t)arm_vm->regs[op->op2]) >> 16;
+	uint32_t flags = 0;
+
+	a = a - d;
+	b = b + c;
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+	flags = (a > 0xffff ? 3 : 0) | (b > 0xffff ? 0xc : 0);
+	arm_vm->fpscr |= flags << 16;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_usub16(subtilis_arm_vm_t *arm_vm,
+			       subtilis_arm_reg_only_instr_t *op,
+			       subtilis_error_t *err)
+{
+	uint32_t a;
+	uint32_t b;
+	uint32_t flags = 0;
+
+	prv_sub_uint16(arm_vm, op, &a, &b);
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+	flags = (a > 0xffff ? 3 : 0) | (b > 0xffff ? 0xc : 0);
+	arm_vm->fpscr |= flags << 16;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_usub8(subtilis_arm_vm_t *arm_vm,
+			      subtilis_arm_reg_only_instr_t *op,
+			      subtilis_error_t *err)
+{
+	uint32_t a;
+	uint32_t b;
+	uint32_t c;
+	uint32_t d;
+	uint32_t flags = 0;
+
+	prv_sub_uint8(arm_vm, op, &a, &b, &c, &d);
+
+	arm_vm->regs[op->dest] =
+	    ((d & 0xff) << 24) | ((c & 0xff) << 16) | ((b & 0xff) << 8) | a;
+	flags = (a >= 0xff ? 1 : 0) | ((b >= 0xff) ? 2 : 0) |
+		(c >= 0xff ? 4 : 0) | ((d >= 0xff) ? 8 : 0);
+	arm_vm->fpscr |= flags << 16;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_usubaddx(subtilis_arm_vm_t *arm_vm,
+				 subtilis_arm_reg_only_instr_t *op,
+				 subtilis_error_t *err)
+{
+	uint32_t a = ((uint32_t)arm_vm->regs[op->op1]) & 0xffff;
+	uint32_t b = ((uint32_t)arm_vm->regs[op->op1]) >> 16;
+	uint32_t c = ((uint32_t)arm_vm->regs[op->op2]) & 0xffff;
+	uint32_t d = ((uint32_t)arm_vm->regs[op->op2]) >> 16;
+	uint32_t flags = 0;
+
+	a = a + d;
+	b = b - c;
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+	flags = (a > 0xffff ? 3 : 0) | (b > 0xffff ? 0xc : 0);
+	arm_vm->fpscr |= flags << 16;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_uhadd16(subtilis_arm_vm_t *arm_vm,
+				subtilis_arm_reg_only_instr_t *op,
+				subtilis_error_t *err)
+{
+	uint32_t a;
+	uint32_t b;
+
+	prv_add_uint16(arm_vm, op, &a, &b);
+	a /= 2;
+	b /= 2;
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_uhadd8(subtilis_arm_vm_t *arm_vm,
+			       subtilis_arm_reg_only_instr_t *op,
+			       subtilis_error_t *err)
+{
+	uint32_t a;
+	uint32_t b;
+	uint32_t c;
+	uint32_t d;
+
+	prv_add_uint8(arm_vm, op, &a, &b, &c, &d);
+	a /= 2;
+	b /= 2;
+	c /= 2;
+	d /= 2;
+
+	arm_vm->regs[op->dest] = ((d & 0xff) << 24) | ((c & 0xff) << 16) |
+				 ((b & 0xff) << 8) | (a & 0xff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_uhaddsubx(subtilis_arm_vm_t *arm_vm,
+				  subtilis_arm_reg_only_instr_t *op,
+				  subtilis_error_t *err)
+{
+	uint32_t a = ((uint32_t)arm_vm->regs[op->op1]) & 0xffff;
+	uint32_t b = ((uint32_t)arm_vm->regs[op->op1]) >> 16;
+	uint32_t c = ((uint32_t)arm_vm->regs[op->op2]) & 0xffff;
+	uint32_t d = ((uint32_t)arm_vm->regs[op->op2]) >> 16;
+
+	a = (a - d) / 2;
+	b = (b + c) / 2;
+
+	arm_vm->regs[op->dest] = ((b & 0xfffff) << 16) | (a & 0xfffff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_uhsub16(subtilis_arm_vm_t *arm_vm,
+				subtilis_arm_reg_only_instr_t *op,
+				subtilis_error_t *err)
+{
+	uint32_t a;
+	uint32_t b;
+
+	prv_sub_uint16(arm_vm, op, &a, &b);
+	a /= 2;
+	b /= 2;
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_uhsub8(subtilis_arm_vm_t *arm_vm,
+			       subtilis_arm_reg_only_instr_t *op,
+			       subtilis_error_t *err)
+{
+	uint32_t a;
+	uint32_t b;
+	uint32_t c;
+	uint32_t d;
+
+	prv_sub_uint8(arm_vm, op, &a, &b, &c, &d);
+	a /= 2;
+	b /= 2;
+	c /= 2;
+	d /= 2;
+
+	arm_vm->regs[op->dest] = ((d & 0xff) << 24) | ((c & 0xff) << 16) |
+				 ((b & 0xff) << 8) | (a & 0xff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_uhsubaddx(subtilis_arm_vm_t *arm_vm,
+				  subtilis_arm_reg_only_instr_t *op,
+				  subtilis_error_t *err)
+{
+	uint32_t a = ((uint32_t)arm_vm->regs[op->op1]) & 0xffff;
+	uint32_t b = ((uint32_t)arm_vm->regs[op->op1]) >> 16;
+	uint32_t c = ((uint32_t)arm_vm->regs[op->op2]) & 0xffff;
+	uint32_t d = ((uint32_t)arm_vm->regs[op->op2]) >> 16;
+
+	a = (a + d) / 2;
+	b = (b - c) / 2;
+
+	arm_vm->regs[op->dest] = ((b & 0xffff) << 16) | (a & 0xffff);
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_uqadd16(subtilis_arm_vm_t *arm_vm,
+				subtilis_arm_reg_only_instr_t *op,
+				subtilis_error_t *err)
+{
+	uint32_t a;
+	uint32_t b;
+
+	prv_add_uint16(arm_vm, op, &a, &b);
+	prv_clamp_uint16(&a, &b);
+
+	arm_vm->regs[op->dest] = (b << 16) | a;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_uqadd8(subtilis_arm_vm_t *arm_vm,
+			       subtilis_arm_reg_only_instr_t *op,
+			       subtilis_error_t *err)
+{
+	uint32_t a;
+	uint32_t b;
+	uint32_t c;
+	uint32_t d;
+
+	prv_add_uint8(arm_vm, op, &a, &b, &c, &d);
+	prv_clamp_uint8(&a, &b, &c, &d);
+
+	arm_vm->regs[op->dest] = (d << 24) | (c << 16) | (b << 8) | a;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_uqaddsubx(subtilis_arm_vm_t *arm_vm,
+				  subtilis_arm_reg_only_instr_t *op,
+				  subtilis_error_t *err)
+{
+	uint32_t a = ((uint32_t)arm_vm->regs[op->op1]) & 0xffff;
+	uint32_t b = ((uint32_t)arm_vm->regs[op->op1]) >> 16;
+	uint32_t c = ((uint32_t)arm_vm->regs[op->op2]) & 0xffff;
+	uint32_t d = ((uint32_t)arm_vm->regs[op->op2]) >> 16;
+
+	a = a - d;
+	b = b + c;
+
+	prv_clamp_uint16(&a, &b);
+
+	arm_vm->regs[op->dest] = (b << 16) | a;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_uqsub16(subtilis_arm_vm_t *arm_vm,
+				subtilis_arm_reg_only_instr_t *op,
+				subtilis_error_t *err)
+{
+	uint32_t a;
+	uint32_t b;
+
+	prv_sub_uint16(arm_vm, op, &a, &b);
+	prv_clamp_uint16(&a, &b);
+
+	arm_vm->regs[op->dest] = (b << 16) | a;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_uqsub8(subtilis_arm_vm_t *arm_vm,
+			       subtilis_arm_reg_only_instr_t *op,
+			       subtilis_error_t *err)
+{
+	uint32_t a;
+	uint32_t b;
+	uint32_t c;
+	uint32_t d;
+
+	prv_sub_uint8(arm_vm, op, &a, &b, &c, &d);
+	prv_clamp_uint8(&a, &b, &c, &d);
+
+	arm_vm->regs[op->dest] = (d << 24) | (c << 16) | (b << 8) | a;
+
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_uqsubaddx(subtilis_arm_vm_t *arm_vm,
+				  subtilis_arm_reg_only_instr_t *op,
+				  subtilis_error_t *err)
+{
+	uint32_t a = ((uint32_t)arm_vm->regs[op->op1]) & 0xffff;
+	uint32_t b = ((uint32_t)arm_vm->regs[op->op1]) >> 16;
+	uint32_t c = ((uint32_t)arm_vm->regs[op->op2]) & 0xffff;
+	uint32_t d = ((uint32_t)arm_vm->regs[op->op2]) >> 16;
+
+	a = a + d;
+	b = b - c;
+
+	prv_clamp_uint16(&a, &b);
+
+	arm_vm->regs[op->dest] = (b << 16) | a;
+
+	arm_vm->regs[15] += 4;
+}
+
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			 subtilis_error_t *err)
 {
@@ -3100,6 +4011,151 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			prv_process_stran_misc_str(
 			    arm_vm, &instr.operands.stran_misc, err);
 			break;
+		case SUBTILIS_ARM_SIMD_QADD16:
+			prv_process_qadd16(arm_vm, &instr.operands.reg_only,
+					   err);
+			break;
+		case SUBTILIS_ARM_SIMD_QADD8:
+			prv_process_qadd8(arm_vm, &instr.operands.reg_only,
+					  err);
+			break;
+		case SUBTILIS_ARM_SIMD_QADDSUBX:
+			prv_process_qaddsubx(arm_vm, &instr.operands.reg_only,
+					     err);
+			break;
+		case SUBTILIS_ARM_SIMD_QSUB16:
+			prv_process_qsub16(arm_vm, &instr.operands.reg_only,
+					   err);
+			break;
+		case SUBTILIS_ARM_SIMD_QSUB8:
+			prv_process_qsub8(arm_vm, &instr.operands.reg_only,
+					  err);
+			break;
+		case SUBTILIS_ARM_SIMD_QSUBADDX:
+			prv_process_qsubaddx(arm_vm, &instr.operands.reg_only,
+					     err);
+			break;
+		case SUBTILIS_ARM_SIMD_SADD16:
+			prv_process_sadd16(arm_vm, &instr.operands.reg_only,
+					   err);
+			break;
+		case SUBTILIS_ARM_SIMD_SADD8:
+			prv_process_sadd8(arm_vm, &instr.operands.reg_only,
+					  err);
+			break;
+		case SUBTILIS_ARM_SIMD_SADDSUBX:
+			prv_process_saddsubx(arm_vm, &instr.operands.reg_only,
+					     err);
+			break;
+		case SUBTILIS_ARM_SIMD_SSUB16:
+			prv_process_ssub16(arm_vm, &instr.operands.reg_only,
+					   err);
+			break;
+		case SUBTILIS_ARM_SIMD_SSUB8:
+			prv_process_ssub8(arm_vm, &instr.operands.reg_only,
+					  err);
+			break;
+		case SUBTILIS_ARM_SIMD_SSUBADDX:
+			prv_process_ssubaddx(arm_vm, &instr.operands.reg_only,
+					     err);
+			break;
+		case SUBTILIS_ARM_SIMD_SHADD16:
+			prv_process_shadd16(arm_vm, &instr.operands.reg_only,
+					    err);
+			break;
+		case SUBTILIS_ARM_SIMD_SHADD8:
+			prv_process_shadd8(arm_vm, &instr.operands.reg_only,
+					   err);
+			break;
+		case SUBTILIS_ARM_SIMD_SHADDSUBX:
+			prv_process_shaddsubx(arm_vm, &instr.operands.reg_only,
+					      err);
+			break;
+		case SUBTILIS_ARM_SIMD_SHSUB16:
+			prv_process_shsub16(arm_vm, &instr.operands.reg_only,
+					    err);
+			break;
+		case SUBTILIS_ARM_SIMD_SHSUB8:
+			prv_process_shsub8(arm_vm, &instr.operands.reg_only,
+					   err);
+			break;
+		case SUBTILIS_ARM_SIMD_SHSUBADDX:
+			prv_process_shsubaddx(arm_vm, &instr.operands.reg_only,
+					      err);
+			break;
+		case SUBTILIS_ARM_SIMD_UADD16:
+			prv_process_uadd16(arm_vm, &instr.operands.reg_only,
+					   err);
+			break;
+		case SUBTILIS_ARM_SIMD_UADD8:
+			prv_process_uadd8(arm_vm, &instr.operands.reg_only,
+					  err);
+			break;
+		case SUBTILIS_ARM_SIMD_UADDSUBX:
+			prv_process_uaddsubx(arm_vm, &instr.operands.reg_only,
+					     err);
+			break;
+		case SUBTILIS_ARM_SIMD_USUB16:
+			prv_process_usub16(arm_vm, &instr.operands.reg_only,
+					   err);
+			break;
+		case SUBTILIS_ARM_SIMD_USUB8:
+			prv_process_usub8(arm_vm, &instr.operands.reg_only,
+					  err);
+			break;
+		case SUBTILIS_ARM_SIMD_USUBADDX:
+			prv_process_usubaddx(arm_vm, &instr.operands.reg_only,
+					     err);
+			break;
+		case SUBTILIS_ARM_SIMD_UHADD16:
+			prv_process_uhadd16(arm_vm, &instr.operands.reg_only,
+					    err);
+			break;
+		case SUBTILIS_ARM_SIMD_UHADD8:
+			prv_process_uhadd8(arm_vm, &instr.operands.reg_only,
+					   err);
+			break;
+		case SUBTILIS_ARM_SIMD_UHADDSUBX:
+			prv_process_uhaddsubx(arm_vm, &instr.operands.reg_only,
+					      err);
+			break;
+		case SUBTILIS_ARM_SIMD_UHSUB16:
+			prv_process_uhsub16(arm_vm, &instr.operands.reg_only,
+					    err);
+			break;
+		case SUBTILIS_ARM_SIMD_UHSUB8:
+			prv_process_uhsub8(arm_vm, &instr.operands.reg_only,
+					   err);
+			break;
+		case SUBTILIS_ARM_SIMD_UHSUBADDX:
+			prv_process_uhsubaddx(arm_vm, &instr.operands.reg_only,
+					      err);
+			break;
+		case SUBTILIS_ARM_SIMD_UQADD16:
+			prv_process_uqadd16(arm_vm, &instr.operands.reg_only,
+					    err);
+			break;
+		case SUBTILIS_ARM_SIMD_UQADD8:
+			prv_process_uqadd8(arm_vm, &instr.operands.reg_only,
+					   err);
+			break;
+
+		case SUBTILIS_ARM_SIMD_UQADDSUBX:
+			prv_process_uqaddsubx(arm_vm, &instr.operands.reg_only,
+					      err);
+			break;
+		case SUBTILIS_ARM_SIMD_UQSUB16:
+			prv_process_uqsub16(arm_vm, &instr.operands.reg_only,
+					    err);
+			break;
+		case SUBTILIS_ARM_SIMD_UQSUB8:
+			prv_process_uqsub8(arm_vm, &instr.operands.reg_only,
+					   err);
+			break;
+		case SUBTILIS_ARM_SIMD_UQSUBADDX:
+			prv_process_uqsubaddx(arm_vm, &instr.operands.reg_only,
+					      err);
+			break;
 		default:
 			printf("instr type %d\n", instr.type);
 			subtilis_error_set_assertion_failed(err);
@@ -3107,6 +4163,7 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
+
 		/*
 		 *		subtilis_arm_disass_dump(
 		 *		   (uint8_t *)&((uint32_t *)arm_vm->memory)[pc],

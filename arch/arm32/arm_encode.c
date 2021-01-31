@@ -2119,6 +2119,74 @@ static void prv_encode_stran_misc_instr(void *user_data, subtilis_arm_op_t *op,
 	prv_add_word(ud, word, err);
 }
 
+static void prv_encode_simd_instr(void *user_data, subtilis_arm_op_t *op,
+				  subtilis_arm_instr_type_t type,
+				  subtilis_arm_reg_only_instr_t *instr,
+				  subtilis_error_t *err)
+{
+	uint32_t word;
+	subtilis_arm_encode_ud_t *ud = user_data;
+	const uint32_t opcodes[] = {
+	    0x06200010, // SUBTILIS_ARM_SIMD_QADD16
+	    0x06200090, // SUBTILIS_ARM_SIMD_QADD8
+	    0x06200030, // SUBTILIS_ARM_SIMD_QADDSUBX
+	    0x06200070, // SUBTILIS_ARM_SIMD_QSUB16
+	    0x062000f0, // SUBTILIS_ARM_SIMD_QSUB8
+	    0x06200050, // SUBTILIS_ARM_SIMD_QSUBADDX,
+	    0x06100010, // SUBTILIS_ARM_SIMD_SADD16
+	    0x06100090, // SUBTILIS_ARM_SIMD_SADD8
+	    0x06100030, // SUBTILIS_ARM_SIMD_SADDSUBX,
+	    0x06100070, // SUBTILIS_ARM_SIMD_SSUB16
+	    0x061000f0, // SUBTILIS_ARM_SIMD_SSUB8,
+	    0x06100050, // SUBTILIS_ARM_SIMD_SSUBADDX
+	    0x06300010, // SUBTILIS_ARM_SIMD_SHADD16
+	    0x06300090, // SUBTILIS_ARM_SIMD_SHADD8
+	    0x06300030, // SUBTILIS_ARM_SIMD_SHADDSUBX,
+	    0x06300070, // SUBTILIS_ARM_SIMD_SHSUB16,
+	    0x063000f0, // SUBTILIS_ARM_SIMD_SHSUB8,
+	    0x06300050, // SUBTILIS_ARM_SIMD_SHSUBADDX,
+	    0x06500010, // SUBTILIS_ARM_SIMD_UADD16,
+	    0x06500090, // SUBTILIS_ARM_SIMD_UADD8,
+	    0x06500030, // SUBTILIS_ARM_SIMD_UADDSUBX,
+	    0x06500070, // SUBTILIS_ARM_SIMD_USUB16,
+	    0x065000f0, // SUBTILIS_ARM_SIMD_USUB8,
+	    0x06500050, // SUBTILIS_ARM_SIMD_USUBADDX,
+	    0x06700010, // SUBTILIS_ARM_SIMD_UHADD16,
+	    0x06700090, // SUBTILIS_ARM_SIMD_UHADD8,
+	    0x06700030, // SUBTILIS_ARM_SIMD_UHADDSUBX,
+	    0x06700070, // SUBTILIS_ARM_SIMD_UHSUB16,
+	    0x067000f0, // SUBTILIS_ARM_SIMD_UHSUB8,
+	    0x06700050, // SUBTILIS_ARM_SIMD_UHSUBADDX,
+	    0x06600010, // SUBTILIS_ARM_SIMD_UQADD16,
+	    0x06600090, // SUBTILIS_ARM_SIMD_UQADD8,
+	    0x06600030, // SUBTILIS_ARM_SIMD_UQADDSUBX,
+	    0x06600070, // SUBTILIS_ARM_SIMD_UQSUB16,
+	    0x066000f0, // SUBTILIS_ARM_SIMD_UQSUB8,
+	    0x06600050, // SUBTILIS_ARM_SIMD_UQSUBADDX,
+	};
+	size_t index = type - SUBTILIS_ARM_SIMD_QADD16;
+
+	if (type > SUBTILIS_ARM_SIMD_UQSUBADDX) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	word = opcodes[index];
+	word |= instr->ccode << 28;
+	word |= (instr->dest & 0xf) << 12;
+	word |= (instr->op1 & 0xf) << 16;
+	word |= (instr->op2 & 0xf);
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	prv_add_word(ud, word, err);
+}
+
 static int32_t prv_compute_dist(size_t first, size_t second, size_t limit,
 				subtilis_error_t *err)
 {
@@ -2314,6 +2382,7 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 	walker.vfp_sysreg_fn = prv_encode_vfp_sysreg_instr;
 	walker.vfp_cvt_fn = prv_encode_vfp_cvt_instr;
 	walker.stran_misc_fn = prv_encode_stran_misc_instr;
+	walker.simd_fn = prv_encode_simd_instr;
 
 	subtilis_arm_walk(arm_s, &walker, err);
 	if (err->type != SUBTILIS_ERROR_OK)

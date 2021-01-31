@@ -336,8 +336,9 @@ void subtilis_arm_prog_append_section(subtilis_arm_prog_t *prog,
 subtilis_arm_iclass_t subtilis_arm_get_iclass(subtilis_arm_instr_type_t itype,
 					      subtilis_error_t *err)
 {
-	if (itype >= SUBTILIS_ARM_INSTR_AND &&
-	    itype <= SUBTILIS_ARM_INSTR_INT_MAX)
+	if ((itype >= SUBTILIS_ARM_INSTR_AND &&
+	     itype <= SUBTILIS_ARM_INSTR_INT_MAX) ||
+	    itype >= SUBTILIS_ARM_INSTR_VFP_MAX)
 		return SUBTILIS_ARM_ICLASS_INT;
 
 	if (itype >= SUBTILIS_FPA_INSTR_LDF &&
@@ -1664,4 +1665,24 @@ void subtilis_arm_add_flags_imm(subtilis_arm_section_t *s,
 		flags->op2_reg = false;
 		flags->op.integer = encoded;
 	}
+}
+
+void subtilis_arm_add_reg_only(subtilis_arm_section_t *s,
+			       subtilis_arm_instr_type_t itype,
+			       subtilis_arm_ccode_type_t ccode,
+			       subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			       subtilis_arm_reg_t op2, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_reg_only_instr_t *reg_only;
+
+	instr = subtilis_arm_section_add_instr(s, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	reg_only = &instr->operands.reg_only;
+	reg_only->ccode = ccode;
+	reg_only->dest = dest;
+	reg_only->op1 = op1;
+	reg_only->op2 = op2;
 }

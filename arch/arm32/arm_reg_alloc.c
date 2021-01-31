@@ -1844,6 +1844,7 @@ size_t subtilis_arm_reg_alloc(subtilis_arm_section_t *arm_s,
 	walker.cmov_fn = prv_alloc_cmov_instr;
 	walker.flags_fn = prv_alloc_flags_instr;
 	walker.stran_misc_fn = NULL;
+	walker.simd_fn = NULL;
 	arm_s->fp_if->init_real_alloc_fn(&walker, &ud);
 
 	subtilis_arm_walk(arm_s, &walker, err);

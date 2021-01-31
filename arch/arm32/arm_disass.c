@@ -298,6 +298,132 @@ static void prv_decode_fpa_stran(subtilis_arm_instr_t *instr, uint32_t encoded,
 	stran->offset = encoded & 0xff;
 }
 
+static void prv_decode_simd(subtilis_arm_instr_t *instr, uint32_t encoded,
+			    subtilis_error_t *err)
+{
+	subtilis_arm_reg_only_instr_t *simd = &instr->operands.reg_only;
+	uint32_t type_mask = encoded & 0x0ff000f0;
+
+	switch (type_mask) {
+	case 0x06200010:
+		instr->type = SUBTILIS_ARM_SIMD_QADD16;
+		break;
+	case 0x06200090:
+		instr->type = SUBTILIS_ARM_SIMD_QADD8;
+		break;
+	case 0x06200030:
+		instr->type = SUBTILIS_ARM_SIMD_QADDSUBX;
+		break;
+	case 0x06200070:
+		instr->type = SUBTILIS_ARM_SIMD_QSUB16;
+		break;
+	case 0x062000f0:
+		instr->type = SUBTILIS_ARM_SIMD_QSUB8;
+		break;
+	case 0x06200050:
+		instr->type = SUBTILIS_ARM_SIMD_QSUBADDX;
+		break;
+	case 0x06100010:
+		instr->type = SUBTILIS_ARM_SIMD_SADD16;
+		break;
+	case 0x06100090:
+		instr->type = SUBTILIS_ARM_SIMD_SADD8;
+		break;
+	case 0x06100030:
+		instr->type = SUBTILIS_ARM_SIMD_SADDSUBX;
+		break;
+	case 0x06100070:
+		instr->type = SUBTILIS_ARM_SIMD_SSUB16;
+		break;
+	case 0x061000f0:
+		instr->type = SUBTILIS_ARM_SIMD_SSUB8;
+		break;
+	case 0x06100050:
+		instr->type = SUBTILIS_ARM_SIMD_SSUBADDX;
+		break;
+	case 0x06300010:
+		instr->type = SUBTILIS_ARM_SIMD_SHADD16;
+		break;
+	case 0x06300090:
+		instr->type = SUBTILIS_ARM_SIMD_SHADD8;
+		break;
+	case 0x06300030:
+		instr->type = SUBTILIS_ARM_SIMD_SHADDSUBX;
+		break;
+	case 0x06300070:
+		instr->type = SUBTILIS_ARM_SIMD_SHSUB16;
+		break;
+	case 0x063000f0:
+		instr->type = SUBTILIS_ARM_SIMD_SHSUB8;
+		break;
+	case 0x06300050:
+		instr->type = SUBTILIS_ARM_SIMD_SHSUBADDX;
+		break;
+	case 0x06500010:
+		instr->type = SUBTILIS_ARM_SIMD_UADD16;
+		break;
+	case 0x06500090:
+		instr->type = SUBTILIS_ARM_SIMD_UADD8;
+		break;
+	case 0x06500030:
+		instr->type = SUBTILIS_ARM_SIMD_UADDSUBX;
+		break;
+	case 0x06500070:
+		instr->type = SUBTILIS_ARM_SIMD_USUB16;
+		break;
+	case 0x065000f0:
+		instr->type = SUBTILIS_ARM_SIMD_USUB8;
+		break;
+	case 0x06500050:
+		instr->type = SUBTILIS_ARM_SIMD_USUBADDX;
+		break;
+	case 0x06700010:
+		instr->type = SUBTILIS_ARM_SIMD_UHADD16;
+		break;
+	case 0x06700090:
+		instr->type = SUBTILIS_ARM_SIMD_UHADD8;
+		break;
+	case 0x06700030:
+		instr->type = SUBTILIS_ARM_SIMD_UHADDSUBX;
+		break;
+	case 0x06700070:
+		instr->type = SUBTILIS_ARM_SIMD_UHSUB16;
+		break;
+	case 0x067000f0:
+		instr->type = SUBTILIS_ARM_SIMD_UHSUB8;
+		break;
+	case 0x06700050:
+		instr->type = SUBTILIS_ARM_SIMD_UHSUBADDX;
+		break;
+	case 0x06600010:
+		instr->type = SUBTILIS_ARM_SIMD_UQADD16;
+		break;
+	case 0x06600090:
+		instr->type = SUBTILIS_ARM_SIMD_UQADD8;
+		break;
+	case 0x06600030:
+		instr->type = SUBTILIS_ARM_SIMD_UQADDSUBX;
+		break;
+	case 0x06600070:
+		instr->type = SUBTILIS_ARM_SIMD_UQSUB16;
+		break;
+	case 0x066000f0:
+		instr->type = SUBTILIS_ARM_SIMD_UQSUB8;
+		break;
+	case 0x06600050:
+		instr->type = SUBTILIS_ARM_SIMD_UQSUBADDX;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	simd->ccode = (subtilis_arm_ccode_type_t)(encoded >> 28);
+	simd->dest = (encoded >> 12) & 0x0f;
+	simd->op1 = (encoded >> 16) & 0x0f;
+	simd->op2 = encoded & 0x0f;
+}
+
 /* clang-format off */
 static subtilis_arm_instr_type_t prv_fpa_data_opcodes[] = {
 	SUBTILIS_FPA_INSTR_ADF,
@@ -974,6 +1100,7 @@ void subtilis_arm_disass(subtilis_arm_instr_t *instr, uint32_t encoded,
 			 bool vfp, subtilis_error_t *err)
 {
 	uint32_t mask;
+	uint32_t simd_mask;
 
 	mask = encoded & (0x3f << 22);
 	if ((mask == 0) && (((encoded >> 4) & 0xf) == 9)) {
@@ -996,6 +1123,17 @@ void subtilis_arm_disass(subtilis_arm_instr_t *instr, uint32_t encoded,
 	if (mask == 4) {
 		prv_decode_mtran(instr, encoded, err);
 		return;
+	}
+
+	simd_mask = encoded & 0x0ff00f00;
+	if (simd_mask == 0x06100000 || simd_mask == 0x06200000 ||
+	    simd_mask == 0x06300000 || simd_mask == 0x06500000 ||
+	    simd_mask == 0x06600000 || simd_mask == 0x06700000) {
+		simd_mask = (encoded & 0xf0) >> 4;
+		if ((simd_mask & 1) && (simd_mask != 11) && (simd_mask != 13)) {
+			prv_decode_simd(instr, encoded, err);
+			return;
+		}
 	}
 
 	mask = (encoded & (0x3 << 26)) >> 26;
