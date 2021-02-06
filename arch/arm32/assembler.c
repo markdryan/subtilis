@@ -203,6 +203,8 @@ static const subtilis_arm_ass_mnemomic_t m_mnem[] = {
 	{ "MLA", SUBTILIS_ARM_INSTR_MLA, NULL, },
 	{ "MNF", SUBTILIS_FPA_INSTR_MNF, NULL, },
 	{ "MOV", SUBTILIS_ARM_INSTR_MOV, NULL, },
+	{ "MRS", SUBTILIS_ARM_INSTR_MRS, NULL, },
+	{ "MSR", SUBTILIS_ARM_INSTR_MSR, NULL, },
 	{ "MUF", SUBTILIS_FPA_INSTR_MUF, NULL, },
 	{ "MUL", SUBTILIS_ARM_INSTR_MUL, NULL, },
 	{ "MVF", SUBTILIS_FPA_INSTR_MVF, NULL, },
@@ -607,6 +609,56 @@ static subtilis_arm_reg_t prv_get_vfp_sysreg(subtilis_arm_ass_context_t *c,
 
 	if (val->type != SUBTILIS_ARM_EXP_TYPE_SYSREG) {
 		subtilis_error_set_expected(err, "FPSCR or FPEXC or FPSID",
+					    subtilis_arm_exp_type_name(val),
+					    c->l->stream->name, c->l->line);
+		reg = SIZE_MAX;
+	} else {
+		reg = val->val.reg;
+	}
+
+	subtilis_arm_exp_val_free(val);
+
+	return reg;
+}
+
+static subtilis_arm_reg_t prv_get_dest_flagsreg(subtilis_arm_ass_context_t *c,
+						subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+	subtilis_arm_reg_t reg;
+
+	val = subtilis_arm_exp_val_get(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	if (val->type != SUBTILIS_ARM_EXP_TYPE_FLAGS_REG ||
+	    val->val.reg <= SUBTILIS_ARM_EXP_SPSR_REG) {
+		subtilis_error_set_expected(err, "CPSR_[cxfs] or SPSR_[cxfs]",
+					    subtilis_arm_exp_type_name(val),
+					    c->l->stream->name, c->l->line);
+		reg = SIZE_MAX;
+	} else {
+		reg = val->val.reg;
+	}
+
+	subtilis_arm_exp_val_free(val);
+
+	return reg;
+}
+
+static subtilis_arm_reg_t prv_get_src_flagsreg(subtilis_arm_ass_context_t *c,
+					       subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+	subtilis_arm_reg_t reg;
+
+	val = subtilis_arm_exp_val_get(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	if (val->type != SUBTILIS_ARM_EXP_TYPE_FLAGS_REG ||
+	    val->val.reg > SUBTILIS_ARM_EXP_SPSR_REG) {
+		subtilis_error_set_expected(err, "CPSR or SPSR",
 					    subtilis_arm_exp_type_name(val),
 					    c->l->stream->name, c->l->line);
 		reg = SIZE_MAX;
@@ -1734,6 +1786,84 @@ cleanup:
 	subtilis_arm_exp_val_free(val);
 }
 
+static void prv_parse_msr(subtilis_arm_ass_context_t *c,
+			  subtilis_arm_ccode_type_t ccode,
+			  subtilis_error_t *err)
+{
+	subtilis_arm_exp_val_t *val;
+	subtilis_arm_reg_t dest;
+	const char *tbuf;
+	uint32_t encoded;
+	int32_t num;
+	uint32_t flags;
+
+	dest = prv_get_dest_flagsreg(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ",")) {
+		subtilis_error_set_expected(err, ",", tbuf, c->l->stream->name,
+					    c->l->line);
+		return;
+	}
+
+	val = subtilis_arm_exp_val_get(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	flags = dest & 0xfffffffe;
+
+	if ((val->type == SUBTILIS_ARM_EXP_TYPE_INT) ||
+	    (val->type == SUBTILIS_ARM_EXP_TYPE_REAL)) {
+		if (val->type == SUBTILIS_ARM_EXP_TYPE_REAL)
+			num = (int32_t)val->val.real;
+		else
+			num = val->val.integer;
+		if (!subtilis_arm_encode_imm(num, &encoded)) {
+			subtilis_error_set_ass_integer_encode(
+			    err, num, c->l->stream->name, c->l->line);
+			goto cleanup;
+		}
+		subtilis_arm_add_flags_imm(c->arm_s, SUBTILIS_ARM_INSTR_MSR,
+					   ccode, dest & 1, flags, num, err);
+	} else if (val->type == SUBTILIS_ARM_EXP_TYPE_REG) {
+		subtilis_arm_add_flags(c->arm_s, SUBTILIS_ARM_INSTR_MSR, ccode,
+				       dest & 1, flags, val->val.reg, err);
+	}
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+}
+
+static void prv_parse_mrs(subtilis_arm_ass_context_t *c,
+			  subtilis_arm_ccode_type_t ccode,
+			  subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+	const char *tbuf;
+
+	dest = prv_get_reg(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ",")) {
+		subtilis_error_set_expected(err, ",", tbuf, c->l->stream->name,
+					    c->l->line);
+		return;
+	}
+
+	op1 = prv_get_src_flagsreg(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_flags(c->arm_s, SUBTILIS_ARM_INSTR_MRS, ccode, op1, 0,
+			       dest, err);
+}
+
 static void prv_parse_reg_only(subtilis_arm_ass_context_t *c,
 			       subtilis_arm_instr_type_t itype,
 			       subtilis_arm_ccode_type_t ccode,
@@ -1830,6 +1960,12 @@ static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
 		break;
 	case SUBTILIS_ARM_INSTR_ADR:
 		prv_parse_adr(c, ccode, err);
+		break;
+	case SUBTILIS_ARM_INSTR_MRS:
+		prv_parse_mrs(c, ccode, err);
+		break;
+	case SUBTILIS_ARM_INSTR_MSR:
+		prv_parse_msr(c, ccode, err);
 		break;
 	case SUBTILIS_ARM_SIMD_QADD16:
 	case SUBTILIS_ARM_SIMD_QADD8:

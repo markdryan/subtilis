@@ -818,6 +818,24 @@ static const subtilis_test_case_t riscos_vfp_test_cases[] = {
 	"80011111\n81811111\n80011111\nEEEF7777\nEFEF7777\nEEEF8888\n"
 	"2000FFFF\n2020FFFF\nFFFF3001\n70000000\n70700000\n3001FFFF\n"
 	},
+	{"msr_mrs",
+	"print ~FNMSR%\n"
+	"print ~FNMSR2%\n"
+	"def FNMSR%\n"
+	"[\n"
+	"MSR CPSR_cxsf, &ff << 28\n"
+	"MRS R0, CPSR\n"
+	"MOV PC, R14\n"
+	"]\n"
+	"def FNMSR2%\n"
+	"[\n"
+	"MOV R1, &ff << 28\n"
+	"MSR CPSR_cxsf, R1\n"
+	"MRS R0, CPSR\n"
+	"MOV PC, R14\n"
+	"]\n",
+	"F0000000\nF0000000\n"
+	},
 };
 
 /* clang-format on */

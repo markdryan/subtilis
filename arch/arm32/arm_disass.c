@@ -205,16 +205,16 @@ static void prv_decode_msr(subtilis_arm_instr_t *instr, uint32_t encoded,
 	subtilis_arm_flags_instr_t *flags = &instr->operands.flags;
 
 	instr->type = SUBTILIS_ARM_INSTR_MSR;
-	flags->fields = (encoded >> 16) & 0xf;
+	flags->fields = encoded & (0xf << 16);
 	flags->ccode = encoded >> 28;
 	flags->flag_reg = (encoded & (1 << 22)) ? SUBTILIS_ARM_FLAGS_SPSR
 						: SUBTILIS_ARM_FLAGS_CPSR;
-	if ((encoded & 1 << 25)) {
+	if (encoded & (1 << 25)) {
 		flags->op.integer = encoded & 0xfff;
 		flags->op2_reg = false;
 	} else {
 		flags->op2_reg = true;
-		flags->op.reg = (encoded >> 12) & 0xf;
+		flags->op.reg = encoded & 0xf;
 	}
 }
 
