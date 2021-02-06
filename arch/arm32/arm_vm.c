@@ -127,6 +127,17 @@ static uint8_t *prv_get_vm_address(subtilis_arm_vm_t *arm_vm, int32_t addr,
 	return &arm_vm->memory[addr];
 }
 
+static int32_t prv_decode_imm(int32_t val)
+{
+	int32_t shift;
+
+	if ((val & 0xf00) == 0)
+		return val;
+	shift = (val & 0xf00) >> 7;
+	val &= 0xff;
+	return val >> shift | val << (32 - shift);
+}
+
 static int32_t prv_eval_op2(subtilis_arm_vm_t *arm_vm, bool status,
 			    subtilis_arm_op2_t *op2, subtilis_error_t *err)
 {
@@ -134,18 +145,12 @@ static int32_t prv_eval_op2(subtilis_arm_vm_t *arm_vm, bool status,
 	bool neg;
 	bool bit_one;
 	int32_t shift;
-	int32_t val;
 
 	switch (op2->type) {
 	case SUBTILIS_ARM_OP2_REG:
 		return arm_vm->regs[op2->op.reg];
 	case SUBTILIS_ARM_OP2_I32:
-		val = op2->op.integer;
-		if ((val & 0xf00) == 0)
-			return val;
-		shift = (val & 0xf00) >> 7;
-		val &= 0xff;
-		return val >> shift | val << (32 - shift);
+		return prv_decode_imm(op2->op.integer);
 	case SUBTILIS_ARM_OP2_SHIFTED:
 		if (op2->op.shift.shift_reg) {
 			shift = arm_vm->regs[op2->op.shift.shift.reg];
@@ -1351,7 +1356,10 @@ static void prv_process_msr(subtilis_arm_vm_t *arm_vm,
 		return;
 	}
 
-	word = op->op2_reg ? arm_vm->regs[op->op.reg] : op->op.integer;
+	if (op->op2_reg)
+		word = arm_vm->regs[op->op.reg];
+	else
+		word = prv_decode_imm(op->op.integer);
 	if (op->fields & SUBTILIS_ARM_FLAGS_FIELD_CONTROL)
 		mask |= 0xff;
 	if (op->fields & SUBTILIS_ARM_FLAGS_FIELD_EXTENSION)

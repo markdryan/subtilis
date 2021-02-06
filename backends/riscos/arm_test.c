@@ -941,6 +941,26 @@ static const subtilis_bad_test_case_t riscos_arm_bad_test_cases[] = {
 	 "def PROCBadLDRS [ LDRD R1, [R1] ]\n",
 	 SUBTILIS_ERROR_ASS_BAD_REG,
 	},
+	{"assembler_msr_no_flags",
+	 "def PROCBadMSR [ MSR CPSR, R0 ]\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
+	{"assembler_msr_id",
+	 "def PROCBadMSR [ MSR CPSR_, R0 ]\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
+	{"assembler_msr_double_flags",
+	 "def PROCBadMSR [ MSR CPSR_cc, R0 ]\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
+	{"assembler_msr_unknown_flags",
+	 "def PROCBadMSR [ MSR CPSR_ab, R0 ]\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
+	{"assembler_msr_too_many_flags",
+	 "def PROCBadMSR [ MSR CPSR_cfsxs, R0 ]\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	}
 };
 
 /* clang-format on */

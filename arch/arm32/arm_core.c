@@ -1628,7 +1628,6 @@ void subtilis_arm_add_flags(subtilis_arm_section_t *s,
 
 	flags = &instr->operands.flags;
 	flags->ccode = ccode;
-	flags = &instr->operands.flags;
 	flags->flag_reg = flag_reg;
 	flags->fields = fields;
 	flags->op2_reg = true;

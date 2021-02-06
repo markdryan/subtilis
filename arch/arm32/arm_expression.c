@@ -196,6 +196,12 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_new_sysreg(subtilis_arm_reg_t reg,
 	return prv_new_reg(reg, SUBTILIS_ARM_EXP_TYPE_SYSREG, err);
 }
 
+subtilis_arm_exp_val_t *subtilis_arm_exp_new_flagsreg(subtilis_arm_reg_t reg,
+						      subtilis_error_t *err)
+{
+	return prv_new_reg(reg, SUBTILIS_ARM_EXP_TYPE_FLAGS_REG, err);
+}
+
 subtilis_arm_exp_val_t *subtilis_arm_exp_dup(subtilis_arm_exp_val_t *val,
 					     subtilis_error_t *err)
 {
@@ -212,6 +218,8 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_dup(subtilis_arm_exp_val_t *val,
 		return subtilis_arm_exp_new_dreg(val->val.reg, err);
 	case SUBTILIS_ARM_EXP_TYPE_SYSREG:
 		return subtilis_arm_exp_new_sysreg(val->val.reg, err);
+	case SUBTILIS_ARM_EXP_TYPE_FLAGS_REG:
+		return subtilis_arm_exp_new_flagsreg(val->val.reg, err);
 	case SUBTILIS_ARM_EXP_TYPE_INT:
 		return subtilis_arm_exp_new_int32(val->val.integer, err);
 	case SUBTILIS_ARM_EXP_TYPE_REAL:
@@ -559,6 +567,57 @@ subtilis_arm_reg_t subtilis_arm_exp_parse_sysreg(subtilis_arm_ass_context_t *c,
 	return (subtilis_arm_reg_t)reg;
 }
 
+subtilis_arm_reg_t
+subtilis_arm_exp_parse_flagsreg(subtilis_arm_ass_context_t *c, const char *id)
+{
+	subtilis_arm_reg_t reg;
+	subtilis_arm_reg_t flag;
+
+	if (!strncmp(id, "CPSR", 4))
+		reg = SUBTILIS_ARM_EXP_CPSR_REG;
+	else if (!strncmp(id, "SPSR", 4))
+		reg = SUBTILIS_ARM_EXP_SPSR_REG;
+	else
+		return SIZE_MAX;
+
+	id += 4;
+	if (!*id)
+		return reg;
+
+	if (*id != '_')
+		return SIZE_MAX;
+
+	id++;
+	if ((strlen(id) == 0) || (strlen(id) > 4))
+		return SIZE_MAX;
+
+	for (; *id; id++) {
+		switch (*id) {
+		case 'c':
+			flag = SUBTILIS_ARM_EXP_CONTROL_REG;
+			break;
+		case 'x':
+			flag = SUBTILIS_ARM_EXP_EXT_REG;
+			break;
+		case 's':
+			flag = SUBTILIS_ARM_EXP_STATUS_REG;
+			break;
+		case 'f':
+			flag = SUBTILIS_ARM_EXP_FLAGS_REG;
+			break;
+		default:
+			return SIZE_MAX;
+		}
+
+		if (reg & flag)
+			return SIZE_MAX;
+
+		reg |= flag;
+	}
+
+	return reg;
+}
+
 /* clang-format off */
 subtilis_arm_exp_val_t *subtilis_arm_exp_process_id(
 	subtilis_arm_ass_context_t *c, const char *id, subtilis_error_t *err)
@@ -599,6 +658,10 @@ subtilis_arm_exp_val_t *subtilis_arm_exp_process_id(
 	reg = subtilis_arm_exp_parse_sysreg(c, id);
 	if (reg != SIZE_MAX)
 		return subtilis_arm_exp_new_sysreg(reg, err);
+
+	reg = subtilis_arm_exp_parse_flagsreg(c, id);
+	if (reg != SIZE_MAX)
+		return subtilis_arm_exp_new_flagsreg(reg, err);
 
 	val = subtilis_arm_asm_find_def(c, id);
 	if (val)
@@ -2087,6 +2150,8 @@ const char *subtilis_arm_exp_type_name(subtilis_arm_exp_val_t *val)
 		return "vfp D register";
 	case SUBTILIS_ARM_EXP_TYPE_SYSREG:
 		return "vfp SYSREG register";
+	case SUBTILIS_ARM_EXP_TYPE_FLAGS_REG:
+		return "flags register";
 	case SUBTILIS_ARM_EXP_TYPE_INT:
 		return "integer";
 	case SUBTILIS_ARM_EXP_TYPE_REAL:

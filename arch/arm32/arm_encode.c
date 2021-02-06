@@ -1040,13 +1040,13 @@ static void prv_encode_flags_instr(void *user_data, subtilis_arm_op_t *op,
 		word |= (instr->op.reg & 0xf) << 12;
 	} else {
 		word = 0x01200000;
-		if (instr->flag_reg) {
+		if (instr->op2_reg) {
 			word |= instr->op.reg & 0xf;
 		} else {
 			word |= 1 << 25;
 			word |= (instr->op.integer & 0xfff);
 		}
-		word |= (instr->fields & 0xf) << 16;
+		word |= instr->fields;
 	}
 
 	if (instr->flag_reg == SUBTILIS_ARM_FLAGS_SPSR)
