@@ -1738,6 +1738,7 @@ struct subtilis_ir_section_t_ {
 	size_t error_len;
 	size_t max_error_len;
 	bool in_error_handler;
+	size_t try_depth;
 	subtilis_ir_op_t **error_ops;
 	subtilis_handler_list_t *handler_list;
 	size_t handler_offset;

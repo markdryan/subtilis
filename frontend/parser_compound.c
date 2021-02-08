@@ -152,8 +152,9 @@ cleanup:
 	free(var_name);
 }
 
-void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
-			      int end_key, subtilis_error_t *err)
+void subtilis_parser_compound_at_level(subtilis_parser_t *p,
+				       subtilis_token_t *t, int end_key,
+				       subtilis_error_t *err)
 {
 	unsigned int start;
 	subtilis_ir_operand_t var_reg;
@@ -162,7 +163,6 @@ void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	p->level++;
 	start = p->l->line;
 	while (t->type != SUBTILIS_TOKEN_EOF) {
 		if ((t->type == SUBTILIS_TOKEN_KEYWORD) &&
@@ -176,7 +176,6 @@ void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 	if (t->type == SUBTILIS_TOKEN_EOF)
 		subtilis_error_set_compund_not_term(err, p->l->stream->name,
 						    start);
-
 	if ((end_key != SUBTILIS_KEYWORD_NEXT) &&
 	    (end_key != SUBTILIS_KEYWORD_UNTIL) &&
 	    (end_key != SUBTILIS_KEYWORD_ENDPROC))
@@ -194,4 +193,11 @@ void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	p->current->handler_list =
 	    subtilis_handler_list_truncate(p->current->handler_list, p->level);
+}
+
+void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
+			      int end_key, subtilis_error_t *err)
+{
+	p->level++;
+	subtilis_parser_compound_at_level(p, t, end_key, err);
 }

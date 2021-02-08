@@ -1646,7 +1646,9 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"local_on_error_deref",
 	 "ONERROR\n"
-	 "    LOCAL DIM c(100)\n"
+	 "    TRY\n"
+	 "        LOCAL DIM c(100)\n"
+	 "    ENDTRY\n"
 	 "ENDERROR\n"
 	 "ERROR 1\n",
 	 ""
@@ -1655,7 +1657,9 @@ const subtilis_test_case_t test_cases[] = {
 	 "PROCP\n"
 	 "DEF PROCP\n"
 	 "    ONERROR\n"
-	 "         LOCAL DIM c(100)\n"
+	 "        TRY\n"
+	 "            LOCAL DIM c(100)\n"
+	 "        ENDTRY\n"
 	 "    ENDERROR\n"
 	 "    ERROR 1\n"
 	 "ENDPROC\n",
@@ -3208,6 +3212,66 @@ const subtilis_test_case_t test_cases[] = {
 	"plot$ := \"hello\"\n"
 	"print plot$\n",
 	"hello\n",
+	},
+	{
+	"nested_try_exp",
+	"print try\n"
+	"x% := try\n"
+	"error 14\n"
+	"endtry\n"
+	"print \"failed with error: \";\n"
+	"print x%\n"
+	"endtry\n"
+	"print \"I should be here\"\n",
+	"failed with error: 14\n0\nI should be here\n",
+	},
+	{"handler_after_try",
+	"print try\n"
+	"endtry\n"
+	"onerror\n"
+	"print \"in handler\"\n"
+	"enderror\n"
+	"error 10\n",
+	"0\nin handler\n",
+	},
+	{
+	"try_in_onerror",
+	"onerror\n"
+	"try\n"
+	"local dim a%(10)\n"
+	"print a%(0)\n"
+	"endtry\n"
+	"enderror\n"
+	"print\"hello\"\n"
+	"error 10\n",
+	"hello\n0\n"
+	},
+	{"try_back2back",
+	"try\n"
+	"print 1\n"
+	"error 2\n"
+	"endtry\n"
+	"try\n"
+	"print 3\n"
+	"error 4\n"
+	"endtry\n",
+	"1\n3\n",
+	},
+	{
+	"nested_try_exp_in_proc",
+	"PROCTry\n"
+	"print \"and here\"\n"
+	"def PROCTry\n"
+	"print try\n"
+	"x% := try\n"
+	"error 14\n"
+	"endtry\n"
+	"print \"failed with error: \";\n"
+	"print x%\n"
+	"endtry\n"
+	"print \"I should be here\"\n"
+	"endproc",
+	"failed with error: 14\n0\nI should be here\nand here\n",
 	},
 };
 

@@ -165,6 +165,12 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_NESTED_HANDLER */
 	{"Nested error handlers are not allowed\n", 0},
 
+	/* SUBTILIS_ERROR_HANDLER_IN_TRY */
+	{"Error handlers are not allowed in try blocks\n", 0},
+
+	/* SUBTILIS_ERROR_ERROR_IN_HANDLER */
+	{"Implicit error in handler. A try statement is needed\n", 0},
+
 	/* SUBTILIS_ERROR_ENDPROC_IN_FN */
 	{"ENDPROC is not allowed in functions\n"},
 

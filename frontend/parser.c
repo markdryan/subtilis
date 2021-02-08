@@ -554,6 +554,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_ENDERROR */
 	NULL, /* SUBTILIS_KEYWORD_ENDIF */
 	subtilis_parser_endproc, /* SUBTILIS_KEYWORD_ENDPROC */
+	NULL, /* SUBTILIS_KEYWORD_ENDTRY */
 	NULL, /* SUBTILIS_KEYWORD_ENDWHILE */
 	NULL, /* SUBTILIS_KEYWORD_EOF_HASH */
 	NULL, /* SUBTILIS_KEYWORD_EOR */
@@ -642,6 +643,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_TINT */
 	NULL, /* SUBTILIS_KEYWORD_TO */
 	NULL, /* SUBTILIS_KEYWORD_TRUE */
+	subtilis_parser_try, /* SUBTILIS_KEYWORD_TRY */
 	NULL, /* SUBTILIS_KEYWORD_UNTIL */
 	NULL, /* SUBTILIS_KEYWORD_USR */
 	NULL, /* SUBTILIS_KEYWORD_VAL */
