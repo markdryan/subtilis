@@ -277,6 +277,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 		case SUBTILIS_KEYWORD_TRY:
 			e = subtilis_parser_try_exp(p, t, err);
 			break;
+		case SUBTILIS_KEYWORD_TRY_ONE:
+			return subtilis_parser_try_one_exp(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "Unexpected keyword in expression",

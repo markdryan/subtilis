@@ -195,6 +195,34 @@ void subtilis_parser_compound_at_level(subtilis_parser_t *p,
 	    subtilis_handler_list_truncate(p->current->handler_list, p->level);
 }
 
+void subtilis_parser_compound_statement_at_level(subtilis_parser_t *p,
+						 subtilis_token_t *t,
+						 subtilis_error_t *err)
+{
+	subtilis_ir_operand_t var_reg;
+
+	subtilis_symbol_table_level_up(p->local_st, p->l, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_parser_statement(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
+	subtilis_reference_deallocate_refs(p, var_reg, p->local_st, p->level,
+					   err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	p->level--;
+	subtilis_symbol_table_level_down(p->local_st, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	p->current->handler_list =
+	    subtilis_handler_list_truncate(p->current->handler_list, p->level);
+}
+
 void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 			      int end_key, subtilis_error_t *err)
 {

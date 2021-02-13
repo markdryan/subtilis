@@ -245,6 +245,10 @@ subtilis_exp_t *subtilis_parser_try_exp(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	subtilis_var_set_eflag(p, false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	subtilis_ir_section_add_label(p->current, skip_label.label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -265,10 +269,8 @@ void subtilis_parser_try(subtilis_parser_t *p, subtilis_token_t *t,
 			 subtilis_error_t *err)
 {
 	subtilis_ir_operand_t handler_label;
-	subtilis_ir_operand_t skip_label;
 
 	handler_label.label = subtilis_ir_section_new_label(p->current);
-	skip_label.label = subtilis_ir_section_new_label(p->current);
 
 	p->level++;
 	p->current->try_depth++;
@@ -290,16 +292,124 @@ void subtilis_parser_try(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	subtilis_ir_section_add_label(p->current, handler_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_var_set_eflag(p, false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	p->current->try_depth--;
+}
+
+subtilis_exp_t *subtilis_parser_try_one_exp(subtilis_parser_t *p,
+					    subtilis_token_t *t,
+					    subtilis_error_t *err)
+{
+	subtilis_ir_operand_t handler_label;
+	subtilis_ir_operand_t skip_label;
+	subtilis_ir_operand_t retval;
+	subtilis_ir_operand_t zero;
+	subtilis_exp_t *e = NULL;
+
+	retval.reg = p->current->reg_counter++;
+	zero.integer = 0;
+
+	handler_label.label = subtilis_ir_section_new_label(p->current);
+	skip_label.label = subtilis_ir_section_new_label(p->current);
+
+	p->level++;
+	p->current->try_depth++;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	p->current->handler_list = subtilis_handler_list_update(
+	    p->current->handler_list, p->level, handler_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_parser_compound_statement_at_level(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	p->current->endproc = false;
+
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, retval, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
 					     skip_label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, handler_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_var_lookup_var(p, subtilis_err_hidden_var, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      retval, e->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_var_set_eflag(p, false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, skip_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_delete(e);
+
+	p->current->try_depth--;
+
+	return subtilis_exp_new_int32_var(retval.reg, err);
+
+cleanup:
+	subtilis_exp_delete(e);
+
+	return NULL;
+}
+
+void subtilis_parser_try_one(subtilis_parser_t *p, subtilis_token_t *t,
+			     subtilis_error_t *err)
+{
+	subtilis_ir_operand_t handler_label;
+
+	handler_label.label = subtilis_ir_section_new_label(p->current);
+
+	p->level++;
+	p->current->try_depth++;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	p->current->handler_list = subtilis_handler_list_update(
+	    p->current->handler_list, p->level, handler_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_parser_compound_statement_at_level(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	p->current->endproc = false;
 
 	subtilis_ir_section_add_label(p->current, handler_label.label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_ir_section_add_label(p->current, skip_label.label, err);
+	subtilis_var_set_eflag(p, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

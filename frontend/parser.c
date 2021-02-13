@@ -644,6 +644,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_TO */
 	NULL, /* SUBTILIS_KEYWORD_TRUE */
 	subtilis_parser_try, /* SUBTILIS_KEYWORD_TRY */
+	subtilis_parser_try_one, /* SUBTILIS_KEYWORD_TRY */
 	NULL, /* SUBTILIS_KEYWORD_UNTIL */
 	NULL, /* SUBTILIS_KEYWORD_USR */
 	NULL, /* SUBTILIS_KEYWORD_VAL */

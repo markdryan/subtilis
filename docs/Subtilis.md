@@ -646,6 +646,20 @@ endtry
 
 will not compile.
 
+Sometimes you only want to trap the error from a single statement.  This
+can be down using the try/endtry statements, but typing endtry for a
+single statement is tedious.  For this reason, Subtilis also supports
+the tryone keyword, which allows you to trap the error from a single
+statement, and does not require block termination statement, i.e., there
+is no endtryone.  Note that the statement can be a compound statement so
+you can write code like:
+
+```
+if tryone for i% := 0 to 10 PROCMayFail next then
+    print "Failed"
+endif
+```
+
 ### Strings
 
 Strings work much in the same way as they do in BBC BASIC with the exception that there

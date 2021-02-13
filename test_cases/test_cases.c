@@ -3273,6 +3273,21 @@ const subtilis_test_case_t test_cases[] = {
 	"endproc",
 	"failed with error: 14\n0\nI should be here\nand here\n",
 	},
+	{
+	"tryone",
+	"a% := 0\n"
+	"while tryone PROCFail(a%)\n"
+	"a% += 1\n"
+	"endwhile\n"
+	"print \"finished\"\n"
+	"def PROCFail(a%)\n"
+	"PRINT a%\n"
+	"if a% < 5 then\n"
+	"      error a%+1\n"
+	"endif\n"
+	"endproc\n",
+	"0\n1\n2\n3\n4\n5\nfinished\n",
+	},
 };
 
 /* clang-format on */
