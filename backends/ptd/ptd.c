@@ -21,6 +21,7 @@
 #include "../../arch/arm32/arm_gen.h"
 #include "../../arch/arm32/assembler.h"
 #include "../../arch/arm32/vfp_gen.h"
+#include "../../common/error_codes.h"
 #include "../riscos_common/riscos_arm.h"
 #include "ptd.h"
 #include "ptd_swi.h"
@@ -269,6 +270,15 @@ const subtilis_ir_rule_raw_t ptd_rules[] = {
 	 {"blockfree *, *\n", subtilis_riscos_arm_block_free_space},
 	 {"blockadjust *, *\n", subtilis_riscos_arm_block_adjust},
 	 {"syscall\n", subtilis_ptd_syscall},
+	 {"openout *, *\n", subtilis_riscos_openout},
+	 {"openup *, *\n", subtilis_riscos_openup},
+	 {"openin *, *\n", subtilis_riscos_openin },
+	 {"close *\n", subtilis_riscos_close },
+	 {"bget *, *\n", subtilis_riscos_bget },
+	 {"bput *, *\n", subtilis_riscos_bput },
+	 {"blockget *, *, *, *\n", subtilis_riscos_block_get },
+	 {"blockput *, *, *, *\n", subtilis_riscos_block_put },
+	 {"eof *, *\n", subtilis_ptd_eof },
 };
 
 const size_t ptd_rules_count = sizeof(ptd_rules) /
@@ -404,4 +414,71 @@ void subtilis_ptd_arm_off(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err)
 {
 	prv_cursor_on_off(s, user_data, 0, err);
+}
+
+void subtilis_ptd_eof(subtilis_ir_section_t *s, size_t start, void *user_data,
+		      subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t handle;
+	subtilis_arm_reg_t one;
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_br_instr_t *br;
+	subtilis_arm_section_t *arm_s = user_data;
+	size_t label = arm_s->label_counter++;
+	subtilis_ir_inst_t *bget = &s->ops[start]->op.instr;
+
+	dest = subtilis_arm_ir_to_arm_reg(bget->operands[0].reg);
+	handle = subtilis_arm_ir_to_arm_reg(bget->operands[1].reg);
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 127,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 1, handle,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/* OS_Byte &06 */
+	/* read_mask = 0x3 = r0, r1 */
+	/* write_mask = 0x6 = r2 */
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x20000 + 0x6, 0x3,
+			     0x6, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	one = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	subtilis_arm_gen_sete(arm_s, s, SUBTILIS_ARM_CCODE_VS, one,
+			      SUBTILIS_ERROR_CODE_READ, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	br = &instr->operands.br;
+	br->ccode = SUBTILIS_ARM_CCODE_VS;
+	br->link = false;
+	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
+	br->target.label = label;
+
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_CMP,
+				 SUBTILIS_ARM_CCODE_AL, 1, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_EQ, false, dest, 0,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mvn_imm(arm_s, SUBTILIS_ARM_CCODE_NE, false, dest, 0,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_section_add_label(arm_s, label, err);
 }

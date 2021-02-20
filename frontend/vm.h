@@ -18,6 +18,7 @@
 #define __SUBTILIS_VM_H
 
 #include <stdint.h>
+#include <stdio.h>
 
 #include "../common/buffer.h"
 #include "../common/ir.h"
@@ -25,7 +26,7 @@
 #include "symbol_table.h"
 
 #define SUBTILIS_VM_HEAP_SIZE (32 * 1024)
-
+#define SUBTILIS_VM_MAX_FILES 16
 /*
  * TODO: We need this as we only have 32 bit registers.
  */
@@ -51,6 +52,10 @@ struct subitlis_vm_t_ {
 	subtilis_vm_heap_t heap;
 	size_t *constants;
 	size_t max_constants;
+	// clang-format off
+	FILE * files[SUBTILIS_VM_MAX_FILES];
+
+	// clang-format on
 };
 
 typedef struct subitlis_vm_t_ subitlis_vm_t;

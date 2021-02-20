@@ -116,6 +116,24 @@ void subtilis_riscos_arm_syscall(subtilis_ir_section_t *s, size_t start,
 				 void *user_data,
 				 const subtilis_arm_swi_t *swi_list,
 				 size_t swi_count, subtilis_error_t *err);
+void subtilis_riscos_openout(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_riscos_openup(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err);
+void subtilis_riscos_openin(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err);
+void subtilis_riscos_close(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err);
+void subtilis_riscos_bget(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
+void subtilis_riscos_bput(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
+void subtilis_riscos_block_get(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_error_t *err);
+void subtilis_riscos_block_put(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_error_t *err);
+void subtilis_riscos_eof(subtilis_ir_section_t *s, size_t start,
+			 void *user_data, subtilis_error_t *err);
 
 bool subtilis_riscos_sys_check(size_t call_id, uint32_t *in_regs,
 			       uint32_t *out_regs, bool *handle_errors,

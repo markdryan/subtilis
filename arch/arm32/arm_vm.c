@@ -60,8 +60,14 @@ fail:
 
 void subtilis_arm_vm_delete(subtilis_arm_vm_t *vm)
 {
+	size_t i;
+
 	if (!vm)
 		return;
+
+	for (i = 0; i < SUBTILIS_ARM_VM_MAX_FILES; i++)
+		if (vm->files[i])
+			fclose(vm->files[i]);
 
 	free(vm->memory);
 	free(vm);
@@ -1033,9 +1039,29 @@ static void prv_inkey(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 		arm_vm->regs[1] = 0;
 }
 
+static void prv_osbyte_eof(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
+{
+	int32_t slot = arm_vm->regs[1];
+
+	if (slot >= SUBTILIS_ARM_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!arm_vm->files[slot]) {
+		arm_vm->overflow_flag = true;
+		return;
+	}
+
+	arm_vm->regs[1] = (int32_t)feof(arm_vm->files[slot]);
+}
+
 static void prv_os_byte(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 {
 	switch (arm_vm->regs[0]) {
+	case 127:
+		prv_osbyte_eof(arm_vm, err);
+		break;
 	case 129:
 		prv_inkey(arm_vm, err);
 		break;
@@ -1046,6 +1072,122 @@ static void prv_os_byte(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 	default:
 		break;
 	}
+}
+
+static void prv_os_find(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
+{
+	int32_t slot;
+	const char *mode;
+	int32_t code = arm_vm->regs[0] & 0xf0;
+	size_t ptr;
+
+	if (code == 0) {
+		slot = arm_vm->regs[1];
+		if (slot == 0) {
+			for (; slot < SUBTILIS_ARM_VM_MAX_FILES; slot++)
+				if (arm_vm->files[slot]) {
+					fclose(arm_vm->files[slot]);
+					arm_vm->files[slot] = NULL;
+				}
+		} else {
+			if (arm_vm->files[slot]) {
+				fclose(arm_vm->files[slot]);
+				arm_vm->files[slot] = NULL;
+			} else {
+				arm_vm->overflow_flag = true;
+			}
+		}
+		return;
+	}
+
+	if (code != 0x40 && code != 0x80 && code != 0xc0) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	for (slot = 0; slot < SUBTILIS_ARM_VM_MAX_FILES; slot++)
+		if (!arm_vm->files[slot])
+			break;
+
+	if (slot == SUBTILIS_ARM_VM_MAX_FILES) {
+		arm_vm->overflow_flag = true;
+		return;
+	}
+
+	switch (code) {
+	case 0x40:
+		mode = "r";
+		break;
+	default:
+		mode = "w+";
+		break;
+	}
+
+	ptr = arm_vm->regs[1] - arm_vm->start_address;
+	arm_vm->files[slot] = fopen((const char *)&arm_vm->memory[ptr], mode);
+
+	if (!arm_vm->files[slot])
+		arm_vm->overflow_flag = true;
+	else
+		arm_vm->regs[0] = slot;
+}
+
+static void prv_os_bput(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
+{
+	int32_t slot = arm_vm->regs[1];
+
+	if (slot >= SUBTILIS_ARM_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!arm_vm->files[slot]) {
+		arm_vm->overflow_flag = true;
+		return;
+	}
+
+	if (fputc(arm_vm->regs[0], arm_vm->files[slot]) == EOF)
+		arm_vm->overflow_flag = true;
+}
+
+static void prv_os_bget(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
+{
+	int32_t slot = arm_vm->regs[1];
+
+	if (slot >= SUBTILIS_ARM_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!arm_vm->files[slot]) {
+		arm_vm->overflow_flag = true;
+		return;
+	}
+
+	arm_vm->regs[0] = (int32_t)fgetc(arm_vm->files[slot]);
+	if (arm_vm->regs[0] == EOF) {
+		arm_vm->carry_flag = true;
+		arm_vm->overflow_flag = true;
+	} else {
+		arm_vm->carry_flag = false;
+	}
+}
+
+static void prv_os_args(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
+{
+	int32_t slot = arm_vm->regs[1];
+
+	if (slot >= SUBTILIS_ARM_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!arm_vm->files[slot]) {
+		arm_vm->overflow_flag = true;
+		return;
+	}
+
+	arm_vm->regs[2] = (int32_t)feof(arm_vm->files[slot]);
 }
 
 static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
@@ -1062,6 +1204,9 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		arm_vm->regs[15] += 4;
 		return;
 	}
+
+	if (op->code & 0x20000)
+		arm_vm->overflow_flag = false;
 
 	switch (op->code) {
 	case 0x11 + 0x20000:
@@ -1162,12 +1307,28 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			    subtilis_get_i32_time();
 		}
 		break;
+	case 0x9 + 0x20000:
+	case 0x9:
+		prv_os_args(arm_vm, err);
+		break;
 	case 0x32 + 0x20000:
 	case 0x32:
 		/* OS_ReadPoint  */
 		arm_vm->regs[2] = 0;
 		arm_vm->regs[3] = 0;
 		arm_vm->regs[4] = 0;
+		break;
+	case 0xa:
+	case 0xa + 0x20000:
+		prv_os_bget(arm_vm, err);
+		break;
+	case 0xb:
+	case 0xb + 0x20000:
+		prv_os_bput(arm_vm, err);
+		break;
+	case 0xd:
+	case 0xd + 0x20000:
+		prv_os_find(arm_vm, err);
 		break;
 	default:
 		code = op->code;
@@ -1333,7 +1494,8 @@ static void prv_process_ldm(subtilis_arm_vm_t *arm_vm,
 	if (op->write_back)
 		arm_vm->regs[op->op0] = addr + arm_vm->start_address;
 
-	// TODO: Is this correct? We dont do this for other loads
+	// TODO: Is this correct? We dont do this for other
+	// loads
 
 	if (!((1 << 15) & op->reg_list))
 		arm_vm->regs[15] += 4;

@@ -14,6 +14,7 @@ COMMON =\
 	parser_compound.c \
 	parser_cond.c \
 	parser_exp.c \
+	parser_file.c \
 	parser_loops.c \
 	parser_math.c \
 	parser_error.c \

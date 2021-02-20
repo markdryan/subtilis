@@ -195,7 +195,16 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "heapfree", SUBTILIS_OP_CLASS_REG },
 	{ "blockfree", SUBTILIS_OP_CLASS_REG_REG },
 	{ "blockadjust", SUBTILIS_OP_CLASS_REG_REG },
-	{ "cmovi32", SUBTILIS_OP_CLASS_REG_REG_REG_REG},
+	{ "cmovi32", SUBTILIS_OP_CLASS_REG_REG_REG_REG },
+	{ "openout", SUBTILIS_OP_CLASS_REG_REG },
+	{ "openup", SUBTILIS_OP_CLASS_REG_REG },
+	{ "openin", SUBTILIS_OP_CLASS_REG_REG },
+	{ "close", SUBTILIS_OP_CLASS_REG },
+	{ "bget", SUBTILIS_OP_CLASS_REG_REG },
+	{ "bput", SUBTILIS_OP_CLASS_REG_REG },
+	{ "blockget", SUBTILIS_OP_CLASS_REG_REG_REG_REG },
+	{ "blockput", SUBTILIS_OP_CLASS_REG_REG_REG_REG },
+	{ "eof", SUBTILIS_OP_CLASS_REG_REG },
 };
 
 /*

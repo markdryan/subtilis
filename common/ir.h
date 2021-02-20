@@ -1610,6 +1610,104 @@ typedef enum {
 
 	SUBTILIS_OP_INSTR_CMOV_I32,
 
+	/*
+	 *
+	 * openout r0, r1
+	 *
+	 * Creates a new file with name specified by the null terminated
+	 * string in R1.  The file is open for reading and writing.  If
+	 * the file already exists it is overwritten.  The handle for the
+	 * newly open file is returned in r0.  An error will be generated
+	 * if the file cannot be created.
+	 */
+
+	SUBTILIS_OP_INSTR_OPENOUT,
+
+	/*
+	 *
+	 * openup r0, r1
+	 *
+	 * Opens an existing file for reading and writing.  The name of the
+	 * file to open is specified by the null terminated pointed to be
+	 * The handle for the newly open file is returned in r0.  An error
+	 * will be generated if the file cannot be opened.
+	 */
+
+	SUBTILIS_OP_INSTR_OPENUP,
+
+	/*
+	 *
+	 * openin r0, r1
+	 *
+	 * Opens an existing file for reading.  The name of the
+	 * file to open is specified by the null terminated pointed to be
+	 * The handle for the newly open file is returned in r0.  An error
+	 * will be generated if the file cannot be opened.
+	 */
+
+	SUBTILIS_OP_INSTR_OPENIN,
+
+	/*
+	 *
+	 * close r0
+	 *
+	 * Closes the open file whose handle is stored in r0.
+	 */
+
+	SUBTILIS_OP_INSTR_CLOSE,
+
+	/*
+	 *
+	 * bget r0, r1
+	 *
+	 * Reads a byte from the open file whose handle is in r1.  The
+	 * byte is returned in the lowest byte of r0.
+	 */
+
+	SUBTILIS_OP_INSTR_BGET,
+
+	/*
+	 *
+	 * bput r0, r1
+	 *
+	 * Writes the least significant byte in r0 to the open file
+	 * whose handle is in r1.
+	 */
+
+	SUBTILIS_OP_INSTR_BPUT,
+
+	/*
+	 *
+	 * blockget r0, r1, r2, r3
+	 *
+	 * Reads up to r2 bytes into the buffer pointed to by r3 from
+	 * the file whose handle is stored in r1.  The number of bytes
+	 * read is returned in r0.
+	 */
+
+	SUBTILIS_OP_INSTR_BLOCK_GET,
+
+	/*
+	 *
+	 * blockput r0, r1, r2, r3
+	 *
+	 * Writes up to r2 bytes of data contained in the buffer pointed
+	 * to be r3 from the file whose handle is stored in r1.  The number
+	 * of bytes read is returned in r0.
+	 */
+
+	SUBTILIS_OP_INSTR_BLOCK_PUT,
+
+	/*
+	 *
+	 * eof r0, r1
+	 *
+	 * Stores -1 in r0 if the file handle in r1 refers to a file whose
+	 * end of file marker has been reached, or 0 otherwise
+	 */
+
+	SUBTILIS_OP_INSTR_EOF,
+
 } subtilis_op_instr_type_t;
 
 typedef enum {

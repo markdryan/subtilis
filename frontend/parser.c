@@ -26,6 +26,7 @@
 #include "parser_compound.h"
 #include "parser_cond.h"
 #include "parser_error.h"
+#include "parser_file.h"
 #include "parser_graphics.h"
 #include "parser_loops.h"
 #include "parser_os.h"
@@ -529,14 +530,14 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_BEAT */
 	NULL, /* SUBTILIS_KEYWORD_BEATS */
 	NULL, /* SUBTILIS_KEYWORD_BGET_HASH */
-	NULL, /* SUBTILIS_KEYWORD_BPUT_HASH */
+	subtilis_parser_bput, /* SUBTILIS_KEYWORD_BPUT_HASH */
 	NULL, /* SUBTILIS_KEYWORD_BY */
 	NULL, /* SUBTILIS_KEYWORD_CALL */
 	NULL, /* SUBTILIS_KEYWORD_CASE */
 	NULL, /* SUBTILIS_KEYWORD_CHR_STR */
 	subtilis_parser_circle, /* SUBTILIS_KEYWORD_CIRCLE */
 	subtilis_parser_clg, /* SUBTILIS_KEYWORD_CLG */
-	NULL, /* SUBTILIS_KEYWORD_CLOSE_HASH */
+	subtilis_parser_close, /* SUBTILIS_KEYWORD_CLOSE_HASH */
 	subtilis_parser_cls, /* SUBTILIS_KEYWORD_CLS */
 	subtilis_parser_colour, /* SUBTILIS_KEYWORD_COLOR */
 	subtilis_parser_colour, /* SUBTILIS_KEYWORD_COLOUR */
