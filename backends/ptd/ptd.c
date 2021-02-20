@@ -279,6 +279,7 @@ const subtilis_ir_rule_raw_t ptd_rules[] = {
 	 {"blockget *, *, *, *\n", subtilis_riscos_block_get },
 	 {"blockput *, *, *, *\n", subtilis_riscos_block_put },
 	 {"eof *, *\n", subtilis_ptd_eof },
+	 {"ext *, *\n", subtilis_riscos_ext },
 };
 
 const size_t ptd_rules_count = sizeof(ptd_rules) /

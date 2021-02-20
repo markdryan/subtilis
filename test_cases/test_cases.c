@@ -3339,6 +3339,23 @@ const subtilis_test_case_t test_cases[] = {
 	"endproc\n",
 	"0\n0\n-1\nhello world!\n"
 	},
+	{"ext_test",
+	"PROCCreateFile(\"markus\", string$(33, \"!\"))\n"
+	"f% = openin(\"markus\")\n"
+	"onerror tryone close# f% enderror\n"
+	"print ext# f%\n"
+	"close# f%\n"
+	"\n"
+	"def PROCCreateFile(name$, data$)\n"
+	"  f% := openout(name$)\n"
+	"  onerror tryone close# f% enderror\n"
+	"  for i% := 1 to len(data$)\n"
+	"    bput# f%, asc(mid$(data$,i%,1))\n"
+	"  next\n"
+	"  close# f%\n"
+	"endproc\n",
+	"33\n",
+	},
 };
 
 /* clang-format on */

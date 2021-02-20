@@ -1175,6 +1175,7 @@ static void prv_os_bget(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 
 static void prv_os_args(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 {
+	int32_t fsize = 0;
 	int32_t slot = arm_vm->regs[1];
 
 	if (slot >= SUBTILIS_ARM_VM_MAX_FILES) {
@@ -1187,7 +1188,17 @@ static void prv_os_args(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 		return;
 	}
 
-	arm_vm->regs[2] = (int32_t)feof(arm_vm->files[slot]);
+	if (arm_vm->regs[0] == 2) {
+		if (!subtils_get_file_size(arm_vm->files[slot], &fsize)) {
+			arm_vm->overflow_flag = true;
+			return;
+		}
+		arm_vm->regs[2] = fsize;
+	} else if (arm_vm->regs[0] == 5) {
+		arm_vm->regs[2] = (int32_t)feof(arm_vm->files[slot]);
+	} else {
+		subtilis_error_set_assertion_failed(err);
+	}
 }
 
 static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,

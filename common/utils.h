@@ -17,7 +17,9 @@
 #ifndef __SUBTILIS_UTILS_H
 #define __SUBTILIS_UTILS_H
 
+#include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 const char *subtilis_utils_basename(const char *path);
 /*
@@ -25,4 +27,6 @@ const char *subtilis_utils_basename(const char *path);
  * positive.  Date will need to be updated every year or so.
  */
 int32_t subtilis_get_i32_time(void);
+
+bool subtils_get_file_size(FILE *f, int32_t *size);
 #endif

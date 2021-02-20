@@ -1708,6 +1708,15 @@ typedef enum {
 
 	SUBTILIS_OP_INSTR_EOF,
 
+	/*
+	 *
+	 * ext r0, r1
+	 *
+	 * Returns the size of the file whose handle is stored in r1.
+	 */
+
+	SUBTILIS_OP_INSTR_EXT,
+
 } subtilis_op_instr_type_t;
 
 typedef enum {

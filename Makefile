@@ -165,10 +165,11 @@ unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(FPA:%.c=%.o) $(V
 
 .PHONY: clean
 clean:
-	rm subtro subtptd *.o *.d unit_tests
+	rm subtro subtptd *.o *.d unit_tests markus
 
 .PHONY: check
 check: unit_tests
+	- rm markus
 	./unit_tests
 
 -include $(ARM:%.c=%.d)

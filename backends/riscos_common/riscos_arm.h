@@ -134,6 +134,8 @@ void subtilis_riscos_block_put(subtilis_ir_section_t *s, size_t start,
 			       void *user_data, subtilis_error_t *err);
 void subtilis_riscos_eof(subtilis_ir_section_t *s, size_t start,
 			 void *user_data, subtilis_error_t *err);
+void subtilis_riscos_ext(subtilis_ir_section_t *s, size_t start,
+			 void *user_data, subtilis_error_t *err);
 
 bool subtilis_riscos_sys_check(size_t call_id, uint32_t *in_regs,
 			       uint32_t *out_regs, bool *handle_errors,

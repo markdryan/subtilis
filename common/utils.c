@@ -52,3 +52,26 @@ int32_t subtilis_get_i32_time(void)
 
 	return (int32_t)(t * 100);
 }
+
+bool subtils_get_file_size(FILE *f, int32_t *size)
+{
+	long cur_pos = ftell(f);
+	long fsize;
+
+	if (cur_pos == -1)
+		return false;
+
+	if (fseek(f, 0L, SEEK_END))
+		return false;
+
+	fsize = (int32_t)ftell(f);
+	if (fsize == -1)
+		return false;
+
+	if (fseek(f, 0L, cur_pos))
+		return false;
+
+	*size = fsize;
+
+	return true;
+}
