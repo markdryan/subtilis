@@ -2364,6 +2364,86 @@ void subtilis_riscos_ext(subtilis_ir_section_t *s, size_t start,
 				 err);
 }
 
+void subtilis_riscos_get_ptr(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t handle;
+	subtilis_arm_reg_t one;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *bget = &s->ops[start]->op.instr;
+
+	dest = subtilis_arm_ir_to_arm_reg(bget->operands[0].reg);
+	handle = subtilis_arm_ir_to_arm_reg(bget->operands[1].reg);
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 0,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 1, handle,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/* OS_Args 2 */
+	/* read_mask = 0x3 = r0, r1 */
+	/* write_mask = 0x5 = r0, r2 */
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x20000 + 0x9, 0x3,
+			     0x5, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	one = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	subtilis_arm_gen_sete(arm_s, s, SUBTILIS_ARM_CCODE_VS, one,
+			      SUBTILIS_ERROR_CODE_READ, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_VC, false, dest, 2,
+				 err);
+}
+
+void subtilis_riscos_set_ptr(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t handle;
+	subtilis_arm_reg_t one;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *bget = &s->ops[start]->op.instr;
+
+	dest = subtilis_arm_ir_to_arm_reg(bget->operands[0].reg);
+	handle = subtilis_arm_ir_to_arm_reg(bget->operands[1].reg);
+
+	subtilis_arm_add_mov_imm(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, 1,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 1, handle,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_VC, false, 2, dest,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/* OS_Args 2 */
+	/* read_mask = 0x7 = r0, r1, r2 */
+	/* write_mask = 0x0*/
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x20000 + 0x9, 0x3,
+			     0x0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	one = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	subtilis_arm_gen_sete(arm_s, s, SUBTILIS_ARM_CCODE_VS, one,
+			      SUBTILIS_ERROR_CODE_READ, err);
+}
+
 void subtilis_riscos_asm_free(void *asm_code)
 {
 	subtilis_arm_section_t *arm_s = asm_code;

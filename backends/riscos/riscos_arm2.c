@@ -276,6 +276,8 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	 {"blockput *, *, *, *\n", subtilis_riscos_block_put },
 	 {"eof *, *\n", subtilis_riscos_eof },
 	 {"ext *, *\n", subtilis_riscos_ext },
+	 {"getptr *, *\n", subtilis_riscos_get_ptr },
+	 {"setptr *, *\n", subtilis_riscos_set_ptr },
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

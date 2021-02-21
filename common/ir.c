@@ -206,6 +206,8 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "blockput", SUBTILIS_OP_CLASS_REG_REG_REG_REG },
 	{ "eof", SUBTILIS_OP_CLASS_REG_REG },
 	{ "ext", SUBTILIS_OP_CLASS_REG_REG },
+	{ "getptr", SUBTILIS_OP_CLASS_REG_REG },
+	{ "setptr", SUBTILIS_OP_CLASS_REG_REG },
 };
 
 /*

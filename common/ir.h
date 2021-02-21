@@ -1712,10 +1712,28 @@ typedef enum {
 	 *
 	 * ext r0, r1
 	 *
-	 * Returns the size of the file whose handle is stored in r1.
+	 * Returns the size of the file whose handle is stored in r1 in r0.
 	 */
 
 	SUBTILIS_OP_INSTR_EXT,
+
+	/*
+	 *
+	 * getptr r0, r1
+	 *
+	 * Returns the pointer of the file whose handle is stored in r1 in r0.
+	 */
+
+	SUBTILIS_OP_INSTR_GET_PTR,
+
+	/*
+	 *
+	 * setptr r0, r1
+	 *
+	 * Sets the pointer of the file whose handle is stored in r1 to r0.
+	 */
+
+	SUBTILIS_OP_INSTR_SET_PTR,
 
 } subtilis_op_instr_type_t;
 

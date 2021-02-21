@@ -292,6 +292,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return subtilis_parser_eof(p, t, err);
 		case SUBTILIS_KEYWORD_EXT_HASH:
 			return subtilis_parser_ext(p, t, err);
+		case SUBTILIS_KEYWORD_PTR_HASH:
+			return subtilis_parser_get_ptr(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "Unexpected keyword in expression",

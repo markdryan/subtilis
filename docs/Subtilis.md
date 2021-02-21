@@ -647,10 +647,10 @@ endtry
 will not compile.
 
 Sometimes you only want to trap the error from a single statement.  This
-can be down using the try/endtry statements, but typing endtry for a
+can be done using the try/endtry statements, but typing endtry for a
 single statement is tedious.  For this reason, Subtilis also supports
 the tryone keyword, which allows you to trap the error from a single
-statement, and does not require block termination statement, i.e., there
+statement, and does not require a block termination statement, i.e., there
 is no endtryone.  Note that the statement can be a compound statement so
 you can write code like:
 
@@ -1077,6 +1077,23 @@ this feature will be added but will be restricted to using a constant integer as
 To make matters worse, Subtilis doesn't yet know about all the existing RiscOS system calls.  Many,
 e.g., Wimp calls, still need to be added.
 
+## File Handling
+
+Works for the most part as you would expect.  There's one syntactic different between BBC BASIC
+and Subtilis though.  The ',' operator is used in place of the '=' operator in the PTR# statement.
+The reason is that the use of '=' is ambiguous, for example when the compiler sees,
+
+```
+ptr# a%=10
+```
+
+It assumes the file handle to be determined not by a% but rather by the expression a%=10.  So for
+this reason, in Subtilis, we write.
+
+```
+ptr# a%, 10
+```
+
 ## New keywords
 
 ### HEAPFREE
@@ -1116,13 +1133,13 @@ As Assembly language is really a platform specific feature the assemblers (curre
 Here's a list of other language features that are currently not implemented but which will be at some point
 
 * The @% variable
-* File Handling
 * CASE OF
 * SOUND
 * OSCLI and *
 * RETURN for passing arguments by reference to procedures and functions
 * POINT TO
 * INPUT
+* INPUT# and PRINT#
 * INSTR
 * SWAP
 * The vector operations on arrays are not implemented but will be

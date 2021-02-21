@@ -1188,7 +1188,19 @@ static void prv_os_args(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 		return;
 	}
 
-	if (arm_vm->regs[0] == 2) {
+	if (arm_vm->regs[0] == 0) {
+		fsize = ftell(arm_vm->files[slot]);
+		if (fsize == -1) {
+			arm_vm->overflow_flag = true;
+			return;
+		}
+		arm_vm->regs[2] = fsize;
+	} else if (arm_vm->regs[0] == 1) {
+		if (fseek(arm_vm->files[slot], arm_vm->regs[2], SEEK_SET)) {
+			arm_vm->overflow_flag = true;
+			return;
+		}
+	} else if (arm_vm->regs[0] == 2) {
 		if (!subtils_get_file_size(arm_vm->files[slot], &fsize)) {
 			arm_vm->overflow_flag = true;
 			return;

@@ -1648,6 +1648,51 @@ static void prv_ext(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = fsize;
 }
 
+static void prv_get_ptr(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int32_t slot;
+	long cur_pos;
+
+	slot = vm->regs[ops[1].reg];
+	if (slot > SUBTILIS_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!vm->files[slot]) {
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_READ);
+		return;
+	}
+	cur_pos = ftell(vm->files[slot]);
+	if (cur_pos == -1) {
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_READ);
+		return;
+	}
+
+	vm->regs[ops[0].reg] = (int32_t)cur_pos;
+}
+
+static void prv_set_ptr(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int32_t slot;
+
+	slot = vm->regs[ops[1].reg];
+	if (slot > SUBTILIS_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!vm->files[slot]) {
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_READ);
+		return;
+	}
+
+	if (fseek(vm->files[slot], vm->regs[ops[0].reg], SEEK_SET))
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_WRITE);
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                        /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1799,6 +1844,8 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_block_put,                     /* SUBTILIS_OP_INSTR_BLOCK_PUT */
 	prv_eof,                           /* SUBTILIS_OP_INSTR_EOF */
 	prv_ext,                           /* SUBTILIS_OP_INSTR_EXT */
+	prv_get_ptr,                       /* SUBTILIS_OP_INSTR_EXT */
+	prv_set_ptr,                       /* SUBTILIS_OP_INSTR_EXT */
 };
 
 /* clang-format on */

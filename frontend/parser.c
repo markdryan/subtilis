@@ -611,7 +611,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_POS */
 	subtilis_parser_print, /* SUBTILIS_KEYWORD_PRINT */
 	NULL, /* SUBTILIS_KEYWORD_PRINT_HASH */
-	NULL, /* SUBTILIS_KEYWORD_PTR_HASH */
+	subtilis_parser_set_ptr, /* SUBTILIS_KEYWORD_PTR_HASH */
 	NULL, /* SUBTILIS_KEYWORD_QUIT */
 	NULL, /* SUBTILIS_KEYWORD_RAD */
 	subtilis_parser_rectangle, /* SUBTILIS_KEYWORD_RECTANGLE */
