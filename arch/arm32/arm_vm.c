@@ -1091,8 +1091,10 @@ static void prv_os_find(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 				}
 		} else {
 			if (arm_vm->files[slot]) {
-				fclose(arm_vm->files[slot]);
-				arm_vm->files[slot] = NULL;
+				if (fclose(arm_vm->files[slot]))
+					arm_vm->overflow_flag = true;
+				else
+					arm_vm->files[slot] = NULL;
 			} else {
 				arm_vm->overflow_flag = true;
 			}

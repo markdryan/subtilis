@@ -1517,6 +1517,8 @@ static void prv_close(subitlis_vm_t *vm, subtilis_buffer_t *b,
 
 	if (fclose(vm->files[slot]))
 		prv_generate_error(vm, SUBTILIS_ERROR_CODE_CLOSE);
+	else
+		vm->files[slot] = NULL;
 }
 
 static void prv_bget(subitlis_vm_t *vm, subtilis_buffer_t *b,

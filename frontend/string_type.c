@@ -415,6 +415,7 @@ static subtilis_exp_t *prv_zt_non_const(subtilis_parser_t *p, subtilis_exp_t *e,
 		goto cleanup;
 
 	null_str = subtilis_exp_new_str(&buf, err);
+	subtilis_buffer_free(&buf);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
