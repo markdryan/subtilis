@@ -1102,6 +1102,30 @@ Returns the number of free bytes available in the heap.  Only makes sense on pla
 amount of memory allocated to a program is fixed when it's run.  On platforms where there's
 no memory restriction on an application, the maximum integer value is returned.
 
+### INTZ
+
+Zero extends from a byte variable to an integer.  See the byte type below for more information
+
+## New Types
+
+### Byte
+
+Subtilis supports a byte type.  This is a signed 8 bit integer.  There are no byte constants only byte variables.  Byte variables are declared with the '&' type suffix, for example
+
+```
+a& := -1
+```
+
+declares a new byte variable and assigns it the value -1.  As byte is a signed type, byte variables are sign extended when converted to other types or printed out.  Use the INTZ keyword to zero extend a byte value instead, e.g.,
+
+```
+```
+a& := -1
+print intz(a&)
+```
+
+outputs 255 and not -1.
+
 ## Assembler
 
 Subtilis implements an assembler, as all good BASIC implementations should.  It differs considerably from the assembler in BBC BASIC, however.  Assembly happens at compile time rather than at runtime and the syntax of Subtilis's assembler is significantly different to that of BBC BASIC.  Assembly code is included directly inside Subtilis source files and not in separate assembly only files.  A function or a procedure must be written entirely on one of the two languages.  It is not possible to mix BASIC and assembly in the same function or procedure.  Inline assembly is not permitted.
