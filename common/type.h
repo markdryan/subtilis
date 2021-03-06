@@ -25,6 +25,7 @@ typedef enum {
 	SUBTILIS_TYPE_CONST_STRING,
 	SUBTILIS_TYPE_REAL,
 	SUBTILIS_TYPE_INTEGER,
+	SUBTILIS_TYPE_BYTE,
 	SUBTILIS_TYPE_STRING,
 	SUBTILIS_TYPE_VOID,
 	SUBTILIS_TYPE_ARRAY_REAL,
@@ -85,6 +86,7 @@ extern const subtilis_type_t subtilis_type_const_integer;
 extern const subtilis_type_t subtilis_type_const_string;
 extern const subtilis_type_t subtilis_type_real;
 extern const subtilis_type_t subtilis_type_integer;
+extern const subtilis_type_t subtilis_type_byte;
 extern const subtilis_type_t subtilis_type_string;
 extern const subtilis_type_t subtilis_type_void;
 extern const subtilis_type_t subtilis_type_local_buffer;

@@ -148,6 +148,7 @@ prv_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 
 {
 	subtilis_symbol_t *sym;
+	size_t align_bytes;
 	char *key_dup = NULL;
 
 	sym = subtilis_hashtable_find(st->h, key);
@@ -160,6 +161,16 @@ prv_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 		goto on_error;
 	}
 	(void)strcpy(key_dup, key);
+
+	/*
+	 * TODO:  This can leave holes in our global data.  It would
+	 * be good to keep track of those holes so we could plug them
+	 * with bytes variables.
+	 */
+
+	align_bytes = st->allocated % size;
+	if (align_bytes > 0)
+		st->allocated += size - align_bytes;
 
 	sym = prv_symbol_new(key_dup, st->allocated, id_type, size, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)

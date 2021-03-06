@@ -40,6 +40,7 @@ COMMON =\
 	type_if.c \
 	float64_type.c \
 	int32_type.c \
+	byte_type_if.c \
 	array_int32_type.c \
 	array_float64_type.c \
 	array_string_type.c \

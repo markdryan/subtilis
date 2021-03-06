@@ -278,6 +278,8 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	 {"ext *, *\n", subtilis_riscos_ext },
 	 {"getptr *, *\n", subtilis_riscos_get_ptr },
 	 {"setptr *, *\n", subtilis_riscos_set_ptr },
+	 {"signx8to32 *, *\n", subtilis_riscos_signx8to32 },
+	 {"movi8tofp *, *\n", subtilis_fpa_gen_movi8tofp },
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

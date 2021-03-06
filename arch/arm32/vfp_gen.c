@@ -905,6 +905,38 @@ void subtilis_vfp_gen_preamble(subtilis_arm_section_t *arm_s,
 				SUBTILIS_VFP_SYSREG_FPSCR, status, err);
 }
 
+void subtilis_vfp_gen_movi8tofp(subtilis_ir_section_t *s, size_t start,
+				void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t src;
+	subtilis_arm_reg_t tmp;
+	subtilis_arm_reg_t tmp1;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *signx = &s->ops[start]->op.instr;
+
+	dest = subtilis_arm_ir_to_dreg(signx->operands[0].reg);
+	src = subtilis_arm_ir_to_arm_reg(signx->operands[1].reg);
+	tmp = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	tmp1 = subtilis_arm_ir_to_dreg(arm_s->freg_counter++);
+
+	/*
+	 * TODO: This needs to change to the proper ARMv6 instruction.
+	 */
+
+	subtilis_arm_gen_signx8to32_helper(arm_s, tmp, src, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_vfp_add_cptran(arm_s, SUBTILIS_VFP_INSTR_FMSR,
+				SUBTILIS_ARM_CCODE_AL, true, tmp1, tmp, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_vfp_add_tran(arm_s, SUBTILIS_VFP_INSTR_FSITOD,
+			      SUBTILIS_ARM_CCODE_AL, true, dest, tmp1, err);
+}
+
 size_t subtilis_vfp_preserve_regs(subtilis_arm_section_t *arm_s,
 				  int save_real_start, subtilis_error_t *err)
 {

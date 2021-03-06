@@ -18,6 +18,7 @@
 
 #include "builtins_ir.h"
 #include "float64_type.h"
+#include "int32_type.h"
 #include "parser_exp.h"
 #include "reference_type.h"
 #include "string_type.h"
@@ -180,6 +181,12 @@ static subtilis_exp_t *prv_coerce_type_const(subtilis_parser_t *p,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return NULL;
 		e = subtilis_type_if_to_int(p, e, err);
+		break;
+	case SUBTILIS_TYPE_BYTE:
+		e = subtilis_type_if_exp_to_var(p, e, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+		e = subtilis_type_if_to_byte(p, e, err);
 		break;
 	default:
 		subtilis_error_set_bad_conversion(
@@ -643,6 +650,7 @@ subtilis_type_if subtilis_type_const_float64 = {
 	.indexed_sub = NULL,
 	.load_mem = NULL,
 	.to_int32 = prv_to_int32_const,
+	.to_byte = NULL,
 	.to_float64 = prv_returne,
 	.to_string = prv_to_string_const,
 	.coerce = prv_coerce_type_const,
@@ -776,6 +784,16 @@ on_error:
 	return NULL;
 }
 
+static subtilis_exp_t *prv_to_byte(subtilis_parser_t *p, subtilis_exp_t *e,
+				   subtilis_error_t *err)
+{
+	e = prv_to_int32(p, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_type_int32.to_byte(p, e, err);
+}
+
 static subtilis_exp_t *prv_to_string(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err)
 {
@@ -861,6 +879,9 @@ static subtilis_exp_t *prv_coerce_type(subtilis_parser_t *p, subtilis_exp_t *e,
 	case SUBTILIS_TYPE_INTEGER:
 		e = subtilis_type_if_to_int(p, e, err);
 		break;
+	case SUBTILIS_TYPE_BYTE:
+		e = subtilis_type_if_to_byte(p, e, err);
+		break;
 	default:
 		subtilis_error_set_bad_conversion(
 		    err, subtilis_type_name(&e->type), subtilis_type_name(type),
@@ -913,6 +934,10 @@ static subtilis_exp_t *prv_commutative(subtilis_parser_t *p, subtilis_exp_t *a1,
 			goto on_error;
 		a1->exp.ir_op.reg = reg;
 		break;
+	case SUBTILIS_TYPE_BYTE:
+		a2 = subtilis_type_if_to_int(p, a2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
 	case SUBTILIS_TYPE_INTEGER:
 		reg = subtilis_ir_section_add_instr2(
 		    p->current, SUBTILIS_OP_INSTR_MOV_I32_FP, a2->exp.ir_op,
@@ -966,6 +991,10 @@ static subtilis_exp_t *prv_commutative_logical(
 		a1->exp.ir_op.reg = reg;
 		a1->type.type = SUBTILIS_TYPE_INTEGER;
 		break;
+	case SUBTILIS_TYPE_BYTE:
+		a2 = subtilis_type_if_to_int(p, a2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
 	case SUBTILIS_TYPE_INTEGER:
 		reg = subtilis_ir_section_add_instr2(
 		    p->current, SUBTILIS_OP_INSTR_MOV_I32_FP, a2->exp.ir_op,
@@ -1196,6 +1225,10 @@ static subtilis_exp_t *prv_pow(subtilis_parser_t *p, subtilis_exp_t *a1,
 		goto on_error;
 
 	switch (a2->type.type) {
+	case SUBTILIS_TYPE_BYTE:
+		a2 = subtilis_type_if_to_int(p, a2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
 	case SUBTILIS_TYPE_INTEGER:
 		a2 = subtilis_type_if_to_float64(p, a2, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -1460,6 +1493,7 @@ subtilis_type_if subtilis_type_float64 = {
 	.indexed_address = NULL,
 	.load_mem = prv_load_from_mem,
 	.to_int32 = prv_to_int32,
+	.to_byte = prv_to_byte,
 	.to_float64 = prv_returne,
 	.to_string = prv_to_string,
 	.coerce = prv_coerce_type,

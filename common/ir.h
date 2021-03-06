@@ -1735,6 +1735,24 @@ typedef enum {
 
 	SUBTILIS_OP_INSTR_SET_PTR,
 
+	/*
+	 *
+	 * signx8to32 r0, r1
+	 *
+	 * Sign extends the value in the bottom 8 bits of r1 into r0.
+	 */
+
+	SUBTILIS_OP_INSTR_SIGNX_8_TO_32,
+
+	/*
+	 *
+	 * movi8fp fp0, r1
+	 *
+	 * Converts the signed byte value in r1 into a 64 bit floating point
+	 * number and stores the result in fp0.
+	 */
+
+	SUBTILIS_OP_INSTR_MOV_I8_FP
 } subtilis_op_instr_type_t;
 
 typedef enum {

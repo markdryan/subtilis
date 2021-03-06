@@ -282,6 +282,8 @@ const subtilis_ir_rule_raw_t ptd_rules[] = {
 	 {"ext *, *\n", subtilis_riscos_ext },
 	 {"getptr *, *\n", subtilis_riscos_get_ptr },
 	 {"setptr *, *\n", subtilis_riscos_set_ptr },
+	 {"signx8to32 *, *\n", subtilis_riscos_signx8to32 },
+	 {"movi8tofp *, *\n", subtilis_vfp_gen_movi8tofp },
 };
 
 const size_t ptd_rules_count = sizeof(ptd_rules) /

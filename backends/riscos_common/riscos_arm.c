@@ -2444,6 +2444,20 @@ void subtilis_riscos_set_ptr(subtilis_ir_section_t *s, size_t start,
 			      SUBTILIS_ERROR_CODE_READ, err);
 }
 
+void subtilis_riscos_signx8to32(subtilis_ir_section_t *s, size_t start,
+				void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t src;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *signx = &s->ops[start]->op.instr;
+
+	dest = subtilis_arm_ir_to_arm_reg(signx->operands[0].reg);
+	src = subtilis_arm_ir_to_arm_reg(signx->operands[1].reg);
+
+	subtilis_arm_gen_signx8to32_helper(arm_s, dest, src, err);
+}
+
 void subtilis_riscos_asm_free(void *asm_code)
 {
 	subtilis_arm_section_t *arm_s = asm_code;

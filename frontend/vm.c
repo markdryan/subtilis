@@ -1695,6 +1695,24 @@ static void prv_set_ptr(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		prv_generate_error(vm, SUBTILIS_ERROR_CODE_WRITE);
 }
 
+static void prv_signx8to32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			   subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int8_t val;
+
+	val = (int8_t)vm->regs[ops[1].reg];
+	vm->regs[ops[0].reg] = (int32_t)val;
+}
+
+static void prv_movi8tofp(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			  subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int8_t val;
+
+	val = (int8_t)vm->regs[ops[1].reg];
+	vm->fregs[ops[0].reg] = (double)val;
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                        /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1846,8 +1864,10 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_block_put,                     /* SUBTILIS_OP_INSTR_BLOCK_PUT */
 	prv_eof,                           /* SUBTILIS_OP_INSTR_EOF */
 	prv_ext,                           /* SUBTILIS_OP_INSTR_EXT */
-	prv_get_ptr,                       /* SUBTILIS_OP_INSTR_EXT */
-	prv_set_ptr,                       /* SUBTILIS_OP_INSTR_EXT */
+	prv_get_ptr,                       /* SUBTILIS_OP_INSTR_GET_PTR */
+	prv_set_ptr,                       /* SUBTILIS_OP_INSTR_SET_PTR */
+	prv_signx8to32,                    /* SUBTILIS_OP_INSTR_SIGNX_8_TO_32 */
+	prv_movi8tofp,                     /* SUBTILIS_OP_INSTR_MOV_I8_FP */
 };
 
 /* clang-format on */

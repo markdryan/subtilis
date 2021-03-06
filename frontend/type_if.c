@@ -19,6 +19,7 @@
 #include "array_float64_type.h"
 #include "array_int32_type.h"
 #include "array_string_type.h"
+#include "byte_type_if.h"
 #include "float64_type.h"
 #include "int32_type.h"
 #include "local_buffer_type_if.h"
@@ -32,6 +33,7 @@ static subtilis_type_if *prv_type_map[] = {
 	&subtilis_type_if_const_string,
 	&subtilis_type_float64,
 	&subtilis_type_int32,
+	&subtilis_type_byte_if,
 	&subtilis_type_if_string,
 	NULL,
 	&subtilis_type_array_float64,
@@ -517,6 +519,27 @@ subtilis_exp_t *subtilis_type_if_to_int(subtilis_parser_t *p, subtilis_exp_t *e,
 				 err);
 }
 
+subtilis_exp_t *subtilis_type_if_to_byte(subtilis_parser_t *p,
+					 subtilis_exp_t *e,
+					 subtilis_error_t *err)
+{
+	if (subtilis_type_if_is_const(&e->type)) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+
+	if (!prv_type_map[e->type.type]->to_byte) {
+		subtilis_error_set_byte_expected(
+		    err, subtilis_type_name(&e->type), p->l->stream->name,
+		    p->l->line);
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return prv_call_unary_fn(p, e, prv_type_map[e->type.type]->to_byte,
+				 err);
+}
+
 subtilis_exp_t *subtilis_type_if_to_float64(subtilis_parser_t *p,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err)
@@ -750,16 +773,20 @@ subtilis_exp_t *subtilis_type_if_lsl(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err)
 
 {
-	a1 = subtilis_type_if_to_int(p, a1, err);
-	if (err->type != SUBTILIS_ERROR_OK) {
-		subtilis_exp_delete(a2);
-		return NULL;
+	if (!subtilis_type_if_is_integer(&a1->type)) {
+		a1 = subtilis_type_if_to_int(p, a1, err);
+		if (err->type != SUBTILIS_ERROR_OK) {
+			subtilis_exp_delete(a2);
+			return NULL;
+		}
 	}
 
-	a2 = subtilis_type_if_to_int(p, a2, err);
-	if (err->type != SUBTILIS_ERROR_OK) {
-		subtilis_exp_delete(a1);
-		return NULL;
+	if (!subtilis_type_if_is_integer(&a2->type)) {
+		a2 = subtilis_type_if_to_int(p, a2, err);
+		if (err->type != SUBTILIS_ERROR_OK) {
+			subtilis_exp_delete(a1);
+			return NULL;
+		}
 	}
 
 	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->lsl,
@@ -770,16 +797,20 @@ subtilis_exp_t *subtilis_type_if_lsr(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err)
 
 {
-	a1 = subtilis_type_if_to_int(p, a1, err);
-	if (err->type != SUBTILIS_ERROR_OK) {
-		subtilis_exp_delete(a2);
-		return NULL;
+	if (!subtilis_type_if_is_integer(&a1->type)) {
+		a1 = subtilis_type_if_to_int(p, a1, err);
+		if (err->type != SUBTILIS_ERROR_OK) {
+			subtilis_exp_delete(a2);
+			return NULL;
+		}
 	}
 
-	a2 = subtilis_type_if_to_int(p, a2, err);
-	if (err->type != SUBTILIS_ERROR_OK) {
-		subtilis_exp_delete(a1);
-		return NULL;
+	if (!subtilis_type_if_is_integer(&a2->type)) {
+		a2 = subtilis_type_if_to_int(p, a2, err);
+		if (err->type != SUBTILIS_ERROR_OK) {
+			subtilis_exp_delete(a1);
+			return NULL;
+		}
 	}
 
 	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->lsr,
@@ -790,16 +821,20 @@ subtilis_exp_t *subtilis_type_if_asr(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err)
 
 {
-	a1 = subtilis_type_if_to_int(p, a1, err);
-	if (err->type != SUBTILIS_ERROR_OK) {
-		subtilis_exp_delete(a2);
-		return NULL;
+	if (!subtilis_type_if_is_integer(&a1->type)) {
+		a1 = subtilis_type_if_to_int(p, a1, err);
+		if (err->type != SUBTILIS_ERROR_OK) {
+			subtilis_exp_delete(a2);
+			return NULL;
+		}
 	}
 
-	a2 = subtilis_type_if_to_int(p, a2, err);
-	if (err->type != SUBTILIS_ERROR_OK) {
-		subtilis_exp_delete(a1);
-		return NULL;
+	if (!subtilis_type_if_is_integer(&a2->type)) {
+		a2 = subtilis_type_if_to_int(p, a2, err);
+		if (err->type != SUBTILIS_ERROR_OK) {
+			subtilis_exp_delete(a1);
+			return NULL;
+		}
 	}
 
 	return prv_call_binary_fn(p, a1, a2, prv_type_map[a1->type.type]->asr,

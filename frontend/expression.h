@@ -56,6 +56,8 @@ subtilis_exp_t *subtilis_exp_new_var_block(subtilis_parser_t *p,
 					   subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_int32_var(unsigned int reg,
 					   subtilis_error_t *err);
+subtilis_exp_t *subtilis_exp_new_byte_var(unsigned int reg,
+					  subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_real_var(unsigned int reg,
 					  subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_int32(int32_t integer, subtilis_error_t *err);

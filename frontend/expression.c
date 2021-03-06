@@ -367,6 +367,12 @@ subtilis_exp_t *subtilis_exp_new_int32_var(unsigned int reg,
 	return subtilis_exp_new_var(&subtilis_type_integer, reg, err);
 }
 
+subtilis_exp_t *subtilis_exp_new_byte_var(unsigned int reg,
+					  subtilis_error_t *err)
+{
+	return subtilis_exp_new_var(&subtilis_type_byte, reg, err);
+}
+
 subtilis_exp_t *subtilis_exp_new_real_var(unsigned int reg,
 					  subtilis_error_t *err)
 {

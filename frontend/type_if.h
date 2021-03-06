@@ -128,6 +128,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_iread_t indexed_address;
 	subtilis_type_if_load_t load_mem;
 	subtilis_type_if_unary_t to_int32;
+	subtilis_type_if_unary_t to_byte;
 	subtilis_type_if_unary_t to_float64;
 	subtilis_type_if_unary_t to_string;
 	subtilis_type_if_unary_t to_hex_string;
@@ -406,6 +407,15 @@ subtilis_exp_t *subtilis_type_if_load_from_mem(subtilis_parser_t *p,
 
 subtilis_exp_t *subtilis_type_if_to_int(subtilis_parser_t *p, subtilis_exp_t *e,
 					subtilis_error_t *err);
+
+/*
+ * Converts a scalar type to a a byte.  As there are no constant bytes this
+ * function will assert if e is a constant.
+ */
+
+subtilis_exp_t *subtilis_type_if_to_byte(subtilis_parser_t *p,
+					 subtilis_exp_t *e,
+					 subtilis_error_t *err);
 
 /*
  * Converts a scalar type to a float64.  The constant status of e is
