@@ -548,6 +548,21 @@ subtilis_exp_t *subtilis_type_if_to_float64(subtilis_parser_t *p,
 				 err);
 }
 
+subtilis_exp_t *subtilis_type_if_zerox(subtilis_parser_t *p, subtilis_exp_t *e,
+				       const subtilis_type_t *type,
+				       subtilis_error_t *err)
+{
+	if (!prv_type_map[e->type.type]->zerox) {
+		subtilis_error_set_bad_zero_extend(
+		    err, subtilis_type_name(&e->type), subtilis_type_name(type),
+		    p->l->stream->name, p->l->line);
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return prv_type_map[e->type.type]->zerox(p, e, type, err);
+}
+
 subtilis_exp_t *subtilis_type_if_to_string(subtilis_parser_t *p,
 					   subtilis_exp_t *e,
 					   subtilis_error_t *err)

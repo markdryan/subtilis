@@ -550,6 +550,10 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	 "try onerror enderror endtry\n",
 	 SUBTILIS_ERROR_HANDLER_IN_TRY,
 	},
+	{"intz_dbl_to_int",
+	"print intz(10.0)\n",
+	SUBTILIS_ERROR_BAD_ZERO_EXTEND,
+	},
 };
 
 /* clang-format on */

@@ -219,6 +219,9 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_BAD_CONVERSION */
 	{"Unable to convert from %s to %s\n", 2},
 
+	/* SUBTILIS_ERROR_BAD_ZERO_EXTEND */
+	{"Cannot zero extend from %s to %s\n", 2},
+
 	/* SUBTILIS_ERROR_BAD_ELEMENT_COUNT */
 	{"Bad element count\n", 0},
 

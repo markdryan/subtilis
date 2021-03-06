@@ -3535,6 +3535,11 @@ const subtilis_test_case_t test_cases[] = {
 	"print chr$(b&)\n",
 	"!\n",
 	},
+	{"intz_byte_int",
+	"a& := TRUE\n"
+	"print intz(a&)\n",
+	"255\n",
+	}
 };
 
 /* clang-format on */

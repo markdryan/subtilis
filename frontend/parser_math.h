@@ -26,6 +26,8 @@ subtilis_exp_t *subtilis_parser_pi(subtilis_parser_t *p, subtilis_token_t *t,
 				   subtilis_error_t *err);
 subtilis_exp_t *subtilis_parser_int(subtilis_parser_t *p, subtilis_token_t *t,
 				    subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_intz(subtilis_parser_t *p, subtilis_token_t *t,
+				     subtilis_error_t *err);
 subtilis_exp_t *subtilis_parser_sin(subtilis_parser_t *p, subtilis_token_t *t,
 				    subtilis_error_t *err);
 subtilis_exp_t *subtilis_parser_cos(subtilis_parser_t *p, subtilis_token_t *t,

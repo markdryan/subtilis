@@ -580,6 +580,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_INPUT_HASH */
 	NULL, /* SUBTILIS_KEYWORD_INSTR */
 	NULL, /* SUBTILIS_KEYWORD_INT */
+	NULL, /* SUBTILIS_KEYWORD_INTZ */
 	subtilis_parser_left_str, /* SUBTILIS_KEYWORD_LEFT_STR */
 	NULL, /* SUBTILIS_KEYWORD_LEN */
 	subtilis_parser_let, /* SUBTILIS_KEYWORD_LET */

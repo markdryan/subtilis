@@ -313,6 +313,7 @@ subtilis_type_if subtilis_type_array_string = {
 	.indexed_address = NULL,
 	.load_mem = NULL,
 	.to_int32 = NULL,
+	.zerox = NULL,
 	.to_float64 = NULL,
 	.to_string = NULL,
 	.to_hex_string = NULL,

@@ -147,6 +147,18 @@ cleanup:
 	return NULL;
 }
 
+subtilis_exp_t *subtilis_parser_intz(subtilis_parser_t *p, subtilis_token_t *t,
+				     subtilis_error_t *err)
+{
+	subtilis_exp_t *e = NULL;
+
+	e = subtilis_parser_bracketed_exp(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_type_if_zerox(p, e, &subtilis_type_integer, err);
+}
+
 subtilis_exp_t *subtilis_parser_sin(subtilis_parser_t *p, subtilis_token_t *t,
 				    subtilis_error_t *err)
 {

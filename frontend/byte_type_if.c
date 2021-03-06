@@ -145,6 +145,22 @@ on_error:
 	return NULL;
 }
 
+static subtilis_exp_t *prv_zerox_from_type(subtilis_parser_t *p,
+					   subtilis_exp_t *e,
+					   const subtilis_type_t *type,
+					   subtilis_error_t *err)
+{
+	if (type->type != SUBTILIS_TYPE_INTEGER) {
+		subtilis_error_set_bad_zero_extend(
+		    err, subtilis_type_name(&e->type), subtilis_type_name(type),
+		    p->l->stream->name, p->l->line);
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return prv_zerox(p, e, err);
+}
+
 static void prv_assign_to_reg(subtilis_parser_t *p, size_t reg,
 			      subtilis_exp_t *e, subtilis_error_t *err)
 {
@@ -694,6 +710,7 @@ subtilis_type_if subtilis_type_byte_if = {
 	.indexed_address = NULL,
 	.load_mem = prv_load_from_mem,
 	.to_int32 = prv_to_int32,
+	.zerox = prv_zerox_from_type,
 	.to_byte = prv_to_byte,
 	.to_float64 = prv_to_float64,
 	.to_string = prv_to_string,
