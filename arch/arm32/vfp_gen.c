@@ -920,11 +920,9 @@ void subtilis_vfp_gen_movi8tofp(subtilis_ir_section_t *s, size_t start,
 	tmp = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
 	tmp1 = subtilis_arm_ir_to_dreg(arm_s->freg_counter++);
 
-	/*
-	 * TODO: This needs to change to the proper ARMv6 instruction.
-	 */
-
-	subtilis_arm_gen_signx8to32_helper(arm_s, tmp, src, err);
+	subtilis_arm_add_signx(arm_s, SUBTILIS_ARM_INSTR_SXTB,
+			       SUBTILIS_ARM_CCODE_AL, tmp, src,
+			       SUBTILIS_ARM_SIGNX_ROR_NONE, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

@@ -282,7 +282,7 @@ const subtilis_ir_rule_raw_t ptd_rules[] = {
 	 {"ext *, *\n", subtilis_riscos_ext },
 	 {"getptr *, *\n", subtilis_riscos_get_ptr },
 	 {"setptr *, *\n", subtilis_riscos_set_ptr },
-	 {"signx8to32 *, *\n", subtilis_riscos_signx8to32 },
+	 {"signx8to32 *, *\n", subtilis_ptd_signx8to32 },
 	 {"movi8tofp *, *\n", subtilis_vfp_gen_movi8tofp },
 };
 
@@ -486,4 +486,20 @@ void subtilis_ptd_eof(subtilis_ir_section_t *s, size_t start, void *user_data,
 		return;
 
 	subtilis_arm_section_add_label(arm_s, label, err);
+}
+
+void subtilis_ptd_signx8to32(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t src;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *signx = &s->ops[start]->op.instr;
+
+	dest = subtilis_arm_ir_to_arm_reg(signx->operands[0].reg);
+	src = subtilis_arm_ir_to_arm_reg(signx->operands[1].reg);
+
+	subtilis_arm_add_signx(arm_s, SUBTILIS_ARM_INSTR_SXTB,
+			       SUBTILIS_ARM_CCODE_AL, dest, src,
+			       SUBTILIS_ARM_SIGNX_ROR_NONE, err);
 }
