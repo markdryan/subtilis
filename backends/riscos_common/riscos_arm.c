@@ -232,7 +232,12 @@ static void prv_add_preamble(subtilis_arm_section_t *arm_s, size_t globals,
 	const uint32_t stack_size = 8192;
 	const uint32_t min_heap_size = subtilis_arm_heap_min_size();
 
+	/* globals needs to be divisible by 4. */
+
+	if (globals & 3)
+		globals += 4 - (globals & 3);
 	needed = globals + stack_size + min_heap_size;
+
 	if (arm_s->settings->handle_escapes)
 		needed += 12;
 
