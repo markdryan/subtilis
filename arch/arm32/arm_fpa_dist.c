@@ -394,6 +394,16 @@ static void prv_dist_vfp_cvt_instr(void *user_data, subtilis_arm_op_t *op,
 	subtilis_error_set_assertion_failed(err);
 }
 
+static void prv_dist_signx_instr(void *user_data, subtilis_arm_op_t *op,
+				 subtilis_arm_instr_type_t type,
+				 subtilis_arm_signx_instr_t *instr,
+				 subtilis_error_t *err)
+{
+	subtilis_dist_data_t *ud = user_data;
+
+	ud->last_used++;
+}
+
 void subtilis_init_fpa_dist_walker(subtlis_arm_walker_t *walker,
 				   void *user_data)
 {
@@ -431,6 +441,7 @@ void subtilis_init_fpa_dist_walker(subtlis_arm_walker_t *walker,
 	walker->vfp_cvt_fn = prv_dist_vfp_cvt_instr;
 	walker->stran_misc_fn = NULL;
 	walker->simd_fn = NULL;
+	walker->signx_fn = prv_dist_signx_instr;
 }
 
 static void prv_used_fpa_data_dyadic_instr(void *user_data,
@@ -565,4 +576,5 @@ void subtilis_init_fpa_used_walker(subtlis_arm_walker_t *walker,
 	walker->vfp_cvt_fn = prv_dist_vfp_cvt_instr;
 	walker->stran_misc_fn = NULL;
 	walker->simd_fn = NULL;
+	walker->signx_fn = prv_dist_signx_instr;
 }

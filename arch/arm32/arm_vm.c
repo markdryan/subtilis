@@ -3762,6 +3762,57 @@ static void prv_process_uqsubaddx(subtilis_arm_vm_t *arm_vm,
 	arm_vm->regs[15] += 4;
 }
 
+static int32_t prv_signx_rotate(int32_t num, subtilis_arm_signx_rotate_t rotate)
+{
+	switch (rotate) {
+	case SUBTILIS_ARM_SIGNX_ROR_NONE:
+		return num;
+	case SUBTILIS_ARM_SIGNX_ROR_8:
+		return (num << 24) | (num >> 8);
+	case SUBTILIS_ARM_SIGNX_ROR_16:
+		return (num << 16) | (num >> 16);
+	case SUBTILIS_ARM_SIGNX_ROR_24:
+		return (num << 8) | (num >> 24);
+	}
+
+	return num;
+}
+
+static void prv_process_sxtb(subtilis_arm_vm_t *arm_vm,
+			     subtilis_arm_signx_instr_t *op,
+			     subtilis_error_t *err)
+{
+	int8_t num = prv_signx_rotate(arm_vm->regs[op->op1], op->rotate) & 0xff;
+
+	arm_vm->regs[op->dest] = num;
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_sxtb16(subtilis_arm_vm_t *arm_vm,
+			       subtilis_arm_signx_instr_t *op,
+			       subtilis_error_t *err)
+{
+	int32_t num = prv_signx_rotate(arm_vm->regs[op->op1], op->rotate);
+	int8_t num1 = (int8_t)(num & 0xff);
+	int8_t num2 = (int8_t)((num >> 16) & 0xff);
+	int16_t extended1 = num1;
+	int16_t extended2 = num2;
+
+	arm_vm->regs[op->dest] = (extended2 << 16) | (extended1 & 0xffff);
+	arm_vm->regs[15] += 4;
+}
+
+static void prv_process_sxth(subtilis_arm_vm_t *arm_vm,
+			     subtilis_arm_signx_instr_t *op,
+			     subtilis_error_t *err)
+{
+	int16_t num =
+	    prv_signx_rotate(arm_vm->regs[op->op1], op->rotate) & 0xffff;
+
+	arm_vm->regs[op->dest] = num;
+	arm_vm->regs[15] += 4;
+}
+
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			 subtilis_error_t *err)
 {
@@ -4350,6 +4401,15 @@ void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		case SUBTILIS_ARM_SIMD_UQSUBADDX:
 			prv_process_uqsubaddx(arm_vm, &instr.operands.reg_only,
 					      err);
+			break;
+		case SUBTILIS_ARM_INSTR_SXTB:
+			prv_process_sxtb(arm_vm, &instr.operands.signx, err);
+			break;
+		case SUBTILIS_ARM_INSTR_SXTB16:
+			prv_process_sxtb16(arm_vm, &instr.operands.signx, err);
+			break;
+		case SUBTILIS_ARM_INSTR_SXTH:
+			prv_process_sxth(arm_vm, &instr.operands.signx, err);
 			break;
 		default:
 			printf("instr type %d\n", instr.type);

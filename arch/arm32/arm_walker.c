@@ -323,6 +323,20 @@ static void prv_call_simd_fn(subtlis_arm_walker_t *walker, void *user_data,
 			&instr->operands.reg_only, err);
 }
 
+static void prv_call_signx_fn(subtlis_arm_walker_t *walker, void *user_data,
+			      subtilis_arm_op_t *op, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr = &op->op.instr;
+
+	if (!walker->signx_fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	walker->signx_fn(walker->user_data, op, instr->type,
+			 &instr->operands.signx, err);
+}
+
 typedef void (*subtilis_walker_fn_t)(subtlis_arm_walker_t *walker,
 				     void *user_data, subtilis_arm_op_t *op,
 				     subtilis_error_t *err);
@@ -498,6 +512,9 @@ static const subtilis_walker_fn_t walker_table[] = {
 	prv_call_simd_fn,		// SUBTILIS_ARM_SIMD_UQSUB16,
 	prv_call_simd_fn,		// SUBTILIS_ARM_SIMD_UQSUB8,
 	prv_call_simd_fn,		// SUBTILIS_ARM_SIMD_UQSUBADDX,
+	prv_call_signx_fn,		// SUBTILIS_ARM_INSTR_SXTB,
+	prv_call_signx_fn,		// SUBTILIS_ARM_INSTR_SXTB16,
+	prv_call_signx_fn,		// SUBTILIS_ARM_INSTR_SXTH,
 };
 
 /* clang-format on */

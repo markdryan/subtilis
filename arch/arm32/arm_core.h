@@ -305,7 +305,9 @@ typedef enum {
 	SUBTILIS_ARM_SIMD_UQSUB16,
 	SUBTILIS_ARM_SIMD_UQSUB8,
 	SUBTILIS_ARM_SIMD_UQSUBADDX,
-
+	SUBTILIS_ARM_INSTR_SXTB,
+	SUBTILIS_ARM_INSTR_SXTB16,
+	SUBTILIS_ARM_INSTR_SXTH,
 	SUBTILIS_ARM_INSTR_MAX,
 } subtilis_arm_instr_type_t;
 
@@ -479,6 +481,22 @@ struct subtilis_arm_reg_only_instr_t_ {
 };
 
 typedef struct subtilis_arm_reg_only_instr_t_ subtilis_arm_reg_only_instr_t;
+
+typedef enum {
+	SUBTILIS_ARM_SIGNX_ROR_NONE,
+	SUBTILIS_ARM_SIGNX_ROR_8,
+	SUBTILIS_ARM_SIGNX_ROR_16,
+	SUBTILIS_ARM_SIGNX_ROR_24,
+} subtilis_arm_signx_rotate_t;
+
+struct subtilis_arm_signx_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_signx_rotate_t rotate;
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+};
+
+typedef struct subtilis_arm_signx_instr_t_ subtilis_arm_signx_instr_t;
 
 typedef enum {
 	SUBTILIS_FPA_ROUNDING_NEAREST,
@@ -677,6 +695,7 @@ struct subtilis_arm_instr_t_ {
 		subtilis_vfp_cvt_instr_t vfp_cvt;
 		subtilis_arm_stran_misc_instr_t stran_misc;
 		subtilis_arm_reg_only_instr_t reg_only;
+		subtilis_arm_signx_instr_t signx;
 	} operands;
 };
 
@@ -1201,6 +1220,13 @@ void subtilis_arm_add_reg_only(subtilis_arm_section_t *s,
 			       subtilis_arm_ccode_type_t ccode,
 			       subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
 			       subtilis_arm_reg_t op2, subtilis_error_t *err);
+
+void subtilis_arm_add_signx(subtilis_arm_section_t *s,
+			    subtilis_arm_instr_type_t itype,
+			    subtilis_arm_ccode_type_t ccode,
+			    subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			    subtilis_arm_signx_rotate_t rotate,
+			    subtilis_error_t *err);
 
 void subtilis_arm_add_byte(subtilis_arm_section_t *s, uint8_t byte,
 			   subtilis_error_t *err);
