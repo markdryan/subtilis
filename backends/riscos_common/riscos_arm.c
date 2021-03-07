@@ -458,11 +458,14 @@ static void prv_add_section(subtilis_ir_section_t *s,
 	uint32_t encoded;
 	subtilis_arm_reg_t dest;
 	subtilis_arm_reg_t op2;
+	size_t move_instr;
 
 	stack_sub =
 	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_SUB, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	move_instr = arm_s->last_op;
 
 	datai = &stack_sub->operands.data;
 	datai->status = false;
@@ -498,6 +501,13 @@ static void prv_add_section(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	/*
+	 * The original datai pointer may have become invalidated by a realloc
+	 * on the ops pool.
+	 */
+
+	stack_sub = &arm_s->op_pool->ops[move_instr].op.instr;
+	datai = &stack_sub->operands.data;
 	datai->op2.op.integer = encoded;
 
 	subtilis_arm_save_regs(arm_s, err);
