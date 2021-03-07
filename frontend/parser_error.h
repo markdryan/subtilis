@@ -28,5 +28,15 @@ void subtilis_parser_onerror(subtilis_parser_t *p, subtilis_token_t *t,
 			     subtilis_error_t *err);
 void subtilis_parser_error(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_try_exp(subtilis_parser_t *p,
+					subtilis_token_t *t,
+					subtilis_error_t *err);
+void subtilis_parser_try(subtilis_parser_t *p, subtilis_token_t *t,
+			 subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_try_one_exp(subtilis_parser_t *p,
+					    subtilis_token_t *t,
+					    subtilis_error_t *err);
+void subtilis_parser_try_one(subtilis_parser_t *p, subtilis_token_t *t,
+			     subtilis_error_t *err);
 
 #endif

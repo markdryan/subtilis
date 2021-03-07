@@ -1685,3 +1685,24 @@ void subtilis_arm_add_reg_only(subtilis_arm_section_t *s,
 	reg_only->op1 = op1;
 	reg_only->op2 = op2;
 }
+
+void subtilis_arm_add_signx(subtilis_arm_section_t *s,
+			    subtilis_arm_instr_type_t itype,
+			    subtilis_arm_ccode_type_t ccode,
+			    subtilis_arm_reg_t dest, subtilis_arm_reg_t op1,
+			    subtilis_arm_signx_rotate_t rotate,
+			    subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_signx_instr_t *signx;
+
+	instr = subtilis_arm_section_add_instr(s, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	signx = &instr->operands.signx;
+	signx->ccode = ccode;
+	signx->dest = dest;
+	signx->op1 = op1;
+	signx->rotate = rotate;
+}

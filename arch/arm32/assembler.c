@@ -266,6 +266,9 @@ static const subtilis_arm_ass_mnemomic_t s_mnem[] = {
 	{ "SUB", SUBTILIS_ARM_INSTR_SUB, NULL, },
 	{ "SUF", SUBTILIS_FPA_INSTR_SUF, NULL, },
 	{ "SWI", SUBTILIS_ARM_INSTR_SWI, NULL, },
+	{ "SXTB", SUBTILIS_ARM_INSTR_SXTB, NULL, },
+	{ "SXTB16", SUBTILIS_ARM_INSTR_SXTB16, NULL, },
+	{ "SXTH", SUBTILIS_ARM_INSTR_SXTH, NULL, },
 };
 
 static const subtilis_arm_ass_mnemomic_t t_mnem[] = {
@@ -1903,6 +1906,84 @@ static void prv_parse_reg_only(subtilis_arm_ass_context_t *c,
 	subtilis_arm_add_reg_only(c->arm_s, itype, ccode, dest, op1, op2, err);
 }
 
+static void prv_parse_signx(subtilis_arm_ass_context_t *c,
+			    subtilis_arm_instr_type_t itype,
+			    subtilis_arm_ccode_type_t ccode,
+			    subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t op1;
+	const char *tbuf;
+	subtilis_arm_exp_val_t *val = NULL;
+	subtilis_arm_signx_rotate_t rotate = SUBTILIS_ARM_SIGNX_ROR_NONE;
+
+	dest = prv_get_reg(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ",")) {
+		subtilis_error_set_expected(err, ",", tbuf, c->l->stream->name,
+					    c->l->line);
+		return;
+	}
+
+	op1 = prv_get_reg(c, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(c->t);
+	if ((c->t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, ",")) {
+		subtilis_lexer_get(c->l, c->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		tbuf = subtilis_token_get_text(c->t);
+		if (c->t->type != SUBTILIS_TOKEN_KEYWORD ||
+		    (c->t->tok.keyword.type != SUBTILIS_ARM_KEYWORD_ROR)) {
+			subtilis_error_set_expected(
+			    err, "ROR", tbuf, c->l->stream->name, c->l->line);
+			return;
+		}
+
+		val = subtilis_arm_exp_val_get(c, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (val->type != SUBTILIS_ARM_EXP_TYPE_INT) {
+			subtilis_error_set_expected(err, "0, 8, 16 or 24", tbuf,
+						    c->l->stream->name,
+						    c->l->line);
+			goto cleanup;
+		}
+
+		switch (val->val.integer) {
+		case 0:
+			break;
+		case 8:
+			rotate = SUBTILIS_ARM_SIGNX_ROR_8;
+			break;
+		case 16:
+			rotate = SUBTILIS_ARM_SIGNX_ROR_16;
+			break;
+		case 24:
+			rotate = SUBTILIS_ARM_SIGNX_ROR_24;
+			break;
+		default:
+			subtilis_error_set_expected(err, "0, 8, 16 or 24", tbuf,
+						    c->l->stream->name,
+						    c->l->line);
+			goto cleanup;
+		}
+	}
+
+	subtilis_arm_add_signx(c->arm_s, itype, ccode, dest, op1, rotate, err);
+
+cleanup:
+
+	subtilis_arm_exp_val_free(val);
+}
+
 static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
 				  const char *name,
 				  subtilis_arm_instr_type_t itype,
@@ -2004,6 +2085,11 @@ static void prv_parse_instruction(subtilis_arm_ass_context_t *c,
 	case SUBTILIS_ARM_SIMD_UQSUB8:
 	case SUBTILIS_ARM_SIMD_UQSUBADDX:
 		prv_parse_reg_only(c, itype, ccode, err);
+		break;
+	case SUBTILIS_ARM_INSTR_SXTB:
+	case SUBTILIS_ARM_INSTR_SXTB16:
+	case SUBTILIS_ARM_INSTR_SXTH:
+		prv_parse_signx(c, itype, ccode, err);
 		break;
 	default:
 		subtilis_error_set_not_supported(err, name, c->l->stream->name,

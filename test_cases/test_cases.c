@@ -1646,7 +1646,9 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"local_on_error_deref",
 	 "ONERROR\n"
-	 "    LOCAL DIM c(100)\n"
+	 "    TRY\n"
+	 "        LOCAL DIM c(100)\n"
+	 "    ENDTRY\n"
 	 "ENDERROR\n"
 	 "ERROR 1\n",
 	 ""
@@ -1655,7 +1657,9 @@ const subtilis_test_case_t test_cases[] = {
 	 "PROCP\n"
 	 "DEF PROCP\n"
 	 "    ONERROR\n"
-	 "         LOCAL DIM c(100)\n"
+	 "        TRY\n"
+	 "            LOCAL DIM c(100)\n"
+	 "        ENDTRY\n"
 	 "    ENDERROR\n"
 	 "    ERROR 1\n"
 	 "ENDPROC\n",
@@ -3209,6 +3213,333 @@ const subtilis_test_case_t test_cases[] = {
 	"print plot$\n",
 	"hello\n",
 	},
+	{
+	"nested_try_exp",
+	"print try\n"
+	"x% := try\n"
+	"error 14\n"
+	"endtry\n"
+	"print \"failed with error: \";\n"
+	"print x%\n"
+	"endtry\n"
+	"print \"I should be here\"\n",
+	"failed with error: 14\n0\nI should be here\n",
+	},
+	{"handler_after_try",
+	"print try\n"
+	"endtry\n"
+	"onerror\n"
+	"print \"in handler\"\n"
+	"enderror\n"
+	"error 10\n",
+	"0\nin handler\n",
+	},
+	{
+	"try_in_onerror",
+	"onerror\n"
+	"try\n"
+	"local dim a%(10)\n"
+	"print a%(0)\n"
+	"endtry\n"
+	"enderror\n"
+	"print\"hello\"\n"
+	"error 10\n",
+	"hello\n0\n"
+	},
+	{"try_back2back",
+	"try\n"
+	"print 1\n"
+	"error 2\n"
+	"endtry\n"
+	"try\n"
+	"print 3\n"
+	"error 4\n"
+	"endtry\n",
+	"1\n3\n",
+	},
+	{
+	"nested_try_exp_in_proc",
+	"PROCTry\n"
+	"print \"and here\"\n"
+	"def PROCTry\n"
+	"print try\n"
+	"x% := try\n"
+	"error 14\n"
+	"endtry\n"
+	"print \"failed with error: \";\n"
+	"print x%\n"
+	"endtry\n"
+	"print \"I should be here\"\n"
+	"endproc",
+	"failed with error: 14\n0\nI should be here\nand here\n",
+	},
+	{
+	"tryone",
+	"a% := 0\n"
+	"while tryone PROCFail(a%)\n"
+	"a% += 1\n"
+	"endwhile\n"
+	"print \"finished\"\n"
+	"def PROCFail(a%)\n"
+	"PRINT a%\n"
+	"if a% < 5 then\n"
+	"      error a%+1\n"
+	"endif\n"
+	"endproc\n",
+	"0\n1\n2\n3\n4\n5\nfinished\n",
+	},
+	{"bget_bput_eof",
+	"PROCWriteFile\n"
+	"PROCReadFile\n"
+	"\n"
+	"def PROCWriteFile\n"
+	"  f% := openout \"Markus\"\n"
+	"  onerror\n"
+	"    tryone close# f%\n"
+	"  enderror\n"
+	"\n"
+	"  print eof# f%\n"
+	"\n"
+	"  a$ := \"hello world!\"\n"
+	"\n"
+	"  for i% := 1 to len(a$)\n"
+	"    bput# f%, asc(mid$(a$,i%,1))\n"
+	"  next\n"
+	"\n"
+	"  onerror error err enderror\n"
+	"\n"
+	"  close# f%\n"
+	"endproc\n"
+	"\n"
+	"def PROCReadFile\n"
+	"  g% := openin \"Markus\"\n"
+	"\n"
+	"  onerror\n"
+	"    tryone close# g%\n"
+	"  enderror\n"
+	"\n"
+	"  print eof# g%\n"
+	"\n"
+	"  b$ := \"\"\n"
+	"  local a%\n"
+	"  while (tryone a% = bget# g%) = 0\n"
+	"     b$ += chr$(a%)\n"
+	"  endwhile\n"
+	"\n"
+	"  print eof# g%\n"
+	"\n"
+	"  if not eof# g% then\n"
+	"    print \"eof error\"\n"
+	"     error err\n"
+	"  endif\n"
+	"\n"
+	"  tryone close# g%\n"
+	"\n"
+	"  print b$\n"
+	"endproc\n",
+	"0\n0\n-1\nhello world!\n"
+	},
+	{"ext_test",
+	"PROCCreateFile(\"markus\", string$(33, \"!\"))\n"
+	"f% = openin(\"markus\")\n"
+	"onerror tryone close# f% enderror\n"
+	"print ext# f%\n"
+	"close# f%\n"
+	"\n"
+	"def PROCCreateFile(name$, data$)\n"
+	"  f% := openout(name$)\n"
+	"  onerror tryone close# f% enderror\n"
+	"  for i% := 1 to len(data$)\n"
+	"    bput# f%, asc(mid$(data$,i%,1))\n"
+	"  next\n"
+	"  close# f%\n"
+	"endproc\n",
+	"33\n",
+	},
+	{"ptr_test",
+	"PROCCreateFile(\"markus\", string$(16, \"!\") + string$(16,\"@\"))\n"
+	"f% = openin(\"markus\")\n"
+	"print ptr# f%\n"
+	"onerror\n"
+	"  print \"whoops\"\n"
+	"enderror\n"
+	"ptr# f%, 15\n"
+	"print ptr# f%\n"
+	"b$ := \"\"\n"
+	"local a%\n"
+	"while (tryone a% = bget# f%) = 0\n"
+	"  b$ += chr$(a%)\n"
+	"endwhile\n"
+	"print b$\n"
+	"close# f%\n"
+	"def PROCCreateFile(name$, data$)\n"
+	"  f% := openout(name$)\n"
+	"  onerror tryone close# f% enderror\n"
+	"  for i% := 1 to len(data$)\n"
+	"    bput# f%, asc(mid$(data$,i%,1))\n"
+	"   next\n"
+	"   print ptr# f%\n"
+	"   close# f%\n"
+	"endproc\n",
+	"32\n0\n15\n!@@@@@@@@@@@@@@@@\n",
+	},
+	{"int_byte_global",
+	"b& = -10\n"
+	"a% = 66\n"
+	"print a% * b&\n"
+	"print 66 * b&\n"
+	"print a% + b&\n"
+	"print 66 + b&\n"
+	"print a% - b&\n"
+	"print 66 - b&\n"
+	"a% = 64\n"
+	"b& = 4\n"
+	"print a% << b&\n"
+	"print 64 << b&\n"
+	"print a% >> b&\n"
+	"print 64 >> b&\n"
+	"a% = -64\n"
+	"print a% >>> b&\n"
+	"print -64 >>> b&\n"
+	"print a% DIV b&\n"
+	"print a% MOD b&\n"
+	"b& = -64"
+	"c& = 64"
+	"print a% = b&\n"
+	"print a% = c&\n"
+	"print a% <> b&\n"
+	"print a% <> c&\n"
+	"print -64 = b&\n"
+	"print -64 = c&\n"
+	"print -64 <> b&\n"
+	"print -64 <> c&\n"
+	"print a% <= b&\n"
+	"print a% < b&\n"
+	"print a% > b&\n"
+	"print a% >= b&\n"
+	"print a% <= c&\n"
+	"print a% < c&\n"
+	"print a% > c&\n"
+	"print a% >= c&\n"
+	"print -64 <= b&\n"
+	"print -64 < b&\n"
+	"print -64 > b&\n"
+	"print -64 >= b&\n"
+	"print -64 <= c&\n"
+	"print -64 < c&\n"
+	"print -64 > c&\n"
+	"print -64 >= c&\n",
+	"-660\n-660\n56\n56\n76\n76\n1024\n1024\n4\n4\n-4\n-4\n-16\n0\n-1\n0\n"
+	"0\n-1\n-1\n0\n0\n-1\n-1\n0\n0\n-1\n-1\n-1\n0\n0\n-1\n0\n0\n-1\n-1\n-1\n0\n0\n"
+	},
+	{"byte_int_local",
+	"b% := -10\n"
+	"a& := 66\n"
+	"print a& * b%\n"
+	"print a& + b%\n"
+	"print a& - b%\n"
+	"a& = 64\n"
+	"b% = 4\n"
+	"print a& << b%\n"
+	"print a& >> b%\n"
+	"a& = -64\n"
+	"print a& >>> b%\n"
+	"print a& DIV b%\n"
+	"print a& MOD b%\n"
+	"b% = -64"
+	"c% = 64"
+	"print a& = b%\n"
+	"print a& = c%\n"
+	"print a& <> b%\n"
+	"print a& <> c%\n"
+	"print a& <= b%\n"
+	"print a& < b%\n"
+	"print a& > b%\n"
+	"print a& >= b%\n"
+	"print a& <= c%\n"
+	"print a& < c%\n"
+	"print a& > c%\n"
+	"print a& >= c%\n",
+	"-660\n56\n76\n0\n4\n-4\n-16\n0\n-1\n0\n0\n-1\n-1\n0\n0\n-1\n-1\n-1\n0\n0\n"
+	},
+	{"byte_byte_local",
+	"b& := -64\n"
+	"a& := 64\n"
+	"c& := 200\n"
+	"print b& + a&\n"
+	"print c& + a&\n"
+	"b& = 3\n"
+	"c& = 128\n"
+	"print a& * b&\n"
+	"print b& * c&\n"
+	"b& = 1\n"
+	"print a& << b&\n"
+	"print a& >> b&\n"
+	"print a& >>> b&\n"
+	"print (a& << b&) >>> b&\n"
+	"print c& div a&\n"
+	"b& = 3\n"
+	"print a& mod b&\n"
+	"a& = -64\n"
+	"b& = -64\n"
+	"c& = 64\n"
+	"print a& = b&\n"
+	"print a& = c&\n"
+	"print a& <> b&\n"
+	"print a& <> c&\n"
+	"print a& <= b&\n"
+	"print a& < b&\n"
+	"print a& > b&\n"
+	"print a& >= b&\n"
+	"print a& <= c&\n"
+	"print a& < c&\n"
+	"print a& > c&\n"
+	"print a& >= c&\n",
+	"0\n8\n-64\n-128\n-128\n32\n32\n-64\n-2\n1\n-1\n0\n0\n-1\n-1\n0\n0\n"
+	"-1\n-1\n-1\n0\n0\n",
+	},
+	{"byte_fn",
+	"print FNByteSum&(100, 100)\n"
+	"a& = 140\n"
+	"b& = 130\n"
+	"print FNByteSum&(a&, b&)\n"
+	"print FNIntSum%(a&, b&)\n"
+	"print FNByteSumDBL&(a&, b&)\n"
+	"print FNDBLSum(a&, b&)\n"
+	"c = 140\n"
+	"d = 130\n"
+	"print FNByteSum&(c, d)\n"
+	"def FNByteSum&(a&, b&)\n"
+	"<- a& + b&\n"
+	"def FNIntSum%(a%, b%)\n"
+	"<- a% + b%\n"
+	"def FNByteSumDBL&(a, b)\n"
+	"<- a + b\n"
+	"def FNDBLSum(a, b)\n"
+	"<- a + b\n",
+	"-56\n14\n-242\n14\n-242\n14\n",
+	},
+	{"byte_array_conversion",
+	"DIM a%(1)\n"
+	"DIM b(1)\n"
+	"byte& = -77\n"
+	"a%(0) = byte&\n"
+	"b(0) = byte&\n"
+	"print a%(0)\n"
+	"print b(0)\n",
+	"-77\n-77\n",
+	},
+	{"byte_chr$",
+	"a% := 33 + 256\n"
+	"b& := a%\n"
+	"print chr$(b&)\n",
+	"!\n",
+	},
+	{"intz_byte_int",
+	"a& := TRUE\n"
+	"print intz(a&)\n",
+	"255\n",
+	}
 };
 
 /* clang-format on */

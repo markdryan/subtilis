@@ -98,12 +98,15 @@ void subtilis_exp_handle_errors(subtilis_parser_t *p, subtilis_error_t *err)
 	subtilis_ir_operand_t op1;
 	subtilis_exp_t *ecode;
 
-	if (p->current->in_error_handler) {
+	if (p->current->in_error_handler && (p->current->try_depth == 0)) {
 		/*
-		 * We're in an error handler.  We ignore any error and continue.
+		 * We're in an error handler and not inside a try block.
+		 * This is an error.  Implicit errors are not allowed
+		 * in error handlers.
 		 */
 
-		subtilis_var_set_eflag(p, false, err);
+		subtilis_error_set_error_handler(err, p->l->stream->name,
+						 p->l->line);
 		return;
 	}
 
@@ -362,6 +365,12 @@ subtilis_exp_t *subtilis_exp_new_int32_var(unsigned int reg,
 					   subtilis_error_t *err)
 {
 	return subtilis_exp_new_var(&subtilis_type_integer, reg, err);
+}
+
+subtilis_exp_t *subtilis_exp_new_byte_var(unsigned int reg,
+					  subtilis_error_t *err)
+{
+	return subtilis_exp_new_var(&subtilis_type_byte, reg, err);
 }
 
 subtilis_exp_t *subtilis_exp_new_real_var(unsigned int reg,

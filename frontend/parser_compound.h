@@ -24,6 +24,12 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err);
 void subtilis_parser_compound(subtilis_parser_t *p, subtilis_token_t *t,
 			      int end_key, subtilis_error_t *err);
+void subtilis_parser_compound_at_level(subtilis_parser_t *p,
+				       subtilis_token_t *t, int end_key,
+				       subtilis_error_t *err);
+void subtilis_parser_compound_statement_at_level(subtilis_parser_t *p,
+						 subtilis_token_t *t,
+						 subtilis_error_t *err);
 void subtilis_parser_statement(subtilis_parser_t *p, subtilis_token_t *t,
 			       subtilis_error_t *err);
 

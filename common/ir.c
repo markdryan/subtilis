@@ -195,7 +195,21 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "heapfree", SUBTILIS_OP_CLASS_REG },
 	{ "blockfree", SUBTILIS_OP_CLASS_REG_REG },
 	{ "blockadjust", SUBTILIS_OP_CLASS_REG_REG },
-	{ "cmovi32", SUBTILIS_OP_CLASS_REG_REG_REG_REG},
+	{ "cmovi32", SUBTILIS_OP_CLASS_REG_REG_REG_REG },
+	{ "openout", SUBTILIS_OP_CLASS_REG_REG },
+	{ "openup", SUBTILIS_OP_CLASS_REG_REG },
+	{ "openin", SUBTILIS_OP_CLASS_REG_REG },
+	{ "close", SUBTILIS_OP_CLASS_REG },
+	{ "bget", SUBTILIS_OP_CLASS_REG_REG },
+	{ "bput", SUBTILIS_OP_CLASS_REG_REG },
+	{ "blockget", SUBTILIS_OP_CLASS_REG_REG_REG_REG },
+	{ "blockput", SUBTILIS_OP_CLASS_REG_REG_REG_REG },
+	{ "eof", SUBTILIS_OP_CLASS_REG_REG },
+	{ "ext", SUBTILIS_OP_CLASS_REG_REG },
+	{ "getptr", SUBTILIS_OP_CLASS_REG_REG },
+	{ "setptr", SUBTILIS_OP_CLASS_REG_REG },
+	{ "signx8to32", SUBTILIS_OP_CLASS_REG_REG },
+	{ "movi8tofp", SUBTILIS_OP_CLASS_FREG_REG },
 };
 
 /*
@@ -619,7 +633,9 @@ size_t subtilis_ir_section_promote_nop(subtilis_ir_section_t *s, size_t nop,
 	subtilis_ir_op_t *op;
 
 	if (s->in_error_handler || ((type != SUBTILIS_OP_INSTR_MOV_I32_FP) &&
-				    (type != SUBTILIS_OP_INSTR_MOV_FP_I32))) {
+				    (type != SUBTILIS_OP_INSTR_MOV_FP_I32) &&
+				    (type != SUBTILIS_OP_INSTR_SIGNX_8_TO_32) &&
+				    (type != SUBTILIS_OP_INSTR_MOV_I8_FP))) {
 		subtilis_error_set_assertion_failed(err);
 		return 0;
 	}
@@ -638,7 +654,8 @@ size_t subtilis_ir_section_promote_nop(subtilis_ir_section_t *s, size_t nop,
 
 	instr = &op->op.instr;
 	instr->type = type;
-	instr->operands[0].reg = type == SUBTILIS_OP_INSTR_MOV_I32_FP
+	instr->operands[0].reg = (type == SUBTILIS_OP_INSTR_MOV_I32_FP ||
+				  type == SUBTILIS_OP_INSTR_MOV_I8_FP)
 				     ? s->freg_counter++
 				     : s->reg_counter++;
 	instr->operands[1].reg = op1;
@@ -745,6 +762,7 @@ static subtilis_ir_section_t *prv_ir_prog_section_new(
 		s->ret_reg = s->freg_counter++;
 		break;
 	case SUBTILIS_TYPE_INTEGER:
+	case SUBTILIS_TYPE_BYTE:
 	case SUBTILIS_TYPE_ARRAY_REAL:
 	case SUBTILIS_TYPE_ARRAY_INTEGER:
 	case SUBTILIS_TYPE_ARRAY_STRING:

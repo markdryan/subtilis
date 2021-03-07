@@ -30,6 +30,7 @@ const subtilis_type_t subtilis_type_const_integer = {
 const subtilis_type_t subtilis_type_const_string = {SUBTILIS_TYPE_CONST_STRING};
 const subtilis_type_t subtilis_type_real = {SUBTILIS_TYPE_REAL};
 const subtilis_type_t subtilis_type_integer = {SUBTILIS_TYPE_INTEGER};
+const subtilis_type_t subtilis_type_byte = {SUBTILIS_TYPE_BYTE};
 const subtilis_type_t subtilis_type_string = {SUBTILIS_TYPE_STRING};
 const subtilis_type_t subtilis_type_void = {SUBTILIS_TYPE_VOID};
 const subtilis_type_t subtilis_type_local_buffer = {SUBTILIS_TYPE_LOCAL_BUFFER};
@@ -41,6 +42,7 @@ static const char *const prv_fixed_type_names[] = {
 	"const string",    /* SUBTILIS_TYPE_CONST_STRING */
 	"real",    /* SUBTILIS_TYPE_REAL */
 	"integer", /* SUBTILIS_TYPE_INTEGER */
+	"byte",    /* SUBTILIS_TYPE_BYTE */
 	"string",  /* SUBTILIS_TYPE_STRING */
 	"void",    /* SUBTILIS_TYPE_VOID */
 	"array of reals", /* SUBTILIS_TYPE_ARRAY_REAL */
@@ -107,6 +109,7 @@ subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 	for (i = 0; i < num_parameters; i++) {
 		switch (parameters[i].type) {
 		case SUBTILIS_TYPE_INTEGER:
+		case SUBTILIS_TYPE_BYTE:
 		case SUBTILIS_TYPE_STRING:
 		case SUBTILIS_TYPE_ARRAY_REAL:
 		case SUBTILIS_TYPE_ARRAY_INTEGER:

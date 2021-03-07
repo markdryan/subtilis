@@ -2187,6 +2187,60 @@ static void prv_encode_simd_instr(void *user_data, subtilis_arm_op_t *op,
 	prv_add_word(ud, word, err);
 }
 
+static void prv_encode_signx_instr(void *user_data, subtilis_arm_op_t *op,
+				   subtilis_arm_instr_type_t type,
+				   subtilis_arm_signx_instr_t *instr,
+				   subtilis_error_t *err)
+{
+	subtilis_arm_encode_ud_t *ud = user_data;
+	uint32_t word;
+	uint32_t ror;
+
+	prv_check_pool(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	switch (type) {
+	case SUBTILIS_ARM_INSTR_SXTB:
+		word = 0x6af0070;
+		break;
+	case SUBTILIS_ARM_INSTR_SXTB16:
+		word = 0x68f0070;
+		break;
+	case SUBTILIS_ARM_INSTR_SXTH:
+		word = 0x6bf0070;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	switch (instr->rotate) {
+	case SUBTILIS_ARM_SIGNX_ROR_NONE:
+		ror = 0;
+		break;
+	case SUBTILIS_ARM_SIGNX_ROR_8:
+		ror = 1;
+		break;
+	case SUBTILIS_ARM_SIGNX_ROR_16:
+		ror = 2;
+		break;
+	case SUBTILIS_ARM_SIGNX_ROR_24:
+		ror = 3;
+		break;
+	}
+
+	word |= (ror << 10);
+	word |= instr->ccode << 28;
+	word |= (instr->dest & 0xf) << 12;
+	word |= (instr->op1 & 0xf);
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	prv_add_word(ud, word, err);
+}
+
 static int32_t prv_compute_dist(size_t first, size_t second, size_t limit,
 				subtilis_error_t *err)
 {
@@ -2383,6 +2437,7 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 	walker.vfp_cvt_fn = prv_encode_vfp_cvt_instr;
 	walker.stran_misc_fn = prv_encode_stran_misc_instr;
 	walker.simd_fn = prv_encode_simd_instr;
+	walker.signx_fn = prv_encode_signx_instr;
 
 	subtilis_arm_walk(arm_s, &walker, err);
 	if (err->type != SUBTILIS_ERROR_OK)

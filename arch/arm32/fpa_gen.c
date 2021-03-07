@@ -798,6 +798,28 @@ void subtilis_fpa_gen_preamble(subtilis_arm_section_t *arm_s,
 				SUBTILIS_ARM_CCODE_AL, status, err);
 }
 
+void subtilis_fpa_gen_movi8tofp(subtilis_ir_section_t *s, size_t start,
+				void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_reg_t src;
+	subtilis_arm_reg_t tmp;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *signx = &s->ops[start]->op.instr;
+
+	dest = subtilis_arm_ir_to_freg(signx->operands[0].reg);
+	src = subtilis_arm_ir_to_arm_reg(signx->operands[1].reg);
+	tmp = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+
+	subtilis_arm_gen_signx8to32_helper(arm_s, tmp, src, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_fpa_add_tran(arm_s, SUBTILIS_FPA_INSTR_FLT,
+			      SUBTILIS_ARM_CCODE_AL,
+			      SUBTILIS_FPA_ROUNDING_NEAREST, dest, tmp, err);
+}
+
 size_t subtilis_fpa_preserve_regs(subtilis_arm_section_t *arm_s,
 				  int save_real_start, subtilis_error_t *err)
 {

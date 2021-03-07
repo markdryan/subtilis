@@ -424,6 +424,48 @@ static void prv_decode_simd(subtilis_arm_instr_t *instr, uint32_t encoded,
 	simd->op2 = encoded & 0x0f;
 }
 
+static void prv_decode_signx(subtilis_arm_instr_t *instr, uint32_t encoded,
+			     subtilis_error_t *err)
+{
+	subtilis_arm_signx_instr_t *signx = &instr->operands.signx;
+	uint32_t code = (encoded >> 20) & 0xf;
+
+	switch (code) {
+	case 10:
+		instr->type = SUBTILIS_ARM_INSTR_SXTB;
+		break;
+	case 8:
+		instr->type = SUBTILIS_ARM_INSTR_SXTB16;
+		break;
+	case 11:
+		instr->type = SUBTILIS_ARM_INSTR_SXTH;
+		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	code = (encoded >> 10) & 3;
+	switch (code) {
+	case 0:
+		signx->rotate = SUBTILIS_ARM_SIGNX_ROR_NONE;
+		break;
+	case 1:
+		signx->rotate = SUBTILIS_ARM_SIGNX_ROR_8;
+		break;
+	case 2:
+		signx->rotate = SUBTILIS_ARM_SIGNX_ROR_16;
+		break;
+	case 3:
+		signx->rotate = SUBTILIS_ARM_SIGNX_ROR_24;
+		break;
+	}
+
+	signx->ccode = encoded >> 28;
+	signx->dest = (encoded >> 12) & 0xf;
+	signx->op1 = encoded & 0xf;
+}
+
 /* clang-format off */
 static subtilis_arm_instr_type_t prv_fpa_data_opcodes[] = {
 	SUBTILIS_FPA_INSTR_ADF,
@@ -1136,6 +1178,11 @@ void subtilis_arm_disass(subtilis_arm_instr_t *instr, uint32_t encoded,
 		}
 	}
 
+	if ((encoded & 0x68f0370) == 0x68f0070) {
+		prv_decode_signx(instr, encoded, err);
+		return;
+	}
+
 	mask = (encoded & (0x3 << 26)) >> 26;
 	if (mask == 1) {
 		prv_decode_stran(instr, encoded, err);
@@ -1184,7 +1231,7 @@ void subtilis_arm_disass_dump(uint8_t *code, size_t len, bool vfp)
 
 	for (i = 0; i < words; i++) {
 		subtilis_error_init(&err);
-		printf("%lx\t", 0x8000 + (i * 4));
+		printf("%lx\t%x\t", 0x8000 + (i * 4), ((uint32_t *)code)[i]);
 		subtilis_arm_disass(&instr, ((uint32_t *)code)[i], vfp, &err);
 		if (err.type == SUBTILIS_ERROR_OK)
 			subtilis_arm_instr_dump(&instr);

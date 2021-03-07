@@ -542,6 +542,18 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	 "<-a%\n",
 	 SUBTILIS_ERROR_DEFFN_SHOULD_BE_DEF_FN,
 	},
+	{"error_in_handler",
+	 "onerror local dim a%(10) enderror\n",
+	 SUBTILIS_ERROR_ERROR_IN_HANDLER,
+	},
+	{"handler_in try",
+	 "try onerror enderror endtry\n",
+	 SUBTILIS_ERROR_HANDLER_IN_TRY,
+	},
+	{"intz_dbl_to_int",
+	"print intz(10.0)\n",
+	SUBTILIS_ERROR_BAD_ZERO_EXTEND,
+	},
 };
 
 /* clang-format on */

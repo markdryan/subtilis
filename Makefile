@@ -14,6 +14,7 @@ COMMON =\
 	parser_compound.c \
 	parser_cond.c \
 	parser_exp.c \
+	parser_file.c \
 	parser_loops.c \
 	parser_math.c \
 	parser_error.c \
@@ -39,6 +40,7 @@ COMMON =\
 	type_if.c \
 	float64_type.c \
 	int32_type.c \
+	byte_type_if.c \
 	array_int32_type.c \
 	array_float64_type.c \
 	array_string_type.c \
@@ -164,10 +166,11 @@ unit_tests: $(TESTS:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(FPA:%.c=%.o) $(V
 
 .PHONY: clean
 clean:
-	rm subtro subtptd *.o *.d unit_tests
+	rm subtro subtptd *.o *.d unit_tests markus
 
 .PHONY: check
 check: unit_tests
+	- rm markus
 	./unit_tests
 
 -include $(ARM:%.c=%.d)

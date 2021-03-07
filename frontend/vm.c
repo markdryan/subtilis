@@ -1452,6 +1452,267 @@ static void prv_cmov_i32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	    vm->regs[ops[1].reg] ? vm->regs[ops[2].reg] : vm->regs[ops[3].reg];
 }
 
+static int32_t prv_find_file_slot(subitlis_vm_t *vm, subtilis_error_t *err)
+{
+	int32_t i;
+
+	for (i = 0; i < SUBTILIS_VM_MAX_FILES; i++)
+		if (!vm->files[i])
+			return i;
+
+	subtilis_error_set_assertion_failed(err);
+
+	return -1;
+}
+
+static void prv_openfile(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			 subtilis_ir_operand_t *ops, const char *mode,
+			 int32_t error_code, subtilis_error_t *err)
+{
+	int32_t slot;
+
+	slot = prv_find_file_slot(vm, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	vm->files[slot] =
+	    fopen((const char *)&vm->memory[vm->regs[ops[1].reg]], mode);
+	if (!vm->files[slot]) {
+		prv_generate_error(vm, error_code);
+		vm->regs[ops[0].reg] = 0;
+	} else {
+		vm->regs[ops[0].reg] = slot;
+	}
+}
+
+static void prv_openout(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	prv_openfile(vm, b, ops, "w+", SUBTILIS_ERROR_CODE_CREAT, err);
+}
+
+static void prv_openup(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	prv_openfile(vm, b, ops, "w+", SUBTILIS_ERROR_CODE_OPEN, err);
+}
+
+static void prv_openin(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	prv_openfile(vm, b, ops, "r", SUBTILIS_ERROR_CODE_OPEN, err);
+}
+
+static void prv_close(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		      subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int32_t slot;
+
+	slot = vm->regs[ops[0].reg];
+
+	if (!vm->files[slot]) {
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_CLOSE);
+		return;
+	}
+
+	if (fclose(vm->files[slot]))
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_CLOSE);
+	else
+		vm->files[slot] = NULL;
+}
+
+static void prv_bget(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int32_t slot;
+
+	slot = vm->regs[ops[1].reg];
+	if (slot > SUBTILIS_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!vm->files[slot]) {
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_READ);
+		return;
+	}
+
+	vm->regs[ops[0].reg] = (int32_t)fgetc(vm->files[slot]);
+	if (vm->regs[ops[0].reg] == EOF)
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_READ);
+}
+
+static void prv_bput(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		     subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int32_t slot;
+
+	slot = vm->regs[ops[1].reg];
+	if (slot > SUBTILIS_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!vm->files[slot]) {
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_WRITE);
+		return;
+	}
+
+	if (fputc(vm->regs[ops[0].reg], vm->files[slot]) == EOF)
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_WRITE);
+}
+
+static void prv_block_get(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			  subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int32_t slot;
+	int32_t base = vm->regs[ops[3].reg];
+	uint8_t *dst = &vm->memory[base];
+
+	slot = vm->regs[ops[1].reg];
+	if (slot > SUBTILIS_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!vm->files[slot]) {
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_READ);
+		return;
+	}
+
+	vm->regs[ops[0].reg] =
+	    fread(dst, 1, vm->regs[ops[2].reg], vm->files[slot]);
+}
+
+static void prv_block_put(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			  subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int32_t slot;
+	int32_t base = vm->regs[ops[3].reg];
+	uint8_t *dst = &vm->memory[base];
+
+	slot = vm->regs[ops[1].reg];
+	if (slot > SUBTILIS_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!vm->files[slot]) {
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_WRITE);
+		return;
+	}
+
+	vm->regs[ops[0].reg] =
+	    fwrite(dst, 1, vm->regs[ops[2].reg], vm->files[slot]);
+}
+
+static void prv_eof(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int32_t slot;
+
+	slot = vm->regs[ops[1].reg];
+	if (slot > SUBTILIS_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!vm->files[slot]) {
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_READ);
+		return;
+	}
+
+	vm->regs[ops[0].reg] = feof(vm->files[slot]) ? -1 : 0;
+}
+
+static void prv_ext(subitlis_vm_t *vm, subtilis_buffer_t *b,
+		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int32_t slot;
+	int32_t fsize = 0;
+
+	slot = vm->regs[ops[1].reg];
+	if (slot > SUBTILIS_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!vm->files[slot]) {
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_READ);
+		return;
+	}
+
+	if (!subtils_get_file_size(vm->files[slot], &fsize)) {
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_READ);
+		return;
+	}
+
+	vm->regs[ops[0].reg] = fsize;
+}
+
+static void prv_get_ptr(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int32_t slot;
+	long cur_pos;
+
+	slot = vm->regs[ops[1].reg];
+	if (slot > SUBTILIS_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!vm->files[slot]) {
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_READ);
+		return;
+	}
+	cur_pos = ftell(vm->files[slot]);
+	if (cur_pos == -1) {
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_READ);
+		return;
+	}
+
+	vm->regs[ops[0].reg] = (int32_t)cur_pos;
+}
+
+static void prv_set_ptr(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int32_t slot;
+
+	slot = vm->regs[ops[1].reg];
+	if (slot > SUBTILIS_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!vm->files[slot]) {
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_READ);
+		return;
+	}
+
+	if (fseek(vm->files[slot], vm->regs[ops[0].reg], SEEK_SET))
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_WRITE);
+}
+
+static void prv_signx8to32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			   subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int8_t val;
+
+	val = (int8_t)vm->regs[ops[1].reg];
+	vm->regs[ops[0].reg] = (int32_t)val;
+}
+
+static void prv_movi8tofp(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			  subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	int8_t val;
+
+	val = (int8_t)vm->regs[ops[1].reg];
+	vm->fregs[ops[0].reg] = (double)val;
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                        /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1593,6 +1854,20 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_block_free,                    /* SUBTILIS_OP_INSTR_BLOCK_FREE */
 	prv_block_adjust,                  /* SUBTILIS_OP_INSTR_BLOCK_ADJUST */
 	prv_cmov_i32,                      /* SUBTILIS_OP_INSTR_CMOV_I32 */
+	prv_openout,                       /* SUBTILIS_OP_INSTR_OPENOUT */
+	prv_openup,                        /* SUBTILIS_OP_INSTR_OPENUP */
+	prv_openin,                        /* SUBTILIS_OP_INSTR_OPENIN */
+	prv_close,                         /* SUBTILIS_OP_INSTR_CLOSE */
+	prv_bget,                          /* SUBTILIS_OP_INSTR_BGET */
+	prv_bput,                          /* SUBTILIS_OP_INSTR_BPUT */
+	prv_block_get,                     /* SUBTILIS_OP_INSTR_BLOCK_GET */
+	prv_block_put,                     /* SUBTILIS_OP_INSTR_BLOCK_PUT */
+	prv_eof,                           /* SUBTILIS_OP_INSTR_EOF */
+	prv_ext,                           /* SUBTILIS_OP_INSTR_EXT */
+	prv_get_ptr,                       /* SUBTILIS_OP_INSTR_GET_PTR */
+	prv_set_ptr,                       /* SUBTILIS_OP_INSTR_SET_PTR */
+	prv_signx8to32,                    /* SUBTILIS_OP_INSTR_SIGNX_8_TO_32 */
+	prv_movi8tofp,                     /* SUBTILIS_OP_INSTR_MOV_I8_FP */
 };
 
 /* clang-format on */
@@ -1641,8 +1916,14 @@ void subitlis_vm_run(subitlis_vm_t *vm, subtilis_buffer_t *b,
 
 void subitlis_vm_delete(subitlis_vm_t *vm)
 {
+	size_t i;
+
 	if (!vm)
 		return;
+
+	for (i = 0; i < SUBTILIS_VM_MAX_FILES; i++)
+		if (vm->files[i])
+			fclose(vm->files[i]);
 	free(vm->constants);
 	free(vm->labels);
 	free(vm->fregs);

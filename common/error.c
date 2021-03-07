@@ -96,6 +96,9 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_INTEGER_EXPECTED */
 	{"Integer expected found %s.\n", 1},
 
+	/* SUBTILIS_ERROR_BYTE_EXPECTED */
+	{"Byte expected found %s.\n", 1},
+
 	/* SUBTILIS_ERROR_BAD_EXPRESSION */
 	{"Bad expression.\n", 0},
 
@@ -165,6 +168,12 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_NESTED_HANDLER */
 	{"Nested error handlers are not allowed\n", 0},
 
+	/* SUBTILIS_ERROR_HANDLER_IN_TRY */
+	{"Error handlers are not allowed in try blocks\n", 0},
+
+	/* SUBTILIS_ERROR_ERROR_IN_HANDLER */
+	{"Implicit error in handler. A try statement is needed\n", 0},
+
 	/* SUBTILIS_ERROR_ENDPROC_IN_FN */
 	{"ENDPROC is not allowed in functions\n"},
 
@@ -209,6 +218,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_BAD_CONVERSION */
 	{"Unable to convert from %s to %s\n", 2},
+
+	/* SUBTILIS_ERROR_BAD_ZERO_EXTEND */
+	{"Cannot zero extend from %s to %s\n", 2},
 
 	/* SUBTILIS_ERROR_BAD_ELEMENT_COUNT */
 	{"Bad element count\n", 0},

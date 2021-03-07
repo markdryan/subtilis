@@ -42,5 +42,9 @@ void subtilis_ptd_arm_on(subtilis_ir_section_t *s, size_t start,
 			 void *user_data, subtilis_error_t *err);
 void subtilis_ptd_arm_off(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
+void subtilis_ptd_eof(subtilis_ir_section_t *s, size_t start, void *user_data,
+		      subtilis_error_t *err);
+void subtilis_ptd_signx8to32(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err);
 
 #endif

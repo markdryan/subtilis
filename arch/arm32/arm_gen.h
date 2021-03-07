@@ -171,5 +171,9 @@ void subtilis_arm_gen_sete_reg(subtilis_arm_section_t *arm_s,
 			       subtilis_ir_section_t *s,
 			       subtilis_arm_ccode_type_t ccode, size_t reg,
 			       size_t error_code, subtilis_error_t *err);
+void subtilis_arm_gen_signx8to32_helper(subtilis_arm_section_t *arm_s,
+					subtilis_arm_reg_t dest,
+					subtilis_arm_reg_t src,
+					subtilis_error_t *err);
 
 #endif

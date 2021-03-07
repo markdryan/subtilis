@@ -266,6 +266,20 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	 {"blockfree *, *\n", subtilis_riscos_arm_block_free_space},
 	 {"blockadjust *, *\n", subtilis_riscos_arm_block_adjust},
 	 {"syscall\n", subtilis_riscos_arm2_syscall},
+	 {"openout *, *\n", subtilis_riscos_openout},
+	 {"openup *, *\n", subtilis_riscos_openup},
+	 {"openin *, *\n", subtilis_riscos_openin },
+	 {"close *\n", subtilis_riscos_close },
+	 {"bget *, *\n", subtilis_riscos_bget },
+	 {"bput *, *\n", subtilis_riscos_bput },
+	 {"blockget *, *, *, *\n", subtilis_riscos_block_get },
+	 {"blockput *, *, *, *\n", subtilis_riscos_block_put },
+	 {"eof *, *\n", subtilis_riscos_eof },
+	 {"ext *, *\n", subtilis_riscos_ext },
+	 {"getptr *, *\n", subtilis_riscos_get_ptr },
+	 {"setptr *, *\n", subtilis_riscos_set_ptr },
+	 {"signx8to32 *, *\n", subtilis_riscos_signx8to32 },
+	 {"movi8tofp *, *\n", subtilis_fpa_gen_movi8tofp },
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

@@ -1204,3 +1204,46 @@ void subtilis_arm_gen_sete_reg(subtilis_arm_section_t *arm_s,
 	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_STR, ccode,
 				   error_code, 12, s->error_offset, false, err);
 }
+
+void subtilis_arm_gen_signx8to32_helper(subtilis_arm_section_t *arm_s,
+					subtilis_arm_reg_t dest,
+					subtilis_arm_reg_t src,
+					subtilis_error_t *err)
+
+{
+	subtilis_arm_instr_t *instr;
+	subtilis_arm_data_instr_t *datai;
+
+	subtilis_arm_add_cmp_imm(arm_s, SUBTILIS_ARM_INSTR_TST,
+				 SUBTILIS_ARM_CCODE_AL, src, 1 << 7, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_EQ, false, dest, src,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_data_imm(arm_s, SUBTILIS_ARM_INSTR_AND,
+				  SUBTILIS_ARM_CCODE_EQ, false, dest, dest,
+				  0xff, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mvn_imm(arm_s, SUBTILIS_ARM_CCODE_NE, false, dest, 255,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_ORR, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	datai = &instr->operands.data;
+	datai->status = false;
+	datai->ccode = SUBTILIS_ARM_CCODE_NE;
+	datai->dest = dest;
+	datai->op1 = dest;
+	datai->op2.type = SUBTILIS_ARM_OP2_REG;
+	datai->op2.op.reg = src;
+}

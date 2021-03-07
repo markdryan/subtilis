@@ -17,8 +17,12 @@
 #ifndef __SUBTILIS_ARM_VM_H
 #define __SUBTILIS_ARM_VM_H
 
+#include <stdio.h>
+
 #include "../../common/buffer.h"
 #include "arm_core.h"
+
+#define SUBTILIS_ARM_VM_MAX_FILES 16
 
 struct subtilis_arm_vm_freg_t_ {
 	union {
@@ -57,6 +61,10 @@ struct subtilis_arm_vm_t_ {
 	int32_t start_address;
 	uint32_t fpscr;
 	bool vfp;
+	// clang-format off
+	FILE * files[SUBTILIS_ARM_VM_MAX_FILES];
+
+	// clang-format on
 };
 
 typedef struct subtilis_arm_vm_t_ subtilis_arm_vm_t;

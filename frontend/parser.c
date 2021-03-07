@@ -26,6 +26,7 @@
 #include "parser_compound.h"
 #include "parser_cond.h"
 #include "parser_error.h"
+#include "parser_file.h"
 #include "parser_graphics.h"
 #include "parser_loops.h"
 #include "parser_os.h"
@@ -529,14 +530,14 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_BEAT */
 	NULL, /* SUBTILIS_KEYWORD_BEATS */
 	NULL, /* SUBTILIS_KEYWORD_BGET_HASH */
-	NULL, /* SUBTILIS_KEYWORD_BPUT_HASH */
+	subtilis_parser_bput, /* SUBTILIS_KEYWORD_BPUT_HASH */
 	NULL, /* SUBTILIS_KEYWORD_BY */
 	NULL, /* SUBTILIS_KEYWORD_CALL */
 	NULL, /* SUBTILIS_KEYWORD_CASE */
 	NULL, /* SUBTILIS_KEYWORD_CHR_STR */
 	subtilis_parser_circle, /* SUBTILIS_KEYWORD_CIRCLE */
 	subtilis_parser_clg, /* SUBTILIS_KEYWORD_CLG */
-	NULL, /* SUBTILIS_KEYWORD_CLOSE_HASH */
+	subtilis_parser_close, /* SUBTILIS_KEYWORD_CLOSE_HASH */
 	subtilis_parser_cls, /* SUBTILIS_KEYWORD_CLS */
 	subtilis_parser_colour, /* SUBTILIS_KEYWORD_COLOR */
 	subtilis_parser_colour, /* SUBTILIS_KEYWORD_COLOUR */
@@ -554,6 +555,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_ENDERROR */
 	NULL, /* SUBTILIS_KEYWORD_ENDIF */
 	subtilis_parser_endproc, /* SUBTILIS_KEYWORD_ENDPROC */
+	NULL, /* SUBTILIS_KEYWORD_ENDTRY */
 	NULL, /* SUBTILIS_KEYWORD_ENDWHILE */
 	NULL, /* SUBTILIS_KEYWORD_EOF_HASH */
 	NULL, /* SUBTILIS_KEYWORD_EOR */
@@ -578,6 +580,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_INPUT_HASH */
 	NULL, /* SUBTILIS_KEYWORD_INSTR */
 	NULL, /* SUBTILIS_KEYWORD_INT */
+	NULL, /* SUBTILIS_KEYWORD_INTZ */
 	subtilis_parser_left_str, /* SUBTILIS_KEYWORD_LEFT_STR */
 	NULL, /* SUBTILIS_KEYWORD_LEN */
 	subtilis_parser_let, /* SUBTILIS_KEYWORD_LET */
@@ -609,7 +612,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_POS */
 	subtilis_parser_print, /* SUBTILIS_KEYWORD_PRINT */
 	NULL, /* SUBTILIS_KEYWORD_PRINT_HASH */
-	NULL, /* SUBTILIS_KEYWORD_PTR_HASH */
+	subtilis_parser_set_ptr, /* SUBTILIS_KEYWORD_PTR_HASH */
 	NULL, /* SUBTILIS_KEYWORD_QUIT */
 	NULL, /* SUBTILIS_KEYWORD_RAD */
 	subtilis_parser_rectangle, /* SUBTILIS_KEYWORD_RECTANGLE */
@@ -642,6 +645,8 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_TINT */
 	NULL, /* SUBTILIS_KEYWORD_TO */
 	NULL, /* SUBTILIS_KEYWORD_TRUE */
+	subtilis_parser_try, /* SUBTILIS_KEYWORD_TRY */
+	subtilis_parser_try_one, /* SUBTILIS_KEYWORD_TRY */
 	NULL, /* SUBTILIS_KEYWORD_UNTIL */
 	NULL, /* SUBTILIS_KEYWORD_USR */
 	NULL, /* SUBTILIS_KEYWORD_VAL */

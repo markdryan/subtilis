@@ -175,7 +175,7 @@ static const char *const instr_desc[] = {
 	"STR",      // SUBTILIS_ARM_STRAN_MISC_STR
 	"QADD16",   // SUBTILIS_ARM_SIMD_QADD16
 	"QADD8",    // SUBTILIS_ARM_SIMD_QADD8
-	"QADDSUBX"  // SUBTILIS_ARM_SIMD_QADDSUBX
+	"QADDSUBX", // SUBTILIS_ARM_SIMD_QADDSUBX
 	"QSUB16",   // SUBTILIS_ARM_SIMD_QSUB16
 	"QSUB8",    // SUBTILIS_ARM_SIMD_QSUB8
 	"QSUBADDX", // SUBTILIS_ARM_SIMD_QSUBADDX
@@ -209,6 +209,9 @@ static const char *const instr_desc[] = {
 	"UQSUB16",  // SUBTILIS_ARM_SIMD_UQSUB16
 	"UQSUB8",   // SUBTILIS_ARM_SIMD_UQSUB8
 	"UQSUBADDX",// SUBTILIS_ARM_SIMD_UQSUBADDX
+	"SXTB",     // SUBTILIS_ARM_INSTR_SXTB
+	"SXTB16",   // SUBTILIS_ARM_INSTR_SXTB16
+	"SXTH",     // SUBTILIS_ARM_INSTR_SXTH
 };
 
 static const char *const shift_desc[] = {
@@ -1029,6 +1032,36 @@ static void prv_dump_reg_only_instr(void *user_data, subtilis_arm_op_t *op,
 	printf(" R%zu, R%zu, R%zu\n", instr->dest, instr->op1, instr->op2);
 }
 
+static void prv_dump_signx_instr(void *user_data, subtilis_arm_op_t *op,
+				 subtilis_arm_instr_type_t type,
+				 subtilis_arm_signx_instr_t *instr,
+				 subtilis_error_t *err)
+{
+	int ror = 0;
+
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+
+	printf(" R%zu, R%zu", instr->dest, instr->op1);
+	switch (instr->rotate) {
+	case SUBTILIS_ARM_SIGNX_ROR_NONE:
+		printf("\n");
+		return;
+	case SUBTILIS_ARM_SIGNX_ROR_8:
+		ror = 8;
+		break;
+	case SUBTILIS_ARM_SIGNX_ROR_16:
+		ror = 16;
+		break;
+	case SUBTILIS_ARM_SIGNX_ROR_24:
+		ror = 24;
+		break;
+	}
+
+	printf(", ROR %d\n", ror);
+}
+
 void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 			       subtilis_arm_section_t *s)
 {
@@ -1073,6 +1106,7 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 	walker.vfp_cvt_fn = prv_dump_vfp_cvt_instr;
 	walker.stran_misc_fn = prv_dump_stran_misc_instr;
 	walker.simd_fn = prv_dump_reg_only_instr;
+	walker.signx_fn = prv_dump_signx_instr;
 
 	subtilis_arm_walk(s, &walker, &err);
 
@@ -1369,6 +1403,12 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 	case SUBTILIS_ARM_SIMD_UQSUBADDX:
 		prv_dump_reg_only_instr(NULL, NULL, instr->type,
 					&instr->operands.reg_only, NULL);
+		break;
+	case SUBTILIS_ARM_INSTR_SXTB:
+	case SUBTILIS_ARM_INSTR_SXTB16:
+	case SUBTILIS_ARM_INSTR_SXTH:
+		prv_dump_signx_instr(NULL, NULL, instr->type,
+				     &instr->operands.signx, NULL);
 		break;
 	default:
 		printf("\tUNKNOWN INSTRUCTION\n");

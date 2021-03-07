@@ -46,6 +46,7 @@ typedef enum {
 	SUBTILIS_ERROR_EXP_EXPECTED,
 	SUBTILIS_ERROR_RIGHT_BKT_EXPECTED,
 	SUBTILIS_ERROR_INTEGER_EXPECTED,
+	SUBTILIS_ERROR_BYTE_EXPECTED,
 	SUBTILIS_ERROR_BAD_EXPRESSION,
 	SUBTILIS_ERROR_DIVIDE_BY_ZERO,
 	SUBTILIS_ERROR_UNKNOWN_VARIABLE,
@@ -69,6 +70,8 @@ typedef enum {
 	SUBTILIS_ERROR_RETURN_IN_MAIN,
 	SUBTILIS_ERROR_RETURN_IN_PROC,
 	SUBTILIS_ERROR_NESTED_HANDLER,
+	SUBTILIS_ERROR_HANDLER_IN_TRY,
+	SUBTILIS_ERROR_ERROR_IN_HANDLER,
 	SUBTILIS_ERROR_ENDPROC_IN_FN,
 	SUBTILIS_ERROR_RETURN_EXPECTED,
 	SUBTILIS_ERROR_TOO_MANY_DIMS,
@@ -84,6 +87,7 @@ typedef enum {
 	SUBTILIS_ERROR_CONST_INTEGER_EXPECTED,
 	SUBTILIS_ERROR_NUMERIC_EXP_EXPECTED,
 	SUBTILIS_ERROR_BAD_CONVERSION,
+	SUBTILIS_ERROR_BAD_ZERO_EXTEND,
 	SUBTILIS_ERROR_BAD_ELEMENT_COUNT,
 	SUBTILIS_ERROR_CONST_EXPRESSION_EXPECTED,
 	SUBTILIS_ERROR_STRING_EXPECTED,
@@ -183,6 +187,8 @@ void subtilis_error_init(subtilis_error_t *e);
 			    line)
 #define subtilis_error_set_integer_expected(e, str, file, line)                \
 	subtilis_error_set1(e, SUBTILIS_ERROR_INTEGER_EXPECTED, str, file, line)
+#define subtilis_error_set_byte_expected(e, str, file, line)                   \
+	subtilis_error_set1(e, SUBTILIS_ERROR_BYTE_EXPECTED, str, file, line)
 #define subtilis_error_set_bad_expression(e, file, line)                       \
 	subtilis_error_set_syntax(e, SUBTILIS_ERROR_BAD_EXPRESSION, file,      \
 				  line, __FILE__, __LINE__)
@@ -241,6 +247,10 @@ void subtilis_error_init(subtilis_error_t *e);
 				  line, __FILE__, __LINE__)
 #define subtilis_error_set_nested_handler(e, file, line)                       \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_NESTED_HANDLER, file, line)
+#define subtilis_error_set_handler_in_try(e, file, line)                       \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_HANDLER_IN_TRY, file, line)
+#define subtilis_error_set_error_handler(e, file, line)                        \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_ERROR_IN_HANDLER, file, line)
 #define subtilis_error_set_proc_in_fn(e, file, line)                           \
 	subtilis_error_set_syntax(e, SUBTILIS_ERROR_ENDPROC_IN_FN, file, line, \
 				  __FILE__, __LINE__)
@@ -280,6 +290,9 @@ void subtilis_error_init(subtilis_error_t *e);
 				  file, line, __FILE__, __LINE__)
 #define subtilis_error_set_bad_conversion(e, from, to, file, line)             \
 	subtilis_error_set2(e, SUBTILIS_ERROR_BAD_CONVERSION, from, to, file,  \
+			    line)
+#define subtilis_error_set_bad_zero_extend(e, from, to, file, line)            \
+	subtilis_error_set2(e, SUBTILIS_ERROR_BAD_ZERO_EXTEND, from, to, file, \
 			    line)
 #define subtilis_error_bad_element_count(e, file, line)                        \
 	subtilis_error_set_syntax(e, SUBTILIS_ERROR_BAD_ELEMENT_COUNT, file,   \

@@ -1015,9 +1015,21 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 		    (ct->parameters[i].type == SUBTILIS_TYPE_INTEGER)) {
 			itype = SUBTILIS_OP_INSTR_MOV_I32_FP;
 			reg_type = SUBTILIS_IR_REG_TYPE_REAL;
-		} else if ((st->parameters[i].type == SUBTILIS_TYPE_INTEGER) &&
+		} else if ((st->parameters[i].type == SUBTILIS_TYPE_REAL) &&
+			   (ct->parameters[i].type == SUBTILIS_TYPE_BYTE)) {
+			itype = SUBTILIS_OP_INSTR_MOV_I8_FP;
+			reg_type = SUBTILIS_IR_REG_TYPE_REAL;
+		} else if (((st->parameters[i].type == SUBTILIS_TYPE_INTEGER) ||
+			    (st->parameters[i].type == SUBTILIS_TYPE_BYTE)) &&
 			   (ct->parameters[i].type == SUBTILIS_TYPE_REAL)) {
 			itype = SUBTILIS_OP_INSTR_MOV_FP_I32;
+			reg_type = SUBTILIS_IR_REG_TYPE_INTEGER;
+		} else if ((st->parameters[i].type == SUBTILIS_TYPE_BYTE) &&
+			   (ct->parameters[i].type == SUBTILIS_TYPE_INTEGER)) {
+			continue;
+		} else if ((st->parameters[i].type == SUBTILIS_TYPE_INTEGER) &&
+			   (ct->parameters[i].type == SUBTILIS_TYPE_BYTE)) {
+			itype = SUBTILIS_OP_INSTR_SIGNX_8_TO_32;
 			reg_type = SUBTILIS_IR_REG_TYPE_INTEGER;
 		} else {
 			expected_typname =
