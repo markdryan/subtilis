@@ -615,7 +615,7 @@ static subtilis_exp_t *prv_abs(subtilis_parser_t *p, subtilis_exp_t *e,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	e = subtilis_type_int32.abs(p, e, err);
+	e = (subtilis_type_int32.abs)(p, e, err);
 	e->type.type = SUBTILIS_TYPE_BYTE;
 	return e;
 }
