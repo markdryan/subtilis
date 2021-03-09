@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_BYTE_TYPE_IF_H
-#define __SUBTILIS_BYTE_TYPE_IF_H
+#ifndef __SUBTILIS_ARRAY_BYTE_TYPE_H
+#define __SUBTILIS_ARRAY_BYTE_TYPE_H
 
 #include "type_if.h"
 
-extern subtilis_type_if subtilis_type_const_byte;
-extern subtilis_type_if subtilis_type_byte_if;
+extern subtilis_type_if subtilis_type_array_byte;
 
 #endif

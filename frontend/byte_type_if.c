@@ -26,6 +26,80 @@
 
 static size_t prv_size(const subtilis_type_t *type) { return 1; }
 
+/*
+ * subtilis_type_const_byte is only a partial type.  It's not possible
+ * for the programmer to create one of these for general use.  They
+ * only exist to allow the initialisation of byte arrays.
+ */
+
+/* clang-format off */
+subtilis_type_if subtilis_type_const_byte = {
+	.is_const = true,
+	.is_numeric = true,
+	.is_integer = true,
+	.is_array = false,
+	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
+	.size = prv_size,
+	.data_size = NULL,
+	.zero = NULL,
+	.zero_ref = NULL,
+	.new_ref = NULL,
+	.assign_ref = NULL,
+	.top_bit = NULL,
+	.zero_reg = NULL,
+	.copy_ret = NULL,
+	.const_of = NULL,
+	.array_of = NULL,
+	.element_type = NULL,
+	.exp_to_var = NULL,
+	.copy_var = NULL,
+	.dup = NULL,
+	.assign_reg = NULL,
+	.assign_mem = NULL,
+	.indexed_write = NULL,
+	.indexed_add = NULL,
+	.indexed_sub = NULL,
+	.indexed_read = NULL,
+	.indexed_address = NULL,
+	.load_mem = NULL,
+	.to_int32 = NULL,
+	.zerox = NULL,
+	.to_byte = NULL,
+	.to_float64 = NULL,
+	.to_string = NULL,
+	.to_hex_string = NULL,
+	.coerce = NULL,
+	.unary_minus = NULL,
+	.add = NULL,
+	.mul = NULL,
+	.and = NULL,
+	.or = NULL,
+	.eor = NULL,
+	.not = NULL,
+	.eq = NULL,
+	.neq = NULL,
+	.sub = NULL,
+	.div = NULL,
+	.mod = NULL,
+	.gt = NULL,
+	.lte = NULL,
+	.lt = NULL,
+	.gte = NULL,
+	.pow = NULL,
+	.lsl = NULL,
+	.lsr = NULL,
+	.asr = NULL,
+	.abs = NULL,
+	.sgn = NULL,
+	.is_inf = NULL,
+	.call = NULL,
+	.ret = NULL,
+	.print = NULL,
+	.destructor = NULL,
+};
+
+/* clang-format on */
+
 static void prv_dup(subtilis_exp_t *e1, subtilis_exp_t *e2,
 		    subtilis_error_t *err)
 {
@@ -43,6 +117,12 @@ static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 	return subtilis_exp_new_byte_var(reg_num, err);
+}
+
+static void prv_const_of(const subtilis_type_t *type,
+			 subtilis_type_t *const_type)
+{
+	const_type->type = SUBTILIS_TYPE_CONST_BYTE;
 }
 
 static subtilis_exp_t *prv_top_bit(subtilis_parser_t *p, subtilis_error_t *err)
@@ -73,8 +153,7 @@ static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
 static void prv_array_of(const subtilis_type_t *element_type,
 			 subtilis_type_t *type)
 {
-	/* TODO: Fix this */
-	type->type = SUBTILIS_TYPE_ARRAY_INTEGER;
+	type->type = SUBTILIS_TYPE_ARRAY_BYTE;
 }
 
 static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -695,7 +774,7 @@ subtilis_type_if subtilis_type_byte_if = {
 	.top_bit = prv_top_bit,
 	.zero_reg = prv_zero_reg,
 	.copy_ret = NULL,
-	.const_of = NULL,
+	.const_of = prv_const_of,
 	.array_of = prv_array_of,
 	.element_type = NULL,
 	.exp_to_var = prv_exp_to_var,

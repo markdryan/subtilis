@@ -39,6 +39,7 @@ const subtilis_type_t subtilis_type_local_buffer = {SUBTILIS_TYPE_LOCAL_BUFFER};
 static const char *const prv_fixed_type_names[] = {
 	"const real",    /* SUBTILIS_TYPE_CONST_REAL */
 	"const integer", /* SUBTILIS_TYPE_CONST_INTEGER */
+	"const byte",    /* SUBTILIS_TYPE_CONST_BYTE */
 	"const string",    /* SUBTILIS_TYPE_CONST_STRING */
 	"real",    /* SUBTILIS_TYPE_REAL */
 	"integer", /* SUBTILIS_TYPE_INTEGER */
@@ -47,6 +48,7 @@ static const char *const prv_fixed_type_names[] = {
 	"void",    /* SUBTILIS_TYPE_VOID */
 	"array of reals", /* SUBTILIS_TYPE_ARRAY_REAL */
 	"array of ints", /* SUBTILIS_TYPE_ARRAY_INTEGER */
+	"array of bytes", /* SUBTILIS_TYPE_ARRAY_BYTE */
 	"array of strings", /* SUBTILIS_TYPE_ARRAY_STRING */
 	"local buffer",  /* SUBTILIS_TYPE_LOCAL_BUFFER */
 };
@@ -113,6 +115,7 @@ subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 		case SUBTILIS_TYPE_STRING:
 		case SUBTILIS_TYPE_ARRAY_REAL:
 		case SUBTILIS_TYPE_ARRAY_INTEGER:
+		case SUBTILIS_TYPE_ARRAY_BYTE:
 			stype->int_regs++;
 			break;
 		case SUBTILIS_TYPE_REAL:

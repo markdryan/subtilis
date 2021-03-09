@@ -109,7 +109,8 @@ static size_t *prv_process_input_args(subtilis_parser_t *p,
 			args[i] = subtilis_string_zt_non_const(p, e, err);
 		} else if (e->type.type == SUBTILIS_TYPE_CONST_STRING) {
 			args[i] = subtilis_string_lca_const_zt(p, e, err);
-		} else if (e->type.type == SUBTILIS_TYPE_ARRAY_INTEGER) {
+		} else if ((e->type.type == SUBTILIS_TYPE_ARRAY_INTEGER) ||
+			   (e->type.type == SUBTILIS_TYPE_ARRAY_INTEGER)) {
 			ptr = subtilis_reference_get_data(p, e->exp.ir_op.reg,
 							  0, err);
 			if (err->type != SUBTILIS_ERROR_OK)

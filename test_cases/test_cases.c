@@ -3539,7 +3539,34 @@ const subtilis_test_case_t test_cases[] = {
 	"a& := TRUE\n"
 	"print intz(a&)\n",
 	"255\n",
-	}
+	},
+	{"array_byte",
+	"a&() := FNInita&(1)()\n"
+	"print a&(0)\n"
+	"print a&(1)\n"
+	"a&() = FNUpdatea&(1)(a&())\n"
+	"print a&(0)\n"
+	"print a&(1)\n"
+	"\n"
+	"def FNInita&(1)\n"
+	"  local dim a&(1)\n"
+	"  a&(0) = 127\n"
+	"  a&(1) = 128\n"
+	"<-a&()\n"
+	"\n"
+	"def FNUpdatea&(1)(a&(1))\n"
+	"  a&(0) += 1\n"
+	"  a&(1) += 1\n"
+	"<-a&()\n",
+	"127\n-128\n-128\n-127\n",
+	},
+	{"array_byte_init",
+	"dim a&(1)\n"
+	"a&() = 1, 2\n"
+	"print a&(0)\n"
+	"print a&(1)\n",
+	"1\n2\n",
+	},
 };
 
 /* clang-format on */

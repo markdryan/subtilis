@@ -1050,7 +1050,8 @@ subtilis_exp_t *subtilis_var_lookup_ref(subtilis_parser_t *p,
 		}
 
 		return e;
-	} else if (s->t.type == SUBTILIS_TYPE_ARRAY_INTEGER) {
+	} else if ((s->t.type == SUBTILIS_TYPE_ARRAY_INTEGER) ||
+		   (s->t.type == SUBTILIS_TYPE_ARRAY_BYTE)) {
 		subtilis_lexer_get(p->l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return NULL;

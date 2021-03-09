@@ -33,6 +33,7 @@ COMMON =\
 	string_pool.c \
 	type.c \
 	builtins.c \
+	builtins_helper.c \
 	builtins_ir.c \
 	call.c \
 	variable.c \
@@ -42,6 +43,7 @@ COMMON =\
 	int32_type.c \
 	byte_type_if.c \
 	array_int32_type.c \
+	array_byte_type.c \
 	array_float64_type.c \
 	array_string_type.c \
 	array_type.c \
