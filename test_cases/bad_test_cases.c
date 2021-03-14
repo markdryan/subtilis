@@ -562,6 +562,13 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"<-a&()\n",
 	SUBTILIS_ERROR_ALREADY_DEFINED,
 	},
+	{"assign_array_to_numeric",
+	"a& := FNInita&(1)()\n"
+	"def FNInita&(1)\n"
+	"local dim a&(1)\n"
+	"<-a&()\n",
+	SUBTILIS_ERROR_EXPECTED,
+	}
 };
 
 /* clang-format on */

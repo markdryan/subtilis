@@ -258,6 +258,13 @@ subtilis_exp_t *subtilis_parser_assign_local_num(subtilis_parser_t *p,
 	e = subtilis_parser_expression(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
+	if (!subtilis_type_if_is_numeric(&e->type)) {
+		subtilis_error_set_expected(err, "Numeric expression",
+					    subtilis_type_name(&e->type),
+					    p->l->stream->name, p->l->line);
+		subtilis_exp_delete(e);
+		return NULL;
+	}
 	e = subtilis_type_if_copy_var(p, e, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
