@@ -3567,6 +3567,26 @@ const subtilis_test_case_t test_cases[] = {
 	"print a&(1)\n",
 	"1\n2\n",
 	},
+	{"string_array_fn4",
+	"a$() := FNInita$(1)()\n"
+	"print a$(0)\n"
+	"print a$(1)\n"
+	"a$() = FNUpdatea$(1)(a$())\n"
+	"print a$(0)\n"
+	"print a$(1)\n"
+	"\n"
+	"def FNInita$(1)\n"
+	"  local dim a$(1)\n"
+	"  a$(0) = \"hello\"\n"
+	"  a$(1) = \"world\"\n"
+	"<-a$()\n"
+	"\n"
+	"def FNUpdatea$(1)(a$(1))\n"
+	"  a$(0) += \" !\"\n"
+	"  a$(1) += \" *\"\n"
+	"<-a$()\n",
+	"hello\nworld\nhello !\nworld *\n",
+	},
 };
 
 /* clang-format on */

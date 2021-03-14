@@ -115,6 +115,7 @@ subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 		case SUBTILIS_TYPE_STRING:
 		case SUBTILIS_TYPE_ARRAY_REAL:
 		case SUBTILIS_TYPE_ARRAY_INTEGER:
+		case SUBTILIS_TYPE_ARRAY_STRING:
 		case SUBTILIS_TYPE_ARRAY_BYTE:
 			stype->int_regs++;
 			break;
