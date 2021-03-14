@@ -1119,7 +1119,6 @@ a& := -1
 declares a new byte variable and assigns it the value -1.  As byte is a signed type, byte variables are sign extended when converted to other types or printed out.  Use the INTZ keyword to zero extend a byte value instead, e.g.,
 
 ```
-```
 a& := -1
 print intz(a&)
 ```
