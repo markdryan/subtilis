@@ -568,7 +568,21 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"local dim a&(1)\n"
 	"<-a&()\n",
 	SUBTILIS_ERROR_EXPECTED,
-	}
+	},
+	{"local_obscures_global1",
+	"dim a&(1)\n"
+	"a& := 10\n"
+	"print a&\n"
+	"print a&(0)\n",
+	SUBTILIS_ERROR_LOCAL_OBSCURES_GLOBAL,
+	},
+	{"local_obscures_global2",
+	"dim a&(1)\n"
+	"local a& = 10\n"
+	"print a&\n"
+	"print a&(0)\n",
+	SUBTILIS_ERROR_LOCAL_OBSCURES_GLOBAL,
+	},
 };
 
 /* clang-format on */

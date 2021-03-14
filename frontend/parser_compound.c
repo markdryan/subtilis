@@ -87,6 +87,15 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 
+	if ((p->current == p->main) && (p->level == 0)) {
+		s = subtilis_symbol_table_lookup(p->st, tbuf);
+		if (s) {
+			subtilis_error_set_local_obscures_global(
+			    err, tbuf, p->l->stream->name, p->l->line);
+			return;
+		}
+	}
+
 	if (subtilis_symbol_table_lookup(p->local_st, tbuf)) {
 		subtilis_error_set_already_defined(
 		    err, tbuf, p->l->stream->name, p->l->line);

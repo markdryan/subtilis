@@ -256,6 +256,9 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_DEFFN_SHOULD_BE_DEF_FN */
 	{"Unexpected identifier.  Did you mean DEF FN?\n", 0},
 
+	/* SUBTILIS_ERROR_LOCAL_OBSCURES_GLOBAL */
+	{"Global variable %s shadowed at the top level of main\n", 1},
+
 	/* SUBTILIS_ERROR_ASS_BAD_REG */
 	{"%s is not a valid register name\n", 1},
 

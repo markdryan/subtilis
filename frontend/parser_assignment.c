@@ -285,6 +285,15 @@ static void prv_assignment_local(subtilis_parser_t *p, subtilis_token_t *t,
 	const subtilis_symbol_t *s;
 	subtilis_exp_t *e;
 
+	if ((p->current == p->main) && (p->level == 0)) {
+		s = subtilis_symbol_table_lookup(p->st, var_name);
+		if (s) {
+			subtilis_error_set_local_obscures_global(
+			    err, var_name, p->l->stream->name, p->l->line);
+			return;
+		}
+	}
+
 	if (subtilis_symbol_table_lookup(p->local_st, var_name)) {
 		subtilis_error_set_already_defined(
 		    err, var_name, p->l->stream->name, p->l->line);

@@ -1970,7 +1970,6 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"array_local_return_fn",
 	 "c% := 10\n"
-	 "dim a(c%)\n"
 	 "local a() = FNArr(1)()\n"
 	 "for i% = 0 to dim(a(),1)\n"
 	 "  print a(i%)\n"

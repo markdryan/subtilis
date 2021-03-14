@@ -319,6 +319,16 @@ LOCAL x%
 
 declares a local variable, x%, and initialises it to 0.
 
+Local variables declared at the top level of the main function are not allowed
+to shadow global variables.  For example,
+
+```
+dim a&(1)
+a& := 10
+```
+
+will not compile.
+
 ### The := assignment operator
 
 Subtilis introduces the ':=' operator which creates a new local variable and
