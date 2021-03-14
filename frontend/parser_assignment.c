@@ -231,6 +231,10 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 					     s->loc, e, indices, dims, err);
 		e = NULL;
 		break;
+	case SUBTILIS_ASSIGN_TYPE_CREATE_EQUAL:
+		subtilis_error_set_already_defined(
+		    err, var_name, p->l->stream->name, p->l->line);
+		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
 		break;

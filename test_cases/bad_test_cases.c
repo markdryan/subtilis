@@ -554,6 +554,14 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"print intz(10.0)\n",
 	SUBTILIS_ERROR_BAD_ZERO_EXTEND,
 	},
+	{"array_reference_redefine",
+	"a&() := FNInita&(1)()\n"
+	"a&() := FNUpdatea&(1)(a&())\n"
+	"def FNInita&(1)\n"
+	"local dim a&(1)\n"
+	"<-a&()\n",
+	SUBTILIS_ERROR_ALREADY_DEFINED,
+	},
 };
 
 /* clang-format on */
