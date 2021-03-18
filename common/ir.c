@@ -765,6 +765,7 @@ static subtilis_ir_section_t *prv_ir_prog_section_new(
 	case SUBTILIS_TYPE_BYTE:
 	case SUBTILIS_TYPE_ARRAY_REAL:
 	case SUBTILIS_TYPE_ARRAY_INTEGER:
+	case SUBTILIS_TYPE_ARRAY_BYTE:
 	case SUBTILIS_TYPE_ARRAY_STRING:
 	case SUBTILIS_TYPE_STRING:
 		s->ret_reg = s->reg_counter++;

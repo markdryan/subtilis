@@ -592,7 +592,9 @@ static size_t prv_init_block_variables(subtilis_parser_t *p,
 	for (i = 0; i < stype->num_parameters; i++) {
 		t = &stype->parameters[i];
 		if ((t->type == SUBTILIS_TYPE_ARRAY_REAL) ||
-		    (t->type == SUBTILIS_TYPE_ARRAY_INTEGER)) {
+		    (t->type == SUBTILIS_TYPE_ARRAY_INTEGER) ||
+		    (t->type == SUBTILIS_TYPE_ARRAY_BYTE) ||
+		    (t->type == SUBTILIS_TYPE_ARRAY_STRING)) {
 			blocks++;
 			source_op.reg = source_reg++;
 			subtlis_array_type_copy_param_ref(

@@ -180,6 +180,9 @@ static subtilis_exp_t *prv_coerce_type_const(subtilis_parser_t *p,
 		break;
 	case SUBTILIS_TYPE_CONST_INTEGER:
 		break;
+	case SUBTILIS_TYPE_CONST_BYTE:
+		e->type.type = SUBTILIS_TYPE_CONST_BYTE;
+		break;
 	case SUBTILIS_TYPE_REAL:
 		e = subtilis_type_if_exp_to_var(p, e, err);
 		if (err->type != SUBTILIS_ERROR_OK)

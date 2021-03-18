@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 
+#include "array_byte_type.h"
 #include "array_float64_type.h"
 #include "array_int32_type.h"
 #include "array_string_type.h"
@@ -30,6 +31,7 @@
 static subtilis_type_if *prv_type_map[] = {
 	&subtilis_type_const_float64,
 	&subtilis_type_const_int32,
+	&subtilis_type_const_byte,
 	&subtilis_type_if_const_string,
 	&subtilis_type_float64,
 	&subtilis_type_int32,
@@ -37,8 +39,9 @@ static subtilis_type_if *prv_type_map[] = {
 	&subtilis_type_if_string,
 	NULL,
 	&subtilis_type_array_float64,
-	&subtilis_type_array_int32
-,	&subtilis_type_array_string,
+	&subtilis_type_array_int32,
+	&subtilis_type_array_byte,
+	&subtilis_type_array_string,
 	&subtilis_type_if_local_buffer,
 	NULL,
 };

@@ -231,6 +231,10 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 					     s->loc, e, indices, dims, err);
 		e = NULL;
 		break;
+	case SUBTILIS_ASSIGN_TYPE_CREATE_EQUAL:
+		subtilis_error_set_already_defined(
+		    err, var_name, p->l->stream->name, p->l->line);
+		break;
 	default:
 		subtilis_error_set_assertion_failed(err);
 		break;
@@ -254,6 +258,13 @@ subtilis_exp_t *subtilis_parser_assign_local_num(subtilis_parser_t *p,
 	e = subtilis_parser_expression(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
+	if (!subtilis_type_if_is_numeric(&e->type)) {
+		subtilis_error_set_expected(err, "Numeric expression",
+					    subtilis_type_name(&e->type),
+					    p->l->stream->name, p->l->line);
+		subtilis_exp_delete(e);
+		return NULL;
+	}
 	e = subtilis_type_if_copy_var(p, e, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
@@ -273,6 +284,15 @@ static void prv_assignment_local(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	const subtilis_symbol_t *s;
 	subtilis_exp_t *e;
+
+	if ((p->current == p->main) && (p->level == 0)) {
+		s = subtilis_symbol_table_lookup(p->st, var_name);
+		if (s) {
+			subtilis_error_set_local_obscures_global(
+			    err, var_name, p->l->stream->name, p->l->line);
+			return;
+		}
+	}
 
 	if (subtilis_symbol_table_lookup(p->local_st, var_name)) {
 		subtilis_error_set_already_defined(

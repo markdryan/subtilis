@@ -554,6 +554,35 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"print intz(10.0)\n",
 	SUBTILIS_ERROR_BAD_ZERO_EXTEND,
 	},
+	{"array_reference_redefine",
+	"a&() := FNInita&(1)()\n"
+	"a&() := FNUpdatea&(1)(a&())\n"
+	"def FNInita&(1)\n"
+	"local dim a&(1)\n"
+	"<-a&()\n",
+	SUBTILIS_ERROR_ALREADY_DEFINED,
+	},
+	{"assign_array_to_numeric",
+	"a& := FNInita&(1)()\n"
+	"def FNInita&(1)\n"
+	"local dim a&(1)\n"
+	"<-a&()\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
+	{"local_obscures_global1",
+	"dim a&(1)\n"
+	"a& := 10\n"
+	"print a&\n"
+	"print a&(0)\n",
+	SUBTILIS_ERROR_LOCAL_OBSCURES_GLOBAL,
+	},
+	{"local_obscures_global2",
+	"dim a&(1)\n"
+	"local a& = 10\n"
+	"print a&\n"
+	"print a&(0)\n",
+	SUBTILIS_ERROR_LOCAL_OBSCURES_GLOBAL,
+	},
 };
 
 /* clang-format on */

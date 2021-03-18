@@ -836,6 +836,7 @@ subtilis_exp_t *subtilis_parser_get_dim(subtilis_parser_t *p,
 
 	if ((ar->type.type != SUBTILIS_TYPE_ARRAY_REAL) &&
 	    (ar->type.type != SUBTILIS_TYPE_ARRAY_INTEGER) &&
+	    (ar->type.type != SUBTILIS_TYPE_ARRAY_BYTE) &&
 	    (ar->type.type != SUBTILIS_TYPE_ARRAY_STRING)) {
 		subtilis_error_not_array(err, "First argument to dim",
 					 p->l->stream->name, p->l->line);

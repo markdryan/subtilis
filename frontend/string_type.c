@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "builtins_helper.h"
 #include "reference_type.h"
 #include "string_type.h"
 #include "type_if.h"
@@ -2495,39 +2496,6 @@ cleanup:
 	return NULL;
 }
 
-static void prv_memset_string(subtilis_parser_t *p, size_t base_reg,
-			      size_t size_reg, size_t val_reg,
-			      subtilis_error_t *err)
-{
-	subtilis_ir_arg_t *args;
-	char *name = NULL;
-	static const char memset[] = "_memseti8";
-
-	name = malloc(sizeof(memset));
-	if (!name) {
-		subtilis_error_set_oom(err);
-		return;
-	}
-	strcpy(name, memset);
-
-	args = malloc(sizeof(*args) * 3);
-	if (!args) {
-		free(name);
-		subtilis_error_set_oom(err);
-		return;
-	}
-
-	args[0].type = SUBTILIS_IR_REG_TYPE_INTEGER;
-	args[0].reg = base_reg;
-	args[1].type = SUBTILIS_IR_REG_TYPE_INTEGER;
-	args[1].reg = size_reg;
-	args[2].type = SUBTILIS_IR_REG_TYPE_INTEGER;
-	args[2].reg = val_reg;
-
-	(void)subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_MEMSETI8, NULL,
-				    args, &subtilis_type_void, 3, true, err);
-}
-
 static subtilis_exp_t *prv_string_from_const_char(subtilis_parser_t *p,
 						  subtilis_exp_t *count,
 						  subtilis_exp_t *str,
@@ -2560,7 +2528,8 @@ static subtilis_exp_t *prv_string_from_const_char(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	prv_memset_string(p, dest_reg, count->exp.ir_op.reg, val_reg, err);
+	subtilis_builtin_memset_i8(p, dest_reg, count->exp.ir_op.reg, val_reg,
+				   err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -2705,8 +2674,8 @@ static void prv_string_str_non_const_common(subtilis_parser_t *p,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		prv_memset_string(p, dest_reg, count->exp.ir_op.reg, val_reg,
-				  err);
+		subtilis_builtin_memset_i8(p, dest_reg, count->exp.ir_op.reg,
+					   val_reg, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
