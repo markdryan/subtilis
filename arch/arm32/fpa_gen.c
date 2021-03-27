@@ -820,6 +820,39 @@ void subtilis_fpa_gen_movi8tofp(subtilis_ir_section_t *s, size_t start,
 			      SUBTILIS_FPA_ROUNDING_NEAREST, dest, tmp, err);
 }
 
+void subtilis_fpa_gen_movfptoi32i32(subtilis_ir_section_t *s, size_t start,
+				    void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest1;
+	subtilis_arm_reg_t dest2;
+	subtilis_arm_reg_t src;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *mov = &s->ops[start]->op.instr;
+
+	dest1 = subtilis_arm_ir_to_arm_reg(mov->operands[0].reg);
+	dest2 = subtilis_arm_ir_to_arm_reg(mov->operands[1].reg);
+	src = subtilis_arm_ir_to_freg(mov->operands[2].reg);
+
+	/*
+	 * TOOD: Need to check for stack overflow.
+	 */
+
+	subtilis_fpa_add_stran(arm_s, SUBTILIS_FPA_INSTR_STF,
+			       SUBTILIS_ARM_CCODE_AL, src, 13, -8, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, dest2, 13, -4, false,
+				   err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_stran_imm(arm_s, SUBTILIS_ARM_INSTR_LDR,
+				   SUBTILIS_ARM_CCODE_AL, dest1, 13, -8, false,
+				   err);
+}
+
 size_t subtilis_fpa_preserve_regs(subtilis_arm_section_t *arm_s,
 				  int save_real_start, subtilis_error_t *err)
 {

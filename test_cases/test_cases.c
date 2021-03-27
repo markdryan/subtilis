@@ -2339,7 +2339,7 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"string_array_1_el",
 	 "dim a$(1)\n"
-	 "a$() = \"Mark\""
+	 "a$(0) = \"Mark\""
 	 "print a$(0)\n",
 	 "Mark\n",
 	},
@@ -3585,6 +3585,114 @@ const subtilis_test_case_t test_cases[] = {
 	"  a$(1) += \" *\"\n"
 	"<-a$()\n",
 	"hello\nworld\nhello !\nworld *\n",
+	},
+	{"string_array_set",
+	"dim a$(9)\n"
+	"a$() = \"hello\"\n"
+	"for i% := 0 to dim(a$(), 1)\n"
+	"print a$(i%)\n"
+	"next\n",
+	"hello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\n"
+	},
+	{"int_array_set",
+	"dim a%(9)\n"
+	"a%() = 255\n"
+	"for i% := 0 to dim(a%(), 1)\n"
+	"print a%(i%)\n"
+	"next\n",
+	"255\n255\n255\n255\n255\n255\n255\n255\n255\n255\n"
+	},
+	{"byte_array_set",
+	"dim a&(9)\n"
+	"a&() = 255\n"
+	"for i% := 0 to dim(a&(), 1)\n"
+	"print a&(i%)\n"
+	"next\n",
+	"-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n",
+	},
+	{"real_array_set",
+	"dim a(9)\n"
+	"a() = 255\n"
+	"for i% := 0 to dim(a(), 1)\n"
+	"print a(i%)\n"
+	"next\n",
+	"255\n255\n255\n255\n255\n255\n255\n255\n255\n255\n"
+	},
+	{"string_2darray_set",
+	"dim a$(2,2)\n"
+	"a$() = \"hello\"\n"
+	"for i% := 0 to dim(a$(), 1)\n"
+	"  for j% := 0 to dim(a$(), 2)\n"
+	"    print a$(i%, j%)\n"
+	"  next\n"
+	"next\n",
+	"hello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\n"
+	},
+	{"int_2darray_set",
+	"dim a%(2,2)\n"
+	"a%() = 255\n"
+	"for i% := 0 to dim(a%(), 1)\n"
+	"  for j% := 0 to dim(a%(), 2)\n"
+	"    print a%(i%, j%)\n"
+	"  next\n"
+	"next\n",
+	"255\n255\n255\n255\n255\n255\n255\n255\n255\n"
+	},
+	{"byte_2darray_set",
+	"dim a&(2,2)\n"
+	"a&() = 255\n"
+	"for i% := 0 to dim(a&(), 1)\n"
+	"  for j% := 0 to dim(a&(), 2)\n"
+	"    print a&(i%, j%)\n"
+	"  next\n"
+	"next\n",
+	"-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n",
+	},
+	{"real_2darray_set",
+	"dim a(2,2)\n"
+	"a() = 255\n"
+	"for i% := 0 to dim(a(), 1)\n"
+	"  for j% := 0 to dim(a(), 2)\n"
+	"    print a(i%, j%)\n"
+	"  next\n"
+	"next\n",
+	"255\n255\n255\n255\n255\n255\n255\n255\n255\n"
+	},
+	{"string_array_set_var",
+	"dim a$(9)\n"
+	"s$ = \"hello\"\n"
+	"a$() = s$\n"
+	"for i% := 0 to dim(a$(), 1)\n"
+	"print a$(i%)\n"
+	"next\n",
+	"hello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\nhello\n"
+	},
+	{"int_array_set_var",
+	"dim a%(9)\n"
+	"v% := 255\n"
+	"a%() = v%\n"
+	"for i% := 0 to dim(a%(), 1)\n"
+	"print a%(i%)\n"
+	"next\n",
+	"255\n255\n255\n255\n255\n255\n255\n255\n255\n255\n"
+	},
+	{"byte_array_set_var",
+	"dim a&(9)\n"
+	"v& = 255\n"
+	"a&() = v&\n"
+	"for i% := 0 to dim(a&(), 1)\n"
+	"print a&(i%)\n"
+	"next\n",
+	"-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n",
+	},
+	{"real_array_set_var",
+	"dim a(9)\n"
+	"v := 255\n"
+	"a() = v\n"
+	"for i% := 0 to dim(a(), 1)\n"
+	"print a(i%)\n"
+	"next\n",
+	"255\n255\n255\n255\n255\n255\n255\n255\n255\n255\n"
 	},
 };
 

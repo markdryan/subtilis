@@ -143,6 +143,8 @@ void subtilis_vfp_gen_exp(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_vfp_gen_movi8tofp(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err);
+void subtilis_vfp_gen_movfptoi32i32(subtilis_ir_section_t *s, size_t start,
+				    void *user_data, subtilis_error_t *err);
 size_t subtilis_vfp_preserve_regs(subtilis_arm_section_t *arm_s,
 				  int save_real_start, subtilis_error_t *err);
 size_t subtilis_vfp_restore_regs(subtilis_arm_section_t *arm_s,

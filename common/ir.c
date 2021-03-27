@@ -210,6 +210,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "setptr", SUBTILIS_OP_CLASS_REG_REG },
 	{ "signx8to32", SUBTILIS_OP_CLASS_REG_REG },
 	{ "movi8tofp", SUBTILIS_OP_CLASS_FREG_REG },
+	{ "movfptoi32i32", SUBTILIS_OP_CLASS_REG_REG_FREG },
 };
 
 /*
@@ -238,6 +239,8 @@ static const subtilis_ir_class_info_t class_details[] = {
 	      SUBTILIS_IR_OPERAND_REAL} },
 	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_FREGISTER,
 	      SUBTILIS_IR_OPERAND_REGISTER} },
+	{3, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER,
+	      SUBTILIS_IR_OPERAND_FREGISTER} },
 	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_I32} },
 	{2, { SUBTILIS_IR_OPERAND_FREGISTER, SUBTILIS_IR_OPERAND_REAL} },
 	{2, { SUBTILIS_IR_OPERAND_REGISTER, SUBTILIS_IR_OPERAND_REGISTER} },
@@ -936,7 +939,11 @@ static void prv_dump_instr(subtilis_ir_inst_t *instr)
 		       instr->operands[1].reg, instr->operands[2].real);
 		break;
 	case SUBTILIS_OP_CLASS_REG_FREG_REG:
-		printf("r%zu, f%zu, f%zu", instr->operands[0].reg,
+		printf("r%zu, f%zu, r%zu", instr->operands[0].reg,
+		       instr->operands[1].reg, instr->operands[2].reg);
+		break;
+	case SUBTILIS_OP_CLASS_REG_REG_FREG:
+		printf("r%zu, r%zu, f%zu", instr->operands[0].reg,
 		       instr->operands[1].reg, instr->operands[2].reg);
 		break;
 	case SUBTILIS_OP_CLASS_REG_I32:

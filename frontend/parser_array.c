@@ -689,6 +689,8 @@ void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
 					    subtilis_error_t *err)
 {
 	subtilis_type_t el_type;
+	bool single_val;
+	const char *tbuf;
 
 	if (subtilis_type_eq(&s->t, &e->type)) {
 		subtilis_array_type_assign_ref(p, &s->t.params.array, mem_reg,
@@ -697,15 +699,37 @@ void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
 		subtilis_type_if_element_type(p, &s->t, &el_type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
+		tbuf = subtilis_token_get_text(t);
+		single_val =
+		    (t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ",");
 		if (subtilis_type_if_is_numeric(&el_type) &&
-		    subtilis_type_if_is_numeric(&e->type))
-			prv_parse_numeric_initialiser(p, t, e, mem_reg, s, err);
-		else if ((s->t.type == SUBTILIS_TYPE_ARRAY_STRING) &&
-			 (e->type.type == SUBTILIS_TYPE_CONST_STRING))
-			prv_parse_string_initialiser(p, t, e, mem_reg, s, err);
-		else
+		    subtilis_type_if_is_numeric(&e->type)) {
+			if (single_val) {
+				subtilis_type_if_array_set(
+				    p, s->key, &s->t, mem_reg, s->loc, e, err);
+				e = NULL;
+			} else {
+				prv_parse_numeric_initialiser(p, t, e, mem_reg,
+							      s, err);
+			}
+		} else if ((s->t.type == SUBTILIS_TYPE_ARRAY_STRING) &&
+			   ((e->type.type == SUBTILIS_TYPE_CONST_STRING) ||
+			    (e->type.type == SUBTILIS_TYPE_STRING))) {
+			if (single_val) {
+				subtilis_type_if_array_set(
+				    p, s->key, &s->t, mem_reg, s->loc, e, err);
+				e = NULL;
+			} else if (e->type.type == SUBTILIS_TYPE_CONST_STRING) {
+				prv_parse_string_initialiser(p, t, e, mem_reg,
+							     s, err);
+			} else {
+				subtilis_error_set_const_string_expected(
+				    err, p->l->stream->name, p->l->line);
+			}
+		} else {
 			subtilis_error_set_array_type_mismatch(
 			    err, p->l->stream->name, p->l->line);
+		}
 	}
 
 cleanup:

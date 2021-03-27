@@ -25,4 +25,8 @@ void subtilis_builtin_memset_i32(subtilis_parser_t *p, size_t base_reg,
 void subtilis_builtin_memset_i8(subtilis_parser_t *p, size_t base_reg,
 				size_t size_reg, size_t val_reg,
 				subtilis_error_t *err);
+void subtilis_builtin_memset_i64(subtilis_parser_t *p, size_t base_reg,
+				 size_t size_reg, size_t val_reg_low,
+				 size_t val_reg_high, subtilis_error_t *err);
+
 #endif
