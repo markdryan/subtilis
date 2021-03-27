@@ -245,7 +245,7 @@ void subtilis_fpa_add_stran(subtilis_arm_section_t *s,
 		base = mov_dest;
 	} else {
 		if (offset < 0) {
-			offset -= offset;
+			offset = -offset;
 			subtract = true;
 		}
 		offset /= 4;
