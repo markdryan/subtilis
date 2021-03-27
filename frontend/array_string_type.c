@@ -19,6 +19,7 @@
 
 #include "array_string_type.h"
 #include "array_type.h"
+#include "reference_type.h"
 #include "string_type.h"
 
 static size_t prv_size(const subtilis_type_t *type)
@@ -80,6 +81,93 @@ prv_indexed_read(subtilis_parser_t *p, const char *var_name,
 {
 	return subtilis_array_read(p, var_name, type, &subtilis_type_string,
 				   mem_reg, loc, indices, index_count, err);
+}
+
+static void prv_set(subtilis_parser_t *p, const char *var_name,
+		    const subtilis_type_t *type, size_t mem_reg, size_t loc,
+		    subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t sizee;
+	subtilis_ir_operand_t ptr;
+	subtilis_ir_operand_t end_ptr;
+	subtilis_ir_operand_t string_size;
+	subtilis_ir_operand_t start_label;
+	subtilis_ir_operand_t loop_label;
+	subtilis_ir_operand_t end_label;
+	subtilis_ir_operand_t condee;
+	subtilis_exp_t *e_dup;
+
+	start_label.label = subtilis_ir_section_new_label(p->current);
+	end_label.label = subtilis_ir_section_new_label(p->current);
+	loop_label.label = subtilis_ir_section_new_label(p->current);
+
+	e = subtilis_type_if_coerce_type(p, e, &subtilis_type_string, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	sizee.reg = subtilis_reference_type_get_size(p, mem_reg, loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	ptr.reg = subtilis_reference_get_data(p, mem_reg, loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	string_size.integer = subtilis_type_if_size(&subtilis_type_string, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	/*
+	 * TODO: Pointer arithmetic here.
+	 */
+
+	end_ptr.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, ptr, sizee, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, start_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	condee.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LT_I32, ptr, end_ptr, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  condee, loop_label, end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, loop_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e_dup = subtilis_type_if_dup(e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_string_type_assign_ref(p, &subtilis_type_string, ptr.reg, 0,
+					e_dup, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, ptr, ptr, string_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     start_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, end_label.label, err);
+
+cleanup:
+
+	subtilis_exp_delete(e);
 }
 
 static void prv_indexed_write(subtilis_parser_t *p, const char *var_name,
@@ -310,6 +398,7 @@ subtilis_type_if subtilis_type_array_string = {
 	.indexed_add = prv_indexed_add,
 	.indexed_sub = prv_indexed_sub,
 	.indexed_read = prv_indexed_read,
+	.set = prv_set,
 	.indexed_address = NULL,
 	.load_mem = NULL,
 	.to_int32 = NULL,

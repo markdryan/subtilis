@@ -2,7 +2,7 @@
 
 ## Supported Instructions
 
-Subtilis supports all the ARM2 instructions in addition to most of the FPA instructions.  Four FPA instructions are not currently supported;  WFC, RFC, LFM and SFM.  They will be implemented at some point.
+Subtilis supports all the ARM2 instructions in addition to most of the FPA instructions, most of the VFP instructions and some of the additional ARMv6 instructions.  Four FPA instructions are not currently supported;  WFC, RFC, LFM and SFM.  Many ARMv6 instructions are also not yet implemented.  They will be implemented at some point.
 
 ## Calling Convention
 
@@ -18,7 +18,7 @@ def PROC(a, b%, c(), d)
 ]
 ```
 
-F0 = a, R0 = b%, R1 = c(), F1 = d
+F0 = a, R0 = b%, R1 = c(), F1 = d, when compiled for RiscOS.  On PTD builds, F0 and F1 will be D0 and D1.
 
 Arguments that are passed via the stack are first grouped by type and then pushed onto the stack in the order in which they appear in the function or procedure definition.  Floating point arguments are pushed first, followed by integer arguments.  As Subtilis uses a full descending stack one needs to subtract from the stack pointer to access these arguments.  For example,
 
@@ -48,7 +48,7 @@ def FNArgs(a%, b%, c%, d%, ar, br, cr, dr, e%, er)
 
 ### Return values
 
-Values are returned from functions in either the R0 or the F0 registers.
+Values are returned from functions in either the R0 or the F0 register in RiscOS builds or the D0 register in PTD builds.
 
 ## Calling functions from inside an assembly function
 
@@ -62,7 +62,7 @@ The Subtilis assembler supports a full expression syntax that implements many of
 2. An integer number, e.g., 10
 3. A floating point number, e.g., 3.14
 4. An integer register.  Valid values are R0-R15 and PC.
-5. A floating point register.  Valid values are F0-F7.
+5. A floating point register.  Valid values are F0-F7, D0-15, S0-S31.
 6. An identifier, e.g., label1.
 
 As in BASIC, an implicit conversion happens when an integer expression is used where a floating point number is expected, and vice versa.  Registers can be converted to integers using the INT keyword, e.g, INT(R1) produces an integer expression of value 1.

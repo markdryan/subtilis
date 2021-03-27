@@ -935,6 +935,24 @@ void subtilis_vfp_gen_movi8tofp(subtilis_ir_section_t *s, size_t start,
 			      SUBTILIS_ARM_CCODE_AL, true, dest, tmp1, err);
 }
 
+void subtilis_vfp_gen_movfptoi32i32(subtilis_ir_section_t *s, size_t start,
+				    void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest1;
+	subtilis_arm_reg_t dest2;
+	subtilis_arm_reg_t src;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *mov = &s->ops[start]->op.instr;
+
+	dest1 = subtilis_arm_ir_to_arm_reg(mov->operands[0].reg);
+	dest2 = subtilis_arm_ir_to_arm_reg(mov->operands[1].reg);
+	src = subtilis_arm_ir_to_dreg(mov->operands[2].reg);
+
+	subtilis_vfp_add_tran_dbl(arm_s, SUBTILIS_VFP_INSTR_FMRRD,
+				  SUBTILIS_ARM_CCODE_AL, dest1, dest2, src, 0,
+				  err);
+}
+
 size_t subtilis_vfp_preserve_regs(subtilis_arm_section_t *arm_s,
 				  int save_real_start, subtilis_error_t *err)
 {

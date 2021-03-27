@@ -19,6 +19,8 @@
 
 #include "array_float64_type.h"
 #include "array_type.h"
+#include "builtins_helper.h"
+#include "reference_type.h"
 
 static size_t prv_size(const subtilis_type_t *type)
 {
@@ -78,6 +80,47 @@ prv_indexed_read(subtilis_parser_t *p, const char *var_name,
 {
 	return subtilis_array_read(p, var_name, type, &subtilis_type_real,
 				   mem_reg, loc, indices, index_count, err);
+}
+
+static void prv_set(subtilis_parser_t *p, const char *var_name,
+		    const subtilis_type_t *type, size_t mem_reg, size_t loc,
+		    subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_type_t el_type;
+	size_t ptr;
+	size_t sizee;
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+
+	subtilis_type_if_element_type(p, type, &el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_type_if_coerce_type(p, e, &el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	sizee = subtilis_reference_type_get_size(p, mem_reg, loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	ptr = subtilis_reference_get_data(p, mem_reg, loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op0.reg = p->current->reg_counter++;
+	op1.reg = p->current->reg_counter++;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_MOV_FP_I32_I32, op0,
+					  op1, e->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_builtin_memset_i64(p, ptr, sizee, op0.reg, op1.reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(e);
 }
 
 static subtilis_exp_t *
@@ -308,6 +351,7 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.indexed_add = prv_indexed_add,
 	.indexed_sub = prv_indexed_sub,
 	.indexed_read = prv_indexed_read,
+	.set = prv_set,
 	.indexed_address = prv_indexed_address,
 	.load_mem = NULL,
 	.to_int32 = NULL,

@@ -1752,7 +1752,21 @@ typedef enum {
 	 * number and stores the result in fp0.
 	 */
 
-	SUBTILIS_OP_INSTR_MOV_I8_FP
+	SUBTILIS_OP_INSTR_MOV_I8_FP,
+
+	/*
+	 * movfpi32i32 r0, r1, f0
+	 *
+	 * Copies the binary contents of floating point register f0 into
+	 * two 32 bit integer registers, r0 and r1.  The least significant
+	 * bytes are stored in r0, and the most significant bits are stored
+	 * in r1.  Not floating point to integer conversion takes place.
+	 *
+	 * r0 = bottom 32 bits of f0
+	 * r1 = top 32 bits of f0
+	 */
+
+	SUBTILIS_OP_INSTR_MOV_FP_I32_I32,
 } subtilis_op_instr_type_t;
 
 typedef enum {
@@ -1766,6 +1780,7 @@ typedef enum {
 	SUBTILIS_OP_CLASS_REG_FREG_FREG,
 	SUBTILIS_OP_CLASS_REG_FREG_REAL,
 	SUBTILIS_OP_CLASS_REG_FREG_REG,
+	SUBTILIS_OP_CLASS_REG_REG_FREG,
 	SUBTILIS_OP_CLASS_REG_I32,
 	SUBTILIS_OP_CLASS_FREG_REAL,
 	SUBTILIS_OP_CLASS_REG_REG,

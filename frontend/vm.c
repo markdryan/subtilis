@@ -710,6 +710,24 @@ static void prv_memset(subitlis_vm_t *vm, subtilis_ir_call_t *call,
 	       vm->regs[call->args[2].reg], vm->regs[call->args[1].reg]);
 }
 
+static void prv_memset64(subitlis_vm_t *vm, subtilis_ir_call_t *call,
+			 subtilis_error_t *err)
+{
+	size_t i = 0;
+	size_t size = vm->regs[call->args[1].reg];
+	int32_t *ptr = (int32_t *)&vm->memory[vm->regs[call->args[0].reg]];
+
+	if (size & 7) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	for (i = 0; i < size; i += 8) {
+		*ptr++ = vm->regs[call->args[2].reg];
+		*ptr++ = vm->regs[call->args[3].reg];
+	}
+}
+
 static void prv_memcpy(subitlis_vm_t *vm, subtilis_ir_call_t *call,
 		       subtilis_error_t *err)
 {
@@ -762,6 +780,8 @@ static void prv_handle_builtin(subitlis_vm_t *vm, subtilis_builtin_type_t ftype,
 		return prv_compare(vm, call, err);
 	case SUBTILIS_BUILTINS_MEMSETI8:
 		return prv_memset(vm, call, err);
+	case SUBTILIS_BUILTINS_MEMSETI64:
+		return prv_memset64(vm, call, err);
 	default:
 		subtilis_error_set_assertion_failed(err);
 	}
@@ -1713,6 +1733,15 @@ static void prv_movi8tofp(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->fregs[ops[0].reg] = (double)val;
 }
 
+static void prv_movfpi32i32(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	uint32_t *ptr = (uint32_t *)&vm->fregs[ops[2].reg];
+
+	vm->regs[ops[0].reg] = *ptr++;
+	vm->regs[ops[1].reg] = *ptr++;
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                        /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1868,6 +1897,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_set_ptr,                       /* SUBTILIS_OP_INSTR_SET_PTR */
 	prv_signx8to32,                    /* SUBTILIS_OP_INSTR_SIGNX_8_TO_32 */
 	prv_movi8tofp,                     /* SUBTILIS_OP_INSTR_MOV_I8_FP */
+	prv_movfpi32i32,                   /* SUBTILIS_OP_INSTR_MOV_FP_I32_I32*/
 };
 
 /* clang-format on */

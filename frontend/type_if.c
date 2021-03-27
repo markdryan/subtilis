@@ -486,6 +486,32 @@ subtilis_type_if_indexed_read(subtilis_parser_t *p, const char *var_name,
 	return fn(p, var_name, type, mem_reg, loc, indices, index_count, err);
 }
 
+void subtilis_type_if_array_set(subtilis_parser_t *p, const char *var_name,
+				const subtilis_type_t *type, size_t mem_reg,
+				size_t loc, subtilis_exp_t *e,
+				subtilis_error_t *err)
+{
+	subtilis_type_if_set_t fn;
+
+	if (loc > 0x7fffffff) {
+		subtilis_error_set_assertion_failed(err);
+		goto cleanup;
+	}
+
+	fn = prv_type_map[type->type]->set;
+	if (!fn) {
+		subtilis_error_not_array(err, var_name, p->l->stream->name,
+					 p->l->line);
+		goto cleanup;
+	}
+
+	fn(p, var_name, type, mem_reg, loc, e, err);
+	return;
+
+cleanup:
+	subtilis_exp_delete(e);
+}
+
 subtilis_exp_t *
 subtilis_type_if_indexed_address(subtilis_parser_t *p, const char *var_name,
 				 const subtilis_type_t *type, size_t mem_reg,

@@ -81,6 +81,12 @@ typedef subtilis_exp_t *(*subtilis_type_if_iread_t)(subtilis_parser_t *p,
 						    subtilis_exp_t **indices,
 						    size_t index_count,
 						    subtilis_error_t *err);
+typedef void (*subtilis_type_if_set_t)(subtilis_parser_t *p,
+					const char *var_name,
+					const subtilis_type_t *type,
+					size_t mem_reg, size_t loc,
+					subtilis_exp_t *e,
+					subtilis_error_t *err);
 typedef subtilis_exp_t *(*subtilis_type_if_call_t)(subtilis_parser_t *p,
 						   const subtilis_type_t *type,
 						   subtilis_ir_arg_t *args,
@@ -125,6 +131,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_iwrite_t indexed_add;
 	subtilis_type_if_iwrite_t indexed_sub;
 	subtilis_type_if_iread_t indexed_read;
+	subtilis_type_if_set_t set;
 	subtilis_type_if_iread_t indexed_address;
 	subtilis_type_if_load_t load_mem;
 	subtilis_type_if_unary_t to_int32;
@@ -138,11 +145,12 @@ struct subtilis_type_if_ {
 	subtilis_type_if_binary_nc_t add;
 	subtilis_type_if_binary_t mul;
 	subtilis_type_if_binary_t and;
+
 	/* clang-format off */
 	subtilis_type_if_binary_t or;
+	subtilis_type_if_unary_t not;
 	/* clang-format on */
 
-	subtilis_type_if_unary_t not;
 	subtilis_type_if_binary_t eor;
 	subtilis_type_if_binary_t eq;
 	subtilis_type_if_binary_t neq;
@@ -377,6 +385,16 @@ subtilis_type_if_indexed_read(subtilis_parser_t *p, const char *var_name,
 			      const subtilis_type_t *type, size_t mem_reg,
 			      size_t loc, subtilis_exp_t **indices,
 			      size_t index_count, subtilis_error_t *err);
+
+/*
+ * Only implemented for arrays.  Sets every element of the array to the
+ * value e.
+ */
+
+void subtilis_type_if_array_set(subtilis_parser_t *p, const char *var_name,
+				const subtilis_type_t *type, size_t mem_reg,
+				size_t loc, subtilis_exp_t *val,
+				subtilis_error_t *err);
 
 /*
  * Returns a pointer to the scalar element, identified by the indices array,

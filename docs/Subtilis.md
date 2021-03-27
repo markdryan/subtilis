@@ -858,15 +858,24 @@ b%() = FNDouble%(1)(a%())
 
 ### Array initialisers
 
-Array initialisers are supported but with one restriction.  The values in the
-initialiser list must be constants.  So,
+Both forms of array initialisers are supported.
+
+```
+dim a%(4)
+a%() = 11;
+```
+
+Sets all 5 elements of a%() to 11 and 
 
 ```
 dim a%(4)
 a%() = 1, 2, 3, 4, 5
 ```
 
-works fine, where as,
+Sets the elements of a%() to 1, 2, 3, 4, 5.
+
+There's one restriction when using the second form of array initialisation.  The values in the
+initialiser list must be constants.  So,
 
 ```
 dim a%(4)
@@ -874,7 +883,16 @@ b% := 2
 a%() = 1, b%, 3, 4, 5
 ```
 
-will not compile.
+will not compile.  This restriction only applies when multiple elements are specified in the 
+initialiser list.  
+
+```
+dim a%(4)
+v% := 11
+a%() = v%
+```
+
+Compiles and works as expected.
 
 ## Current Issues with the Grammar
 

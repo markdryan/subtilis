@@ -156,6 +156,8 @@ void subtilis_fpa_mov_reg(subtilis_arm_section_t *arm_s,
 			  subtilis_error_t *err);
 void subtilis_fpa_movi8tofp(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_error_t *err);
+void subtilis_fpa_gen_movfptoi32i32(subtilis_ir_section_t *s, size_t start,
+				    void *user_data, subtilis_error_t *err);
 void subtilis_arm_fpa_if_init(subtilis_arm_fp_if_t *fp_if);
 
 #endif
