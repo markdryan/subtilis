@@ -19,6 +19,7 @@
 #include "parser_file.h"
 
 #include "parser_exp.h"
+#include "reference_type.h"
 #include "string_type.h"
 #include "type_if.h"
 
@@ -240,4 +241,181 @@ void subtilis_parser_set_ptr(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 
 	subtilis_exp_handle_errors(p, err);
+}
+
+static bool prv_block_operation_prep(subtilis_parser_t *p, subtilis_token_t *t,
+				     subtilis_ir_operand_t *handle,
+				     subtilis_ir_operand_t *array_size,
+				     size_t *val_reg, subtilis_error_t *err)
+
+{
+	const char *tbuf;
+	subtilis_type_t element_type;
+	bool check_dims = false;
+	subtilis_exp_t *val = NULL;
+
+	*handle = prv_parse_handle(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return false;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ",")) {
+		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
+					    p->l->line);
+		return false;
+	}
+
+	val = subtilis_parser_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return false;
+
+	if (subtilis_type_if_is_array(&val->type)) {
+		subtilis_type_if_element_type(p, &val->type, &element_type,
+					      err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		if (!subtilis_type_if_is_numeric(&element_type)) {
+			subtilis_error_set_expected(
+			    err, "string or array of numeric types",
+			    subtilis_type_name(&val->type), p->l->stream->name,
+			    p->l->line);
+			goto cleanup;
+		}
+	} else if (val->type.type != SUBTILIS_TYPE_STRING) {
+		subtilis_error_set_expected(err,
+					    "string or array of numeric types",
+					    subtilis_type_name(&val->type),
+					    p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
+	array_size->reg =
+	    subtilis_reference_type_get_size(p, val->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	check_dims =
+	    (val->type.type == SUBTILIS_TYPE_STRING) ||
+	    ((val->type.params.array.num_dims == 1) &&
+	     (val->type.params.array.dims[0] == SUBTILIS_DYNAMIC_DIMENSION));
+
+	*val_reg = val->exp.ir_op.reg;
+
+cleanup:
+
+	subtilis_exp_delete(val);
+
+	return check_dims;
+}
+
+subtilis_exp_t *subtilis_parser_get_hash(subtilis_parser_t *p,
+					 subtilis_token_t *t,
+					 subtilis_error_t *err)
+{
+	subtilis_ir_operand_t handle;
+	subtilis_ir_operand_t ret;
+	subtilis_ir_operand_t zero;
+	subtilis_ir_operand_t data;
+	subtilis_ir_operand_t skip_label;
+	subtilis_ir_operand_t array_size;
+	subtilis_ir_operand_t get_label;
+	bool check_dims;
+	size_t val_reg;
+
+	skip_label.label = subtilis_ir_section_new_label(p->current);
+	get_label.label = subtilis_ir_section_new_label(p->current);
+
+	check_dims =
+	    prv_block_operation_prep(p, t, &handle, &array_size, &val_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	ret.reg = p->current->reg_counter++;
+	if (check_dims) {
+		zero.integer = 0;
+		subtilis_ir_section_add_instr_no_reg2(
+		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, ret, zero, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+
+		subtilis_ir_section_add_instr_reg(
+		    p->current, SUBTILIS_OP_INSTR_JMPC, array_size, get_label,
+		    skip_label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+
+		subtilis_ir_section_add_label(p->current, get_label.label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+	}
+
+	data.reg = subtilis_reference_get_data(p, val_reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_instr4(p->current, SUBTILIS_OP_INSTR_BLOCK_GET,
+				       ret, handle, data, array_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_exp_handle_errors(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (check_dims)
+		subtilis_ir_section_add_label(p->current, skip_label.label,
+					      err);
+
+	return subtilis_exp_new_int32_var(ret.reg, err);
+}
+
+void subtilis_parser_put_hash(subtilis_parser_t *p, subtilis_token_t *t,
+			      subtilis_error_t *err)
+{
+	subtilis_ir_operand_t handle;
+	subtilis_ir_operand_t data;
+	subtilis_ir_operand_t skip_label;
+	subtilis_ir_operand_t array_size;
+	subtilis_ir_operand_t put_label;
+	bool check_dims;
+	size_t val_reg;
+
+	skip_label.label = subtilis_ir_section_new_label(p->current);
+	put_label.label = subtilis_ir_section_new_label(p->current);
+
+	check_dims =
+	    prv_block_operation_prep(p, t, &handle, &array_size, &val_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (check_dims) {
+		subtilis_ir_section_add_instr_reg(
+		    p->current, SUBTILIS_OP_INSTR_JMPC, array_size, put_label,
+		    skip_label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_ir_section_add_label(p->current, put_label.label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	data.reg = subtilis_reference_get_data(p, val_reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_BLOCK_PUT, handle,
+					  data, array_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_exp_handle_errors(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (check_dims)
+		subtilis_ir_section_add_label(p->current, skip_label.label,
+					      err);
 }

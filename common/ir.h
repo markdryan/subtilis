@@ -1677,23 +1677,23 @@ typedef enum {
 	SUBTILIS_OP_INSTR_BPUT,
 
 	/*
-	 *
 	 * blockget r0, r1, r2, r3
 	 *
-	 * Reads up to r2 bytes into the buffer pointed to by r3 from
-	 * the file whose handle is stored in r1.  The number of bytes
-	 * read is returned in r0.
+	 * Attempt to read r3 bytes into the buffer pointed to by r2 from
+	 * the file pointed to by r1.  The number of bytes read is returned
+	 * in r0.  If r0 is less than r3 than the end of the file has been
+	 * reached.  An error will be raised of the read files (reaching EOF
+	 * is not an error).
 	 */
 
 	SUBTILIS_OP_INSTR_BLOCK_GET,
 
 	/*
+	 * blockput r0, r1, r2
 	 *
-	 * blockput r0, r1, r2, r3
-	 *
-	 * Writes up to r2 bytes of data contained in the buffer pointed
-	 * to be r3 from the file whose handle is stored in r1.  The number
-	 * of bytes read is returned in r0.
+	 * Attempt to write r2 bytes from the buffer pointed to by r1 to
+	 * the file pointed to by r0.  An error is generated if all the
+	 * bytes cannot be written.
 	 */
 
 	SUBTILIS_OP_INSTR_BLOCK_PUT,

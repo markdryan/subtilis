@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <errno.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1586,8 +1587,7 @@ static void prv_block_get(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			  subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	int32_t slot;
-	int32_t base = vm->regs[ops[3].reg];
-	uint8_t *dst = &vm->memory[base];
+	size_t bytes_read = 0;
 
 	slot = vm->regs[ops[1].reg];
 	if (slot > SUBTILIS_VM_MAX_FILES) {
@@ -1595,35 +1595,36 @@ static void prv_block_get(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		return;
 	}
 
-	if (!vm->files[slot]) {
-		prv_generate_error(vm, SUBTILIS_ERROR_CODE_READ);
-		return;
-	}
+	do {
+		bytes_read += fread(&vm->memory[vm->regs[ops[2].reg]], 1,
+				    vm->regs[ops[3].reg], vm->files[slot]);
+	} while ((bytes_read < vm->regs[ops[3].reg]) && (errno == EINTR));
 
-	vm->regs[ops[0].reg] =
-	    fread(dst, 1, vm->regs[ops[2].reg], vm->files[slot]);
+	if ((bytes_read < vm->regs[ops[3].reg]) && (!feof(vm->files[slot])))
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_READ);
+	else
+		vm->regs[ops[0].reg] = (int32_t)bytes_read;
 }
 
 static void prv_block_put(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			  subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	int32_t slot;
-	int32_t base = vm->regs[ops[3].reg];
-	uint8_t *dst = &vm->memory[base];
+	size_t bytes_written = 0;
 
-	slot = vm->regs[ops[1].reg];
+	slot = vm->regs[ops[0].reg];
 	if (slot > SUBTILIS_VM_MAX_FILES) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
-	if (!vm->files[slot]) {
-		prv_generate_error(vm, SUBTILIS_ERROR_CODE_WRITE);
-		return;
-	}
+	do {
+		bytes_written += fwrite(&vm->memory[vm->regs[ops[1].reg]], 1,
+					vm->regs[ops[2].reg], vm->files[slot]);
+	} while ((bytes_written < vm->regs[ops[2].reg]) && (errno == EINTR));
 
-	vm->regs[ops[0].reg] =
-	    fwrite(dst, 1, vm->regs[ops[2].reg], vm->files[slot]);
+	if (bytes_written < vm->regs[ops[2].reg])
+		prv_generate_error(vm, SUBTILIS_ERROR_CODE_WRITE);
 }
 
 static void prv_eof(subitlis_vm_t *vm, subtilis_buffer_t *b,

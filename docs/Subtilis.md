@@ -1122,6 +1122,10 @@ this reason, in Subtilis, we write.
 ptr# a%, 10
 ```
 
+None of the file handling keywords buffer the input.  The requests are sent directly to the OS.
+For this reason, Subtilis does not implement GET$#.  It would be very inefficient.  A getline
+function will be provided once we have a standard library.
+
 ## New keywords
 
 ### HEAPFREE
@@ -1129,6 +1133,33 @@ ptr# a%, 10
 Returns the number of free bytes available in the heap.  Only makes sense on platforms where the
 amount of memory allocated to a program is fixed when it's run.  On platforms where there's
 no memory restriction on an application, the maximum integer value is returned.
+
+### GET# and PUT#
+
+Can be used to read and write blocks of data from and to a file.
+
+GET# takes two comma separated parameters, a file handle and a buffer of some sorts, and returns the number of bytes read.
+The buffer can be an array containing numeric elements or a string.  The size of the array or string determines the
+maximum number of bytes that are actually read, e.g.,
+
+```
+buf$ := string$(32, " ")
+bytes_read% := get# handle#, buf$
+```
+
+will read up to 32 bytes into buf$.  If there are fewer than 32 bytes in the file, the number of bytes actually read
+will be returned, but no error will be generated.
+
+PUT# writes a buffer to a file.  The buffer can be a scalar array or a string.  The number of bytes written is
+determined by the size of the array or string in bytes.  For example,
+
+```
+dim a&(32)
+put# handle%, a&()
+```
+
+will write 32 bytes to the file pointed to by handle%.  An error will be generated if not all 32 bytes can be
+written.
 
 ### INTZ
 
