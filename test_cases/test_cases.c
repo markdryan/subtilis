@@ -3694,6 +3694,69 @@ const subtilis_test_case_t test_cases[] = {
 	"next\n",
 	"255\n255\n255\n255\n255\n255\n255\n255\n255\n255\n"
 	},
+	{"block_get_put_string",
+	"PROCCreateFile\n"
+	"print FNReadFile$;\n"
+	"\n"
+	"def PROCCreateFile\n"
+	"    a$ := string$(6, \"Hello Mark\" + chr$(10))\n"
+	"    f% := openout \"markus\"\n"
+	"    onerror\n"
+	"      tryone close# f%\n"
+	"    enderror\n"
+	"\n"
+	"    put# f%, a$\n"
+	"\n"
+	"    close# f%\n"
+	"endproc\n"
+	"\n"
+	"def FNReadFile$\n"
+	"    f% := openin \"markus\"\n"
+	"    onerror\n"
+	"      tryone close# f%\n"
+	"    enderror\n"
+	"\n"
+	"    s$ := string$(ext# f%, \" \")\n"
+	"    read% := get# f%, s$\n"
+	"\n"
+	"    tryone close# f%\n"
+	"<-s$\n",
+	"Hello Mark\nHello Mark\nHello Mark\nHello Mark\nHello Mark\n"
+	"Hello Mark\n",
+	},
+	{"block_get_put_array",
+	"PROCCreateFile\n"
+	"a%() := FNReadFile%(1)()\n"
+	"for i% := 0 to dim(a%(),1)\n"
+	"    print a%(i%)\n"
+	"next\n"
+	"\n"
+	"def PROCCreateFile\n"
+	"    local dim a%(9)\n"
+	"    a%() = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10\n"
+	"    f% := openout \"markus\"\n"
+	"    onerror\n"
+	"      tryone close# f%\n"
+	"    enderror\n"
+	"\n"
+	"    put# f%, a%()\n"
+	"\n"
+	"    close# f%\n"
+	"endproc\n"
+	"\n"
+	"def FNReadFile%(1)\n"
+	"    f% := openin \"markus\"\n"
+	"    onerror\n"
+	"      tryone close# f%\n"
+	"    enderror\n"
+	"\n"
+	"    local dim a%(10)\n"
+	"    read% := get# f%, a%()\n"
+	"\n"
+	"    tryone close# f%\n"
+	"<-a%()\n",
+	"1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n0\n",
+	}
 };
 
 /* clang-format on */

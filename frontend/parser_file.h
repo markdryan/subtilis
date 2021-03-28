@@ -50,7 +50,11 @@ subtilis_exp_t *subtilis_parser_ext(subtilis_parser_t *p, subtilis_token_t *t,
 subtilis_exp_t *subtilis_parser_get_ptr(subtilis_parser_t *p,
 					subtilis_token_t *t,
 					subtilis_error_t *err);
-
+subtilis_exp_t *subtilis_parser_get_hash(subtilis_parser_t *p,
+					 subtilis_token_t *t,
+					 subtilis_error_t *err);
+void subtilis_parser_put_hash(subtilis_parser_t *p, subtilis_token_t *t,
+			      subtilis_error_t *err);
 void subtilis_parser_set_ptr(subtilis_parser_t *p, subtilis_token_t *t,
 			     subtilis_error_t *err);
 

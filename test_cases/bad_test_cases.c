@@ -583,6 +583,18 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"print a&(0)\n",
 	SUBTILIS_ERROR_LOCAL_OBSCURES_GLOBAL,
 	},
+	{
+	"get_hash_array_strings",
+	"dim a$(10)\n"
+	"x% := get# 0, a$()\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
+	{
+	"put_hash_array_int",
+	"a% = 10\n"
+	"x% := get# 0, a%\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
 };
 
 /* clang-format on */

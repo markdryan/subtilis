@@ -277,7 +277,7 @@ const subtilis_ir_rule_raw_t ptd_rules[] = {
 	 {"bget *, *\n", subtilis_riscos_bget },
 	 {"bput *, *\n", subtilis_riscos_bput },
 	 {"blockget *, *, *, *\n", subtilis_riscos_block_get },
-	 {"blockput *, *, *, *\n", subtilis_riscos_block_put },
+	 {"blockput *, *, *\n", subtilis_riscos_block_put },
 	 {"eof *, *\n", subtilis_ptd_eof },
 	 {"ext *, *\n", subtilis_riscos_ext },
 	 {"getptr *, *\n", subtilis_riscos_get_ptr },

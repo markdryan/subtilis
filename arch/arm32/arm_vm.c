@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <errno.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1074,6 +1075,76 @@ static void prv_os_byte(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 	}
 }
 
+static void prv_put_hash(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
+{
+	size_t ptr;
+	size_t bytes_written = 0;
+	int32_t slot = arm_vm->regs[1];
+
+	if (slot >= SUBTILIS_ARM_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!arm_vm->files[slot]) {
+		arm_vm->overflow_flag = true;
+		return;
+	}
+
+	ptr = arm_vm->regs[2] - arm_vm->start_address;
+
+	do {
+		bytes_written += fwrite(&arm_vm->memory[ptr], 1,
+					arm_vm->regs[3], arm_vm->files[slot]);
+	} while ((bytes_written < arm_vm->regs[3]) && (errno == EINTR));
+
+	if (bytes_written < arm_vm->regs[3])
+		arm_vm->overflow_flag = true;
+}
+
+static void prv_get_hash(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
+{
+	size_t ptr;
+	size_t bytes_read = 0;
+	int32_t slot = arm_vm->regs[1];
+
+	if (slot >= SUBTILIS_ARM_VM_MAX_FILES) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	if (!arm_vm->files[slot]) {
+		arm_vm->overflow_flag = true;
+		return;
+	}
+
+	ptr = arm_vm->regs[2] - arm_vm->start_address;
+
+	do {
+		bytes_read += fread(&arm_vm->memory[ptr], 1, arm_vm->regs[3],
+				    arm_vm->files[slot]);
+	} while ((bytes_read < arm_vm->regs[3]) && (errno == EINTR));
+
+	if ((bytes_read < arm_vm->regs[3]) && (!feof(arm_vm->files[slot])))
+		arm_vm->overflow_flag = true;
+	else
+		arm_vm->regs[3] -= (int32_t)bytes_read;
+}
+
+static void prv_os_gbpb(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
+{
+	switch (arm_vm->regs[0]) {
+	case 2:
+		prv_put_hash(arm_vm, err);
+		break;
+	case 4:
+		prv_get_hash(arm_vm, err);
+		break;
+	default:
+		break;
+	}
+}
+
 static void prv_os_find(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 {
 	int32_t slot;
@@ -1350,6 +1421,13 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	case 0xb:
 	case 0xb + 0x20000:
 		prv_os_bput(arm_vm, err);
+		break;
+	case 0xc + 0x20000:
+	case 0xc:
+		/* OS_GBPB */
+		prv_os_gbpb(arm_vm, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 		break;
 	case 0xd:
 	case 0xd + 0x20000:
