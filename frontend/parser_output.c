@@ -551,6 +551,8 @@ void subtilis_parser_print(subtilis_parser_t *p, subtilis_token_t *t,
 				return;
 		}
 		e = subtilis_type_if_to_hex_string(p, e, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 	} else if (subtilis_type_if_is_numeric(&e->type)) {
 		e = subtilis_type_if_exp_to_var(p, e, err);
 		if (err->type != SUBTILIS_ERROR_OK)
