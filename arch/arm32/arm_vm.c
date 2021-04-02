@@ -1057,7 +1057,7 @@ static void prv_osbyte_eof(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 	}
 
 	if (!arm_vm->files[slot]) {
-		arm_vm->overflow_flag = true;
+		prv_set_error(arm_vm, SUBTILIS_ERROR_CODE_BAD_HANDLE);
 		return;
 	}
 
@@ -1094,7 +1094,7 @@ static void prv_put_hash(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 	}
 
 	if (!arm_vm->files[slot]) {
-		arm_vm->overflow_flag = true;
+		prv_set_error(arm_vm, SUBTILIS_ERROR_CODE_BAD_HANDLE);
 		return;
 	}
 
@@ -1106,7 +1106,7 @@ static void prv_put_hash(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 	} while ((bytes_written < arm_vm->regs[3]) && (errno == EINTR));
 
 	if (bytes_written < arm_vm->regs[3])
-		arm_vm->overflow_flag = true;
+		prv_set_error(arm_vm, SUBTILIS_ERROR_CODE_WRITE);
 }
 
 static void prv_get_hash(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
@@ -1121,7 +1121,7 @@ static void prv_get_hash(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 	}
 
 	if (!arm_vm->files[slot]) {
-		arm_vm->overflow_flag = true;
+		prv_set_error(arm_vm, SUBTILIS_ERROR_CODE_BAD_HANDLE);
 		return;
 	}
 
@@ -1133,7 +1133,7 @@ static void prv_get_hash(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 	} while ((bytes_read < arm_vm->regs[3]) && (errno == EINTR));
 
 	if ((bytes_read < arm_vm->regs[3]) && (!feof(arm_vm->files[slot])))
-		arm_vm->overflow_flag = true;
+		prv_set_error(arm_vm, SUBTILIS_ERROR_CODE_READ);
 	else
 		arm_vm->regs[3] -= (int32_t)bytes_read;
 }
@@ -1170,11 +1170,13 @@ static void prv_os_find(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 		} else {
 			if (arm_vm->files[slot]) {
 				if (fclose(arm_vm->files[slot]))
-					arm_vm->overflow_flag = true;
+					prv_set_error(
+					    arm_vm, SUBTILIS_ERROR_CODE_CLOSE);
 				else
 					arm_vm->files[slot] = NULL;
 			} else {
-				arm_vm->overflow_flag = true;
+				prv_set_error(arm_vm,
+					      SUBTILIS_ERROR_CODE_BAD_HANDLE);
 			}
 		}
 		return;
@@ -1190,7 +1192,7 @@ static void prv_os_find(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 			break;
 
 	if (slot == SUBTILIS_ARM_VM_MAX_FILES) {
-		arm_vm->overflow_flag = true;
+		prv_set_error(arm_vm, SUBTILIS_ERROR_CODE_OPEN);
 		return;
 	}
 
@@ -1207,7 +1209,7 @@ static void prv_os_find(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 	arm_vm->files[slot] = fopen((const char *)&arm_vm->memory[ptr], mode);
 
 	if (!arm_vm->files[slot])
-		arm_vm->overflow_flag = true;
+		prv_set_error(arm_vm, SUBTILIS_ERROR_CODE_OPEN);
 	else
 		arm_vm->regs[0] = slot;
 }
@@ -1222,12 +1224,13 @@ static void prv_os_bput(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 	}
 
 	if (!arm_vm->files[slot]) {
-		arm_vm->overflow_flag = true;
+		prv_set_error(arm_vm, SUBTILIS_ERROR_CODE_BAD_HANDLE);
+
 		return;
 	}
 
 	if (fputc(arm_vm->regs[0], arm_vm->files[slot]) == EOF)
-		arm_vm->overflow_flag = true;
+		prv_set_error(arm_vm, SUBTILIS_ERROR_CODE_WRITE);
 }
 
 static void prv_os_bget(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
@@ -1240,14 +1243,14 @@ static void prv_os_bget(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 	}
 
 	if (!arm_vm->files[slot]) {
-		arm_vm->overflow_flag = true;
+		prv_set_error(arm_vm, SUBTILIS_ERROR_CODE_BAD_HANDLE);
 		return;
 	}
 
 	arm_vm->regs[0] = (int32_t)fgetc(arm_vm->files[slot]);
 	if (arm_vm->regs[0] == EOF) {
 		arm_vm->carry_flag = true;
-		arm_vm->overflow_flag = true;
+		prv_set_error(arm_vm, SUBTILIS_ERROR_CODE_READ);
 	} else {
 		arm_vm->carry_flag = false;
 	}
@@ -1264,25 +1267,25 @@ static void prv_os_args(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 	}
 
 	if (!arm_vm->files[slot]) {
-		arm_vm->overflow_flag = true;
+		prv_set_error(arm_vm, SUBTILIS_ERROR_CODE_BAD_HANDLE);
 		return;
 	}
 
 	if (arm_vm->regs[0] == 0) {
 		fsize = ftell(arm_vm->files[slot]);
 		if (fsize == -1) {
-			arm_vm->overflow_flag = true;
+			prv_set_error(arm_vm, SUBTILIS_ERROR_CODE_READ);
 			return;
 		}
 		arm_vm->regs[2] = fsize;
 	} else if (arm_vm->regs[0] == 1) {
 		if (fseek(arm_vm->files[slot], arm_vm->regs[2], SEEK_SET)) {
-			arm_vm->overflow_flag = true;
+			prv_set_error(arm_vm, SUBTILIS_ERROR_CODE_WRITE);
 			return;
 		}
 	} else if (arm_vm->regs[0] == 2) {
 		if (!subtils_get_file_size(arm_vm->files[slot], &fsize)) {
-			arm_vm->overflow_flag = true;
+			prv_set_error(arm_vm, SUBTILIS_ERROR_CODE_READ);
 			return;
 		}
 		arm_vm->regs[2] = fsize;

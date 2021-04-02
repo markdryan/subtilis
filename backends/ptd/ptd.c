@@ -457,8 +457,8 @@ void subtilis_ptd_eof(subtilis_ir_section_t *s, size_t start, void *user_data,
 		return;
 
 	one = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
-	subtilis_arm_gen_sete(arm_s, s, SUBTILIS_ARM_CCODE_VS, one,
-			      SUBTILIS_ERROR_CODE_READ, err);
+	subtilis_arm_gen_sete_load_reg(arm_s, s, SUBTILIS_ARM_CCODE_VS, one,
+				       err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
