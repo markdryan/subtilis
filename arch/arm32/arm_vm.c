@@ -59,6 +59,13 @@ fail:
 	return NULL;
 }
 
+static void prv_set_error(subtilis_arm_vm_t *arm_vm, int32_t error_code)
+{
+	*((uint32_t *)&arm_vm->memory[arm_vm->mem_size - 4]) = error_code;
+	arm_vm->overflow_flag = true;
+	arm_vm->regs[0] = arm_vm->mem_size - 4 + arm_vm->start_address;
+}
+
 void subtilis_arm_vm_delete(subtilis_arm_vm_t *vm)
 {
 	size_t i;
@@ -1286,6 +1293,18 @@ static void prv_os_args(subtilis_arm_vm_t *arm_vm, subtilis_error_t *err)
 	}
 }
 
+static void prv_oscli(subtilis_arm_vm_t *arm_vm, int32_t code,
+		      subtilis_error_t *err)
+{
+	size_t ptr;
+	int ret;
+
+	ptr = arm_vm->regs[0] - arm_vm->start_address;
+	ret = system((const char *)&arm_vm->memory[ptr]);
+	if ((code & 0x20000) && ret)
+		prv_set_error(arm_vm, ret);
+}
+
 static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			    subtilis_arm_swi_instr_t *op, subtilis_error_t *err)
 {
@@ -1325,11 +1344,8 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 		/* OS_ConvertInteger4  */
 		buf_len = sprintf(buf, format, arm_vm->regs[0]);
 		if (buf_len + 1 > arm_vm->regs[2]) {
-			*((uint32_t *)&arm_vm->memory[arm_vm->mem_size - 4]) =
-			    SUBTILIS_ERROR_CODE_BUFFER_OVERFLOW;
-			arm_vm->overflow_flag = true;
-			arm_vm->regs[0] =
-			    arm_vm->mem_size - 4 + arm_vm->start_address;
+			prv_set_error(arm_vm,
+				      SUBTILIS_ERROR_CODE_BUFFER_OVERFLOW);
 			break;
 		}
 		addr =
@@ -1386,6 +1402,11 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	case 0x4:
 		/* OS_ReadC  */
 		arm_vm->regs[0] = getchar();
+		break;
+	case 0x5:
+	case 0x5 + 0x20000:
+		/* OS_OSCLI */
+		prv_oscli(arm_vm, op->code, err);
 		break;
 	case 0x6 + 0x20000:
 	case 0x6:

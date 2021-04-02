@@ -40,6 +40,11 @@ implemented.  GOSUB is essentially useless.  While GOTO can be useful for writin
 cleanup code and for handling errors, there are better ways to do these sort of
 things today, e.g, ON ERROR.
 
+#### The '*' method of executing OS commands
+
+This can't be done in Subtilis as it relies on newlines being part of the grammar
+which they're not.  OSCLI is implemented however.
+
 ### Subtilis permits lower case keywords
 
 Keywords can be either upper or lower case in Subtilis.  Mixed case identifiers
@@ -1217,7 +1222,6 @@ Here's a list of other language features that are currently not implemented but 
 * The @% variable
 * CASE OF
 * SOUND
-* OSCLI and *
 * RETURN for passing arguments by reference to procedures and functions
 * POINT TO
 * INPUT

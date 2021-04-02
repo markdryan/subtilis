@@ -281,6 +281,7 @@ const subtilis_ir_rule_raw_t riscos_arm2_rules[] = {
 	 {"signx8to32 *, *\n", subtilis_riscos_signx8to32 },
 	 {"movi8tofp *, *\n", subtilis_fpa_gen_movi8tofp },
 	 {"movfptoi32i32 *, *, *\n", subtilis_fpa_gen_movfptoi32i32 },
+	 {"oscli *\n", subtilis_riscos_oscli },
 };
 
 const size_t riscos_arm2_rules_count = sizeof(riscos_arm2_rules) /

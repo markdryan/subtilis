@@ -2578,6 +2578,34 @@ void subtilis_riscos_signx8to32(subtilis_ir_section_t *s, size_t start,
 	subtilis_arm_gen_signx8to32_helper(arm_s, dest, src, err);
 }
 
+void subtilis_riscos_oscli(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t buffer;
+	subtilis_arm_reg_t one;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *openf = &s->ops[start]->op.instr;
+
+	buffer = subtilis_arm_ir_to_arm_reg(openf->operands[0].reg);
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, 0, buffer,
+				 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/* OS_CLI */
+	/* read_mask = 0x1 = r0 */
+	/* write_mask = 0x1 = r0 */
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x20000 + 0x5, 0x1,
+			     0x1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	one = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	subtilis_arm_gen_sete_load_reg(arm_s, s, SUBTILIS_ARM_CCODE_VS, one, 0,
+				       err);
+}
+
 void subtilis_riscos_asm_free(void *asm_code)
 {
 	subtilis_arm_section_t *arm_s = asm_code;

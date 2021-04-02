@@ -285,6 +285,7 @@ const subtilis_ir_rule_raw_t ptd_rules[] = {
 	 {"signx8to32 *, *\n", subtilis_ptd_signx8to32 },
 	 {"movi8tofp *, *\n", subtilis_vfp_gen_movi8tofp },
 	 {"movfptoi32i32 *, *, *\n", subtilis_vfp_gen_movfptoi32i32 },
+	 {"oscli *\n", subtilis_riscos_oscli },
 };
 
 const size_t ptd_rules_count = sizeof(ptd_rules) /
