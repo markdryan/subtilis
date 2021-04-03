@@ -284,6 +284,12 @@ void subtilis_type_if_array_of(subtilis_parser_t *p,
 			       subtilis_type_t *type, subtilis_error_t *err);
 
 /*
+ * Returns true if type is an array of numeric types of a string.
+ */
+
+bool subtilis_type_if_is_scalar_ref(const subtilis_type_t *type);
+
+/*
  * Writes the type of the elements contained within an array of type "type"
  * into element_type.
  */

@@ -972,6 +972,18 @@ bool subtilis_type_if_is_array(const subtilis_type_t *type)
 	return prv_type_map[type->type]->is_array;
 }
 
+bool subtilis_type_if_is_scalar_ref(const subtilis_type_t *type)
+{
+	subtilis_type_t element_type;
+
+	if (subtilis_type_if_is_array(type)) {
+		prv_type_map[type->type]->element_type(type, &element_type);
+		return subtilis_type_if_is_numeric(&element_type);
+	}
+
+	return (type->type == SUBTILIS_TYPE_STRING);
+}
+
 subtilis_exp_t *subtilis_type_if_coerce_type(subtilis_parser_t *p,
 					     subtilis_exp_t *e,
 					     const subtilis_type_t *type,

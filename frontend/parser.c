@@ -29,6 +29,7 @@
 #include "parser_file.h"
 #include "parser_graphics.h"
 #include "parser_loops.h"
+#include "parser_mem.h"
 #include "parser_os.h"
 #include "parser_output.h"
 #include "parser_string.h"
@@ -541,6 +542,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	subtilis_parser_cls, /* SUBTILIS_KEYWORD_CLS */
 	subtilis_parser_colour, /* SUBTILIS_KEYWORD_COLOR */
 	subtilis_parser_colour, /* SUBTILIS_KEYWORD_COLOUR */
+	subtilis_parser_copy, /* SUBTILIS_KEYWORD_COPY */
 	NULL, /* SUBTILIS_KEYWORD_COS */
 	NULL, /* SUBTILIS_KEYWORD_COUNT */
 	subtilis_parser_def, /* SUBTILIS_KEYWORD_DEF */

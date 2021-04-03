@@ -3756,7 +3756,51 @@ const subtilis_test_case_t test_cases[] = {
 	"    tryone close# f%\n"
 	"<-a%()\n",
 	"1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n0\n",
-	}
+	},
+	{"copy_byte_string",
+	"a$ := \"Hello world\"\n"
+	"dim b&(7)\n"
+	"copy b&(), a$\n"
+	"for i% := 0 to dim(b&(), 1)\n"
+	"  print chr$(b&(i%));\n"
+	"next\n"
+	"print \"\"\n",
+	"Hello wo\n",
+	},
+	{"copy_byte_int",
+	"dim a%(99)\n"
+	"a%() = &12345678\n"
+	"c% := 9\n"
+	"dim b&(c%)\n"
+	"copy b&(), a%()\n"
+	"for i% := 0 to dim(b&(),1)\n"
+	"  print ~b&(i%)\n"
+	"next\n",
+	"78\n56\n34\n12\n78\n56\n34\n12\n78\n56\n",
+	},
+	{"copy_byte_const_string",
+	"dim b&(7)\n"
+	"copy b&(), \"Hello world\"\n"
+	"for i% := 0 to dim(b&(), 1)\n"
+	"  print chr$(b&(i%));\n"
+	"next\n"
+	"print \"\"\n",
+	"Hello wo\n",
+	},
+	{"copy_byte_empty_string",
+	"a$ := \"\"\n"
+	"copy a$, \"Hello\"\n"
+	"print a$\n",
+	"\n",
+	},
+	{"copy_string_string_woc",
+	"a$ := \"Hello Mark\"\n"
+	"b$ := a$\n"
+	"copy a$, \"Seeya\"\n"
+	"print a$\n"
+	"print b$\n",
+	"Seeya Mark\nHello Mark\n",
+	},
 };
 
 /* clang-format on */
