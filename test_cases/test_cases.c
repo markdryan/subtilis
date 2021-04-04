@@ -3830,6 +3830,32 @@ const subtilis_test_case_t test_cases[] = {
 	"<- b$()\n",
 	"Hello\nHello\nHello\nHello\nHello\nHello\nHello\n"
 	},
+	{"bget_cow",
+	"PROCWriteFile\n"
+	"f% := openin \"Markus\"\n"
+	"onerror\n"
+	"  tryone close# f%\n"
+	"enderror\n"
+	"\n"
+	"s$ := string$(ext# f%, \"!\")\n"
+	"b$ := s$\n"
+	"read% := get# f%, s$\n"
+	"print s$\n"
+	"print b$\n"
+	"close# f%\n"
+	"def PROCWriteFile\n"
+	"  f% := openout \"Markus\"\n"
+	"  onerror\n"
+	"    tryone close# f%\n"
+	"  enderror\n"
+	"\n"
+	"  a$ := \"Hello markus\"\n"
+	"\n"
+	"  put# f%, a$\n"
+	"  close# f%\n"
+	"endproc\n",
+	"Hello markus\n!!!!!!!!!!!!\n"
+	},
 };
 
 /* clang-format on */

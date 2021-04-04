@@ -246,7 +246,8 @@ void subtilis_parser_set_ptr(subtilis_parser_t *p, subtilis_token_t *t,
 static bool prv_block_operation_prep(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_ir_operand_t *handle,
 				     subtilis_ir_operand_t *array_size,
-				     size_t *val_reg, subtilis_error_t *err)
+				     size_t *val_reg, bool *cow,
+				     subtilis_error_t *err)
 
 {
 	const char *tbuf;
@@ -275,6 +276,8 @@ static bool prv_block_operation_prep(subtilis_parser_t *p, subtilis_token_t *t,
 					    p->l->stream->name, p->l->line);
 		goto cleanup;
 	}
+
+	*cow = val->type.type == SUBTILIS_TYPE_STRING;
 
 	array_size->reg =
 	    subtilis_reference_type_get_size(p, val->exp.ir_op.reg, 0, err);
@@ -308,12 +311,13 @@ subtilis_exp_t *subtilis_parser_get_hash(subtilis_parser_t *p,
 	subtilis_ir_operand_t get_label;
 	bool check_dims;
 	size_t val_reg;
+	bool cow = false;
 
 	skip_label.label = subtilis_ir_section_new_label(p->current);
 	get_label.label = subtilis_ir_section_new_label(p->current);
 
-	check_dims =
-	    prv_block_operation_prep(p, t, &handle, &array_size, &val_reg, err);
+	check_dims = prv_block_operation_prep(p, t, &handle, &array_size,
+					      &val_reg, &cow, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -336,7 +340,11 @@ subtilis_exp_t *subtilis_parser_get_hash(subtilis_parser_t *p,
 			return NULL;
 	}
 
-	data.reg = subtilis_reference_get_data(p, val_reg, 0, err);
+	if (cow)
+		data.reg = subtilis_reference_type_copy_on_write(
+		    p, val_reg, 0, array_size.reg, err);
+	else
+		data.reg = subtilis_reference_get_data(p, val_reg, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -366,12 +374,13 @@ void subtilis_parser_put_hash(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_ir_operand_t put_label;
 	bool check_dims;
 	size_t val_reg;
+	bool cow = false;
 
 	skip_label.label = subtilis_ir_section_new_label(p->current);
 	put_label.label = subtilis_ir_section_new_label(p->current);
 
-	check_dims =
-	    prv_block_operation_prep(p, t, &handle, &array_size, &val_reg, err);
+	check_dims = prv_block_operation_prep(p, t, &handle, &array_size,
+					      &val_reg, &cow, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
