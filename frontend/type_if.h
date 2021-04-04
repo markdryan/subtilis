@@ -55,6 +55,10 @@ typedef subtilis_exp_t *(*subtilis_type_if_binary_nc_t)(subtilis_parser_t *p,
 							subtilis_error_t *err);
 typedef void (*subtilis_type_if_dup_t)(subtilis_exp_t *e1, subtilis_exp_t *e2,
 				       subtilis_error_t *err);
+typedef void (*subtilis_type_if_copy_collection_t)(subtilis_parser_t *p,
+						   subtilis_exp_t *e1,
+						   subtilis_exp_t *e2,
+						   subtilis_error_t *err);
 
 typedef void (*subtilis_type_if_sizet_exp_t)(subtilis_parser_t *p, size_t reg,
 					     subtilis_exp_t *e,
@@ -125,6 +129,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_unary_t exp_to_var;
 	subtilis_type_if_unary_t copy_var;
 	subtilis_type_if_dup_t dup;
+	subtilis_type_if_copy_collection_t copy_col;
 	subtilis_type_if_sizet_exp_t assign_reg;
 	subtilis_type_if_sizet2_exp_t assign_mem;
 	subtilis_type_if_iwrite_t indexed_write;
@@ -324,6 +329,15 @@ subtilis_exp_t *subtilis_type_if_copy_var(subtilis_parser_t *p,
  */
 
 subtilis_exp_t *subtilis_type_if_dup(subtilis_exp_t *e, subtilis_error_t *err);
+
+/*
+ * Only implemented for arrays and strings.  Copies the contents of e2 into
+ * e1.  e1 and e2 can be of different types provided that they are both
+ * either strings or arrays of scalar types.
+ */
+
+void subtilis_type_if_memcpy(subtilis_parser_t *p, subtilis_exp_t *e1,
+			     subtilis_exp_t *e2, subtilis_error_t *err);
 
 /*
  * Assigns the value in expression e to the given register of the appropriate

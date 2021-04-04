@@ -3801,6 +3801,35 @@ const subtilis_test_case_t test_cases[] = {
 	"print b$\n",
 	"Seeya Mark\nHello Mark\n",
 	},
+	{"copy_string_array",
+	"a$() = FNCopy$(1)()\n"
+	"for i% := 0 to dim(a$(),1)\n"
+	"  print a$(i%)\n"
+	"next\n"
+	"\n"
+	"def FNCopy$(1)\n"
+	"  local dim a$(9)\n"
+	"  a$() = \"Hello\"\n"
+	"  local dim b$(6)\n"
+	"  b$() =  \"goodbye\"\n"
+	"  copy b$(), a$()\n"
+	"<- b$()\n",
+	"Hello\nHello\nHello\nHello\nHello\nHello\nHello\n"
+	},
+	{"copy_string_array_to_empty",
+	"a$() = FNCopy$(1)()\n"
+	"for i% := 0 to dim(a$(),1)\n"
+	"  print a$(i%)\n"
+	"next\n"
+	"\n"
+	"def FNCopy$(1)\n"
+	"  local dim a$(9)\n"
+	"  a$() = \"Hello\"\n"
+	"  local dim b$(6)\n"
+	"  copy b$(), a$()\n"
+	"<- b$()\n",
+	"Hello\nHello\nHello\nHello\nHello\nHello\nHello\n"
+	},
 };
 
 /* clang-format on */

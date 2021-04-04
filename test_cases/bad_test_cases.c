@@ -606,6 +606,18 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"copy \"mark\", b&()",
 	SUBTILIS_ERROR_EXPECTED,
 	},
+	{"copy_string_array_mismatch",
+	"dim b&(9)\n"
+	"dim a$(9)\n"
+	"copy a$(), b&()",
+	SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH,
+	},
+	{"copy_string_array_mismatch_2",
+	"dim b&(9)\n"
+	"dim a$(9)\n"
+	"copy b&(), a$()",
+	SUBTILIS_ERROR_EXPECTED,
+	},
 };
 
 /* clang-format on */

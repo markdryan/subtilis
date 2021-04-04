@@ -346,6 +346,23 @@ subtilis_exp_t *subtilis_type_if_dup(subtilis_exp_t *e, subtilis_error_t *err)
 	return exp;
 }
 
+void subtilis_type_if_memcpy(subtilis_parser_t *p, subtilis_exp_t *e1,
+			     subtilis_exp_t *e2, subtilis_error_t *err)
+{
+	subtilis_type_if_copy_collection_t fn;
+
+	fn = prv_type_map[e1->type.type]->copy_col;
+	if (!fn) {
+		subtilis_error_set_expected(err, "string or array",
+					    subtilis_type_name(&e1->type),
+					    p->l->stream->name, p->l->line);
+		subtilis_exp_delete(e1);
+		subtilis_exp_delete(e2);
+		return;
+	}
+	fn(p, e1, e2, err);
+}
+
 void subtilis_type_if_assign_to_reg(subtilis_parser_t *p, size_t reg,
 				    subtilis_exp_t *e, subtilis_error_t *err)
 {

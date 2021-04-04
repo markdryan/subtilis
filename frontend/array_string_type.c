@@ -19,6 +19,7 @@
 
 #include "array_string_type.h"
 #include "array_type.h"
+#include "collection.h"
 #include "reference_type.h"
 #include "string_type.h"
 
@@ -71,6 +72,12 @@ static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
 				      subtilis_error_t *err)
 {
 	return e;
+}
+
+static void prv_copy_col(subtilis_parser_t *p, subtilis_exp_t *e1,
+			 subtilis_exp_t *e2, subtilis_error_t *err)
+{
+	subtilis_collection_copy_ref(p, e1, e2, err);
 }
 
 static subtilis_exp_t *
@@ -392,6 +399,7 @@ subtilis_type_if subtilis_type_array_string = {
 	.exp_to_var = prv_exp_to_var,
 	.copy_var = NULL,
 	.dup = NULL,
+	.copy_col = prv_copy_col,
 	.assign_reg = subtilis_array_type_assign_to_reg,
 	.assign_mem = NULL,
 	.indexed_write = prv_indexed_write,

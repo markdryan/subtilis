@@ -1206,3 +1206,82 @@ void subtilis_array_type_deref_els(subtilis_parser_t *p, size_t data_reg,
 
 	subtilis_ir_section_add_label(p->current, end.label, err);
 }
+
+void subtilis_array_type_copy_els(subtilis_parser_t *p,
+				  const subtilis_type_t *el_type,
+				  size_t data_reg, size_t size_reg,
+				  size_t src_reg, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t data_end;
+	subtilis_ir_operand_t counter;
+	subtilis_ir_operand_t counter2;
+	subtilis_ir_operand_t conde;
+	subtilis_ir_operand_t start;
+	subtilis_ir_operand_t end;
+
+	start.label = subtilis_ir_section_new_label(p->current);
+	end.label = subtilis_ir_section_new_label(p->current);
+
+	/* size_reg must be > 0 */
+
+	op0.reg = data_reg;
+	counter.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOV, op0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op0.reg = src_reg;
+	counter2.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOV, op0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.reg = size_reg;
+	data_end.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, counter, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, start.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_reference_type_deref(p, counter.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_reference_type_init_ref(p, counter.reg, 0, counter2.reg, true,
+					 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.integer = subtilis_type_if_size(el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, counter, counter, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_ADDI_I32, counter2,
+					  counter2, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	conde.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LT_I32, counter, data_end, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  conde, start, end, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, end.label, err);
+}

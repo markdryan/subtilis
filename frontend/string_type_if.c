@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "collection.h"
 #include "reference_type.h"
 #include "string_type.h"
 #include "string_type_if.h"
@@ -305,6 +306,7 @@ subtilis_type_if subtilis_type_if_const_string = {
 	.exp_to_var = prv_exp_to_var_const,
 	.copy_var = NULL,
 	.dup = prv_dup_const,
+	.copy_col = NULL,
 	.assign_reg = NULL,
 	.assign_mem = prv_assign_to_mem_const,
 	.indexed_write = NULL,
@@ -433,6 +435,12 @@ static void prv_dup(subtilis_exp_t *e1, subtilis_exp_t *e2,
 		    subtilis_error_t *err)
 {
 	e2->exp.ir_op = e1->exp.ir_op;
+}
+
+static void prv_copy_col(subtilis_parser_t *p, subtilis_exp_t *e1,
+			 subtilis_exp_t *e2, subtilis_error_t *err)
+{
+	subtilis_collection_copy_scalar(p, e1, e2, true, err);
 }
 
 static subtilis_exp_t *prv_compare_fixed_len(subtilis_parser_t *p, size_t a1,
@@ -1094,6 +1102,7 @@ subtilis_type_if subtilis_type_if_string = {
 	.exp_to_var = prv_exp_to_var,
 	.copy_var = NULL,
 	.dup = prv_dup,
+	.copy_col = prv_copy_col,
 	.assign_reg = subtilis_string_type_assign_to_reg,
 	.assign_mem = prv_assign_to_mem,
 	.indexed_write = NULL,
