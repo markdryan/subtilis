@@ -2496,104 +2496,22 @@ cleanup:
 	return NULL;
 }
 
-static subtilis_exp_t *prv_string_from_const_char(subtilis_parser_t *p,
-						  subtilis_exp_t *count,
-						  subtilis_exp_t *str,
-						  subtilis_error_t *err)
-{
-	const subtilis_symbol_t *s;
-	size_t dest_reg;
-	size_t val_reg;
-	size_t str_reg;
-	subtilis_ir_operand_t op1;
-
-	op1.integer = (int32_t)subtilis_buffer_get_string(&str->exp.str)[0];
-	val_reg = subtilis_ir_section_add_instr2(
-	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	count = subtilis_type_if_exp_to_var(p, count, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	s = subtilis_symbol_table_insert_tmp(p->local_st, &subtilis_type_string,
-					     NULL, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	dest_reg = subtilis_reference_type_alloc(
-	    p, &subtilis_type_string, s->loc, SUBTILIS_IR_REG_LOCAL,
-	    count->exp.ir_op.reg, true, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_builtin_memset_i8(p, dest_reg, count->exp.ir_op.reg, val_reg,
-				   err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	str_reg = subtilis_reference_get_pointer(p, SUBTILIS_IR_REG_LOCAL,
-						 s->loc, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_exp_delete(count);
-	subtilis_exp_delete(str);
-
-	return subtilis_exp_new_var(&subtilis_type_string, str_reg, err);
-
-cleanup:
-
-	subtilis_exp_delete(count);
-	subtilis_exp_delete(str);
-
-	return NULL;
-}
-
-/* clang-format off */
-static void prv_string_str_non_const_common(subtilis_parser_t *p,
-					    const subtilis_symbol_t *s,
-					    subtilis_exp_t *count,
-					    size_t str_data,
-					    subtilis_exp_t *str_len,
-					    bool check_for_one,
-					    subtilis_error_t *err)
-/* clang-format on */
+static void prv_string_str_check_count(subtilis_parser_t *p,
+				       const subtilis_symbol_t *s,
+				       subtilis_exp_t *dup,
+				       subtilis_ir_operand_t end,
+				       subtilis_error_t *err)
 {
 	subtilis_ir_operand_t lt_one;
 	subtilis_ir_operand_t gte_one;
-	subtilis_ir_operand_t end;
-	subtilis_ir_operand_t memcpy_loop;
-	size_t dest_reg;
-	size_t val_reg;
 	subtilis_ir_operand_t op1;
-	subtilis_ir_operand_t op2;
-	subtilis_ir_operand_t end_ptr;
 	subtilis_ir_operand_t zero_reg;
-	subtilis_ir_operand_t eq_one_label;
-	subtilis_ir_operand_t not_eq_one_label;
-	subtilis_exp_t *dup = NULL;
 	subtilis_exp_t *one = NULL;
-
-	not_eq_one_label.label = SIZE_MAX;
-	eq_one_label.label = SIZE_MAX;
 
 	lt_one.label = subtilis_ir_section_new_label(p->current);
 	gte_one.label = subtilis_ir_section_new_label(p->current);
-	if (check_for_one) {
-		eq_one_label.label = subtilis_ir_section_new_label(p->current);
-		not_eq_one_label.label =
-		    subtilis_ir_section_new_label(p->current);
-	}
-	memcpy_loop.label = subtilis_ir_section_new_label(p->current);
-	end.label = subtilis_ir_section_new_label(p->current);
 
 	one = subtilis_exp_new_int32(1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	dup = subtilis_type_if_dup(count, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -2630,6 +2548,122 @@ static void prv_string_str_non_const_common(subtilis_parser_t *p,
 		goto cleanup;
 
 	subtilis_ir_section_add_label(p->current, gte_one.label, err);
+
+cleanup:
+
+	subtilis_exp_delete(one);
+	subtilis_exp_delete(dup);
+}
+
+static subtilis_exp_t *prv_string_from_const_char(subtilis_parser_t *p,
+						  subtilis_exp_t *count,
+						  subtilis_exp_t *str,
+						  subtilis_error_t *err)
+{
+	const subtilis_symbol_t *s;
+	size_t dest_reg;
+	size_t val_reg;
+	size_t str_reg;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t end;
+	subtilis_exp_t *dup = NULL;
+
+	end.label = subtilis_ir_section_new_label(p->current);
+
+	op1.integer = (int32_t)subtilis_buffer_get_string(&str->exp.str)[0];
+	val_reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	count = subtilis_type_if_exp_to_var(p, count, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	s = subtilis_symbol_table_insert_tmp(p->local_st, &subtilis_type_string,
+					     NULL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	dup = subtilis_type_if_dup(count, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_string_str_check_count(p, s, dup, end, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	dest_reg = subtilis_reference_type_alloc(
+	    p, &subtilis_type_string, s->loc, SUBTILIS_IR_REG_LOCAL,
+	    count->exp.ir_op.reg, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_builtin_memset_i8(p, dest_reg, count->exp.ir_op.reg, val_reg,
+				   err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, end.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	str_reg = subtilis_reference_get_pointer(p, SUBTILIS_IR_REG_LOCAL,
+						 s->loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_delete(count);
+	subtilis_exp_delete(str);
+
+	return subtilis_exp_new_var(&subtilis_type_string, str_reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(count);
+	subtilis_exp_delete(str);
+
+	return NULL;
+}
+
+/* clang-format off */
+static void prv_string_str_non_const_common(subtilis_parser_t *p,
+					    const subtilis_symbol_t *s,
+					    subtilis_exp_t *count,
+					    size_t str_data,
+					    subtilis_exp_t *str_len,
+					    bool check_for_one,
+					    subtilis_error_t *err)
+/* clang-format on */
+{
+	subtilis_ir_operand_t end;
+	subtilis_ir_operand_t memcpy_loop;
+	size_t dest_reg;
+	size_t val_reg;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t end_ptr;
+	subtilis_ir_operand_t eq_one_label;
+	subtilis_ir_operand_t not_eq_one_label;
+	subtilis_exp_t *dup = NULL;
+	subtilis_exp_t *one = NULL;
+
+	not_eq_one_label.label = SIZE_MAX;
+	eq_one_label.label = SIZE_MAX;
+
+	if (check_for_one) {
+		eq_one_label.label = subtilis_ir_section_new_label(p->current);
+		not_eq_one_label.label =
+		    subtilis_ir_section_new_label(p->current);
+	}
+	memcpy_loop.label = subtilis_ir_section_new_label(p->current);
+	end.label = subtilis_ir_section_new_label(p->current);
+
+	dup = subtilis_type_if_dup(count, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_string_str_check_count(p, s, dup, end, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

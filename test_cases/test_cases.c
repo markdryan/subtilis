@@ -3856,6 +3856,12 @@ const subtilis_test_case_t test_cases[] = {
 	"endproc\n",
 	"Hello markus\n!!!!!!!!!!!!\n"
 	},
+	{"string_str_char_0_len",
+	"a% := 0\n"
+	"s$ := string$(a%, \"!\")\n"
+	"print s$\n",
+	"\n",
+	}
 };
 
 /* clang-format on */
