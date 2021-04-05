@@ -211,6 +211,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "signx8to32", SUBTILIS_OP_CLASS_REG_REG },
 	{ "movi8tofp", SUBTILIS_OP_CLASS_FREG_REG },
 	{ "movfptoi32i32", SUBTILIS_OP_CLASS_REG_REG_FREG },
+	{ "oscli", SUBTILIS_OP_CLASS_REG },
 };
 
 /*

@@ -285,6 +285,7 @@ const subtilis_ir_rule_raw_t ptd_rules[] = {
 	 {"signx8to32 *, *\n", subtilis_ptd_signx8to32 },
 	 {"movi8tofp *, *\n", subtilis_vfp_gen_movi8tofp },
 	 {"movfptoi32i32 *, *, *\n", subtilis_vfp_gen_movfptoi32i32 },
+	 {"oscli *\n", subtilis_riscos_oscli },
 };
 
 const size_t ptd_rules_count = sizeof(ptd_rules) /
@@ -456,8 +457,8 @@ void subtilis_ptd_eof(subtilis_ir_section_t *s, size_t start, void *user_data,
 		return;
 
 	one = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
-	subtilis_arm_gen_sete(arm_s, s, SUBTILIS_ARM_CCODE_VS, one,
-			      SUBTILIS_ERROR_CODE_READ, err);
+	subtilis_arm_gen_sete_load_reg(arm_s, s, SUBTILIS_ARM_CCODE_VS, one,
+				       err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

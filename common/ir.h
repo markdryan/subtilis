@@ -1767,6 +1767,16 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_MOV_FP_I32_I32,
+
+	/*
+	 * oscli r0
+	 *
+	 * Requests the OS to execute the command in the zero terminated
+	 * string pointed to by r0.  This instruction may generate an error.
+	 *
+	 */
+
+	SUBTILIS_OP_INSTR_OSCLI,
 } subtilis_op_instr_type_t;
 
 typedef enum {

@@ -403,3 +403,34 @@ cleanup:
 		free(input_args);
 	}
 }
+
+void subtilis_parser_oscli(subtilis_parser_t *p, subtilis_token_t *t,
+			   subtilis_error_t *err)
+{
+	subtilis_exp_t *command;
+
+	command = subtilis_parser_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (command->type.type == SUBTILIS_TYPE_STRING) {
+		command = subtilis_string_zt_non_const(p, command, err);
+	} else if (command->type.type == SUBTILIS_TYPE_CONST_STRING) {
+		command = subtilis_string_lca_const_zt(p, command, err);
+	} else {
+		subtilis_error_set_string_expected(err, p->l->stream->name,
+						   p->l->line);
+		goto cleanup;
+	}
+
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_OSCLI, command->exp.ir_op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_handle_errors(p, err);
+
+cleanup:
+
+	subtilis_exp_delete(command);
+}

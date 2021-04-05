@@ -51,7 +51,8 @@ COMMON =\
 	string_type_if.c \
 	string_type.c \
 	reference_type.c \
-	local_buffer_type.c
+	local_buffer_type.c \
+	collection.c
 
 RISCOS_COMMON =\
 	riscos_arm.c

@@ -40,6 +40,11 @@ implemented.  GOSUB is essentially useless.  While GOTO can be useful for writin
 cleanup code and for handling errors, there are better ways to do these sort of
 things today, e.g, ON ERROR.
 
+#### The '*' method of executing OS commands
+
+This can't be done in Subtilis as it relies on newlines being part of the grammar
+which they're not.  OSCLI is implemented however.
+
 ### Subtilis permits lower case keywords
 
 Keywords can be either upper or lower case in Subtilis.  Mixed case identifiers
@@ -894,6 +899,76 @@ a%() = v%
 
 Compiles and works as expected.
 
+### Copying
+
+Arrays are reference types.  When you assign one array to another you really just copy
+the pointer to the data and some additional array meta data.  The actual contents
+of the array are not copied.  For example,
+
+```
+dim a%(10)
+dim b%(10)
+a%() = 10
+b%() = a%()
+a%(0) = 11
+print b%(0)
+```
+
+Will print 11.  This is because a%() and b%() point to the same underlying data.  Sometimes
+you want to actually duplicate data rather than references.  This could be done using a for
+loop for example
+
+```
+for i% := 0 to 10
+  a%(i%) = b%(i%)
+next
+```
+
+but this currently generates very inefficient code, as a bounds check is performed on every
+array access.  A better way to do this is with the copy statement, which eliminates most of
+the bounds checks, for example
+
+```
+dim a%(10)
+dim b%(10)
+a%() = 10
+copy b%(), a%()
+a%(0) = 11
+print b%(0)
+```
+
+will print 10.
+
+The copy statement is flexible and allows you to mix types but there are some rules.
+
+1. The first argument must be an array reference or a non-constant string.
+2. The second argument must be an array reference, a non-constant string or a constant string.
+3. The types of both arguments do not need to match as long as both arguments are either an array of a numeric type or a string.
+4. When the first argument is an array of strings, the second argument must also be an array of strings.
+5. Unless you are copying arrays of strings, the copy statement does a memcpy.  Thus there is no type conversion.  You can copy from
+   an array of bytes or ints into an array of real numbers, but unless the data in the array of bytes contains valid binary representations.  Some restrictions may be introduced here.  Not sure how useful it is to copy an integer or a string into a real.
+   of floating point numbers, the contents of the real array will not be meaningful.
+6. The sizes and dimensions of the arguments do not need to match.  The amount of data copied is 
+   min(size of first arg in bytes, size of second arguments in bytes).
+7. If the size the second array is not a multiple of the element size of the first array, the final element copied into the destination array will be partially written.  (This may change.  Not sure how useful this is.)
+8. If the first argument contains more data, n bytes, than the second argument k bytes, only the first k bytes of the
+destination array will be overwritten.  The final n-k bytes of the first argument will be unmodified.
+
+
+Here's an example of copying a string into a byte array
+
+```
+dim a&(5)
+a&() = 33
+copy a&(), "hello"
+for i% := 0 to dim(a&(),1)
+  print chr$(a&(i%));
+next
+print ""
+```
+
+The example will print "hello!"
+
 ## Current Issues with the Grammar
 
 ### Function like keywords returning integer values
@@ -1217,7 +1292,6 @@ Here's a list of other language features that are currently not implemented but 
 * The @% variable
 * CASE OF
 * SOUND
-* OSCLI and *
 * RETURN for passing arguments by reference to procedures and functions
 * POINT TO
 * INPUT

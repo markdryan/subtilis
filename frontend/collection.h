@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Mark Ryan
+ * Copyright (c) 2021 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_PARSER_MEM_H
-#define __SUBTILIS_PARSER_MEM_H
+#ifndef __SUBTILIS_COLLECTION_H
+#define __SUBTILIS_COLLECTION_H
 
 #include "expression.h"
 #include "parser.h"
 
-subtilis_exp_t *subtilis_parser_mem_heap_free(subtilis_parser_t *p,
-					      subtilis_token_t *t,
-					      subtilis_error_t *err);
-void subtilis_parser_copy(subtilis_parser_t *p, subtilis_token_t *t,
-			  subtilis_error_t *err);
+void subtilis_collection_copy_scalar(subtilis_parser_t *p, subtilis_exp_t *obj1,
+				     subtilis_exp_t *obj2, bool cow,
+				     subtilis_error_t *err);
+void subtilis_collection_copy_ref(subtilis_parser_t *p, subtilis_exp_t *obj1,
+				  subtilis_exp_t *obj2, subtilis_error_t *err);
 
 #endif
