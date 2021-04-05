@@ -182,7 +182,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	  SUBTILIS_ERROR_DIM_IN_PROC,
 	},
 	{ "bad_dim",
-	  "DIM a%(0)\n",
+	  "DIM a%(-1)\n",
 	  SUBTILIS_ERROR_BAD_DIM,
 	},
 	{ "not_array",

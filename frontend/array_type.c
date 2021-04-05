@@ -476,7 +476,7 @@ subtilis_exp_t *subtilis_array_size_calc(subtilis_parser_t *p,
 			non_const_dim = true;
 			continue;
 		}
-		if (e[i]->exp.ir_op.integer <= 0) {
+		if (e[i]->exp.ir_op.integer < 0) {
 			subtilis_error_bad_dim(err, var_name,
 					       p->l->stream->name, p->l->line);
 			return NULL;
