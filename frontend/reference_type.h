@@ -45,7 +45,7 @@ void subtilis_reference_type_copy_ret(subtilis_parser_t *p,
 				      size_t source_reg, subtilis_error_t *err);
 void subtilis_reference_type_assign_ref(subtilis_parser_t *p,
 					size_t dest_mem_reg, size_t dest_loc,
-					size_t source_reg,
+					size_t source_reg, bool check_size,
 					subtilis_error_t *err);
 void subtilis_reference_type_ref(subtilis_parser_t *p, size_t mem_reg,
 				 size_t loc, bool check_size,

@@ -141,15 +141,6 @@ static size_t prv_var_bracketed_int_args(subtilis_parser_t *p,
 	return subtilis_var_bracketed_int_args_have_b(p, t, e, max, err);
 }
 
-static void prv_allocate_array(subtilis_parser_t *p, const char *var_name,
-			       subtilis_type_t *type, size_t loc,
-			       subtilis_exp_t **e,
-			       subtilis_ir_operand_t store_reg,
-			       subtilis_error_t *err)
-{
-	subtlis_array_type_allocate(p, var_name, type, loc, e, store_reg, err);
-}
-
 static uint8_t *prv_append_const_el(subtilis_parser_t *p, subtilis_exp_t *e,
 				    subtilis_type_t *el_type,
 				    size_t element_size, uint8_t *buffer,
@@ -746,6 +737,7 @@ void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_type_t type;
 	size_t i;
 	subtilis_ir_operand_t local_global;
+	bool zero_ref;
 	size_t dims = 0;
 	char *var_name = NULL;
 
@@ -796,7 +788,7 @@ void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
 		}
 
 		subtilis_array_type_init(p, &element_type, &type, &e[0], dims,
-					 err);
+					 &zero_ref, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
@@ -805,8 +797,12 @@ void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		prv_allocate_array(p, var_name, &type, s->loc, &e[0],
-				   local_global, err);
+		if (zero_ref)
+			subtilis_array_type_zero_ref(
+			    p, &type, s->loc, local_global.reg, true, err);
+		else
+			subtilis_array_type_allocate(p, var_name, &type, s->loc,
+						     &e[0], local_global, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 

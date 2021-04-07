@@ -3861,7 +3861,55 @@ const subtilis_test_case_t test_cases[] = {
 	"s$ := string$(a%, \"!\")\n"
 	"print s$\n",
 	"\n",
-	}
+	},
+	{"zero_len_int_array",
+	"dim a%(-1)\n"
+	"\n"
+	"PROCEmpty(a%())\n"
+	"\n"
+	"b%() := FNEmpty%(1)()\n"
+	"print dim(b%())\n"
+	"print dim(b%(),1)\n"
+	"\n"
+	"def PROCEmpty(a%(1))\n"
+	"  print dim(a%())\n"
+	"  print dim(a%(),1)\n"
+	"endproc\n"
+	"\n"
+	"def FNEmpty%(1)\n"
+	"  local dim a%()\n"
+	"<-a%()\n",
+	"1\n-1\n1\n-1\n"},
+	{"zero_len_int_array_assign",
+	"dim a%()\n"
+	"b%() := a%()\n"
+	"print dim(b%(),1)\n",
+	"-1\n",
+	},
+	{"zero_len_string_array",
+	"dim a$(-1)\n"
+	"\n"
+	"PROCEmpty(a$())\n"
+	"\n"
+	"b$() := FNEmpty$(1)()\n"
+	"print dim(b$())\n"
+	"print dim(b$(),1)\n"
+	"\n"
+	"def PROCEmpty(a$(1))\n"
+	"  print dim(a$())\n"
+	"  print dim(a$(),1)\n"
+	"endproc\n"
+	"\n"
+	"def FNEmpty$(1)\n"
+	"  local dim a$()\n"
+	"<-a$()\n",
+	"1\n-1\n1\n-1\n"},
+	{"zero_len_string_array_assign",
+	"dim a$()\n"
+	"b$() := a$()\n"
+	"print dim(b$(),1)\n",
+	"-1\n",
+	},
 };
 
 /* clang-format on */

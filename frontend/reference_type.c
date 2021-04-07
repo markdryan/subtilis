@@ -324,7 +324,7 @@ static void prv_call_deref(subtilis_parser_t *p, subtilis_ir_operand_t address,
 
 void subtilis_reference_type_assign_ref(subtilis_parser_t *p,
 					size_t dest_mem_reg, size_t dest_loc,
-					size_t source_reg,
+					size_t source_reg, bool check_size,
 					subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op0;
@@ -344,7 +344,7 @@ void subtilis_reference_type_assign_ref(subtilis_parser_t *p,
 		return;
 
 	subtilis_reference_type_init_ref(p, dest_mem_reg, dest_loc, source_reg,
-					 false, err);
+					 check_size, err);
 }
 
 size_t subtilis_reference_get_pointer(subtilis_parser_t *p, size_t reg,
