@@ -618,6 +618,20 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"copy b&(), a$()",
 	SUBTILIS_ERROR_EXPECTED,
 	},
+	{"local_array_in_main",
+	"dim a%(-1)\n"
+	"b%() := FNEmpty%(1)()\n"
+	"PROCPrint\n"
+	"\n"
+	"def FNEmpty%(1)\n"
+	"  local dim a%()\n"
+	"<-a%()\n"
+	"\n"
+	"def PROCPrint\n"
+	"  print dim(b%(),1)\n"
+	"endproc\n",
+	SUBTILIS_ERROR_UNKNOWN_VARIABLE,
+	}
 };
 
 /* clang-format on */

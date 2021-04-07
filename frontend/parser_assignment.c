@@ -150,6 +150,7 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 	const subtilis_symbol_t *s;
 	subtilis_exp_t *e = NULL;
 	bool new_global = false;
+	bool local;
 	size_t dims = 0;
 
 	dims = subtilis_var_bracketed_int_args_have_b(
@@ -204,7 +205,8 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 			    err, var_name, p->l->stream->name, p->l->line);
 			goto cleanup;
 		}
-		subtilis_parser_create_array_ref(p, var_name, id_type, e, false,
+		local = (at == SUBTILIS_ASSIGN_TYPE_CREATE_EQUAL);
+		subtilis_parser_create_array_ref(p, var_name, id_type, e, local,
 						 err);
 		return;
 	}
