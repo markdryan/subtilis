@@ -100,6 +100,7 @@ typedef enum {
 	SUBTILIS_ERROR_DEFPROC_SHOULD_BE_DEF_PROC,
 	SUBTILIS_ERROR_DEFFN_SHOULD_BE_DEF_FN,
 	SUBTILIS_ERROR_LOCAL_OBSCURES_GLOBAL,
+	SUBTILIS_ERROR_TEMPORARY_NOT_ALLOWED,
 	SUBTILIS_ERROR_ASS_BAD_REG,
 	SUBTILIS_ERROR_ASS_INTEGER_ENCODE,
 	SUBTILIS_ERROR_SYS_CALL_UNKNOWN,
@@ -331,6 +332,9 @@ void subtilis_error_init(subtilis_error_t *e);
 				  file, line, __FILE__, __LINE__)
 #define subtilis_error_set_local_obscures_global(e, var_name, file, line)      \
 	subtilis_error_set1(e, SUBTILIS_ERROR_LOCAL_OBSCURES_GLOBAL, var_name, \
+			    file, line)
+#define subtilis_error_set_temporary_not_allowed(e, context, file, line)       \
+	subtilis_error_set1(e, SUBTILIS_ERROR_TEMPORARY_NOT_ALLOWED, context,  \
 			    file, line)
 #define subtilis_error_set_ass_bad_reg(e, reg, file, line)                     \
 	subtilis_error_set1(e, SUBTILIS_ERROR_ASS_BAD_REG, reg, file, line)

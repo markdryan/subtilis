@@ -106,5 +106,9 @@ void subtilis_reference_deallocate_refs(subtilis_parser_t *p,
 					size_t level, subtilis_error_t *err);
 size_t subtilis_reference_type_raw_alloc(subtilis_parser_t *p, size_t size_reg,
 					 subtilis_error_t *err);
+size_t subtilis_reference_type_grow(subtilis_parser_t *p, size_t a1_loc,
+				    size_t a1_mem_reg, size_t a1_size_reg,
+				    size_t new_size_reg, size_t a2_size_reg,
+				    subtilis_error_t *err);
 
 #endif

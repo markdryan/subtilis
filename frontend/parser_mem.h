@@ -25,5 +25,7 @@ subtilis_exp_t *subtilis_parser_mem_heap_free(subtilis_parser_t *p,
 					      subtilis_error_t *err);
 void subtilis_parser_copy(subtilis_parser_t *p, subtilis_token_t *t,
 			  subtilis_error_t *err);
+void subtilis_parser_append(subtilis_parser_t *p, subtilis_token_t *t,
+			    subtilis_error_t *err);
 
 #endif

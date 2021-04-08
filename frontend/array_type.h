@@ -111,5 +111,7 @@ void subtilis_array_type_copy_els(subtilis_parser_t *p,
 				  const subtilis_type_t *el_type,
 				  size_t data_reg, size_t size_reg,
 				  size_t src_reg, subtilis_error_t *err);
+void subtilis_array_append_scalar(subtilis_parser_t *p, subtilis_exp_t *a1,
+				  subtilis_exp_t *a2, subtilis_error_t *err);
 
 #endif

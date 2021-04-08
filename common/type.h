@@ -82,6 +82,8 @@ bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b);
 const char *subtilis_type_name(const subtilis_type_t *typ);
 subtilis_type_section_t *
 subtilis_type_section_dup(subtilis_type_section_t *stype);
+/* typ must be an array.  The function doesn't check. */
+bool dynamic_1d_array(const subtilis_type_t *typ);
 
 extern const subtilis_type_t subtilis_type_const_real;
 extern const subtilis_type_t subtilis_type_const_integer;

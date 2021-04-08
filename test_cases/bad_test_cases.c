@@ -631,7 +631,17 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"  print dim(b%(),1)\n"
 	"endproc\n",
 	SUBTILIS_ERROR_UNKNOWN_VARIABLE,
-	}
+	},
+	{"append_to_fixed_array",
+	"dim a%(10)\n"
+	"append a%(), 10\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
+	{"append_string_to_int_array",
+	"dim a%()\n"
+	"append a%(), \"hello\"\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
 };
 
 /* clang-format on */

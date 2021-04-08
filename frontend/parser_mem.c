@@ -79,3 +79,33 @@ void subtilis_parser_copy(subtilis_parser_t *p, subtilis_token_t *t,
 cleanup:
 	subtilis_exp_delete(obj1);
 }
+
+void subtilis_parser_append(subtilis_parser_t *p, subtilis_token_t *t,
+			    subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_exp_t *obj1 = NULL;
+	subtilis_exp_t *obj2 = NULL;
+
+	obj1 = subtilis_parser_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ",")) {
+		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
+					    p->l->line);
+		goto cleanup;
+	}
+
+	obj2 = subtilis_parser_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_type_if_append(p, obj1, obj2, err);
+	return;
+
+cleanup:
+
+	subtilis_exp_delete(obj1);
+}

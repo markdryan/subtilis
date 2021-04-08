@@ -138,6 +138,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_iread_t indexed_read;
 	subtilis_type_if_set_t set;
 	subtilis_type_if_iread_t indexed_address;
+	subtilis_type_if_copy_collection_t append;
 	subtilis_type_if_load_t load_mem;
 	subtilis_type_if_unary_t to_int32;
 	subtilis_type_if_coerce_t zerox;
@@ -427,6 +428,23 @@ subtilis_type_if_indexed_address(subtilis_parser_t *p, const char *var_name,
 				 const subtilis_type_t *type, size_t mem_reg,
 				 size_t loc, subtilis_exp_t **indices,
 				 size_t index_count, subtilis_error_t *err);
+
+/*
+ * Appends a2 to a1.  After the operation has been performed, a2 may point to
+ * a different memory block, depending on whether a realloc was required.  Any
+ * variables pointed to the original memory block will be unaffected, e.g.,
+ *
+ * dim a%(10)
+ * b% := a%()
+ * append(a%(), 11)
+ *
+ * b% will still have 10 elements and will still point to the original block
+ * of data created by dim a%.  a% may or may not point to this original block
+ * of data.  Only implemented for strings and 1d arrays.
+ */
+
+void subtilis_type_if_append(subtilis_parser_t *p, subtilis_exp_t *a1,
+			     subtilis_exp_t *a2, subtilis_error_t *err);
 
 /*
  * Returns the scalar value stored in the memory location represented by

@@ -408,6 +408,13 @@ static void prv_array_of(const subtilis_type_t *element_type,
 	type->type = SUBTILIS_TYPE_ARRAY_STRING;
 }
 
+static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
+		       subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	subtilis_string_type_add_eq(p, a1->exp.ir_op.reg, 0, a2, err);
+	subtilis_exp_delete(a1);
+}
+
 static subtilis_exp_t *prv_load_from_mem(subtilis_parser_t *p, size_t mem_reg,
 					 size_t loc, subtilis_error_t *err)
 {
@@ -1110,6 +1117,7 @@ subtilis_type_if subtilis_type_if_string = {
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
 	.set = NULL,
+	.append = prv_append,
 	.indexed_address = NULL,
 	.load_mem = prv_load_from_mem,
 	.to_int32 = NULL,

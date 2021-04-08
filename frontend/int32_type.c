@@ -2177,6 +2177,7 @@ subtilis_type_if subtilis_type_int32 = {
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
 	.set = NULL,
+	.append = NULL,
 	.indexed_address = NULL,
 	.load_mem = prv_load_from_mem,
 	.to_int32 = prv_to_int32,

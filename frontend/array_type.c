@@ -1535,3 +1535,85 @@ void subtilis_array_type_copy_els(subtilis_parser_t *p,
 
 	subtilis_ir_section_add_label(p->current, end.label, err);
 }
+
+void subtilis_array_append_scalar(subtilis_parser_t *p, subtilis_exp_t *a1,
+				  subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	subtilis_type_t el_type;
+	size_t dest_reg;
+	subtilis_ir_operand_t a1_size;
+	subtilis_ir_operand_t a2_size;
+	size_t new_size_reg;
+	subtilis_ir_operand_t op1;
+
+	if (!dynamic_1d_array(&a1->type)) {
+		subtilis_error_set_expected(err, "1d array",
+					    subtilis_type_name(&a1->type),
+					    p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
+	a2 = subtilis_type_if_exp_to_var(p, a2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_type_if_element_type(p, &a1->type, &el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (el_type.type != a2->type.type) {
+		subtilis_error_set_array_type_mismatch(err, p->l->stream->name,
+						       p->l->line);
+		goto cleanup;
+	}
+
+	op1.integer = subtilis_type_if_size(&el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a1_size.reg =
+	    subtilis_reference_type_get_size(p, a1->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a2_size.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	new_size_reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, a1_size, a2_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	dest_reg =
+	    subtilis_reference_type_grow(p, 0, a1->exp.ir_op.reg, a1_size.reg,
+					 new_size_reg, a2_size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_type_if_assign_to_mem(p, dest_reg, 0, a2, err);
+	a2 = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a2 = subtilis_type_if_load_from_mem(p, &subtilis_type_integer,
+					    a1->exp.ir_op.reg,
+					    SUBTIILIS_ARRAY_DIMS_OFF, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.integer = 1;
+	a2->exp.ir_op.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, a2->exp.ir_op, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_type_if_assign_to_mem(p, a1->exp.ir_op.reg,
+				       SUBTIILIS_ARRAY_DIMS_OFF, a2, err);
+	a2 = NULL;
+
+cleanup:
+	subtilis_exp_delete(a2);
+	subtilis_exp_delete(a1);
+}

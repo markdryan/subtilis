@@ -161,3 +161,9 @@ subtilis_type_section_dup(subtilis_type_section_t *stype)
 	stype->ref_count++;
 	return stype;
 }
+
+bool dynamic_1d_array(const subtilis_type_t *typ)
+{
+	return (typ->params.array.num_dims == 1) &&
+	       (typ->params.array.dims[0] == SUBTILIS_DYNAMIC_DIMENSION);
+}

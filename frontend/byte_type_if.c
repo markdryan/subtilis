@@ -62,6 +62,7 @@ subtilis_type_if subtilis_type_const_byte = {
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
 	.set = NULL,
+	.append = NULL,
 	.indexed_address = NULL,
 	.load_mem = NULL,
 	.to_int32 = NULL,

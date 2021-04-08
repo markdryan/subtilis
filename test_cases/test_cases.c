@@ -3910,6 +3910,51 @@ const subtilis_test_case_t test_cases[] = {
 	"print dim(b$(),1)\n",
 	"-1\n",
 	},
+	{"append_int_array",
+	"dim a%()\n"
+	"for i% := 0 to 9\n"
+	"  append a%(), i%\n"
+	"next\n"
+	"append a%(), 10\n"
+	"print dim(a%(),1)\n"
+	"for i% = 0 to dim(a%(),1)\n"
+	"  print a%(i%)\n"
+	"next\n",
+	"10\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
+	},
+	{"append_real_array",
+	"dim a()\n"
+	"for i := 0 to 4.5 step .5\n"
+	"  append a(), i\n"
+	"next\n"
+	"append a(), 5.0\n"
+	"print dim(a(),1)\n"
+	"for i% = 0 to dim(a(),1)\n"
+	"  print a(i%)\n"
+	"next\n",
+	"10\n0\n0.5\n1\n1.5\n2\n2.5\n3\n3.5\n4\n4.5\n5\n",
+	},
+	{"append_byte_array",
+	"dim a&()\n"
+	"for i% := 0 to 9\n"
+	"  append a&(), i%\n"
+	"next\n"
+	"append a&(), 10\n"
+	"print dim(a&(),1)\n"
+	"for i% = 0 to dim(a&(),1)\n"
+	"  print a&(i%)\n"
+	"next\n",
+	"10\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
+	},
+	{"append_string",
+	"a$ := \"\"\n"
+	"for i% := asc(\"0\") to asc(\"9\")\n"
+	"  append a$, chr$(i%)\n"
+	"next\n"
+	"\n"
+	"print a$\n",
+	"0123456789\n"
+	},
 };
 
 /* clang-format on */

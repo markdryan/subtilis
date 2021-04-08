@@ -130,6 +130,28 @@ cleanup:
 	subtilis_exp_delete(e);
 }
 
+static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
+		       subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	if (a2->type.type == SUBTILIS_TYPE_ARRAY_BYTE) {
+		subtilis_error_set_assertion_failed(err);
+		goto cleanup;
+	} else if (subtilis_type_if_is_numeric(&a2->type)) {
+		a2 = subtilis_type_if_to_float64(p, a2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		subtilis_array_append_scalar(p, a1, a2, err);
+		return;
+	}
+	subtilis_error_set_expected(err, "real or array of reals",
+				    subtilis_type_name(&a2->type),
+				    p->l->stream->name, p->l->line);
+
+cleanup:
+	subtilis_exp_delete(a2);
+	subtilis_exp_delete(a1);
+}
+
 static subtilis_exp_t *
 prv_indexed_address(subtilis_parser_t *p, const char *var_name,
 		    const subtilis_type_t *type, size_t mem_reg, size_t loc,
@@ -360,6 +382,7 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.indexed_sub = prv_indexed_sub,
 	.indexed_read = prv_indexed_read,
 	.set = prv_set,
+	.append = prv_append,
 	.indexed_address = prv_indexed_address,
 	.load_mem = NULL,
 	.to_int32 = NULL,
