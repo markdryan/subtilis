@@ -330,6 +330,21 @@ subtilis_exp_t *subtilis_exp_new_var(const subtilis_type_t *type,
 	return e;
 }
 
+subtilis_exp_t *subtilis_exp_new_tmp_var(const subtilis_type_t *type,
+					 unsigned int reg, char *tmp_name,
+					 subtilis_error_t *err)
+{
+	subtilis_exp_t *e = subtilis_exp_new_var(type, reg, err);
+
+	if (err->type != SUBTILIS_ERROR_OK) {
+		free(tmp_name);
+		return NULL;
+	}
+
+	e->temporary = tmp_name;
+	return e;
+}
+
 subtilis_exp_t *subtilis_exp_new_var_block(subtilis_parser_t *p,
 					   const subtilis_type_t *type,
 					   unsigned int mem_reg, size_t offset,
