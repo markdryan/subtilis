@@ -556,13 +556,6 @@ void subtilis_type_if_append(subtilis_parser_t *p, subtilis_exp_t *a1,
 {
 	subtilis_type_if_copy_collection_t fn;
 
-	if (a1->temporary) {
-		subtilis_error_set_temporary_not_allowed(
-		    err, "first argument to append", p->l->stream->name,
-		    p->l->line);
-		goto cleanup;
-	}
-
 	fn = prv_type_map[a1->type.type]->append;
 	if (!fn) {
 		subtilis_error_set_expected(err, "string or 1d array",

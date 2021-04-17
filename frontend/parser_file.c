@@ -277,6 +277,13 @@ static bool prv_block_operation_prep(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 	}
 
+	if (val->temporary) {
+		subtilis_error_set_temporary_not_allowed(
+		    err, "second argument to get#", p->l->stream->name,
+		    p->l->line);
+		goto cleanup;
+	}
+
 	*cow = val->type.type == SUBTILIS_TYPE_STRING;
 
 	array_size->reg =

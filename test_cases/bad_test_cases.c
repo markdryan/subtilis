@@ -642,6 +642,16 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"append a%(), \"hello\"\n",
 	SUBTILIS_ERROR_EXPECTED,
 	},
+	{"copy_temp",
+	"a$ = \"aa\"\n"
+	"copy a$+\"1\", \"a\"\n",
+	SUBTILIS_ERROR_TEMPORARY_NOT_ALLOWED,
+	},
+	{"get_hash_temp",
+	"a$ = \"aa\"\n"
+	"x$ := get# 0, a$+\"1\"\n",
+	SUBTILIS_ERROR_TEMPORARY_NOT_ALLOWED,
+	},
 };
 
 /* clang-format on */

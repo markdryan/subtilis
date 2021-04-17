@@ -62,6 +62,13 @@ void subtilis_parser_copy(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	if (obj1->temporary) {
+		subtilis_error_set_temporary_not_allowed(
+		    err, "first argument to copy", p->l->stream->name,
+		    p->l->line);
+		goto cleanup;
+	}
+
 	tbuf = subtilis_token_get_text(t);
 	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ",")) {
 		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
@@ -90,6 +97,13 @@ void subtilis_parser_append(subtilis_parser_t *p, subtilis_token_t *t,
 	obj1 = subtilis_parser_expression(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	if (obj1->temporary) {
+		subtilis_error_set_temporary_not_allowed(
+		    err, "first argument to append", p->l->stream->name,
+		    p->l->line);
+		goto cleanup;
+	}
 
 	tbuf = subtilis_token_get_text(t);
 	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ",")) {
