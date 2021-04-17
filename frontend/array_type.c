@@ -381,8 +381,7 @@ static void prv_copy_ref_base(subtilis_parser_t *p, const subtilis_type_t *t,
 
 	size_t ints_to_copy = 1 + (t->params.array.num_dims);
 
-	if ((t->params.array.num_dims == 1) &&
-	    (t->params.array.dims[0] == SUBTILIS_DYNAMIC_DIMENSION)) {
+	if (dynamic_1d_array(t)) {
 		check_size = true;
 		ref_label.label = subtilis_ir_section_new_label(p->current);
 		skip_ref_label.label =
@@ -619,9 +618,7 @@ void subtilis_array_type_assign_ref(subtilis_parser_t *p,
 void subtilis_array_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
 				       subtilis_exp_t *e, subtilis_error_t *err)
 {
-	bool check_size =
-	    (e->type.params.array.num_dims == 1) &&
-	    (e->type.params.array.dims[0] == SUBTILIS_DYNAMIC_DIMENSION);
+	bool check_size = dynamic_1d_array(&e->type);
 
 	subtilis_reference_type_assign_to_reg(p, reg, e, check_size, err);
 }
