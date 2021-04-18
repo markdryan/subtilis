@@ -367,6 +367,7 @@ subtilis_type_if subtilis_type_array_int32 = {
 	.copy_col = prv_copy_col,
 	.assign_reg = subtilis_array_type_assign_to_reg,
 	.assign_mem = NULL,
+	.assign_new_mem = NULL,
 	.indexed_write = prv_indexed_write,
 	.indexed_add = prv_indexed_add,
 	.indexed_sub = prv_indexed_sub,

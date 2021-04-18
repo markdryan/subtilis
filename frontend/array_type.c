@@ -139,6 +139,10 @@ void subtilis_array_type_zero_ref(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	subtilis_reference_type_set_destructor(p, type, mem_reg, loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	op1.integer = ((int32_t)loc) + SUBTIILIS_ARRAY_DIMS_OFF;
 	base.reg = mem_reg;
 	subtilis_ir_section_add_instr_reg(p->current,
@@ -1589,7 +1593,7 @@ void subtilis_array_append_scalar(subtilis_parser_t *p, subtilis_exp_t *a1,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_type_if_assign_to_mem(p, dest_reg, 0, a2, err);
+	subtilis_type_if_assign_to_new_mem(p, dest_reg, 0, a2, err);
 	a2 = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;

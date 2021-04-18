@@ -507,15 +507,12 @@ void subtilis_string_type_new_ref(subtilis_parser_t *p,
 	subtilis_exp_delete(e);
 }
 
-void subtilis_string_type_assign_ref(subtilis_parser_t *p,
-				     const subtilis_type_t *type,
-				     size_t mem_reg, size_t loc,
-				     subtilis_exp_t *e, subtilis_error_t *err)
+void subtilis_string_type_assign_new_ref(subtilis_parser_t *p,
+					 const subtilis_type_t *type,
+					 size_t mem_reg, size_t loc,
+					 subtilis_exp_t *e,
+					 subtilis_error_t *err)
 {
-	subtilis_reference_type_deref(p, mem_reg, loc, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
 	switch (e->type.type) {
 	case SUBTILIS_TYPE_STRING:
 		subtilis_reference_type_init_ref(p, mem_reg, loc,
@@ -531,6 +528,20 @@ void subtilis_string_type_assign_ref(subtilis_parser_t *p,
 		break;
 	}
 
+	subtilis_exp_delete(e);
+}
+
+void subtilis_string_type_assign_ref(subtilis_parser_t *p,
+				     const subtilis_type_t *type,
+				     size_t mem_reg, size_t loc,
+				     subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_reference_type_deref(p, mem_reg, loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_string_type_assign_new_ref(p, type, mem_reg, loc, e, err);
+	return;
 cleanup:
 
 	subtilis_exp_delete(e);

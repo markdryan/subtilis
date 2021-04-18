@@ -61,6 +61,11 @@ void subtilis_string_type_assign_ref(subtilis_parser_t *p,
 				     const subtilis_type_t *type,
 				     size_t mem_reg, size_t loc,
 				     subtilis_exp_t *e, subtilis_error_t *err);
+void subtilis_string_type_assign_new_ref(subtilis_parser_t *p,
+					 const subtilis_type_t *type,
+					 size_t mem_reg, size_t loc,
+					 subtilis_exp_t *e,
+					 subtilis_error_t *err);
 void subtilis_string_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
 					subtilis_exp_t *e,
 					subtilis_error_t *err);

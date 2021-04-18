@@ -3955,6 +3955,27 @@ const subtilis_test_case_t test_cases[] = {
 	"print a$\n",
 	"0123456789\n"
 	},
+	{"append_string_array_const",
+	"local dim a$()\n"
+	"\n"
+	"append a$(), \"hello\"\n"
+	"append a$(), \"world\"\n"
+	"for i% = 0 to dim(a$(), 1)\n"
+	"  print a$(i%)\n"
+	"next\n",
+	"hello\nworld\n",
+	},
+	{"append_string_array",
+	"local dim a$()\n"
+	"\n"
+	"for i% := asc(\"a\") to asc(\"z\")\n"
+	"  append a$(), chr$(i%)\n"
+	"next\n"
+	"for i% = 0 to dim(a$(), 1)\n"
+	"  print a$(i%)\n"
+	"next\n",
+	"a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\nl\nm\nn\no\np\nq\nr\ns\nt\nu\nv\nw\nx\ny\nz\n",
+	},
 };
 
 /* clang-format on */

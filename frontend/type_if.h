@@ -132,6 +132,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_copy_collection_t copy_col;
 	subtilis_type_if_sizet_exp_t assign_reg;
 	subtilis_type_if_sizet2_exp_t assign_mem;
+	subtilis_type_if_sizet2_exp_t assign_new_mem;
 	subtilis_type_if_iwrite_t indexed_write;
 	subtilis_type_if_iwrite_t indexed_add;
 	subtilis_type_if_iwrite_t indexed_sub;
@@ -356,6 +357,18 @@ void subtilis_type_if_assign_to_reg(subtilis_parser_t *p, size_t reg,
 void subtilis_type_if_assign_to_mem(subtilis_parser_t *p, size_t mem_reg,
 				    size_t loc, subtilis_exp_t *e,
 				    subtilis_error_t *err);
+
+/*
+ * Identical to subtilis_type_if_assign_to_mem for numeric types.  It's
+ * different for referenced counted types in that it doesn't try to
+ * dereference whatever is at the destination location.  This is inteded
+ * to be invoked on newly allocated memory that has never had a Subtilis
+ * object.
+ */
+
+void subtilis_type_if_assign_to_new_mem(subtilis_parser_t *p, size_t mem_reg,
+					size_t loc, subtilis_exp_t *e,
+					subtilis_error_t *err);
 
 /*
  * Writes the scalar expression represented by e to an array identified by

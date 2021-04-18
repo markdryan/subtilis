@@ -395,6 +395,25 @@ void subtilis_type_if_assign_to_mem(subtilis_parser_t *p, size_t mem_reg,
 	fn(p, mem_reg, loc, e, err);
 }
 
+void subtilis_type_if_assign_to_new_mem(subtilis_parser_t *p, size_t mem_reg,
+					size_t loc, subtilis_exp_t *e,
+					subtilis_error_t *err)
+{
+	subtilis_type_if_sizet2_exp_t fn;
+
+	if (loc > 0x7fffffff) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	fn = prv_type_map[e->type.type]->assign_new_mem;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(p, mem_reg, loc, e, err);
+}
+
 subtilis_exp_t *subtilis_type_if_load_from_mem(subtilis_parser_t *p,
 					       const subtilis_type_t *type,
 					       size_t mem_reg, size_t loc,

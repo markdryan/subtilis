@@ -438,6 +438,14 @@ static void prv_assign_to_mem(subtilis_parser_t *p, size_t mem_reg, size_t loc,
 					e, err);
 }
 
+static void prv_assign_to_new_mem(subtilis_parser_t *p, size_t mem_reg,
+				  size_t loc, subtilis_exp_t *e,
+				  subtilis_error_t *err)
+{
+	subtilis_string_type_assign_new_ref(p, &subtilis_type_string, mem_reg,
+					    loc, e, err);
+}
+
 static void prv_dup(subtilis_exp_t *e1, subtilis_exp_t *e2,
 		    subtilis_error_t *err)
 {
@@ -1112,6 +1120,7 @@ subtilis_type_if subtilis_type_if_string = {
 	.copy_col = prv_copy_col,
 	.assign_reg = subtilis_string_type_assign_to_reg,
 	.assign_mem = prv_assign_to_mem,
+	.assign_new_mem = prv_assign_to_new_mem,
 	.indexed_write = NULL,
 	.indexed_add = NULL,
 	.indexed_sub = NULL,
