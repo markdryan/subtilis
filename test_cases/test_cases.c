@@ -3976,6 +3976,21 @@ const subtilis_test_case_t test_cases[] = {
 	"next\n",
 	"a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\nl\nm\nn\no\np\nq\nr\ns\nt\nu\nv\nw\nx\ny\nz\n",
 	},
+	{"read_empty_file",
+	"close# openout \"markus\"  rem creates an empty file\n"
+	"print dim(FNReadFile&(1)(\"markus\"), 1)\n"
+	"\n"
+	"def FNReadFile&(1)(a$)\n"
+	"  f% := openin a$\n"
+	"  onerror tryone close# f% enderror\n"
+	"  local dim a&((ext# f%) - 1)\n"
+	"  if dim(a&(), 1) > -1 then\n"
+	"      read% := get# f%, a&()\n"
+	"  endif\n"
+	"  close# f%\n"
+	"<- a&()\n",
+	"-1\n",
+	},
 };
 
 /* clang-format on */

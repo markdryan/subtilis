@@ -272,17 +272,17 @@ static void prv_1d_dynamic_alloc(subtilis_parser_t *p, size_t loc,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	prv_clear_new_array(p, type, loc, sizee->exp.ir_op.reg, store_reg, data,
+			    err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	subtilis_ir_section_add_label(p->current, end_label.label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
 	subtilis_reference_type_push_reference(p, type, store_reg.reg, loc,
 					       err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	prv_clear_new_array(p, type, loc, sizee->exp.ir_op.reg, store_reg, data,
-			    err);
 
 cleanup:
 
