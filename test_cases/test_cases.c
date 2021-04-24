@@ -3760,7 +3760,7 @@ const subtilis_test_case_t test_cases[] = {
 	{"copy_byte_string",
 	"a$ := \"Hello world\"\n"
 	"dim b&(7)\n"
-	"copy b&(), a$\n"
+	"copy(b&(), a$)\n"
 	"for i% := 0 to dim(b&(), 1)\n"
 	"  print chr$(b&(i%));\n"
 	"next\n"
@@ -3772,7 +3772,7 @@ const subtilis_test_case_t test_cases[] = {
 	"a%() = &12345678\n"
 	"c% := 9\n"
 	"dim b&(c%)\n"
-	"copy b&(), a%()\n"
+	"copy(b&(), a%())\n"
 	"for i% := 0 to dim(b&(),1)\n"
 	"  print ~b&(i%)\n"
 	"next\n",
@@ -3780,7 +3780,7 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"copy_byte_const_string",
 	"dim b&(7)\n"
-	"copy b&(), \"Hello world\"\n"
+	"copy(b&(), \"Hello world\")\n"
 	"for i% := 0 to dim(b&(), 1)\n"
 	"  print chr$(b&(i%));\n"
 	"next\n"
@@ -3789,14 +3789,14 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"copy_byte_empty_string",
 	"a$ := \"\"\n"
-	"copy a$, \"Hello\"\n"
+	"copy(a$, \"Hello\")\n"
 	"print a$\n",
 	"\n",
 	},
 	{"copy_string_string_woc",
 	"a$ := \"Hello Mark\"\n"
 	"b$ := a$\n"
-	"copy a$, \"Seeya\"\n"
+	"copy(a$, \"Seeya\")\n"
 	"print a$\n"
 	"print b$\n",
 	"Seeya Mark\nHello Mark\n",
@@ -3812,7 +3812,7 @@ const subtilis_test_case_t test_cases[] = {
 	"  a$() = \"Hello\"\n"
 	"  local dim b$(6)\n"
 	"  b$() =  \"goodbye\"\n"
-	"  copy b$(), a$()\n"
+	"  copy(b$(), a$())\n"
 	"<- b$()\n",
 	"Hello\nHello\nHello\nHello\nHello\nHello\nHello\n"
 	},
@@ -3826,7 +3826,7 @@ const subtilis_test_case_t test_cases[] = {
 	"  local dim a$(9)\n"
 	"  a$() = \"Hello\"\n"
 	"  local dim b$(6)\n"
-	"  copy b$(), a$()\n"
+	"  copy(b$(), a$())\n"
 	"<- b$()\n",
 	"Hello\nHello\nHello\nHello\nHello\nHello\nHello\n"
 	},
@@ -3913,9 +3913,9 @@ const subtilis_test_case_t test_cases[] = {
 	{"append_int_array",
 	"dim a%()\n"
 	"for i% := 0 to 9\n"
-	"  append a%(), i%\n"
+	"  append(a%(), i%)\n"
 	"next\n"
-	"append a%(), 10\n"
+	"append(a%(), 10)\n"
 	"print dim(a%(),1)\n"
 	"for i% = 0 to dim(a%(),1)\n"
 	"  print a%(i%)\n"
@@ -3925,9 +3925,9 @@ const subtilis_test_case_t test_cases[] = {
 	{"append_real_array",
 	"dim a()\n"
 	"for i := 0 to 4.5 step .5\n"
-	"  append a(), i\n"
+	"  append(a(), i)\n"
 	"next\n"
-	"append a(), 5.0\n"
+	"append(a(), 5.0)\n"
 	"print dim(a(),1)\n"
 	"for i% = 0 to dim(a(),1)\n"
 	"  print a(i%)\n"
@@ -3937,9 +3937,9 @@ const subtilis_test_case_t test_cases[] = {
 	{"append_byte_array",
 	"dim a&()\n"
 	"for i% := 0 to 9\n"
-	"  append a&(), i%\n"
+	"  append(a&(), i%)\n"
 	"next\n"
-	"append a&(), 10\n"
+	"append(a&(), 10)\n"
 	"print dim(a&(),1)\n"
 	"for i% = 0 to dim(a&(),1)\n"
 	"  print a&(i%)\n"
@@ -3949,7 +3949,7 @@ const subtilis_test_case_t test_cases[] = {
 	{"append_string",
 	"a$ := \"\"\n"
 	"for i% := asc(\"0\") to asc(\"9\")\n"
-	"  append a$, chr$(i%)\n"
+	"  append(a$, chr$(i%))\n"
 	"next\n"
 	"\n"
 	"print a$\n",
@@ -3958,8 +3958,8 @@ const subtilis_test_case_t test_cases[] = {
 	{"append_string_array_const",
 	"local dim a$()\n"
 	"\n"
-	"append a$(), \"hello\"\n"
-	"append a$(), \"world\"\n"
+	"append(a$(), \"hello\")\n"
+	"append(a$(), \"world\")\n"
 	"for i% = 0 to dim(a$(), 1)\n"
 	"  print a$(i%)\n"
 	"next\n",
@@ -3969,7 +3969,7 @@ const subtilis_test_case_t test_cases[] = {
 	"local dim a$()\n"
 	"\n"
 	"for i% := asc(\"a\") to asc(\"z\")\n"
-	"  append a$(), chr$(i%)\n"
+	"  append(a$(), chr$(i%))\n"
 	"next\n"
 	"for i% = 0 to dim(a$(), 1)\n"
 	"  print a$(i%)\n"
@@ -3998,7 +3998,7 @@ const subtilis_test_case_t test_cases[] = {
 	"local dim b&(7)\n"
 	"b&() = 2,3,4,5,6,7,8,9\n"
 	"c&() := a&()\n"
-	"append a&(), b&()\n"
+	"append(a&(), b&())\n"
 	"for i% := 0 to dim(a&(),1)\n"
 	"  print a&(i%)\n"
 	"next\n"
@@ -4014,7 +4014,7 @@ const subtilis_test_case_t test_cases[] = {
 	"local dim b(7)\n"
 	"b() = 2,3,4,5,6,7,8,9\n"
 	"c() := a()\n"
-	"append a(), b()\n"
+	"append(a(), b())\n"
 	"for i% := 0 to dim(a(),1)\n"
 	"  print a(i%)\n"
 	"next\n"
@@ -4030,7 +4030,7 @@ const subtilis_test_case_t test_cases[] = {
 	"local dim b&(2,2)\n"
 	"b&() = 2,3,4,5,6,7,8,9,10\n"
 	"c&() := a&()\n"
-	"append a&(), b&()\n"
+	"append(a&(), b&())\n"
 	"for i% := 0 to dim(a&(),1)\n"
 	"  print a&(i%)\n"
 	"next\n"
@@ -4045,7 +4045,7 @@ const subtilis_test_case_t test_cases[] = {
 	"a$() = \"i\", \"ii\", \"iii\", \"iv\", \"v\"\n"
 	"dim b$(4)\n"
 	"b$() = \"vi\", \"vii\", \"viii\", \"ix\", \"x\"\n"
-	"append a$(), b$()\n"
+	"append(a$(), b$())\n"
 	"for i% := 0 to dim(a$(), 1)\n"
 	"  print a$(i%)\n"
 	"next\n",
@@ -4056,7 +4056,7 @@ const subtilis_test_case_t test_cases[] = {
 	"b% := 5\n"
 	"dim c%(b%)\n"
 	"c%() = 100\n"
-	"append c%(), a%()\n"
+	"append(c%(), a%())\n"
 	"print dim(c%(), 1)\n",
 	"5\n",
 	},

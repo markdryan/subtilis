@@ -609,13 +609,13 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	{"copy_string_array_mismatch",
 	"dim b&(9)\n"
 	"dim a$(9)\n"
-	"copy a$(), b&()",
+	"copy(a$(), b&())",
 	SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH,
 	},
 	{"copy_string_array_mismatch_2",
 	"dim b&(9)\n"
 	"dim a$(9)\n"
-	"copy b&(), a$()",
+	"copy(b&(), a$())",
 	SUBTILIS_ERROR_EXPECTED,
 	},
 	{"local_array_in_main",
@@ -644,7 +644,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	},
 	{"copy_temp",
 	"a$ = \"aa\"\n"
-	"copy a$+\"1\", \"a\"\n",
+	"copy(a$+\"1\", \"a\")\n",
 	SUBTILIS_ERROR_TEMPORARY_NOT_ALLOWED,
 	},
 	{"get_hash_temp",
