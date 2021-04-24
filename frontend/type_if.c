@@ -336,14 +336,17 @@ subtilis_exp_t *subtilis_type_if_dup(subtilis_exp_t *e, subtilis_error_t *err)
 	fn = prv_type_map[e->type.type]->dup;
 	if (!fn) {
 		subtilis_error_set_assertion_failed(err);
-		return NULL;
+		goto cleanup;
 	}
 	fn(e, exp, err);
-	if (err->type != SUBTILIS_ERROR_OK) {
-		free(exp);
-		return NULL;
-	}
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	return exp;
+
+cleanup:
+	subtilis_exp_delete(exp);
+	return NULL;
 }
 
 void subtilis_type_if_memcpy(subtilis_parser_t *p, subtilis_exp_t *e1,
