@@ -3991,6 +3991,75 @@ const subtilis_test_case_t test_cases[] = {
 	"<- a&()\n",
 	"-1\n",
 	},
+	{"append_array_array_ints",
+	"c% := 7\n"
+	"local dim a&(c%)\n"
+	"a&() = 1\n"
+	"local dim b&(7)\n"
+	"b&() = 2,3,4,5,6,7,8,9\n"
+	"c&() := a&()\n"
+	"append a&(), b&()\n"
+	"for i% := 0 to dim(a&(),1)\n"
+	"  print a&(i%)\n"
+	"next\n"
+	"for i% = 0 to dim(c&(),1)\n"
+	"  print c&(i%)\n"
+	"next\n",
+	"1\n1\n1\n1\n1\n1\n1\n1\n2\n3\n4\n5\n6\n7\n8\n9\n1\n1\n1\n1\n1\n1\n1\n1\n",
+	},
+	{"append_array_array_reals",
+	"d% := 7\n"
+	"local dim a(d%)\n"
+	"a() = 1\n"
+	"local dim b(7)\n"
+	"b() = 2,3,4,5,6,7,8,9\n"
+	"c() := a()\n"
+	"append a(), b()\n"
+	"for i% := 0 to dim(a(),1)\n"
+	"  print a(i%)\n"
+	"next\n"
+	"for i% = 0 to dim(c(),1)\n"
+	"  print c(i%)\n"
+	"next\n",
+	"1\n1\n1\n1\n1\n1\n1\n1\n2\n3\n4\n5\n6\n7\n8\n9\n1\n1\n1\n1\n1\n1\n1\n1\n",
+	},
+	{"append_array_array_bytes",
+	"c% := 7\n"
+	"local dim a&(c%)\n"
+	"a&() = 1\n"
+	"local dim b&(2,2)\n"
+	"b&() = 2,3,4,5,6,7,8,9,10\n"
+	"c&() := a&()\n"
+	"append a&(), b&()\n"
+	"for i% := 0 to dim(a&(),1)\n"
+	"  print a&(i%)\n"
+	"next\n"
+	"for i% = 0 to dim(c&(),1)\n"
+	"  print c&(i%)\n"
+	"next\n",
+	"1\n1\n1\n1\n1\n1\n1\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n1\n1\n1\n1\n1\n1\n1\n1\n",
+	},
+	{"append_array_array_strings",
+	"c% := 4\n"
+	"dim a$(c%)\n"
+	"a$() = \"i\", \"ii\", \"iii\", \"iv\", \"v\"\n"
+	"dim b$(4)\n"
+	"b$() = \"vi\", \"vii\", \"viii\", \"ix\", \"x\"\n"
+	"append a$(), b$()\n"
+	"for i% := 0 to dim(a$(), 1)\n"
+	"  print a$(i%)\n"
+	"next\n",
+	"i\nii\niii\niv\nv\nvi\nvii\nviii\nix\nx\n",
+	},
+	{"append_array_array_empty",
+	"dim a%()\n"
+	"b% := 5\n"
+	"dim c%(b%)\n"
+	"c%() = 100\n"
+	"append c%(), a%()\n"
+	"print dim(c%(), 1)\n",
+	"5\n",
+	},
 };
 
 /* clang-format on */

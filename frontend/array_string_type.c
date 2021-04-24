@@ -181,8 +181,8 @@ static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
 		       subtilis_exp_t *a2, subtilis_error_t *err)
 {
 	if (a2->type.type == SUBTILIS_TYPE_ARRAY_STRING) {
-		subtilis_error_set_assertion_failed(err);
-		goto cleanup;
+		subtilis_array_append_ref_array(p, a1, a2, err);
+		return;
 	} else if ((a2->type.type == SUBTILIS_TYPE_STRING) ||
 		   (a2->type.type == SUBTILIS_TYPE_CONST_STRING)) {
 		subtilis_array_append_scalar(p, a1, a2, err);
@@ -191,8 +191,6 @@ static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
 	subtilis_error_set_expected(err, "string or array of strings",
 				    subtilis_type_name(&a2->type),
 				    p->l->stream->name, p->l->line);
-
-cleanup:
 	subtilis_exp_delete(a2);
 	subtilis_exp_delete(a1);
 }

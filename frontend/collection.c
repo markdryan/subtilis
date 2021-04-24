@@ -182,7 +182,7 @@ void subtilis_collection_copy_ref(subtilis_parser_t *p, subtilis_exp_t *obj1,
 		goto cleanup;
 
 	subtilis_array_type_copy_els(p, &el_type, ptr1, final_size.reg, ptr2,
-				     err);
+				     true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

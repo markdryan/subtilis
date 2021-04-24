@@ -134,8 +134,8 @@ static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
 		       subtilis_exp_t *a2, subtilis_error_t *err)
 {
 	if (a2->type.type == SUBTILIS_TYPE_ARRAY_INTEGER) {
-		subtilis_error_set_assertion_failed(err);
-		goto cleanup;
+		subtilis_array_append_scalar_array(p, a1, a2, err);
+		return;
 	} else if (subtilis_type_if_is_numeric(&a2->type)) {
 		a2 = subtilis_type_if_to_int(p, a2, err);
 		if (err->type != SUBTILIS_ERROR_OK)
