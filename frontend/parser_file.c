@@ -31,7 +31,7 @@ static subtilis_exp_t *prv_open(subtilis_parser_t *p, subtilis_token_t *t,
 	size_t ret;
 	subtilis_exp_t *handle = NULL;
 
-	file_name = subtilis_parser_expression(p, t, err);
+	file_name = subtilis_parser_bracketed_exp(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -148,10 +148,51 @@ static subtilis_exp_t *prv_2arg_file_op(subtilis_parser_t *p,
 	return subtilis_exp_new_int32_var(ret, err);
 }
 
+static subtilis_exp_t *parse_1arg_bkt_file_op(subtilis_parser_t *p,
+					      subtilis_token_t *t,
+					      subtilis_op_instr_type_t itype,
+					      subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_exp_t *e;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, "(")) {
+		subtilis_error_set_expected(err, "( ", tbuf, p->l->stream->name,
+					    p->l->line);
+		return NULL;
+	}
+
+	e = prv_2arg_file_op(p, t, itype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ")")) {
+		subtilis_error_set_expected(err, ") ", tbuf, p->l->stream->name,
+					    p->l->line);
+		goto cleanup;
+	}
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return e;
+
+cleanup:
+	subtilis_exp_delete(e);
+	return NULL;
+}
+
 subtilis_exp_t *subtilis_parser_bget(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
-	return prv_2arg_file_op(p, t, SUBTILIS_OP_INSTR_BGET, err);
+	return parse_1arg_bkt_file_op(p, t, SUBTILIS_OP_INSTR_BGET, err);
 }
 
 void subtilis_parser_bput(subtilis_parser_t *p, subtilis_token_t *t,
@@ -192,20 +233,20 @@ void subtilis_parser_bput(subtilis_parser_t *p, subtilis_token_t *t,
 subtilis_exp_t *subtilis_parser_eof(subtilis_parser_t *p, subtilis_token_t *t,
 				    subtilis_error_t *err)
 {
-	return prv_2arg_file_op(p, t, SUBTILIS_OP_INSTR_EOF, err);
+	return parse_1arg_bkt_file_op(p, t, SUBTILIS_OP_INSTR_EOF, err);
 }
 
 subtilis_exp_t *subtilis_parser_ext(subtilis_parser_t *p, subtilis_token_t *t,
 				    subtilis_error_t *err)
 {
-	return prv_2arg_file_op(p, t, SUBTILIS_OP_INSTR_EXT, err);
+	return parse_1arg_bkt_file_op(p, t, SUBTILIS_OP_INSTR_EXT, err);
 }
 
 subtilis_exp_t *subtilis_parser_get_ptr(subtilis_parser_t *p,
 					subtilis_token_t *t,
 					subtilis_error_t *err)
 {
-	return prv_2arg_file_op(p, t, SUBTILIS_OP_INSTR_GET_PTR, err);
+	return parse_1arg_bkt_file_op(p, t, SUBTILIS_OP_INSTR_GET_PTR, err);
 }
 
 void subtilis_parser_set_ptr(subtilis_parser_t *p, subtilis_token_t *t,

@@ -1219,11 +1219,11 @@ maximum number of bytes that are actually read, e.g.,
 
 ```
 buf$ := string$(32, " ")
-bytes_read% := get# handle#, buf$
+bytes_read% := get#(handle#, buf$)
 ```
 
 will read up to 32 bytes into buf$.  If there are fewer than 32 bytes in the file, the number of bytes actually read
-will be returned, but no error will be generated.
+will be returned, but no error will be generated.  As get# can be used in an expression, its parameters are bracketed.
 
 PUT# writes a buffer to a file.  The buffer can be a scalar array or a string.  The number of bytes written is
 determined by the size of the array or string in bytes.  For example,
