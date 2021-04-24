@@ -246,7 +246,7 @@ void subtilis_parser_set_ptr(subtilis_parser_t *p, subtilis_token_t *t,
 static bool prv_block_operation_prep(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_ir_operand_t *handle,
 				     subtilis_ir_operand_t *array_size,
-				     size_t *val_reg, bool *cow,
+				     size_t *val_reg, bool *cow, bool *arg1_tmp,
 				     subtilis_error_t *err)
 
 {
@@ -277,13 +277,7 @@ static bool prv_block_operation_prep(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 	}
 
-	if (val->temporary) {
-		subtilis_error_set_temporary_not_allowed(
-		    err, "second argument to get#", p->l->stream->name,
-		    p->l->line);
-		goto cleanup;
-	}
-
+	*arg1_tmp = val->temporary;
 	*cow = val->type.type == SUBTILIS_TYPE_STRING;
 
 	array_size->reg =
@@ -291,10 +285,8 @@ static bool prv_block_operation_prep(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	check_dims =
-	    (val->type.type == SUBTILIS_TYPE_STRING) ||
-	    ((val->type.params.array.num_dims == 1) &&
-	     (val->type.params.array.dims[0] == SUBTILIS_DYNAMIC_DIMENSION));
+	check_dims = (val->type.type == SUBTILIS_TYPE_STRING) ||
+		     dynamic_1d_array(&val->type);
 
 	*val_reg = val->exp.ir_op.reg;
 
@@ -317,6 +309,7 @@ subtilis_exp_t *subtilis_parser_get_hash(subtilis_parser_t *p,
 	subtilis_ir_operand_t array_size;
 	subtilis_ir_operand_t get_label;
 	bool check_dims;
+	bool arg1_tmp;
 	size_t val_reg;
 	bool cow = false;
 
@@ -324,9 +317,16 @@ subtilis_exp_t *subtilis_parser_get_hash(subtilis_parser_t *p,
 	get_label.label = subtilis_ir_section_new_label(p->current);
 
 	check_dims = prv_block_operation_prep(p, t, &handle, &array_size,
-					      &val_reg, &cow, err);
+					      &val_reg, &cow, &arg1_tmp, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
+
+	if (arg1_tmp) {
+		subtilis_error_set_temporary_not_allowed(
+		    err, "second argument to get#", p->l->stream->name,
+		    p->l->line);
+		return NULL;
+	}
 
 	ret.reg = p->current->reg_counter++;
 	if (check_dims) {
@@ -380,6 +380,7 @@ void subtilis_parser_put_hash(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_ir_operand_t array_size;
 	subtilis_ir_operand_t put_label;
 	bool check_dims;
+	bool arg1_tmp;
 	size_t val_reg;
 	bool cow = false;
 
@@ -387,7 +388,7 @@ void subtilis_parser_put_hash(subtilis_parser_t *p, subtilis_token_t *t,
 	put_label.label = subtilis_ir_section_new_label(p->current);
 
 	check_dims = prv_block_operation_prep(p, t, &handle, &array_size,
-					      &val_reg, &cow, err);
+					      &val_reg, &cow, &arg1_tmp, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
