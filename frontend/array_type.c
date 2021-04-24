@@ -1888,3 +1888,11 @@ cleanup:
 	subtilis_exp_delete(a2);
 	subtilis_exp_delete(a1);
 }
+
+void subtilis_array_type_dup(subtilis_exp_t *src, subtilis_exp_t *dst,
+			     subtilis_error_t *err)
+{
+	dst->temporary = src->temporary;
+	dst->type = src->type;
+	dst->exp.ir_op.reg = src->exp.ir_op.reg;
+}

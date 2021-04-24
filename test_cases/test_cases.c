@@ -4060,6 +4060,18 @@ const subtilis_test_case_t test_cases[] = {
 	"print dim(c%(), 1)\n",
 	"5\n",
 	},
+	{"copy_exp",
+	"local dim b&(10)\n"
+	"b&() = asc(\"!\")\n"
+	"a% := 10\n"
+	"print copy(string$(a%, \" \"), b&())\n",
+	"!!!!!!!!!!\n",
+	},
+	{"append_exp",
+	"a% := 10\n"
+	"print append(string$(a%,\"*\"), string$(10,\"!\"))\n",
+	"**********!!!!!!!!!!\n",
+	},
 };
 
 /* clang-format on */

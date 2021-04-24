@@ -119,4 +119,7 @@ void subtilis_array_append_scalar_array(subtilis_parser_t *p,
 					subtilis_error_t *err);
 void subtilis_array_append_ref_array(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err);
+void subtilis_array_type_dup(subtilis_exp_t *src, subtilis_exp_t *dst,
+			     subtilis_error_t *err);
+
 #endif
