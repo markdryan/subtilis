@@ -4072,6 +4072,25 @@ const subtilis_test_case_t test_cases[] = {
 	"print append(string$(a%,\"*\"), string$(10,\"!\"))\n",
 	"**********!!!!!!!!!!\n",
 	},
+	{"get_hash_len_test",
+	"PROCWriteFile(\"markus\")\n"
+	"f% := openin(\"markus\")\n"
+	"local dim a%(10)\n"
+	"print get#(f%, a%())\n"
+	"close# f%\n"
+	"\n"
+	"def PROCWriteFile(a$)\n"
+	"  local dim a%(9)\n"
+	"  a%() = 1,2,3,4,5,6,7,8,9,10\n"
+	"  f% := openout(a$)\n"
+	"  onerror\n"
+	"    tryone close# f%\n"
+	"  enderror\n"
+	"  put# f%, a%()\n"
+	"  close# f%\n"
+	"endproc\n",
+	"10\n",
+	},
 };
 
 /* clang-format on */

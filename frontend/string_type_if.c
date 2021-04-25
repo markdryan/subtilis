@@ -458,6 +458,12 @@ static void prv_copy_col(subtilis_parser_t *p, subtilis_exp_t *e1,
 	subtilis_collection_copy_scalar(p, e1, e2, true, err);
 }
 
+static void prv_element_type(const subtilis_type_t *type,
+			     subtilis_type_t *element_type)
+{
+	element_type->type = SUBTILIS_TYPE_BYTE;
+}
+
 static subtilis_exp_t *prv_compare_fixed_len(subtilis_parser_t *p, size_t a1,
 					     size_t a2,
 					     subtilis_op_instr_type_t iload,
@@ -1113,7 +1119,7 @@ subtilis_type_if subtilis_type_if_string = {
 	.zero_reg = prv_zero_reg,
 	.copy_ret = subtilis_reference_type_copy_ret,
 	.array_of = prv_array_of,
-	.element_type = NULL,
+	.element_type = prv_element_type,
 	.exp_to_var = prv_exp_to_var,
 	.copy_var = NULL,
 	.dup = prv_dup,

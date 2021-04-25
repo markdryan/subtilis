@@ -1213,17 +1213,30 @@ no memory restriction on an application, the maximum integer value is returned.
 
 Can be used to read and write blocks of data from and to a file.
 
-GET# takes two comma separated parameters, a file handle and a buffer of some sorts, and returns the number of bytes read.
+GET# takes two comma separated parameters, a file handle and a buffer of some sorts, and returns the number of items read.
 The buffer can be an array containing numeric elements or a string.  The size of the array or string determines the
 maximum number of bytes that are actually read, e.g.,
 
 ```
 buf$ := string$(32, " ")
-bytes_read% := get#(handle#, buf$)
+chars_read% := get#(handle#, buf$)
 ```
 
 will read up to 32 bytes into buf$.  If there are fewer than 32 bytes in the file, the number of bytes actually read
 will be returned, but no error will be generated.  As get# can be used in an expression, its parameters are bracketed.
+
+Note the return value from get# is not the number of bytes read but the number of complete objects read.  For example,
+assuming that there were 15 bytes left in the file pointed to by handle# and the following code was executed,
+
+```
+dim buf%(10)
+ints_read% := get#(handle#, buf%())
+```
+
+ints_read% would be set to 3 and not 15 as only 3 complete integers were read.
+
+
+
 
 PUT# writes a buffer to a file.  The buffer can be a scalar array or a string.  The number of bytes written is
 determined by the size of the array or string in bytes.  For example,
