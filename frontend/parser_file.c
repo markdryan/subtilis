@@ -352,13 +352,36 @@ subtilis_exp_t *subtilis_parser_get_hash(subtilis_parser_t *p,
 	bool check_dims;
 	bool arg1_tmp;
 	size_t val_reg;
+	const char *tbuf;
 	bool cow = false;
 
 	skip_label.label = subtilis_ir_section_new_label(p->current);
 	get_label.label = subtilis_ir_section_new_label(p->current);
 
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, "(")) {
+		subtilis_error_set_expected(err, "(", tbuf, p->l->stream->name,
+					    p->l->line);
+		return NULL;
+	}
+
 	check_dims = prv_block_operation_prep(p, t, &handle, &array_size,
 					      &val_reg, &cow, &arg1_tmp, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ")")) {
+		subtilis_error_set_expected(err, ")", tbuf, p->l->stream->name,
+					    p->l->line);
+		return NULL;
+	}
+
+	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 

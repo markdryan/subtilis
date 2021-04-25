@@ -3717,7 +3717,7 @@ const subtilis_test_case_t test_cases[] = {
 	"    enderror\n"
 	"\n"
 	"    s$ := string$(ext#(f%), \" \")\n"
-	"    read% := get# f%, s$\n"
+	"    read% := get#(f%, s$)\n"
 	"\n"
 	"    tryone close# f%\n"
 	"<-s$\n",
@@ -3751,7 +3751,7 @@ const subtilis_test_case_t test_cases[] = {
 	"    enderror\n"
 	"\n"
 	"    local dim a%(10)\n"
-	"    read% := get# f%, a%()\n"
+	"    read% := get#(f%, a%())\n"
 	"\n"
 	"    tryone close# f%\n"
 	"<-a%()\n",
@@ -3839,7 +3839,7 @@ const subtilis_test_case_t test_cases[] = {
 	"\n"
 	"s$ := string$(ext#(f%), \"!\")\n"
 	"b$ := s$\n"
-	"read% := get# f%, s$\n"
+	"read% := get#(f%, s$)\n"
 	"print s$\n"
 	"print b$\n"
 	"close# f%\n"
@@ -3985,7 +3985,7 @@ const subtilis_test_case_t test_cases[] = {
 	"  onerror tryone close# f% enderror\n"
 	"  local dim a&(ext#(f%) - 1)\n"
 	"  if dim(a&(), 1) > -1 then\n"
-	"      read% := get# f%, a&()\n"
+	"      read% := get#(f%, a&())\n"
 	"  endif\n"
 	"  close# f%\n"
 	"<- a&()\n",

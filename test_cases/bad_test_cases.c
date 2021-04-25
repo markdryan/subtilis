@@ -586,7 +586,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	{
 	"get_hash_array_strings",
 	"dim a$(10)\n"
-	"x% := get# 0, a$()\n",
+	"x% := get#(0, a$())\n",
 	SUBTILIS_ERROR_EXPECTED,
 	},
 	{
@@ -649,7 +649,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	},
 	{"get_hash_temp",
 	"a$ = \"aa\"\n"
-	"x$ := get# 0, a$+\"1\"\n",
+	"x$ := get#(0, a$+\"1\")\n",
 	SUBTILIS_ERROR_TEMPORARY_NOT_ALLOWED,
 	},
 };
