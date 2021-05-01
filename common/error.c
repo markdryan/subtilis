@@ -198,6 +198,12 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_NOT_ARRAY */
 	{"%s is not an array\n", 1},
 
+	/* SUBTILIS_ERROR_NOT_VECTOR */
+	{"%s is not a vector\n", 1},
+
+	/* SUBTILIS_ERROR_NOT_ARRAY_OR_VECTOR */
+	{"%s is not an array or vector\n", 1},
+
 	/* SUBTILIS_ERROR_VARIABLE_BAD_LEVEL */
 	{"global variable %s must be declared at the top level\n", 1},
 

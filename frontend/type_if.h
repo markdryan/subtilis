@@ -113,6 +113,7 @@ struct subtilis_type_if_ {
 	bool is_numeric;
 	bool is_integer;
 	bool is_array;
+	bool is_vector;
 	subtilis_ir_reg_type_t param_type;
 	subtilis_type_if_size_t size;
 	subtilis_type_if_unary_t data_size;
@@ -125,6 +126,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_reg2_t copy_ret;
 	subtilis_type_if_typeof_t const_of;
 	subtilis_type_if_typeof_t array_of;
+	subtilis_type_if_typeof_t vector_of;
 	subtilis_type_if_typeof_t element_type;
 	subtilis_type_if_unary_t exp_to_var;
 	subtilis_type_if_unary_t copy_var;
@@ -289,6 +291,15 @@ void subtilis_type_if_const_of(const subtilis_type_t *type,
 void subtilis_type_if_array_of(subtilis_parser_t *p,
 			       const subtilis_type_t *element_type,
 			       subtilis_type_t *type, subtilis_error_t *err);
+
+/*
+ * Writes the type of a vector of the scalar type specified in
+ * element_type into type.
+ */
+
+void subtilis_type_if_vector_of(subtilis_parser_t *p,
+				const subtilis_type_t *element_type,
+				subtilis_type_t *type, subtilis_error_t *err);
 
 /*
  * Returns true if type is an array of numeric types of a string.
@@ -747,6 +758,12 @@ bool subtilis_type_if_is_integer(const subtilis_type_t *type);
  */
 
 bool subtilis_type_if_is_array(const subtilis_type_t *type);
+
+/*
+ * Returns true if the given type is a vector of some kind.
+ */
+
+bool subtilis_type_if_is_vector(const subtilis_type_t *type);
 
 /*
  * Converts expression e to type type, if possible.

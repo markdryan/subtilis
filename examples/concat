@@ -1,0 +1,18 @@
+f% := openout("three")
+onerror
+    tryone close# f%
+enderror
+
+put# f%, append(FNReadFile&{}("one"), FNReadFile&{}("two"))
+
+close# f%
+
+def FNReadFile&{}(fname$)
+    f% := openin(fname$)
+    onerror
+        tryone close# f%
+    enderror
+    local dim data&{ext#(f%) -1}
+    read% := get#(f%, data&{})
+    close# f%
+<-data&{}

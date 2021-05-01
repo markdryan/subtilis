@@ -80,6 +80,8 @@ typedef enum {
 	SUBTILIS_ERROR_BAD_INDEX,
 	SUBTILIS_ERROR_BAD_INDEX_COUNT,
 	SUBTILIS_ERROR_NOT_ARRAY,
+	SUBTILIS_ERROR_NOT_VECTOR,
+	SUBTILIS_ERROR_NOT_ARRAY_OR_VECTOR,
 	SUBTILIS_ERROR_VARIABLE_BAD_LEVEL,
 	SUBTILIS_ERROR_BAD_ERROR,
 	SUBTILIS_ERROR_TOO_MANY_BLOCKS,
@@ -272,6 +274,11 @@ void subtilis_error_init(subtilis_error_t *e);
 	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_INDEX_COUNT, str, file, line)
 #define subtilis_error_not_array(e, str, file, line)                           \
 	subtilis_error_set1(e, SUBTILIS_ERROR_NOT_ARRAY, str, file, line)
+#define subtilis_error_not_vector(e, str, file, line)                          \
+	subtilis_error_set1(e, SUBTILIS_ERROR_NOT_VECTOR, str, file, line)
+#define subtilis_error_not_array_or_vector(e, str, file, line)                 \
+	subtilis_error_set1(e, SUBTILIS_ERROR_NOT_ARRAY_OR_VECTOR, str, file,  \
+			    line)
 #define subtilis_error_variable_bad_level(e, str, file, line)                  \
 	subtilis_error_set1(e, SUBTILIS_ERROR_VARIABLE_BAD_LEVEL, str, file,   \
 			    line)

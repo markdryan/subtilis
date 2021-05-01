@@ -3862,87 +3862,87 @@ const subtilis_test_case_t test_cases[] = {
 	"print s$\n",
 	"\n",
 	},
-	{"zero_len_int_array",
-	"dim a%(-1)\n"
+	{"zero_len_int_vector",
+	"dim a%{-1}\n"
 	"\n"
-	"PROCEmpty(a%())\n"
+	"PROCEmpty(a%{})\n"
 	"\n"
-	"b%() := FNEmpty%(1)()\n"
-	"print dim(b%())\n"
-	"print dim(b%(),1)\n"
+	"b%{} := FNEmpty%{}()\n"
+	"print dim(b%{})\n"
+	"print dim(b%{},1)\n"
 	"\n"
-	"def PROCEmpty(a%(1))\n"
-	"  print dim(a%())\n"
-	"  print dim(a%(),1)\n"
+	"def PROCEmpty(a%{})\n"
+	"  print dim(a%{})\n"
+	"  print dim(a%{},1)\n"
 	"endproc\n"
 	"\n"
-	"def FNEmpty%(1)\n"
-	"  local dim a%()\n"
-	"<-a%()\n",
+	"def FNEmpty%{}\n"
+	"  local dim a%{}\n"
+	"<-a%{}\n",
 	"1\n-1\n1\n-1\n"},
-	{"zero_len_int_array_assign",
-	"dim a%()\n"
-	"b%() := a%()\n"
-	"print dim(b%(),1)\n",
+	{"zero_len_int_vector_assign",
+	"dim a%{}\n"
+	"b%{} := a%{}\n"
+	"print dim(b%{},1)\n",
 	"-1\n",
 	},
-	{"zero_len_string_array",
-	"dim a$(-1)\n"
+	{"zero_len_string_vector",
+	"dim a${-1}\n"
 	"\n"
-	"PROCEmpty(a$())\n"
+	"PROCEmpty(a${})\n"
 	"\n"
-	"b$() := FNEmpty$(1)()\n"
-	"print dim(b$())\n"
-	"print dim(b$(),1)\n"
+	"b${} := FNEmpty${}()\n"
+	"print dim(b${})\n"
+	"print dim(b${},1)\n"
 	"\n"
-	"def PROCEmpty(a$(1))\n"
-	"  print dim(a$())\n"
-	"  print dim(a$(),1)\n"
+	"def PROCEmpty(a${})\n"
+	"  print dim(a${})\n"
+	"  print dim(a${},1)\n"
 	"endproc\n"
 	"\n"
-	"def FNEmpty$(1)\n"
-	"  local dim a$()\n"
-	"<-a$()\n",
+	"def FNEmpty${}\n"
+	"  local dim a${}\n"
+	"<-a${}\n",
 	"1\n-1\n1\n-1\n"},
-	{"zero_len_string_array_assign",
-	"dim a$()\n"
-	"b$() := a$()\n"
-	"print dim(b$(),1)\n",
+	{"zero_len_string_vector_assign",
+	"dim a${}\n"
+	"b${} := a${}\n"
+	"print dim(b${},1)\n",
 	"-1\n",
 	},
-	{"append_int_array",
-	"dim a%()\n"
+	{"append_int_vector",
+	"dim a%{}\n"
 	"for i% := 0 to 9\n"
-	"  append(a%(), i%)\n"
+	"  append(a%{}, i%)\n"
 	"next\n"
-	"append(a%(), 10)\n"
-	"print dim(a%(),1)\n"
-	"for i% = 0 to dim(a%(),1)\n"
-	"  print a%(i%)\n"
+	"append(a%{}, 10)\n"
+	"print dim(a%{},1)\n"
+	"for i% = 0 to dim(a%{},1)\n"
+	"  print a%{i%}\n"
 	"next\n",
 	"10\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
 	},
-	{"append_real_array",
-	"dim a()\n"
+	{"append_real_vector",
+	"dim a{}\n"
 	"for i := 0 to 4.5 step .5\n"
-	"  append(a(), i)\n"
+	"  append(a{}, i)\n"
 	"next\n"
-	"append(a(), 5.0)\n"
-	"print dim(a(),1)\n"
-	"for i% = 0 to dim(a(),1)\n"
-	"  print a(i%)\n"
+	"append(a{}, 5.0)\n"
+	"print dim(a{},1)\n"
+	"for i% = 0 to dim(a{},1)\n"
+	"  print a{i%}\n"
 	"next\n",
 	"10\n0\n0.5\n1\n1.5\n2\n2.5\n3\n3.5\n4\n4.5\n5\n",
 	},
-	{"append_byte_array",
-	"dim a&()\n"
+	{"append_byte_vector",
+	"dim a&{}\n"
 	"for i% := 0 to 9\n"
-	"  append(a&(), i%)\n"
+	"  append(a&{}, i%)\n"
 	"next\n"
-	"append(a&(), 10)\n"
-	"print dim(a&(),1)\n"
-	"for i% = 0 to dim(a&(),1)\n"
-	"  print a&(i%)\n"
+	"append(a&{}, 10)\n"
+	"print dim(a&{},1)\n"
+	"for i% = 0 to dim(a&{},1)\n"
+	"  print a&{i%}\n"
 	"next\n",
 	"10\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
 	},
@@ -3955,109 +3955,108 @@ const subtilis_test_case_t test_cases[] = {
 	"print a$\n",
 	"0123456789\n"
 	},
-	{"append_string_array_const",
-	"local dim a$()\n"
+	{"append_string_vector_const",
+	"local dim a${}\n"
 	"\n"
-	"append(a$(), \"hello\")\n"
-	"append(a$(), \"world\")\n"
-	"for i% = 0 to dim(a$(), 1)\n"
-	"  print a$(i%)\n"
+	"append(a${}, \"hello\")\n"
+	"append(a${}, \"world\")\n"
+	"for i% = 0 to dim(a${}, 1)\n"
+	"  print a${i%}\n"
 	"next\n",
 	"hello\nworld\n",
 	},
-	{"append_string_array",
-	"local dim a$()\n"
+	{"append_string_vector",
+	"local dim a${}\n"
 	"\n"
 	"for i% := asc(\"a\") to asc(\"z\")\n"
-	"  append(a$(), chr$(i%))\n"
+	"  append(a${}, chr$(i%))\n"
 	"next\n"
-	"for i% = 0 to dim(a$(), 1)\n"
-	"  print a$(i%)\n"
+	"for i% = 0 to dim(a${}, 1)\n"
+	"  print a${i%}\n"
 	"next\n",
 	"a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\nl\nm\nn\no\np\nq\nr\ns\nt\nu\nv\nw\nx\ny\nz\n",
 	},
 	{"read_empty_file",
 	"close# openout(\"markus\")  rem creates an empty file\n"
-	"print dim(FNReadFile&(1)(\"markus\"), 1)\n"
+	"print dim(FNReadFile&{}(\"markus\"), 1)\n"
 	"\n"
-	"def FNReadFile&(1)(a$)\n"
+	"def FNReadFile&{}(a$)\n"
 	"  f% := openin(a$)\n"
 	"  onerror tryone close# f% enderror\n"
-	"  local dim a&(ext#(f%) - 1)\n"
-	"  if dim(a&(), 1) > -1 then\n"
-	"      read% := get#(f%, a&())\n"
+	"  local dim a&{ext#(f%) - 1}\n"
+	"  if dim(a&{}, 1) > -1 then\n"
+	"      read% := get#(f%, a&{})\n"
 	"  endif\n"
 	"  close# f%\n"
-	"<- a&()\n",
+	"<- a&{}\n",
 	"-1\n",
 	},
-	{"append_array_array_ints",
+	{"append_vector_array_ints",
 	"c% := 7\n"
-	"local dim a&(c%)\n"
+	"local dim a&{c%}\n"
 	"a&() = 1\n"
 	"local dim b&(7)\n"
 	"b&() = 2,3,4,5,6,7,8,9\n"
-	"c&() := a&()\n"
-	"append(a&(), b&())\n"
-	"for i% := 0 to dim(a&(),1)\n"
-	"  print a&(i%)\n"
+	"c&{} := a&{}\n"
+	"append(a&{}, b&())\n"
+	"for i% := 0 to dim(a&{},1)\n"
+	"  print a&{i%}\n"
 	"next\n"
-	"for i% = 0 to dim(c&(),1)\n"
-	"  print c&(i%)\n"
+	"for i% = 0 to dim(c&{},1)\n"
+	"  print c&{i%}\n"
 	"next\n",
 	"1\n1\n1\n1\n1\n1\n1\n1\n2\n3\n4\n5\n6\n7\n8\n9\n1\n1\n1\n1\n1\n1\n1\n1\n",
 	},
-	{"append_array_array_reals",
+	{"append_vector_array_reals",
 	"d% := 7\n"
-	"local dim a(d%)\n"
-	"a() = 1\n"
+	"local dim a{d%}\n"
+	"a{} = 1\n"
 	"local dim b(7)\n"
 	"b() = 2,3,4,5,6,7,8,9\n"
-	"c() := a()\n"
-	"append(a(), b())\n"
-	"for i% := 0 to dim(a(),1)\n"
-	"  print a(i%)\n"
+	"c{} := a{}\n"
+	"append(a{}, b())\n"
+	"for i% := 0 to dim(a{},1)\n"
+	"  print a{i%}\n"
 	"next\n"
-	"for i% = 0 to dim(c(),1)\n"
-	"  print c(i%)\n"
+	"for i% = 0 to dim(c{},1)\n"
+	"  print c{i%}\n"
 	"next\n",
 	"1\n1\n1\n1\n1\n1\n1\n1\n2\n3\n4\n5\n6\n7\n8\n9\n1\n1\n1\n1\n1\n1\n1\n1\n",
 	},
-	{"append_array_array_bytes",
-	"c% := 7\n"
-	"local dim a&(c%)\n"
-	"a&() = 1\n"
+	{"append_vector_array_bytes",
+	"local dim a&{7}\n"
+	"a&{} = 1\n"
 	"local dim b&(2,2)\n"
 	"b&() = 2,3,4,5,6,7,8,9,10\n"
-	"c&() := a&()\n"
-	"append(a&(), b&())\n"
-	"for i% := 0 to dim(a&(),1)\n"
-	"  print a&(i%)\n"
+	"c&{} := a&{}\n"
+	"append(a&{}, b&())\n"
+	"for i% := 0 to dim(a&{},1)\n"
+	"  print a&{i%}\n"
 	"next\n"
-	"for i% = 0 to dim(c&(),1)\n"
-	"  print c&(i%)\n"
+	"for i% = 0 to dim(c&{},1)\n"
+	"  print c&{i%}\n"
 	"next\n",
 	"1\n1\n1\n1\n1\n1\n1\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n1\n1\n1\n1\n1\n1\n1\n1\n",
 	},
-	{"append_array_array_strings",
+	{"append_vector_array_strings",
 	"c% := 4\n"
-	"dim a$(c%)\n"
-	"a$() = \"i\", \"ii\", \"iii\", \"iv\", \"v\"\n"
+	"dim a${c%}\n"
+	"a${} = \"i\", \"ii\", \"iii\", \"iv\", \"v\"\n"
 	"dim b$(4)\n"
 	"b$() = \"vi\", \"vii\", \"viii\", \"ix\", \"x\"\n"
-	"append(a$(), b$())\n"
-	"for i% := 0 to dim(a$(), 1)\n"
-	"  print a$(i%)\n"
+	"append(a${}, b$())\n"
+	"for i% := 0 to dim(a${}, 1)\n"
+	"  print a${i%}\n"
 	"next\n",
 	"i\nii\niii\niv\nv\nvi\nvii\nviii\nix\nx\n",
 	},
-	{"append_array_array_empty",
-	"dim a%()\n"
+	{"append_vector_vector_empty",
+	"dim a%{}\n"
 	"b% := 5\n"
-	"dim c%(b%)\n"
-	"c%() = 100\n"
-	"append(c%(), a%())\n"
-	"print dim(c%(), 1)\n",
+	"dim c%{b%}\n"
+	"c%{} = 100\n"
+	"append(c%{}, a%{})\n"
+	"print dim(c%{}, 1)\n",
 	"5\n",
 	},
 	{"copy_exp",
@@ -4089,6 +4088,87 @@ const subtilis_test_case_t test_cases[] = {
 	"  put# f%, a%()\n"
 	"  close# f%\n"
 	"endproc\n",
+	"10\n",
+	},
+	{"memset_vector",
+	"local dim b&{10}\n"
+	"b&{} = 66\n"
+	"for i% := 0 to dim(b&{},1)\n"
+	"print b&{i%}\n"
+	"next\n",
+	"66\n66\n66\n66\n66\n66\n66\n66\n66\n66\n66\n",
+	},
+	{"vector_bad_init",
+	"onerror print err enderror\n"
+	"dim a%{}\n"
+	"a%{} = 1,1\n",
+	"10\n",
+	},
+	{"memset_empty_vector",
+	"dim a%{}\n"
+	"a%{} = 1\n"
+	"dim b{}\n"
+	"b{} = 1\n"
+	"dim c&{}\n"
+	"c&{} = 1\n"
+	"dim d${}\n"
+	"d${} = \"1\"\n"
+	"print dim(a%{}, 1)"
+	"print dim(b{}, 1)"
+	"print dim(c&{}, 1)"
+	"print dim(d${}, 1)",
+	"-1\n-1\n-1\n-1\n",
+	},
+	{"vector_ref_test",
+	"local dim a%{4}\n"
+	"local b%{} = a%{}\n"
+	"c%{} := a%{}\n"
+	"a%{} = 1, 2, 3\n"
+	"for i% := 0 to dim(c%{},1)\n"
+	"print c%{i%}\n"
+	"next\n",
+	"1\n2\n3\n0\n0\n"
+	},
+	{"vector_copy",
+	"dim a%{10}\n"
+	"dim b%(11)\n"
+	"dim c%{10}\n"
+	"c%{} = 11\n"
+	"b%() = 10\n"
+	"copy(a%{}, b%())\n"
+	"for i% := 0 to dim(a%{}, 1)\n"
+	"print a%{i%}\n"
+	"next\n"
+	"copy(a%{}, c%{})\n"
+	"for i% = 0 to dim(a%{}, 1)\n"
+	"print a%{i%}\n"
+	"next\n",
+	"10\n10\n10\n10\n10\n10\n10\n10\n10\n10\n10\n"
+	"11\n11\n11\n11\n11\n11\n11\n11\n11\n11\n11\n",
+	},
+	{"vector_as_param",
+	"dim a%{}\n"
+	"PROCPassVector(a%{})\n"
+	"def PROCPassVector(a%{})\n"
+	"print dim(a%{}, 1)\n"
+	"endproc\n",
+	"-1\n",
+	},
+	{"vector_as_func",
+	"local a%{} = FNMakeVector%{}\n"
+	"for i% := 0 to dim(a%{}, 1)\n"
+	"print a%{i%}\n"
+	"next\n"
+	"def FNMakeVector%{}\n"
+	"local dim a%{9}\n"
+	"a%{} = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9\n"
+	"<-a%{}\n",
+	"0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n",
+	},
+	{"negative_array_dim",
+	"onerror print err enderror\n"
+	"b% := -1\n"
+	"dim a%(b%)\n",
 	"10\n",
 	},
 };

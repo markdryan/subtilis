@@ -50,6 +50,10 @@ static const char *const prv_fixed_type_names[] = {
 	"array of ints", /* SUBTILIS_TYPE_ARRAY_INTEGER */
 	"array of bytes", /* SUBTILIS_TYPE_ARRAY_BYTE */
 	"array of strings", /* SUBTILIS_TYPE_ARRAY_STRING */
+	"vector of reals", /* SUBTILIS_TYPE_VECTOR_REAL */
+	"vector of ints", /* SUBTILIS_TYPE_VECTOR_INTEGER */
+	"vector of bytes", /* SUBTILIS_TYPE_VECTOR_BYTE */
+	"vector of strings", /* SUBTILIS_TYPE_VECTOR_STRING */
 	"local buffer",  /* SUBTILIS_TYPE_LOCAL_BUFFER */
 };
 
@@ -117,6 +121,10 @@ subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 		case SUBTILIS_TYPE_ARRAY_INTEGER:
 		case SUBTILIS_TYPE_ARRAY_STRING:
 		case SUBTILIS_TYPE_ARRAY_BYTE:
+		case SUBTILIS_TYPE_VECTOR_REAL:
+		case SUBTILIS_TYPE_VECTOR_INTEGER:
+		case SUBTILIS_TYPE_VECTOR_STRING:
+		case SUBTILIS_TYPE_VECTOR_BYTE:
 			stype->int_regs++;
 			break;
 		case SUBTILIS_TYPE_REAL:
@@ -160,10 +168,4 @@ subtilis_type_section_dup(subtilis_type_section_t *stype)
 {
 	stype->ref_count++;
 	return stype;
-}
-
-bool dynamic_1d_array(const subtilis_type_t *typ)
-{
-	return (typ->params.array.num_dims == 1) &&
-	       (typ->params.array.dims[0] == SUBTILIS_DYNAMIC_DIMENSION);
 }

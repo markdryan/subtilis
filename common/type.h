@@ -33,6 +33,10 @@ typedef enum {
 	SUBTILIS_TYPE_ARRAY_INTEGER,
 	SUBTILIS_TYPE_ARRAY_BYTE,
 	SUBTILIS_TYPE_ARRAY_STRING,
+	SUBTILIS_TYPE_VECTOR_REAL,
+	SUBTILIS_TYPE_VECTOR_INTEGER,
+	SUBTILIS_TYPE_VECTOR_BYTE,
+	SUBTILIS_TYPE_VECTOR_STRING,
 	SUBTILIS_TYPE_LOCAL_BUFFER,
 	SUBTILIS_TYPE_MAX,
 } subtilis_type_type_t;
@@ -82,8 +86,6 @@ bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b);
 const char *subtilis_type_name(const subtilis_type_t *typ);
 subtilis_type_section_t *
 subtilis_type_section_dup(subtilis_type_section_t *stype);
-/* typ must be an array.  The function doesn't check. */
-bool dynamic_1d_array(const subtilis_type_t *typ);
 
 extern const subtilis_type_t subtilis_type_const_real;
 extern const subtilis_type_t subtilis_type_const_integer;

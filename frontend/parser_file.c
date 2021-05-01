@@ -335,7 +335,7 @@ static bool prv_block_operation_prep(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 
 	check_dims = (val->type.type == SUBTILIS_TYPE_STRING) ||
-		     dynamic_1d_array(&val->type);
+		     subtilis_type_if_is_vector(&val->type);
 
 	*val_reg = val->exp.ir_op.reg;
 

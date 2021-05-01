@@ -31,6 +31,7 @@ static void prv_local_array_ref(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	const char *tbuf;
 	subtilis_exp_t *e;
+	subtilis_type_t array_type;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -59,7 +60,57 @@ static void prv_local_array_ref(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_parser_create_array_ref(p, var_name, type, e, true, err);
+	subtilis_type_if_array_of(p, type, &array_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_parser_create_array_ref(p, var_name, &array_type, e, true,
+					 err);
+}
+
+static void prv_local_vector_ref(subtilis_parser_t *p, subtilis_token_t *t,
+				 const char *var_name, subtilis_type_t *type,
+				 subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_exp_t *e;
+	subtilis_type_t vector_type;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+	if (!((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "}"))) {
+		subtilis_error_set_expected(err, "}", tbuf, p->l->stream->name,
+					    p->l->line);
+		return;
+	}
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+
+	if (!((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "="))) {
+		subtilis_error_set_exp_expected(err, "= ", p->l->stream->name,
+						p->l->line);
+		return;
+	}
+
+	e = subtilis_parser_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_type_if_vector_of(p, type, &vector_type, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return;
+	}
+
+	subtilis_parser_create_array_ref(p, var_name, &vector_type, e, true,
+					 err);
 }
 
 void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
@@ -117,6 +168,12 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 	tbuf = subtilis_token_get_text(t);
 	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "(")) {
 		prv_local_array_ref(p, t, var_name, &type, err);
+		free(var_name);
+		return;
+	}
+
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "{")) {
+		prv_local_vector_ref(p, t, var_name, &type, err);
 		free(var_name);
 		return;
 	}
