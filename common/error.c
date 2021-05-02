@@ -198,6 +198,12 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_NOT_ARRAY */
 	{"%s is not an array\n", 1},
 
+	/* SUBTILIS_ERROR_NOT_VECTOR */
+	{"%s is not a vector\n", 1},
+
+	/* SUBTILIS_ERROR_NOT_ARRAY_OR_VECTOR */
+	{"%s is not an array or vector\n", 1},
+
 	/* SUBTILIS_ERROR_VARIABLE_BAD_LEVEL */
 	{"global variable %s must be declared at the top level\n", 1},
 
@@ -258,6 +264,10 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_LOCAL_OBSCURES_GLOBAL */
 	{"Global variable %s shadowed at the top level of main\n", 1},
+
+	/* SUBTILIS_ERROR_TEMPORARY_NOT_ALLOWED */
+
+	{"Temporary cannot be used in this context: %s\n", 1},
 
 	/* SUBTILIS_ERROR_ASS_BAD_REG */
 	{"%s is not a valid register name\n", 1},

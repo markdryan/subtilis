@@ -24,6 +24,11 @@ subtilis_exp_t *subtils_parser_read_array(subtilis_parser_t *p,
 					  subtilis_token_t *t,
 					  const char *var_name,
 					  subtilis_error_t *err);
+subtilis_exp_t *subtils_parser_read_vector(subtilis_parser_t *p,
+					   subtilis_token_t *t,
+					   const char *var_name,
+					   subtilis_error_t *err);
+
 subtilis_exp_t *
 subtils_parser_element_address(subtilis_parser_t *p, subtilis_token_t *t,
 			       const subtilis_symbol_t *s, size_t mem_reg,

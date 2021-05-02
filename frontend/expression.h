@@ -50,6 +50,9 @@ subtilis_exp_t *subtilis_exp_new_empty(const subtilis_type_t *type,
 				       subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_var(const subtilis_type_t *type,
 				     unsigned int reg, subtilis_error_t *err);
+subtilis_exp_t *subtilis_exp_new_tmp_var(const subtilis_type_t *type,
+					 unsigned int reg, char *tmp_name,
+					 subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_var_block(subtilis_parser_t *p,
 					   const subtilis_type_t *type,
 					   unsigned int mem_reg, size_t offset,

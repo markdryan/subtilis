@@ -69,7 +69,7 @@ size_t subtilis_array_type_size(const subtilis_type_t *type)
 
 /* Does not consume elements in e */
 
-void subtilis_array_type_init(subtilis_parser_t *p,
+void subtilis_array_type_init(subtilis_parser_t *p, const char *var_name,
 			      const subtilis_type_t *element_type,
 			      subtilis_type_t *type, subtilis_exp_t **e,
 			      size_t dims, subtilis_error_t *err)
@@ -87,30 +87,335 @@ void subtilis_array_type_init(subtilis_parser_t *p,
 
 	type->params.array.num_dims = dims;
 	for (i = 0; i < dims; i++) {
-		if (e[i]->type.type == SUBTILIS_TYPE_CONST_INTEGER)
+		if (e[i]->type.type == SUBTILIS_TYPE_CONST_INTEGER) {
+			if (e[i]->exp.ir_op.integer < 0) {
+				subtilis_error_bad_dim(err, var_name,
+						       p->l->stream->name,
+						       p->l->line);
+				return;
+			}
 			type->params.array.dims[i] = e[i]->exp.ir_op.integer;
-		else
+		} else {
 			type->params.array.dims[i] = SUBTILIS_DYNAMIC_DIMENSION;
+		}
 	}
 }
 
-void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
-				 subtilis_type_t *type, size_t loc,
-				 subtilis_exp_t **e,
+void subtilis_array_type_vector_init(subtilis_parser_t *p,
+				     const subtilis_type_t *element_type,
+				     subtilis_type_t *type,
+				     subtilis_error_t *err)
+{
+	subtilis_type_if_vector_of(p, element_type, type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	type->params.array.num_dims = 1;
+	type->params.array.dims[0] = SUBTILIS_DYNAMIC_DIMENSION;
+}
+
+void subtilis_array_type_zero_ref(subtilis_parser_t *p,
+				  const subtilis_type_t *type, size_t loc,
+				  size_t mem_reg, bool push,
+				  subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t base;
+	subtilis_exp_t *zero = NULL;
+	subtilis_exp_t *neg1 = NULL;
+
+	zero = subtilis_exp_new_int32(0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	zero = subtilis_type_if_exp_to_var(p, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	neg1 = subtilis_exp_new_int32(-1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	neg1 = subtilis_type_if_exp_to_var(p, neg1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_reference_type_set_size(p, mem_reg, loc, zero->exp.ir_op.reg,
+					 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_reference_type_set_destructor(p, type, mem_reg, loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.integer = ((int32_t)loc) + SUBTIILIS_ARRAY_DIMS_OFF;
+	base.reg = mem_reg;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_STOREO_I32,
+					  neg1->exp.ir_op, base, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (push)
+		subtilis_reference_type_push_reference(p, type, mem_reg, loc,
+						       err);
+
+cleanup:
+
+	subtilis_exp_delete(neg1);
+	subtilis_exp_delete(zero);
+}
+
+static void prv_clear_new_array(subtilis_parser_t *p, subtilis_type_t *type,
+				size_t loc, size_t sizee,
+				subtilis_ir_operand_t store_reg, size_t data,
+				subtilis_error_t *err)
+{
+	size_t el_size;
+	subtilis_type_t element_type;
+	subtilis_exp_t *zero;
+
+	zero = subtilis_exp_new_int32(0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	zero = subtilis_type_if_exp_to_var(p, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_type_if_element_type(p, type, &element_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	el_size = subtilis_type_if_size(&element_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if ((el_size & 3) == 0)
+		subtilis_builtin_memset_i32(p, data, sizee, zero->exp.ir_op.reg,
+					    err);
+	else
+		subtilis_builtin_memset_i8(p, data, sizee, zero->exp.ir_op.reg,
+					   err);
+cleanup:
+
+	subtilis_exp_delete(zero);
+}
+
+static void prv_1d_dynamic_alloc(subtilis_parser_t *p, size_t loc,
+				 subtilis_type_t *type, subtilis_exp_t *e,
 				 subtilis_ir_operand_t store_reg,
 				 subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t one;
+	subtilis_ir_operand_t zero;
+	subtilis_ir_operand_t condee;
+	subtilis_ir_operand_t size;
+	size_t data;
+	subtilis_ir_operand_t ok_label;
+	subtilis_ir_operand_t error_label;
+	subtilis_exp_t *sizee = NULL;
+
+	error_label = subtilis_array_type_error_label(p);
+	ok_label.label = subtilis_ir_section_new_label(p->current);
+
+	zero.integer = 0;
+	condee.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_GTEI_I32, e->exp.ir_op, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  condee, ok_label, error_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, ok_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = ((int32_t)loc) + SUBTIILIS_ARRAY_DIMS_OFF;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_STOREO_I32,
+					  e->exp.ir_op, store_reg, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	one.integer = 1;
+	size.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, e->exp.ir_op, one, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	sizee = subtilis_exp_new_int32_var(size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	sizee = subtilis_type_if_data_size(p, type, sizee, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	data = subtilis_reference_type_alloc(p, type, loc, store_reg.reg,
+					     sizee->exp.ir_op.reg, false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_clear_new_array(p, type, loc, sizee->exp.ir_op.reg, store_reg, data,
+			    err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_reference_type_push_reference(p, type, store_reg.reg, loc,
+					       err);
+
+cleanup:
+
+	subtilis_exp_delete(sizee);
+}
+
+static void prv_dynamic_vector_alloc(subtilis_parser_t *p, size_t loc,
+				     subtilis_type_t *type, subtilis_exp_t *e,
+				     subtilis_ir_operand_t store_reg,
+				     subtilis_error_t *err)
+{
+	subtilis_ir_operand_t neg_label;
+	subtilis_ir_operand_t non_neg_label;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t condee;
+	subtilis_ir_operand_t zero;
+	subtilis_ir_operand_t one;
+	subtilis_ir_operand_t end_label;
+	subtilis_ir_operand_t size;
+	size_t data;
+	subtilis_exp_t *sizee = NULL;
+
+	end_label.label = subtilis_ir_section_new_label(p->current);
+	neg_label.label = subtilis_ir_section_new_label(p->current);
+	non_neg_label.label = subtilis_ir_section_new_label(p->current);
+
+	zero.integer = 0;
+	condee.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LTI_I32, e->exp.ir_op, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  condee, neg_label, non_neg_label,
+					  err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, neg_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_array_type_zero_ref(p, type, loc, store_reg.reg, false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, non_neg_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op1.integer = ((int32_t)loc) + SUBTIILIS_ARRAY_DIMS_OFF;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_STOREO_I32,
+					  e->exp.ir_op, store_reg, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	one.integer = 1;
+	size.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, e->exp.ir_op, one, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	sizee = subtilis_exp_new_int32_var(size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	sizee = subtilis_type_if_data_size(p, type, sizee, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	data = subtilis_reference_type_alloc(p, type, loc, store_reg.reg,
+					     sizee->exp.ir_op.reg, false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_clear_new_array(p, type, loc, sizee->exp.ir_op.reg, store_reg, data,
+			    err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, end_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_reference_type_push_reference(p, type, store_reg.reg, loc,
+					       err);
+
+cleanup:
+
+	subtilis_exp_delete(sizee);
+}
+
+void subtilis_array_type_vector_alloc(subtilis_parser_t *p, size_t loc,
+				      subtilis_type_t *type, subtilis_exp_t *e,
+				      subtilis_ir_operand_t store_reg,
+				      subtilis_error_t *err)
+{
+	if (e->type.type == SUBTILIS_TYPE_CONST_INTEGER) {
+		if (e->exp.ir_op.integer < 0) {
+			subtilis_array_type_zero_ref(p, type, loc,
+						     store_reg.reg, true, err);
+			return;
+		}
+
+		e = subtilis_type_if_dup(e, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		e = subtilis_type_if_exp_to_var(p, e, err);
+		if (err->type == SUBTILIS_ERROR_OK)
+			prv_1d_dynamic_alloc(p, loc, type, e, store_reg, err);
+		subtilis_exp_delete(e);
+	} else {
+		prv_dynamic_vector_alloc(p, loc, type, e, store_reg, err);
+	}
+}
+
+void subtilis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
+				  subtilis_type_t *type, size_t loc,
+				  subtilis_exp_t **e,
+				  subtilis_ir_operand_t store_reg,
+				  subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op;
 	subtilis_ir_operand_t op1;
 	size_t i;
-	size_t el_size;
-	subtilis_type_t element_type;
 	int32_t offset;
 	subtilis_exp_t *sizee = NULL;
-	subtilis_exp_t *zero = NULL;
 
 	if (loc + subtilis_array_type_size(type) > 0x7fffffff) {
 		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	/*
+	 * We have a separate allocation path for dynamically sized
+	 * 1-dimensional arrays.
+	 */
+
+	if ((type->params.array.num_dims == 1) &&
+	    (type->params.array.dims[0] == SUBTILIS_DYNAMIC_DIMENSION)) {
+		prv_1d_dynamic_alloc(p, loc, type, e[0], store_reg, err);
 		return;
 	}
 
@@ -136,14 +441,6 @@ void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 		offset += sizeof(int32_t);
 	}
 
-	zero = subtilis_exp_new_int32(0, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	zero = subtilis_type_if_exp_to_var(p, zero, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
 	sizee = subtilis_type_if_data_size(p, type, sizee, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -157,24 +454,11 @@ void subtlis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_type_if_element_type(p, type, &element_type, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	el_size = subtilis_type_if_size(&element_type, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	if ((el_size & 3) == 0)
-		subtilis_builtin_memset_i32(p, op.reg, sizee->exp.ir_op.reg,
-					    zero->exp.ir_op.reg, err);
-	else
-		subtilis_builtin_memset_i8(p, op.reg, sizee->exp.ir_op.reg,
-					   zero->exp.ir_op.reg, err);
+	prv_clear_new_array(p, type, loc, sizee->exp.ir_op.reg, store_reg,
+			    op.reg, err);
 
 cleanup:
 
-	subtilis_exp_delete(zero);
 	subtilis_exp_delete(sizee);
 }
 
@@ -188,12 +472,25 @@ static void prv_copy_ref_base(subtilis_parser_t *p, const subtilis_type_t *t,
 	subtilis_ir_operand_t soffset;
 	subtilis_ir_operand_t doffset;
 	subtilis_ir_operand_t ref_start;
+	subtilis_ir_operand_t size;
 	subtilis_ir_operand_t data;
+	subtilis_ir_operand_t ref_label;
+	subtilis_ir_operand_t skip_ref_label;
 	size_t i;
+	bool check_size = false;
 
 	/* TODO: This is platform specific */
 
-	size_t ints_to_copy = 3 + (t->params.array.num_dims);
+	/* copy destructor + array dimensions */
+
+	size_t ints_to_copy = 1 + (t->params.array.num_dims);
+
+	if (subtilis_type_if_is_vector(t)) {
+		check_size = true;
+		ref_label.label = subtilis_ir_section_new_label(p->current);
+		skip_ref_label.label =
+		    subtilis_ir_section_new_label(p->current);
+	}
 
 	soffset.integer = SUBTIILIS_ARRAY_SIZE_OFF + source_offset;
 	doffset.integer = SUBTIILIS_ARRAY_SIZE_OFF + dest_offset;
@@ -208,6 +505,57 @@ static void prv_copy_ref_base(subtilis_parser_t *p, const subtilis_type_t *t,
 		ref_start = dest_reg;
 	}
 
+	size.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, source_reg, soffset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_STOREO_I32, size,
+					  dest_reg, doffset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	soffset.integer += sizeof(int32_t);
+	doffset.integer += sizeof(int32_t);
+
+	if (check_size) {
+		subtilis_ir_section_add_instr_reg(
+		    p->current, SUBTILIS_OP_INSTR_JMPC, size, ref_label,
+		    skip_ref_label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		subtilis_ir_section_add_label(p->current, ref_label.label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	data.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, source_reg, soffset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_STOREO_I32, data,
+					  dest_reg, doffset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (ref) {
+		subtilis_ir_section_add_instr_no_reg(
+		    p->current, SUBTILIS_OP_INSTR_REF, data, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	if (check_size) {
+		subtilis_ir_section_add_label(p->current, skip_ref_label.label,
+					      err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	soffset.integer += sizeof(int32_t);
+	doffset.integer += sizeof(int32_t);
+
 	for (i = 0; i < ints_to_copy; i++) {
 		data.reg = subtilis_ir_section_add_instr(
 		    p->current, SUBTILIS_OP_INSTR_LOADO_I32, source_reg,
@@ -220,13 +568,6 @@ static void prv_copy_ref_base(subtilis_parser_t *p, const subtilis_type_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
-		if (ref && (soffset.integer ==
-			    source_offset + SUBTIILIS_ARRAY_DATA_OFF)) {
-			subtilis_ir_section_add_instr_no_reg(
-			    p->current, SUBTILIS_OP_INSTR_REF, data, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-		}
 		soffset.integer += sizeof(int32_t);
 		doffset.integer += sizeof(int32_t);
 	}
@@ -278,12 +619,13 @@ cleanup:
 }
 
 /*
- * Initialise a temporary reference on the caller's stack with the contents
- * of an array variable on the callee's stack.  This is called directly after
- * the callee's ret has executed so his stack is still presevered.
+ * Initialise a temporary reference on the caller's stack with the
+ * contents of an array variable on the callee's stack.  This is called
+ * directly after the callee's ret has executed so his stack is still
+ * presevered.
  *
- * TODO: This is a bit risky though.  Might be better, and faster, to allocate
- * space for this variable on the caller's stack.
+ * TODO: This is a bit risky though.  Might be better, and faster, to
+ * allocate space for this variable on the caller's stack.
  */
 
 void subtlis_array_type_copy_ret(subtilis_parser_t *p, const subtilis_type_t *t,
@@ -304,7 +646,8 @@ void subtlis_array_type_copy_ret(subtilis_parser_t *p, const subtilis_type_t *t,
 }
 
 /*
- * t1 is the target array.  If it has a dynamic dim that's treated as a match.
+ * t1 is the target array.  If it has a dynamic dim that's treated as a
+ * match.
  */
 
 void subtilis_array_type_match(subtilis_parser_t *p, const subtilis_type_t *t1,
@@ -336,7 +679,7 @@ void subtilis_array_type_match(subtilis_parser_t *p, const subtilis_type_t *t1,
 }
 
 void subtilis_array_type_assign_ref(subtilis_parser_t *p,
-				    const subtilis_type_array_t *dest_type,
+				    const subtilis_type_t *type,
 				    size_t dest_mem_reg, size_t dest_loc,
 				    size_t source_reg, subtilis_error_t *err)
 {
@@ -345,9 +688,11 @@ void subtilis_array_type_assign_ref(subtilis_parser_t *p,
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t op2;
 	size_t copy_reg;
+	const subtilis_type_array_t *dest_type = &type->params.array;
+	bool check_size = subtilis_type_if_is_vector(type);
 
 	subtilis_reference_type_assign_ref(p, dest_mem_reg, dest_loc,
-					   source_reg, err);
+					   source_reg, check_size, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -377,7 +722,9 @@ void subtilis_array_type_assign_ref(subtilis_parser_t *p,
 void subtilis_array_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
 				       subtilis_exp_t *e, subtilis_error_t *err)
 {
-	subtilis_reference_type_assign_to_reg(p, reg, e, false, err);
+	bool check_size = subtilis_type_if_is_vector(&e->type);
+
+	subtilis_reference_type_assign_to_reg(p, reg, e, check_size, err);
 }
 
 /* Does not consume e.  Does consume  max_dim */
@@ -455,20 +802,21 @@ subtilis_exp_t *subtilis_array_size_calc(subtilis_parser_t *p,
 	int64_t array_size = 1;
 
 	/*
-	 * TODO: This whole thing is 32 bit specific.  At least the pointer
-	 * needs to be platform specific although we may still keep maximum
-	 * array sizes to 32 bits.
+	 * TODO: This whole thing is 32 bit specific.  At least the
+	 * pointer needs to be platform specific although we may still
+	 * keep maximum array sizes to 32 bits.
 	 */
 
 	/* TODO:
-	 * I don't see any way to detect whether the array dimensions overflow
-	 * 32 bits. For constants we can use 64 bit integers to store the size.
-	 * This would then limit us to using 32 bits for the array size, even on
-	 * 64 bit builds (unless we resort to instrinsics) as there
-	 * are no 128 bit integers in C.  For the ARM2 backend, there is
-	 * no way to detect overflow of dynamic vars.  This could be done on
-	 * StrongARM using UMULL.  Perhaps we could execute different code on
-	 * SA here.  For now, be careful with those array bounds!
+	 * I don't see any way to detect whether the array dimensions
+	 * overflow 32 bits. For constants we can use 64 bit integers to
+	 * store the size. This would then limit us to using 32 bits for
+	 * the array size, even on 64 bit builds (unless we resort to
+	 * instrinsics) as there are no 128 bit integers in C.  For the
+	 * ARM2 backend, there is no way to detect overflow of dynamic
+	 * vars.  This could be done on StrongARM using UMULL.  Perhaps
+	 * we could execute different code on SA here.  For now, be
+	 * careful with those array bounds!
 	 */
 
 	for (i = 0; i < index_count; i++) {
@@ -476,7 +824,7 @@ subtilis_exp_t *subtilis_array_size_calc(subtilis_parser_t *p,
 			non_const_dim = true;
 			continue;
 		}
-		if (e[i]->exp.ir_op.integer <= 0) {
+		if (e[i]->exp.ir_op.integer < 0) {
 			subtilis_error_bad_dim(err, var_name,
 					       p->l->stream->name, p->l->line);
 			return NULL;
@@ -587,11 +935,12 @@ cleanup:
 }
 
 /*
- * Functions that use arrays will typically contain a lot of error checks and
- * each of these checks can lead to code being called that generates an error.
- * We don't want to duplicate that code for each error, so we create the error
- * generation code once per function when it's first needed and retain the label
- * in the section so it can jumped to when needed.
+ * Functions that use arrays will typically contain a lot of error
+ * checks and each of these checks can lead to code being called that
+ * generates an error. We don't want to duplicate that code for each
+ * error, so we create the error generation code once per function when
+ * it's first needed and retain the label in the section so it can
+ * jumped to when needed.
  */
 
 subtilis_ir_operand_t subtilis_array_type_error_label(subtilis_parser_t *p)
@@ -805,20 +1154,21 @@ subtilis_array_index_calc(subtilis_parser_t *p, const char *var_name,
 	offset = loc + SUBTIILIS_ARRAY_DIMS_OFF;
 
 	/*
-	 * First we compute the constant part of the array indexing.  This can
-	 * all be done at compile time if both the indexes and the dimensions
-	 * are known to the compiler.  We start with the final index and work
-	 * our way toward the first index.  Two sizes are returned here.
+	 * First we compute the constant part of the array indexing.
+	 * This can all be done at compile time if both the indexes and
+	 * the dimensions are known to the compiler.  We start with the
+	 * final index and work our way toward the first index.  Two
+	 * sizes are returned here.
 	 *
 	 * array_size - the offset in elements from the beginning of the
-	 * array we know we need to skip.  This does not include the offset
-	 * of the last index, which is added later.
+	 * array we know we need to skip.  This does not include the
+	 * offset of the last index, which is added later.
 	 *
-	 * block_size - the cummulative product elements of all the trailing
-	 * dimensions that we've processed.
-	 * dyn_start - contains the first index that could not be processed
-	 * at compile time.  If dyn_start == indxex_count -1 none of the indices
-	 * could be processed at compile time.
+	 * block_size - the cummulative product elements of all the
+	 * trailing dimensions that we've processed. dyn_start -
+	 * contains the first index that could not be processed at
+	 * compile time.  If dyn_start == indxex_count -1 none of the
+	 * indices could be processed at compile time.
 	 */
 
 	array_size = prv_check_constant_dims(p, e, index_count, var_name, type,
@@ -907,9 +1257,9 @@ subtilis_array_index_calc(subtilis_parser_t *p, const char *var_name,
 	subtilis_exp_delete(blocke);
 
 	/*
-	 * Check and add the offset for the final index.  If it's constant and
-	 * the last dimension is constant we'll have already checked it but hey
-	 * hum.
+	 * Check and add the offset for the final index.  If it's
+	 * constant and the last dimension is constant we'll have
+	 * already checked it but hey hum.
 	 */
 
 	prv_check_last_index(p, var_name, e, type, last_offset, mem_reg, err);
@@ -1074,9 +1424,10 @@ subtilis_exp_t *subtilis_array_get_dim(subtilis_parser_t *p, subtilis_exp_t *ar,
 	subtilis_exp_t *e = NULL;
 
 	/*
-	 * This is unfortunate as DIM(a()) may generate one add instruction
-	 * for the array reference even though we don't actually need it.
-	 * Hopefully, the optimiser will be able to get rid of it.
+	 * This is unfortunate as DIM(a()) may generate one add
+	 * instruction for the array reference even though we don't
+	 * actually need it. Hopefully, the optimiser will be able to
+	 * get rid of it.
 	 */
 
 	num_dims = ar->type.params.array.num_dims;
@@ -1210,7 +1561,8 @@ void subtilis_array_type_deref_els(subtilis_parser_t *p, size_t data_reg,
 void subtilis_array_type_copy_els(subtilis_parser_t *p,
 				  const subtilis_type_t *el_type,
 				  size_t data_reg, size_t size_reg,
-				  size_t src_reg, subtilis_error_t *err)
+				  size_t src_reg, bool deref,
+				  subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
@@ -1249,9 +1601,11 @@ void subtilis_array_type_copy_els(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_reference_type_deref(p, counter.reg, 0, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+	if (deref) {
+		subtilis_reference_type_deref(p, counter.reg, 0, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 
 	subtilis_reference_type_init_ref(p, counter.reg, 0, counter2.reg, true,
 					 err);
@@ -1284,4 +1638,392 @@ void subtilis_array_type_copy_els(subtilis_parser_t *p,
 		return;
 
 	subtilis_ir_section_add_label(p->current, end.label, err);
+}
+
+void subtilis_array_append_scalar(subtilis_parser_t *p, subtilis_exp_t *a1,
+				  subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	subtilis_type_t el_type;
+	size_t dest_reg;
+	subtilis_ir_operand_t a1_size;
+	subtilis_ir_operand_t a2_size;
+	size_t new_size_reg;
+	subtilis_ir_operand_t op1;
+
+	if (!subtilis_type_if_is_vector(&a1->type)) {
+		subtilis_error_set_expected(err, "dynamic 1d array",
+					    subtilis_type_name(&a1->type),
+					    p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
+	a2 = subtilis_type_if_exp_to_var(p, a2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_type_if_element_type(p, &a1->type, &el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (el_type.type != a2->type.type) {
+		subtilis_error_set_array_type_mismatch(err, p->l->stream->name,
+						       p->l->line);
+		goto cleanup;
+	}
+
+	op1.integer = subtilis_type_if_size(&el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a1_size.reg =
+	    subtilis_reference_type_get_size(p, a1->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a2_size.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	new_size_reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, a1_size, a2_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	dest_reg =
+	    subtilis_reference_type_grow(p, 0, a1->exp.ir_op.reg, a1_size.reg,
+					 new_size_reg, a2_size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_type_if_assign_to_new_mem(p, dest_reg, 0, a2, err);
+	a2 = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a2 = subtilis_type_if_load_from_mem(p, &subtilis_type_integer,
+					    a1->exp.ir_op.reg,
+					    SUBTIILIS_ARRAY_DIMS_OFF, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.integer = 1;
+	a2->exp.ir_op.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, a2->exp.ir_op, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_type_if_assign_to_mem(p, a1->exp.ir_op.reg,
+				       SUBTIILIS_ARRAY_DIMS_OFF, a2, err);
+	a2 = NULL;
+
+cleanup:
+	subtilis_exp_delete(a2);
+	subtilis_exp_delete(a1);
+}
+
+static size_t prv_div_by_const(subtilis_parser_t *p, size_t reg,
+			       int32_t divisor, subtilis_error_t *err)
+{
+	subtilis_exp_t *a1;
+	subtilis_exp_t *a2 = NULL;
+
+	a1 = subtilis_exp_new_int32_var(reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	a2 = subtilis_exp_new_int32(divisor, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(a1);
+		return SIZE_MAX;
+	}
+
+	a1 = subtilis_type_if_div(p, a1, a2, err);
+	reg = a1->exp.ir_op.reg;
+	subtilis_exp_delete(a1);
+
+	return reg;
+}
+
+static void prv_check_arrays_compat(subtilis_parser_t *p,
+				    subtilis_type_t *el_type,
+				    subtilis_exp_t *a1, subtilis_exp_t *a2,
+				    subtilis_error_t *err)
+{
+	subtilis_type_t el_type2;
+
+	if (a1->type.type != a2->type.type) {
+		/*
+		 * Check to see if a2 is an array.  We can append an array to a
+		 * vector, but not the other way around.
+		 */
+
+		/*
+		 * Number of dimensions aren't important here.  We're just going
+		 * to copy all the elements from a2.
+		 */
+
+		if (!subtilis_type_if_is_array(&a2->type)) {
+			subtilis_error_set_array_type_mismatch(
+			    err, p->l->stream->name, p->l->line);
+			return;
+		}
+
+		subtilis_type_if_element_type(p, &a2->type, &el_type2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (el_type->type != el_type2.type)
+			subtilis_error_set_array_type_mismatch(
+			    err, p->l->stream->name, p->l->line);
+	}
+}
+
+void subtilis_array_append_scalar_array(subtilis_parser_t *p,
+					subtilis_exp_t *a1, subtilis_exp_t *a2,
+					subtilis_error_t *err)
+{
+	subtilis_type_t el_type;
+	subtilis_ir_operand_t el_size;
+	size_t dest_reg;
+	subtilis_ir_operand_t a1_size;
+	subtilis_ir_operand_t a2_size;
+	subtilis_ir_operand_t a2_size_zero;
+	subtilis_ir_operand_t a2_size_gt_zero;
+	subtilis_ir_operand_t a2_data;
+	size_t new_size_reg;
+	subtilis_ir_operand_t op1;
+	bool a2_dynamic;
+
+	if (!subtilis_type_if_is_vector(&a1->type)) {
+		subtilis_error_set_expected(err, "vector",
+					    subtilis_type_name(&a1->type),
+					    p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
+	subtilis_type_if_element_type(p, &a1->type, &el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_check_arrays_compat(p, &el_type, a1, a2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	el_size.integer = subtilis_type_if_size(&el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a2_size.reg =
+	    subtilis_reference_type_get_size(p, a2->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a2_dynamic = subtilis_type_if_is_vector(&a2->type);
+	if (a2_dynamic) {
+		a2_size_zero.label = subtilis_ir_section_new_label(p->current);
+		a2_size_gt_zero.label =
+		    subtilis_ir_section_new_label(p->current);
+
+		subtilis_ir_section_add_instr_reg(
+		    p->current, SUBTILIS_OP_INSTR_JMPC, a2_size,
+		    a2_size_gt_zero, a2_size_zero, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		subtilis_ir_section_add_label(p->current, a2_size_gt_zero.label,
+					      err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	a1_size.reg =
+	    subtilis_reference_type_get_size(p, a1->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	new_size_reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, a1_size, a2_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	dest_reg =
+	    subtilis_reference_type_grow(p, 0, a1->exp.ir_op.reg, a1_size.reg,
+					 new_size_reg, a2_size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a2_data.reg = subtilis_reference_get_data(p, a2->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_reference_type_memcpy_dest(p, dest_reg, a2_data.reg,
+					    a2_size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_delete(a2);
+	a2 = subtilis_type_if_load_from_mem(p, &subtilis_type_integer,
+					    a1->exp.ir_op.reg,
+					    SUBTIILIS_ARRAY_DIMS_OFF, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (el_size.integer > 1) {
+		op1.reg =
+		    prv_div_by_const(p, a2_size.reg, el_size.integer, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	} else {
+		op1.reg = a2_size.reg;
+	}
+
+	a2->exp.ir_op.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, a2->exp.ir_op, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_type_if_assign_to_mem(p, a1->exp.ir_op.reg,
+				       SUBTIILIS_ARRAY_DIMS_OFF, a2, err);
+	a2 = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (a2_dynamic)
+		subtilis_ir_section_add_label(p->current, a2_size_zero.label,
+					      err);
+
+cleanup:
+	subtilis_exp_delete(a2);
+	subtilis_exp_delete(a1);
+}
+
+void subtilis_array_append_ref_array(subtilis_parser_t *p, subtilis_exp_t *a1,
+				     subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	subtilis_type_t el_type;
+	subtilis_ir_operand_t el_size;
+	size_t dest_reg;
+	subtilis_ir_operand_t a1_size;
+	subtilis_ir_operand_t a2_size;
+	subtilis_ir_operand_t a2_size_zero;
+	subtilis_ir_operand_t a2_size_gt_zero;
+	subtilis_ir_operand_t a2_data;
+	size_t new_size_reg;
+	subtilis_ir_operand_t op1;
+	bool a2_dynamic;
+
+	if (!subtilis_type_if_is_vector(&a1->type)) {
+		subtilis_error_set_expected(err, "vector",
+					    subtilis_type_name(&a1->type),
+					    p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
+	subtilis_type_if_element_type(p, &a1->type, &el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_check_arrays_compat(p, &el_type, a1, a2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	el_size.integer = subtilis_type_if_size(&el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a2_size.reg =
+	    subtilis_reference_type_get_size(p, a2->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a2_dynamic = subtilis_type_if_is_vector(&a2->type);
+	if (a2_dynamic) {
+		a2_size_zero.label = subtilis_ir_section_new_label(p->current);
+		a2_size_gt_zero.label =
+		    subtilis_ir_section_new_label(p->current);
+
+		subtilis_ir_section_add_instr_reg(
+		    p->current, SUBTILIS_OP_INSTR_JMPC, a2_size,
+		    a2_size_gt_zero, a2_size_zero, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		subtilis_ir_section_add_label(p->current, a2_size_gt_zero.label,
+					      err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	a1_size.reg =
+	    subtilis_reference_type_get_size(p, a1->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	new_size_reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, a1_size, a2_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	dest_reg =
+	    subtilis_reference_type_grow(p, 0, a1->exp.ir_op.reg, a1_size.reg,
+					 new_size_reg, a2_size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a2_data.reg = subtilis_reference_get_data(p, a2->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_array_type_copy_els(p, &el_type, dest_reg, a2_size.reg,
+				     a2_data.reg, false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_exp_delete(a2);
+	a2 = subtilis_type_if_load_from_mem(p, &subtilis_type_integer,
+					    a1->exp.ir_op.reg,
+					    SUBTIILIS_ARRAY_DIMS_OFF, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op1.reg = prv_div_by_const(p, a2_size.reg, el_size.integer, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	a2->exp.ir_op.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, a2->exp.ir_op, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_type_if_assign_to_mem(p, a1->exp.ir_op.reg,
+				       SUBTIILIS_ARRAY_DIMS_OFF, a2, err);
+	a2 = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (a2_dynamic)
+		subtilis_ir_section_add_label(p->current, a2_size_zero.label,
+					      err);
+
+cleanup:
+	subtilis_exp_delete(a2);
+	subtilis_exp_delete(a1);
+}
+
+void subtilis_array_type_dup(subtilis_exp_t *src, subtilis_exp_t *dst,
+			     subtilis_error_t *err)
+{
+	if (src->temporary) {
+		dst->temporary = malloc(strlen(src->temporary) + 1);
+		if (!dst->temporary) {
+			subtilis_error_set_oom(err);
+			return;
+		}
+		strcpy(dst->temporary, src->temporary);
+	} else {
+		dst->temporary = NULL;
+	}
+	dst->type = src->type;
+	dst->exp.ir_op.reg = src->exp.ir_op.reg;
 }

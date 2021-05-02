@@ -292,6 +292,7 @@ subtilis_type_if subtilis_type_if_const_string = {
 	.is_numeric = false,
 	.is_integer = false,
 	.is_array = false,
+	.is_vector = false,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = NULL,
 	.data_size = NULL,
@@ -302,6 +303,7 @@ subtilis_type_if subtilis_type_if_const_string = {
 	.zero_reg = NULL,
 	.copy_ret = NULL,
 	.array_of = NULL,
+	.vector_of = NULL,
 	.element_type = NULL,
 	.exp_to_var = prv_exp_to_var_const,
 	.copy_var = NULL,
@@ -408,6 +410,19 @@ static void prv_array_of(const subtilis_type_t *element_type,
 	type->type = SUBTILIS_TYPE_ARRAY_STRING;
 }
 
+static void prv_vector_of(const subtilis_type_t *element_type,
+			  subtilis_type_t *type)
+{
+	type->type = SUBTILIS_TYPE_VECTOR_STRING;
+}
+
+static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
+		       subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	subtilis_string_type_add_eq(p, a1->exp.ir_op.reg, 0, a2, err);
+	subtilis_exp_delete(a1);
+}
+
 static subtilis_exp_t *prv_load_from_mem(subtilis_parser_t *p, size_t mem_reg,
 					 size_t loc, subtilis_error_t *err)
 {
@@ -431,6 +446,14 @@ static void prv_assign_to_mem(subtilis_parser_t *p, size_t mem_reg, size_t loc,
 					e, err);
 }
 
+static void prv_assign_to_new_mem(subtilis_parser_t *p, size_t mem_reg,
+				  size_t loc, subtilis_exp_t *e,
+				  subtilis_error_t *err)
+{
+	subtilis_string_type_assign_new_ref(p, &subtilis_type_string, mem_reg,
+					    loc, e, err);
+}
+
 static void prv_dup(subtilis_exp_t *e1, subtilis_exp_t *e2,
 		    subtilis_error_t *err)
 {
@@ -441,6 +464,12 @@ static void prv_copy_col(subtilis_parser_t *p, subtilis_exp_t *e1,
 			 subtilis_exp_t *e2, subtilis_error_t *err)
 {
 	subtilis_collection_copy_scalar(p, e1, e2, true, err);
+}
+
+static void prv_element_type(const subtilis_type_t *type,
+			     subtilis_type_t *element_type)
+{
+	element_type->type = SUBTILIS_TYPE_BYTE;
 }
 
 static subtilis_exp_t *prv_compare_fixed_len(subtilis_parser_t *p, size_t a1,
@@ -1088,6 +1117,7 @@ subtilis_type_if subtilis_type_if_string = {
 	.is_numeric = false,
 	.is_integer = false,
 	.is_array = false,
+	.is_vector = false,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = subtilis_string_type_size,
 	.data_size = prv_data_size,
@@ -1098,18 +1128,21 @@ subtilis_type_if subtilis_type_if_string = {
 	.zero_reg = prv_zero_reg,
 	.copy_ret = subtilis_reference_type_copy_ret,
 	.array_of = prv_array_of,
-	.element_type = NULL,
+	.vector_of = prv_vector_of,
+	.element_type = prv_element_type,
 	.exp_to_var = prv_exp_to_var,
 	.copy_var = NULL,
 	.dup = prv_dup,
 	.copy_col = prv_copy_col,
 	.assign_reg = subtilis_string_type_assign_to_reg,
 	.assign_mem = prv_assign_to_mem,
+	.assign_new_mem = prv_assign_to_new_mem,
 	.indexed_write = NULL,
 	.indexed_add = NULL,
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
 	.set = NULL,
+	.append = prv_append,
 	.indexed_address = NULL,
 	.load_mem = prv_load_from_mem,
 	.to_int32 = NULL,

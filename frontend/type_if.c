@@ -42,6 +42,10 @@ static subtilis_type_if *prv_type_map[] = {
 	&subtilis_type_array_int32,
 	&subtilis_type_array_byte,
 	&subtilis_type_array_string,
+	&subtilis_type_vector_float64,
+	&subtilis_type_vector_int32,
+	&subtilis_type_vector_byte,
+	&subtilis_type_vector_string,
 	&subtilis_type_if_local_buffer,
 	NULL,
 };
@@ -281,6 +285,20 @@ void subtilis_type_if_array_of(subtilis_parser_t *p,
 	fn(element_type, type);
 }
 
+void subtilis_type_if_vector_of(subtilis_parser_t *p,
+				const subtilis_type_t *element_type,
+				subtilis_type_t *type, subtilis_error_t *err)
+{
+	subtilis_type_if_typeof_t fn;
+
+	fn = prv_type_map[element_type->type]->vector_of;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(element_type, type);
+}
+
 void subtilis_type_if_const_of(const subtilis_type_t *type,
 			       subtilis_type_t *const_type,
 			       subtilis_error_t *err)
@@ -336,14 +354,17 @@ subtilis_exp_t *subtilis_type_if_dup(subtilis_exp_t *e, subtilis_error_t *err)
 	fn = prv_type_map[e->type.type]->dup;
 	if (!fn) {
 		subtilis_error_set_assertion_failed(err);
-		return NULL;
+		goto cleanup;
 	}
 	fn(e, exp, err);
-	if (err->type != SUBTILIS_ERROR_OK) {
-		free(exp);
-		return NULL;
-	}
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	return exp;
+
+cleanup:
+	subtilis_exp_delete(exp);
+	return NULL;
 }
 
 void subtilis_type_if_memcpy(subtilis_parser_t *p, subtilis_exp_t *e1,
@@ -395,6 +416,25 @@ void subtilis_type_if_assign_to_mem(subtilis_parser_t *p, size_t mem_reg,
 	fn(p, mem_reg, loc, e, err);
 }
 
+void subtilis_type_if_assign_to_new_mem(subtilis_parser_t *p, size_t mem_reg,
+					size_t loc, subtilis_exp_t *e,
+					subtilis_error_t *err)
+{
+	subtilis_type_if_sizet2_exp_t fn;
+
+	if (loc > 0x7fffffff) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	fn = prv_type_map[e->type.type]->assign_new_mem;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(p, mem_reg, loc, e, err);
+}
+
 subtilis_exp_t *subtilis_type_if_load_from_mem(subtilis_parser_t *p,
 					       const subtilis_type_t *type,
 					       size_t mem_reg, size_t loc,
@@ -430,8 +470,8 @@ void subtilis_type_if_indexed_write(subtilis_parser_t *p, const char *var_name,
 
 	fn = prv_type_map[type->type]->indexed_write;
 	if (!fn) {
-		subtilis_error_not_array(err, var_name, p->l->stream->name,
-					 p->l->line);
+		subtilis_error_not_array_or_vector(
+		    err, var_name, p->l->stream->name, p->l->line);
 		return;
 	}
 	fn(p, var_name, type, mem_reg, loc, e, indices, index_count, err);
@@ -452,8 +492,8 @@ void subtilis_type_if_indexed_add(subtilis_parser_t *p, const char *var_name,
 
 	fn = prv_type_map[type->type]->indexed_add;
 	if (!fn) {
-		subtilis_error_not_array(err, var_name, p->l->stream->name,
-					 p->l->line);
+		subtilis_error_not_array_or_vector(
+		    err, var_name, p->l->stream->name, p->l->line);
 		return;
 	}
 	fn(p, var_name, type, mem_reg, loc, e, indices, index_count, err);
@@ -474,8 +514,8 @@ void subtilis_type_if_indexed_sub(subtilis_parser_t *p, const char *var_name,
 
 	fn = prv_type_map[type->type]->indexed_sub;
 	if (!fn) {
-		subtilis_error_not_array(err, var_name, p->l->stream->name,
-					 p->l->line);
+		subtilis_error_not_array_or_vector(
+		    err, var_name, p->l->stream->name, p->l->line);
 		return;
 	}
 	fn(p, var_name, type, mem_reg, loc, e, indices, index_count, err);
@@ -496,8 +536,8 @@ subtilis_type_if_indexed_read(subtilis_parser_t *p, const char *var_name,
 
 	fn = prv_type_map[type->type]->indexed_read;
 	if (!fn) {
-		subtilis_error_not_array(err, var_name, p->l->stream->name,
-					 p->l->line);
+		subtilis_error_not_array_or_vector(
+		    err, var_name, p->l->stream->name, p->l->line);
 		return NULL;
 	}
 	return fn(p, var_name, type, mem_reg, loc, indices, index_count, err);
@@ -517,8 +557,8 @@ void subtilis_type_if_array_set(subtilis_parser_t *p, const char *var_name,
 
 	fn = prv_type_map[type->type]->set;
 	if (!fn) {
-		subtilis_error_not_array(err, var_name, p->l->stream->name,
-					 p->l->line);
+		subtilis_error_not_array_or_vector(
+		    err, var_name, p->l->stream->name, p->l->line);
 		goto cleanup;
 	}
 
@@ -544,11 +584,32 @@ subtilis_type_if_indexed_address(subtilis_parser_t *p, const char *var_name,
 
 	fn = prv_type_map[type->type]->indexed_address;
 	if (!fn) {
-		subtilis_error_not_array(err, var_name, p->l->stream->name,
-					 p->l->line);
+		subtilis_error_not_array_or_vector(
+		    err, var_name, p->l->stream->name, p->l->line);
 		return NULL;
 	}
 	return fn(p, var_name, type, mem_reg, loc, indices, index_count, err);
+}
+
+void subtilis_type_if_append(subtilis_parser_t *p, subtilis_exp_t *a1,
+			     subtilis_exp_t *a2, subtilis_error_t *err)
+{
+	subtilis_type_if_copy_collection_t fn;
+
+	fn = prv_type_map[a1->type.type]->append;
+	if (!fn) {
+		subtilis_error_set_expected(err, "string or 1d array",
+					    subtilis_type_name(&a1->type),
+					    p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
+	fn(p, a1, a2, err);
+	return;
+
+cleanup:
+	subtilis_exp_delete(a2);
+	subtilis_exp_delete(a1);
 }
 
 subtilis_exp_t *subtilis_type_if_to_int(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -989,11 +1050,17 @@ bool subtilis_type_if_is_array(const subtilis_type_t *type)
 	return prv_type_map[type->type]->is_array;
 }
 
+bool subtilis_type_if_is_vector(const subtilis_type_t *type)
+{
+	return prv_type_map[type->type]->is_vector;
+}
+
 bool subtilis_type_if_is_scalar_ref(const subtilis_type_t *type)
 {
 	subtilis_type_t element_type;
 
-	if (subtilis_type_if_is_array(type)) {
+	if (subtilis_type_if_is_array(type) ||
+	    subtilis_type_if_is_vector(type)) {
 		prv_type_map[type->type]->element_type(type, &element_type);
 		return subtilis_type_if_is_numeric(&element_type);
 	}

@@ -38,6 +38,7 @@ subtilis_type_if subtilis_type_const_byte = {
 	.is_numeric = true,
 	.is_integer = true,
 	.is_array = false,
+	.is_vector = false,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = prv_size,
 	.data_size = NULL,
@@ -50,6 +51,7 @@ subtilis_type_if subtilis_type_const_byte = {
 	.copy_ret = NULL,
 	.const_of = NULL,
 	.array_of = NULL,
+	.vector_of = NULL,
 	.element_type = NULL,
 	.exp_to_var = NULL,
 	.copy_var = NULL,
@@ -57,11 +59,13 @@ subtilis_type_if subtilis_type_const_byte = {
 	.copy_col = NULL,
 	.assign_reg = NULL,
 	.assign_mem = NULL,
+	.assign_new_mem = NULL,
 	.indexed_write = NULL,
 	.indexed_add = NULL,
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
 	.set = NULL,
+	.append = NULL,
 	.indexed_address = NULL,
 	.load_mem = NULL,
 	.to_int32 = NULL,
@@ -156,6 +160,12 @@ static void prv_array_of(const subtilis_type_t *element_type,
 			 subtilis_type_t *type)
 {
 	type->type = SUBTILIS_TYPE_ARRAY_BYTE;
+}
+
+static void prv_vector_of(const subtilis_type_t *element_type,
+			  subtilis_type_t *type)
+{
+	type->type = SUBTILIS_TYPE_VECTOR_BYTE;
 }
 
 static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -766,6 +776,7 @@ subtilis_type_if subtilis_type_byte_if = {
 	.is_numeric = true,
 	.is_integer = true,
 	.is_array = false,
+	.is_vector = false,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = prv_size,
 	.data_size = NULL,
@@ -778,6 +789,7 @@ subtilis_type_if subtilis_type_byte_if = {
 	.copy_ret = NULL,
 	.const_of = prv_const_of,
 	.array_of = prv_array_of,
+	.vector_of = prv_vector_of,
 	.element_type = NULL,
 	.exp_to_var = prv_exp_to_var,
 	.copy_var = prv_copy_var,
@@ -785,6 +797,7 @@ subtilis_type_if subtilis_type_byte_if = {
 	.copy_col = NULL,
 	.assign_reg = prv_assign_to_reg,
 	.assign_mem = prv_assign_to_mem,
+	.assign_new_mem = prv_assign_to_mem,
 	.indexed_write = NULL,
 	.indexed_add = NULL,
 	.indexed_sub = NULL,

@@ -119,10 +119,16 @@ static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 
 	tbuf = subtilis_token_get_text(t);
-	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || (strcmp(tbuf, "(")))
+	if (t->type == SUBTILIS_TOKEN_OPERATOR) {
+		if (!strcmp(tbuf, "("))
+			e = subtils_parser_read_array(p, t, var_name, err);
+		else if (!strcmp(tbuf, "{"))
+			e = subtils_parser_read_vector(p, t, var_name, err);
+		else
+			e = subtilis_var_lookup_var(p, var_name, err);
+	} else {
 		e = subtilis_var_lookup_var(p, var_name, err);
-	else
-		e = subtils_parser_read_array(p, t, var_name, err);
+	}
 
 cleanup:
 
@@ -298,6 +304,10 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return subtilis_parser_ext(p, t, err);
 		case SUBTILIS_KEYWORD_PTR_HASH:
 			return subtilis_parser_get_ptr(p, t, err);
+		case SUBTILIS_KEYWORD_APPEND:
+			return subtilis_parser_append_exp(p, t, err);
+		case SUBTILIS_KEYWORD_COPY:
+			return subtilis_parser_copy_exp(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "Unexpected keyword in expression",
@@ -989,6 +999,40 @@ size_t subtilis_var_bracketed_args_have_b(subtilis_parser_t *p,
 					  subtilis_error_t *err)
 {
 	return prv_bracketed_args_have_b(p, t, e, max, NULL, err);
+}
+
+subtilis_exp_t *subtilis_curly_bracketed_arg_have_b(subtilis_parser_t *p,
+						    subtilis_token_t *t,
+						    subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_exp_t *e;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "}"))
+		return NULL;
+
+	e = subtilis_parser_priority7(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	e = subtilis_type_if_to_int(p, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	if (strcmp(tbuf, "}")) {
+		subtilis_exp_delete(e);
+		subtilis_error_set_expected(err, "} ", tbuf, p->l->stream->name,
+					    p->l->line);
+		return NULL;
+	}
+
+	return e;
 }
 
 /*

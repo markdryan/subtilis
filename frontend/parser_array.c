@@ -49,6 +49,12 @@ subtilis_exp_t *subtils_parser_read_array(subtilis_parser_t *p,
 		mem_reg = SUBTILIS_IR_REG_GLOBAL;
 	}
 
+	if (!subtilis_type_if_is_array(&s->t)) {
+		subtilis_error_not_array(err, var_name, p->l->stream->name,
+					 p->l->line);
+		goto cleanup;
+	}
+
 	dims = subtilis_var_bracketed_int_args_have_b(
 	    p, t, indices, SUBTILIS_MAX_DIMENSIONS, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -59,11 +65,6 @@ subtilis_exp_t *subtils_parser_read_array(subtilis_parser_t *p,
 		goto cleanup;
 
 	if (dims == 0) {
-		if (!subtilis_type_if_is_array(&s->t)) {
-			subtilis_error_not_array(
-			    err, var_name, p->l->stream->name, p->l->line);
-			goto cleanup;
-		}
 		/* What we have here is an array reference. */
 		e = subtilis_exp_new_var_block(p, &s->t, mem_reg, s->loc, err);
 	} else {
@@ -75,6 +76,58 @@ cleanup:
 
 	for (i = 0; i < dims; i++)
 		subtilis_exp_delete(indices[i]);
+
+	return e;
+}
+
+subtilis_exp_t *subtils_parser_read_vector(subtilis_parser_t *p,
+					   subtilis_token_t *t,
+					   const char *var_name,
+					   subtilis_error_t *err)
+{
+	size_t mem_reg;
+	const subtilis_symbol_t *s;
+	subtilis_exp_t *indices[1];
+	subtilis_exp_t *e = NULL;
+
+	s = subtilis_symbol_table_lookup(p->local_st, var_name);
+	if (s) {
+		mem_reg = SUBTILIS_IR_REG_LOCAL;
+	} else {
+		s = subtilis_symbol_table_lookup(p->st, var_name);
+		if (!s) {
+			subtilis_error_set_unknown_variable(
+			    err, var_name, p->l->stream->name, p->l->line);
+			return NULL;
+		}
+		mem_reg = SUBTILIS_IR_REG_GLOBAL;
+	}
+
+	if (!subtilis_type_if_is_vector(&s->t)) {
+		subtilis_error_not_vector(err, var_name, p->l->stream->name,
+					  p->l->line);
+		return NULL;
+	}
+
+	indices[0] = subtilis_curly_bracketed_arg_have_b(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (!indices[0]) {
+		/* What we have here is an array reference. */
+		e = subtilis_exp_new_var_block(p, &s->t, mem_reg, s->loc, err);
+	} else {
+		e = subtilis_type_if_indexed_read(p, var_name, &s->t, mem_reg,
+						  s->loc, indices, 1, err);
+	}
+
+cleanup:
+
+	subtilis_exp_delete(indices[0]);
 
 	return e;
 }
@@ -123,7 +176,7 @@ cleanup:
 static size_t prv_var_bracketed_int_args(subtilis_parser_t *p,
 					 subtilis_token_t *t,
 					 subtilis_exp_t **e, size_t max,
-					 subtilis_error_t *err)
+					 bool *vec, subtilis_error_t *err)
 {
 	const char *tbuf;
 
@@ -132,22 +185,25 @@ static size_t prv_var_bracketed_int_args(subtilis_parser_t *p,
 		return 0;
 
 	tbuf = subtilis_token_get_text(t);
-	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, "(")) {
-		subtilis_error_set_exp_expected(err, "( ", p->l->stream->name,
-						p->l->line);
-		return 0;
+	if (t->type == SUBTILIS_TOKEN_OPERATOR) {
+		if (!strcmp(tbuf, "(")) {
+			*vec = false;
+			return subtilis_var_bracketed_int_args_have_b(p, t, e,
+								      max, err);
+		} else if (!strcmp(tbuf, "{")) {
+			e[0] = subtilis_curly_bracketed_arg_have_b(p, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return 0;
+
+			*vec = true;
+			return e[0] ? 1 : 0;
+		}
 	}
 
-	return subtilis_var_bracketed_int_args_have_b(p, t, e, max, err);
-}
+	subtilis_error_set_expected(err, "( or [", tbuf, p->l->stream->name,
+				    p->l->line);
 
-static void prv_allocate_array(subtilis_parser_t *p, const char *var_name,
-			       subtilis_type_t *type, size_t loc,
-			       subtilis_exp_t **e,
-			       subtilis_ir_operand_t store_reg,
-			       subtilis_error_t *err)
-{
-	subtlis_array_type_allocate(p, var_name, type, loc, e, store_reg, err);
+	return 0;
 }
 
 static uint8_t *prv_append_const_el(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -611,8 +667,8 @@ static void prv_parse_string_initialiser(subtilis_parser_t *p,
 		return;
 
 	/*
-	 * If there's only one string in the list it's not worth setting up tge
-	 * loop.
+	 * If there's only one string in the list it's not worth setting
+	 * up the loop.
 	 */
 
 	if (entries == 1) {
@@ -693,8 +749,8 @@ void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
 	const char *tbuf;
 
 	if (subtilis_type_eq(&s->t, &e->type)) {
-		subtilis_array_type_assign_ref(p, &s->t.params.array, mem_reg,
-					       s->loc, e->exp.ir_op.reg, err);
+		subtilis_array_type_assign_ref(p, &s->t, mem_reg, s->loc,
+					       e->exp.ir_op.reg, err);
 	} else {
 		subtilis_type_if_element_type(p, &s->t, &el_type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -712,7 +768,8 @@ void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
 				prv_parse_numeric_initialiser(p, t, e, mem_reg,
 							      s, err);
 			}
-		} else if ((s->t.type == SUBTILIS_TYPE_ARRAY_STRING) &&
+		} else if (((s->t.type == SUBTILIS_TYPE_ARRAY_STRING) ||
+			    (s->t.type == SUBTILIS_TYPE_VECTOR_STRING)) &&
 			   ((e->type.type == SUBTILIS_TYPE_CONST_STRING) ||
 			    (e->type.type == SUBTILIS_TYPE_STRING))) {
 			if (single_val) {
@@ -746,6 +803,7 @@ void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_type_t type;
 	size_t i;
 	subtilis_ir_operand_t local_global;
+	bool vec = false;
 	size_t dims = 0;
 	char *var_name = NULL;
 
@@ -779,8 +837,8 @@ void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
 		strcpy(var_name, tbuf);
 		element_type = t->tok.id_type;
 
-		dims = prv_var_bracketed_int_args(p, t, e,
-						  SUBTILIS_MAX_DIMENSIONS, err);
+		dims = prv_var_bracketed_int_args(
+		    p, t, e, SUBTILIS_MAX_DIMENSIONS, &vec, err);
 		if (err->type == SUBTILIS_ERROR_RIGHT_BKT_EXPECTED) {
 			subtilis_error_too_many_dims(
 			    err, var_name, p->l->stream->name, p->l->line);
@@ -795,18 +853,50 @@ void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
 			goto cleanup;
 		}
 
-		subtilis_array_type_init(p, &element_type, &type, &e[0], dims,
-					 err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
+		if (vec) {
+			subtilis_array_type_vector_init(p, &element_type, &type,
+							err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
 
-		s = subtilis_symbol_table_insert(local ? p->local_st : p->st,
-						 var_name, &type, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
+			/*
+			 * No dimensions means a vector with no
+			 * elements.
+			 */
 
-		prv_allocate_array(p, var_name, &type, s->loc, &e[0],
-				   local_global, err);
+			if (dims == 0) {
+				e[0] = subtilis_exp_new_int32(-1, err);
+				if (err->type != SUBTILIS_ERROR_OK)
+					goto cleanup;
+				dims = 1;
+			}
+
+			s = subtilis_symbol_table_insert(
+			    local ? p->local_st : p->st, var_name, &type, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+			subtilis_array_type_vector_alloc(p, s->loc, &type, e[0],
+							 local_global, err);
+
+		} else {
+			if (dims == 0) {
+				subtilis_error_set_integer_exp_expected(
+				    err, p->l->stream->name, p->l->line);
+				goto cleanup;
+			}
+
+			subtilis_array_type_init(p, var_name, &element_type,
+						 &type, &e[0], dims, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+
+			s = subtilis_symbol_table_insert(
+			    local ? p->local_st : p->st, var_name, &type, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+			subtilis_array_type_allocate(p, var_name, &type, s->loc,
+						     &e[0], local_global, err);
+		}
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
@@ -858,10 +948,8 @@ subtilis_exp_t *subtilis_parser_get_dim(subtilis_parser_t *p,
 		goto cleanup;
 	}
 
-	if ((ar->type.type != SUBTILIS_TYPE_ARRAY_REAL) &&
-	    (ar->type.type != SUBTILIS_TYPE_ARRAY_INTEGER) &&
-	    (ar->type.type != SUBTILIS_TYPE_ARRAY_BYTE) &&
-	    (ar->type.type != SUBTILIS_TYPE_ARRAY_STRING)) {
+	if (!subtilis_type_if_is_array(&ar->type) &&
+	    !subtilis_type_if_is_vector(&ar->type)) {
 		subtilis_error_not_array(err, "First argument to dim",
 					 p->l->stream->name, p->l->line);
 		goto cleanup;

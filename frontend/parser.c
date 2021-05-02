@@ -525,6 +525,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_ACS */
 	NULL, /* SUBTILIS_KEYWORD_ADVAL */
 	NULL, /* SUBTILIS_KEYWORD_AND */
+	subtilis_parser_append, /* SUBTILIS_KEYWORD_APPEND */
 	NULL, /* SUBTILIS_KEYWORD_ASC */
 	NULL, /* SUBTILIS_KEYWORD_ASN */
 	NULL, /* SUBTILIS_KEYWORD_ATN */

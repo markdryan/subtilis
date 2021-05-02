@@ -113,6 +113,7 @@ struct subtilis_type_if_ {
 	bool is_numeric;
 	bool is_integer;
 	bool is_array;
+	bool is_vector;
 	subtilis_ir_reg_type_t param_type;
 	subtilis_type_if_size_t size;
 	subtilis_type_if_unary_t data_size;
@@ -125,6 +126,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_reg2_t copy_ret;
 	subtilis_type_if_typeof_t const_of;
 	subtilis_type_if_typeof_t array_of;
+	subtilis_type_if_typeof_t vector_of;
 	subtilis_type_if_typeof_t element_type;
 	subtilis_type_if_unary_t exp_to_var;
 	subtilis_type_if_unary_t copy_var;
@@ -132,12 +134,14 @@ struct subtilis_type_if_ {
 	subtilis_type_if_copy_collection_t copy_col;
 	subtilis_type_if_sizet_exp_t assign_reg;
 	subtilis_type_if_sizet2_exp_t assign_mem;
+	subtilis_type_if_sizet2_exp_t assign_new_mem;
 	subtilis_type_if_iwrite_t indexed_write;
 	subtilis_type_if_iwrite_t indexed_add;
 	subtilis_type_if_iwrite_t indexed_sub;
 	subtilis_type_if_iread_t indexed_read;
 	subtilis_type_if_set_t set;
 	subtilis_type_if_iread_t indexed_address;
+	subtilis_type_if_copy_collection_t append;
 	subtilis_type_if_load_t load_mem;
 	subtilis_type_if_unary_t to_int32;
 	subtilis_type_if_coerce_t zerox;
@@ -289,6 +293,15 @@ void subtilis_type_if_array_of(subtilis_parser_t *p,
 			       subtilis_type_t *type, subtilis_error_t *err);
 
 /*
+ * Writes the type of a vector of the scalar type specified in
+ * element_type into type.
+ */
+
+void subtilis_type_if_vector_of(subtilis_parser_t *p,
+				const subtilis_type_t *element_type,
+				subtilis_type_t *type, subtilis_error_t *err);
+
+/*
  * Returns true if type is an array of numeric types of a string.
  */
 
@@ -325,7 +338,7 @@ subtilis_exp_t *subtilis_type_if_copy_var(subtilis_parser_t *p,
 
 /*
  * Returns a duplicate of the expression e.  e does not need to be
- * a register expression.  Only implemented for scalar types.
+ * a register expression.
  */
 
 subtilis_exp_t *subtilis_type_if_dup(subtilis_exp_t *e, subtilis_error_t *err);
@@ -355,6 +368,18 @@ void subtilis_type_if_assign_to_reg(subtilis_parser_t *p, size_t reg,
 void subtilis_type_if_assign_to_mem(subtilis_parser_t *p, size_t mem_reg,
 				    size_t loc, subtilis_exp_t *e,
 				    subtilis_error_t *err);
+
+/*
+ * Identical to subtilis_type_if_assign_to_mem for numeric types.  It's
+ * different for referenced counted types in that it doesn't try to
+ * dereference whatever is at the destination location.  This is inteded
+ * to be invoked on newly allocated memory that has never had a Subtilis
+ * object.
+ */
+
+void subtilis_type_if_assign_to_new_mem(subtilis_parser_t *p, size_t mem_reg,
+					size_t loc, subtilis_exp_t *e,
+					subtilis_error_t *err);
 
 /*
  * Writes the scalar expression represented by e to an array identified by
@@ -427,6 +452,23 @@ subtilis_type_if_indexed_address(subtilis_parser_t *p, const char *var_name,
 				 const subtilis_type_t *type, size_t mem_reg,
 				 size_t loc, subtilis_exp_t **indices,
 				 size_t index_count, subtilis_error_t *err);
+
+/*
+ * Appends a2 to a1.  After the operation has been performed, a2 may point to
+ * a different memory block, depending on whether a realloc was required.  Any
+ * variables pointed to the original memory block will be unaffected, e.g.,
+ *
+ * dim a%(10)
+ * b% := a%()
+ * append(a%(), 11)
+ *
+ * b% will still have 10 elements and will still point to the original block
+ * of data created by dim a%.  a% may or may not point to this original block
+ * of data.  Only implemented for strings and 1d arrays.
+ */
+
+void subtilis_type_if_append(subtilis_parser_t *p, subtilis_exp_t *a1,
+			     subtilis_exp_t *a2, subtilis_error_t *err);
 
 /*
  * Returns the scalar value stored in the memory location represented by
@@ -716,6 +758,12 @@ bool subtilis_type_if_is_integer(const subtilis_type_t *type);
  */
 
 bool subtilis_type_if_is_array(const subtilis_type_t *type);
+
+/*
+ * Returns true if the given type is a vector of some kind.
+ */
+
+bool subtilis_type_if_is_vector(const subtilis_type_t *type);
 
 /*
  * Converts expression e to type type, if possible.

@@ -20,5 +20,6 @@
 #include "type_if.h"
 
 extern subtilis_type_if subtilis_type_array_string;
+extern subtilis_type_if subtilis_type_vector_string;
 
 #endif

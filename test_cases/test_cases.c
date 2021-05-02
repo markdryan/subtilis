@@ -3292,12 +3292,12 @@ const subtilis_test_case_t test_cases[] = {
 	"PROCReadFile\n"
 	"\n"
 	"def PROCWriteFile\n"
-	"  f% := openout \"Markus\"\n"
+	"  f% := openout(\"Markus\")\n"
 	"  onerror\n"
 	"    tryone close# f%\n"
 	"  enderror\n"
 	"\n"
-	"  print eof# f%\n"
+	"  print eof#(f%)\n"
 	"\n"
 	"  a$ := \"hello world!\"\n"
 	"\n"
@@ -3311,23 +3311,23 @@ const subtilis_test_case_t test_cases[] = {
 	"endproc\n"
 	"\n"
 	"def PROCReadFile\n"
-	"  g% := openin \"Markus\"\n"
+	"  g% := openin(\"Markus\")\n"
 	"\n"
 	"  onerror\n"
 	"    tryone close# g%\n"
 	"  enderror\n"
 	"\n"
-	"  print eof# g%\n"
+	"  print eof#(g%)\n"
 	"\n"
 	"  b$ := \"\"\n"
 	"  local a%\n"
-	"  while (tryone a% = bget# g%) = 0\n"
+	"  while (tryone a% = bget#(g%)) = 0\n"
 	"     b$ += chr$(a%)\n"
 	"  endwhile\n"
 	"\n"
-	"  print eof# g%\n"
+	"  print eof#(g%)\n"
 	"\n"
-	"  if not eof# g% then\n"
+	"  if not eof#(g%) then\n"
 	"    print \"eof error\"\n"
 	"     error err\n"
 	"  endif\n"
@@ -3342,7 +3342,7 @@ const subtilis_test_case_t test_cases[] = {
 	"PROCCreateFile(\"markus\", string$(33, \"!\"))\n"
 	"f% = openin(\"markus\")\n"
 	"onerror tryone close# f% enderror\n"
-	"print ext# f%\n"
+	"print ext#(f%)\n"
 	"close# f%\n"
 	"\n"
 	"def PROCCreateFile(name$, data$)\n"
@@ -3358,15 +3358,15 @@ const subtilis_test_case_t test_cases[] = {
 	{"ptr_test",
 	"PROCCreateFile(\"markus\", string$(16, \"!\") + string$(16,\"@\"))\n"
 	"f% = openin(\"markus\")\n"
-	"print ptr# f%\n"
+	"print ptr#(f%)\n"
 	"onerror\n"
 	"  print \"whoops\"\n"
 	"enderror\n"
 	"ptr# f%, 15\n"
-	"print ptr# f%\n"
+	"print ptr#(f%)\n"
 	"b$ := \"\"\n"
 	"local a%\n"
-	"while (tryone a% = bget# f%) = 0\n"
+	"while (tryone a% = bget#(f%)) = 0\n"
 	"  b$ += chr$(a%)\n"
 	"endwhile\n"
 	"print b$\n"
@@ -3377,7 +3377,7 @@ const subtilis_test_case_t test_cases[] = {
 	"  for i% := 1 to len(data$)\n"
 	"    bput# f%, asc(mid$(data$,i%,1))\n"
 	"   next\n"
-	"   print ptr# f%\n"
+	"   print ptr#(f%)\n"
 	"   close# f%\n"
 	"endproc\n",
 	"32\n0\n15\n!@@@@@@@@@@@@@@@@\n",
@@ -3700,7 +3700,7 @@ const subtilis_test_case_t test_cases[] = {
 	"\n"
 	"def PROCCreateFile\n"
 	"    a$ := string$(6, \"Hello Mark\" + chr$(10))\n"
-	"    f% := openout \"markus\"\n"
+	"    f% := openout(\"markus\")\n"
 	"    onerror\n"
 	"      tryone close# f%\n"
 	"    enderror\n"
@@ -3711,13 +3711,13 @@ const subtilis_test_case_t test_cases[] = {
 	"endproc\n"
 	"\n"
 	"def FNReadFile$\n"
-	"    f% := openin \"markus\"\n"
+	"    f% := openin(\"markus\")\n"
 	"    onerror\n"
 	"      tryone close# f%\n"
 	"    enderror\n"
 	"\n"
-	"    s$ := string$(ext# f%, \" \")\n"
-	"    read% := get# f%, s$\n"
+	"    s$ := string$(ext#(f%), \" \")\n"
+	"    read% := get#(f%, s$)\n"
 	"\n"
 	"    tryone close# f%\n"
 	"<-s$\n",
@@ -3734,7 +3734,7 @@ const subtilis_test_case_t test_cases[] = {
 	"def PROCCreateFile\n"
 	"    local dim a%(9)\n"
 	"    a%() = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10\n"
-	"    f% := openout \"markus\"\n"
+	"    f% := openout(\"markus\")\n"
 	"    onerror\n"
 	"      tryone close# f%\n"
 	"    enderror\n"
@@ -3745,13 +3745,13 @@ const subtilis_test_case_t test_cases[] = {
 	"endproc\n"
 	"\n"
 	"def FNReadFile%(1)\n"
-	"    f% := openin \"markus\"\n"
+	"    f% := openin(\"markus\")\n"
 	"    onerror\n"
 	"      tryone close# f%\n"
 	"    enderror\n"
 	"\n"
 	"    local dim a%(10)\n"
-	"    read% := get# f%, a%()\n"
+	"    read% := get#(f%, a%())\n"
 	"\n"
 	"    tryone close# f%\n"
 	"<-a%()\n",
@@ -3760,7 +3760,7 @@ const subtilis_test_case_t test_cases[] = {
 	{"copy_byte_string",
 	"a$ := \"Hello world\"\n"
 	"dim b&(7)\n"
-	"copy b&(), a$\n"
+	"copy(b&(), a$)\n"
 	"for i% := 0 to dim(b&(), 1)\n"
 	"  print chr$(b&(i%));\n"
 	"next\n"
@@ -3772,7 +3772,7 @@ const subtilis_test_case_t test_cases[] = {
 	"a%() = &12345678\n"
 	"c% := 9\n"
 	"dim b&(c%)\n"
-	"copy b&(), a%()\n"
+	"copy(b&(), a%())\n"
 	"for i% := 0 to dim(b&(),1)\n"
 	"  print ~b&(i%)\n"
 	"next\n",
@@ -3780,7 +3780,7 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"copy_byte_const_string",
 	"dim b&(7)\n"
-	"copy b&(), \"Hello world\"\n"
+	"copy(b&(), \"Hello world\")\n"
 	"for i% := 0 to dim(b&(), 1)\n"
 	"  print chr$(b&(i%));\n"
 	"next\n"
@@ -3789,14 +3789,14 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"copy_byte_empty_string",
 	"a$ := \"\"\n"
-	"copy a$, \"Hello\"\n"
+	"copy(a$, \"Hello\")\n"
 	"print a$\n",
 	"\n",
 	},
 	{"copy_string_string_woc",
 	"a$ := \"Hello Mark\"\n"
 	"b$ := a$\n"
-	"copy a$, \"Seeya\"\n"
+	"copy(a$, \"Seeya\")\n"
 	"print a$\n"
 	"print b$\n",
 	"Seeya Mark\nHello Mark\n",
@@ -3812,7 +3812,7 @@ const subtilis_test_case_t test_cases[] = {
 	"  a$() = \"Hello\"\n"
 	"  local dim b$(6)\n"
 	"  b$() =  \"goodbye\"\n"
-	"  copy b$(), a$()\n"
+	"  copy(b$(), a$())\n"
 	"<- b$()\n",
 	"Hello\nHello\nHello\nHello\nHello\nHello\nHello\n"
 	},
@@ -3826,25 +3826,25 @@ const subtilis_test_case_t test_cases[] = {
 	"  local dim a$(9)\n"
 	"  a$() = \"Hello\"\n"
 	"  local dim b$(6)\n"
-	"  copy b$(), a$()\n"
+	"  copy(b$(), a$())\n"
 	"<- b$()\n",
 	"Hello\nHello\nHello\nHello\nHello\nHello\nHello\n"
 	},
 	{"bget_cow",
 	"PROCWriteFile\n"
-	"f% := openin \"Markus\"\n"
+	"f% := openin(\"Markus\")\n"
 	"onerror\n"
 	"  tryone close# f%\n"
 	"enderror\n"
 	"\n"
-	"s$ := string$(ext# f%, \"!\")\n"
+	"s$ := string$(ext#(f%), \"!\")\n"
 	"b$ := s$\n"
-	"read% := get# f%, s$\n"
+	"read% := get#(f%, s$)\n"
 	"print s$\n"
 	"print b$\n"
 	"close# f%\n"
 	"def PROCWriteFile\n"
-	"  f% := openout \"Markus\"\n"
+	"  f% := openout(\"Markus\")\n"
 	"  onerror\n"
 	"    tryone close# f%\n"
 	"  enderror\n"
@@ -3861,7 +3861,316 @@ const subtilis_test_case_t test_cases[] = {
 	"s$ := string$(a%, \"!\")\n"
 	"print s$\n",
 	"\n",
-	}
+	},
+	{"zero_len_int_vector",
+	"dim a%{-1}\n"
+	"\n"
+	"PROCEmpty(a%{})\n"
+	"\n"
+	"b%{} := FNEmpty%{}()\n"
+	"print dim(b%{})\n"
+	"print dim(b%{},1)\n"
+	"\n"
+	"def PROCEmpty(a%{})\n"
+	"  print dim(a%{})\n"
+	"  print dim(a%{},1)\n"
+	"endproc\n"
+	"\n"
+	"def FNEmpty%{}\n"
+	"  local dim a%{}\n"
+	"<-a%{}\n",
+	"1\n-1\n1\n-1\n"},
+	{"zero_len_int_vector_assign",
+	"dim a%{}\n"
+	"b%{} := a%{}\n"
+	"print dim(b%{},1)\n",
+	"-1\n",
+	},
+	{"zero_len_string_vector",
+	"dim a${-1}\n"
+	"\n"
+	"PROCEmpty(a${})\n"
+	"\n"
+	"b${} := FNEmpty${}()\n"
+	"print dim(b${})\n"
+	"print dim(b${},1)\n"
+	"\n"
+	"def PROCEmpty(a${})\n"
+	"  print dim(a${})\n"
+	"  print dim(a${},1)\n"
+	"endproc\n"
+	"\n"
+	"def FNEmpty${}\n"
+	"  local dim a${}\n"
+	"<-a${}\n",
+	"1\n-1\n1\n-1\n"},
+	{"zero_len_string_vector_assign",
+	"dim a${}\n"
+	"b${} := a${}\n"
+	"print dim(b${},1)\n",
+	"-1\n",
+	},
+	{"append_int_vector",
+	"dim a%{}\n"
+	"for i% := 0 to 9\n"
+	"  append(a%{}, i%)\n"
+	"next\n"
+	"append(a%{}, 10)\n"
+	"print dim(a%{},1)\n"
+	"for i% = 0 to dim(a%{},1)\n"
+	"  print a%{i%}\n"
+	"next\n",
+	"10\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
+	},
+	{"append_real_vector",
+	"dim a{}\n"
+	"for i := 0 to 4.5 step .5\n"
+	"  append(a{}, i)\n"
+	"next\n"
+	"append(a{}, 5.0)\n"
+	"print dim(a{},1)\n"
+	"for i% = 0 to dim(a{},1)\n"
+	"  print a{i%}\n"
+	"next\n",
+	"10\n0\n0.5\n1\n1.5\n2\n2.5\n3\n3.5\n4\n4.5\n5\n",
+	},
+	{"append_byte_vector",
+	"dim a&{}\n"
+	"for i% := 0 to 9\n"
+	"  append(a&{}, i%)\n"
+	"next\n"
+	"append(a&{}, 10)\n"
+	"print dim(a&{},1)\n"
+	"for i% = 0 to dim(a&{},1)\n"
+	"  print a&{i%}\n"
+	"next\n",
+	"10\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
+	},
+	{"append_string",
+	"a$ := \"\"\n"
+	"for i% := asc(\"0\") to asc(\"9\")\n"
+	"  append(a$, chr$(i%))\n"
+	"next\n"
+	"\n"
+	"print a$\n",
+	"0123456789\n"
+	},
+	{"append_string_vector_const",
+	"local dim a${}\n"
+	"\n"
+	"append(a${}, \"hello\")\n"
+	"append(a${}, \"world\")\n"
+	"for i% = 0 to dim(a${}, 1)\n"
+	"  print a${i%}\n"
+	"next\n",
+	"hello\nworld\n",
+	},
+	{"append_string_vector",
+	"local dim a${}\n"
+	"\n"
+	"for i% := asc(\"a\") to asc(\"z\")\n"
+	"  append(a${}, chr$(i%))\n"
+	"next\n"
+	"for i% = 0 to dim(a${}, 1)\n"
+	"  print a${i%}\n"
+	"next\n",
+	"a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\nl\nm\nn\no\np\nq\nr\ns\nt\nu\nv\nw\nx\ny\nz\n",
+	},
+	{"read_empty_file",
+	"close# openout(\"markus\")  rem creates an empty file\n"
+	"print dim(FNReadFile&{}(\"markus\"), 1)\n"
+	"\n"
+	"def FNReadFile&{}(a$)\n"
+	"  f% := openin(a$)\n"
+	"  onerror tryone close# f% enderror\n"
+	"  local dim a&{ext#(f%) - 1}\n"
+	"  if dim(a&{}, 1) > -1 then\n"
+	"      read% := get#(f%, a&{})\n"
+	"  endif\n"
+	"  close# f%\n"
+	"<- a&{}\n",
+	"-1\n",
+	},
+	{"append_vector_array_ints",
+	"c% := 7\n"
+	"local dim a&{c%}\n"
+	"a&() = 1\n"
+	"local dim b&(7)\n"
+	"b&() = 2,3,4,5,6,7,8,9\n"
+	"c&{} := a&{}\n"
+	"append(a&{}, b&())\n"
+	"for i% := 0 to dim(a&{},1)\n"
+	"  print a&{i%}\n"
+	"next\n"
+	"for i% = 0 to dim(c&{},1)\n"
+	"  print c&{i%}\n"
+	"next\n",
+	"1\n1\n1\n1\n1\n1\n1\n1\n2\n3\n4\n5\n6\n7\n8\n9\n1\n1\n1\n1\n1\n1\n1\n1\n",
+	},
+	{"append_vector_array_reals",
+	"d% := 7\n"
+	"local dim a{d%}\n"
+	"a{} = 1\n"
+	"local dim b(7)\n"
+	"b() = 2,3,4,5,6,7,8,9\n"
+	"c{} := a{}\n"
+	"append(a{}, b())\n"
+	"for i% := 0 to dim(a{},1)\n"
+	"  print a{i%}\n"
+	"next\n"
+	"for i% = 0 to dim(c{},1)\n"
+	"  print c{i%}\n"
+	"next\n",
+	"1\n1\n1\n1\n1\n1\n1\n1\n2\n3\n4\n5\n6\n7\n8\n9\n1\n1\n1\n1\n1\n1\n1\n1\n",
+	},
+	{"append_vector_array_bytes",
+	"local dim a&{7}\n"
+	"a&{} = 1\n"
+	"local dim b&(2,2)\n"
+	"b&() = 2,3,4,5,6,7,8,9,10\n"
+	"c&{} := a&{}\n"
+	"append(a&{}, b&())\n"
+	"for i% := 0 to dim(a&{},1)\n"
+	"  print a&{i%}\n"
+	"next\n"
+	"for i% = 0 to dim(c&{},1)\n"
+	"  print c&{i%}\n"
+	"next\n",
+	"1\n1\n1\n1\n1\n1\n1\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n1\n1\n1\n1\n1\n1\n1\n1\n",
+	},
+	{"append_vector_array_strings",
+	"c% := 4\n"
+	"dim a${c%}\n"
+	"a${} = \"i\", \"ii\", \"iii\", \"iv\", \"v\"\n"
+	"dim b$(4)\n"
+	"b$() = \"vi\", \"vii\", \"viii\", \"ix\", \"x\"\n"
+	"append(a${}, b$())\n"
+	"for i% := 0 to dim(a${}, 1)\n"
+	"  print a${i%}\n"
+	"next\n",
+	"i\nii\niii\niv\nv\nvi\nvii\nviii\nix\nx\n",
+	},
+	{"append_vector_vector_empty",
+	"dim a%{}\n"
+	"b% := 5\n"
+	"dim c%{b%}\n"
+	"c%{} = 100\n"
+	"append(c%{}, a%{})\n"
+	"print dim(c%{}, 1)\n",
+	"5\n",
+	},
+	{"copy_exp",
+	"local dim b&(10)\n"
+	"b&() = asc(\"!\")\n"
+	"a% := 10\n"
+	"print copy(string$(a%, \" \"), b&())\n",
+	"!!!!!!!!!!\n",
+	},
+	{"append_exp",
+	"a% := 10\n"
+	"print append(string$(a%,\"*\"), string$(10,\"!\"))\n",
+	"**********!!!!!!!!!!\n",
+	},
+	{"get_hash_len_test",
+	"PROCWriteFile(\"markus\")\n"
+	"f% := openin(\"markus\")\n"
+	"local dim a%(10)\n"
+	"print get#(f%, a%())\n"
+	"close# f%\n"
+	"\n"
+	"def PROCWriteFile(a$)\n"
+	"  local dim a%(9)\n"
+	"  a%() = 1,2,3,4,5,6,7,8,9,10\n"
+	"  f% := openout(a$)\n"
+	"  onerror\n"
+	"    tryone close# f%\n"
+	"  enderror\n"
+	"  put# f%, a%()\n"
+	"  close# f%\n"
+	"endproc\n",
+	"10\n",
+	},
+	{"memset_vector",
+	"local dim b&{10}\n"
+	"b&{} = 66\n"
+	"for i% := 0 to dim(b&{},1)\n"
+	"print b&{i%}\n"
+	"next\n",
+	"66\n66\n66\n66\n66\n66\n66\n66\n66\n66\n66\n",
+	},
+	{"vector_bad_init",
+	"onerror print err enderror\n"
+	"dim a%{}\n"
+	"a%{} = 1,1\n",
+	"10\n",
+	},
+	{"memset_empty_vector",
+	"dim a%{}\n"
+	"a%{} = 1\n"
+	"dim b{}\n"
+	"b{} = 1\n"
+	"dim c&{}\n"
+	"c&{} = 1\n"
+	"dim d${}\n"
+	"d${} = \"1\"\n"
+	"print dim(a%{}, 1)"
+	"print dim(b{}, 1)"
+	"print dim(c&{}, 1)"
+	"print dim(d${}, 1)",
+	"-1\n-1\n-1\n-1\n",
+	},
+	{"vector_ref_test",
+	"local dim a%{4}\n"
+	"local b%{} = a%{}\n"
+	"c%{} := a%{}\n"
+	"a%{} = 1, 2, 3\n"
+	"for i% := 0 to dim(c%{},1)\n"
+	"print c%{i%}\n"
+	"next\n",
+	"1\n2\n3\n0\n0\n"
+	},
+	{"vector_copy",
+	"dim a%{10}\n"
+	"dim b%(11)\n"
+	"dim c%{10}\n"
+	"c%{} = 11\n"
+	"b%() = 10\n"
+	"copy(a%{}, b%())\n"
+	"for i% := 0 to dim(a%{}, 1)\n"
+	"print a%{i%}\n"
+	"next\n"
+	"copy(a%{}, c%{})\n"
+	"for i% = 0 to dim(a%{}, 1)\n"
+	"print a%{i%}\n"
+	"next\n",
+	"10\n10\n10\n10\n10\n10\n10\n10\n10\n10\n10\n"
+	"11\n11\n11\n11\n11\n11\n11\n11\n11\n11\n11\n",
+	},
+	{"vector_as_param",
+	"dim a%{}\n"
+	"PROCPassVector(a%{})\n"
+	"def PROCPassVector(a%{})\n"
+	"print dim(a%{}, 1)\n"
+	"endproc\n",
+	"-1\n",
+	},
+	{"vector_as_func",
+	"local a%{} = FNMakeVector%{}\n"
+	"for i% := 0 to dim(a%{}, 1)\n"
+	"print a%{i%}\n"
+	"next\n"
+	"def FNMakeVector%{}\n"
+	"local dim a%{9}\n"
+	"a%{} = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9\n"
+	"<-a%{}\n",
+	"0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n",
+	},
+	{"negative_array_dim",
+	"onerror print err enderror\n"
+	"b% := -1\n"
+	"dim a%(b%)\n",
+	"10\n",
+	},
 };
 
 /* clang-format on */

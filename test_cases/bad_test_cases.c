@@ -182,7 +182,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	  SUBTILIS_ERROR_DIM_IN_PROC,
 	},
 	{ "bad_dim",
-	  "DIM a%(0)\n",
+	  "DIM a%(10, -1)\n",
 	  SUBTILIS_ERROR_BAD_DIM,
 	},
 	{ "not_array",
@@ -586,7 +586,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	{
 	"get_hash_array_strings",
 	"dim a$(10)\n"
-	"x% := get# 0, a$()\n",
+	"x% := get#(0, a$())\n",
 	SUBTILIS_ERROR_EXPECTED,
 	},
 	{
@@ -609,14 +609,72 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	{"copy_string_array_mismatch",
 	"dim b&(9)\n"
 	"dim a$(9)\n"
-	"copy a$(), b&()",
+	"copy(a$(), b&())",
 	SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH,
 	},
 	{"copy_string_array_mismatch_2",
 	"dim b&(9)\n"
 	"dim a$(9)\n"
-	"copy b&(), a$()",
+	"copy(b&(), a$())",
 	SUBTILIS_ERROR_EXPECTED,
+	},
+	{"local_array_in_main",
+	"dim a%(1)\n"
+	"b%() := FNEmpty%(1)()\n"
+	"PROCPrint\n"
+	"\n"
+	"def FNEmpty%(1)\n"
+	"  local dim a%(1)\n"
+	"<-a%()\n"
+	"\n"
+	"def PROCPrint\n"
+	"  print dim(b%(),1)\n"
+	"endproc\n",
+	SUBTILIS_ERROR_UNKNOWN_VARIABLE,
+	},
+	{"append_to_fixed_array",
+	"dim a%(10)\n"
+	"append a%(), 10\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
+	{"append_string_to_int_array",
+	"dim a%{}\n"
+	"append a%(), \"hello\"\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
+	{"copy_temp",
+	"a$ = \"aa\"\n"
+	"copy(a$+\"1\", \"a\")\n",
+	SUBTILIS_ERROR_TEMPORARY_NOT_ALLOWED,
+	},
+	{"get_hash_temp",
+	"a$ = \"aa\"\n"
+	"x$ := get#(0, a$+\"1\")\n",
+	SUBTILIS_ERROR_TEMPORARY_NOT_ALLOWED,
+	},
+	{"index_vector_as_array",
+	"dim a%{10}\n"
+	"print a%(1)\n",
+	SUBTILIS_ERROR_NOT_ARRAY,
+	},
+	{"index_array_as_vector",
+	"dim a%(10)\n"
+	"print a%{1}\n",
+	SUBTILIS_ERROR_NOT_VECTOR,
+	},
+	{"assign_vector_to_array",
+	"dim a%{10}\n"
+	"b%() := a%{}\n",
+	SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH,
+	},
+	{"assign_array_to_vector",
+	"dim a%(10)\n"
+	"b%{} := a%()\n",
+	SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH,
+	},
+	{"negative_array_dim",
+	"dim a%(-1)\n",
+	SUBTILIS_ERROR_BAD_DIM,
 	},
 };
 

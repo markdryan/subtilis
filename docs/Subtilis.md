@@ -899,9 +899,105 @@ a%() = v%
 
 Compiles and works as expected.
 
+### Vectors
+
+Subtilis supports vectors.  Vectors are similar to one dimensional arrays with 3 notable exceptions.
+
+1. The are defined, referenced and indexed using curly brackets {}, rather than round brackets.
+2. A vector can contain 0 elements.
+3. The size of a vector can be increased after it has been defined using the append statement.
+
+Vectors are declared using the DIM keyword, e.g.,
+
+```
+dim a%{10}
+```
+
+declares a vector containing 11 elements.  Zero element vectors can be created in two ways.
+
+1. By omitting the dimension size between the {} in the dim statement
+2. By specifying a negative size, e.g., -1
+
+For example, the following code snipped declares two zero element vectors
+
+```
+dim a&{}
+dim b${-1}
+```
+
+Vectors can be initialised in the same way that arrays are initialised.  Attempting to initialise
+all the values of a zero element vector to the same value has no effect, e.g.,
+
+```
+dim a%{}
+a%{} = 1
+```
+
+will do nothing.
+
+Vectors can be indexed like normal arrays, e.g., using {} instead of ()
+
+```
+dim a%{1}
+a%{0} = 10
+a%{1} = 11
+```
+
+Note that because a vector can contain zero elements, it's generally not safe to iterate through a
+vector using a for loop as for loops in BASIC behave like repeat loops instead of while loops, i.e.,
+one iteration of the loop is always performed.
+
+Vectors can be passed to and returned from functions.  This is demonstrated in the following example
+which returns the sum of the individual elements of two vectors of ints in a new vector.
+
+```
+local dim a%{10}
+local dim b%{5}
+
+a%{} = 1
+b%{} = 2
+
+c%{} := FNAddVectors%{}(a%{}, b%{})
+i% := 0
+while i% <= dim(c%{}, 1)
+  print c%{i%}
+  i% += 1
+endwhile
+
+def FNAddVectors%{}(a%{}, b%{})
+  a_len% := dim(a%{}, 1)
+  b_len% := dim(b%{}, 1)
+  if b_len% < a_len% then
+    a_len% = b_len%
+  endif
+  local dim ret%{a_len%}
+  i% := 0
+  while i% <= a_len%
+    ret%{i%} = a%{i%} + b%{i%} 
+    i% += 1
+  endwhile
+<-ret%{}
+```
+
+The size of a vector can be determined using the dim statement as shown
+in the example above.
+
+It's also possible to create vector references, e.g.,
+
+```
+local dim a&{}
+b&{} := a&{}
+```
+
+Vectors can be used pretty much anywhere arrays can be used, e.g., in the put#, get# and copy statements.
+
+It's not currently possible to assign an array reference to a vector reference and vice-versa.
+This may be permitted in the future if it turns out that there's a need for this sort of thing.
+
+
 ### Copying
 
-Arrays are reference types.  When you assign one array to another you really just copy
+Arrays and vectors are reference types.  When you assign one array to another you really just copy
 the pointer to the data and some additional array meta data.  The actual contents
 of the array are not copied.  For example,
 
@@ -932,7 +1028,7 @@ the bounds checks, for example
 dim a%(10)
 dim b%(10)
 a%() = 10
-copy b%(), a%()
+copy(b%(), a%())
 a%(0) = 11
 print b%(0)
 ```
@@ -941,11 +1037,11 @@ will print 10.
 
 The copy statement is flexible and allows you to mix types but there are some rules.
 
-1. The first argument must be an array reference or a non-constant string.
-2. The second argument must be an array reference, a non-constant string or a constant string.
+1. The first argument must be an array or vector reference or a non-constant string.
+2. The second argument must be an array or vector reference, a non-constant string or a constant string.
 3. The types of both arguments do not need to match as long as both arguments are either an array of a numeric type or a string.
-4. When the first argument is an array of strings, the second argument must also be an array of strings.
-5. Unless you are copying arrays of strings, the copy statement does a memcpy.  Thus there is no type conversion.  You can copy from
+4. When the first argument is an array or vector of strings, the second argument must also be an array or vector of strings.
+5. Unless you are copying arrays or vectors of strings, the copy statement does a memcpy.  Thus there is no type conversion.  You can copy from
    an array of bytes or ints into an array of real numbers, but unless the data in the array of bytes contains valid binary representations.  Some restrictions may be introduced here.  Not sure how useful it is to copy an integer or a string into a real.
    of floating point numbers, the contents of the real array will not be meaningful.
 6. The sizes and dimensions of the arguments do not need to match.  The amount of data copied is 
@@ -960,7 +1056,7 @@ Here's an example of copying a string into a byte array
 ```
 dim a&(5)
 a&() = 33
-copy a&(), "hello"
+copy(a&(), "hello")
 for i% := 0 to dim(a&(),1)
   print chr$(a&(i%));
 next
@@ -968,6 +1064,54 @@ print ""
 ```
 
 The example will print "hello!"
+
+Two forms of the copy statement are provided.  The statement form, which is depicted in the examples
+above, and an expression form.  The expression form evaluates to its first argument, the expression
+form is useful when the destination is a temorary, e.g., a value returned from a function or keyword,
+e.g.,
+
+```
+print copy(FNNewString$, "hello world")
+```
+
+### Appending
+
+Subtilis provides a new keyword, called append that allows the programmer to append elements to
+a string or a vector.  As with the copy statement,  expression and statement variants of the keyword are provided.
+Append takes two parameters.
+
+The first parameter must be a vector or a string.  If the first parameter is a string, the second
+parameter must also be a string, e.g.,
+
+```
+append(a$, "hello")
+```
+
+which is equivalent to writing
+
+```
+a$ += "hello"
+```
+
+If the first argument is a vector the type second argument can be either the type of elements
+stored in the vector, or it can be a vector or array (of any dimension), providing it contains
+the same type of elements as the first argument.  For example,
+
+```
+local dim a${}
+local dim b$(2)
+
+b$() = "to", "the", "world"
+append(a${}, "hello")
+append(a${}, b$())
+
+print a${0}
+print a${1}
+print a${2}
+print a${3}
+```
+
+will print "hello to the world".
 
 ## Current Issues with the Grammar
 
@@ -1213,17 +1357,30 @@ no memory restriction on an application, the maximum integer value is returned.
 
 Can be used to read and write blocks of data from and to a file.
 
-GET# takes two comma separated parameters, a file handle and a buffer of some sorts, and returns the number of bytes read.
+GET# takes two comma separated parameters, a file handle and a buffer of some sorts, and returns the number of items read.
 The buffer can be an array containing numeric elements or a string.  The size of the array or string determines the
 maximum number of bytes that are actually read, e.g.,
 
 ```
 buf$ := string$(32, " ")
-bytes_read% := get# handle#, buf$
+chars_read% := get#(handle#, buf$)
 ```
 
 will read up to 32 bytes into buf$.  If there are fewer than 32 bytes in the file, the number of bytes actually read
-will be returned, but no error will be generated.
+will be returned, but no error will be generated.  As get# can be used in an expression, its parameters are bracketed.
+
+Note the return value from get# is not the number of bytes read but the number of complete objects read.  For example,
+assuming that there were 15 bytes left in the file pointed to by handle# and the following code was executed,
+
+```
+dim buf%(10)
+ints_read% := get#(handle#, buf%())
+```
+
+ints_read% would be set to 3 and not 15 as only 3 complete integers were read.
+
+
+
 
 PUT# writes a buffer to a file.  The buffer can be a scalar array or a string.  The number of bytes written is
 determined by the size of the array or string in bytes.  For example,
@@ -1240,7 +1397,7 @@ written.
 
 Zero extends from a byte variable to an integer.  See the byte type below for more information
 
-## New Types
+## New Scalar Types
 
 ### Byte
 
@@ -1306,7 +1463,6 @@ more palatable to the modern programmer.
 * Structures
 * Functions and procedures as first class types
 * Maps
-* Ability to append to single dimension arrays and strings
 
 ## Tooling
 
