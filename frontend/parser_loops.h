@@ -26,5 +26,7 @@ void subtilis_parser_while(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err);
 void subtilis_parser_repeat(subtilis_parser_t *p, subtilis_token_t *t,
 			    subtilis_error_t *err);
+void subtilis_parser_range(subtilis_parser_t *p, subtilis_token_t *t,
+			   subtilis_error_t *err);
 
 #endif

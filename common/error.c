@@ -269,6 +269,20 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	{"Temporary cannot be used in this context: %s\n", 1},
 
+	/* SUBTILIS_ERROR_RANGE_TYPE_MISMATCH */
+
+	{"Range variable %s is not compatible with range collection type %s\n",
+	 2},
+
+	/* SUBTILIS_ERROR_ARRAY_IN_RANGE */
+
+	{"Range variable %s cannot be an array or a vector\n", 1},
+
+	/* SUBTILIS_ERROR_RANGE_BAD_VAR_COUNT */
+
+	{"Incorrect number of variables in range statement.  Expected 1 or %s"
+	" got %s\n", 2},
+
 	/* SUBTILIS_ERROR_ASS_BAD_REG */
 	{"%s is not a valid register name\n", 1},
 

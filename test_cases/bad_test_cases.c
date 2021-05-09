@@ -676,6 +676,37 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"dim a%(-1)\n",
 	SUBTILIS_ERROR_BAD_DIM,
 	},
+	{"range_out_of_scope",
+	"dim a%(5)\n"
+	"a%() = 1,2,3,4,5,6\n"
+	"range b% := a%()\n"
+	"    print b%\n"
+	"endrange\n"
+	"print b%\n",
+	SUBTILIS_ERROR_UNKNOWN_VARIABLE,
+	},
+	{"range_not_array_or_vector",
+	"range a& := \"hello\"\n"
+	"  print a&\n"
+	"endrange\n",
+	SUBTILIS_ERROR_NOT_ARRAY_OR_VECTOR,
+	},
+	{"range_type_mismatch",
+	"dim b(7)\n"
+	"range a& := b()\n"
+	"print a&\n"
+	"endrange\n",
+	SUBTILIS_ERROR_RANGE_TYPE_MISMATCH,
+	},
+	{"range_array_in_range",
+	"dim a&(5)\n"
+	"a&() = 1,2,3,4,5,6\n"
+	"dim c&(0)\n"
+	"range c&(0) := a&()\n"
+	"  print b&\n"
+	"endrange\n",
+	SUBTILIS_ERROR_ARRAY_IN_RANGE,
+	},
 };
 
 /* clang-format on */
