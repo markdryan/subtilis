@@ -707,6 +707,30 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"endrange\n",
 	SUBTILIS_ERROR_ARRAY_IN_RANGE,
 	},
+	{"range_too_many_vars",
+	"dim a%(5)\n"
+	"a%() = 1,2,3,4,5,6\n"
+	"local c%\n"
+	"range b%, c%, d% = a%()\n"
+	"endrange\n",
+	SUBTILIS_ERROR_RANGE_BAD_VAR_COUNT,
+	},
+	{"range_bad_index_type",
+	"dim a%(5)\n"
+	"a%() = 1,2,3,4,5,6\n"
+	"local b%\n"
+	"range b%, c = a%()\n"
+	"  print c\n"
+	"endrange\n",
+	SUBTILIS_ERROR_INTEGER_VARIABLE_EXPECTED,
+	},
+	{"range_array_for_index_var",
+	"dim a%{5}\n"
+	"dim c%(0)\n"
+	"range b%, c%(0) = a%{}\n"
+	"endrange\n",
+	SUBTILIS_ERROR_ARRAY_IN_RANGE,
+	},
 };
 
 /* clang-format on */

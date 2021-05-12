@@ -959,7 +959,9 @@ struct subtilis_range_var_t_ {
 	char *name;
 	subtilis_type_t type;
 	subtilis_for_context_t for_ctx;
-	subtilis_ir_operand_t label;
+	subtilis_ir_operand_t start_label;
+	subtilis_ir_operand_t end_label;
+	subtilis_ir_operand_t end_reg;
 };
 
 typedef struct subtilis_range_var_t_ subtilis_range_var_t;
@@ -1002,15 +1004,17 @@ static subtilis_range_var_t *prv_get_varnames(subtilis_parser_t *p,
 		    p, t, &range_vars[var_count].type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-
-		if (t->tok.id_type.type != SUBTILIS_TYPE_INTEGER) {
+		var_count++;
+		if (range_vars[var_count - 1].type.type !=
+		    SUBTILIS_TYPE_INTEGER) {
 			subtilis_error_set_integer_variable_expected(
-			    err, tbuf, p->l->stream->name, p->l->line);
+			    err,
+			    subtilis_type_name(&range_vars[var_count].type),
+			    p->l->stream->name, p->l->line);
 			goto cleanup;
 		}
 
 		tbuf = subtilis_token_get_text(t);
-		var_count++;
 	}
 
 	if ((t->type == SUBTILIS_TOKEN_OPERATOR) &&
@@ -1135,39 +1139,39 @@ cleanup:
 	return NULL;
 }
 
+static void prv_assign_range_var(subtilis_parser_t *p,
+				 subtilis_ir_operand_t ptr,
+				 subtilis_range_var_t *var,
+				 subtilis_error_t *err)
+{
+	subtilis_exp_t *val;
+
+	val = subtilis_type_if_load_from_mem(p, &var->type, ptr.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (!subtilis_type_if_is_numeric(&var->type)) {
+		subtilis_type_if_assign_ref(p, &var->type, var->for_ctx.reg,
+					    var->for_ctx.loc, val, err);
+	} else if (var->for_ctx.is_reg) {
+		subtilis_type_if_assign_to_reg(p, var->for_ctx.loc, val, err);
+	} else {
+		subtilis_type_if_assign_to_mem(p, var->for_ctx.reg,
+					       var->for_ctx.loc, val, err);
+	}
+}
+
 static size_t prv_range_loop_start(subtilis_parser_t *p, subtilis_exp_t *e,
-				   size_t var_count,
 				   subtilis_range_var_t *range_vars,
 				   subtilis_ir_operand_t start_label,
 				   subtilis_ir_operand_t end_label,
 				   subtilis_error_t *err)
 {
-	subtilis_exp_t *zero;
-	subtilis_exp_t *val;
-	size_t i;
 	subtilis_ir_operand_t size;
 	subtilis_ir_operand_t end;
 	subtilis_ir_operand_t condee;
 	subtilis_ir_operand_t iter_label;
 	subtilis_ir_operand_t ptr;
-
-	for (i = 1; i < var_count; i++) {
-		zero = subtilis_exp_new_int32(0, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return SIZE_MAX;
-
-		if (range_vars[i].for_ctx.is_reg)
-			subtilis_type_if_assign_to_reg(
-			    p, range_vars[i].for_ctx.loc, zero, err);
-		else
-			subtilis_type_if_assign_to_mem(
-			    p, range_vars[i].for_ctx.reg,
-			    range_vars[i].for_ctx.loc, zero, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return SIZE_MAX;
-		range_vars[i].label.label =
-		    subtilis_ir_section_new_label(p->current);
-	}
 
 	size.reg =
 	    subtilis_reference_type_get_size(p, e->exp.ir_op.reg, 0, err);
@@ -1202,33 +1206,116 @@ static size_t prv_range_loop_start(subtilis_parser_t *p, subtilis_exp_t *e,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	val = subtilis_type_if_load_from_mem(p, &range_vars[0].type, ptr.reg, 0,
-					     err);
+	prv_assign_range_var(p, ptr, &range_vars[0], err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
-
-	if (!subtilis_type_if_is_numeric(&range_vars[0].type)) {
-		subtilis_type_if_assign_ref(
-		    p, &range_vars[0].type, range_vars[0].for_ctx.reg,
-		    range_vars[0].for_ctx.loc, val, err);
-	} else if (range_vars[0].for_ctx.is_reg) {
-		subtilis_type_if_assign_to_reg(p, range_vars[0].for_ctx.loc,
-					       val, err);
-	} else {
-		subtilis_type_if_assign_to_mem(p, range_vars[0].for_ctx.reg,
-					       range_vars[0].for_ctx.loc, val,
-					       err);
-	}
 
 	return ptr.reg;
 }
 
-static void prv_range_loop_end(subtilis_parser_t *p, size_t var_count,
-			       subtilis_range_var_t *range_vars,
-			       subtilis_ir_operand_t ptr,
-			       subtilis_ir_operand_t start_label,
-			       subtilis_ir_operand_t end_label,
-			       subtilis_error_t *err)
+static size_t prv_range_loop_start_index(subtilis_parser_t *p,
+					 subtilis_exp_t *e, size_t var_count,
+					 subtilis_range_var_t *range_vars,
+					 subtilis_error_t *err)
+{
+	subtilis_exp_t *zero;
+	subtilis_exp_t *dim;
+	subtilis_exp_t *e_dup;
+	subtilis_ir_operand_t ok_label;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t condee;
+	subtilis_ir_operand_t ptr;
+	subtilis_ir_operand_t counter;
+	size_t i;
+
+	ptr.reg = subtilis_reference_get_data(p, e->exp.ir_op.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	for (i = 1; i < var_count; i++) {
+		range_vars[i].start_label.label =
+		    subtilis_ir_section_new_label(p->current);
+		range_vars[i].end_label.label =
+		    subtilis_ir_section_new_label(p->current);
+		e_dup = subtilis_type_if_dup(e, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+		dim = subtilis_exp_new_int32(i, err);
+		if (err->type != SUBTILIS_ERROR_OK) {
+			subtilis_exp_delete(dim);
+			return SIZE_MAX;
+		}
+		dim = subtilis_array_get_dim(p, e_dup, dim, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+		dim = subtilis_type_if_exp_to_var(p, dim, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+		range_vars[i].end_reg = dim->exp.ir_op;
+		subtilis_exp_delete(dim);
+	}
+
+	for (i = 1; i < var_count; i++) {
+		zero = subtilis_exp_new_int32(0, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+
+		if (range_vars[i].for_ctx.is_reg)
+			subtilis_type_if_assign_to_reg(
+			    p, range_vars[i].for_ctx.loc, zero, err);
+		else
+			subtilis_type_if_assign_to_mem(
+			    p, range_vars[i].for_ctx.reg,
+			    range_vars[i].for_ctx.loc, zero, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+
+		subtilis_ir_section_add_label(
+		    p->current, range_vars[i].start_label.label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+
+		if (range_vars[i].for_ctx.is_reg) {
+			counter.reg = range_vars[i].for_ctx.loc;
+		} else {
+			op1.reg = range_vars[i].for_ctx.reg;
+			op2.integer = range_vars[i].for_ctx.loc;
+			counter.reg = subtilis_ir_section_add_instr(
+			    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op1, op2,
+			    err);
+		}
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+
+		condee.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_LTE_I32, counter,
+		    range_vars[i].end_reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+
+		ok_label.label = subtilis_ir_section_new_label(p->current);
+		subtilis_ir_section_add_instr_reg(
+		    p->current, SUBTILIS_OP_INSTR_JMPC, condee, ok_label,
+		    range_vars[i].end_label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+		subtilis_ir_section_add_label(p->current, ok_label.label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+	}
+
+	prv_assign_range_var(p, ptr, &range_vars[0], err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	return ptr.reg;
+}
+
+static void
+prv_range_loop_end(subtilis_parser_t *p, subtilis_range_var_t *range_vars,
+		   subtilis_ir_operand_t ptr, subtilis_ir_operand_t start_label,
+		   subtilis_ir_operand_t end_label, subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op1;
 
@@ -1247,6 +1334,46 @@ static void prv_range_loop_end(subtilis_parser_t *p, size_t var_count,
 		return;
 
 	subtilis_ir_section_add_label(p->current, end_label.label, err);
+}
+
+static void prv_range_loop_end_index(subtilis_parser_t *p, size_t var_count,
+				     subtilis_range_var_t *range_vars,
+				     subtilis_ir_operand_t ptr,
+				     subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	size_t i;
+	subtilis_exp_t *inc;
+
+	op1.integer = subtilis_type_if_size(&range_vars[0].type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, ptr, ptr, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	for (i = var_count - 1; i > 0; i--) {
+		inc = subtilis_exp_new_int32(1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		inc = prv_increment_var(p, inc, &range_vars[i].for_ctx, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		subtilis_exp_delete(inc);
+
+		subtilis_ir_section_add_instr_no_reg(
+		    p->current, SUBTILIS_OP_INSTR_JMP,
+		    range_vars[i].start_label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		subtilis_ir_section_add_label(
+		    p->current, range_vars[i].end_label.label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 }
 
 static void prv_init_range_var(subtilis_parser_t *p, subtilis_token_t *t,
@@ -1370,8 +1497,12 @@ static void prv_range_compound(subtilis_parser_t *p, subtilis_token_t *t,
 	start_label.label = subtilis_ir_section_new_label(p->current);
 	end_label.label = subtilis_ir_section_new_label(p->current);
 
-	ptr.reg = prv_range_loop_start(p, e, var_count, range_vars, start_label,
-				       end_label, err);
+	if (var_count == 1)
+		ptr.reg = prv_range_loop_start(p, e, range_vars, start_label,
+					       end_label, err);
+	else
+		ptr.reg = prv_range_loop_start_index(p, e, var_count,
+						     range_vars, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1389,8 +1520,12 @@ static void prv_range_compound(subtilis_parser_t *p, subtilis_token_t *t,
 		subtilis_error_set_compund_not_term(err, p->l->stream->name,
 						    start);
 
-	prv_range_loop_end(p, var_count, range_vars, ptr, start_label,
-			   end_label, err);
+	if (var_count == 1)
+		prv_range_loop_end(p, range_vars, ptr, start_label, end_label,
+				   err);
+	else
+		prv_range_loop_end_index(p, var_count, range_vars, ptr, err);
+
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

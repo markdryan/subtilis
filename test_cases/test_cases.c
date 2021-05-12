@@ -4271,6 +4271,83 @@ const subtilis_test_case_t test_cases[] = {
 	"endrange\n",
 	"1\n2\n3\n4\n5\n6\n"
 	},
+	{"range_1d_array_var",
+	"dim a%(5)\n"
+	"a%() = 1,2,3,4,5,6\n"
+	"local b%\n"
+	"range b%, c% = a%()\n"
+	"  print b%;\n"
+	"  print \", \";\n"
+	"  print c%\n"
+	"endrange\n",
+	"1, 0\n2, 1\n3, 2\n4, 3\n5, 4\n6, 5\n",
+	},
+	{"range_1d_array_var_global",
+	"dim a%(5)\n"
+	"a%() = 1,2,3,4,5,6\n"
+	"range b%, c% = a%()\n"
+	"  print b%;\n"
+	"  print \", \";\n"
+	"  print c%\n"
+	"endrange\n"
+	"print b%\n"
+	"print c%\n",
+	"1, 0\n2, 1\n3, 2\n4, 3\n5, 4\n6, 5\n6\n6\n",
+	},
+	{"range_1d_array_var_local",
+	"dim a%(5)\n"
+	"a%() = 1,2,3,4,5,6\n"
+	"range local b%, c% = a%()\n"
+	"  print b%;\n"
+	"  print \", \";\n"
+	"  print c%\n"
+	"endrange\n",
+	"1, 0\n2, 1\n3, 2\n4, 3\n5, 4\n6, 5\n",
+	},
+	{"range_1d_array_var_local_index",
+	"dim a%(5)\n"
+	"a%() = 1,2,3,4,5,6\n"
+	"local c%\n"
+	"range b%, c% = a%()\n"
+	"  print b%;\n"
+	"  print \", \";\n"
+	"  print c%\n"
+	"endrange\n",
+	"1, 0\n2, 1\n3, 2\n4, 3\n5, 4\n6, 5\n",
+	},
+	{"range_var_vector",
+	"dim a%{5}\n"
+	"a%{} = 1,2,3,4,5,6\n"
+	"local b%\n"
+	"range b%, c% = a%{}\n"
+	"  print b%;\n"
+	"  print \", \";\n"
+	"  print c%\n"
+	"endrange\n",
+	"1, 0\n2, 1\n3, 2\n4, 3\n5, 4\n6, 5\n",
+	},
+	{"range_3d_string_array",
+	"dim a$(1,1,1)\n"
+	"a$() = \"her\", \"beauty\", \"fairly\", \"took\", \"my\", \"breath\", \"away\", \".\"\n"
+	"range b$, c%, d%, e% := a$()\n"
+	"  print b$;\n"
+	"  print \" ( \";\n"
+	"  print c%;\n"
+	"  print \", \";\n"
+	"  print d%;\n"
+	"  print \", \";\n"
+	"  print e%;\n"
+	"  print \")\"\n"
+	"endrange\n",
+	"her ( 0, 0, 0)\n"
+	"beauty ( 0, 0, 1)\n"
+	"fairly ( 0, 1, 0)\n"
+	"took ( 0, 1, 1)\n"
+	"my ( 1, 0, 0)\n"
+	"breath ( 1, 0, 1)\n"
+	"away ( 1, 1, 0)\n"
+	". ( 1, 1, 1)\n",
+	},
 };
 
 /* clang-format on */
