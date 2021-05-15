@@ -731,6 +731,12 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"endrange\n",
 	SUBTILIS_ERROR_ARRAY_IN_RANGE,
 	},
+	{"for_out_of_scope",
+	"for i% := 0 to 10\n"
+	"next\n"
+	"print i%\n",
+	SUBTILIS_ERROR_UNKNOWN_VARIABLE,
+	},
 };
 
 /* clang-format on */

@@ -432,16 +432,25 @@ static void prv_for_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 
 	if (new_local) {
+		p->level++;
+		subtilis_symbol_table_level_up(p->local_st, p->l, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
 		subtilis_type_if_assign_to_reg(p, for_ctx->loc, e, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		(void)subtilis_symbol_table_insert_reg(
 		    p->local_st, var_name, &for_ctx->type, for_ctx->loc, err);
-	} else if (for_ctx->is_reg) {
-		subtilis_type_if_assign_to_reg(p, for_ctx->loc, e, err);
 	} else {
-		subtilis_type_if_assign_to_mem(p, for_ctx->reg, for_ctx->loc, e,
-					       err);
+		if (for_ctx->is_reg) {
+			subtilis_type_if_assign_to_reg(p, for_ctx->loc, e, err);
+		} else {
+			subtilis_type_if_assign_to_mem(p, for_ctx->reg,
+						       for_ctx->loc, e, err);
+		}
+		p->level++;
+		subtilis_symbol_table_level_up(p->local_st, p->l, err);
 	}
 
 cleanup:
@@ -463,7 +472,7 @@ static void prv_for_loop_start(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_parser_compound(p, t, SUBTILIS_KEYWORD_NEXT, err);
+	subtilis_parser_compound_at_sym_level(p, t, SUBTILIS_KEYWORD_NEXT, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

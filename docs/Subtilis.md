@@ -357,6 +357,35 @@ FOR i% := 0 TO 10
 NEXT
 ```
 
+### Variables Created by FOR and RANGE
+
+The FOR and RANGE statements are fairly unique in Subtilis as they are the only
+statements, apart from DIM and LET that can create new variables.  When a FOR
+or a RANGE statement appears at the top level of the main function they can be
+used to create global variabes.  For example,
+
+```
+for a% = 0 to 10 next
+```
+
+is equivalent to 
+
+```
+a% = 0
+for a% = 0 to 10 next
+```
+
+However, when FOR or RANGE is used to create local variables, these variables are
+local to the loop.  They cease to exist once the loop goes out of scope.  Thus
+
+```
+range a% := b%{}
+endrange
+print a%
+```
+
+will not compile as a% ceases to exist once the loop has finished.
+
 
 ### Function and Procedure definition
 
