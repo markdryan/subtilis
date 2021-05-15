@@ -1277,6 +1277,10 @@ static size_t prv_range_loop_start(subtilis_parser_t *p, subtilis_exp_t *e,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
+	subtilis_parser_handle_escape(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
 	prv_assign_range_var(p, ptr, &range_vars[0], err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
@@ -1375,6 +1379,10 @@ static size_t prv_range_loop_start_index(subtilis_parser_t *p,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return SIZE_MAX;
 	}
+
+	subtilis_parser_handle_escape(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
 
 	prv_assign_range_var(p, ptr, &range_vars[0], err);
 	if (err->type != SUBTILIS_ERROR_OK)
