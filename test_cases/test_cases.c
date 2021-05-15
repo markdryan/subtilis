@@ -4348,6 +4348,14 @@ const subtilis_test_case_t test_cases[] = {
 	"away ( 1, 1, 0)\n"
 	". ( 1, 1, 1)\n",
 	},
+	{"for_vector_var",
+	"dim a%{0}\n"
+	"for a%{0} = 0 to 4\n"
+	"  print a%{0}\n"
+	"next\n"
+	"print a%{0}\n",
+	"0\n1\n2\n3\n4\n5\n",
+	},
 };
 
 /* clang-format on */

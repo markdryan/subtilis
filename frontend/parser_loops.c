@@ -225,6 +225,42 @@ cleanup:
 		subtilis_exp_delete(indices[i]);
 }
 
+static void prv_for_assign_vector(subtilis_parser_t *p, const char *var_name,
+				  subtilis_token_t *t,
+				  const subtilis_symbol_t *s, size_t mem_reg,
+				  subtilis_for_context_t *ctx,
+				  subtilis_error_t *err)
+{
+	subtilis_exp_t *index[1];
+	subtilis_exp_t *e = NULL;
+
+	index[0] = subtilis_curly_bracketed_arg_have_b(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_type_if_element_type(p, &s->t, &ctx->type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_array_index_calc(p, var_name, &s->t, mem_reg, s->loc,
+				      index, 1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	ctx->is_reg = false;
+	ctx->reg = e->exp.ir_op.reg;
+	ctx->loc = 0;
+
+cleanup:
+
+	subtilis_exp_delete(e);
+	subtilis_exp_delete(index[0]);
+}
+
 static void prv_init_array_var(subtilis_parser_t *p, subtilis_token_t *t,
 			       subtilis_for_context_t *for_ctx,
 			       const char *var_name, subtilis_error_t *err)
@@ -245,6 +281,28 @@ static void prv_init_array_var(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	prv_for_assign_array(p, var_name, t, s, op1.reg, for_ctx, err);
+}
+
+static void prv_init_vector_var(subtilis_parser_t *p, subtilis_token_t *t,
+				subtilis_for_context_t *for_ctx,
+				const char *var_name, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	const subtilis_symbol_t *s;
+	bool new_global = false;
+
+	subtilis_parser_lookup_assignment_var(p, t, var_name, &s, &op1.reg,
+					      &new_global, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (new_global) {
+		subtilis_error_set_unknown_variable(
+		    err, var_name, p->l->stream->name, p->l->line);
+		return;
+	}
+
+	prv_for_assign_vector(p, var_name, t, s, op1.reg, for_ctx, err);
 }
 
 static void prv_init_scalar_var(subtilis_parser_t *p, subtilis_token_t *t,
@@ -312,6 +370,10 @@ static char *prv_init_for_var(subtilis_parser_t *p, subtilis_token_t *t,
 
 	if (!strcmp(tbuf, "(")) {
 		prv_init_array_var(p, t, for_ctx, var_name, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	} else if (!strcmp(tbuf, "{")) {
+		prv_init_vector_var(p, t, for_ctx, var_name, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 	} else {
