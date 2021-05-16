@@ -201,7 +201,7 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 
 		if (!value_present) {
 			subtilis_type_if_zero_ref(
-			    p, &type, SUBTILIS_IR_REG_LOCAL, s->loc, err);
+			    p, &type, SUBTILIS_IR_REG_LOCAL, s->loc, true, err);
 		} else {
 			e = subtilis_parser_expression(p, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)

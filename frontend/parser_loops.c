@@ -1212,7 +1212,7 @@ cleanup:
 
 static void prv_assign_range_var(subtilis_parser_t *p,
 				 subtilis_ir_operand_t ptr,
-				 subtilis_range_var_t *var,
+				 subtilis_range_var_t *var, bool new_locals,
 				 subtilis_error_t *err)
 {
 	subtilis_exp_t *val;
@@ -1222,8 +1222,22 @@ static void prv_assign_range_var(subtilis_parser_t *p,
 		return;
 
 	if (!subtilis_type_if_is_numeric(&var->type)) {
-		subtilis_type_if_assign_ref(p, &var->type, var->for_ctx.reg,
-					    var->for_ctx.loc, val, err);
+		/*
+		 * If we have a reference type and it's a new local, there's
+		 * no need to go through all the reference counting.  We know
+		 * that the array has references to every element we're
+		 * iterating through, so this saves some code.
+		 */
+
+		if (!new_locals)
+			subtilis_type_if_assign_ref(p, &var->type,
+						    var->for_ctx.reg,
+						    var->for_ctx.loc, val, err);
+		else
+			subtilis_type_if_assign_ref_no_rc(
+			    p, &var->type, var->for_ctx.reg, var->for_ctx.loc,
+			    val, err);
+
 	} else if (var->for_ctx.is_reg) {
 		subtilis_type_if_assign_to_reg(p, var->for_ctx.loc, val, err);
 	} else {
@@ -1236,7 +1250,7 @@ static size_t prv_range_loop_start(subtilis_parser_t *p, subtilis_exp_t *e,
 				   subtilis_range_var_t *range_vars,
 				   subtilis_ir_operand_t start_label,
 				   subtilis_ir_operand_t end_label,
-				   subtilis_error_t *err)
+				   bool new_locals, subtilis_error_t *err)
 {
 	subtilis_ir_operand_t size;
 	subtilis_ir_operand_t end;
@@ -1281,7 +1295,7 @@ static size_t prv_range_loop_start(subtilis_parser_t *p, subtilis_exp_t *e,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	prv_assign_range_var(p, ptr, &range_vars[0], err);
+	prv_assign_range_var(p, ptr, &range_vars[0], new_locals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
@@ -1291,7 +1305,7 @@ static size_t prv_range_loop_start(subtilis_parser_t *p, subtilis_exp_t *e,
 static size_t prv_range_loop_start_index(subtilis_parser_t *p,
 					 subtilis_exp_t *e, size_t var_count,
 					 subtilis_range_var_t *range_vars,
-					 subtilis_error_t *err)
+					 bool new_locals, subtilis_error_t *err)
 {
 	subtilis_exp_t *zero;
 	subtilis_exp_t *dim;
@@ -1384,7 +1398,7 @@ static size_t prv_range_loop_start_index(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	prv_assign_range_var(p, ptr, &range_vars[0], err);
+	prv_assign_range_var(p, ptr, &range_vars[0], new_locals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
@@ -1476,7 +1490,7 @@ static void prv_init_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 			return;
 		if (!subtilis_type_if_is_numeric(type)) {
 			subtilis_type_if_zero_ref(
-			    p, type, SUBTILIS_IR_REG_GLOBAL, s->loc, err);
+			    p, type, SUBTILIS_IR_REG_GLOBAL, s->loc, true, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 		}
@@ -1514,10 +1528,12 @@ static void prv_init_local_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 
-	s = subtilis_symbol_table_insert(p->local_st, var_name, type, err);
+	s = subtilis_symbol_table_insert_no_rc(p->local_st, var_name, type,
+					       err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	subtilis_type_if_zero_ref(p, type, SUBTILIS_IR_REG_LOCAL, s->loc, err);
+	subtilis_type_if_zero_ref(p, type, SUBTILIS_IR_REG_LOCAL, s->loc, false,
+				  err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	for_ctx->is_reg = s->is_reg;
@@ -1578,10 +1594,10 @@ static void prv_range_compound(subtilis_parser_t *p, subtilis_token_t *t,
 
 	if (var_count == 1)
 		ptr.reg = prv_range_loop_start(p, e, range_vars, start_label,
-					       end_label, err);
+					       end_label, new_locals, err);
 	else
-		ptr.reg = prv_range_loop_start_index(p, e, var_count,
-						     range_vars, err);
+		ptr.reg = prv_range_loop_start_index(
+		    p, e, var_count, range_vars, new_locals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1595,9 +1611,17 @@ static void prv_range_compound(subtilis_parser_t *p, subtilis_token_t *t,
 			return;
 	}
 
-	if (t->type == SUBTILIS_TOKEN_EOF)
+	if (t->type == SUBTILIS_TOKEN_EOF) {
 		subtilis_error_set_compund_not_term(err, p->l->stream->name,
 						    start);
+		return;
+	}
+
+	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
+	subtilis_reference_deallocate_refs(p, var_reg, p->local_st, p->level,
+					   err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	if (var_count == 1)
 		prv_range_loop_end(p, range_vars, ptr, start_label, end_label,
@@ -1605,12 +1629,6 @@ static void prv_range_compound(subtilis_parser_t *p, subtilis_token_t *t,
 	else
 		prv_range_loop_end_index(p, var_count, range_vars, ptr, err);
 
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	var_reg.reg = SUBTILIS_IR_REG_LOCAL;
-	subtilis_reference_deallocate_refs(p, var_reg, p->local_st, p->level,
-					   err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

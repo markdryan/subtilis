@@ -31,7 +31,8 @@
 
 void subtilis_reference_type_init_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 				      size_t dest_loc, size_t source_reg,
-				      bool check_size, subtilis_error_t *err);
+				      bool check_size, bool ref,
+				      subtilis_error_t *err);
 void subtilis_reference_type_new_ref(subtilis_parser_t *p,
 				     const subtilis_type_t *type,
 				     size_t dest_mem_reg, size_t dest_loc,
@@ -47,6 +48,10 @@ void subtilis_reference_type_assign_ref(subtilis_parser_t *p,
 					size_t dest_mem_reg, size_t dest_loc,
 					size_t source_reg, bool check_size,
 					subtilis_error_t *err);
+void subtilis_reference_type_assign_no_rc(subtilis_parser_t *p,
+					  size_t dest_mem_reg, size_t dest_loc,
+					  size_t source_reg, bool check_size,
+					  subtilis_error_t *err);
 void subtilis_reference_type_ref(subtilis_parser_t *p, size_t mem_reg,
 				 size_t loc, bool check_size,
 				 subtilis_error_t *err);

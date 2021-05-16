@@ -25,7 +25,8 @@
 
 void subtilis_reference_type_init_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 				      size_t dest_loc, size_t source_reg,
-				      bool check_size, subtilis_error_t *err)
+				      bool check_size, bool ref,
+				      subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
@@ -68,10 +69,12 @@ void subtilis_reference_type_init_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_REF,
-					     copy, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+	if (ref) {
+		subtilis_ir_section_add_instr_no_reg(
+		    p->current, SUBTILIS_OP_INSTR_REF, copy, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 
 	op1.reg = dest_mem_reg;
 	op2.integer = dest_loc + SUBTIILIS_REFERENCE_DATA_OFF;
@@ -112,7 +115,7 @@ void subtilis_reference_type_copy_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 	subtilis_ir_operand_t op2;
 
 	subtilis_reference_type_init_ref(p, dest_mem_reg, dest_loc, source_reg,
-					 false, err);
+					 false, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -301,7 +304,7 @@ void subtilis_reference_type_new_ref(subtilis_parser_t *p,
 				     subtilis_error_t *err)
 {
 	subtilis_reference_type_init_ref(p, dest_mem_reg, dest_loc, source_reg,
-					 check_size, err);
+					 check_size, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -344,7 +347,7 @@ void subtilis_reference_type_assign_ref(subtilis_parser_t *p,
 		return;
 
 	subtilis_reference_type_init_ref(p, dest_mem_reg, dest_loc, source_reg,
-					 check_size, err);
+					 check_size, true, err);
 }
 
 size_t subtilis_reference_get_pointer(subtilis_parser_t *p, size_t reg,
@@ -1220,7 +1223,7 @@ void subtilis_reference_deallocate_refs(subtilis_parser_t *p,
 
 	for (i = 0; i < l->size; i++) {
 		s = l->symbols[i];
-		if (subtilis_type_if_is_numeric(&s->t))
+		if (subtilis_type_if_is_numeric(&s->t) || s->no_rc)
 			continue;
 
 		ref_of_ref = !(subtilis_type_if_destructor(&s->t) == 0);
