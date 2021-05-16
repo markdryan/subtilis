@@ -357,6 +357,35 @@ FOR i% := 0 TO 10
 NEXT
 ```
 
+### Variables Created by FOR and RANGE
+
+The FOR and RANGE statements are fairly unique in Subtilis as they are the only
+statements, apart from DIM and LET that can create new variables.  When a FOR
+or a RANGE statement appears at the top level of the main function they can be
+used to create global variabes.  For example,
+
+```
+for a% = 0 to 10 next
+```
+
+is equivalent to 
+
+```
+a% = 0
+for a% = 0 to 10 next
+```
+
+However, when FOR or RANGE is used to create local variables, these variables are
+local to the loop.  They cease to exist once the loop goes out of scope.  Thus
+
+```
+range a% := b%{}
+endrange
+print a%
+```
+
+will not compile as a% ceases to exist once the loop has finished.
+
 
 ### Function and Procedure definition
 
@@ -1396,6 +1425,112 @@ written.
 ### INTZ
 
 Zero extends from a byte variable to an integer.  See the byte type below for more information
+
+### RANGE
+
+The RANGE keyword introduces a new convenience looping construct for iterating through the elements
+of an array or a vector.  The syntax is
+
+```
+range [local] var [,index]* [:=|=] array or vector
+endrange
+```
+
+*array or vector* is an array or vector reference.  It can be of any type and any dimension.
+*var* is a variable.  Its type must match the element type of the *array or vector*.  It must
+be a scalar variable, e.g., a% or b$.  It cannot be an element of an array or vector, e.g., a$(0).
+The *var* variable can be followed by one or more optional *index* variables.  They do not need to
+be present, but if they are, the number of index variables provided must match the number of
+dimensions of the *array or vector*.
+
+Here's an example
+
+```
+dim a%(5)
+a%() = 1,2,3,4,5,6
+range b%, c% := a%()
+  print b%;
+  print ", ";
+  print c%
+endrange
+```
+
+This code will print
+
+```
+1, 0
+2, 1
+3, 2
+4, 3
+5, 4
+6, 5
+```
+
+If the local keyword is provided or the := assigment operator is used, then new local variables will be
+created for *var* and the *index* variables.  These variables will go out of scope when the endrange
+keyword is reached.  If neither local or := is specified, the *var* and the *index* are assumed
+to be existing variables.  There's one exception here.  If the range loop is used in the top level of
+the main function, new global variables will be created for any of the var or index variables that do
+not exist..  These variables will be valid for the entire program.
+
+For example,
+
+```
+dim a%(5)
+a%() = 1,2,3,4,5,6
+
+range b%, c% = a%()
+endrange
+print b%
+print c%
+```
+
+will print
+
+```
+6
+6
+```
+
+Range should be used in preference to for when iterating through arrays and vectors.  Bounds checking
+is eliminated for assignment to *var* so
+
+```
+range v% := range a%()
+  rem do something with v%
+endrange
+```
+
+should be more efficient and generate less code than
+
+```
+for i% := 0 to dim(a%(), 1)
+  v% := a%(i%)
+  rem do something with v%
+next
+```
+
+In addition, it is better to use range loops when dealing with vectors as vectors can be empty,
+thus
+
+```
+dim a%{}
+range v% := a%{}
+  print v%
+endrange
+```
+
+will do nothing, whereas
+
+```
+dim a%{}
+for i% := 0 to dim(a%{},1)
+  print a%{i%}
+next
+```
+
+will generate a runtime error as it will try to access the first element of the vector which does not exist.
+The body of a for loop is always executed at least once.
 
 ## New Scalar Types
 

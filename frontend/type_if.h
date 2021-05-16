@@ -29,7 +29,7 @@ typedef subtilis_exp_t *(*subtilis_type_if_none_t)(subtilis_parser_t *p,
 typedef void (*subtilis_type_if_zeroref_t)(subtilis_parser_t *p,
 					   const subtilis_type_t *type,
 					   size_t mem_reg, size_t loc,
-					   subtilis_error_t *err);
+					   bool push, subtilis_error_t *err);
 typedef void (*subtilis_type_if_initref_t)(subtilis_parser_t *p,
 					   const subtilis_type_t *type,
 					   size_t mem_reg, size_t loc,
@@ -121,6 +121,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_zeroref_t zero_ref;
 	subtilis_type_if_initref_t new_ref;
 	subtilis_type_if_initref_t assign_ref;
+	subtilis_type_if_initref_t assign_ref_no_rc;
 	subtilis_type_if_none_t top_bit;
 	subtilis_type_if_reg_t zero_reg;
 	subtilis_type_if_reg2_t copy_ret;
@@ -223,7 +224,7 @@ subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 
 void subtilis_type_if_zero_ref(subtilis_parser_t *p,
 			       const subtilis_type_t *type, size_t mem_reg,
-			       size_t loc, subtilis_error_t *err);
+			       size_t loc, bool push, subtilis_error_t *err);
 
 /*
  * Initialises a new reference type from a value returned from a function.
@@ -254,6 +255,21 @@ void subtilis_type_if_assign_ref(subtilis_parser_t *p,
 				 const subtilis_type_t *type, size_t mem_reg,
 				 size_t loc, subtilis_exp_t *e,
 				 subtilis_error_t *err);
+
+/*
+ * Similar to subtilis_type_if_assign_ref except no reference counting logic
+ * code is generated.  That means that no code is generated to deref the
+ * existing object pointed to by mem_reg and loc and no code is generated to
+ * ref the object e.  This is useful for cases where the compiler is certain
+ * that it is safe to copy an object without the need to mess with the
+ * reference counts, for example in the range loop.
+ */
+
+void subtilis_type_if_assign_ref_no_rc(subtilis_parser_t *p,
+				       const subtilis_type_t *type,
+				       size_t mem_reg, size_t loc,
+				       subtilis_exp_t *e,
+				       subtilis_error_t *err);
 
 /*
  * Only defined for integer types.  Returns an expression containing an

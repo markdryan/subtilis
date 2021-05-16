@@ -114,7 +114,7 @@ void subtilis_symbol_table_level_down(subtilis_symbol_table_t *st,
 
 static subtilis_symbol_t *prv_symbol_new(const char *key, size_t loc,
 					 const subtilis_type_t *id_type,
-					 size_t size, bool is_reg,
+					 size_t size, bool is_reg, bool no_rc,
 					 subtilis_error_t *err)
 {
 	subtilis_symbol_t *sym;
@@ -132,6 +132,7 @@ static subtilis_symbol_t *prv_symbol_new(const char *key, size_t loc,
 	sym->t = *id_type;
 	sym->loc = loc;
 	sym->is_reg = is_reg;
+	sym->no_rc = no_rc;
 
 	return sym;
 
@@ -144,7 +145,7 @@ on_error:
 static const subtilis_symbol_t *
 prv_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 			const subtilis_type_t *id_type, size_t size,
-			size_t level, subtilis_error_t *err)
+			size_t level, bool no_rc, subtilis_error_t *err)
 
 {
 	subtilis_symbol_t *sym;
@@ -172,7 +173,8 @@ prv_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 	if (align_bytes > 0)
 		st->allocated += size - align_bytes;
 
-	sym = prv_symbol_new(key_dup, st->allocated, id_type, size, false, err);
+	sym = prv_symbol_new(key_dup, st->allocated, id_type, size, false,
+			     no_rc, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -208,7 +210,23 @@ subtilis_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	return prv_symbol_table_insert(st, key, id_type, size, st->level, err);
+	return prv_symbol_table_insert(st, key, id_type, size, st->level, false,
+				       err);
+}
+
+const subtilis_symbol_t *
+subtilis_symbol_table_insert_no_rc(subtilis_symbol_table_t *st, const char *key,
+				   const subtilis_type_t *id_type,
+				   subtilis_error_t *err)
+{
+	size_t size;
+
+	size = subtilis_type_if_size(id_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return prv_symbol_table_insert(st, key, id_type, size, st->level, true,
+				       err);
 }
 
 const subtilis_symbol_t *
@@ -233,7 +251,7 @@ subtilis_symbol_table_create_local_buf(subtilis_symbol_table_t *st, size_t size,
 
 	sprintf(buf, "%zu", st->tmp_count++);
 	return prv_symbol_table_insert(st, buf, &subtilis_type_local_buffer,
-				       size, 0, err);
+				       size, 0, false, err);
 }
 
 const subtilis_symbol_t *
@@ -251,7 +269,7 @@ subtilis_symbol_table_create_named_local_buf(subtilis_symbol_table_t *st,
 	}
 
 	return prv_symbol_table_insert(st, name, &subtilis_type_local_buffer,
-				       size, 0, err);
+				       size, 0, false, err);
 }
 
 const subtilis_symbol_t *
@@ -352,7 +370,7 @@ subtilis_symbol_table_insert_reg(subtilis_symbol_table_t *st, const char *key,
 	size = subtilis_type_if_size(id_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
-	sym = prv_symbol_new(key_dup, reg_num, id_type, size, true, err);
+	sym = prv_symbol_new(key_dup, reg_num, id_type, size, true, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 

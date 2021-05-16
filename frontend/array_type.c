@@ -1608,7 +1608,7 @@ void subtilis_array_type_copy_els(subtilis_parser_t *p,
 	}
 
 	subtilis_reference_type_init_ref(p, counter.reg, 0, counter2.reg, true,
-					 err);
+					 true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

@@ -35,6 +35,7 @@ subtilis_type_if subtilis_type_if_local_buffer = {
 	.zero_ref = NULL,
 	.new_ref = NULL,
 	.assign_ref = NULL,
+	.assign_ref_no_rc = NULL,
 	.top_bit = NULL,
 	.zero_reg = NULL,
 	.const_of = NULL,

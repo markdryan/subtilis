@@ -103,6 +103,9 @@ typedef enum {
 	SUBTILIS_ERROR_DEFFN_SHOULD_BE_DEF_FN,
 	SUBTILIS_ERROR_LOCAL_OBSCURES_GLOBAL,
 	SUBTILIS_ERROR_TEMPORARY_NOT_ALLOWED,
+	SUBTILIS_ERROR_RANGE_TYPE_MISMATCH,
+	SUBTILIS_ERROR_ARRAY_IN_RANGE,
+	SUBTILIS_ERROR_RANGE_BAD_VAR_COUNT,
 	SUBTILIS_ERROR_ASS_BAD_REG,
 	SUBTILIS_ERROR_ASS_INTEGER_ENCODE,
 	SUBTILIS_ERROR_SYS_CALL_UNKNOWN,
@@ -343,6 +346,15 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_temporary_not_allowed(e, context, file, line)       \
 	subtilis_error_set1(e, SUBTILIS_ERROR_TEMPORARY_NOT_ALLOWED, context,  \
 			    file, line)
+#define subtilis_error_set_range_type_mismatch(e, scalar, col, file, line)     \
+	subtilis_error_set2(e, SUBTILIS_ERROR_RANGE_TYPE_MISMATCH, scalar,     \
+			    col, file, line)
+#define subtilis_error_set_array_in_range(e, var_name, file, line)             \
+	subtilis_error_set1(e, SUBTILIS_ERROR_ARRAY_IN_RANGE, var_name, file,  \
+			    line)
+#define subtilis_error_set_range_bad_var_count(e, exp, got, file, line)        \
+	subtilis_error_set_int(e, SUBTILIS_ERROR_RANGE_BAD_VAR_COUNT, exp,     \
+			       got, file, line, __FILE__, __LINE__)
 #define subtilis_error_set_ass_bad_reg(e, reg, file, line)                     \
 	subtilis_error_set1(e, SUBTILIS_ERROR_ASS_BAD_REG, reg, file, line)
 #define subtilis_error_set_ass_integer_encode(e, num, file, line)              \

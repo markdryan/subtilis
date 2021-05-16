@@ -201,7 +201,7 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 
 		if (!value_present) {
 			subtilis_type_if_zero_ref(
-			    p, &type, SUBTILIS_IR_REG_LOCAL, s->loc, err);
+			    p, &type, SUBTILIS_IR_REG_LOCAL, s->loc, true, err);
 		} else {
 			e = subtilis_parser_expression(p, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
@@ -218,16 +218,12 @@ cleanup:
 	free(var_name);
 }
 
-void subtilis_parser_compound_at_level(subtilis_parser_t *p,
-				       subtilis_token_t *t, int end_key,
-				       subtilis_error_t *err)
+void subtilis_parser_compound_at_sym_level(subtilis_parser_t *p,
+					   subtilis_token_t *t, int end_key,
+					   subtilis_error_t *err)
 {
 	unsigned int start;
 	subtilis_ir_operand_t var_reg;
-
-	subtilis_symbol_table_level_up(p->local_st, p->l, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 
 	start = p->l->line;
 	while (t->type != SUBTILIS_TOKEN_EOF) {
@@ -259,6 +255,17 @@ void subtilis_parser_compound_at_level(subtilis_parser_t *p,
 		return;
 	p->current->handler_list =
 	    subtilis_handler_list_truncate(p->current->handler_list, p->level);
+}
+
+void subtilis_parser_compound_at_level(subtilis_parser_t *p,
+				       subtilis_token_t *t, int end_key,
+				       subtilis_error_t *err)
+{
+	subtilis_symbol_table_level_up(p->local_st, p->l, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_parser_compound_at_sym_level(p, t, end_key, err);
 }
 
 void subtilis_parser_compound_statement_at_level(subtilis_parser_t *p,
