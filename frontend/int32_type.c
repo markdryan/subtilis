@@ -39,7 +39,7 @@ static subtilis_exp_t *prv_top_bit_const(subtilis_parser_t *p,
 }
 
 static void prv_const_of(const subtilis_type_t *type,
-			 subtilis_type_t *const_type)
+			 subtilis_type_t *const_type, subtilis_error_t *err)
 {
 	const_type->type = SUBTILIS_TYPE_CONST_INTEGER;
 }
@@ -1017,13 +1017,13 @@ static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
 }
 
 static void prv_array_of(const subtilis_type_t *element_type,
-			 subtilis_type_t *type)
+			 subtilis_type_t *type, subtilis_error_t *err)
 {
 	type->type = SUBTILIS_TYPE_ARRAY_INTEGER;
 }
 
 static void prv_vector_of(const subtilis_type_t *element_type,
-			  subtilis_type_t *type)
+			  subtilis_type_t *type, subtilis_error_t *err)
 {
 	type->type = SUBTILIS_TYPE_VECTOR_INTEGER;
 }
@@ -1283,7 +1283,9 @@ static void prv_commutative_const_real(subtilis_parser_t *p, subtilis_exp_t *a1,
 	    p->current, SUBTILIS_OP_INSTR_MOV_I32_FP, a1->exp.ir_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	a1->type = *result_type;
+	subtilis_type_copy(&a1->type, result_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 	a1->exp.ir_op.reg = reg;
 	reg = subtilis_ir_section_add_instr(p->current, real_var_imm,
 					    a1->exp.ir_op, a2->exp.ir_op, err);
@@ -1304,7 +1306,9 @@ static void prv_commutative_real(subtilis_parser_t *p, subtilis_exp_t *a1,
 	    p->current, SUBTILIS_OP_INSTR_MOV_I32_FP, a1->exp.ir_op, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	a1->type = *result_type;
+	subtilis_type_copy(&a1->type, result_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 	a1->exp.ir_op.reg = reg;
 	reg = subtilis_ir_section_add_instr(p->current, real_var_var,
 					    a1->exp.ir_op, a2->exp.ir_op, err);

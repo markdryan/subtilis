@@ -138,7 +138,7 @@ typedef struct subtilis_for_context_t_ subtilis_for_context_t;
 
 static subtilis_exp_t *prv_increment_var(subtilis_parser_t *p,
 					 subtilis_exp_t *inc,
-					 subtilis_for_context_t *for_ctx,
+					 const subtilis_for_context_t *for_ctx,
 					 subtilis_error_t *err)
 {
 	subtilis_exp_t *var = NULL;
@@ -328,7 +328,9 @@ static void prv_init_scalar_var(subtilis_parser_t *p, subtilis_token_t *t,
 				return;
 		}
 		for_ctx->is_reg = s->is_reg;
-		for_ctx->type = s->t;
+		subtilis_type_copy(&for_ctx->type, &s->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 		for_ctx->reg = op1.reg;
 		for_ctx->loc = s->loc;
 		return;
@@ -396,7 +398,7 @@ static char *prv_init_for_var(subtilis_parser_t *p, subtilis_token_t *t,
 	return var_name;
 
 cleanup:
-
+	subtilis_type_free(&type);
 	free(var_name);
 
 	return NULL;
@@ -481,7 +483,7 @@ static void prv_for_loop_start(subtilis_parser_t *p, subtilis_token_t *t,
 
 static void prv_for_step_generic_var(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_exp_t *to, subtilis_exp_t *step,
-				     subtilis_for_context_t *for_ctx,
+				     const subtilis_for_context_t *for_ctx,
 				     subtilis_error_t *err)
 {
 	subtilis_ir_operand_t start_label;
@@ -595,7 +597,7 @@ cleanup:
 
 static void prv_for_step_int_var(subtilis_parser_t *p, subtilis_token_t *t,
 				 subtilis_exp_t *to, subtilis_exp_t *step,
-				 subtilis_for_context_t *for_ctx,
+				 const subtilis_for_context_t *for_ctx,
 				 subtilis_error_t *err)
 {
 	subtilis_ir_operand_t start_label;
@@ -610,6 +612,8 @@ static void prv_for_step_int_var(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_exp_t *eor_var_dup = NULL;
 	subtilis_exp_t *zero = NULL;
 	subtilis_exp_t *sub = NULL;
+
+	step_type_const.type = SUBTILIS_TYPE_VOID;
 
 	/*
 	 * TODO: Add a runtime check for step variable of 0.
@@ -717,12 +721,13 @@ cleanup:
 	subtilis_exp_delete(step_dir);
 	subtilis_exp_delete(step_dup);
 	subtilis_exp_delete(step);
+	subtilis_type_free(&step_type_const);
 }
 
 static void prv_for_step_const(subtilis_parser_t *p, subtilis_token_t *t,
 			       subtilis_exp_t *to, subtilis_exp_t *step,
 			       subtilis_step_type_t step_type,
-			       subtilis_for_context_t *for_ctx,
+			       const subtilis_for_context_t *for_ctx,
 			       subtilis_error_t *err)
 {
 	subtilis_ir_operand_t start_label;
@@ -768,7 +773,8 @@ cleanup:
 }
 
 static void prv_for_no_step(subtilis_parser_t *p, subtilis_token_t *t,
-			    subtilis_exp_t *to, subtilis_for_context_t *for_ctx,
+			    subtilis_exp_t *to,
+			    const subtilis_for_context_t *for_ctx,
 			    subtilis_error_t *err)
 {
 	subtilis_ir_operand_t start_label;
@@ -820,6 +826,9 @@ void subtilis_parser_for(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_exp_t *step = NULL;
 	bool new_local = false;
 	subtilis_step_type_t step_type = SUBTILIS_STEP_MAX;
+
+	var_type.type = SUBTILIS_TYPE_VOID;
+	for_ctx.type.type = SUBTILIS_TYPE_VOID;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -922,6 +931,8 @@ void subtilis_parser_for(subtilis_parser_t *p, subtilis_token_t *t,
 
 cleanup:
 
+	subtilis_type_free(&var_type);
+	subtilis_type_free(&for_ctx.type);
 	subtilis_exp_delete(step);
 	free(var_name);
 	subtilis_exp_delete(to);
@@ -1053,6 +1064,11 @@ static subtilis_range_var_t *prv_get_varnames(subtilis_parser_t *p,
 		return NULL;
 	}
 
+	for (i = 0; i < SUBTILIS_MAX_DIMENSIONS + 1; i++) {
+		range_vars[i].type.type = SUBTILIS_TYPE_VOID;
+		range_vars[i].for_ctx.type.type = SUBTILIS_TYPE_VOID;
+	}
+
 	tbuf = subtilis_token_get_text(t);
 	if (t->type != SUBTILIS_TOKEN_IDENTIFIER) {
 		subtilis_error_set_id_expected(err, tbuf, p->l->stream->name,
@@ -1101,8 +1117,11 @@ static subtilis_range_var_t *prv_get_varnames(subtilis_parser_t *p,
 
 cleanup:
 
-	for (i = 0; i < var_count; i++)
+	for (i = 0; i < var_count; i++) {
+		subtilis_type_free(&range_vars[i].type);
+		subtilis_type_free(&range_vars[i].for_ctx.type);
 		free(range_vars[i].name);
+	}
 	free(range_vars);
 	return NULL;
 }
@@ -1184,8 +1203,10 @@ prv_get_range_vars(subtilis_parser_t *p, subtilis_token_t *t, size_t *count,
 		subtilis_error_set_range_type_mismatch(
 		    err, range_vars[0].name, subtilis_type_name(&e->type),
 		    p->l->stream->name, p->l->line);
+		subtilis_type_free(&el_type);
 		goto cleanup;
 	}
+	subtilis_type_free(&el_type);
 
 	if ((var_count > 1) &&
 	    (e->type.params.array.num_dims != var_count - 1)) {
@@ -1203,8 +1224,11 @@ prv_get_range_vars(subtilis_parser_t *p, subtilis_token_t *t, size_t *count,
 cleanup:
 
 	subtilis_exp_delete(e);
-	for (i = 0; i < var_count; i++)
+	for (i = 0; i < var_count; i++) {
+		subtilis_type_free(&range_vars[i].type);
+		subtilis_type_free(&range_vars[i].for_ctx.type);
 		free(range_vars[i].name);
+	}
 	free(range_vars);
 
 	return NULL;
@@ -1212,8 +1236,8 @@ cleanup:
 
 static void prv_assign_range_var(subtilis_parser_t *p,
 				 subtilis_ir_operand_t ptr,
-				 subtilis_range_var_t *var, bool new_locals,
-				 subtilis_error_t *err)
+				 const subtilis_range_var_t *var,
+				 bool new_locals, subtilis_error_t *err)
 {
 	subtilis_exp_t *val;
 
@@ -1247,7 +1271,7 @@ static void prv_assign_range_var(subtilis_parser_t *p,
 }
 
 static size_t prv_range_loop_start(subtilis_parser_t *p, subtilis_exp_t *e,
-				   subtilis_range_var_t *range_vars,
+				   const subtilis_range_var_t *range_vars,
 				   subtilis_ir_operand_t start_label,
 				   subtilis_ir_operand_t end_label,
 				   bool new_locals, subtilis_error_t *err)
@@ -1406,7 +1430,7 @@ static size_t prv_range_loop_start_index(subtilis_parser_t *p,
 }
 
 static void
-prv_range_loop_end(subtilis_parser_t *p, subtilis_range_var_t *range_vars,
+prv_range_loop_end(subtilis_parser_t *p, const subtilis_range_var_t *range_vars,
 		   subtilis_ir_operand_t ptr, subtilis_ir_operand_t start_label,
 		   subtilis_ir_operand_t end_label, subtilis_error_t *err)
 {
@@ -1430,7 +1454,7 @@ prv_range_loop_end(subtilis_parser_t *p, subtilis_range_var_t *range_vars,
 }
 
 static void prv_range_loop_end_index(subtilis_parser_t *p, size_t var_count,
-				     subtilis_range_var_t *range_vars,
+				     const subtilis_range_var_t *range_vars,
 				     subtilis_ir_operand_t ptr,
 				     subtilis_error_t *err)
 {
@@ -1517,7 +1541,9 @@ static void prv_init_local_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 
 	if (subtilis_type_if_is_numeric(type)) {
 		for_ctx->is_reg = true;
-		for_ctx->type = *type;
+		subtilis_type_copy(&for_ctx->type, type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 		if (subtilis_type_if_reg_type(&for_ctx->type) ==
 		    SUBTILIS_IR_REG_TYPE_INTEGER)
 			for_ctx->loc = p->current->reg_counter++;
@@ -1659,7 +1685,10 @@ void subtilis_parser_range(subtilis_parser_t *p, subtilis_token_t *t,
 	prv_range_compound(p, t, e, var_count, new_locals, range_vars, err);
 
 	subtilis_exp_delete(e);
-	for (i = 0; i < var_count; i++)
+	for (i = 0; i < var_count; i++) {
+		subtilis_type_free(&range_vars[i].type);
+		subtilis_type_free(&range_vars[i].for_ctx.type);
 		free(range_vars[i].name);
+	}
 	free(range_vars);
 }

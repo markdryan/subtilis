@@ -2501,15 +2501,19 @@ static subtilis_ir_section_t *prv_add_args(subtilis_parser_t *p,
 	subtilis_type_section_t *ts;
 	subtilis_type_t *params;
 	subtilis_ir_section_t *current;
-	size_t i;
+	size_t j;
+	size_t i = 0;
 
 	params = malloc(sizeof(subtilis_type_t) * arg_count);
 	if (!params) {
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
-	for (i = 0; i < arg_count; i++)
-		params[i] = *ptype[i];
+	for (; i < arg_count; i++) {
+		subtilis_type_init_copy(&params[i], ptype[i], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
 	ts = subtilis_type_section_new(rtype, arg_count, params, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
@@ -2519,6 +2523,14 @@ static subtilis_ir_section_t *prv_add_args(subtilis_parser_t *p,
 	    p->eflag_offset, p->error_offset, err);
 
 	return current;
+
+cleanup:
+
+	for (j = 0; j < i; j++)
+		subtilis_type_free(&params[i]);
+	free(params);
+
+	return NULL;
 }
 
 subtilis_ir_section_t *

@@ -114,6 +114,7 @@ static int prv_test(void)
 
 	type.type = SUBTILIS_TYPE_REAL;
 	retval = prv_test_type(st, t, &type, 8, &err);
+	subtilis_type_free(&type);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);
 		goto on_error;

@@ -739,19 +739,20 @@ static int prv_check_fn_typed(subtilis_lexer_t *l, subtilis_token_t *t)
 	    {SUBTILIS_TYPE_STRING},
 	};
 	size_t i;
+	int ret_val = 1;
 
 	subtilis_error_init(&err);
 	for (i = 0; i < sizeof(expected_types) / sizeof(subtilis_type_t); i++) {
 		subtilis_lexer_get(l, t, &err);
 		if (err.type != SUBTILIS_ERROR_OK) {
 			fprintf(stderr, "Unxpected error %d\n", err.type);
-			return 1;
+			goto on_error;
 		}
 
 		if (t->tok.keyword.type != SUBTILIS_KEYWORD_FN) {
 			fprintf(stderr, "Unxpected keyword found %d\n",
 				t->tok.keyword.type);
-			return 1;
+			goto on_error;
 		}
 
 		if (t->tok.keyword.id_type.type != expected_types[i].type) {
@@ -759,11 +760,18 @@ static int prv_check_fn_typed(subtilis_lexer_t *l, subtilis_token_t *t)
 					"wanted %d\n",
 				t->tok.keyword.id_type.type,
 				expected_types[i].type);
-			return 1;
+			goto on_error;
 		}
 	}
 
-	return 0;
+	ret_val = 0;
+
+on_error:
+
+	for (i = 0; i < sizeof(expected_types) / sizeof(subtilis_type_t); i++)
+		subtilis_type_free(&expected_types[i]);
+
+	return ret_val;
 }
 
 static int prv_test_fn_typed(void)

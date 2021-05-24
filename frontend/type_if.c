@@ -292,12 +292,17 @@ void subtilis_type_if_array_of(subtilis_parser_t *p,
 {
 	subtilis_type_if_typeof_t fn;
 
+	if (element_type == type) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
 	fn = prv_type_map[element_type->type]->array_of;
 	if (!fn) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-	fn(element_type, type);
+	fn(element_type, type, err);
 }
 
 void subtilis_type_if_vector_of(subtilis_parser_t *p,
@@ -306,12 +311,17 @@ void subtilis_type_if_vector_of(subtilis_parser_t *p,
 {
 	subtilis_type_if_typeof_t fn;
 
+	if (element_type == type) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
 	fn = prv_type_map[element_type->type]->vector_of;
 	if (!fn) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-	fn(element_type, type);
+	fn(element_type, type, err);
 }
 
 void subtilis_type_if_const_of(const subtilis_type_t *type,
@@ -320,12 +330,17 @@ void subtilis_type_if_const_of(const subtilis_type_t *type,
 {
 	subtilis_type_if_typeof_t fn;
 
+	if (const_type == type) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
 	fn = prv_type_map[type->type]->const_of;
 	if (!fn) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-	fn(type, const_type);
+	fn(type, const_type, err);
 }
 
 void subtilis_type_if_element_type(subtilis_parser_t *p,
@@ -335,12 +350,17 @@ void subtilis_type_if_element_type(subtilis_parser_t *p,
 {
 	subtilis_type_if_typeof_t fn;
 
+	if (element_type == type) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
 	fn = prv_type_map[type->type]->element_type;
 	if (!fn) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-	fn(type, element_type);
+	fn(type, element_type, err);
 }
 
 subtilis_exp_t *subtilis_type_if_exp_to_var(subtilis_parser_t *p,
@@ -1070,14 +1090,21 @@ bool subtilis_type_if_is_vector(const subtilis_type_t *type)
 	return prv_type_map[type->type]->is_vector;
 }
 
-bool subtilis_type_if_is_scalar_ref(const subtilis_type_t *type)
+bool subtilis_type_if_is_scalar_ref(const subtilis_type_t *type,
+				    subtilis_error_t *err)
 {
 	subtilis_type_t element_type;
+	bool retval;
 
 	if (subtilis_type_if_is_array(type) ||
 	    subtilis_type_if_is_vector(type)) {
-		prv_type_map[type->type]->element_type(type, &element_type);
-		return subtilis_type_if_is_numeric(&element_type);
+		prv_type_map[type->type]->element_type(type, &element_type,
+						       err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return false;
+		retval = subtilis_type_if_is_numeric(&element_type);
+		subtilis_type_free(&element_type);
+		return retval;
 	}
 
 	return (type->type == SUBTILIS_TYPE_STRING);

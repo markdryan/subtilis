@@ -23,7 +23,8 @@
 
 typedef size_t (*subtilis_type_if_size_t)(const subtilis_type_t *type);
 typedef void (*subtilis_type_if_typeof_t)(const subtilis_type_t *element_type,
-					  subtilis_type_t *type);
+					  subtilis_type_t *type,
+					  subtilis_error_t *err);
 typedef subtilis_exp_t *(*subtilis_type_if_none_t)(subtilis_parser_t *p,
 						   subtilis_error_t *err);
 typedef void (*subtilis_type_if_zeroref_t)(subtilis_parser_t *p,
@@ -321,7 +322,8 @@ void subtilis_type_if_vector_of(subtilis_parser_t *p,
  * Returns true if type is an array of numeric types of a string.
  */
 
-bool subtilis_type_if_is_scalar_ref(const subtilis_type_t *type);
+bool subtilis_type_if_is_scalar_ref(const subtilis_type_t *type,
+				    subtilis_error_t *err);
 
 /*
  * Writes the type of the elements contained within an array of type "type"

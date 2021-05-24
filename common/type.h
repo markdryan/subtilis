@@ -56,6 +56,23 @@ struct subtilis_type_array_t_ {
 
 typedef struct subtilis_type_array_t_ subtilis_type_array_t;
 
+/*
+ * Partly because of legacy code, subtilis_type_t objects are declared
+ * on the stack.  Some subtilis_type_t objects will own heap memory,
+ * recursive types, and so it is expected that subtilis_type_free is
+ * called on these objects when they go out of scope.  Type objects
+ * are owned by the function that created them or the structure of
+ * which they are a part, and the convention is to always use
+ * subtilis_type_free, even if the type is not self referencing.  The
+ * one exception here is the lexer which does not understand complex
+ * types.
+ *
+ * To copy a type one must call subtilis_type_copy.  This assumes
+ * that the type has already been initialised.  It will free any
+ * existing content before making the copy.  If the type has not
+ * been initialised called subtilis_type_init_copy instead.
+ */
+
 struct subtilis_type_t_ {
 	subtilis_type_type_t type;
 	union {
@@ -86,6 +103,12 @@ bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b);
 const char *subtilis_type_name(const subtilis_type_t *typ);
 subtilis_type_section_t *
 subtilis_type_section_dup(subtilis_type_section_t *stype);
+void subtilis_type_copy(subtilis_type_t *dst, const subtilis_type_t *src,
+			subtilis_error_t *err);
+void subtilis_type_init_copy(subtilis_type_t *dst, const subtilis_type_t *src,
+			     subtilis_error_t *err);
+
+void subtilis_type_free(subtilis_type_t *typ);
 
 extern const subtilis_type_t subtilis_type_const_real;
 extern const subtilis_type_t subtilis_type_const_integer;

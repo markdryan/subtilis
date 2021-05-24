@@ -35,12 +35,13 @@ void subtilis_array_type_zero_ref(subtilis_parser_t *p,
 				  size_t mem_reg, bool push,
 				  subtilis_error_t *err);
 void subtilis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
-				  subtilis_type_t *type, size_t loc,
+				  const subtilis_type_t *type, size_t loc,
 				  subtilis_exp_t **e,
 				  subtilis_ir_operand_t store_reg,
 				  subtilis_error_t *err);
 void subtilis_array_type_vector_alloc(subtilis_parser_t *p, size_t loc,
-				      subtilis_type_t *type, subtilis_exp_t *e,
+				      const subtilis_type_t *type,
+				      subtilis_exp_t *e,
 				      subtilis_ir_operand_t store_reg,
 				      subtilis_error_t *err);
 void subtlis_array_type_copy_param_ref(subtilis_parser_t *p,

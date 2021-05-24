@@ -24,8 +24,8 @@
 
 struct subtilis_symbol_t_ {
 	size_t loc;
-	subtilis_type_t t;
-	const char *key; // owned by hash table
+	subtilis_type_t t; // owned by hash table
+	const char *key;   // owned by hash table
 	size_t size;
 	bool is_reg;
 	bool no_rc;

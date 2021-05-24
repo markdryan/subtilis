@@ -63,7 +63,8 @@ static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
 }
 
 static void prv_element_type(const subtilis_type_t *type,
-			     subtilis_type_t *element_type)
+			     subtilis_type_t *element_type,
+			     subtilis_error_t *err)
 {
 	element_type->type = SUBTILIS_TYPE_STRING;
 }

@@ -106,7 +106,9 @@ subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 	}
 
 	stype->ref_count = 1;
-	stype->return_type = *rtype;
+	subtilis_type_init_copy(&stype->return_type, rtype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
 	stype->num_parameters = num_parameters;
 	stype->parameters = parameters;
 	stype->int_regs = 0;
@@ -132,11 +134,16 @@ subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 			break;
 		default:
 			subtilis_error_set_assertion_failed(err);
-			break;
+			goto on_error;
 		}
 	}
 
 	return stype;
+
+on_error:
+
+	free(stype);
+	return NULL;
 }
 
 void subtilis_type_section_delete(subtilis_type_section_t *stype)
@@ -144,6 +151,7 @@ void subtilis_type_section_delete(subtilis_type_section_t *stype)
 	if (!stype)
 		return;
 
+	subtilis_type_free(&stype->return_type);
 	stype->ref_count--;
 
 	if (stype->ref_count != 0)
@@ -161,6 +169,21 @@ const char *subtilis_type_name(const subtilis_type_t *typ)
 		return prv_fixed_type_names[index];
 
 	return "unknown";
+}
+
+void subtilis_type_free(subtilis_type_t *typ) {}
+void subtilis_type_copy(subtilis_type_t *dst, const subtilis_type_t *src,
+			subtilis_error_t *err)
+{
+	subtilis_type_free(dst);
+	dst->type = SUBTILIS_TYPE_VOID;
+	subtilis_type_init_copy(dst, src, err);
+}
+
+void subtilis_type_init_copy(subtilis_type_t *dst, const subtilis_type_t *src,
+			     subtilis_error_t *err)
+{
+	*dst = *src;
 }
 
 subtilis_type_section_t *

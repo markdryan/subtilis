@@ -21,6 +21,17 @@
 #include "symbol_table.h"
 #include "type_if.h"
 
+static void prv_symbol_delete(void *s)
+{
+	subtilis_symbol_t *sym = s;
+
+	if (!sym)
+		return;
+
+	subtilis_type_free(&sym->t);
+	free(sym);
+}
+
 subtilis_symbol_table_t *subtilis_symbol_table_new(subtilis_error_t *err)
 {
 	subtilis_hashtable_t *h;
@@ -28,7 +39,7 @@ subtilis_symbol_table_t *subtilis_symbol_table_new(subtilis_error_t *err)
 
 	h = subtilis_hashtable_new(
 	    SUBTILIS_CONFIG_ST_SIZE, subtilis_hashtable_djb2,
-	    subtilis_hashtable_string_equal, free, free, err);
+	    subtilis_hashtable_string_equal, free, prv_symbol_delete, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -125,11 +136,12 @@ static subtilis_symbol_t *prv_symbol_new(const char *key, size_t loc,
 		return NULL;
 	}
 
-	sym->size = size;
+	subtilis_type_init_copy(&sym->t, id_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
+
+	sym->size = size;
 	sym->key = key;
-	sym->t = *id_type;
 	sym->loc = loc;
 	sym->is_reg = is_reg;
 	sym->no_rc = no_rc;
@@ -195,7 +207,7 @@ prv_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 
 on_error:
 	free(key_dup);
-	free(sym);
+	prv_symbol_delete(sym);
 	return NULL;
 }
 
@@ -387,7 +399,7 @@ subtilis_symbol_table_insert_reg(subtilis_symbol_table_t *st, const char *key,
 
 on_error:
 	free(key_dup);
-	free(sym);
+	prv_symbol_delete(sym);
 	return NULL;
 }
 

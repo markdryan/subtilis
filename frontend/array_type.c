@@ -167,10 +167,10 @@ cleanup:
 	subtilis_exp_delete(zero);
 }
 
-static void prv_clear_new_array(subtilis_parser_t *p, subtilis_type_t *type,
-				size_t loc, size_t sizee,
-				subtilis_ir_operand_t store_reg, size_t data,
-				subtilis_error_t *err)
+static void prv_clear_new_array(subtilis_parser_t *p,
+				const subtilis_type_t *type, size_t loc,
+				size_t sizee, subtilis_ir_operand_t store_reg,
+				size_t data, subtilis_error_t *err)
 {
 	size_t el_size;
 	subtilis_type_t element_type;
@@ -190,7 +190,7 @@ static void prv_clear_new_array(subtilis_parser_t *p, subtilis_type_t *type,
 
 	el_size = subtilis_type_if_size(&element_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		goto free_e;
 
 	if ((el_size & 3) == 0)
 		subtilis_builtin_memset_i32(p, data, sizee, zero->exp.ir_op.reg,
@@ -198,13 +198,16 @@ static void prv_clear_new_array(subtilis_parser_t *p, subtilis_type_t *type,
 	else
 		subtilis_builtin_memset_i8(p, data, sizee, zero->exp.ir_op.reg,
 					   err);
-cleanup:
 
+free_e:
+	subtilis_type_free(&element_type);
+
+cleanup:
 	subtilis_exp_delete(zero);
 }
 
 static void prv_1d_dynamic_alloc(subtilis_parser_t *p, size_t loc,
-				 subtilis_type_t *type, subtilis_exp_t *e,
+				 const subtilis_type_t *type, subtilis_exp_t *e,
 				 subtilis_ir_operand_t store_reg,
 				 subtilis_error_t *err)
 {
@@ -276,7 +279,8 @@ cleanup:
 }
 
 static void prv_dynamic_vector_alloc(subtilis_parser_t *p, size_t loc,
-				     subtilis_type_t *type, subtilis_exp_t *e,
+				     const subtilis_type_t *type,
+				     subtilis_exp_t *e,
 				     subtilis_ir_operand_t store_reg,
 				     subtilis_error_t *err)
 {
@@ -368,7 +372,8 @@ cleanup:
 }
 
 void subtilis_array_type_vector_alloc(subtilis_parser_t *p, size_t loc,
-				      subtilis_type_t *type, subtilis_exp_t *e,
+				      const subtilis_type_t *type,
+				      subtilis_exp_t *e,
 				      subtilis_ir_operand_t store_reg,
 				      subtilis_error_t *err)
 {
@@ -392,7 +397,7 @@ void subtilis_array_type_vector_alloc(subtilis_parser_t *p, size_t loc,
 }
 
 void subtilis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
-				  subtilis_type_t *type, size_t loc,
+				  const subtilis_type_t *type, size_t loc,
 				  subtilis_exp_t **e,
 				  subtilis_ir_operand_t store_reg,
 				  subtilis_error_t *err)
@@ -1654,16 +1659,16 @@ void subtilis_array_append_scalar(subtilis_parser_t *p, subtilis_exp_t *a1,
 		subtilis_error_set_expected(err, "dynamic 1d array",
 					    subtilis_type_name(&a1->type),
 					    p->l->stream->name, p->l->line);
-		goto cleanup;
+		goto free_as;
 	}
 
 	a2 = subtilis_type_if_exp_to_var(p, a2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		goto free_as;
 
 	subtilis_type_if_element_type(p, &a1->type, &el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		goto free_as;
 
 	if (el_type.type != a2->type.type) {
 		subtilis_error_set_array_type_mismatch(err, p->l->stream->name,
@@ -1718,6 +1723,8 @@ void subtilis_array_append_scalar(subtilis_parser_t *p, subtilis_exp_t *a1,
 	a2 = NULL;
 
 cleanup:
+	subtilis_type_free(&el_type);
+free_as:
 	subtilis_exp_delete(a2);
 	subtilis_exp_delete(a1);
 }
@@ -1746,7 +1753,7 @@ static size_t prv_div_by_const(subtilis_parser_t *p, size_t reg,
 }
 
 static void prv_check_arrays_compat(subtilis_parser_t *p,
-				    subtilis_type_t *el_type,
+				    const subtilis_type_t *el_type,
 				    subtilis_exp_t *a1, subtilis_exp_t *a2,
 				    subtilis_error_t *err)
 {
@@ -1776,6 +1783,8 @@ static void prv_check_arrays_compat(subtilis_parser_t *p,
 		if (el_type->type != el_type2.type)
 			subtilis_error_set_array_type_mismatch(
 			    err, p->l->stream->name, p->l->line);
+
+		subtilis_type_free(&el_type2);
 	}
 }
 
@@ -1917,12 +1926,12 @@ void subtilis_array_append_ref_array(subtilis_parser_t *p, subtilis_exp_t *a1,
 		subtilis_error_set_expected(err, "vector",
 					    subtilis_type_name(&a1->type),
 					    p->l->stream->name, p->l->line);
-		goto cleanup;
+		goto free_as;
 	}
 
 	subtilis_type_if_element_type(p, &a1->type, &el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		goto free_as;
 
 	prv_check_arrays_compat(p, &el_type, a1, a2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -2007,6 +2016,9 @@ void subtilis_array_append_ref_array(subtilis_parser_t *p, subtilis_exp_t *a1,
 					      err);
 
 cleanup:
+	subtilis_type_free(&el_type);
+
+free_as:
 	subtilis_exp_delete(a2);
 	subtilis_exp_delete(a1);
 }

@@ -312,7 +312,13 @@ subtilis_exp_t *subtilis_exp_new_empty(const subtilis_type_t *type,
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
-	e->type = *type;
+
+	subtilis_type_init_copy(&e->type, type, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		free(e);
+		return NULL;
+	}
+
 	e->temporary = NULL;
 
 	return e;
@@ -358,7 +364,13 @@ subtilis_exp_t *subtilis_exp_new_var_block(subtilis_parser_t *p,
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
-	e->type = *type;
+
+	subtilis_type_init_copy(&e->type, type, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		free(e);
+		return NULL;
+	}
+
 	e->temporary = NULL;
 	op0.reg = mem_reg;
 	op1.integer = offset;
@@ -479,6 +491,7 @@ void subtilis_exp_delete(subtilis_exp_t *e)
 		return;
 	if (e->type.type == SUBTILIS_TYPE_CONST_STRING)
 		subtilis_buffer_free(&e->exp.str);
+	subtilis_type_free(&e->type);
 	free(e->temporary);
 	free(e);
 }

@@ -155,7 +155,6 @@ prv_get_output_args(subtilis_parser_t *p, subtilis_token_t *t, size_t *no_args,
 	const char *tbuf;
 	subtilis_exp_t *e;
 	bool local;
-	subtilis_type_t type;
 	subtilis_ir_sys_out_reg_t *args = NULL;
 	size_t count = 0;
 	size_t max_count = 0;
@@ -173,7 +172,7 @@ prv_get_output_args(subtilis_parser_t *p, subtilis_token_t *t, size_t *no_args,
 			e = NULL;
 		} else {
 			*reg_mask |= 1 << count;
-			e = subtilis_var_lookup_ref(p, t, &local, &type, err);
+			e = subtilis_var_lookup_ref(p, t, &local, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
 			if (e->type.type != SUBTILIS_TYPE_INTEGER) {
@@ -225,14 +224,13 @@ static size_t prv_handle_flags(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	subtilis_exp_t *e;
 	bool local;
-	subtilis_type_t type;
 	size_t ret_val = SIZE_MAX;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	e = subtilis_var_lookup_ref(p, t, &local, &type, err);
+	e = subtilis_var_lookup_ref(p, t, &local, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 

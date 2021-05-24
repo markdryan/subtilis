@@ -80,7 +80,9 @@ void subtilis_parser_create_array_ref(subtilis_parser_t *p,
 						       p->l->line);
 		goto cleanup;
 	}
-	type = e->type;
+	subtilis_type_init_copy(&type, &e->type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
 	/*
 	 * If the expression is a temporary variable and we're assigning to
@@ -91,13 +93,14 @@ void subtilis_parser_create_array_ref(subtilis_parser_t *p,
 	if (local && e->temporary) {
 		(void)subtilis_symbol_table_promote_tmp(
 		    p->local_st, &e->type, e->temporary, var_name, err);
-
+		subtilis_type_free(&type);
 		subtilis_exp_delete(e);
 		return;
 	}
 
 	s = subtilis_symbol_table_insert(local ? p->local_st : p->st, var_name,
 					 &type, err);
+	subtilis_type_free(&type);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -255,11 +258,15 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 	    p, t, indices, SUBTILIS_MAX_DIMENSIONS, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		prv_check_bad_def(p, var_name, err);
-		return;
+		goto cleanup;
 	}
 
 	prv_assign_array_or_vector(p, t, dims, indices, var_name, &array_type,
 				   err);
+
+cleanup:
+
+	subtilis_type_free(&array_type);
 }
 
 static void prv_assign_vector(subtilis_parser_t *p, subtilis_token_t *t,
@@ -277,18 +284,21 @@ static void prv_assign_vector(subtilis_parser_t *p, subtilis_token_t *t,
 
 	indices[0] = subtilis_curly_bracketed_arg_have_b(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		goto cleanup;
 	if (indices[0])
 		dims = 1;
 
 	prv_assign_array_or_vector(p, t, dims, indices, var_name, &vector_type,
 				   err);
+
+cleanup:
+	subtilis_type_free(&vector_type);
 }
 
 subtilis_exp_t *subtilis_parser_assign_local_num(subtilis_parser_t *p,
 						 subtilis_token_t *t,
 						 const char *var_name,
-						 subtilis_type_t *type,
+						 const subtilis_type_t *type,
 						 subtilis_error_t *err)
 {
 	subtilis_exp_t *e;
@@ -317,7 +327,8 @@ subtilis_exp_t *subtilis_parser_assign_local_num(subtilis_parser_t *p,
 }
 
 static void prv_assignment_local(subtilis_parser_t *p, subtilis_token_t *t,
-				 const char *var_name, subtilis_type_t *id_type,
+				 const char *var_name,
+				 const subtilis_type_t *id_type,
 				 subtilis_error_t *err)
 {
 	const subtilis_symbol_t *s;
@@ -388,7 +399,9 @@ char *subtilis_parser_get_assignment_var(subtilis_parser_t *p,
 		return NULL;
 	}
 	strcpy(var_name, tbuf);
-	*id_type = t->tok.id_type;
+	subtilis_type_copy(id_type, &t->tok.id_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -397,7 +410,6 @@ char *subtilis_parser_get_assignment_var(subtilis_parser_t *p,
 	return var_name;
 
 cleanup:
-
 	free(var_name);
 
 	return NULL;
@@ -455,6 +467,8 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	char *var_name = NULL;
 	subtilis_exp_t *e = NULL;
 
+	type.type = SUBTILIS_TYPE_VOID;
+
 	var_name = subtilis_parser_get_assignment_var(p, t, &type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -467,22 +481,17 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 
 	if (!strcmp(tbuf, "(")) {
 		prv_assign_array(p, t, var_name, &type, err);
-		free(var_name);
-		return;
+		goto cleanup;
 	}
 
 	if (!strcmp(tbuf, "{")) {
 		prv_assign_vector(p, t, var_name, &type, err);
-		free(var_name);
-		return;
+		goto cleanup;
 	}
 
 	if (!strcmp(tbuf, ":=")) {
 		prv_assignment_local(p, t, var_name, &type, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-		free(var_name);
-		return;
+		goto cleanup;
 	}
 
 	subtilis_parser_lookup_assignment_var(p, t, var_name, &s, &op1.reg,
@@ -548,6 +557,7 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 
 cleanup:
 
+	subtilis_type_free(&type);
 	free(var_name);
 }
 

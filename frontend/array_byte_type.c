@@ -54,7 +54,8 @@ static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
 }
 
 static void prv_element_type(const subtilis_type_t *type,
-			     subtilis_type_t *element_type)
+			     subtilis_type_t *element_type,
+			     subtilis_error_t *err)
 {
 	element_type->type = SUBTILIS_TYPE_BYTE;
 }
@@ -94,11 +95,11 @@ static void prv_set(subtilis_parser_t *p, const char *var_name,
 
 	subtilis_type_if_element_type(p, type, &el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		goto free_e;
 
 	e = subtilis_type_if_coerce_type(p, e, &el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		goto cleanup;
 
 	sizee = subtilis_reference_type_get_size(p, mem_reg, loc, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -131,7 +132,9 @@ static void prv_set(subtilis_parser_t *p, const char *var_name,
 		subtilis_ir_section_add_label(p->current, eq_zero.label, err);
 
 cleanup:
+	subtilis_type_free(&el_type);
 
+free_e:
 	subtilis_exp_delete(e);
 }
 

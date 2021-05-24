@@ -34,6 +34,7 @@ static subtilis_exp_t *prv_exp_to_var_const(subtilis_parser_t *p,
 	type.type = SUBTILIS_TYPE_STRING;
 
 	s = subtilis_symbol_table_insert_tmp(p->local_st, &type, NULL, err);
+	subtilis_type_free(&type);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -407,13 +408,13 @@ static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
 }
 
 static void prv_array_of(const subtilis_type_t *element_type,
-			 subtilis_type_t *type)
+			 subtilis_type_t *type, subtilis_error_t *err)
 {
 	type->type = SUBTILIS_TYPE_ARRAY_STRING;
 }
 
 static void prv_vector_of(const subtilis_type_t *element_type,
-			  subtilis_type_t *type)
+			  subtilis_type_t *type, subtilis_error_t *err)
 {
 	type->type = SUBTILIS_TYPE_VECTOR_STRING;
 }
@@ -469,7 +470,8 @@ static void prv_copy_col(subtilis_parser_t *p, subtilis_exp_t *e1,
 }
 
 static void prv_element_type(const subtilis_type_t *type,
-			     subtilis_type_t *element_type)
+			     subtilis_type_t *element_type,
+			     subtilis_error_t *err)
 {
 	element_type->type = SUBTILIS_TYPE_BYTE;
 }

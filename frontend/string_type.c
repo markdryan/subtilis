@@ -239,6 +239,7 @@ subtilis_exp_t *subtilis_string_type_new_tmp_from_char(subtilis_parser_t *p,
 	type.type = SUBTILIS_TYPE_STRING;
 	s = subtilis_symbol_table_insert_tmp(p->local_st, &type, &tmp_name,
 					     err);
+	subtilis_type_free(&type);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

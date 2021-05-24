@@ -34,7 +34,7 @@ static subtilis_exp_t *prv_zero_const(subtilis_parser_t *p,
 }
 
 static void prv_const_of(const subtilis_type_t *type,
-			 subtilis_type_t *const_type)
+			 subtilis_type_t *const_type, subtilis_error_t *err)
 {
 	const_type->type = SUBTILIS_TYPE_CONST_REAL;
 }
@@ -719,13 +719,13 @@ static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
 }
 
 static void prv_array_of(const subtilis_type_t *element_type,
-			 subtilis_type_t *type)
+			 subtilis_type_t *type, subtilis_error_t *err)
 {
 	type->type = SUBTILIS_TYPE_ARRAY_REAL;
 }
 
 static void prv_vector_of(const subtilis_type_t *element_type,
-			  subtilis_type_t *type)
+			  subtilis_type_t *type, subtilis_error_t *err)
 {
 	type->type = SUBTILIS_TYPE_VECTOR_REAL;
 }
