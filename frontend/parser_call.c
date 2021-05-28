@@ -349,6 +349,74 @@ on_error:
 	return NULL;
 }
 
+static void prv_process_array_param_type(subtilis_parser_t *p,
+					 subtilis_token_t *t,
+					 const subtilis_type_t *type,
+					 subtilis_type_t *ptype,
+					 subtilis_error_t *err)
+{
+	subtilis_exp_t *e;
+	int32_t num_dims;
+	size_t i;
+
+	e = subtilis_parser_bracketed_exp_internal(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (e->type.type != SUBTILIS_TYPE_CONST_INTEGER) {
+		subtilis_exp_delete(e);
+		subtilis_error_set_const_integer_expected(
+		    err, p->l->stream->name, p->l->line);
+		return;
+	}
+	num_dims = e->exp.ir_op.integer;
+	subtilis_exp_delete(e);
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_type_if_array_of(p, type, ptype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	ptype->params.array.num_dims = num_dims;
+	for (i = 0; i < ptype->params.array.num_dims; i++)
+		ptype->params.array.dims[i] = SUBTILIS_DYNAMIC_DIMENSION;
+}
+
+static void prv_process_vector_param_type(subtilis_parser_t *p,
+					  subtilis_token_t *t,
+					  const subtilis_type_t *type,
+					  subtilis_type_t *ptype,
+					  subtilis_error_t *err)
+{
+	const char *tbuf;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) && (strcmp(tbuf, "}"))) {
+		subtilis_error_set_expected(err, "} ", tbuf, p->l->stream->name,
+					    p->l->line);
+		return;
+	}
+
+	ptype->params.array.num_dims = 1;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_type_if_vector_of(p, type, ptype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	ptype->params.array.dims[0] = SUBTILIS_DYNAMIC_DIMENSION;
+}
+
 static void prv_process_param(subtilis_parser_t *p, subtilis_token_t *t,
 			      size_t *num_iparams, size_t *num_fparams,
 			      const subtilis_symbol_t **symbol,
@@ -357,10 +425,7 @@ static void prv_process_param(subtilis_parser_t *p, subtilis_token_t *t,
 	size_t reg_num;
 	const char *tbuf;
 	char *var_name;
-	subtilis_exp_t *e;
-	size_t i;
 	subtilis_type_t type;
-	int32_t num_dims;
 
 	subtilis_type_init_copy(&type, &t->tok.id_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -381,31 +446,10 @@ static void prv_process_param(subtilis_parser_t *p, subtilis_token_t *t,
 	tbuf = subtilis_token_get_text(t);
 
 	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && (!strcmp(tbuf, "("))) {
-		e = subtilis_parser_bracketed_exp_internal(p, t, err);
+		prv_process_array_param_type(p, t, &type, ptype, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		if (e->type.type != SUBTILIS_TYPE_CONST_INTEGER) {
-			subtilis_exp_delete(e);
-			subtilis_error_set_const_integer_expected(
-			    err, p->l->stream->name, p->l->line);
-			goto cleanup;
-		}
-		num_dims = e->exp.ir_op.integer;
-		subtilis_exp_delete(e);
-
-		subtilis_lexer_get(p->l, t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-
-		subtilis_type_if_array_of(p, &type, ptype, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-
-		ptype->params.array.num_dims = num_dims;
-		for (i = 0; i < ptype->params.array.num_dims; i++)
-			ptype->params.array.dims[i] =
-			    SUBTILIS_DYNAMIC_DIMENSION;
 		reg_num = SUBTILIS_IR_REG_TEMP_START + *num_iparams;
 		*num_iparams += 1;
 
@@ -413,30 +457,10 @@ static void prv_process_param(subtilis_parser_t *p, subtilis_token_t *t,
 						       ptype, err);
 	} else if ((t->type == SUBTILIS_TOKEN_OPERATOR) &&
 		   (!strcmp(tbuf, "{"))) {
-		subtilis_lexer_get(p->l, t, err);
+		prv_process_vector_param_type(p, t, &type, ptype, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		tbuf = subtilis_token_get_text(t);
-		if ((t->type != SUBTILIS_TOKEN_OPERATOR) &&
-		    (strcmp(tbuf, "}"))) {
-			subtilis_error_set_expected(
-			    err, "} ", tbuf, p->l->stream->name, p->l->line);
-			goto cleanup;
-		}
-
-		ptype->params.array.num_dims = 1;
-
-		subtilis_lexer_get(p->l, t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-
-		subtilis_type_if_vector_of(p, &type, ptype, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-
-		ptype->params.array.dims[0] = SUBTILIS_DYNAMIC_DIMENSION;
-		reg_num = SUBTILIS_IR_REG_TEMP_START + *num_iparams;
 		*num_iparams += 1;
 
 		*symbol = subtilis_symbol_table_insert(p->local_st, var_name,
@@ -478,32 +502,19 @@ cleanup:
 	subtilis_type_free(&type);
 }
 
-static subtilis_type_t *
-prv_def_parameters(subtilis_parser_t *p, subtilis_token_t *t,
-		   size_t *num_parameters, const subtilis_symbol_t ***symbols,
-		   subtilis_type_t *fn_type, subtilis_error_t *err)
+static bool prv_complete_array_type(subtilis_parser_t *p, subtilis_token_t *t,
+				    subtilis_type_t *fn_type,
+				    subtilis_error_t *err)
 {
-	const char *tbuf;
-	subtilis_type_t *new_params;
-	size_t new_max;
-	subtilis_type_t ptype;
 	subtilis_type_t id_type;
 	size_t i;
-	const subtilis_symbol_t *symbol = NULL;
-	size_t max_params = 0;
-	size_t num_params = 0;
-	size_t num_iparams = 0;
-	size_t num_fparams = 0;
-	const subtilis_symbol_t **new_syms;
-	subtilis_type_t *params = NULL;
-	const subtilis_symbol_t **syms = NULL;
+	const char *tbuf;
 
-	ptype.type = SUBTILIS_TYPE_VOID;
 	id_type.type = SUBTILIS_TYPE_VOID;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return NULL;
+		return false;
 
 	if ((t->type == SUBTILIS_TOKEN_INTEGER) &&
 	    (fn_type->type != SUBTILIS_TYPE_VOID) &&
@@ -516,14 +527,15 @@ prv_def_parameters(subtilis_parser_t *p, subtilis_token_t *t,
 		    (t->tok.integer > SUBTILIS_MAX_DIMENSIONS)) {
 			subtilis_error_bad_dim(err, "return type",
 					       p->l->stream->name, p->l->line);
-			return NULL;
+			return false;
 		}
 		subtilis_type_init_copy(&id_type, fn_type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return NULL;
+			return false;
 		subtilis_type_if_array_of(p, &id_type, fn_type, err);
+		subtilis_type_free(&id_type);
 		if (err->type != SUBTILIS_ERROR_OK)
-			goto on_error;
+			return false;
 		fn_type->params.array.num_dims = t->tok.integer;
 		for (i = 0; i < fn_type->params.array.num_dims; i++)
 			fn_type->params.array.dims[i] =
@@ -531,28 +543,57 @@ prv_def_parameters(subtilis_parser_t *p, subtilis_token_t *t,
 
 		subtilis_lexer_get(p->l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			goto on_error;
+			return false;
 		tbuf = subtilis_token_get_text(t);
 
 		if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ")")) {
 			subtilis_error_set_right_bkt_expected(
 			    err, tbuf, p->l->stream->name, p->l->line);
-			goto on_error;
+			return false;
 		}
 
 		subtilis_lexer_get(p->l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			goto on_error;
+			return false;
 		tbuf = subtilis_token_get_text(t);
-		if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, "(")) {
-			subtilis_type_free(&id_type);
-			*num_parameters = 0;
-			*symbols = NULL;
-			return NULL;
-		}
+		if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, "("))
+			return false;
 		subtilis_lexer_get(p->l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			goto on_error;
+			return false;
+	}
+
+	return true;
+}
+
+static subtilis_type_t *
+prv_def_parameters(subtilis_parser_t *p, subtilis_token_t *t,
+		   size_t *num_parameters, const subtilis_symbol_t ***symbols,
+		   subtilis_type_t *fn_type, subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_type_t *new_params;
+	size_t new_max;
+	subtilis_type_t ptype;
+	size_t i;
+	bool have_params;
+	const subtilis_symbol_t *symbol = NULL;
+	size_t max_params = 0;
+	size_t num_params = 0;
+	size_t num_iparams = 0;
+	size_t num_fparams = 0;
+	const subtilis_symbol_t **new_syms;
+	subtilis_type_t *params = NULL;
+	const subtilis_symbol_t **syms = NULL;
+
+	ptype.type = SUBTILIS_TYPE_VOID;
+	have_params = prv_complete_array_type(p, t, fn_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	if (!have_params) {
+		*num_parameters = 0;
+		*symbols = NULL;
+		return NULL;
 	}
 
 	tbuf = subtilis_token_get_text(t);
@@ -635,7 +676,6 @@ read_next:
 on_error:
 
 	subtilis_type_free(&ptype);
-	subtilis_type_free(&id_type);
 	free(syms);
 	for (i = 0; i < num_params; i++)
 		subtilis_type_free(&params[i]);
@@ -780,42 +820,23 @@ on_error:
 	subtilis_lexer_set_ass_keywords(p->l, false, &err2);
 }
 
-void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
-			 subtilis_error_t *err)
+static char *prv_initial_proc_fn_type(subtilis_parser_t *p, subtilis_token_t *t,
+				      subtilis_type_t *ftype,
+				      subtilis_error_t *err)
 {
-	const char *tbuf;
-	subtilis_type_section_t *stype;
 	subtilis_type_t fn_type;
 	subtilis_type_t id_type;
-	subtilis_exp_t *e;
-	size_t blocks;
-	subtilis_ir_operand_t zero_op;
-	size_t i;
-	size_t num_params = 0;
-	subtilis_type_t *params = NULL;
-	subtilis_symbol_table_t *local_st = NULL;
+	const char *tbuf;
 	char *name = NULL;
-	const subtilis_symbol_t **symbols = NULL;
 
 	fn_type.type = SUBTILIS_TYPE_VOID;
 	id_type.type = SUBTILIS_TYPE_VOID;
 
-	if (p->current != p->main) {
-		subtilis_error_set_nested_procedure(err, p->l->stream->name,
-						    p->l->line);
-		return;
-	}
-
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		return NULL;
 
 	name = prv_proc_name_and_type(p, t, &fn_type, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	local_st = subtilis_symbol_table_new(err);
-	p->local_st = local_st;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -850,6 +871,53 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 		fn_type.params.array.num_dims = 1;
 		fn_type.params.array.dims[0] = SUBTILIS_DYNAMIC_DIMENSION;
 	}
+
+	subtilis_type_copy(ftype, &fn_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+	return name;
+
+on_error:
+	subtilis_type_free(&fn_type);
+	free(name);
+
+	return NULL;
+}
+
+void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
+			 subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_type_section_t *stype;
+	subtilis_type_t fn_type;
+	subtilis_exp_t *e;
+	size_t blocks;
+	subtilis_ir_operand_t zero_op;
+	size_t i;
+	size_t num_params = 0;
+	subtilis_type_t *params = NULL;
+	subtilis_symbol_table_t *local_st = NULL;
+	char *name = NULL;
+	const subtilis_symbol_t **symbols = NULL;
+
+	fn_type.type = SUBTILIS_TYPE_VOID;
+
+	if (p->current != p->main) {
+		subtilis_error_set_nested_procedure(err, p->l->stream->name,
+						    p->l->line);
+		return;
+	}
+
+	local_st = subtilis_symbol_table_new(err);
+	p->local_st = local_st;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	name = prv_initial_proc_fn_type(p, t, &fn_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	tbuf = subtilis_token_get_text(t);
 	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "(")) {
 		params = prv_def_parameters(p, t, &num_params, &symbols,
 					    &fn_type, err);
@@ -959,7 +1027,7 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 on_error:
 
 	free(symbols);
-	for (i = 0; i < num_params; i++)
+	for (i = 0; params && i < num_params; i++)
 		subtilis_type_free(&params[i]);
 	free(params);
 	subtilis_symbol_table_delete(local_st);
