@@ -22,6 +22,7 @@
 #include "array_string_type.h"
 #include "byte_type_if.h"
 #include "float64_type.h"
+#include "fn_type.h"
 #include "int32_type.h"
 #include "local_buffer_type_if.h"
 #include "string_type_if.h"
@@ -47,6 +48,7 @@ static subtilis_type_if *prv_type_map[] = {
 	&subtilis_type_vector_byte,
 	&subtilis_type_vector_string,
 	&subtilis_type_if_local_buffer,
+	&subtilis_type_fn,
 	NULL,
 };
 
@@ -487,7 +489,7 @@ subtilis_exp_t *subtilis_type_if_load_from_mem(subtilis_parser_t *p,
 		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
-	return fn(p, mem_reg, loc, err);
+	return fn(p, type, mem_reg, loc, err);
 }
 
 void subtilis_type_if_indexed_write(subtilis_parser_t *p, const char *var_name,
@@ -1090,6 +1092,13 @@ bool subtilis_type_if_is_vector(const subtilis_type_t *type)
 	return prv_type_map[type->type]->is_vector;
 }
 
+bool subtilis_type_if_is_reference(const subtilis_type_t *type)
+{
+	return (type->type == SUBTILIS_TYPE_STRING) ||
+	       prv_type_map[type->type]->is_vector ||
+	       prv_type_map[type->type]->is_array;
+}
+
 bool subtilis_type_if_is_scalar_ref(const subtilis_type_t *type,
 				    subtilis_error_t *err)
 {
@@ -1122,10 +1131,10 @@ subtilis_exp_t *subtilis_type_if_coerce_type(subtilis_parser_t *p,
 
 	fn = prv_type_map[e->type.type]->coerce;
 	if (!fn) {
-		subtilis_exp_delete(e);
 		subtilis_error_set_bad_conversion(
 		    err, subtilis_type_name(&e->type), subtilis_type_name(type),
 		    p->l->stream->name, p->l->line);
+		subtilis_exp_delete(e);
 		return NULL;
 	}
 

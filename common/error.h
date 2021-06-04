@@ -37,6 +37,7 @@ typedef enum {
 	SUBTILIS_ERROR_UNKNOWN_TOKEN,
 	SUBTILIS_ERROR_BAD_PROC_NAME,
 	SUBTILIS_ERROR_BAD_FN_NAME,
+	SUBTILIS_ERROR_BAD_TYPE_NAME,
 	SUBTILIS_ERROR_ASSERTION_FAILED,
 	SUBTILIS_ERROR_KEYWORD_EXPECTED,
 	SUBTILIS_ERROR_KEYWORD_UNEXPECTED,
@@ -60,8 +61,10 @@ typedef enum {
 	SUBTILIS_ERROR_FUNCTION_EXPECTED,
 	SUBTILIS_ERROR_UNKNOWN_PROCEDURE,
 	SUBTILIS_ERROR_UNKNOWN_FUNCTION,
+	SUBTILIS_ERROR_UNKNOWN_TYPE,
 	SUBTILIS_ERROR_BAD_INSTRUCTION,
 	SUBTILIS_ERROR_BAD_ARG_COUNT,
+	SUBTILIS_ERROR_TOO_MANY_ARGS,
 	SUBTILIS_ERROR_BAD_ARG_TYPE,
 	SUBTILIS_ERROR_ZERO_STEP,
 	SUBTILIS_ERROR_NUMERIC_EXPECTED,
@@ -86,6 +89,7 @@ typedef enum {
 	SUBTILIS_ERROR_BAD_ERROR,
 	SUBTILIS_ERROR_TOO_MANY_BLOCKS,
 	SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH,
+	SUBTILIS_ERROR_FN_TYPE_MISMATCH,
 	SUBTILIS_ERROR_CONST_INTEGER_EXPECTED,
 	SUBTILIS_ERROR_NUMERIC_EXP_EXPECTED,
 	SUBTILIS_ERROR_BAD_CONVERSION,
@@ -106,6 +110,7 @@ typedef enum {
 	SUBTILIS_ERROR_RANGE_TYPE_MISMATCH,
 	SUBTILIS_ERROR_ARRAY_IN_RANGE,
 	SUBTILIS_ERROR_RANGE_BAD_VAR_COUNT,
+	SUBTILIS_ERROR_TYPE_NOT_AT_TOP_LEVEL,
 	SUBTILIS_ERROR_ASS_BAD_REG,
 	SUBTILIS_ERROR_ASS_INTEGER_ENCODE,
 	SUBTILIS_ERROR_SYS_CALL_UNKNOWN,
@@ -172,6 +177,8 @@ void subtilis_error_init(subtilis_error_t *e);
 	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_PROC_NAME, str, file, line)
 #define subtilis_error_set_bad_fn_name(e, str, file, line)                     \
 	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_FN_NAME, str, file, line)
+#define subtilis_error_set_bad_type_name(e, str, file, line)                   \
+	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_TYPE_NAME, str, file, line)
 #define subtilis_error_set_assertion_failed(e)                                 \
 	subtilis_error_set_basic(e, SUBTILIS_ERROR_ASSERTION_FAILED, __FILE__, \
 				 __LINE__)
@@ -230,11 +237,16 @@ void subtilis_error_init(subtilis_error_t *e);
 			    line)
 #define subtilis_error_set_unknown_function(e, str, file, line)                \
 	subtilis_error_set1(e, SUBTILIS_ERROR_UNKNOWN_FUNCTION, str, file, line)
+#define subtilis_error_set_unknown_type(e, str, file, line)                    \
+	subtilis_error_set1(e, SUBTILIS_ERROR_UNKNOWN_TYPE, str, file, line)
 #define subtilis_error_set_bad_instruction(e, num)                             \
 	subtilis_error_set_hex(e, SUBTILIS_ERROR_BAD_INSTRUCTION, num,         \
 			       __FILE__, __LINE__)
 #define subtilis_error_set_bad_arg_count(e, num1, num2, file, line)            \
 	subtilis_error_set_int(e, SUBTILIS_ERROR_BAD_ARG_COUNT, num1, num2,    \
+			       file, line, __FILE__, __LINE__)
+#define subtilis_error_set_too_many_args(e, num1, num2, file, line)            \
+	subtilis_error_set_int(e, SUBTILIS_ERROR_TOO_MANY_ARGS, num1, num2,    \
 			       file, line, __FILE__, __LINE__)
 #define subtilis_error_set_numeric_expected(e, id, file, line)                 \
 	subtilis_error_set1(e, SUBTILIS_ERROR_NUMERIC_EXPECTED, id, file, line)
@@ -293,6 +305,9 @@ void subtilis_error_init(subtilis_error_t *e);
 				  line, __FILE__, __LINE__)
 #define subtilis_error_set_array_type_mismatch(e, file, line)                  \
 	subtilis_error_set_syntax(e, SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH, file, \
+				  line, __FILE__, __LINE__)
+#define subtilis_error_set_fn_type_mismatch(e, file, line)                     \
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_FN_TYPE_MISMATCH, file,    \
 				  line, __FILE__, __LINE__)
 #define subtilis_error_set_const_integer_expected(e, file, line)               \
 	subtilis_error_set_syntax(e, SUBTILIS_ERROR_CONST_INTEGER_EXPECTED,    \
@@ -355,6 +370,9 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_range_bad_var_count(e, exp, got, file, line)        \
 	subtilis_error_set_int(e, SUBTILIS_ERROR_RANGE_BAD_VAR_COUNT, exp,     \
 			       got, file, line, __FILE__, __LINE__)
+#define subtilis_error_set_type_not_at_top_level(e, str, file, line)           \
+	subtilis_error_set1(e, SUBTILIS_ERROR_TYPE_NOT_AT_TOP_LEVEL, str,      \
+			    file, line)
 #define subtilis_error_set_ass_bad_reg(e, reg, file, line)                     \
 	subtilis_error_set1(e, SUBTILIS_ERROR_ASS_BAD_REG, reg, file, line)
 #define subtilis_error_set_ass_integer_encode(e, num, file, line)              \

@@ -30,5 +30,8 @@ void subtilis_parser_endproc(subtilis_parser_t *p, subtilis_token_t *t,
 			     subtilis_error_t *err);
 void subtilis_parser_check_calls(subtilis_parser_t *p, subtilis_error_t *err);
 void subtilis_parser_unwind(subtilis_parser_t *p, subtilis_error_t *err);
+char *subtilis_parser_parse_call_type(subtilis_parser_t *p, subtilis_token_t *t,
+				      subtilis_type_t *type,
+				      subtilis_error_t *err);
 
 #endif

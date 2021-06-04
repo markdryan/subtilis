@@ -203,7 +203,14 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 		}
 		(void)subtilis_symbol_table_insert_reg(
 		    p->local_st, var_name, &type, e->exp.ir_op.reg, err);
-	} else {
+	} else if (type.type == SUBTILIS_TYPE_FN) {
+		if (!value_present)
+			subtilis_parser_zero_local_fn(p, t, var_name, &type,
+						      err);
+		else
+			subtilis_parser_assign_local_fn(p, t, var_name, &type,
+							err);
+	} else if (subtilis_type_if_is_reference(&type)) {
 		s = subtilis_symbol_table_insert(p->local_st, var_name, &type,
 						 err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -220,6 +227,8 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 			    p, &type, SUBTILIS_IR_REG_LOCAL, s->loc, e, err);
 			e = NULL;
 		}
+	} else {
+		subtilis_error_set_assertion_failed(err);
 	}
 
 cleanup:

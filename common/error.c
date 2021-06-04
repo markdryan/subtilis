@@ -69,6 +69,9 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_BAD_FN_NAME */
 	{"Bad function name: %s.\n", 1},
 
+	/* SUBTILIS_ERROR_BAD_TYPE_NAME */
+	{"Bad type name: %s.\n", 1},
+
 	/* SUBTILIS_ERROR_ASSERTION_FAILED */
 	{"Assertion failed.\n", 0},
 
@@ -138,11 +141,17 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_UNKNOWN_FUNCTION */
 	{"Unknown function %s\n", 1},
 
+	/* SUBTILIS_ERROR_UNKNOWN_TYPE */
+	{"Unknown type %s\n", 1},
+
 	/* SUBTILIS_ERROR_BAD_INSTRUCTION */
 	{"Bad instruction %s\n", 1},
 
 	/* SUBTILIS_ERROR_BAD_ARG_COUNT */
 	{"Wrong number of arguments.  Found %s expected %s\n", 2},
+
+	/* SUBTILIS_ERROR_TOO_MANY_ARGS */
+	{"Too many arguments (%s) specified.  Maximum number of args is %s\n", 2},
 
 	/* SUBTILIS_ERROR_BAD_ARG_TYPE */
 	{"Argument %s of wrong type : %s\n", 2},
@@ -216,6 +225,9 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH */
 	{"Arrays are not compatible\n", 0},
 
+	/* SUBTILIS_ERROR_FN_TYPE_MISMATCH */
+	{"Functions or procedures are not compatible\n", 0},
+
 	/* SUBTILIS_ERROR_CONST_INTEGER_EXPECTED */
 	{"Constant integer expected\n", 0},
 
@@ -282,6 +294,9 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	{"Incorrect number of variables in range statement.  Expected 1 or %s"
 	" got %s\n", 2},
+
+	/* SUBTILIS_ERROR_TYPE_NOT_AT_TOP_LEVEL */
+	{"Type %s must be declared at the top level of the main function\n", 1},
 
 	/* SUBTILIS_ERROR_ASS_BAD_REG */
 	{"%s is not a valid register name\n", 1},

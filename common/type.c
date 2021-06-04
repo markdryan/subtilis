@@ -34,6 +34,7 @@ const subtilis_type_t subtilis_type_byte = {SUBTILIS_TYPE_BYTE};
 const subtilis_type_t subtilis_type_string = {SUBTILIS_TYPE_STRING};
 const subtilis_type_t subtilis_type_void = {SUBTILIS_TYPE_VOID};
 const subtilis_type_t subtilis_type_local_buffer = {SUBTILIS_TYPE_LOCAL_BUFFER};
+const subtilis_type_t subtilis_type_typedef = {SUBTILIS_TYPE_TYPEDEF};
 
 /* clang-format off */
 static const char *const prv_fixed_type_names[] = {
@@ -55,6 +56,8 @@ static const char *const prv_fixed_type_names[] = {
 	"vector of bytes", /* SUBTILIS_TYPE_VECTOR_BYTE */
 	"vector of strings", /* SUBTILIS_TYPE_VECTOR_STRING */
 	"local buffer",  /* SUBTILIS_TYPE_LOCAL_BUFFER */
+	"function pointer",  /* SUBTILIS_TYPE_FN */
+	"type",  /* SUBTILIS_TYPE_TYPEDEF */
 };
 
 /* clang-format on */
@@ -77,6 +80,25 @@ static bool prv_array_type_match(const subtilis_type_t *t1,
 	return true;
 }
 
+static bool prv_fn_type_match(const subtilis_type_t *t1,
+			      const subtilis_type_t *t2)
+{
+	size_t i;
+
+	if (!subtilis_type_eq(t1->params.fn.ret_val, t2->params.fn.ret_val))
+		return false;
+
+	if (t1->params.fn.num_params != t2->params.fn.num_params)
+		return false;
+
+	for (i = 0; i < t1->params.fn.num_params; i++)
+		if (!subtilis_type_eq(t1->params.fn.params[i],
+				      t2->params.fn.params[i]))
+			return false;
+
+	return true;
+}
+
 bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b)
 {
 	if (a->type != b->type)
@@ -84,9 +106,11 @@ bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b)
 	switch (a->type) {
 	case SUBTILIS_TYPE_ARRAY_REAL:
 	case SUBTILIS_TYPE_ARRAY_INTEGER:
+	case SUBTILIS_TYPE_ARRAY_STRING:
+	case SUBTILIS_TYPE_ARRAY_BYTE:
 		return prv_array_type_match(a, b);
-	case SUBTILIS_TYPE_STRING:
-		return a->type == b->type;
+	case SUBTILIS_TYPE_FN:
+		return prv_fn_type_match(a, b);
 	default:
 		return true;
 	}
@@ -171,7 +195,17 @@ const char *subtilis_type_name(const subtilis_type_t *typ)
 	return "unknown";
 }
 
-void subtilis_type_free(subtilis_type_t *typ) {}
+void subtilis_type_free(subtilis_type_t *typ)
+{
+	size_t i;
+
+	if (typ->type == SUBTILIS_TYPE_FN) {
+		free(typ->params.fn.ret_val);
+		for (i = 0; i < typ->params.fn.num_params; i++)
+			free(typ->params.fn.params[i]);
+	}
+}
+
 void subtilis_type_copy(subtilis_type_t *dst, const subtilis_type_t *src,
 			subtilis_error_t *err)
 {
@@ -180,9 +214,47 @@ void subtilis_type_copy(subtilis_type_t *dst, const subtilis_type_t *src,
 	subtilis_type_init_copy(dst, src, err);
 }
 
+static void prv_init_copy_fn(subtilis_type_t *dst, const subtilis_type_t *src,
+			     subtilis_error_t *err)
+{
+	size_t i;
+
+	dst->type = src->type;
+	dst->params.fn.ret_val = calloc(1, sizeof(*dst->params.fn.ret_val));
+	if (!dst->params.fn.ret_val) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	subtilis_type_init_copy(dst->params.fn.ret_val, src->params.fn.ret_val,
+				err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	dst->params.fn.num_params = src->params.fn.num_params;
+	for (i = 0; i < dst->params.fn.num_params; i++) {
+		dst->params.fn.params[i] =
+		    calloc(1, sizeof(*dst->params.fn.params[i]));
+		if (!dst->params.fn.params[i]) {
+			subtilis_error_set_oom(err);
+			goto cleanup;
+		}
+		subtilis_type_init_copy(dst->params.fn.params[i],
+					src->params.fn.params[i], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+	return;
+
+cleanup:
+	subtilis_type_free(dst);
+}
+
 void subtilis_type_init_copy(subtilis_type_t *dst, const subtilis_type_t *src,
 			     subtilis_error_t *err)
 {
+	if (src->type == SUBTILIS_TYPE_FN) {
+		prv_init_copy_fn(dst, src, err);
+		return;
+	}
 	*dst = *src;
 }
 

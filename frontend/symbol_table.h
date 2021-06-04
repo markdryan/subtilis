@@ -24,8 +24,9 @@
 
 struct subtilis_symbol_t_ {
 	size_t loc;
-	subtilis_type_t t; // owned by hash table
-	const char *key;   // owned by hash table
+	subtilis_type_t t;     // owned by hash table
+	subtilis_type_t sub_t; // owned by hash table
+	const char *key;       // owned by hash table
 	size_t size;
 	bool is_reg;
 	bool no_rc;
@@ -71,6 +72,11 @@ const subtilis_symbol_t *
 subtilis_symbol_table_insert_tmp(subtilis_symbol_table_t *st,
 				 const subtilis_type_t *id_type,
 				 char **tmp_name, subtilis_error_t *err);
+void subtilis_symbol_table_insert_type(subtilis_symbol_table_t *st,
+				       const char *name,
+				       const subtilis_type_t *type,
+				       subtilis_error_t *err);
+
 /* clang-format off */
 const subtilis_symbol_t *subtilis_symbol_table_promote_tmp(
 	subtilis_symbol_table_t *st, const subtilis_type_t *id_type,

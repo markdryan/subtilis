@@ -1083,8 +1083,10 @@ static void prv_assign_to_mem(subtilis_parser_t *p, size_t mem_reg, size_t loc,
 	subtilis_exp_delete(e);
 }
 
-static subtilis_exp_t *prv_load_from_mem(subtilis_parser_t *p, size_t mem_reg,
-					 size_t loc, subtilis_error_t *err)
+static subtilis_exp_t *prv_load_from_mem(subtilis_parser_t *p,
+					 const subtilis_type_t *type,
+					 size_t mem_reg, size_t loc,
+					 subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t op2;

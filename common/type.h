@@ -38,6 +38,8 @@ typedef enum {
 	SUBTILIS_TYPE_VECTOR_BYTE,
 	SUBTILIS_TYPE_VECTOR_STRING,
 	SUBTILIS_TYPE_LOCAL_BUFFER,
+	SUBTILIS_TYPE_FN,
+	SUBTILIS_TYPE_TYPEDEF,
 	SUBTILIS_TYPE_MAX,
 } subtilis_type_type_t;
 
@@ -73,14 +75,23 @@ typedef struct subtilis_type_array_t_ subtilis_type_array_t;
  * been initialised called subtilis_type_init_copy instead.
  */
 
+typedef struct subtilis_type_t_ subtilis_type_t;
+
+struct subtilis_type_fn_t_ {
+	subtilis_type_t *ret_val;
+	size_t num_params;
+	subtilis_type_t *params[SUBTILIS_MAX_ARGS];
+};
+
+typedef struct subtilis_type_fn_t_ subtilis_type_fn_t;
+
 struct subtilis_type_t_ {
 	subtilis_type_type_t type;
 	union {
 		subtilis_type_array_t array;
+		subtilis_type_fn_t fn;
 	} params;
 };
-
-typedef struct subtilis_type_t_ subtilis_type_t;
 
 struct subtilis_type_section_t_ {
 	subtilis_type_t return_type;
@@ -119,5 +130,6 @@ extern const subtilis_type_t subtilis_type_byte;
 extern const subtilis_type_t subtilis_type_string;
 extern const subtilis_type_t subtilis_type_void;
 extern const subtilis_type_t subtilis_type_local_buffer;
+extern const subtilis_type_t subtilis_type_typedef;
 
 #endif

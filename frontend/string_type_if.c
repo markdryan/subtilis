@@ -426,8 +426,10 @@ static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
 	subtilis_exp_delete(a1);
 }
 
-static subtilis_exp_t *prv_load_from_mem(subtilis_parser_t *p, size_t mem_reg,
-					 size_t loc, subtilis_error_t *err)
+static subtilis_exp_t *prv_load_from_mem(subtilis_parser_t *p,
+					 const subtilis_type_t *type,
+					 size_t mem_reg, size_t loc,
+					 subtilis_error_t *err)
 {
 	size_t reg;
 

@@ -68,6 +68,7 @@ typedef void (*subtilis_type_if_sizet2_exp_t)(subtilis_parser_t *p, size_t reg,
 					      size_t loc, subtilis_exp_t *e,
 					      subtilis_error_t *err);
 typedef subtilis_exp_t *(*subtilis_type_if_load_t)(subtilis_parser_t *p,
+						   const subtilis_type_t *type,
 						   size_t reg, size_t loc,
 						   subtilis_error_t *err);
 /* clang-format off */
@@ -782,6 +783,13 @@ bool subtilis_type_if_is_array(const subtilis_type_t *type);
  */
 
 bool subtilis_type_if_is_vector(const subtilis_type_t *type);
+
+/*
+ * Returns true if the given type is a refernce type,
+ * currently a string, vector or array
+ */
+
+bool subtilis_type_if_is_reference(const subtilis_type_t *type);
 
 /*
  * Converts expression e to type type, if possible.
