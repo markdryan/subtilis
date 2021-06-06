@@ -1069,27 +1069,42 @@ void subtilis_type_if_print(subtilis_parser_t *p, subtilis_exp_t *e,
 
 bool subtilis_type_if_is_const(const subtilis_type_t *type)
 {
-	return prv_type_map[type->type]->is_const;
+	if (prv_type_map[type->type])
+		return prv_type_map[type->type]->is_const;
+	else
+		return false;
 }
 
 bool subtilis_type_if_is_numeric(const subtilis_type_t *type)
 {
-	return prv_type_map[type->type]->is_numeric;
+	if (prv_type_map[type->type])
+		return prv_type_map[type->type]->is_numeric;
+	else
+		return false;
 }
 
 bool subtilis_type_if_is_integer(const subtilis_type_t *type)
 {
-	return prv_type_map[type->type]->is_integer;
+	if (prv_type_map[type->type])
+		return prv_type_map[type->type]->is_integer;
+	else
+		return false;
 }
 
 bool subtilis_type_if_is_array(const subtilis_type_t *type)
 {
-	return prv_type_map[type->type]->is_array;
+	if (prv_type_map[type->type])
+		return prv_type_map[type->type]->is_array;
+	else
+		return false;
 }
 
 bool subtilis_type_if_is_vector(const subtilis_type_t *type)
 {
-	return prv_type_map[type->type]->is_vector;
+	if (prv_type_map[type->type])
+		return prv_type_map[type->type]->is_vector;
+	else
+		return false;
 }
 
 bool subtilis_type_if_is_reference(const subtilis_type_t *type)

@@ -4356,6 +4356,21 @@ const subtilis_test_case_t test_cases[] = {
 	"print a%{0}\n",
 	"0\n1\n2\n3\n4\n5\n",
 	},
+	{"fn_names",
+	"def FNa <-0.0\n"
+	"def FNa& <- 2\n"
+	"def FNa% <-1\n"
+	"def FNa$ <- \"hello\"\n"
+	"def FNa%(1) local dim a%(10) <- a%()\n"
+	"def FNa%{} local dim a%{4} <-a%{} \n"
+	"print FNa\n"
+	"print FNa&\n"
+	"print FNa%\n"
+	"print FNa$\n"
+	"print dim(FNa%(1)(),1)\n"
+	"print dim(FNa%{}, 1)\n",
+	"0\n2\n1\nhello\n10\n4\n",
+	},
 };
 
 /* clang-format on */

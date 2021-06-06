@@ -228,6 +228,50 @@ static void prv_process_vector_fn_type(subtilis_parser_t *p, const char *name,
 	fn_type->params.array.dims[0] = SUBTILIS_DYNAMIC_DIMENSION;
 }
 
+/*
+ * Takes ownership of name.
+ */
+
+static char *prv_complete_fn_name(char *name, const subtilis_type_t *fn_type,
+				  subtilis_error_t *err)
+{
+	char buffer[64];
+	int ptr;
+	int name_len;
+	char *new_name;
+
+	if (subtilis_type_if_is_array(fn_type)) {
+		ptr = snprintf(buffer, 64, "(%d)",
+			       fn_type->params.array.num_dims);
+		if (ptr >= 64) {
+			subtilis_error_set_assertion_failed(err);
+			goto on_error;
+		}
+	} else if (subtilis_type_if_is_vector(fn_type)) {
+		buffer[0] = '{';
+		buffer[1] = '}';
+		buffer[2] = 0;
+		ptr = 2;
+	} else {
+		return name;
+	}
+
+	name_len = strlen(name);
+	new_name = realloc(name, name_len + ptr + 1);
+	if (!new_name) {
+		subtilis_error_set_oom(err);
+		goto on_error;
+	}
+	strcpy(name + name_len, buffer);
+
+	return name;
+
+on_error:
+	free(name);
+
+	return NULL;
+}
+
 subtilis_exp_t *subtilis_parser_call(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
@@ -324,6 +368,10 @@ subtilis_exp_t *subtilis_parser_call(subtilis_parser_t *p, subtilis_token_t *t,
 
 	prv_delete_params(params, num_poss_args);
 	params = NULL;
+
+	name = prv_complete_fn_name(name, &fn_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
 
 	stype = subtilis_type_section_new(&fn_type, num_poss_args, ptypes, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -926,6 +974,10 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 	}
+
+	name = prv_complete_fn_name(name, &fn_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
 
 	stype = subtilis_type_section_new(&fn_type, num_params, params, err);
 	if (err->type != SUBTILIS_ERROR_OK)
