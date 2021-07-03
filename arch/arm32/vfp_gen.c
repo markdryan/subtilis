@@ -168,8 +168,8 @@ void subtilis_vfp_gen_movi32r(subtilis_ir_section_t *s, size_t start,
 			      SUBTILIS_ARM_CCODE_AL, true, dest, tmp, err);
 }
 
-void subtilis_vfp_gen_callr(subtilis_ir_section_t *s, size_t start,
-			    void *user_data, subtilis_error_t *err)
+static void prv_gen_callr(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, bool indirect, subtilis_error_t *err)
 {
 	subtilis_arm_reg_t dest;
 	subtilis_arm_reg_t op1;
@@ -177,7 +177,7 @@ void subtilis_vfp_gen_callr(subtilis_ir_section_t *s, size_t start,
 	subtilis_ir_call_t *call = &s->ops[start]->op.call;
 
 	subtilis_arm_gen_call_gen(s, start, user_data,
-				  SUBTILIS_ARM_BR_LINK_REAL, err);
+				  SUBTILIS_ARM_BR_LINK_REAL, indirect, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -186,6 +186,18 @@ void subtilis_vfp_gen_callr(subtilis_ir_section_t *s, size_t start,
 
 	subtilis_vfp_add_copy(arm_s, SUBTILIS_ARM_CCODE_AL,
 			      SUBTILIS_VFP_INSTR_FCPYD, dest, op1, err);
+}
+
+void subtilis_vfp_gen_callr(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err)
+{
+	prv_gen_callr(s, start, user_data, false, err);
+}
+
+void subtilis_vfp_gen_callr_ptr(subtilis_ir_section_t *s, size_t start,
+				void *user_data, subtilis_error_t *err)
+{
+	prv_gen_callr(s, start, user_data, true, err);
 }
 
 static void prv_check_divbyzero(subtilis_arm_section_t *arm_s,

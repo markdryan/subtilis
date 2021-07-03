@@ -737,6 +737,31 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"print i%\n",
 	SUBTILIS_ERROR_UNKNOWN_VARIABLE,
 	},
+	{"assign_func_to_proc",
+	"type PROCMap(a%)\n"
+	"a@PROCMap = def FN(a%) <-a%\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+	{"assign_proc_missing_args",
+	"type PROCMap(a%, b%)\n"
+	"a@PROCMap = def PROC(a%) endproc\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+	{"assign_fn_type_mismatch",
+	"type FNMap%\n"
+	"a@FNMap = def FN <-0.0\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+	{"bad_lambda_name1",
+	"type FNMap\n"
+	"a@FNMap = def FNu <-0.0\n",
+	SUBTILIS_ERROR_BAD_LAMBDA_NAME
+	},
+	{"bad_lambda_name2",
+	"type FNMap%\n"
+	"a@FNMap = def FNu% <-0\n",
+	SUBTILIS_ERROR_BAD_LAMBDA_NAME
+	},
 };
 
 /* clang-format on */

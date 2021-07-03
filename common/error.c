@@ -69,6 +69,9 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_BAD_FN_NAME */
 	{"Bad function name: %s.\n", 1},
 
+	/* SUBTILIS_ERROR_BAD_LAMBDA_NAME */
+	{"Bad lambda name: %s.\n", 1},
+
 	/* SUBTILIS_ERROR_BAD_TYPE_NAME */
 	{"Bad type name: %s.\n", 1},
 
@@ -151,7 +154,8 @@ static subtilis_error_desc_t prv_errors[] = {
 	{"Wrong number of arguments.  Found %s expected %s\n", 2},
 
 	/* SUBTILIS_ERROR_TOO_MANY_ARGS */
-	{"Too many arguments (%s) specified.  Maximum number of args is %s\n", 2},
+	{"Too many arguments (%s) specified.  Maximum number of args is %s\n",
+	 2},
 
 	/* SUBTILIS_ERROR_BAD_ARG_TYPE */
 	{"Argument %s of wrong type : %s\n", 2},

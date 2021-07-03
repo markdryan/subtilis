@@ -92,7 +92,8 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 
 	p->current = subtilis_ir_prog_section_new(
 	    p->prog, SUBTILIS_MAIN_FN, 0, stype, SUBTILIS_BUILTINS_MAX,
-	    l->stream->name, l->line, p->eflag_offset, p->error_offset, err);
+	    l->stream->name, l->line, p->eflag_offset, p->error_offset, NULL,
+	    err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 	stype = NULL;

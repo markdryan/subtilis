@@ -98,6 +98,10 @@ typedef subtilis_exp_t *(*subtilis_type_if_call_t)(subtilis_parser_t *p,
 						   subtilis_ir_arg_t *args,
 						   size_t num_args,
 						   subtilis_error_t *err);
+typedef subtilis_exp_t *(*subtilis_type_if_call_ptr_t)(
+	subtilis_parser_t *p, const subtilis_type_t *type,
+	subtilis_ir_arg_t *args, size_t num_args,
+	size_t ptr, subtilis_error_t *err);
 
 typedef subtilis_exp_t *(*subtilis_type_if_coerce_t)(
 	subtilis_parser_t *p, subtilis_exp_t *e,
@@ -182,6 +186,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_unary_t sgn;
 	subtilis_type_if_unary_t is_inf;
 	subtilis_type_if_call_t call;
+	subtilis_type_if_call_ptr_t call_ptr;
 	subtilis_type_if_reg_t ret;
 	subtilis_type_if_print_t print;
 	subtilis_type_if_size_t destructor;
@@ -738,6 +743,20 @@ subtilis_exp_t *subtilis_type_if_call(subtilis_parser_t *p,
 				      const subtilis_type_t *type,
 				      subtilis_ir_arg_t *args, size_t num_args,
 				      subtilis_error_t *err);
+
+/*
+ * Generates an indirect call instruction for a function that returns a value of
+ * type type.  The address of the function is stored in the register ptr.  A
+ * register of the appropriate type is returned.  This register will hold either
+ * the return value or a reference to the return value.  Ownership of args is
+ * transferred to the call on success.
+ */
+
+subtilis_exp_t *subtilis_type_if_call_ptr(subtilis_parser_t *p,
+					  const subtilis_type_t *type,
+					  subtilis_ir_arg_t *args,
+					  size_t num_args, size_t ptr,
+					  subtilis_error_t *err);
 
 /*
  * Generate a return instruction for a type of type that returns that

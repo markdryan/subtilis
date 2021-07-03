@@ -46,11 +46,13 @@
 
 typedef enum {
 	SUBTILIS_ARM_ENCODE_BP_LDR,
+	SUBTILIS_ARM_ENCODE_BP_LDRP,
 	SUBTILIS_ARM_ENCODE_BP_LDRF,
 } subtilis_arm_encode_const_type_t;
 
 struct subtilis_arm_encode_const_t_ {
 	size_t label;
+	size_t section_label;
 	size_t code_index;
 	subtilis_arm_encode_const_type_t type;
 };
@@ -268,6 +270,7 @@ static void prv_apply_constants(subtilis_arm_encode_ud_t *ud,
 		dist = (ud->label_offsets[cnst->label] - cnst->code_index) - 8;
 		switch (cnst->type) {
 		case SUBTILIS_ARM_ENCODE_BP_LDR:
+		case SUBTILIS_ARM_ENCODE_BP_LDRP:
 			if (dist < 0)
 				dist = -dist;
 			if (dist > 4096) {
@@ -330,6 +333,19 @@ static void prv_flush_constants(subtilis_arm_encode_ud_t *ud,
 				prv_add_word(
 				    ud, arm_s->constants.ui32[j].integer, err);
 			}
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			break;
+		case SUBTILIS_ARM_ENCODE_BP_LDRP:
+			prv_ensure_code(ud, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			subtilis_arm_link_extref_add(ud->link, cnst->code_index,
+						     ud->bytes_written,
+						     cnst->section_label, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			prv_add_word(ud, 0, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 			break;
@@ -486,7 +502,7 @@ static void prv_add_const(subtilis_arm_encode_ud_t *ud, size_t label,
 		ud->max_const_count = new_max;
 		ud->constants = new_const;
 	}
-	if (type == SUBTILIS_ARM_ENCODE_BP_LDR)
+	if (type != SUBTILIS_ARM_ENCODE_BP_LDRF)
 		ud->int_const_count++;
 	else
 		ud->real_const_count++;
@@ -840,18 +856,30 @@ static void prv_encode_br_instr(void *user_data, subtilis_arm_op_t *op,
 		return;
 
 	word |= instr->ccode << 28;
-	word |= 0x5 << 25;
-	if (instr->link)
-		word |= 1 << 24;
-	if (instr->link && !instr->local) {
-		subtilis_arm_link_add(ud->link, ud->bytes_written, err);
-		word |= instr->target.label;
+	if (instr->indirect) {
+		/*
+		 * We're going to do a mov pc, reg.  There's no need to do
+		 * any linking stuff as the address is computed at runtime.
+		 */
+
+		word |= SUBTILIS_ARM_INSTR_MOV << 21;
+		word |= 15 << 12;
+		word |= instr->target.reg & 0xf;
 	} else {
-		prv_add_back_patch(ud, SUBTILIS_ARM_ENCODE_BP_TYPE_BRANCH,
-				   instr->target.label, ud->bytes_written, err);
+		word |= 0x5 << 25;
+		if (instr->link)
+			word |= 1 << 24;
+		if (instr->link && !instr->local) {
+			subtilis_arm_link_add(ud->link, ud->bytes_written, err);
+			word |= instr->target.label;
+		} else {
+			prv_add_back_patch(
+			    ud, SUBTILIS_ARM_ENCODE_BP_TYPE_BRANCH,
+			    instr->target.label, ud->bytes_written, err);
+		}
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 	}
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 
 	prv_ensure_code(ud, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -960,6 +988,43 @@ static void prv_encode_adr_instr(void *user_data, subtilis_arm_op_t *op,
 
 	prv_encode_data_instr(user_data, op, SUBTILIS_ARM_INSTR_ADD, &data,
 			      err);
+}
+
+static void prv_encode_ldrp_instr(void *user_data, subtilis_arm_op_t *op,
+				  subtilis_arm_instr_type_t type,
+				  subtilis_arm_ldrp_instr_t *instr,
+				  subtilis_error_t *err)
+{
+	subtilis_arm_encode_ud_t *ud = user_data;
+	subtilis_arm_stran_instr_t stran;
+
+	/*
+	 * We need to make sure we have enough room for one PC relative load and
+	 * an add and the constant.
+	 */
+
+	prv_check_pool_adj(ud, 12, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_const(ud, instr->constant_label, ud->bytes_written,
+		      SUBTILIS_ARM_ENCODE_BP_LDRP, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	ud->constants[ud->const_count - 1].section_label = instr->section_label;
+
+	stran.ccode = instr->ccode;
+	stran.dest = instr->dest;
+	stran.base = 15;
+	stran.offset.type = SUBTILIS_ARM_OP2_I32;
+	stran.offset.op.integer = 0;
+	stran.pre_indexed = true;
+	stran.write_back = false;
+	stran.subtract = false;
+	stran.byte = false;
+	prv_encode_stran_instr(user_data, op, SUBTILIS_ARM_INSTR_LDR, &stran,
+			       err);
 }
 
 static void prv_encode_cmov_instr(void *user_data, subtilis_arm_op_t *op,
@@ -2414,6 +2479,7 @@ static void prv_arm_encode(subtilis_arm_section_t *arm_s,
 	walker.br_fn = prv_encode_br_instr;
 	walker.swi_fn = prv_encode_swi_instr;
 	walker.ldrc_fn = prv_encode_ldrc_instr;
+	walker.ldrp_fn = prv_encode_ldrp_instr;
 	walker.adr_fn = prv_encode_adr_instr;
 	walker.cmov_fn = prv_encode_cmov_instr;
 	walker.flags_fn = prv_encode_flags_instr;

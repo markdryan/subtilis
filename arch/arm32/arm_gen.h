@@ -133,9 +133,13 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 void subtilis_arm_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 			       void *user_data,
 			       subtilis_arm_br_link_type_t link_type,
-			       subtilis_error_t *err);
+			       bool indirect, subtilis_error_t *err);
 void subtilis_arm_gen_calli32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_call_ptr(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_error_t *err);
+void subtilis_arm_gen_calli32_ptr(subtilis_ir_section_t *s, size_t start,
+				  void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_ret(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_arm_gen_reti32(subtilis_ir_section_t *s, size_t start,
@@ -175,5 +179,6 @@ void subtilis_arm_gen_signx8to32_helper(subtilis_arm_section_t *arm_s,
 					subtilis_arm_reg_t dest,
 					subtilis_arm_reg_t src,
 					subtilis_error_t *err);
-
+void subtilis_arm_gen_get_proc_addr(subtilis_ir_section_t *s, size_t start,
+				    void *user_data, subtilis_error_t *err);
 #endif

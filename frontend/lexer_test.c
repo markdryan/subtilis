@@ -562,10 +562,7 @@ static int prv_test_push(void)
 	subtilis_buffer_t buf;
 	subtilis_error_t err;
 	static const char *const test_strings[] = {
-	    "1234 ",
-	    "hello ",
-	    "45678",
-	    "goodbye",
+	    "1234 ", "hello ", "45678", "goodbye",
 	};
 	int res = 0;
 
@@ -759,9 +756,8 @@ static int prv_check_fn_typed(subtilis_lexer_t *l, subtilis_token_t *t)
 		}
 
 		if (t->tok.keyword.id_type.type != expected_types[i].type) {
-			fprintf(stderr,
-				"Unxpected function type. Found  %d "
-				"wanted %d\n",
+			fprintf(stderr, "Unxpected function type. Found  %d "
+					"wanted %d\n",
 				t->tok.keyword.id_type.type,
 				expected_types[i].type);
 			goto on_error;
@@ -799,7 +795,7 @@ static int prv_check_int(subtilis_lexer_t *l, subtilis_token_t *t)
 	int i;
 	const char *tbuf;
 
-	const int expected[] = {12345,	 67890,	     0x12345, 0x67890,
+	const int expected[] = {12345,   67890,      0x12345, 0x67890,
 				0xabcef, 2147483647, 170,     0xffffffff};
 
 	const int expected_signed[] = {255, 0xff, 255};
@@ -884,9 +880,7 @@ static int prv_check_real(subtilis_lexer_t *l, subtilis_token_t *t)
 	int i;
 
 	const double expected[] = {
-	    12345.67890,
-	    0.314,
-	    .314,
+	    12345.67890, 0.314, .314,
 	};
 
 	const double expected_signed[] = {0.314, .314};
@@ -1006,8 +1000,8 @@ static int prv_check_vars(subtilis_lexer_t *l, subtilis_token_t *t,
 static int prv_check_real_vars(subtilis_lexer_t *l, subtilis_token_t *t)
 {
 	const char *const expected[] = {
-	    "The",   "quick",	       "brown",	    "fox",
-	    "jumps", "over",	       "the",	    "lazy",
+	    "The",   "quick",	  "brown",     "fox",
+	    "jumps", "over",	   "the",       "lazy",
 	    "dog",   "floating_point", "PROcedure", "index001of2"};
 	return prv_check_vars(l, t, expected,
 			      sizeof(expected) / sizeof(const char *const),
@@ -1122,8 +1116,8 @@ static int prv_check_operators(subtilis_lexer_t *l, subtilis_token_t *t)
 
 	const char *const expected[] = {
 	    "<", "<<", ">",  ">>", ">>>", ">=", "<=", "+=", "-=",
-	    "+", "-",  "<>", "^",  "(",	  ")",	"/",  "|",  "?",
-	    ";", ",",  "[",  "]",  "~",	  "*",	"$",  ":="};
+	    "+", "-",  "<>", "^",  "(",   ")",  "/",  "|",  "?",
+	    ";", ",",  "[",  "]",  "~",   "*",  "$",  ":="};
 
 	subtilis_error_init(&err);
 	for (i = 0; i < sizeof(expected) / sizeof(const char *); i++) {
@@ -1244,8 +1238,7 @@ static int prv_check_strings(subtilis_lexer_t *l, subtilis_token_t *t)
 	int i;
 	const char *tbuf;
 	const char *const expected[] = {
-	    "one two three four five size 0 1 2",
-	    "\"No way\", he said",
+	    "one two three four five size 0 1 2", "\"No way\", he said",
 	};
 
 	subtilis_error_init(&err);
@@ -1379,8 +1372,7 @@ static int prv_check_unknown(subtilis_lexer_t *l, subtilis_token_t *t)
 	int i;
 	const char *tbuf;
 	const char *const expected[] = {
-	    "#UNKNOWN",
-	    "#1234567890",
+	    "#UNKNOWN", "#1234567890",
 	};
 
 	for (i = 0; i < sizeof(expected) / sizeof(const char *); i++) {

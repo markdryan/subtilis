@@ -47,6 +47,9 @@ typedef enum {
 	SUBTILIS_OP_CALL,
 	SUBTILIS_OP_CALLI32,
 	SUBTILIS_OP_CALLREAL,
+	SUBTILIS_OP_CALL_PTR,
+	SUBTILIS_OP_CALLI32_PTR,
+	SUBTILIS_OP_CALLREAL_PTR,
 	SUBTILIS_OP_SYS_CALL,
 	SUBTILIS_OP_PHI,
 	SUBTILIS_OP_MAX,
@@ -1777,6 +1780,16 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_OSCLI,
+
+	/*
+	 * getprocaddr r0, i32 (procedure identifier)
+	 *
+	 * Moves the procedure id, which is a 32 bit constant, into the
+	 * register r0.  In the frontend this is equivalent to mov r0, i32
+	 * but the backends require a separate instruction for this.
+	 */
+
+	SUBTILIS_OP_INSTR_GET_PROC_ADDR,
 } subtilis_op_instr_type_t;
 
 typedef enum {
@@ -1934,6 +1947,7 @@ struct subtilis_ir_prog_t_ {
 	subtilis_string_pool_t *string_pool;
 	const subtilis_settings_t *settings;
 	subtilis_constant_pool_t *constant_pool;
+	size_t lambdas;
 };
 
 typedef struct subtilis_ir_prog_t_ subtilis_ir_prog_t;
@@ -2005,12 +2019,12 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	subtilis_ir_prog_t *p, const char *name, size_t locals,
 	subtilis_type_section_t *tp, subtilis_builtin_type_t ftype,
 	const char *file, size_t line, int32_t eflag_offset,
-	int32_t error_offset, subtilis_error_t *err);
+	int32_t error_offset, size_t *call_index, subtilis_error_t *err);
 void subtilis_ir_prog_asm_section_new(
 	subtilis_ir_prog_t *p, const char *name, subtilis_type_section_t *tp,
 	const char *file, size_t line, int32_t eflag_offset,
 	int32_t error_offset, subtilis_backend_asm_free_t asm_free,
-	void *asm_code, subtilis_error_t *err);
+	void *asm_code, size_t *call_index, subtilis_error_t *err);
 
 /* clang-format on */
 subtilis_ir_section_t *subtilis_ir_prog_find_section(subtilis_ir_prog_t *p,
@@ -2065,7 +2079,7 @@ size_t subtilis_ir_section_new_label(subtilis_ir_section_t *s);
 void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 				   subtilis_error_t *err);
 void subtilis_ir_merge_errors(subtilis_ir_section_t *s, subtilis_error_t *err);
-/* Ownership of args passes to this function */
+/* Ownership of args passes to thes functions */
 void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t arg_count,
 				  subtilis_ir_arg_t *args,
 				  subtilis_error_t *err);
@@ -2077,6 +2091,18 @@ size_t subtilis_ir_section_add_real_call(subtilis_ir_section_t *s,
 					 size_t arg_count,
 					 subtilis_ir_arg_t *args,
 					 subtilis_error_t *err);
+void subtilis_ir_section_add_call_ptr(subtilis_ir_section_t *s,
+				      size_t arg_count, subtilis_ir_arg_t *args,
+				      size_t ptr, subtilis_error_t *err);
+size_t subtilis_ir_section_add_i32_call_ptr(subtilis_ir_section_t *s,
+					    size_t arg_count,
+					    subtilis_ir_arg_t *args, size_t ptr,
+					    subtilis_error_t *err);
+size_t subtilis_ir_section_add_real_call_ptr(subtilis_ir_section_t *s,
+					     size_t arg_count,
+					     subtilis_ir_arg_t *args,
+					     size_t ptr, subtilis_error_t *err);
+
 /*
  * Ownership of in_regs and out_regs  passes to this function.
  * flags_reg == SIZE_MAX if no flags are to be returned.

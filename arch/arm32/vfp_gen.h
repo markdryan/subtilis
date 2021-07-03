@@ -32,6 +32,8 @@ void subtilis_vfp_gen_movi32r(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_vfp_gen_callr(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_error_t *err);
+void subtilis_vfp_gen_callr_ptr(subtilis_ir_section_t *s, size_t start,
+				void *user_data, subtilis_error_t *err);
 void subtilis_vfp_gen_addr(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err);
 void subtilis_vfp_gen_addir(subtilis_ir_section_t *s, size_t start,

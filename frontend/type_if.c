@@ -1040,6 +1040,22 @@ subtilis_exp_t *subtilis_type_if_call(subtilis_parser_t *p,
 	return fn(p, type, args, num_args, err);
 }
 
+subtilis_exp_t *subtilis_type_if_call_ptr(subtilis_parser_t *p,
+					  const subtilis_type_t *type,
+					  subtilis_ir_arg_t *args,
+					  size_t num_args, size_t ptr,
+					  subtilis_error_t *err)
+{
+	subtilis_type_if_call_ptr_t fn;
+
+	fn = prv_type_map[type->type]->call_ptr;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+	return fn(p, type, args, num_args, ptr, err);
+}
+
 void subtilis_type_if_ret(subtilis_parser_t *p, const subtilis_type_t *type,
 			  size_t reg, subtilis_error_t *err)
 {
@@ -1057,11 +1073,15 @@ void subtilis_type_if_print(subtilis_parser_t *p, subtilis_exp_t *e,
 			    subtilis_error_t *err)
 {
 	subtilis_type_if_print_t fn;
+	char error_buffer[128];
 
 	fn = prv_type_map[e->type.type]->print;
 	if (!fn) {
+		snprintf(error_buffer, 128, "print on %s",
+			 subtilis_type_name(&e->type));
+		subtilis_error_set_not_supported(
+		    err, error_buffer, p->l->stream->name, p->l->line);
 		subtilis_exp_delete(e);
-		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 	fn(p, e, err);

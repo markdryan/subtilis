@@ -4362,7 +4362,7 @@ const subtilis_test_case_t test_cases[] = {
 	"def FNa% <-1\n"
 	"def FNa$ <- \"hello\"\n"
 	"def FNa%(1) local dim a%(10) <- a%()\n"
-	"def FNa%{} local dim a%{4} <-a%{} \n"
+	"def FNa%{} local dim a%{4} <-a%{}\n"
 	"print FNa\n"
 	"print FNa&\n"
 	"print FNa%\n"
@@ -4370,6 +4370,81 @@ const subtilis_test_case_t test_cases[] = {
 	"print dim(FNa%(1)(),1)\n"
 	"print dim(FNa%{}, 1)\n",
 	"0\n2\n1\nhello\n10\n4\n",
+	},
+	{"lambda_basic",
+	"type PROCMap(a%)\n"
+	"type PROCNoArgs\n"
+	"type FNInt%\n"
+	"type FNStr$\n"
+	"type FNReal\n"
+	"type FNByte&\n"
+	"e@PROCMap := def PROC(a%)\n"
+	"  print a%\n"
+	"endproc\n"
+	"f@PROCNoArgs := def PROC\n"
+	"  print \"no args\"\n"
+	"endproc\n"
+	"i@FNInt := def FN% <- 1\n"
+	"j@FNStr := def FN$ <- \"Hello World\"\n"
+	"k@FNReal := def FN <- 10.0\n"
+	"l@FNByte := def FN& <- 127\n"
+	"e@PROCMap(10.1)\n"
+	"f@PROCNoArgs()\n"
+	"print i@FNInt()\n"
+	"print j@FNStr()\n"
+	"print k@FNReal()\n"
+	"print l@FNByte()\n",
+	"10\nno args\n1\nHello World\n10\n127\n",
+	},
+	{"lambda_string_array_fn",
+	"type FN_getStrings$(1)(len%)\n"
+	"a@FN_getStrings = def FN$(1)(len%)\n"
+	"  local dim a$(len%)\n"
+	"   for i% := 0 to dim (a$(),1)\n"
+	"    a$(i%) = str$(i%)\n"
+	"   next\n"
+	"<-a$()\n"
+	"strs$() := a@FN_getStrings(10)\n"
+	"range a$ := strs$()\n"
+	"  print a$\n"
+	"endrange\n",
+	"0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
+	},
+	{"lambda_alias",
+	"type FNByte&\n"
+	"l@FNByte = def FN& <- 127\n"
+	"print l@FNByte()\n"
+	"g@FNByte := l@FNByte\n"
+	"h@FNByte = l@FNByte\n"
+	"print g@FNByte()\n"
+	"print h@FNByte()\n",
+	"127\n127\n127\n",
+	},
+	{"lambda_nested1",
+	"type PROCEmpty\n"
+	"for i% = 0 to 9\n"
+	"  a@PROCEmpty := def PROC print \"empty\" endproc\n"
+	"  a@PROCEmpty()\n"
+	"next\n",
+	"empty\nempty\nempty\nempty\nempty\nempty\nempty\nempty\nempty\nempty\n",
+	},
+	{"lambda_in_proc",
+	"type FNHello$\n"
+	"def PROCPrint\n"
+	"  a@FNHello := def FN$ <- \"HELLO\"\n"
+	"  print a@FNHello()\n"
+	"endproc\n"
+	"PROCPrint\n",
+	"HELLO\n",
+	},
+	{"lambda_in_error_handler",
+	"type PROCEmpty\n"
+	"onerror\n"
+	"  a@PROCEmpty := def PROC print \"empty\" endproc\n"
+	"  tryone a@PROCEmpty()\n"
+	"enderror\n"
+	"error 1\n",
+	"empty\n",
 	},
 };
 

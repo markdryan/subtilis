@@ -790,13 +790,12 @@ static void prv_handle_builtin(subitlis_vm_t *vm, subtilis_builtin_type_t ftype,
 
 static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		     const subtilis_type_t *call_type, subtilis_ir_call_t *call,
-		     subtilis_error_t *err)
+		     size_t section_index, subtilis_error_t *err)
 {
 	subtilis_ir_section_t *s;
 	int32_t *new_regs;
 	double *new_fregs;
 	size_t space_needed;
-	size_t section_index = call->proc_id;
 
 	if (section_index >= vm->p->num_sections) {
 		subtilis_error_set_assertion_failed(err);
@@ -876,6 +875,20 @@ static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->pc = -1;
 
 	prv_compute_labels(vm, err);
+}
+
+static void prv_call_direct(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			    const subtilis_type_t *call_type,
+			    subtilis_ir_call_t *call, subtilis_error_t *err)
+{
+	prv_call(vm, b, call_type, call, call->proc_id, err);
+}
+
+static void prv_call_indirect(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			      const subtilis_type_t *call_type,
+			      subtilis_ir_call_t *call, subtilis_error_t *err)
+{
+	prv_call(vm, b, call_type, call, vm->regs[call->proc_id], err);
 }
 
 static size_t prv_ret_gen(subitlis_vm_t *vm, const subtilis_type_t *call_type,
@@ -1752,6 +1765,12 @@ static void prv_oscli(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		prv_generate_error(vm, (int32_t)err_code);
 }
 
+static void prv_getprocaddr(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = ops[1].label;
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                        /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1909,6 +1928,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_movi8tofp,                     /* SUBTILIS_OP_INSTR_MOV_I8_FP */
 	prv_movfpi32i32,                   /* SUBTILIS_OP_INSTR_MOV_FP_I32_I32*/
 	prv_oscli,			   /* SUBTILIS_OP_INSTR_OSCLI */
+	prv_getprocaddr,		   /* SUBTILIS_OP_INSTR_GET_PROC_ADDR */
 };
 
 /* clang-format on */
@@ -1924,14 +1944,25 @@ void subitlis_vm_run(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		if (!vm->s->ops[vm->pc])
 			continue;
 		if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_CALL) {
-			prv_call(vm, b, &subtilis_type_void,
-				 &vm->s->ops[vm->pc]->op.call, err);
+			prv_call_direct(vm, b, &subtilis_type_void,
+					&vm->s->ops[vm->pc]->op.call, err);
 		} else if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_CALLI32) {
-			prv_call(vm, b, &subtilis_type_integer,
-				 &vm->s->ops[vm->pc]->op.call, err);
+			prv_call_direct(vm, b, &subtilis_type_integer,
+					&vm->s->ops[vm->pc]->op.call, err);
 		} else if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_CALLREAL) {
-			prv_call(vm, b, &subtilis_type_real,
-				 &vm->s->ops[vm->pc]->op.call, err);
+			prv_call_direct(vm, b, &subtilis_type_real,
+					&vm->s->ops[vm->pc]->op.call, err);
+		} else if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_CALL_PTR) {
+			prv_call_indirect(vm, b, &subtilis_type_void,
+					  &vm->s->ops[vm->pc]->op.call, err);
+		} else if (vm->s->ops[vm->pc]->type ==
+			   SUBTILIS_OP_CALLI32_PTR) {
+			prv_call_indirect(vm, b, &subtilis_type_integer,
+					  &vm->s->ops[vm->pc]->op.call, err);
+		} else if (vm->s->ops[vm->pc]->type ==
+			   SUBTILIS_OP_CALLREAL_PTR) {
+			prv_call_indirect(vm, b, &subtilis_type_real,
+					  &vm->s->ops[vm->pc]->op.call, err);
 		} else if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_SYS_CALL) {
 			prv_sys_call(vm, b, &vm->s->ops[vm->pc]->op.sys_call,
 				     err);

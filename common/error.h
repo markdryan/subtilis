@@ -37,6 +37,7 @@ typedef enum {
 	SUBTILIS_ERROR_UNKNOWN_TOKEN,
 	SUBTILIS_ERROR_BAD_PROC_NAME,
 	SUBTILIS_ERROR_BAD_FN_NAME,
+	SUBTILIS_ERROR_BAD_LAMBDA_NAME,
 	SUBTILIS_ERROR_BAD_TYPE_NAME,
 	SUBTILIS_ERROR_ASSERTION_FAILED,
 	SUBTILIS_ERROR_KEYWORD_EXPECTED,
@@ -177,6 +178,8 @@ void subtilis_error_init(subtilis_error_t *e);
 	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_PROC_NAME, str, file, line)
 #define subtilis_error_set_bad_fn_name(e, str, file, line)                     \
 	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_FN_NAME, str, file, line)
+#define subtilis_error_set_bad_lambda_name(e, str, file, line)                 \
+	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_LAMBDA_NAME, str, file, line)
 #define subtilis_error_set_bad_type_name(e, str, file, line)                   \
 	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_TYPE_NAME, str, file, line)
 #define subtilis_error_set_assertion_failed(e)                                 \

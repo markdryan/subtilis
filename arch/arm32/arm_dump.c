@@ -66,6 +66,7 @@ static const char *const instr_desc[] = {
 	"B",        // SUBTILIS_ARM_INSTR_B
 	"SWI",      // SUBTILIS_ARM_INSTR_SWI
 	"LDR",      // SUBTILIS_ARM_INSTR_LDRC
+	"LDRP",     // SUBTILIS_ARM_INSTR_LDRP
 	"CMOV",     // SUBTILIS_ARM_INSTR_CMOV
 	"ADR",      // SUBTILIS_ARM_INSTR_ADR
 	"MSR",      // SUBTILIS_ARM_INSTR_MSR
@@ -369,7 +370,9 @@ static void prv_dump_br_instr(void *user_data, subtilis_arm_op_t *op,
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
 	if (instr->link) {
-		if (p)
+		if (instr->indirect)
+			printf(" [R%zu]\n", instr->target.reg);
+		else if (p)
 			printf(" %s\n",
 			       p->string_pool->strings[instr->target.label]);
 		else
@@ -401,6 +404,18 @@ static void prv_dump_ldrc_instr(void *user_data, subtilis_arm_op_t *op,
 	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
 		printf("%s", ccode_desc[instr->ccode]);
 	printf(" R%zu, label_%zu\n", instr->dest, instr->label);
+}
+
+static void prv_dump_ldrp_instr(void *user_data, subtilis_arm_op_t *op,
+				subtilis_arm_instr_type_t type,
+				subtilis_arm_ldrp_instr_t *instr,
+				subtilis_error_t *err)
+{
+	printf("\t%s", instr_desc[type]);
+	if (instr->ccode != SUBTILIS_ARM_CCODE_AL)
+		printf("%s", ccode_desc[instr->ccode]);
+	printf(" R%zu, section_%zu via label_%zu\n", instr->dest,
+	       instr->section_label, instr->constant_label);
 }
 
 static void prv_dump_adr_instr(void *user_data, subtilis_arm_op_t *op,
@@ -1083,6 +1098,7 @@ void subtilis_arm_section_dump(subtilis_arm_prog_t *p,
 	walker.br_fn = prv_dump_br_instr;
 	walker.swi_fn = prv_dump_swi_instr;
 	walker.ldrc_fn = prv_dump_ldrc_instr;
+	walker.ldrp_fn = prv_dump_ldrp_instr;
 	walker.adr_fn = prv_dump_adr_instr;
 	walker.cmov_fn = prv_dump_cmov_instr;
 	walker.flags_fn = prv_dump_flags_instr;
@@ -1181,6 +1197,14 @@ void subtilis_arm_instr_dump(subtilis_arm_instr_t *instr)
 	case SUBTILIS_ARM_INSTR_LDRC:
 		prv_dump_ldrc_instr(NULL, NULL, instr->type,
 				    &instr->operands.ldrc, NULL);
+		break;
+	case SUBTILIS_ARM_INSTR_LDRP:
+		prv_dump_ldrp_instr(NULL, NULL, instr->type,
+				    &instr->operands.ldrp, NULL);
+		break;
+	case SUBTILIS_ARM_INSTR_ADR:
+		prv_dump_adr_instr(NULL, NULL, instr->type,
+				   &instr->operands.adr, NULL);
 		break;
 	case SUBTILIS_ARM_INSTR_CMOV:
 		prv_dump_cmov_instr(NULL, NULL, instr->type,

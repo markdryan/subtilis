@@ -103,8 +103,10 @@ static subtilis_exp_t *prv_not_exp(subtilis_parser_t *p, subtilis_token_t *t,
 static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,
 				      const char *tbuf, subtilis_error_t *err)
 {
+	const subtilis_symbol_t *s;
 	subtilis_exp_t *e = NULL;
 	char *var_name = NULL;
+	size_t mem_reg = SUBTILIS_IR_REG_LOCAL;
 
 	tbuf = subtilis_token_get_text(t);
 	var_name = malloc(strlen(tbuf) + 1);
@@ -117,6 +119,21 @@ static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
+
+	s = subtilis_symbol_table_lookup(p->local_st, var_name);
+	if (!s) {
+		s = subtilis_symbol_table_lookup(p->st, var_name);
+		mem_reg = SUBTILIS_IR_REG_GLOBAL;
+	}
+	if (s && s->t.type == SUBTILIS_TYPE_FN) {
+		tbuf = subtilis_token_get_text(t);
+		if ((t->type == SUBTILIS_TOKEN_OPERATOR) &&
+		    !strcmp(tbuf, "(")) {
+			e = subtilis_parser_call_ptr(p, t, s, var_name, mem_reg,
+						     err);
+			goto cleanup;
+		}
+	}
 
 	tbuf = subtilis_token_get_text(t);
 	if (t->type == SUBTILIS_TOKEN_OPERATOR) {
@@ -171,9 +188,9 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 				if (err->type != SUBTILIS_ERROR_OK)
 					goto cleanup;
 
-				/* we don't want to read another token here.It's
-				 * already been read by the recursive call to
-				 * prv_priority1.
+				/* we don't want to read another token
+				 * here.It's already been read by the
+				 * recursive call to prv_priority1.
 				 */
 
 				return e;
@@ -308,6 +325,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return subtilis_parser_append_exp(p, t, err);
 		case SUBTILIS_KEYWORD_COPY:
 			return subtilis_parser_copy_exp(p, t, err);
+		case SUBTILIS_KEYWORD_DEF:
+			return subtilis_parser_lambda(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "Unexpected keyword in expression",

@@ -1223,7 +1223,7 @@ void subtilis_reference_deallocate_refs(subtilis_parser_t *p,
 
 	for (i = 0; i < l->size; i++) {
 		s = l->symbols[i];
-		if (subtilis_type_if_is_numeric(&s->t) || s->no_rc)
+		if (!subtilis_type_if_is_reference(&s->t) || s->no_rc)
 			continue;
 
 		ref_of_ref = !(subtilis_type_if_destructor(&s->t) == 0);

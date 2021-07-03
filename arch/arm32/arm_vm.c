@@ -833,18 +833,12 @@ static void prv_process_mov(subtilis_arm_vm_t *arm_vm,
 		}
 	}
 
-	/*
-	 * TODO: Check the behaviour is correct when we move values other than
-	 * PC into PC.
-	 */
-
-	if ((op->dest == 15) && ((op->op2.type == SUBTILIS_ARM_OP2_REG) &&
-				 (op->op2.op.reg == 15))) {
-		arm_vm->regs[15] += 8;
-	} else {
-		arm_vm->regs[op->dest] = op2;
-		arm_vm->regs[15] += 4;
+	if (op->dest == 15) {
+		arm_vm->regs[15] = (op2 & 0xffffff) + 8;
+		return;
 	}
+	arm_vm->regs[op->dest] = op2;
+	arm_vm->regs[15] += 4;
 }
 
 static void prv_process_mvn(subtilis_arm_vm_t *arm_vm,
@@ -1030,7 +1024,7 @@ static void prv_process_b(subtilis_arm_vm_t *arm_vm,
 	}
 
 	if (op->link)
-		arm_vm->regs[14] = arm_vm->regs[15];
+		arm_vm->regs[14] = arm_vm->regs[15] - 4;
 
 	arm_vm->regs[15] += (op->target.offset * 4) + 8;
 	if (prv_calc_pc(arm_vm) >= arm_vm->code_size)

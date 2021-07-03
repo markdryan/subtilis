@@ -20,6 +20,7 @@
 #include "array_type.h"
 #include "parser_array.h"
 #include "parser_assignment.h"
+#include "parser_call.h"
 #include "parser_exp.h"
 #include "string_type.h"
 #include "type_if.h"
@@ -405,9 +406,15 @@ void subtilis_parser_assign_local_fn(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	prv_complete_custom_type(p, var_name, &type, err);
-	if (err->type == SUBTILIS_ERROR_OK)
-		(void)subtilis_symbol_table_insert_reg(
-		    p->local_st, var_name, &type, e->exp.ir_op.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_type_if_coerce_type(p, e, &type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	(void)subtilis_symbol_table_insert_reg(p->local_st, var_name, &type,
+					       e->exp.ir_op.reg, err);
 
 cleanup:
 	subtilis_exp_delete(e);
@@ -557,6 +564,7 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	const subtilis_symbol_t *s;
 	subtilis_assign_type_t at;
 	subtilis_type_t type;
+	size_t mem_reg = SUBTILIS_IR_REG_LOCAL;
 	bool new_global = false;
 	char *var_name = NULL;
 	subtilis_exp_t *e = NULL;
@@ -574,7 +582,16 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	if (!strcmp(tbuf, "(")) {
-		prv_assign_array(p, t, var_name, &type, err);
+		s = subtilis_symbol_table_lookup(p->local_st, var_name);
+		if (!s) {
+			s = subtilis_symbol_table_lookup(p->st, var_name);
+			mem_reg = SUBTILIS_IR_REG_GLOBAL;
+		}
+		if (s && s->t.type == SUBTILIS_TYPE_FN)
+			subtilis_parser_call_ptr(p, t, s, var_name, mem_reg,
+						 err);
+		else
+			prv_assign_array(p, t, var_name, &type, err);
 		goto cleanup;
 	}
 

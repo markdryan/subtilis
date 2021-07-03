@@ -56,7 +56,7 @@ static void prv_add_builtin(subtilis_parser_t *p, char *name,
 
 	(void)subtilis_ir_prog_section_new(p->prog, name, 0, ts, ftype,
 					   "builtin", 0, p->eflag_offset,
-					   p->error_offset, err);
+					   p->error_offset, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
 			goto on_error;
@@ -207,6 +207,24 @@ on_error:
 	return 0;
 }
 
+static void prv_tmp_ref_return(subtilis_parser_t *p,
+			       const subtilis_type_t *fn_type,
+			       subtilis_exp_t *e, subtilis_error_t *err)
+{
+	size_t reg;
+	char *tmp_name = NULL;
+
+	if (fn_type->type != SUBTILIS_TYPE_VOID &&
+	    !subtilis_type_if_is_numeric(fn_type)) {
+		reg = prv_create_tmp_ref(p, e->exp.ir_op.reg, fn_type,
+					 &tmp_name, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		e->exp.ir_op.reg = reg;
+		e->temporary = tmp_name;
+	}
+}
+
 /*
  * Takes ownership of name and args and stype. stype may be NULL if we're
  * calling a builtin function that's actually used to implement an operator
@@ -223,11 +241,9 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 				      size_t num_params, bool check_error,
 				      subtilis_error_t *err)
 {
-	size_t reg;
 	size_t call_site;
 	subtilis_exp_t *e = NULL;
 	subtilis_parser_call_t *call = NULL;
-	char *tmp_name = NULL;
 
 	if (fn_type->type == SUBTILIS_TYPE_VOID)
 		subtilis_ir_section_add_call(p->current, num_params, args, err);
@@ -262,15 +278,9 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 			goto on_error;
 	}
 
-	if (fn_type->type != SUBTILIS_TYPE_VOID &&
-	    !subtilis_type_if_is_numeric(fn_type)) {
-		reg = prv_create_tmp_ref(p, e->exp.ir_op.reg, fn_type,
-					 &tmp_name, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto on_error;
-		e->exp.ir_op.reg = reg;
-		e->temporary = tmp_name;
-	}
+	prv_tmp_ref_return(p, fn_type, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
 
 	if (ftype != SUBTILIS_BUILTINS_MAX) {
 		prv_add_builtin(p, name, ftype, err);
@@ -299,6 +309,56 @@ on_error:
 	subtilis_parser_call_delete(call);
 	subtilis_type_section_delete(stype);
 	free(name);
+
+	return NULL;
+}
+
+/*
+ * Takes ownership of args
+ */
+
+subtilis_exp_t *subtilis_exp_add_call_ptr(subtilis_parser_t *p,
+					  subtilis_ir_arg_t *args,
+					  const subtilis_type_t *fn_type,
+					  size_t ptr, size_t num_params,
+					  subtilis_error_t *err)
+{
+	size_t call_site;
+	subtilis_exp_t *e = NULL;
+
+	if (fn_type->type == SUBTILIS_TYPE_VOID)
+		subtilis_ir_section_add_call_ptr(p->current, num_params, args,
+						 ptr, err);
+	else
+		e = subtilis_type_if_call_ptr(p, fn_type, args, num_params, ptr,
+					      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+	args = NULL;
+
+	/* For calls made inside handlers we will add the offset from the start
+	 * of the handler section and fix it up later on when checking the
+	 * calls.
+	 */
+
+	call_site = p->current->in_error_handler ? p->current->error_len
+						 : p->current->len;
+	call_site--;
+
+	subtilis_exp_handle_errors(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	prv_tmp_ref_return(p, fn_type, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	return e;
+
+on_error:
+
+	subtilis_exp_delete(e);
+	free(args);
 
 	return NULL;
 }
@@ -451,6 +511,26 @@ subtilis_exp_t *subtilis_exp_new_str(subtilis_buffer_t *str,
 	if (subtilis_buffer_get_size(str) > 0)
 		subtilis_buffer_append(&e->exp.str, str->buffer->data,
 				       subtilis_buffer_get_size(str), err);
+
+	return e;
+}
+
+subtilis_exp_t *subtilis_exp_new_fn(int32_t call_index,
+				    const subtilis_type_t *t,
+				    subtilis_error_t *err)
+{
+	subtilis_exp_t *e = calloc(1, sizeof(*e));
+
+	if (!e) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+	e->exp.ir_op.integer = call_index;
+	subtilis_type_init_copy(&e->type, t, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
 
 	return e;
 }

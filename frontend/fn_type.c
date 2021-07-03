@@ -379,5 +379,6 @@ subtilis_type_if subtilis_type_fn = {
 	.is_inf = NULL,
 	.call = prv_call,
 	.ret = prv_ret,
+	.print = NULL,
 	.destructor = NULL,
 };
