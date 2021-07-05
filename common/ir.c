@@ -1170,6 +1170,29 @@ static void prv_add_call(subtilis_ir_section_t *s, subtilis_op_type_t type,
 		s->ops[s->len++] = op;
 }
 
+size_t subtilis_ir_section_add_get_partial_addr(subtilis_ir_section_t *s,
+						size_t *call_site,
+						subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	size_t call_reg;
+	size_t cs;
+
+	op1.label = SIZE_MAX;
+	call_reg = subtilis_ir_section_add_instr2(
+	    s, SUBTILIS_OP_INSTR_GET_PROC_ADDR, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	if (s->in_error_handler)
+		cs = s->error_len;
+	else
+		cs = s->len;
+	*call_site = cs - 1;
+
+	return call_reg;
+}
+
 void subtilis_ir_section_add_sys_call(subtilis_ir_section_t *s, size_t call_id,
 				      size_t *in_regs,
 				      subtilis_ir_sys_out_reg_t *out_regs,

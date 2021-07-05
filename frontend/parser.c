@@ -124,6 +124,10 @@ void subtilis_parser_delete(subtilis_parser_t *p)
 		subtilis_parser_call_delete(p->calls[i]);
 	free(p->calls);
 
+	for (i = 0; i < p->num_call_addrs; i++)
+		subtilis_parser_call_addr_delete(p->call_addrs[i]);
+	free(p->call_addrs);
+
 	subtilis_ir_prog_delete(p->prog);
 	subtilis_symbol_table_delete(p->main_st);
 	subtilis_symbol_table_delete(p->st);

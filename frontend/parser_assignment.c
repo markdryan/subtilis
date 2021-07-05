@@ -383,6 +383,31 @@ cleanup:
 	subtilis_type_free(&type);
 }
 
+static void prv_add_call_addr(subtilis_parser_t *p, const subtilis_type_t *type,
+			      subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_parser_call_addr_t *call_addr = NULL;
+
+	/*
+	 * We're taking the address of a function we may not have seen
+	 * yet.
+	 */
+
+	subtilis_type_copy(&e->type, type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	call_addr = subtilis_parser_call_addr_new(
+	    p->current, e->call_site, p->current->in_error_handler,
+	    e->partial_name, &e->type, p->l->line, err);
+	e->partial_name = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_exp_add_call_addrs(p, call_addr, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		subtilis_parser_call_addr_delete(call_addr);
+}
+
 void subtilis_parser_assign_local_fn(subtilis_parser_t *p, subtilis_token_t *t,
 				     const char *var_name,
 				     const subtilis_type_t *id_type,
@@ -409,7 +434,10 @@ void subtilis_parser_assign_local_fn(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_type_if_coerce_type(p, e, &type, err);
+	if (e->partial_name)
+		prv_add_call_addr(p, &type, e, err);
+	else
+		e = subtilis_type_if_coerce_type(p, e, &type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -666,7 +694,18 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 	}
 
-	e = subtilis_type_if_coerce_type(p, e, &type, err);
+	if ((type.type == SUBTILIS_TYPE_FN) && (e->partial_name)) {
+		if (e->type.type != SUBTILIS_TYPE_FN) {
+			subtilis_error_set_expected(
+			    err, subtilis_type_name(&type),
+			    subtilis_type_name(&e->type), p->l->stream->name,
+			    p->l->line);
+			goto cleanup;
+		}
+		prv_add_call_addr(p, &type, e, err);
+	} else {
+		e = subtilis_type_if_coerce_type(p, e, &type, err);
+	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

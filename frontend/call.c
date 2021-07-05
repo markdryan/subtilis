@@ -27,8 +27,10 @@ subtilis_parser_call_new(subtilis_ir_section_t *s, size_t index,
 	subtilis_parser_call_t *call;
 
 	call = malloc(sizeof(*call));
-	if (!call)
+	if (!call) {
+		subtilis_error_set_oom(err);
 		goto on_error;
+	}
 
 	call->s = s;
 	call->index = index;
@@ -53,4 +55,46 @@ void subtilis_parser_call_delete(subtilis_parser_call_t *call)
 	subtilis_type_section_delete(call->call_type);
 	free(call->name);
 	free(call);
+}
+
+subtilis_parser_call_addr_t *
+subtilis_parser_call_addr_new(subtilis_ir_section_t *s, size_t index, bool eh,
+			      char *name, const subtilis_type_t *type,
+			      size_t line, subtilis_error_t *err)
+{
+	subtilis_parser_call_addr_t *call_addr;
+
+	call_addr = malloc(sizeof(*call_addr));
+	if (!call_addr) {
+		subtilis_error_set_oom(err);
+		goto on_error;
+	}
+	call_addr->call_type.type = SUBTILIS_TYPE_VOID;
+
+	call_addr->s = s;
+	call_addr->index = index;
+	call_addr->in_error_handler = eh;
+	subtilis_type_init_copy(&call_addr->call_type, type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+	call_addr->name = name;
+	call_addr->line = line;
+
+	return call_addr;
+
+on_error:
+	free(name);
+	subtilis_parser_call_addr_delete(call_addr);
+
+	return NULL;
+}
+
+void subtilis_parser_call_addr_delete(subtilis_parser_call_addr_t *call_addr)
+{
+	if (!call_addr)
+		return;
+
+	subtilis_type_free(&call_addr->call_type);
+	free(call_addr->name);
+	free(call_addr);
 }

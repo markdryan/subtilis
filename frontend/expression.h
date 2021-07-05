@@ -33,6 +33,8 @@ struct subtilis_exp_t_ {
 	subtilis_type_t type;
 	subtilis_exp_operand_t exp;
 	char *temporary;
+	char *partial_name; /* type not known at creation time */
+	size_t call_site;
 };
 
 typedef struct subtilis_exp_t_ subtilis_exp_t;
@@ -72,14 +74,18 @@ subtilis_exp_t *subtilis_exp_new_int32(int32_t integer, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_real(double real, subtilis_error_t *err);
 subtilis_exp_t *subtilis_exp_new_str(subtilis_buffer_t *str,
 				     subtilis_error_t *err);
-subtilis_exp_t *subtilis_exp_new_fn(int32_t call_index,
-				    const subtilis_type_t *t,
+subtilis_exp_t *subtilis_exp_new_fn(size_t call_index, const subtilis_type_t *t,
 				    subtilis_error_t *err);
-
+subtilis_exp_t *subtilis_exp_new_partial_fn(size_t call_index, const char *name,
+					    size_t call_site,
+					    subtilis_error_t *err);
 void subtilis_exp_handle_errors(subtilis_parser_t *p, subtilis_error_t *err);
 typedef subtilis_exp_t *(*subtilis_exp_fn_t)(subtilis_parser_t *,
 					     subtilis_exp_t *, subtilis_exp_t *,
 					     subtilis_error_t *err);
+void subtilis_exp_add_call_addrs(subtilis_parser_t *p,
+				 subtilis_parser_call_addr_t *call_addr,
+				 subtilis_error_t *err);
 
 /* These functions assume ownership of a1 and a2 */
 subtilis_exp_t *subtilis_exp_add(subtilis_parser_t *p, subtilis_exp_t *a1,

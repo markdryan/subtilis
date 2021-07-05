@@ -1789,12 +1789,93 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 	call_site->proc_id = index;
 }
 
+static void prv_check_call_addr(subtilis_parser_t *p,
+				subtilis_parser_call_addr_t *call_addr,
+				subtilis_error_t *err)
+{
+	size_t index;
+	size_t call_index;
+	size_t i;
+	subtilis_type_section_t *st;
+	const char *expected_typname;
+	const char *got_typname;
+	subtilis_ir_inst_t *call_site;
+	subtilis_type_fn_t *ct_fn_type = &call_addr->call_type.params.fn;
+	subtilis_type_type_t ct_ret_type = ct_fn_type->ret_val->type;
+
+	if (!subtilis_string_pool_find(p->prog->string_pool, call_addr->name,
+				       &index)) {
+		if (ct_ret_type == SUBTILIS_TYPE_VOID)
+			subtilis_error_set_unknown_procedure(
+			    err, call_addr->name, p->l->stream->name,
+			    call_addr->line);
+		else
+			subtilis_error_set_unknown_function(
+			    err, call_addr->name, p->l->stream->name,
+			    call_addr->line);
+		return;
+	}
+
+	/* We need to fix up the call site of procedures call in an
+	 * error handler.
+	 */
+
+	call_index = call_addr->index;
+	if (call_addr->in_error_handler)
+		call_index += call_addr->s->handler_offset;
+
+	st = p->prog->sections[index]->type;
+
+	if ((st->return_type.type == SUBTILIS_TYPE_VOID) &&
+	    (ct_ret_type != SUBTILIS_TYPE_VOID)) {
+		subtilis_error_set_procedure_expected(
+		    err, call_addr->name, p->l->stream->name, call_addr->line);
+		return;
+	} else if ((st->return_type.type != SUBTILIS_TYPE_VOID) &&
+		   (ct_ret_type == SUBTILIS_TYPE_VOID)) {
+		subtilis_error_set_function_expected(
+		    err, call_addr->name, p->l->stream->name, call_addr->line);
+		return;
+	}
+
+	if (st->num_parameters != ct_fn_type->num_params) {
+		subtilis_error_set_bad_arg_count(
+		    err, ct_fn_type->num_params, st->num_parameters,
+		    p->l->stream->name, call_addr->line);
+		return;
+	}
+
+	call_site = &call_addr->s->ops[call_index]->op.instr;
+
+	for (i = 0; i < st->num_parameters; i++) {
+		if (!subtilis_type_eq(&st->parameters[i],
+				      ct_fn_type->params[i])) {
+			expected_typname =
+			    subtilis_type_name(&st->parameters[i]);
+			got_typname = subtilis_type_name(ct_fn_type->params[i]);
+			subtilis_error_set_bad_arg_type(
+			    err, i + 1, expected_typname, got_typname,
+			    p->l->stream->name, call_addr->line, __FILE__,
+			    __LINE__);
+			return;
+		}
+	}
+
+	call_site->operands[1].label = index;
+}
+
 void subtilis_parser_check_calls(subtilis_parser_t *p, subtilis_error_t *err)
 {
 	size_t i;
 
 	for (i = 0; i < p->num_calls; i++) {
 		prv_check_call(p, p->calls[i], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	for (i = 0; i < p->num_call_addrs; i++) {
+		prv_check_call_addr(p, p->call_addrs[i], err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}

@@ -85,6 +85,40 @@ static subtilis_exp_t *prv_unary_minus_exp(subtilis_parser_t *p,
 	return subtilis_type_if_unary_minus(p, e, err);
 }
 
+static subtilis_exp_t *prv_call_addr_exp(subtilis_parser_t *p,
+					 subtilis_token_t *t,
+					 subtilis_error_t *err)
+{
+	const char *tbuf;
+	size_t call_reg;
+	size_t call_site;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_KEYWORD) ||
+	    ((t->tok.keyword.type != SUBTILIS_KEYWORD_PROC) &&
+	     (t->tok.keyword.type != SUBTILIS_KEYWORD_FN))) {
+		subtilis_error_set_procedure_expected(
+		    err, tbuf, p->l->stream->name, p->l->line);
+		return NULL;
+	}
+
+	if (t->tok.keyword.type == SUBTILIS_KEYWORD_PROC)
+		tbuf += 4;
+	else if (t->tok.keyword.type == SUBTILIS_KEYWORD_FN)
+		tbuf += 2;
+
+	call_reg = subtilis_ir_section_add_get_partial_addr(p->current,
+							    &call_site, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_partial_fn(call_reg, tbuf, call_site, err);
+}
+
 static subtilis_exp_t *prv_not_exp(subtilis_parser_t *p, subtilis_token_t *t,
 				   subtilis_error_t *err)
 {
@@ -182,21 +216,20 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			e = subtilis_parser_bracketed_exp_internal(p, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
+		} else if (!strcmp(tbuf, "-")) {
+			return prv_unary_minus_exp(p, t, err);
+
+			/* we don't want to read another token
+			 * here.It's already been read by the
+			 * recursive call to prv_priority1.
+			 */
+		} else if (!strcmp(tbuf, "!")) {
+			e = prv_call_addr_exp(p, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
 		} else {
-			if (!strcmp(tbuf, "-")) {
-				e = prv_unary_minus_exp(p, t, err);
-				if (err->type != SUBTILIS_ERROR_OK)
-					goto cleanup;
-
-				/* we don't want to read another token
-				 * here.It's already been read by the
-				 * recursive call to prv_priority1.
-				 */
-
-				return e;
-			}
 			subtilis_error_set_exp_expected(
-			    err, "( or - ", p->l->stream->name, p->l->line);
+			    err, "!, ( or - ", p->l->stream->name, p->l->line);
 			goto cleanup;
 		}
 		break;

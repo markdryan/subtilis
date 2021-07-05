@@ -4446,6 +4446,52 @@ const subtilis_test_case_t test_cases[] = {
 	"error 1\n",
 	"empty\n",
 	},
+	{"call_addr_local",
+	"type PROCEmpty\n"
+	"local a@PROCEmpty = !PROCBoring\n"
+	"a@PROCEmpty()\n"
+	"def PROCBoring\n"
+	"  print \"boring\"\n"
+	"endproc\n",
+	"boring\n"
+	},
+	{"call_addr_global",
+	"type PROCEmpty\n"
+	"a@PROCEmpty = !PROCBoring\n"
+	"a@PROCEmpty()\n"
+	"def PROCBoring\n"
+	"  print \"boring\"\n"
+	"endproc\n",
+	"boring\n"
+	},
+	{"call_addr_fn",
+	"type FNStr$\n"
+	"local a@FNStr = !FNgetStr$\n"
+	"print a@FNStr()\n"
+	"def FNgetStr$\n"
+	"<-\"hello\"\n",
+	"hello\n",
+	},
+	{"call_addr_fn_params",
+	"type FNStr$(a$, b%)\n"
+	"local a@FNStr = !FNgetStr$\n"
+	"print a@FNStr(\"hello\", 3)\n"
+	"def FNgetStr$(a$, b%)\n"
+	"<-string$(b%, a$)\n",
+	"hellohellohello\n",
+	},
+	{"call_addr_on_error",
+	"type PROCEmpty\n"
+	"onerror\n"
+	"local a@PROCEmpty = !PROCBoring\n"
+	"tryone a@PROCEmpty()\n"
+	"enderror\n"
+	"error 1\n"
+	"def PROCBoring\n"
+	"  print \"boring\"\n"
+	"endproc\n",
+	"boring\n",
+	},
 };
 
 /* clang-format on */

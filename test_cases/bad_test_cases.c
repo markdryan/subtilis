@@ -762,6 +762,30 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"a@FNMap = def FNu% <-0\n",
 	SUBTILIS_ERROR_BAD_LAMBDA_NAME
 	},
+	{"assign_fn_type_mismatch2",
+	"type PROCEmpty\n"
+	"local a@PROCEmpty = 1\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
+	{"assign_fn_type_mismatch3",
+	"type PROCEmpty\n"
+	"a@PROCEmpty = 1\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+	{"proc_addr_undefined",
+	"type PROCEmpty\n"
+	"a@PROCEmpty = !PROCBoring\n"
+	"a@PROCEmpty()\n",
+	SUBTILIS_ERROR_UNKNOWN_PROCEDURE,
+	},
+	{"proc_addr_wrong_args",
+	"type FNStr$(a$, b%)\n"
+	"local a@FNStr = !FNgetStr$\n"
+	"print a@FNStr(\"hello \", 3)\n"
+	"def FNgetStr$(b%)\n"
+	"<-string$(b%, \"hello\")\n",
+	SUBTILIS_ERROR_BAD_ARG_COUNT,
+	},
 };
 
 /* clang-format on */

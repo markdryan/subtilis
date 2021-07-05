@@ -2102,6 +2102,9 @@ size_t subtilis_ir_section_add_real_call_ptr(subtilis_ir_section_t *s,
 					     size_t arg_count,
 					     subtilis_ir_arg_t *args,
 					     size_t ptr, subtilis_error_t *err);
+size_t subtilis_ir_section_add_get_partial_addr(subtilis_ir_section_t *s,
+						size_t *call_site,
+						subtilis_error_t *err);
 
 /*
  * Ownership of in_regs and out_regs  passes to this function.
