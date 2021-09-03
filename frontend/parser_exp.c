@@ -159,6 +159,14 @@ static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,
 		s = subtilis_symbol_table_lookup(p->st, var_name);
 		mem_reg = SUBTILIS_IR_REG_GLOBAL;
 	}
+
+	/*
+	 * TODO: This really needs to be a loop so we can handle things like
+	 * arrays of pointers to functions that return functions.  Note it's
+	 * not currently possible to dereference anything directly returned by
+	 * a function, e.g., an array, but we should allow this I guess.
+	 */
+
 	if (s && s->t.type == SUBTILIS_TYPE_FN) {
 		tbuf = subtilis_token_get_text(t);
 		if ((t->type == SUBTILIS_TOKEN_OPERATOR) &&
@@ -177,6 +185,19 @@ static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,
 			e = subtils_parser_read_vector(p, t, var_name, err);
 		else
 			e = subtilis_var_lookup_var(p, var_name, err);
+
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		if (e->type.type == SUBTILIS_TYPE_FN) {
+			tbuf = subtilis_token_get_text(t);
+			if ((t->type == SUBTILIS_TOKEN_OPERATOR) &&
+			    !strcmp(tbuf, "(")) {
+				e = subtilis_parser_call_known_ptr(
+				    p, t, &e->type, e->exp.ir_op.reg, err);
+				goto cleanup;
+			}
+		}
 	} else {
 		e = subtilis_var_lookup_var(p, var_name, err);
 	}
@@ -1167,4 +1188,32 @@ subtilis_exp_t *subtilis_var_lookup_ref(subtilis_parser_t *p,
 	subtilis_error_set_integer_variable_expected(
 	    err, subtilis_type_name(&s->t), p->l->stream->name, p->l->line);
 	return NULL;
+}
+
+void subtilis_complete_custom_type(subtilis_parser_t *p, const char *var_name,
+				   subtilis_type_t *type, subtilis_error_t *err)
+{
+	const subtilis_symbol_t *f_s;
+	const char *type_name;
+
+	type_name = strchr(var_name, '@');
+	if (!type_name) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	type_name++;
+
+	f_s = subtilis_symbol_table_lookup(p->st, type_name);
+	if (!f_s) {
+		subtilis_error_set_unknown_type(err, type_name,
+						p->l->stream->name, p->l->line);
+		return;
+	}
+
+	if (f_s->t.type != SUBTILIS_TYPE_TYPEDEF) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	subtilis_type_copy(type, &f_s->sub_t, err);
 }

@@ -18,6 +18,7 @@
 
 #include "array_byte_type.h"
 #include "array_float64_type.h"
+#include "array_fn_type.h"
 #include "array_int32_type.h"
 #include "array_string_type.h"
 #include "byte_type_if.h"
@@ -39,16 +40,18 @@ static subtilis_type_if *prv_type_map[] = {
 	&subtilis_type_byte_if,
 	&subtilis_type_if_string,
 	NULL,
+	&subtilis_type_fn,
 	&subtilis_type_array_float64,
 	&subtilis_type_array_int32,
 	&subtilis_type_array_byte,
 	&subtilis_type_array_string,
+	&subtilis_type_array_fn,
 	&subtilis_type_vector_float64,
 	&subtilis_type_vector_int32,
 	&subtilis_type_vector_byte,
 	&subtilis_type_vector_string,
+	&subtilis_type_vector_fn,
 	&subtilis_type_if_local_buffer,
-	&subtilis_type_fn,
 	NULL,
 };
 

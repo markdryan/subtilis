@@ -22,6 +22,11 @@
 
 subtilis_exp_t *subtilis_parser_call(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_call_known_ptr(subtilis_parser_t *p,
+					       subtilis_token_t *t,
+					       const subtilis_type_t *type,
+					       size_t reg,
+					       subtilis_error_t *err);
 subtilis_exp_t *subtilis_parser_call_ptr(subtilis_parser_t *p,
 					 subtilis_token_t *t,
 					 const subtilis_symbol_t *s,

@@ -359,6 +359,8 @@ static char *prv_init_for_var(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_type_t type;
 	char *var_name = NULL;
 
+	type.type = SUBTILIS_TYPE_VOID;
+
 	var_name = subtilis_parser_get_assignment_var(p, t, &type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
@@ -1163,9 +1165,9 @@ prv_get_range_vars(subtilis_parser_t *p, subtilis_token_t *t, size_t *count,
 
 	tbuf = subtilis_token_get_text(t);
 	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
-		subtilis_error_set_expected(err, (new_locals) ? "=" : "= or :=",
-					    tbuf, p->l->stream->name,
-					    p->l->line);
+		subtilis_error_set_expected(
+		    err, (new_locals) ? "=" : "= or :=", tbuf,
+		    p->l->stream->name, p->l->line);
 		goto cleanup;
 	}
 
@@ -1177,9 +1179,9 @@ prv_get_range_vars(subtilis_parser_t *p, subtilis_token_t *t, size_t *count,
 		}
 		new_locals = true;
 	} else if (strcmp(tbuf, "=")) {
-		subtilis_error_set_expected(err, (new_locals) ? "=" : "= or :=",
-					    tbuf, p->l->stream->name,
-					    p->l->line);
+		subtilis_error_set_expected(
+		    err, (new_locals) ? "=" : "= or :=", tbuf,
+		    p->l->stream->name, p->l->line);
 		goto cleanup;
 	}
 
@@ -1245,7 +1247,8 @@ static void prv_assign_range_var(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	if (!subtilis_type_if_is_numeric(&var->type)) {
+	if (!subtilis_type_if_is_numeric(&var->type) &&
+	    var->type.type != SUBTILIS_TYPE_FN) {
 		/*
 		 * If we have a reference type and it's a new local, there's
 		 * no need to go through all the reference counting.  We know
@@ -1539,18 +1542,25 @@ static void prv_init_local_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 
-	if (subtilis_type_if_is_numeric(type)) {
+	if (subtilis_type_if_is_numeric(type) ||
+	    type->type == SUBTILIS_TYPE_FN) {
 		for_ctx->is_reg = true;
-		subtilis_type_copy(&for_ctx->type, type, err);
+
+		if (type->type != SUBTILIS_TYPE_FN)
+			subtilis_type_copy(&for_ctx->type, type, err);
+		else
+			subtilis_complete_custom_type(p, var_name,
+						      &for_ctx->type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
+
 		if (subtilis_type_if_reg_type(&for_ctx->type) ==
 		    SUBTILIS_IR_REG_TYPE_INTEGER)
 			for_ctx->loc = p->current->reg_counter++;
 		else
 			for_ctx->loc = p->current->freg_counter++;
-		(void)subtilis_symbol_table_insert_reg(p->local_st, var_name,
-						       type, for_ctx->loc, err);
+		(void)subtilis_symbol_table_insert_reg(
+		    p->local_st, var_name, &for_ctx->type, for_ctx->loc, err);
 		return;
 	}
 

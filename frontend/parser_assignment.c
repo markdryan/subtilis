@@ -327,35 +327,6 @@ subtilis_exp_t *subtilis_parser_assign_local_num(subtilis_parser_t *p,
 	return e;
 }
 
-static void prv_complete_custom_type(subtilis_parser_t *p, const char *var_name,
-				     subtilis_type_t *type,
-				     subtilis_error_t *err)
-{
-	const subtilis_symbol_t *f_s;
-	const char *type_name;
-
-	type_name = strchr(var_name, '@');
-	if (!type_name) {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-	type_name++;
-
-	f_s = subtilis_symbol_table_lookup(p->st, type_name);
-	if (!f_s) {
-		subtilis_error_set_unknown_type(err, type_name,
-						p->l->stream->name, p->l->line);
-		return;
-	}
-
-	if (f_s->t.type != SUBTILIS_TYPE_TYPEDEF) {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
-	subtilis_type_copy(type, &f_s->sub_t, err);
-}
-
 void subtilis_parser_zero_local_fn(subtilis_parser_t *p, subtilis_token_t *t,
 				   const char *var_name,
 				   const subtilis_type_t *id_type,
@@ -367,7 +338,7 @@ void subtilis_parser_zero_local_fn(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_type_init_copy(&type, id_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	prv_complete_custom_type(p, var_name, &type, err);
+	subtilis_complete_custom_type(p, var_name, &type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 
 		goto cleanup;
@@ -430,7 +401,7 @@ void subtilis_parser_assign_local_fn(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_type_init_copy(&type, id_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	prv_complete_custom_type(p, var_name, &type, err);
+	subtilis_complete_custom_type(p, var_name, &type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -665,7 +636,7 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	 */
 
 	if (type.type == SUBTILIS_TYPE_FN) {
-		prv_complete_custom_type(p, var_name, &type, err);
+		subtilis_complete_custom_type(p, var_name, &type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 	}

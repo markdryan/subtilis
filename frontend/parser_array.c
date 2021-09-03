@@ -913,6 +913,13 @@ void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
+		if (element_type.type == SUBTILIS_TYPE_FN) {
+			subtilis_complete_custom_type(p, var_name,
+						      &element_type, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+		}
+
 		dims = prv_var_bracketed_int_args(
 		    p, t, e, SUBTILIS_MAX_DIMENSIONS, &vec, err);
 		if (err->type == SUBTILIS_ERROR_RIGHT_BKT_EXPECTED) {

@@ -1327,15 +1327,13 @@ on_error:
 	return e;
 }
 
-subtilis_exp_t *subtilis_parser_call_ptr(subtilis_parser_t *p,
-					 subtilis_token_t *t,
-					 const subtilis_symbol_t *s,
-					 const char *var_name, size_t mem_reg,
-					 subtilis_error_t *err)
+subtilis_exp_t *subtilis_parser_call_known_ptr(subtilis_parser_t *p,
+					       subtilis_token_t *t,
+					       const subtilis_type_t *type,
+					       size_t reg,
+					       subtilis_error_t *err)
 {
 	size_t i;
-	size_t reg;
-	subtilis_exp_t *e;
 	subtilis_exp_t *args[SUBTILIS_MAX_ARGS];
 	size_t num_args = 0;
 	subtilis_parser_param_t *params = NULL;
@@ -1346,9 +1344,9 @@ subtilis_exp_t *subtilis_parser_call_ptr(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	if (num_args != s->t.params.fn.num_params) {
+	if (num_args != type->params.fn.num_params) {
 		subtilis_error_set_bad_arg_count(
-		    err, num_args, s->t.params.fn.num_params,
+		    err, num_args, type->params.fn.num_params,
 		    p->l->stream->name, p->l->line);
 		goto on_error;
 	}
@@ -1357,7 +1355,7 @@ subtilis_exp_t *subtilis_parser_call_ptr(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	params = prv_call_ptr_parameters(p, args, num_args, &s->t, err);
+	params = prv_call_ptr_parameters(p, args, num_args, type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -1366,6 +1364,27 @@ subtilis_exp_t *subtilis_parser_call_ptr(subtilis_parser_t *p,
 		goto on_error;
 	prv_delete_params(params, num_args);
 	params = NULL;
+
+	return subtilis_exp_add_call_ptr(p, ir_args, type->params.fn.ret_val,
+					 reg, num_args, err);
+
+on_error:
+	free(ir_args);
+	prv_delete_params(params, num_args);
+	for (i = 0; i < num_args; i++)
+		subtilis_exp_delete(args[i]);
+
+	return NULL;
+}
+
+subtilis_exp_t *subtilis_parser_call_ptr(subtilis_parser_t *p,
+					 subtilis_token_t *t,
+					 const subtilis_symbol_t *s,
+					 const char *var_name, size_t mem_reg,
+					 subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_exp_t *e;
 
 	if (!s->is_reg) {
 		e = subtilis_type_if_load_from_mem(p, &s->t, mem_reg, s->loc,
@@ -1376,16 +1395,7 @@ subtilis_exp_t *subtilis_parser_call_ptr(subtilis_parser_t *p,
 		reg = s->loc;
 	}
 
-	return subtilis_exp_add_call_ptr(p, ir_args, s->t.params.fn.ret_val,
-					 reg, num_args, err);
-
-on_error:
-	free(ir_args);
-	prv_delete_params(params, num_args);
-	for (i = 0; i < num_args; i++)
-		subtilis_exp_delete(args[i]);
-
-	return NULL;
+	return subtilis_parser_call_known_ptr(p, t, &s->t, reg, err);
 }
 
 static void prv_parse_param_type(subtilis_parser_t *p, subtilis_token_t *t,

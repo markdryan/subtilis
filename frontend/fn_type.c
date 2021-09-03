@@ -49,15 +49,17 @@ static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
 static void prv_array_of(const subtilis_type_t *element_type,
 			 subtilis_type_t *type, subtilis_error_t *err)
 {
-	subtilis_error_set_assertion_failed(err);
-	//	type->type = SUBTILIS_TYPE_ARRAY_INTEGER;
+	type->type = SUBTILIS_TYPE_ARRAY_FN;
+	subtilis_type_init_to_from_fn(&type->params.array.params.fn,
+				      element_type, err);
 }
 
 static void prv_vector_of(const subtilis_type_t *element_type,
 			  subtilis_type_t *type, subtilis_error_t *err)
 {
-	subtilis_error_set_assertion_failed(err);
-	//	type->type = SUBTILIS_TYPE_VECTOR_INTEGER;
+	type->type = SUBTILIS_TYPE_VECTOR_FN;
+	subtilis_type_init_to_from_fn(&type->params.array.params.fn,
+				      element_type, err);
 }
 
 static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -340,7 +342,7 @@ subtilis_type_if subtilis_type_fn = {
 	.copy_col = NULL,
 	.assign_reg = prv_assign_to_reg,
 	.assign_mem = prv_assign_to_mem,
-	.assign_new_mem = NULL,
+	.assign_new_mem = prv_assign_to_mem,
 	.indexed_write = NULL,
 	.indexed_add = NULL,
 	.indexed_sub = NULL,

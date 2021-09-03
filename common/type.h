@@ -29,16 +29,18 @@ typedef enum {
 	SUBTILIS_TYPE_BYTE,
 	SUBTILIS_TYPE_STRING,
 	SUBTILIS_TYPE_VOID,
+	SUBTILIS_TYPE_FN,
 	SUBTILIS_TYPE_ARRAY_REAL,
 	SUBTILIS_TYPE_ARRAY_INTEGER,
 	SUBTILIS_TYPE_ARRAY_BYTE,
 	SUBTILIS_TYPE_ARRAY_STRING,
+	SUBTILIS_TYPE_ARRAY_FN,
 	SUBTILIS_TYPE_VECTOR_REAL,
 	SUBTILIS_TYPE_VECTOR_INTEGER,
 	SUBTILIS_TYPE_VECTOR_BYTE,
 	SUBTILIS_TYPE_VECTOR_STRING,
+	SUBTILIS_TYPE_VECTOR_FN,
 	SUBTILIS_TYPE_LOCAL_BUFFER,
-	SUBTILIS_TYPE_FN,
 	SUBTILIS_TYPE_TYPEDEF,
 	SUBTILIS_TYPE_MAX,
 } subtilis_type_type_t;
@@ -47,6 +49,16 @@ typedef enum {
 #define SUBTILIS_DYNAMIC_DIMENSION -1
 #define SUBTILIS_MAX_ARGS 32
 
+typedef struct subtilis_type_t_ subtilis_type_t;
+
+struct subtilis_type_fn_t_ {
+	subtilis_type_t *ret_val;
+	size_t num_params;
+	subtilis_type_t *params[SUBTILIS_MAX_ARGS];
+};
+
+typedef struct subtilis_type_fn_t_ subtilis_type_fn_t;
+
 /*
  * TODO: This integer needs to be dependent on the int size of the backend
  */
@@ -54,6 +66,9 @@ typedef enum {
 struct subtilis_type_array_t_ {
 	int32_t num_dims;
 	int32_t dims[SUBTILIS_MAX_DIMENSIONS];
+	union {
+		subtilis_type_fn_t fn;
+	} params;
 };
 
 typedef struct subtilis_type_array_t_ subtilis_type_array_t;
@@ -74,16 +89,6 @@ typedef struct subtilis_type_array_t_ subtilis_type_array_t;
  * existing content before making the copy.  If the type has not
  * been initialised called subtilis_type_init_copy instead.
  */
-
-typedef struct subtilis_type_t_ subtilis_type_t;
-
-struct subtilis_type_fn_t_ {
-	subtilis_type_t *ret_val;
-	size_t num_params;
-	subtilis_type_t *params[SUBTILIS_MAX_ARGS];
-};
-
-typedef struct subtilis_type_fn_t_ subtilis_type_fn_t;
 
 struct subtilis_type_t_ {
 	subtilis_type_type_t type;
@@ -118,6 +123,18 @@ void subtilis_type_copy(subtilis_type_t *dst, const subtilis_type_t *src,
 			subtilis_error_t *err);
 void subtilis_type_init_copy(subtilis_type_t *dst, const subtilis_type_t *src,
 			     subtilis_error_t *err);
+void subtilis_type_copy_from_fn(subtilis_type_t *dst,
+				const subtilis_type_fn_t *src,
+				subtilis_error_t *err);
+void subtilis_type_init_copy_from_fn(subtilis_type_t *dst,
+				     const subtilis_type_fn_t *src,
+				     subtilis_error_t *err);
+void subtilis_type_copy_to_fn(subtilis_type_fn_t *dst,
+			      const subtilis_type_t *src,
+			      subtilis_error_t *err);
+void subtilis_type_init_to_from_fn(subtilis_type_fn_t *dst,
+				   const subtilis_type_t *src,
+				   subtilis_error_t *err);
 
 void subtilis_type_free(subtilis_type_t *typ);
 

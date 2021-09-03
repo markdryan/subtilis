@@ -82,4 +82,8 @@ subtilis_exp_t *subtilis_curly_bracketed_arg_have_b(subtilis_parser_t *p,
 subtilis_exp_t *subtilis_var_lookup_ref(subtilis_parser_t *p,
 					subtilis_token_t *t, bool *local,
 					subtilis_error_t *err);
+void subtilis_complete_custom_type(subtilis_parser_t *p, const char *var_name,
+				   subtilis_type_t *type,
+				   subtilis_error_t *err);
+
 #endif
