@@ -1890,3 +1890,29 @@ void subtilis_parser_check_calls(subtilis_parser_t *p, subtilis_error_t *err)
 			return;
 	}
 }
+
+void subtilis_parser_call_add_addr(subtilis_parser_t *p,
+				   const subtilis_type_t *type,
+				   subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_parser_call_addr_t *call_addr = NULL;
+
+	/*
+	 * We're taking the address of a function we may not have seen
+	 * yet.
+	 */
+
+	subtilis_type_copy(&e->type, type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	call_addr = subtilis_parser_call_addr_new(
+	    p->current, e->call_site, p->current->in_error_handler,
+	    e->partial_name, &e->type, p->l->line, err);
+	e->partial_name = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_exp_add_call_addrs(p, call_addr, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		subtilis_parser_call_addr_delete(call_addr);
+}

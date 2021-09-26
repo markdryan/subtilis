@@ -404,6 +404,40 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	SUBTILIS_ERROR_CONST_EXPRESSION_EXPECTED,
 	},
 	{
+	"array_bad_string_initialiser1",
+	"dim b$(1)\n"
+	"b$() = \"hello\", 5\n",
+	SUBTILIS_ERROR_CONST_STRING_EXPECTED,
+	},
+	{
+	"array_bad_string_initialiser1",
+	"dim b$(1)\n"
+	"local a$\n"
+	"b$() = a$, \"hello\"\n",
+	SUBTILIS_ERROR_CONST_STRING_EXPECTED,
+	},
+	{
+	"array_fn_string_initialiser1",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = 5\n",
+	SUBTILIS_ERROR_FN_TYPE_MISMATCH,
+	},
+	{
+	"array_fn_string_initialiser2",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = def FN%(a%) <-0, 5\n",
+	SUBTILIS_ERROR_FN_TYPE_MISMATCH,
+	},
+	{
+	"array_fn_string_initialiser3",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = 5, def FN%(a%) <-0\n",
+	SUBTILIS_ERROR_FN_TYPE_MISMATCH,
+	},
+	{
 	"array_get_dim_not_array",
 	"dim a%(10)\n"
 	"print dim(a%)\n",

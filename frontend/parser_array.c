@@ -19,6 +19,7 @@
 
 #include "array_type.h"
 #include "parser_array.h"
+#include "parser_call.h"
 #include "parser_exp.h"
 #include "reference_type.h"
 #include "string_type.h"
@@ -413,11 +414,15 @@ cleanup:
 	free(buffer);
 }
 
-static subtilis_exp_t **prv_parse_const_string_list(subtilis_parser_t *p,
-						    subtilis_exp_t *e,
-						    subtilis_token_t *t,
-						    size_t *len,
-						    subtilis_error_t *err)
+typedef void (*subtilis_arr_ct_t)(subtilis_parser_t *p, subtilis_exp_t *e1,
+				  const subtilis_type_t *type,
+				  subtilis_error_t *err);
+
+static subtilis_exp_t **
+prv_parse_expression_list(subtilis_parser_t *p, subtilis_exp_t *e,
+			  const subtilis_type_t *el_type, subtilis_token_t *t,
+			  size_t *len, subtilis_arr_ct_t check_type,
+			  subtilis_error_t *err)
 {
 	size_t i;
 	const char *tbuf;
@@ -454,12 +459,9 @@ static subtilis_exp_t **prv_parse_const_string_list(subtilis_parser_t *p,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		if (e->type.type != SUBTILIS_TYPE_CONST_STRING) {
-			subtilis_error_set_const_string_expected(
-			    err, p->l->stream->name, p->l->line);
-			if (err->type != SUBTILIS_ERROR_OK)
-				goto cleanup;
-		}
+		check_type(p, e, el_type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
 
 		ee[count++] = e;
 		e = NULL;
@@ -474,7 +476,6 @@ cleanup:
 	for (i = 0; i < count; i++)
 		subtilis_exp_delete(ee[i]);
 	free(ee);
-	subtilis_exp_delete(e);
 
 	return NULL;
 }
@@ -650,44 +651,19 @@ static void prv_read_string_table(subtilis_parser_t *p, size_t array_base,
 	subtilis_ir_section_add_label(p->current, end.label, err);
 }
 
-static void prv_parse_string_initialiser(subtilis_parser_t *p,
-					 subtilis_token_t *t, subtilis_exp_t *e,
-					 size_t mem_reg,
-					 const subtilis_symbol_t *s,
-					 subtilis_error_t *err)
+static void prv_check_expression_list_size(subtilis_parser_t *p,
+					   const subtilis_symbol_t *s,
+					   size_t mem_reg, subtilis_exp_t **ee,
+					   size_t entries, size_t element_size,
+					   subtilis_error_t *err)
 {
 	int32_t dim;
-	size_t element_size;
-	size_t data_reg;
-	subtilis_exp_t **ee;
-	size_t table_base;
-	subtilis_exp_t *maxe = NULL;
-	subtilis_exp_t *maxe_dup = NULL;
-	const subtilis_type_t *type = &s->t;
 	bool dynamic = false;
 	size_t max_elements = 1;
-	size_t entries = 0;
+	subtilis_exp_t *maxe = NULL;
+	subtilis_exp_t *maxe_dup = NULL;
 	size_t i = 0;
-
-	ee = prv_parse_const_string_list(p, e, t, &entries, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/*
-	 * If there's only one string in the list it's not worth setting
-	 * up the loop.
-	 */
-
-	if (entries == 1) {
-		data_reg = subtilis_reference_get_data(p, mem_reg, s->loc, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-
-		subtilis_string_type_new_owned_ref_from_const(p, data_reg, 0,
-							      ee[0], err);
-		ee[0] = NULL;
-		goto cleanup;
-	}
+	const subtilis_type_t *type = &s->t;
 
 	do {
 		dim = type->params.array.dims[i];
@@ -700,30 +676,62 @@ static void prv_parse_string_initialiser(subtilis_parser_t *p,
 		i++;
 	} while (i < type->params.array.num_dims);
 
-	element_size = subtilis_type_if_size(&subtilis_type_string, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
 	if (!dynamic) {
-		if (entries > max_elements) {
+		if (entries > max_elements)
 			subtilis_error_bad_element_count(
 			    err, p->l->stream->name, p->l->line);
-			goto cleanup;
-		}
 	} else {
 		maxe =
 		    subtilis_array_type_dynamic_size(p, mem_reg, s->loc, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-
 		maxe_dup = subtilis_type_if_dup(maxe, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		prv_check_initialiser_count(p, entries * element_size, mem_reg,
 					    maxe_dup, s, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
 	}
+
+cleanup:
+
+	subtilis_exp_delete(maxe);
+}
+
+static void prv_string_check_type(subtilis_parser_t *p, subtilis_exp_t *e1,
+				  const subtilis_type_t *type,
+				  subtilis_error_t *err)
+{
+	if (!subtilis_type_eq(&e1->type, type))
+		subtilis_error_set_const_string_expected(
+		    err, p->l->stream->name, p->l->line);
+}
+
+static void prv_parse_string_initialiser(subtilis_parser_t *p,
+					 subtilis_token_t *t, subtilis_exp_t *e,
+					 size_t mem_reg,
+					 const subtilis_symbol_t *s,
+					 subtilis_error_t *err)
+{
+	size_t data_reg;
+	subtilis_exp_t **ee;
+	size_t table_base;
+	size_t element_size;
+	size_t entries = 0;
+	size_t i = 0;
+
+	ee = prv_parse_expression_list(p, e, &subtilis_type_const_string, t,
+				       &entries, prv_string_check_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	element_size = subtilis_type_if_size(&subtilis_type_string, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_check_expression_list_size(p, s, mem_reg, ee, entries, element_size,
+				       err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
 	table_base = prv_init_lca_table(p, ee, entries, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -741,8 +749,81 @@ cleanup:
 	for (i = 0; i < entries; i++)
 		subtilis_exp_delete(ee[i]);
 	free(ee);
+}
 
-	subtilis_exp_delete(maxe);
+static void prv_fn_check_type(subtilis_parser_t *p, subtilis_exp_t *e1,
+			      const subtilis_type_t *type,
+			      subtilis_error_t *err)
+{
+	if (e1->partial_name)
+		subtilis_parser_call_add_addr(p, type, e1, err);
+	else if (!subtilis_type_eq(&e1->type, type))
+		subtilis_error_set_fn_type_mismatch(err, p->l->stream->name,
+						    p->l->line);
+}
+
+static void prv_parse_fn_list(subtilis_parser_t *p, size_t array_base,
+			      subtilis_exp_t **ee, size_t entries,
+			      size_t element_size, subtilis_error_t *err)
+{
+	size_t i;
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+
+	op1.reg = array_base;
+	op2.integer = (int32_t)element_size;
+
+	for (i = 0; i < entries - 1; i++) {
+		subtilis_type_if_assign_to_mem(p, op1.reg, 0, ee[i], err);
+		ee[i] = NULL;
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		op1.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_ADDI_I32, op1, op2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+	subtilis_type_if_assign_to_mem(p, op1.reg, 0, ee[i], err);
+	ee[i] = NULL;
+}
+
+static void prv_parse_fn_initialiser(subtilis_parser_t *p, subtilis_token_t *t,
+				     const subtilis_type_t *el_type,
+				     subtilis_exp_t *e, size_t mem_reg,
+				     const subtilis_symbol_t *s,
+				     subtilis_error_t *err)
+{
+	subtilis_exp_t **ee;
+	size_t element_size;
+	size_t data_reg;
+	size_t entries = 0;
+	size_t i = 0;
+
+	ee = prv_parse_expression_list(p, e, el_type, t, &entries,
+				       prv_fn_check_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	element_size = subtilis_type_if_size(&e->type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_check_expression_list_size(p, s, mem_reg, ee, entries, element_size,
+				       err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	data_reg = subtilis_reference_get_data(p, mem_reg, s->loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	prv_parse_fn_list(p, data_reg, ee, entries, element_size, err);
+
+cleanup:
+
+	for (i = 0; i < entries; i++)
+		subtilis_exp_delete(ee[i]);
+	free(ee);
 }
 
 void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
@@ -789,6 +870,19 @@ void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
 			} else {
 				subtilis_error_set_const_string_expected(
 				    err, p->l->stream->name, p->l->line);
+			}
+		} else if ((s->t.type == SUBTILIS_TYPE_ARRAY_FN) ||
+			   (s->t.type == SUBTILIS_TYPE_VECTOR_FN)) {
+			prv_fn_check_type(p, e, &el_type, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+			if (single_val) {
+				subtilis_type_if_array_set(
+				    p, s->key, &s->t, mem_reg, s->loc, e, err);
+				e = NULL;
+			} else {
+				prv_parse_fn_initialiser(p, t, &el_type, e,
+							 mem_reg, s, err);
 			}
 		} else {
 			subtilis_error_set_array_type_mismatch(

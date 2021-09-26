@@ -4492,6 +4492,48 @@ const subtilis_test_case_t test_cases[] = {
 	"endproc\n",
 	"boring\n",
 	},
+	{"dim_fn_init1",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = !FNCube%, def FN%(a%) <- a% * 2, def FN%(a%) <- a% * a%\n"
+	"range c@FNMap := a@FNMap()\n"
+	"print c@FNMap(10)\n"
+	"endrange\n"
+	"def FNCube%(a%)\n"
+	"<- a% * a% * a%\n",
+	"1000\n20\n100\n",
+	},
+	{"dim_fn_init2",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = def FN%(a%) <- a% * 2, def FN%(a%) <- a% * a%,!FNCube%\n"
+	"range c@FNMap := a@FNMap()\n"
+	"print c@FNMap(10)\n"
+	"endrange\n"
+	"def FNCube%(a%)\n"
+	"<- a% * a% * a%\n",
+	"20\n100\n1000\n",
+	},
+	{"dim_fn_set1",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = def FN%(a%) <- a% * 2\n"
+	"range c@FNMap := a@FNMap()\n"
+	"print c@FNMap(10)\n"
+	"endrange\n",
+	"20\n20\n20\n",
+	},
+	{"dim_fn_set2",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = !FNCube%\n"
+	"range c@FNMap := a@FNMap()\n"
+	"print c@FNMap(10)\n"
+	"endrange\n"
+	"def FNCube%(a%)\n"
+	"<- a% * a% * a%\n",
+	"1000\n1000\n1000\n",
+	},
 };
 
 /* clang-format on */

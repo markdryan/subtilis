@@ -68,6 +68,12 @@ static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
 	return e;
 }
 
+static void prv_dup(subtilis_exp_t *e1, subtilis_exp_t *e2,
+		    subtilis_error_t *err)
+{
+	e2->exp.ir_op = e1->exp.ir_op;
+}
+
 static void prv_assign_to_reg(subtilis_parser_t *p, size_t reg,
 			      subtilis_exp_t *e, subtilis_error_t *err)
 {
@@ -338,7 +344,7 @@ subtilis_type_if subtilis_type_fn = {
 	.element_type = NULL,
 	.exp_to_var = prv_exp_to_var,
 	.copy_var = NULL,
-	.dup = NULL,
+	.dup = prv_dup,
 	.copy_col = NULL,
 	.assign_reg = prv_assign_to_reg,
 	.assign_mem = prv_assign_to_mem,
