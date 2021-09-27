@@ -17,6 +17,7 @@
 #ifndef __SUBTILIS_TYPE_H
 #define __SUBTILIS_TYPE_H
 
+#include "buffer.h"
 #include "error.h"
 
 typedef enum {
@@ -117,6 +118,8 @@ subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 void subtilis_type_section_delete(subtilis_type_section_t *stype);
 bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b);
 const char *subtilis_type_name(const subtilis_type_t *typ);
+void subtilis_full_type_name(const subtilis_type_t *typ, subtilis_buffer_t *buf,
+			     subtilis_error_t *err);
 subtilis_type_section_t *
 subtilis_type_section_dup(subtilis_type_section_t *stype);
 void subtilis_type_copy(subtilis_type_t *dst, const subtilis_type_t *src,

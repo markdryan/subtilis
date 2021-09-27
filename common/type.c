@@ -19,6 +19,9 @@
 
 #include "type.h"
 
+static void prv_fn_type_name(const subtilis_type_t *typ, subtilis_buffer_t *buf,
+			     subtilis_error_t *err);
+
 const subtilis_type_t subtilis_type_const_real = {SUBTILIS_TYPE_CONST_REAL};
 
 /* clang-format off */
@@ -212,6 +215,49 @@ const char *subtilis_type_name(const subtilis_type_t *typ)
 		return prv_fixed_type_names[index];
 
 	return "unknown";
+}
+
+static void prv_full_type_name(const subtilis_type_t *typ,
+			       subtilis_buffer_t *buf, subtilis_error_t *err)
+{
+	if (typ->type == SUBTILIS_TYPE_FN)
+		return prv_fn_type_name(typ, buf, err);
+
+	subtilis_buffer_append_string(buf, subtilis_type_name(typ), err);
+}
+
+static void prv_fn_type_name(const subtilis_type_t *typ, subtilis_buffer_t *buf,
+			     subtilis_error_t *err)
+{
+	size_t i;
+	const char *fnorproc;
+	const subtilis_type_fn_t *fn_type = &typ->params.fn;
+
+	fnorproc = fn_type->ret_val ? "FN(" : "PROC(";
+	subtilis_buffer_append_string(buf, fnorproc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	for (i = 0; i < fn_type->num_params; i++) {
+		prv_full_type_name(fn_type->params[i], buf, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		if (i == fn_type->num_params - 1)
+			break;
+		subtilis_buffer_append_string(buf, ",", err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+	subtilis_buffer_append_string(buf, ")", err);
+}
+
+void subtilis_full_type_name(const subtilis_type_t *typ, subtilis_buffer_t *buf,
+			     subtilis_error_t *err)
+{
+	prv_full_type_name(typ, buf, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_buffer_zero_terminate(buf, err);
 }
 
 void subtilis_type_free(subtilis_type_t *typ)
