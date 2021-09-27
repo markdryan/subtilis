@@ -1165,9 +1165,9 @@ prv_get_range_vars(subtilis_parser_t *p, subtilis_token_t *t, size_t *count,
 
 	tbuf = subtilis_token_get_text(t);
 	if (t->type != SUBTILIS_TOKEN_OPERATOR) {
-		subtilis_error_set_expected(
-		    err, (new_locals) ? "=" : "= or :=", tbuf,
-		    p->l->stream->name, p->l->line);
+		subtilis_error_set_expected(err, (new_locals) ? "=" : "= or :=",
+					    tbuf, p->l->stream->name,
+					    p->l->line);
 		goto cleanup;
 	}
 
@@ -1179,9 +1179,9 @@ prv_get_range_vars(subtilis_parser_t *p, subtilis_token_t *t, size_t *count,
 		}
 		new_locals = true;
 	} else if (strcmp(tbuf, "=")) {
-		subtilis_error_set_expected(
-		    err, (new_locals) ? "=" : "= or :=", tbuf,
-		    p->l->stream->name, p->l->line);
+		subtilis_error_set_expected(err, (new_locals) ? "=" : "= or :=",
+					    tbuf, p->l->stream->name,
+					    p->l->line);
 		goto cleanup;
 	}
 
