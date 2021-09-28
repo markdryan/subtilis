@@ -181,14 +181,14 @@ subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
 				      const subtilis_type_t *type,
 				      subtilis_error_t *err)
 {
-	subtilis_type_if_none_t fn;
+	subtilis_type_if_zero_t fn;
 
 	fn = prv_type_map[type->type]->zero;
 	if (!fn) {
 		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
-	return fn(p, err);
+	return fn(p, type, err);
 }
 
 void subtilis_type_if_zero_ref(subtilis_parser_t *p,
@@ -607,6 +607,21 @@ void subtilis_type_if_array_set(subtilis_parser_t *p, const char *var_name,
 
 cleanup:
 	subtilis_exp_delete(e);
+}
+
+void subtilis_type_if_zero_buf(subtilis_parser_t *p,
+			       const subtilis_type_t *type, size_t data_reg,
+			       size_t size_reg, subtilis_error_t *err)
+{
+	subtilis_type_if_reg2_t fn;
+
+	fn = prv_type_map[type->type]->zero_buf;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	fn(p, type, data_reg, size_reg, err);
 }
 
 subtilis_exp_t *

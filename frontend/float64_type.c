@@ -28,6 +28,7 @@
 static size_t prv_size(const subtilis_type_t *type) { return 8; }
 
 static subtilis_exp_t *prv_zero_const(subtilis_parser_t *p,
+				      const subtilis_type_t *type,
 				      subtilis_error_t *err)
 {
 	return subtilis_exp_new_real(0.0, err);
@@ -653,6 +654,7 @@ subtilis_type_if subtilis_type_const_float64 = {
 	.indexed_write = NULL,
 	.indexed_read = NULL,
 	.set = NULL,
+	.zero_buf = NULL,
 	.indexed_address = NULL,
 	.indexed_add = NULL,
 	.indexed_sub = NULL,
@@ -696,7 +698,9 @@ subtilis_type_if subtilis_type_const_float64 = {
 
 /* clang-format on */
 
-static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
+static subtilis_exp_t *prv_zero(subtilis_parser_t *p,
+				const subtilis_type_t *type,
+				subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op1;
 	size_t reg_num;
@@ -1527,6 +1531,7 @@ subtilis_type_if subtilis_type_float64 = {
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
 	.set = NULL,
+	.zero_buf = NULL,
 	.append = NULL,
 	.indexed_address = NULL,
 	.load_mem = prv_load_from_mem,

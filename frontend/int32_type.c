@@ -27,6 +27,7 @@
 static size_t prv_size(const subtilis_type_t *type) { return 4; }
 
 static subtilis_exp_t *prv_zero_const(subtilis_parser_t *p,
+				      const subtilis_type_t *type,
 				      subtilis_error_t *err)
 {
 	return subtilis_exp_new_int32(0, err);
@@ -938,6 +939,7 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
 	.set = NULL,
+	.zero_buf = NULL,
 	.indexed_address = NULL,
 	.load_mem = NULL,
 	.to_int32 = prv_to_int32,
@@ -979,7 +981,9 @@ subtilis_type_if subtilis_type_const_int32 = {
 
 /* clang-format on */
 
-static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
+static subtilis_exp_t *prv_zero(subtilis_parser_t *p,
+				const subtilis_type_t *type,
+				subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op1;
 	size_t reg_num;
@@ -2213,6 +2217,7 @@ subtilis_type_if subtilis_type_int32 = {
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
 	.set = NULL,
+	.zero_buf = NULL,
 	.append = NULL,
 	.indexed_address = NULL,
 	.load_mem = prv_load_from_mem,

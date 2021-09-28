@@ -956,7 +956,7 @@ static void prv_create_array(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 	subtilis_array_type_allocate(p, var_name, &type, s->loc, &e[0],
-				     local_global, err);
+				     local_global, true, err);
 
 cleanup:
 	subtilis_type_free(&type);

@@ -25,6 +25,9 @@ typedef size_t (*subtilis_type_if_size_t)(const subtilis_type_t *type);
 typedef void (*subtilis_type_if_typeof_t)(const subtilis_type_t *element_type,
 					  subtilis_type_t *type,
 					  subtilis_error_t *err);
+typedef subtilis_exp_t *(*subtilis_type_if_zero_t)(subtilis_parser_t *p,
+						   const subtilis_type_t *type,
+						   subtilis_error_t *err);
 typedef subtilis_exp_t *(*subtilis_type_if_none_t)(subtilis_parser_t *p,
 						   subtilis_error_t *err);
 typedef void (*subtilis_type_if_zeroref_t)(subtilis_parser_t *p,
@@ -123,7 +126,7 @@ struct subtilis_type_if_ {
 	subtilis_ir_reg_type_t param_type;
 	subtilis_type_if_size_t size;
 	subtilis_type_if_unary_t data_size;
-	subtilis_type_if_none_t zero;
+	subtilis_type_if_zero_t zero;
 	subtilis_type_if_zeroref_t zero_ref;
 	subtilis_type_if_initref_t new_ref;
 	subtilis_type_if_initref_t assign_ref;
@@ -147,6 +150,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_iwrite_t indexed_sub;
 	subtilis_type_if_iread_t indexed_read;
 	subtilis_type_if_set_t set;
+	subtilis_type_if_reg2_t zero_buf;
 	subtilis_type_if_iread_t indexed_address;
 	subtilis_type_if_copy_collection_t append;
 	subtilis_type_if_load_t load_mem;
@@ -464,6 +468,16 @@ void subtilis_type_if_array_set(subtilis_parser_t *p, const char *var_name,
 				const subtilis_type_t *type, size_t mem_reg,
 				size_t loc, subtilis_exp_t *val,
 				subtilis_error_t *err);
+
+/*
+ * Only implemented for arrays and vectors.  Sets every element of the array to
+ * its zero value.  data points to the allocated data buffer, not the array or
+ * vector.  size is the size in bytes of the buffer.
+ */
+
+void subtilis_type_if_zero_buf(subtilis_parser_t *p,
+			       const subtilis_type_t *type, size_t data_reg,
+			       size_t size_reg, subtilis_error_t *err);
 
 /*
  * Returns a pointer to the scalar element, identified by the indices array,

@@ -4514,6 +4514,17 @@ const subtilis_test_case_t test_cases[] = {
 	"<- a% * a% * a%\n",
 	"20\n100\n1000\n",
 	},
+	{"dim_fn_init3",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(3)\n"
+	"a@FNMap() = def FN%(a%) <- a% * 2, def FN%(a%) <- a% * a%,!FNCube%\n"
+	"range c@FNMap := a@FNMap()\n"
+	"print c@FNMap(10)\n"
+	"endrange\n"
+	"def FNCube%(a%)\n"
+	"<- a% * a% * a%\n",
+	"20\n100\n1000\n0\n",
+	},
 	{"dim_fn_set1",
 	"type FNMap%(a%)\n"
 	"dim a@FNMap(2)\n"
@@ -4533,6 +4544,70 @@ const subtilis_test_case_t test_cases[] = {
 	"def FNCube%(a%)\n"
 	"<- a% * a% * a%\n",
 	"1000\n1000\n1000\n",
+	},
+	{"dim_fn_zero",
+	"type FNp&\n"
+	"type PROCdoer\n"
+	"type FNi%\n"
+	"type FNr\n"
+	"local l@FNp\n"
+	"local m@FNp\n"
+	"local o@FNi\n"
+	"local p@FNr\n"
+	"local p@PROCdoer\n"
+	"print l@FNp()\n"
+	"print m@FNp()\n"
+	"print o@FNi()\n"
+	"print p@FNr()\n"
+	"p@PROCdoer()\n",
+	"0\n0\n0\n0\n",
+	},
+	{"dim_fn_zero_args",
+	"type FNp&(a%)\n"
+	"type PROCdoer(a$)\n"
+	"type FNi%(a)\n"
+	"type FNr(a&)\n"
+	"local l@FNp\n"
+	"local m@FNp\n"
+	"local o@FNi\n"
+	"local p@FNr\n"
+	"local p@PROCdoer\n"
+	"print l@FNp(10)\n"
+	"print m@FNp(11)\n"
+	"print o@FNi(3.14)\n"
+	"print p@FNr(&ff)\n"
+	"p@PROCdoer(\"hello\")\n",
+	"0\n0\n0\n0\n",
+	},
+	{"dim_fn_zero_ref",
+	"type FNStr$(a$)\n"
+	"type FNia%(2)\n"
+	"type FNba&(1)\n"
+	"type FNra(1)\n"
+	"type FNhello$(1)(a$)\n"
+	"type FNAr${}\n"
+	"type FNiv%{}\n"
+	"type FNbv&{}\n"
+	"type FNrv{}\n"
+	"local m@FNra\n"
+	"local n@FNba\n"
+	"local o@FNia\n"
+	"local p@FNStr\n"
+	"local q@FNhello\n"
+	"local r@FNAr\n"
+	"local s@FNiv\n"
+	"local t@FNbv\n"
+	"local u@FNrv\n"
+	"print len(p@FNStr(\"hI\"))\n"
+	"print dim(m@FNra(),1)\n"
+	"print dim(n@FNba(),1)\n"
+	"print dim(o@FNia(),1)\n"
+	"print dim(q@FNhello(\"hI\"),1)\n"
+	"print dim(r@FNAr(),1)\n"
+	"print dim(s@FNiv(),1)\n"
+	"print dim(t@FNbv(),1)\n"
+	"print dim(u@FNrv(),1)\n",
+	"0\n1\n1\n1\n1\n-1\n-1\n-1\n-1\n",
 	},
 };
 

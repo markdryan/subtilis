@@ -17,33 +17,150 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../common/buffer.h"
 #include "fn_type.h"
+#include "reference_type.h"
+
+static size_t prv_generate_zero_fn(subtilis_parser_t *p,
+				   const subtilis_type_t *type,
+				   subtilis_error_t *err)
+{
+	subtilis_type_section_t *stype;
+	subtilis_buffer_t name;
+	subtilis_exp_t *e;
+	const char *fn_name;
+	const subtilis_symbol_t *s;
+	subtilis_ir_operand_t result;
+	subtilis_ir_operand_t ret_reg;
+	subtilis_symbol_table_t *local_st = NULL;
+	size_t call_index = SIZE_MAX;
+	subtilis_symbol_table_t *old_local_st = p->local_st;
+	subtilis_ir_section_t *old_section = p->current;
+
+	subtilis_buffer_init(&name, 64);
+
+	if (type->type == SUBTILIS_TYPE_ARRAY_FN) {
+		/* I need a loop here that generates functions recursively. */
+		subtilis_error_set_assertion_failed(err);
+		return SIZE_MAX;
+	}
+
+	local_st = subtilis_symbol_table_new(err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+	p->local_st = local_st;
+
+	stype = subtilis_type_section_new(type, 0, NULL, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_buffer_append_string(&name, "!", err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_full_type_name(type, &name, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	fn_name = subtilis_buffer_get_string(&name);
+	if (subtilis_string_pool_find(p->prog->string_pool, fn_name,
+				      &call_index))
+		goto cleanup;
+
+	p->current = subtilis_ir_prog_section_new(
+	    p->prog, fn_name, 0, stype, SUBTILIS_BUILTINS_MAX,
+	    p->l->stream->name, p->l->line, p->eflag_offset, p->error_offset,
+	    &call_index, err);
+	stype = NULL;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (type->type != SUBTILIS_TYPE_VOID) {
+		if (subtilis_type_if_is_reference(type)) {
+			s = subtilis_symbol_table_insert_tmp(local_st, type,
+							     NULL, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+
+			subtilis_type_if_zero_ref(
+			    p, type, SUBTILIS_IR_REG_LOCAL, s->loc, false, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+
+			result.reg = subtilis_reference_get_pointer(
+			    p, SUBTILIS_IR_REG_LOCAL, s->loc, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+
+			/*
+			 * Arrays are trickier as they don't have a zero value
+			 */
+
+			if (subtilis_type_if_is_array(type)) {
+				ret_reg.reg = p->current->ret_reg;
+				subtilis_ir_section_add_instr_no_reg2(
+				    p->current, SUBTILIS_OP_INSTR_MOV, ret_reg,
+				    result, err);
+				if (err->type != SUBTILIS_ERROR_OK)
+					goto cleanup;
+
+				subtilis_ir_section_add_label(
+				    p->current, p->current->end_label, err);
+				if (err->type != SUBTILIS_ERROR_OK)
+					goto cleanup;
+			} else {
+				ret_reg.reg = result.reg;
+			}
+			e = subtilis_exp_new_var(type, ret_reg.reg, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+
+			p->current->locals = local_st->max_allocated;
+		} else {
+			e = subtilis_type_if_zero(p, type, err);
+		}
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		subtilis_type_if_ret(p, type, e->exp.ir_op.reg, err);
+		subtilis_exp_delete(e);
+	} else {
+		subtilis_ir_section_add_instr_no_arg(
+		    p->current, SUBTILIS_OP_INSTR_RET, err);
+	}
+
+cleanup:
+	p->current = old_section;
+
+	subtilis_type_section_delete(stype);
+	p->local_st = old_local_st;
+	subtilis_buffer_free(&name);
+
+	return call_index;
+}
 
 static size_t prv_size(const subtilis_type_t *type) { return sizeof(int32_t); }
 
-static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
+static subtilis_exp_t *prv_zero(subtilis_parser_t *p,
+				const subtilis_type_t *type,
+				subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op1;
 	size_t reg_num;
+	subtilis_exp_t *e = NULL;
+	size_t call_index;
 
-	op1.integer = 0;
-	reg_num = subtilis_ir_section_add_instr2(
-	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
+	call_index = prv_generate_zero_fn(p, type->params.fn.ret_val, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
-	return subtilis_exp_new_int32_var(reg_num, err);
-}
+	op1.label = (int32_t)call_index;
+	reg_num = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_GET_PROC_ADDR, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+	e = subtilis_exp_new_int32_var(reg_num, err);
 
-static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
-			 subtilis_error_t *err)
-{
-	subtilis_ir_operand_t op1;
-	subtilis_ir_operand_t op2;
-
-	op2.integer = 0;
-	op1.reg = reg;
-	subtilis_ir_section_add_instr_no_reg2(
-	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, op2, err);
+	return e;
 }
 
 static void prv_array_of(const subtilis_type_t *element_type,
@@ -337,7 +454,7 @@ subtilis_type_if subtilis_type_fn = {
 	.new_ref = NULL,
 	.assign_ref = NULL,
 	.assign_ref_no_rc = NULL,
-	.zero_reg = prv_zero_reg,
+	.zero_reg = NULL,
 	.copy_ret = NULL,
 	.array_of = prv_array_of,
 	.vector_of = prv_vector_of,

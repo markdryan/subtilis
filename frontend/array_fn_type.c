@@ -46,7 +46,9 @@ static subtilis_exp_t *prv_data_size(subtilis_parser_t *p, subtilis_exp_t *e,
 	return subtilis_type_if_lsl(p, e, two, err);
 }
 
-static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
+static subtilis_exp_t *prv_zero(subtilis_parser_t *p,
+				const subtilis_type_t *type,
+				subtilis_error_t *err)
 {
 	subtilis_error_set_not_supported(err, "zero on arrays",
 					 p->l->stream->name, p->l->line);
@@ -166,6 +168,29 @@ static void prv_array_set(subtilis_parser_t *p, const char *var_name,
 			  size_t loc, subtilis_exp_t *e, subtilis_error_t *err)
 {
 	prv_set(p, var_name, type, mem_reg, loc, e, false, err);
+}
+
+static void prv_zero_buf(subtilis_parser_t *p, const subtilis_type_t *type,
+			 size_t data_reg, size_t size_reg,
+			 subtilis_error_t *err)
+{
+	subtilis_type_t el_type;
+	subtilis_exp_t *e = NULL;
+
+	subtilis_type_if_element_type(p, type, &el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	e = subtilis_type_if_zero(p, &el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_builtin_memset_i32(p, data_reg, size_reg, e->exp.ir_op.reg,
+				    err);
+
+cleanup:
+	subtilis_type_free(&el_type);
+	subtilis_exp_delete(e);
 }
 
 static subtilis_exp_t *
@@ -447,6 +472,7 @@ subtilis_type_if subtilis_type_array_fn = {
 	.indexed_read = prv_indexed_read,
 	.append = NULL,
 	.set = prv_array_set,
+	.zero_buf = prv_zero_buf,
 	.indexed_address = prv_indexed_address,
 	.load_mem = NULL,
 	.to_int32 = NULL,
@@ -525,6 +551,7 @@ subtilis_type_if subtilis_type_vector_fn = {
 	.indexed_read = prv_indexed_read,
 	.append = prv_append,
 	.set = prv_vector_set,
+	.zero_buf = prv_zero_buf,
 	.indexed_address = prv_indexed_address,
 	.load_mem = NULL,
 	.to_int32 = NULL,

@@ -67,6 +67,43 @@ size_t subtilis_array_type_size(const subtilis_type_t *type)
 	return size;
 }
 
+void subtilis_array_create_1el(subtilis_parser_t *p,
+			       const subtilis_type_t *type, size_t mem_reg,
+			       size_t loc, bool push, subtilis_error_t *err)
+{
+	subtilis_type_t const_type;
+	size_t i;
+	subtilis_exp_t **ee;
+	subtilis_ir_operand_t store_reg;
+
+	store_reg.reg = mem_reg;
+	subtilis_type_init_copy(&const_type, type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	ee = malloc(sizeof(*ee) * const_type.params.array.num_dims);
+	if (!ee) {
+		subtilis_error_set_oom(err);
+		goto cleanup;
+	}
+
+	for (i = 0; i < const_type.params.array.num_dims; i++) {
+		const_type.params.array.dims[i] = 1;
+		ee[i] = subtilis_exp_new_int32(1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
+	subtilis_array_type_allocate(p, "temporary array", &const_type, loc, ee,
+				     store_reg, push, err);
+cleanup:
+	for (i = 0; i < const_type.params.array.num_dims; i++)
+		free(ee[i]);
+	free(ee);
+
+	subtilis_type_free(&const_type);
+}
+
 /* Does not consume elements in e */
 
 void subtilis_array_type_init(subtilis_parser_t *p, const char *var_name,
@@ -167,43 +204,44 @@ cleanup:
 	subtilis_exp_delete(zero);
 }
 
+void subtilis_array_zero_buf_i32(subtilis_parser_t *p,
+				 const subtilis_type_t *type, size_t data_reg,
+				 size_t size_reg, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t zero;
+	size_t zero_reg;
+
+	zero.integer = 0;
+	zero_reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_builtin_memset_i32(p, data_reg, size_reg, zero_reg, err);
+}
+
+void subtilis_array_zero_buf_i8(subtilis_parser_t *p,
+				const subtilis_type_t *type, size_t data_reg,
+				size_t size_reg, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t zero;
+	size_t zero_reg;
+
+	zero.integer = 0;
+	zero_reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_builtin_memset_i8(p, data_reg, size_reg, zero_reg, err);
+}
+
 static void prv_clear_new_array(subtilis_parser_t *p,
 				const subtilis_type_t *type, size_t loc,
 				size_t sizee, subtilis_ir_operand_t store_reg,
 				size_t data, subtilis_error_t *err)
 {
-	size_t el_size;
-	subtilis_type_t element_type;
-	subtilis_exp_t *zero;
-
-	zero = subtilis_exp_new_int32(0, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	zero = subtilis_type_if_exp_to_var(p, zero, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_type_if_element_type(p, type, &element_type, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	el_size = subtilis_type_if_size(&element_type, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto free_e;
-
-	if ((el_size & 3) == 0)
-		subtilis_builtin_memset_i32(p, data, sizee, zero->exp.ir_op.reg,
-					    err);
-	else
-		subtilis_builtin_memset_i8(p, data, sizee, zero->exp.ir_op.reg,
-					   err);
-
-free_e:
-	subtilis_type_free(&element_type);
-
-cleanup:
-	subtilis_exp_delete(zero);
+	subtilis_type_if_zero_buf(p, type, data, sizee, err);
 }
 
 static void prv_1d_dynamic_alloc(subtilis_parser_t *p, size_t loc,
@@ -399,7 +437,7 @@ void subtilis_array_type_vector_alloc(subtilis_parser_t *p, size_t loc,
 void subtilis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 				  const subtilis_type_t *type, size_t loc,
 				  subtilis_exp_t **e,
-				  subtilis_ir_operand_t store_reg,
+				  subtilis_ir_operand_t store_reg, bool push,
 				  subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op;
@@ -455,7 +493,7 @@ void subtilis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
 		goto cleanup;
 
 	op.reg = subtilis_reference_type_alloc(p, type, loc, store_reg.reg,
-					       sizee->exp.ir_op.reg, true, err);
+					       sizee->exp.ir_op.reg, push, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1761,13 +1799,13 @@ static void prv_check_arrays_compat(subtilis_parser_t *p,
 
 	if (a1->type.type != a2->type.type) {
 		/*
-		 * Check to see if a2 is an array.  We can append an array to a
-		 * vector, but not the other way around.
+		 * Check to see if a2 is an array.  We can append an
+		 * array to a vector, but not the other way around.
 		 */
 
 		/*
-		 * Number of dimensions aren't important here.  We're just going
-		 * to copy all the elements from a2.
+		 * Number of dimensions aren't important here.  We're
+		 * just going to copy all the elements from a2.
 		 */
 
 		if (!subtilis_type_if_is_array(&a2->type)) {

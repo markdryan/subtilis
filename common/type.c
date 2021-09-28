@@ -290,14 +290,15 @@ static void prv_init_copy_fn(subtilis_type_fn_t *dst,
 	subtilis_type_init_copy(dst->ret_val, src->ret_val, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	dst->num_params = src->num_params;
-	for (i = 0; i < dst->num_params; i++) {
+	dst->num_params = 0;
+	for (i = 0; i < src->num_params; i++) {
 		dst->params[i] = calloc(1, sizeof(*dst->params[i]));
 		if (!dst->params[i]) {
 			subtilis_error_set_oom(err);
 			goto cleanup;
 		}
 		subtilis_type_init_copy(dst->params[i], src->params[i], err);
+		dst->num_params++;
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 	}

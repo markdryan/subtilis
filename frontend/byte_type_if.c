@@ -66,6 +66,7 @@ subtilis_type_if subtilis_type_const_byte = {
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
 	.set = NULL,
+	.zero_buf = NULL,
 	.append = NULL,
 	.indexed_address = NULL,
 	.load_mem = NULL,
@@ -114,7 +115,9 @@ static void prv_dup(subtilis_exp_t *e1, subtilis_exp_t *e2,
 	e2->exp.ir_op = e1->exp.ir_op;
 }
 
-static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
+static subtilis_exp_t *prv_zero(subtilis_parser_t *p,
+				const subtilis_type_t *type,
+				subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op1;
 	size_t reg_num;
@@ -823,6 +826,8 @@ subtilis_type_if subtilis_type_byte_if = {
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
 	.indexed_address = NULL,
+	.set = NULL,
+	.zero_buf = NULL,
 	.load_mem = prv_load_from_mem,
 	.to_int32 = prv_to_int32,
 	.zerox = prv_zerox_from_type,

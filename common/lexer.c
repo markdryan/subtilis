@@ -573,7 +573,7 @@ static void prv_complete_custom_type(subtilis_lexer_t *l, subtilis_token_t *t,
 	}
 
 	tbuf = subtilis_token_get_text(t);
-	if (i < 5) {
+	if (i < 2) {
 		subtilis_error_set_bad_type_name(err, tbuf, l->stream->name,
 						 l->line);
 		return;
@@ -581,7 +581,6 @@ static void prv_complete_custom_type(subtilis_lexer_t *l, subtilis_token_t *t,
 	if (i > 4)
 		i = 4;
 	prefix[i] = 0;
-
 	if (strncmp(prefix, "FN", 2) && strncmp(prefix, "PROC", 4)) {
 		subtilis_error_set_bad_type_name(err, tbuf, l->stream->name,
 						 l->line);

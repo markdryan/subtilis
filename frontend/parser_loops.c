@@ -1098,7 +1098,7 @@ static subtilis_range_var_t *prv_get_varnames(subtilis_parser_t *p,
 		    SUBTILIS_TYPE_INTEGER) {
 			subtilis_error_set_integer_variable_expected(
 			    err,
-			    subtilis_type_name(&range_vars[var_count].type),
+			    subtilis_type_name(&range_vars[var_count - 1].type),
 			    p->l->stream->name, p->l->line);
 			goto cleanup;
 		}
@@ -1139,6 +1139,8 @@ prv_get_range_vars(subtilis_parser_t *p, subtilis_token_t *t, size_t *count,
 	size_t var_count = 0;
 	subtilis_range_var_t *range_vars = NULL;
 	bool new_locals = false;
+
+	el_type.type = SUBTILIS_TYPE_VOID;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1243,12 +1245,13 @@ static void prv_assign_range_var(subtilis_parser_t *p,
 {
 	subtilis_exp_t *val;
 
-	val = subtilis_type_if_load_from_mem(p, &var->type, ptr.reg, 0, err);
+	val = subtilis_type_if_load_from_mem(p, &var->for_ctx.type, ptr.reg, 0,
+					     err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	if (!subtilis_type_if_is_numeric(&var->type) &&
-	    var->type.type != SUBTILIS_TYPE_FN) {
+	if (!subtilis_type_if_is_numeric(&var->for_ctx.type) &&
+	    var->for_ctx.type.type != SUBTILIS_TYPE_FN) {
 		/*
 		 * If we have a reference type and it's a new local, there's
 		 * no need to go through all the reference counting.  We know
@@ -1439,7 +1442,7 @@ prv_range_loop_end(subtilis_parser_t *p, const subtilis_range_var_t *range_vars,
 {
 	subtilis_ir_operand_t op1;
 
-	op1.integer = subtilis_type_if_size(&range_vars[0].type, err);
+	op1.integer = subtilis_type_if_size(&range_vars[0].for_ctx.type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1465,7 +1468,7 @@ static void prv_range_loop_end_index(subtilis_parser_t *p, size_t var_count,
 	size_t i;
 	subtilis_exp_t *inc;
 
-	op1.integer = subtilis_type_if_size(&range_vars[0].type, err);
+	op1.integer = subtilis_type_if_size(&range_vars[0].for_ctx.type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1522,8 +1525,11 @@ static void prv_init_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 				return;
 		}
 	}
+	subtilis_type_copy(&for_ctx->type, &s->t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	for_ctx->is_reg = s->is_reg;
-	for_ctx->type = s->t;
 	for_ctx->reg = op1.reg;
 	for_ctx->loc = s->loc;
 }
@@ -1664,7 +1670,6 @@ static void prv_range_compound(subtilis_parser_t *p, subtilis_token_t *t,
 				   err);
 	else
 		prv_range_loop_end_index(p, var_count, range_vars, ptr, err);
-
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

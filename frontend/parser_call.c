@@ -1462,6 +1462,9 @@ char *subtilis_parser_parse_call_type(subtilis_parser_t *p, subtilis_token_t *t,
 	case SUBTILIS_TYPE_INTEGER:
 	case SUBTILIS_TYPE_BYTE:
 	case SUBTILIS_TYPE_STRING:
+	case SUBTILIS_TYPE_VECTOR_INTEGER:
+	case SUBTILIS_TYPE_VECTOR_BYTE:
+	case SUBTILIS_TYPE_VECTOR_STRING:
 		name[strlen(name) - 1] = 0;
 		break;
 	default:
