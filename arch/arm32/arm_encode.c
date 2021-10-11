@@ -2293,6 +2293,9 @@ static void prv_encode_signx_instr(void *user_data, subtilis_arm_op_t *op,
 	case SUBTILIS_ARM_SIGNX_ROR_24:
 		ror = 3;
 		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return;
 	}
 
 	word |= (ror << 10);

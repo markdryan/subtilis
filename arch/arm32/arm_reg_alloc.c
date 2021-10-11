@@ -1266,7 +1266,7 @@ static void prv_alloc_br_instr(void *user_data, subtilis_arm_op_t *op,
 {
 	size_t vreg_op1;
 	bool fixed_reg_op1 = true;
-	int dist_op1;
+	int dist_op1 = -1;
 	subtilis_arm_reg_ud_t *ud = user_data;
 	size_t reg = 0;
 	subtilis_arm_reg_class_t *regs = NULL;

@@ -723,6 +723,9 @@ static size_t prv_compute_stran_misc_addr(subtilis_arm_vm_t *arm_vm,
 	case SUBTILIS_ARM_STRAN_MISC_D:
 		size = 8;
 		break;
+	default:
+		subtilis_error_set_assertion_failed(err);
+		return 0;
 	}
 
 	if (!op->reg_offset)

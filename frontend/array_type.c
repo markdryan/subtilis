@@ -522,6 +522,8 @@ static void prv_copy_ref_base(subtilis_parser_t *p, const subtilis_type_t *t,
 	size_t i;
 	bool check_size = false;
 
+	skip_ref_label.label = SIZE_MAX;
+
 	/* TODO: This is platform specific */
 
 	/* copy destructor + array dimensions */
@@ -1842,6 +1844,8 @@ void subtilis_array_append_scalar_array(subtilis_parser_t *p,
 	subtilis_ir_operand_t op1;
 	bool a2_dynamic;
 
+	a2_size_zero.label = SIZE_MAX;
+
 	if (!subtilis_type_if_is_vector(&a1->type)) {
 		subtilis_error_set_expected(err, "vector",
 					    subtilis_type_name(&a1->type),
@@ -1959,6 +1963,8 @@ void subtilis_array_append_ref_array(subtilis_parser_t *p, subtilis_exp_t *a1,
 	size_t new_size_reg;
 	subtilis_ir_operand_t op1;
 	bool a2_dynamic;
+
+	a2_size_zero.label = SIZE_MAX;
 
 	if (!subtilis_type_if_is_vector(&a1->type)) {
 		subtilis_error_set_expected(err, "vector",

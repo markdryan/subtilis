@@ -95,6 +95,8 @@ static void prv_set(subtilis_parser_t *p, const char *var_name,
 	subtilis_ir_operand_t gt_zero;
 	subtilis_ir_operand_t eq_zero;
 
+	eq_zero.label = SIZE_MAX;
+
 	subtilis_type_if_element_type(p, type, &el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto free_e;
