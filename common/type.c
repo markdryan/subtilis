@@ -86,13 +86,15 @@ static bool prv_fn_type_match(const subtilis_type_fn_t *t1,
 	return true;
 }
 
-static void prv_fn_type_free(const subtilis_type_fn_t *typ)
+static void prv_fn_type_free(subtilis_type_fn_t *typ)
 {
 	size_t i;
 
 	free(typ->ret_val);
-	for (i = 0; i < typ->num_params; i++)
+	for (i = 0; i < typ->num_params; i++) {
 		subtilis_type_free(typ->params[i]);
+		free(typ->params[i]);
+	}
 }
 
 static bool prv_array_type_match(const subtilis_type_t *t1,
@@ -341,13 +343,6 @@ void subtilis_type_copy_from_fn(subtilis_type_t *dst,
 {
 	subtilis_type_free(dst);
 	subtilis_type_init_copy_from_fn(dst, src, err);
-}
-
-void subtilis_type_copy_to_fn(subtilis_type_fn_t *dst,
-			      const subtilis_type_t *src, subtilis_error_t *err)
-{
-	prv_fn_type_free(&src->params.fn);
-	prv_init_copy_fn(dst, &src->params.fn, err);
 }
 
 void subtilis_type_init_to_from_fn(subtilis_type_fn_t *dst,

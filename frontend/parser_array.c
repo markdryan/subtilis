@@ -460,8 +460,10 @@ prv_parse_expression_list(subtilis_parser_t *p, subtilis_exp_t *e,
 			goto cleanup;
 
 		check_type(p, e, el_type, err);
-		if (err->type != SUBTILIS_ERROR_OK)
+		if (err->type != SUBTILIS_ERROR_OK) {
+			subtilis_exp_delete(e);
 			goto cleanup;
+		}
 
 		ee[count++] = e;
 		e = NULL;
@@ -836,6 +838,8 @@ void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
 	bool single_val;
 	const char *tbuf;
 
+	el_type.type = SUBTILIS_TYPE_VOID;
+
 	if (subtilis_type_eq(&s->t, &e->type)) {
 		subtilis_array_type_assign_ref(p, &s->t, mem_reg, s->loc,
 					       e->exp.ir_op.reg, err);
@@ -888,10 +892,10 @@ void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
 			subtilis_error_set_array_type_mismatch(
 			    err, p->l->stream->name, p->l->line);
 		}
-		subtilis_type_free(&el_type);
 	}
 
 cleanup:
+	subtilis_type_free(&el_type);
 	subtilis_exp_delete(e);
 }
 

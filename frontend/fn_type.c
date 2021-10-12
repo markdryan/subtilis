@@ -134,6 +134,7 @@ cleanup:
 
 	subtilis_type_section_delete(stype);
 	p->local_st = old_local_st;
+	subtilis_symbol_table_delete(local_st);
 	subtilis_buffer_free(&name);
 
 	return call_index;

@@ -199,6 +199,7 @@ void subtilis_arm_link_delete(subtilis_arm_link_t *link)
 	if (!link)
 		return;
 
+	free(link->extrefs);
 	free(link->constants);
 	free(link->externals);
 	free(link->sections);
