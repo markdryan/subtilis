@@ -1962,8 +1962,8 @@ typedef enum {
 
 struct subtilis_ir_inst_match_t_ {
 	subtilis_op_instr_type_t type;
-	subtilis_ir_operand_t operands[3];
-	subtilis_op_match_type_t op_match[3];
+	subtilis_ir_operand_t operands[4];
+	subtilis_op_match_type_t op_match[4];
 };
 
 typedef struct subtilis_ir_inst_match_t_ subtilis_ir_inst_match_t;
