@@ -70,8 +70,11 @@ static subtilis_type_t *prv_parser_to_ptypes(subtilis_parser_param_t *params,
 		return NULL;
 	}
 
-	for (i = 0; i < num_params; i++)
-		ptypes[i] = params[i].type;
+	for (i = 0; i < num_params; i++) {
+		subtilis_type_init_copy(&ptypes[i], &params[i].type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+	}
 
 	return ptypes;
 }
@@ -212,6 +215,13 @@ static char *prv_proc_name_and_type(subtilis_parser_t *p, subtilis_token_t *t,
 		return NULL;
 	}
 
+	if (type->type == SUBTILIS_TYPE_FN) {
+		subtilis_complete_custom_type(p, tbuf, type, err);
+		if (err->type != SUBTILIS_ERROR_OK) {
+			free(name);
+			return NULL;
+		}
+	}
 	strcpy(name, tbuf);
 
 	return name;
@@ -325,6 +335,7 @@ on_error:
 subtilis_exp_t *subtilis_parser_call(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err)
 {
+	subtilis_exp_t *ret_val;
 	const char *tbuf;
 	subtilis_type_t fn_type;
 	subtilis_exp_t *poss_args[SUBTILIS_MAX_ARGS];
@@ -427,12 +438,15 @@ subtilis_exp_t *subtilis_parser_call(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	subtilis_type_free(&fn_type);
-
 	/* Ownership of stypes, args and name passed to this function. */
 
-	return subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_MAX, stype,
-				     args, &fn_type, num_poss_args, true, err);
+	ret_val =
+	    subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_MAX, stype, args,
+				  &fn_type, num_poss_args, true, err);
+
+	subtilis_type_free(&fn_type);
+
+	return ret_val;
 
 on_error:
 
@@ -583,6 +597,18 @@ static void prv_process_param(subtilis_parser_t *p, subtilis_token_t *t,
 			goto cleanup;
 		}
 
+		*symbol = subtilis_symbol_table_insert_reg(
+		    p->local_st, var_name, ptype, reg_num, err);
+	} else if (type.type == SUBTILIS_TYPE_FN) {
+		subtilis_type_copy(ptype, &type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		subtilis_complete_custom_type(p, var_name, ptype, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		reg_num = SUBTILIS_IR_REG_TEMP_START + *num_iparams;
+		*num_iparams += 1;
 		*symbol = subtilis_symbol_table_insert_reg(
 		    p->local_st, var_name, ptype, reg_num, err);
 	} else {

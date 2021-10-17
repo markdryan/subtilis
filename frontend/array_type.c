@@ -2070,6 +2070,10 @@ free_as:
 void subtilis_array_type_dup(subtilis_exp_t *src, subtilis_exp_t *dst,
 			     subtilis_error_t *err)
 {
+	subtilis_type_copy(&dst->type, &src->type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	if (src->temporary) {
 		dst->temporary = malloc(strlen(src->temporary) + 1);
 		if (!dst->temporary) {
@@ -2080,6 +2084,5 @@ void subtilis_array_type_dup(subtilis_exp_t *src, subtilis_exp_t *dst,
 	} else {
 		dst->temporary = NULL;
 	}
-	dst->type = src->type;
 	dst->exp.ir_op.reg = src->exp.ir_op.reg;
 }

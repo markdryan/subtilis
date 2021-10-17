@@ -164,6 +164,22 @@ static subtilis_exp_t *prv_zero(subtilis_parser_t *p,
 	return e;
 }
 
+static void prv_zero_reg(subtilis_parser_t *p, const subtilis_type_t *type,
+			 size_t reg, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+	size_t call_index;
+
+	call_index = prv_generate_zero_fn(p, type->params.fn.ret_val, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	op0.reg = reg;
+	op1.label = (int32_t)call_index;
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_GET_PROC_ADDR, op0, op1, err);
+}
+
 static void prv_array_of(const subtilis_type_t *element_type,
 			 subtilis_type_t *type, subtilis_error_t *err)
 {
@@ -441,6 +457,7 @@ static subtilis_exp_t *prv_coerce_type(subtilis_parser_t *p, subtilis_exp_t *e,
 }
 
 /* clang-format off */
+
 subtilis_type_if subtilis_type_fn = {
 	.is_const = false,
 	.is_numeric = false,
@@ -455,7 +472,7 @@ subtilis_type_if subtilis_type_fn = {
 	.new_ref = NULL,
 	.assign_ref = NULL,
 	.assign_ref_no_rc = NULL,
-	.zero_reg = NULL,
+	.zero_reg = prv_zero_reg,
 	.copy_ret = NULL,
 	.array_of = prv_array_of,
 	.vector_of = prv_vector_of,
@@ -508,3 +525,5 @@ subtilis_type_if subtilis_type_fn = {
 	.print = NULL,
 	.destructor = NULL,
 };
+
+/* clang-format on */

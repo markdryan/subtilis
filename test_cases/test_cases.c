@@ -4609,6 +4609,68 @@ const subtilis_test_case_t test_cases[] = {
 	"print dim(u@FNrv(),1)\n",
 	"0\n1\n1\n1\n1\n-1\n-1\n-1\n-1\n",
 	},
+	{"fn_map",
+	"dim a{10}\n"
+	"\n"
+	"range v, i% := a{}\n"
+	"  a{i%} = i%\n"
+	"endrange\n"
+	"\n"
+	"type FNMapper(a)\n"
+	"\n"
+	"PROC_map(a{}, def FN(a) <- a*a)\n"
+	"\n"
+	"range v, i% := a{}\n"
+	"  print v;\n"
+	"  if i% < dim(a{}, 1) then print \" \"; endif\n"
+	"endrange\n"
+	"print \"\"\n"
+	"\n"
+	"def PROC_map(a{}, f@FNMapper)\n"
+	"  range v, i% := a{}\n"
+	"    a{i%} = f@FNMapper(v)\n"
+	"  endrange\n"
+	"endproc\n",
+	"0 1 4 9 16 25 36 49 64 81 100\n",
+	},
+	{"fn_ret_fn",
+	"type PROCMaker(a%)\n"
+	"\n"
+	"def FNMakeMaker@PROCMaker\n"
+	"<- def PROC(a%)\n"
+	"    for i% := 1 TO a%\n"
+	"       print \"maker\"\n"
+	"    next\n"
+	"  endproc\n"
+	"a@PROCMaker = FNMakeMaker@PROCMaker()\n"
+	"a@PROCMaker(4)\n",
+	"maker\nmaker\nmaker\nmaker\n",
+	},
+	{"fn_ret_ar_fn",
+	"type PROCMaker(a%)\n"
+	"\n"
+	"def FNMakeMaker@PROCMaker(1)\n"
+	"  local dim a@PROCMaker(2)\n"
+	"  a@PROCMaker() = def PROC(a%) PROCLooper(a%, \"one\") endproc,\n"
+	"    def PROC(a%) PROCLooper(a%, \"two\") endproc,\n"
+	"    def PROC(a%) PROCLooper(a%, \"three\") endproc\n"
+	"<- a@PROCMaker()\n"
+	"\n"
+	"def PROCLooper(a%, b$)\n"
+	"  for i% := 1 TO a%\n"
+	"     print b$\n"
+	"  next\n"
+	"endproc\n"
+	"\n"
+	"a@PROCMaker() := FNMakeMaker@PROCMaker(1)()\n"
+	"print \"array returned with \";\n"
+	"print dim(a@PROCMaker(),1 );\n"
+	"print \" elements\"\n"
+	"range fn@PROCMaker, i% := a@PROCMaker()\n"
+	"   fn@PROCMaker(i% + 1)\n"
+	"endrange\n",
+	"array returned with 2 elements\none\ntwo\ntwo\nthree\nthree\nthree\n"
+	}
 };
 
 /* clang-format on */

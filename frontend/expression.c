@@ -236,6 +236,7 @@ static void prv_tmp_ref_return(subtilis_parser_t *p,
 	char *tmp_name = NULL;
 
 	if (fn_type->type != SUBTILIS_TYPE_VOID &&
+	    fn_type->type != SUBTILIS_TYPE_FN &&
 	    !subtilis_type_if_is_numeric(fn_type)) {
 		reg = prv_create_tmp_ref(p, e->exp.ir_op.reg, fn_type,
 					 &tmp_name, err);

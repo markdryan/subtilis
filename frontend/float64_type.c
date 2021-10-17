@@ -713,8 +713,8 @@ static subtilis_exp_t *prv_zero(subtilis_parser_t *p,
 	return subtilis_exp_new_real_var(reg_num, err);
 }
 
-static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
-			 subtilis_error_t *err)
+static void prv_zero_reg(subtilis_parser_t *p, const subtilis_type_t *type,
+			 size_t reg, subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;

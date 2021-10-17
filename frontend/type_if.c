@@ -281,14 +281,14 @@ void subtilis_type_if_zero_reg(subtilis_parser_t *p,
 			       const subtilis_type_t *type, size_t reg,
 			       subtilis_error_t *err)
 {
-	subtilis_type_if_reg_t fn;
+	subtilis_type_if_zeroreg_t fn;
 
 	fn = prv_type_map[type->type]->zero_reg;
 	if (!fn) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-	fn(p, reg, err);
+	fn(p, type, reg, err);
 }
 
 void subtilis_type_if_array_of(subtilis_parser_t *p,

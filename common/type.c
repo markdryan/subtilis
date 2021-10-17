@@ -175,6 +175,7 @@ subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 		case SUBTILIS_TYPE_VECTOR_STRING:
 		case SUBTILIS_TYPE_VECTOR_BYTE:
 		case SUBTILIS_TYPE_VECTOR_FN:
+		case SUBTILIS_TYPE_FN:
 			stype->int_regs++;
 			break;
 		case SUBTILIS_TYPE_REAL:
@@ -199,11 +200,10 @@ void subtilis_type_section_delete(subtilis_type_section_t *stype)
 	if (!stype)
 		return;
 
-	subtilis_type_free(&stype->return_type);
 	stype->ref_count--;
-
 	if (stype->ref_count != 0)
 		return;
+	subtilis_type_free(&stype->return_type);
 
 	free(stype->parameters);
 	free(stype);

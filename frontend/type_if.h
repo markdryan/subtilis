@@ -39,6 +39,9 @@ typedef void (*subtilis_type_if_initref_t)(subtilis_parser_t *p,
 					   size_t mem_reg, size_t loc,
 					   subtilis_exp_t *e,
 					   subtilis_error_t *err);
+typedef void (*subtilis_type_if_zeroreg_t)(subtilis_parser_t *p,
+					   const subtilis_type_t *type,
+					   size_t reg, subtilis_error_t *err);
 typedef void (*subtilis_type_if_reg_t)(subtilis_parser_t *p, size_t reg,
 				       subtilis_error_t *err);
 typedef void (*subtilis_type_if_reg2_t)(subtilis_parser_t *p,
@@ -132,7 +135,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_initref_t assign_ref;
 	subtilis_type_if_initref_t assign_ref_no_rc;
 	subtilis_type_if_none_t top_bit;
-	subtilis_type_if_reg_t zero_reg;
+	subtilis_type_if_zeroreg_t zero_reg;
 	subtilis_type_if_reg2_t copy_ret;
 	subtilis_type_if_typeof_t const_of;
 	subtilis_type_if_typeof_t array_of;

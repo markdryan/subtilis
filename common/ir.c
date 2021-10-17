@@ -785,6 +785,7 @@ static subtilis_ir_section_t *prv_ir_prog_section_new(
 	case SUBTILIS_TYPE_VECTOR_STRING:
 	case SUBTILIS_TYPE_VECTOR_FN:
 	case SUBTILIS_TYPE_STRING:
+	case SUBTILIS_TYPE_FN:
 		s->ret_reg = s->reg_counter++;
 		break;
 	default:
