@@ -154,11 +154,17 @@ prv_call_ptr_parameters(subtilis_parser_t *p, subtilis_exp_t **args,
 		params[i].type.type = SUBTILIS_TYPE_VOID;
 
 	for (i = 0; i < num_args; i++) {
-		args[i] = subtilis_type_if_coerce_type(
-		    p, args[i], expected->params.fn.params[i], err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto on_error;
-		e = subtilis_type_if_exp_to_var(p, args[i], err);
+		if (args[i]->partial_name) {
+			subtilis_parser_call_add_addr(
+			    p, expected->params.fn.params[i], args[i], err);
+			e = args[i];
+		} else {
+			args[i] = subtilis_type_if_coerce_type(
+			    p, args[i], expected->params.fn.params[i], err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto on_error;
+			e = subtilis_type_if_exp_to_var(p, args[i], err);
+		}
 		args[i] = NULL;
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
@@ -1050,7 +1056,7 @@ static char *prv_initial_lambda_proc_fn_type(subtilis_parser_t *p,
 			    err, name, p->l->stream->name, p->l->line);
 			goto on_error;
 		}
-	} else if (strlen(name) != 1) {
+	} else if ((fn_type.type != SUBTILIS_TYPE_FN) && (strlen(name) != 1)) {
 		subtilis_error_set_bad_lambda_name(
 		    err, name, p->l->stream->name, p->l->line);
 		goto on_error;
@@ -1427,12 +1433,18 @@ subtilis_exp_t *subtilis_parser_call_ptr(subtilis_parser_t *p,
 static void prv_parse_param_type(subtilis_parser_t *p, subtilis_token_t *t,
 				 subtilis_type_t *ptype, subtilis_error_t *err)
 {
-	const char *tbuf;
 	subtilis_type_t type;
+	const char *tbuf = subtilis_token_get_text(t);
 
 	subtilis_type_init_copy(&type, &t->tok.id_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	if (type.type == SUBTILIS_TYPE_FN) {
+		subtilis_complete_custom_type(p, tbuf, &type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1459,6 +1471,7 @@ char *subtilis_parser_parse_call_type(subtilis_parser_t *p, subtilis_token_t *t,
 				      subtilis_error_t *err)
 {
 	const char *tbuf;
+	char *at;
 	subtilis_type_t *ret_type;
 	bool have_params;
 	subtilis_type_t *p_type = NULL;
@@ -1492,6 +1505,14 @@ char *subtilis_parser_parse_call_type(subtilis_parser_t *p, subtilis_token_t *t,
 	case SUBTILIS_TYPE_VECTOR_BYTE:
 	case SUBTILIS_TYPE_VECTOR_STRING:
 		name[strlen(name) - 1] = 0;
+		break;
+	case SUBTILIS_TYPE_FN:
+		at = strchr(name, '@');
+		if (!at) {
+			subtilis_error_set_assertion_failed(err);
+			goto on_error;
+		}
+		*at = 0;
 		break;
 	default:
 		break;

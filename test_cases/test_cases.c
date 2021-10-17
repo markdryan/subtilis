@@ -4670,7 +4670,61 @@ const subtilis_test_case_t test_cases[] = {
 	"   fn@PROCMaker(i% + 1)\n"
 	"endrange\n",
 	"array returned with 2 elements\none\ntwo\ntwo\nthree\nthree\nthree\n"
-	}
+	},
+	{"assign_fn_array",
+	"type PROCArgs(a%, b%)\n"
+	"dim a@PROCArgs(1)\n"
+	"a@PROCArgs() = !PROCOne\n"
+	"a@PROCArgs(1) = !PROCTwo\n"
+	"range v@PROCArgs := a@PROCArgs()\n"
+	"  v@PROCArgs(1,2)\n"
+	"endrange\n"
+	"dim vec@PROCArgs{1}\n"
+	"vec@PROCArgs{} = !PROCOne\n"
+	"vec@PROCArgs{1} = !PROCTwo\n"
+	"append(vec@PROCArgs{}, !PROCThree)\n"
+	"range v@PROCArgs := vec@PROCArgs{}\n"
+	"  v@PROCArgs(1,2)\n"
+	"endrange\n"
+	"def PROCOne(a%, b%) print \"one\" endproc\n"
+	"def PROCTwo(a%, b%) print \"two\" endproc\n"
+	"def PROCThree(a%, b%) print \"three\" endproc\n",
+	"one\ntwo\none\ntwo\nthree\n",
+	},
+	{"recursive_type",
+	"type PROC_dummy\n"
+	"type FNfn@PROC_dummy(a%)\n"
+	"\n"
+	"local a@FNfn\n"
+	"local n@PROC_dummy\n"
+	"\n"
+	"a@FNfn = def FN@PROC_dummy(a%) <- def PROC print \"dummy\" endproc\n"
+	"n@PROC_dummy = a@FNfn(10)\n"
+	"n@PROC_dummy()\n",
+	"dummy\n",
+	},
+	{"recursive_type2",
+	"type PROC_dummy(a%)\n"
+	"type PROChigher(a%, b@PROC_dummy, c@PROC_dummy)\n"
+	"\n"
+	"local a@PROChigher = def PROC(a%, b@PROC_dummy, c@PROC_dummy)\n"
+	"    b@PROC_dummy(a%)\n"
+	"    c@PROC_dummy(a%)\n"
+	"endproc\n"
+	"\n"
+	"local b@PROC_dummy = !PROCup\n"
+	"local c@PROC_dummy = !PROCdown\n"
+	"a@PROChigher(5, b@PROC_dummy, c@PROC_dummy)\n"
+	"a@PROChigher(5, !PROCup, !PROCdown)\n"
+	"\n"
+	"def PROCup(a%)\n"
+	"  for i% := 1 to a% print i% next\n"
+	"endproc\n"
+	"\n"
+	"def PROCdown(a%)\n"
+	"  for i% := a% to 1 step -1 print i% next\n"
+	"endproc\n",
+	"1\n2\n3\n4\n5\n5\n4\n3\n2\n1\n1\n2\n3\n4\n5\n5\n4\n3\n2\n1\n"},
 };
 
 /* clang-format on */

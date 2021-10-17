@@ -21,6 +21,7 @@
 #include "array_type.h"
 #include "builtins_helper.h"
 #include "expression.h"
+#include "parser_call.h"
 #include "reference_type.h"
 #include "type_if.h"
 
@@ -1346,7 +1347,10 @@ void subtilis_array_write(subtilis_parser_t *p, const char *var_name,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_type_if_coerce_type(p, e, el_type, err);
+	if (e->partial_name)
+		subtilis_parser_call_add_addr(p, el_type, e, err);
+	else
+		e = subtilis_type_if_coerce_type(p, e, el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1702,19 +1706,20 @@ void subtilis_array_append_scalar(subtilis_parser_t *p, subtilis_exp_t *a1,
 		goto free_as;
 	}
 
-	a2 = subtilis_type_if_exp_to_var(p, a2, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto free_as;
-
 	subtilis_type_if_element_type(p, &a1->type, &el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto free_as;
 
-	if (el_type.type != a2->type.type) {
-		subtilis_error_set_array_type_mismatch(err, p->l->stream->name,
-						       p->l->line);
-		goto cleanup;
+	if (a2->partial_name) {
+		subtilis_parser_call_add_addr(p, &el_type, a2, err);
+	} else {
+		a2 = subtilis_type_if_coerce_type(p, a2, &el_type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto free_as;
+		a2 = subtilis_type_if_exp_to_var(p, a2, err);
 	}
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto free_as;
 
 	op1.integer = subtilis_type_if_size(&el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)

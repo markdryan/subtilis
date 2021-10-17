@@ -1209,3 +1209,46 @@ size_t subtilis_type_if_destructor(const subtilis_type_t *type)
 
 	return fn(type);
 }
+
+void subtilis_type_compare_diag(subtilis_parser_t *p, const subtilis_type_t *t1,
+				const subtilis_type_t *t2,
+				subtilis_error_t *err)
+{
+	subtilis_error_t err1;
+	subtilis_buffer_t buf1;
+	subtilis_buffer_t buf2;
+
+	if (subtilis_type_eq(t1, t2))
+		return;
+
+	subtilis_error_init(&err1);
+	subtilis_buffer_init(&buf1, 64);
+	subtilis_buffer_init(&buf2, 64);
+	subtilis_full_type_name(t1, &buf1, &err1);
+	if (err1.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	subtilis_buffer_zero_terminate(&buf1, &err1);
+	if (err1.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	subtilis_full_type_name(t2, &buf2, &err1);
+	if (err1.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	subtilis_buffer_zero_terminate(&buf2, &err1);
+	if (err1.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_error_set_bad_conversion(
+	    err, subtilis_buffer_get_string(&buf1),
+	    subtilis_buffer_get_string(&buf2), p->l->stream->name, p->l->line);
+	subtilis_buffer_free(&buf2);
+	subtilis_buffer_free(&buf1);
+
+	return;
+
+cleanup:
+	subtilis_error_set_bad_conversion(err, subtilis_type_name(t1),
+					  subtilis_type_name(t2),
+					  p->l->stream->name, p->l->line);
+	subtilis_buffer_free(&buf2);
+	subtilis_buffer_free(&buf1);
+}
