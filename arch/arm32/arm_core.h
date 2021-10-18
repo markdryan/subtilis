@@ -136,6 +136,7 @@ typedef enum {
 	SUBTILIS_ARM_INSTR_B,
 	SUBTILIS_ARM_INSTR_SWI,
 	SUBTILIS_ARM_INSTR_LDRC,
+	SUBTILIS_ARM_INSTR_LDRP,
 	SUBTILIS_ARM_INSTR_CMOV,
 	SUBTILIS_ARM_INSTR_ADR,
 	SUBTILIS_ARM_INSTR_MSR,
@@ -401,10 +402,12 @@ struct subtilis_arm_br_instr_t_ {
 	subtilis_arm_ccode_type_t ccode;
 	bool link;
 	bool local;
+	bool indirect;
 	subtilis_arm_br_link_type_t link_type;
 	union {
 		size_t label;
 		int32_t offset;
+		size_t reg;
 	} target;
 };
 
@@ -435,6 +438,15 @@ struct subtilis_arm_adr_instr_t_ {
 };
 
 typedef struct subtilis_arm_adr_instr_t_ subtilis_arm_adr_instr_t;
+
+struct subtilis_arm_ldrp_instr_t_ {
+	subtilis_arm_ccode_type_t ccode;
+	subtilis_arm_reg_t dest;
+	size_t section_label;
+	size_t constant_label;
+};
+
+typedef struct subtilis_arm_ldrp_instr_t_ subtilis_arm_ldrp_instr_t;
 
 struct subtilis_arm_cmov_instr_t_ {
 	subtilis_arm_reg_t dest;
@@ -673,6 +685,7 @@ struct subtilis_arm_instr_t_ {
 		subtilis_arm_br_instr_t br;
 		subtilis_arm_swi_instr_t swi;
 		subtilis_arm_ldrc_instr_t ldrc;
+		subtilis_arm_ldrp_instr_t ldrp;
 		subtilis_arm_adr_instr_t adr;
 		subtilis_arm_cmov_instr_t cmov;
 		subtilis_arm_flags_instr_t flags;
@@ -1066,6 +1079,10 @@ size_t subtilis_add_explicit_ldr(subtilis_arm_section_t *s,
 				 subtilis_arm_ccode_type_t ccode,
 				 subtilis_arm_reg_t dest, int32_t op2,
 				 bool link_time, subtilis_error_t *err);
+void subtilis_add_ldrp(subtilis_arm_section_t *s,
+		       subtilis_arm_ccode_type_t ccode, subtilis_arm_reg_t dest,
+		       size_t section_label, size_t constant_label,
+		       subtilis_error_t *err);
 void subtilis_add_adr(subtilis_arm_section_t *s,
 		      subtilis_arm_ccode_type_t ccode, subtilis_arm_reg_t dest,
 		      size_t label, subtilis_error_t *err);

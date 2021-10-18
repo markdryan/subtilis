@@ -544,6 +544,67 @@ static int prv_compare_keyword(const void *a, const void *b)
 	return strcmp(kw1->str, kw2->str);
 }
 
+static void prv_complete_custom_type(subtilis_lexer_t *l, subtilis_token_t *t,
+				     subtilis_error_t *err)
+{
+	char ch;
+	char prefix[5];
+	size_t i = 0;
+	const char *tbuf;
+
+	for (;;) {
+		prv_ensure_input(l, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		if (l->index == l->buf_end)
+			break;
+
+		ch = l->buffer[l->index];
+		if (!((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+		      (ch >= '0' && ch <= '9') || (ch == '_')))
+			break;
+		prv_set_next_with_err(l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (i < 4)
+			prefix[i] = ch;
+		i++;
+	}
+
+	tbuf = subtilis_token_get_text(t);
+	if (i < 2) {
+		subtilis_error_set_bad_type_name(err, tbuf, l->stream->name,
+						 l->line);
+		return;
+	}
+	if (i > 4)
+		i = 4;
+	prefix[i] = 0;
+	if (strncmp(prefix, "FN", 2) && strncmp(prefix, "PROC", 4)) {
+		subtilis_error_set_bad_type_name(err, tbuf, l->stream->name,
+						 l->line);
+		return;
+	}
+
+	/*
+	 * The lexer doesn't know the complete type of the token as this
+	 * information is stored in the symbol table to which it doesn't have
+	 * access.  It does know however, that we have a custom type and the
+	 * type is either a function or a procedure.
+	 */
+
+	t->tok.id_type.type = SUBTILIS_TYPE_FN;
+	t->tok.id_type.params.fn.num_params = 0;
+	t->tok.id_type.params.fn.ret_val =
+	    calloc(1, sizeof(*t->tok.id_type.params.fn.ret_val));
+	if (!t->tok.id_type.params.fn.ret_val) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+	t->tok.id_type.params.fn.ret_val->type = SUBTILIS_TYPE_VOID;
+}
+
 static void prv_validate_identifier(subtilis_lexer_t *l, subtilis_token_t *t,
 				    char ch, subtilis_error_t *err)
 {
@@ -582,18 +643,30 @@ static void prv_validate_identifier(subtilis_lexer_t *l, subtilis_token_t *t,
 			prv_set_next_with_err(l, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
+		} else if (ch == '@') {
+			prv_set_next_with_err(l, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			prv_complete_custom_type(l, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
 		} else {
 			t->tok.id_type.type = SUBTILIS_TYPE_REAL;
 		}
 	} else {
-		if (ch == '$')
+		if (ch == '$') {
 			t->tok.id_type.type = SUBTILIS_TYPE_STRING;
-		else if (ch == '%')
+		} else if (ch == '%') {
 			t->tok.id_type.type = SUBTILIS_TYPE_INTEGER;
-		else if (ch == '&')
+		} else if (ch == '&') {
 			t->tok.id_type.type = SUBTILIS_TYPE_BYTE;
-		else
+		} else if (ch == '@') {
+			prv_complete_custom_type(l, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		} else {
 			t->tok.id_type.type = SUBTILIS_TYPE_REAL;
+		}
 	}
 
 	prv_check_token_buffer(l, t, err, SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
@@ -685,7 +758,7 @@ static bool prv_process_keyword(subtilis_lexer_t *l, char ch,
 			prv_set_next_with_err(l, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return false;
-		} else if (ch == '%' || ch == '&') {
+		} else if (ch == '%' || ch == '&' || ch == '@') {
 			prv_set_next_with_err(l, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return false;
@@ -712,7 +785,7 @@ static bool prv_process_keyword(subtilis_lexer_t *l, char ch,
 		possible_fn = strncmp(tbuf, "FN", 2) == 0;
 		if (possible_proc || possible_fn) {
 			subtilis_buffer_remove_terminator(&t->buf);
-			if (ch != '$' && ch != '%' && ch != '&')
+			if (ch != '$' && ch != '%' && ch != '&' && ch != '@')
 				ch = 0;
 			prv_process_call(l, t, possible_proc, ch, err);
 			return false;
@@ -742,7 +815,7 @@ static bool prv_process_keyword(subtilis_lexer_t *l, char ch,
 	subtilis_buffer_remove_terminator(&t->buf);
 	if (possible_id) {
 		t->type = SUBTILIS_TOKEN_IDENTIFIER;
-		if (ch != '$' && ch != '%' && ch != '&')
+		if (ch != '$' && ch != '%' && ch != '&' && ch != '@')
 			ch = 0;
 		prv_validate_identifier(l, t, ch, err);
 		return false;
@@ -903,6 +976,8 @@ void subtilis_token_claim(subtilis_token_t *dest, subtilis_token_t *src)
 {
 	subtilis_buffer_free(&dest->buf);
 	*dest = *src;
+	if (src->tok.id_type.type == SUBTILIS_TYPE_FN)
+		src->tok.id_type.params.fn.ret_val = NULL;
 	subtilis_buffer_init(&src->buf, 1);
 }
 
@@ -933,12 +1008,17 @@ void subtilis_token_delete(subtilis_token_t *t)
 	if (!t)
 		return;
 
+	if (t->tok.id_type.type == SUBTILIS_TYPE_FN)
+		free(t->tok.id_type.params.fn.ret_val);
+
 	subtilis_buffer_free(&t->buf);
 	free(t);
 }
 
 static void prv_reinit_token(subtilis_token_t *t)
 {
+	if (t->tok.id_type.type == SUBTILIS_TYPE_FN)
+		free(t->tok.id_type.params.fn.ret_val);
 	t->type = SUBTILIS_TOKEN_EOF;
 	memset(&t->tok, 0, sizeof(t->tok));
 	subtilis_buffer_reset(&t->buf);

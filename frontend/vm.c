@@ -288,7 +288,7 @@ static void prv_generate_error(subitlis_vm_t *vm, int32_t code)
 	int32_t base = vm->regs[SUBTILIS_IR_REG_GLOBAL];
 
 	vm->memory[base + vm->s->eflag_offset] = -1;
-	*((int32_t *)&vm->memory[base + vm->s->error_offset]) = code;
+	memcpy(&vm->memory[base + vm->s->error_offset], &code, sizeof(code));
 }
 
 static void prv_divi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
@@ -700,8 +700,10 @@ static void prv_memseti32(subitlis_vm_t *vm, subtilis_ir_call_t *call,
 		return;
 	}
 
-	for (i = 0; i < size; i += 4)
-		*ptr++ = vm->regs[call->args[2].reg];
+	for (i = 0; i < size; i += 4) {
+		memcpy(ptr, &vm->regs[call->args[2].reg], sizeof(*ptr));
+		ptr++;
+	}
 }
 
 static void prv_memset(subitlis_vm_t *vm, subtilis_ir_call_t *call,
@@ -724,8 +726,10 @@ static void prv_memset64(subitlis_vm_t *vm, subtilis_ir_call_t *call,
 	}
 
 	for (i = 0; i < size; i += 8) {
-		*ptr++ = vm->regs[call->args[2].reg];
-		*ptr++ = vm->regs[call->args[3].reg];
+		memcpy(ptr, &vm->regs[call->args[2].reg], sizeof(*ptr));
+		ptr++;
+		memcpy(ptr, &vm->regs[call->args[3].reg], sizeof(*ptr));
+		ptr++;
 	}
 }
 
@@ -790,13 +794,13 @@ static void prv_handle_builtin(subitlis_vm_t *vm, subtilis_builtin_type_t ftype,
 
 static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		     const subtilis_type_t *call_type, subtilis_ir_call_t *call,
-		     subtilis_error_t *err)
+		     size_t section_index, subtilis_error_t *err)
 {
+	int32_t num;
 	subtilis_ir_section_t *s;
 	int32_t *new_regs;
 	double *new_fregs;
 	size_t space_needed;
-	size_t section_index = call->proc_id;
 
 	if (section_index >= vm->p->num_sections) {
 		subtilis_error_set_assertion_failed(err);
@@ -852,12 +856,15 @@ static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	       vm->s->freg_counter * sizeof(*vm->fregs));
 	vm->top += vm->s->freg_counter * sizeof(*vm->fregs);
 
-	*((int32_t *)&vm->memory[vm->top]) = vm->pc;
+	num = (int32_t)vm->pc;
+	memcpy(&vm->memory[vm->top], &num, sizeof(num));
 	vm->top += 4;
-	*((int32_t *)&vm->memory[vm->top]) = vm->current_index;
+	num = (int32_t)vm->current_index;
+	memcpy(&vm->memory[vm->top], &num, sizeof(num));
 	vm->top += 4;
 	if (call_type->type != SUBTILIS_TYPE_VOID) {
-		*((int32_t *)&vm->memory[vm->top]) = call->reg;
+		num = (int32_t)call->reg;
+		memcpy(&vm->memory[vm->top], &num, sizeof(num));
 		vm->top += 4;
 	}
 	prv_set_args(vm, call, err);
@@ -878,6 +885,20 @@ static void prv_call(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	prv_compute_labels(vm, err);
 }
 
+static void prv_call_direct(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			    const subtilis_type_t *call_type,
+			    subtilis_ir_call_t *call, subtilis_error_t *err)
+{
+	prv_call(vm, b, call_type, call, call->proc_id, err);
+}
+
+static void prv_call_indirect(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			      const subtilis_type_t *call_type,
+			      subtilis_ir_call_t *call, subtilis_error_t *err)
+{
+	prv_call(vm, b, call_type, call, vm->regs[call->proc_id], err);
+}
+
 static size_t prv_ret_gen(subitlis_vm_t *vm, const subtilis_type_t *call_type,
 			  subtilis_buffer_t *b, subtilis_ir_operand_t *ops,
 			  subtilis_error_t *err)
@@ -885,6 +906,7 @@ static size_t prv_ret_gen(subitlis_vm_t *vm, const subtilis_type_t *call_type,
 	size_t caller_index;
 	subtilis_ir_section_t *cs;
 	size_t to_pop;
+	int32_t num;
 	size_t reg = SUBTILIS_IR_REG_UNDEFINED;
 
 	to_pop = vm->s->locals + sizeof(*vm->regs);
@@ -898,11 +920,13 @@ static size_t prv_ret_gen(subitlis_vm_t *vm, const subtilis_type_t *call_type,
 
 	vm->top -= vm->s->locals + sizeof(*vm->regs);
 	if (call_type->type != SUBTILIS_TYPE_VOID) {
-		reg = *((int32_t *)&vm->memory[vm->top]);
+		memcpy(&num, &vm->memory[vm->top], sizeof(num));
+		reg = (size_t)num;
 		vm->top -= sizeof(*vm->regs);
 	}
 
-	caller_index = *((int32_t *)&vm->memory[vm->top]);
+	memcpy(&num, &vm->memory[vm->top], sizeof(num));
+	caller_index = (size_t)num;
 	if (caller_index >= vm->p->num_sections) {
 		subtilis_error_set_assertion_failed(err);
 		return reg;
@@ -918,7 +942,8 @@ static size_t prv_ret_gen(subitlis_vm_t *vm, const subtilis_type_t *call_type,
 	}
 	vm->s = cs;
 	vm->top -= sizeof(*vm->regs);
-	vm->pc = *((int32_t *)&vm->memory[vm->top]);
+	memcpy(&num, &vm->memory[vm->top], sizeof(num));
+	vm->pc = (size_t)num;
 	vm->current_index = caller_index;
 
 	vm->top -= vm->s->freg_counter * sizeof(*vm->fregs);
@@ -1293,6 +1318,7 @@ static void prv_check_heap(subitlis_vm_t *vm, subtilis_error_t *err)
 static void prv_alloc(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		      subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
+	size_t num;
 	subtilis_vm_heap_free_block_t *block;
 	size_t to_alloc = vm->regs[ops[1].reg] + sizeof(size_t);
 	int32_t base = vm->regs[SUBTILIS_IR_REG_GLOBAL];
@@ -1308,7 +1334,8 @@ static void prv_alloc(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		return;
 	}
 
-	*((size_t *)&vm->memory[block->start]) = 1;
+	num = 1;
+	memcpy(&vm->memory[block->start], &num, sizeof(num));
 	vm->regs[ops[0].reg] = block->start + sizeof(size_t);
 }
 
@@ -1316,7 +1343,7 @@ static void prv_deref(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		      subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	subtilis_vm_heap_free_block_t *block;
-	size_t *count;
+	size_t count;
 	size_t start = vm->regs[ops[0].reg] - sizeof(size_t);
 
 	block = subtilis_vm_heap_find_block(&vm->heap, start);
@@ -1325,14 +1352,15 @@ static void prv_deref(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		return;
 	}
 
-	count = (size_t *)&vm->memory[block->start];
-	if (*count == 0) {
+	memcpy(&count, &vm->memory[block->start], sizeof(count));
+	if (count == 0) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
-	if (*count > 1) {
-		*count = *count - 1;
+	if (count > 1) {
+		count = count - 1;
+		memcpy(&vm->memory[block->start], &count, sizeof(count));
 		return;
 	}
 
@@ -1371,7 +1399,7 @@ static void prv_ref(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		    subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	subtilis_vm_heap_free_block_t *block;
-	size_t *ptr;
+	size_t ptr;
 	size_t start = vm->regs[ops[0].reg] - sizeof(size_t);
 
 	block = subtilis_vm_heap_find_block(&vm->heap, start);
@@ -1379,15 +1407,16 @@ static void prv_ref(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-	ptr = (size_t *)&vm->memory[block->start];
-	*ptr = *ptr + 1;
+	memcpy(&ptr, &vm->memory[block->start], sizeof(ptr));
+	ptr++;
+	memcpy(&vm->memory[block->start], &ptr, sizeof(ptr));
 }
 
 static void prv_getref(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		       subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
 	subtilis_vm_heap_free_block_t *block;
-	size_t *count;
+	size_t count;
 	size_t start = vm->regs[ops[1].reg] - sizeof(size_t);
 
 	block = subtilis_vm_heap_find_block(&vm->heap, start);
@@ -1396,25 +1425,23 @@ static void prv_getref(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		return;
 	}
 
-	count = (size_t *)&vm->memory[block->start];
-	if (*count == 0) {
+	memcpy(&count, &vm->memory[block->start], sizeof(count));
+	if (count == 0) {
 		subtilis_error_set_assertion_failed(err);
 		return;
 	}
-	vm->regs[ops[0].reg] = (int32_t)*count;
+	vm->regs[ops[0].reg] = (int32_t)count;
 }
 
 static void prv_pushi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 			subtilis_ir_operand_t *ops, subtilis_error_t *err)
 {
-	int32_t *ptr;
-
 	prv_reserve_stack(vm, 4, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	ptr = (int32_t *)&vm->memory[vm->top];
-	*ptr = vm->regs[ops[0].reg];
+	memcpy(&vm->memory[vm->top], &vm->regs[ops[0].reg],
+	       sizeof(vm->regs[ops[0].reg]));
 	vm->top += 4;
 }
 
@@ -1425,7 +1452,7 @@ static void prv_popi32(subitlis_vm_t *vm, subtilis_buffer_t *b,
 
 	vm->top -= 4;
 	ptr = (int32_t *)&vm->memory[vm->top];
-	vm->regs[ops[0].reg] = *ptr;
+	memcpy(&vm->regs[ops[0].reg], ptr, sizeof(*ptr));
 }
 
 static void prv_lca(subitlis_vm_t *vm, subtilis_buffer_t *b,
@@ -1752,6 +1779,12 @@ static void prv_oscli(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		prv_generate_error(vm, (int32_t)err_code);
 }
 
+static void prv_getprocaddr(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			    subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = ops[1].label;
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                        /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1909,6 +1942,7 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_movi8tofp,                     /* SUBTILIS_OP_INSTR_MOV_I8_FP */
 	prv_movfpi32i32,                   /* SUBTILIS_OP_INSTR_MOV_FP_I32_I32*/
 	prv_oscli,			   /* SUBTILIS_OP_INSTR_OSCLI */
+	prv_getprocaddr,		   /* SUBTILIS_OP_INSTR_GET_PROC_ADDR */
 };
 
 /* clang-format on */
@@ -1924,14 +1958,25 @@ void subitlis_vm_run(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		if (!vm->s->ops[vm->pc])
 			continue;
 		if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_CALL) {
-			prv_call(vm, b, &subtilis_type_void,
-				 &vm->s->ops[vm->pc]->op.call, err);
+			prv_call_direct(vm, b, &subtilis_type_void,
+					&vm->s->ops[vm->pc]->op.call, err);
 		} else if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_CALLI32) {
-			prv_call(vm, b, &subtilis_type_integer,
-				 &vm->s->ops[vm->pc]->op.call, err);
+			prv_call_direct(vm, b, &subtilis_type_integer,
+					&vm->s->ops[vm->pc]->op.call, err);
 		} else if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_CALLREAL) {
-			prv_call(vm, b, &subtilis_type_real,
-				 &vm->s->ops[vm->pc]->op.call, err);
+			prv_call_direct(vm, b, &subtilis_type_real,
+					&vm->s->ops[vm->pc]->op.call, err);
+		} else if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_CALL_PTR) {
+			prv_call_indirect(vm, b, &subtilis_type_void,
+					  &vm->s->ops[vm->pc]->op.call, err);
+		} else if (vm->s->ops[vm->pc]->type ==
+			   SUBTILIS_OP_CALLI32_PTR) {
+			prv_call_indirect(vm, b, &subtilis_type_integer,
+					  &vm->s->ops[vm->pc]->op.call, err);
+		} else if (vm->s->ops[vm->pc]->type ==
+			   SUBTILIS_OP_CALLREAL_PTR) {
+			prv_call_indirect(vm, b, &subtilis_type_real,
+					  &vm->s->ops[vm->pc]->op.call, err);
 		} else if (vm->s->ops[vm->pc]->type == SUBTILIS_OP_SYS_CALL) {
 			prv_sys_call(vm, b, &vm->s->ops[vm->pc]->op.sys_call,
 				     err);

@@ -167,6 +167,11 @@ static void prv_dist_br_instr(void *user_data, subtilis_arm_op_t *op,
 {
 	subtilis_dist_data_t *ud = user_data;
 
+	if ((instr->indirect) && (instr->target.reg == ud->reg_num)) {
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
 	if ((instr->link_type == SUBTILIS_ARM_BR_LINK_INT) &&
 	    (ud->reg_num == 0)) {
 		ud->last_used = -1;
@@ -220,6 +225,22 @@ static void prv_dist_adr_instr(void *user_data, subtilis_arm_op_t *op,
 			       subtilis_arm_instr_type_t type,
 			       subtilis_arm_adr_instr_t *instr,
 			       subtilis_error_t *err)
+{
+	subtilis_dist_data_t *ud = user_data;
+
+	if (instr->dest == ud->reg_num) {
+		ud->last_used = -1;
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
+	ud->last_used++;
+}
+
+static void prv_dist_ldrp_instr(void *user_data, subtilis_arm_op_t *op,
+				subtilis_arm_instr_type_t type,
+				subtilis_arm_ldrp_instr_t *instr,
+				subtilis_error_t *err)
 {
 	subtilis_dist_data_t *ud = user_data;
 
@@ -596,6 +617,8 @@ void subtilis_init_int_dist_walker(subtlis_arm_walker_t *walker,
 	walker->br_fn = prv_dist_br_instr;
 	walker->swi_fn = prv_dist_swi_instr;
 	walker->ldrc_fn = prv_dist_ldrc_instr;
+	walker->ldrp_fn = prv_dist_ldrp_instr;
+	walker->adr_fn = prv_dist_adr_instr;
 	walker->cmov_fn = prv_dist_cmov_instr;
 	walker->flags_fn = prv_dist_flags_instr;
 	walker->fpa_data_monadic_fn = prv_dist_fpa_data_monadic_instr;
@@ -687,6 +710,23 @@ static void prv_used_stran_instr(void *user_data, subtilis_arm_op_t *op,
 			subtilis_error_set_walker_failed(err);
 			return;
 		}
+	}
+
+	ud->last_used++;
+}
+
+static void prv_used_br_instr(void *user_data, subtilis_arm_op_t *op,
+			      subtilis_arm_instr_type_t type,
+			      subtilis_arm_br_instr_t *instr,
+			      subtilis_error_t *err)
+{
+	subtilis_dist_data_t *ud = user_data;
+
+	if ((instr->link_type == SUBTILIS_ARM_BR_LINK_INT) &&
+	    (ud->reg_num == 0)) {
+		ud->last_used = -1;
+		subtilis_error_set_walker_failed(err);
+		return;
 	}
 
 	ud->last_used++;
@@ -851,9 +891,10 @@ void subtilis_init_int_used_walker(subtlis_arm_walker_t *walker,
 	walker->mov_fn = prv_used_mov_instr;
 	walker->stran_fn = prv_used_stran_instr;
 	walker->mtran_fn = prv_dist_mtran_instr;
-	walker->br_fn = prv_dist_br_instr;
+	walker->br_fn = prv_used_br_instr;
 	walker->swi_fn = prv_used_swi_instr;
 	walker->ldrc_fn = prv_dist_ldrc_instr;
+	walker->ldrp_fn = prv_dist_ldrp_instr;
 	walker->adr_fn = prv_dist_adr_instr;
 	walker->cmov_fn = prv_used_cmov_instr;
 	walker->flags_fn = prv_used_flags_instr;

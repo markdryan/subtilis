@@ -26,7 +26,8 @@
 #include "type_if.h"
 
 static void prv_local_array_ref(subtilis_parser_t *p, subtilis_token_t *t,
-				const char *var_name, subtilis_type_t *type,
+				const char *var_name,
+				const subtilis_type_t *type,
 				subtilis_error_t *err)
 {
 	const char *tbuf;
@@ -66,10 +67,12 @@ static void prv_local_array_ref(subtilis_parser_t *p, subtilis_token_t *t,
 
 	subtilis_parser_create_array_ref(p, var_name, &array_type, e, true,
 					 err);
+	subtilis_type_free(&array_type);
 }
 
 static void prv_local_vector_ref(subtilis_parser_t *p, subtilis_token_t *t,
-				 const char *var_name, subtilis_type_t *type,
+				 const char *var_name,
+				 const subtilis_type_t *type,
 				 subtilis_error_t *err)
 {
 	const char *tbuf;
@@ -111,6 +114,7 @@ static void prv_local_vector_ref(subtilis_parser_t *p, subtilis_token_t *t,
 
 	subtilis_parser_create_array_ref(p, var_name, &vector_type, e, true,
 					 err);
+	subtilis_type_free(&vector_type);
 }
 
 void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
@@ -159,7 +163,11 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 	strcpy(var_name, tbuf);
-	type = t->tok.id_type;
+	subtilis_type_init_copy(&type, &t->tok.id_type, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		free(var_name);
+		return;
+	}
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -168,12 +176,14 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 	tbuf = subtilis_token_get_text(t);
 	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "(")) {
 		prv_local_array_ref(p, t, var_name, &type, err);
+		subtilis_type_free(&type);
 		free(var_name);
 		return;
 	}
 
 	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "{")) {
 		prv_local_vector_ref(p, t, var_name, &type, err);
+		subtilis_type_free(&type);
 		free(var_name);
 		return;
 	}
@@ -193,7 +203,14 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 		}
 		(void)subtilis_symbol_table_insert_reg(
 		    p->local_st, var_name, &type, e->exp.ir_op.reg, err);
-	} else {
+	} else if (type.type == SUBTILIS_TYPE_FN) {
+		if (!value_present)
+			subtilis_parser_zero_local_fn(p, t, var_name, &type,
+						      err);
+		else
+			subtilis_parser_assign_local_fn(p, t, var_name, &type,
+							err);
+	} else if (subtilis_type_if_is_reference(&type)) {
 		s = subtilis_symbol_table_insert(p->local_st, var_name, &type,
 						 err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -210,10 +227,13 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 			    p, &type, SUBTILIS_IR_REG_LOCAL, s->loc, e, err);
 			e = NULL;
 		}
+	} else {
+		subtilis_error_set_assertion_failed(err);
 	}
 
 cleanup:
 
+	subtilis_type_free(&type);
 	subtilis_exp_delete(e);
 	free(var_name);
 }

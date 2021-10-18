@@ -44,6 +44,27 @@ static void prv_add_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 	p->calls[p->num_calls++] = call;
 }
 
+void subtilis_exp_add_call_addrs(subtilis_parser_t *p,
+				 subtilis_parser_call_addr_t *call_addr,
+				 subtilis_error_t *err)
+{
+	subtilis_parser_call_addr_t **new_call_addrs;
+	size_t new_max;
+
+	if (p->num_call_addrs == p->max_call_addrs) {
+		new_max = p->max_call_addrs + SUBTILIS_CONFIG_PROC_GRAN;
+		new_call_addrs =
+		    realloc(p->call_addrs, new_max * sizeof(*new_call_addrs));
+		if (!new_call_addrs) {
+			subtilis_error_set_oom(err);
+			return;
+		}
+		p->call_addrs = new_call_addrs;
+		p->max_call_addrs = new_max;
+	}
+	p->call_addrs[p->num_call_addrs++] = call_addr;
+}
+
 static void prv_add_builtin(subtilis_parser_t *p, char *name,
 			    subtilis_builtin_type_t ftype,
 			    subtilis_error_t *err)
@@ -56,7 +77,7 @@ static void prv_add_builtin(subtilis_parser_t *p, char *name,
 
 	(void)subtilis_ir_prog_section_new(p->prog, name, 0, ts, ftype,
 					   "builtin", 0, p->eflag_offset,
-					   p->error_offset, err);
+					   p->error_offset, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
 			goto on_error;
@@ -207,6 +228,25 @@ on_error:
 	return 0;
 }
 
+static void prv_tmp_ref_return(subtilis_parser_t *p,
+			       const subtilis_type_t *fn_type,
+			       subtilis_exp_t *e, subtilis_error_t *err)
+{
+	size_t reg;
+	char *tmp_name = NULL;
+
+	if (fn_type->type != SUBTILIS_TYPE_VOID &&
+	    fn_type->type != SUBTILIS_TYPE_FN &&
+	    !subtilis_type_if_is_numeric(fn_type)) {
+		reg = prv_create_tmp_ref(p, e->exp.ir_op.reg, fn_type,
+					 &tmp_name, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		e->exp.ir_op.reg = reg;
+		e->temporary = tmp_name;
+	}
+}
+
 /*
  * Takes ownership of name and args and stype. stype may be NULL if we're
  * calling a builtin function that's actually used to implement an operator
@@ -223,11 +263,9 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 				      size_t num_params, bool check_error,
 				      subtilis_error_t *err)
 {
-	size_t reg;
 	size_t call_site;
 	subtilis_exp_t *e = NULL;
 	subtilis_parser_call_t *call = NULL;
-	char *tmp_name = NULL;
 
 	if (fn_type->type == SUBTILIS_TYPE_VOID)
 		subtilis_ir_section_add_call(p->current, num_params, args, err);
@@ -262,15 +300,9 @@ subtilis_exp_t *subtilis_exp_add_call(subtilis_parser_t *p, char *name,
 			goto on_error;
 	}
 
-	if (fn_type->type != SUBTILIS_TYPE_VOID &&
-	    !subtilis_type_if_is_numeric(fn_type)) {
-		reg = prv_create_tmp_ref(p, e->exp.ir_op.reg, fn_type,
-					 &tmp_name, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto on_error;
-		e->exp.ir_op.reg = reg;
-		e->temporary = tmp_name;
-	}
+	prv_tmp_ref_return(p, fn_type, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
 
 	if (ftype != SUBTILIS_BUILTINS_MAX) {
 		prv_add_builtin(p, name, ftype, err);
@@ -303,17 +335,71 @@ on_error:
 	return NULL;
 }
 
+/*
+ * Takes ownership of args
+ */
+
+subtilis_exp_t *subtilis_exp_add_call_ptr(subtilis_parser_t *p,
+					  subtilis_ir_arg_t *args,
+					  const subtilis_type_t *fn_type,
+					  size_t ptr, size_t num_params,
+					  subtilis_error_t *err)
+{
+	size_t call_site;
+	subtilis_exp_t *e = NULL;
+
+	if (fn_type->type == SUBTILIS_TYPE_VOID)
+		subtilis_ir_section_add_call_ptr(p->current, num_params, args,
+						 ptr, err);
+	else
+		e = subtilis_type_if_call_ptr(p, fn_type, args, num_params, ptr,
+					      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+	args = NULL;
+
+	/* For calls made inside handlers we will add the offset from the start
+	 * of the handler section and fix it up later on when checking the
+	 * calls.
+	 */
+
+	call_site = p->current->in_error_handler ? p->current->error_len
+						 : p->current->len;
+	call_site--;
+
+	subtilis_exp_handle_errors(p, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	prv_tmp_ref_return(p, fn_type, e, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	return e;
+
+on_error:
+
+	subtilis_exp_delete(e);
+	free(args);
+
+	return NULL;
+}
+
 subtilis_exp_t *subtilis_exp_new_empty(const subtilis_type_t *type,
 				       subtilis_error_t *err)
 {
-	subtilis_exp_t *e = malloc(sizeof(*e));
+	subtilis_exp_t *e = calloc(1, sizeof(*e));
 
 	if (!e) {
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
-	e->type = *type;
-	e->temporary = NULL;
+
+	subtilis_type_init_copy(&e->type, type, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		free(e);
+		return NULL;
+	}
 
 	return e;
 }
@@ -352,14 +438,19 @@ subtilis_exp_t *subtilis_exp_new_var_block(subtilis_parser_t *p,
 {
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
-	subtilis_exp_t *e = malloc(sizeof(*e));
+	subtilis_exp_t *e = calloc(1, sizeof(*e));
 
 	if (!e) {
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
-	e->type = *type;
-	e->temporary = NULL;
+
+	subtilis_type_init_copy(&e->type, type, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		free(e);
+		return NULL;
+	}
+
 	op0.reg = mem_reg;
 	op1.integer = offset;
 	e->exp.ir_op.reg = subtilis_ir_section_add_instr(
@@ -396,7 +487,7 @@ subtilis_exp_t *subtilis_exp_new_real_var(unsigned int reg,
 
 subtilis_exp_t *subtilis_exp_new_int32(int32_t integer, subtilis_error_t *err)
 {
-	subtilis_exp_t *e = malloc(sizeof(*e));
+	subtilis_exp_t *e = calloc(1, sizeof(*e));
 
 	if (!e) {
 		subtilis_error_set_oom(err);
@@ -404,14 +495,13 @@ subtilis_exp_t *subtilis_exp_new_int32(int32_t integer, subtilis_error_t *err)
 	}
 	e->type.type = SUBTILIS_TYPE_CONST_INTEGER;
 	e->exp.ir_op.integer = integer;
-	e->temporary = NULL;
 
 	return e;
 }
 
 subtilis_exp_t *subtilis_exp_new_real(double real, subtilis_error_t *err)
 {
-	subtilis_exp_t *e = malloc(sizeof(*e));
+	subtilis_exp_t *e = calloc(1, sizeof(*e));
 
 	if (!e) {
 		subtilis_error_set_oom(err);
@@ -419,7 +509,6 @@ subtilis_exp_t *subtilis_exp_new_real(double real, subtilis_error_t *err)
 	}
 	e->type.type = SUBTILIS_TYPE_CONST_REAL;
 	e->exp.ir_op.real = real;
-	e->temporary = NULL;
 
 	return e;
 }
@@ -427,20 +516,73 @@ subtilis_exp_t *subtilis_exp_new_real(double real, subtilis_error_t *err)
 subtilis_exp_t *subtilis_exp_new_str(subtilis_buffer_t *str,
 				     subtilis_error_t *err)
 {
-	subtilis_exp_t *e = malloc(sizeof(*e));
+	subtilis_exp_t *e = calloc(1, sizeof(*e));
 
 	if (!e) {
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
 	e->type.type = SUBTILIS_TYPE_CONST_STRING;
-	e->temporary = NULL;
 	subtilis_buffer_init(&e->exp.str, str->granularity);
 	if (subtilis_buffer_get_size(str) > 0)
 		subtilis_buffer_append(&e->exp.str, str->buffer->data,
 				       subtilis_buffer_get_size(str), err);
 
 	return e;
+}
+
+subtilis_exp_t *subtilis_exp_new_fn(size_t call_index, const subtilis_type_t *t,
+				    subtilis_error_t *err)
+{
+	subtilis_exp_t *e = calloc(1, sizeof(*e));
+
+	if (!e) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+	e->exp.ir_op.reg = call_index;
+	subtilis_type_init_copy(&e->type, t, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return e;
+}
+
+subtilis_exp_t *subtilis_exp_new_partial_fn(size_t call_index, const char *name,
+					    size_t call_site,
+					    subtilis_error_t *err)
+{
+	subtilis_exp_t *e = calloc(1, sizeof(*e));
+
+	if (!e) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+	e->exp.ir_op.reg = call_index;
+	e->type.type = SUBTILIS_TYPE_FN;
+	e->type.params.fn.num_params = 0;
+	e->type.params.fn.ret_val = malloc(sizeof(*e->type.params.fn.ret_val));
+	if (!e->type.params.fn.ret_val) {
+		subtilis_error_set_oom(err);
+		goto cleanup;
+	}
+	e->type.params.fn.ret_val->type = SUBTILIS_TYPE_VOID;
+	e->partial_name = malloc(strlen(name) + 1);
+	if (!e->partial_name) {
+		subtilis_error_set_oom(err);
+		goto cleanup;
+	}
+	strcpy(e->partial_name, name);
+	e->call_site = call_site;
+
+	return e;
+
+cleanup:
+
+	subtilis_exp_delete(e);
+	return NULL;
 }
 
 subtilis_exp_t *subtilis_exp_add(subtilis_parser_t *p, subtilis_exp_t *a1,
@@ -479,6 +621,8 @@ void subtilis_exp_delete(subtilis_exp_t *e)
 		return;
 	if (e->type.type == SUBTILIS_TYPE_CONST_STRING)
 		subtilis_buffer_free(&e->exp.str);
+	subtilis_type_free(&e->type);
+	free(e->partial_name);
 	free(e->temporary);
 	free(e);
 }

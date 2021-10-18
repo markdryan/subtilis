@@ -51,7 +51,7 @@ void subtilis_collection_copy_scalar(subtilis_parser_t *p, subtilis_exp_t *obj1,
 		op1.integer = buf_size;
 		size2.reg = subtilis_ir_section_add_instr2(
 		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
-	} else if (subtilis_type_if_is_scalar_ref(&obj2->type)) {
+	} else if (subtilis_type_if_is_scalar_ref(&obj2->type, err)) {
 		size2.reg = subtilis_reference_type_get_size(
 		    p, obj2->exp.ir_op.reg, 0, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -60,10 +60,12 @@ void subtilis_collection_copy_scalar(subtilis_parser_t *p, subtilis_exp_t *obj1,
 		ptr2 =
 		    subtilis_reference_get_data(p, obj2->exp.ir_op.reg, 0, err);
 	} else {
-		subtilis_error_set_expected(
-		    err, "string, constant string or array of numeric types",
-		    subtilis_type_name(&obj2->type), p->l->stream->name,
-		    p->l->line);
+		if (err->type == SUBTILIS_ERROR_OK)
+			subtilis_error_set_expected(
+			    err,
+			    "string, constant string or array of numeric types",
+			    subtilis_type_name(&obj2->type), p->l->stream->name,
+			    p->l->line);
 		goto cleanup;
 	}
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -135,7 +137,7 @@ void subtilis_collection_copy_ref(subtilis_parser_t *p, subtilis_exp_t *obj1,
 	if (obj1->type.type != obj2->type.type) {
 		subtilis_error_set_array_type_mismatch(err, p->l->stream->name,
 						       p->l->line);
-		goto cleanup;
+		goto free_objs;
 	}
 
 	subtilis_type_if_element_type(p, &obj1->type, &el_type, err);
@@ -189,7 +191,9 @@ void subtilis_collection_copy_ref(subtilis_parser_t *p, subtilis_exp_t *obj1,
 	subtilis_ir_section_add_label(p->current, skip_label.label, err);
 
 cleanup:
+	subtilis_type_free(&el_type);
 
+free_objs:
 	subtilis_exp_delete(obj2);
 	subtilis_exp_delete(obj1);
 }

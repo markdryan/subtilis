@@ -34,6 +34,7 @@ static subtilis_exp_t *prv_exp_to_var_const(subtilis_parser_t *p,
 	type.type = SUBTILIS_TYPE_STRING;
 
 	s = subtilis_symbol_table_insert_tmp(p->local_st, &type, NULL, err);
+	subtilis_type_free(&type);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -317,6 +318,7 @@ subtilis_type_if subtilis_type_if_const_string = {
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
 	.set = NULL,
+	.zero_buf = NULL,
 	.load_mem = NULL,
 	.to_int32 = NULL,
 	.zerox = NULL,
@@ -345,6 +347,7 @@ subtilis_type_if subtilis_type_if_const_string = {
 	.abs = NULL,
 	.is_inf = NULL,
 	.call = NULL,
+	.call_ptr = NULL,
 	.ret = NULL,
 	.print = subtilis_string_type_print_const,
 	.destructor = NULL,
@@ -371,8 +374,8 @@ static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
 	return e;
 }
 
-static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
-			 subtilis_error_t *err)
+static void prv_zero_reg(subtilis_parser_t *p, const subtilis_type_t *type,
+			 size_t reg, subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
@@ -397,6 +400,21 @@ static subtilis_exp_t *prv_call(subtilis_parser_t *p,
 	return subtilis_exp_new_var(type, reg, err);
 }
 
+static subtilis_exp_t *prv_call_ptr(subtilis_parser_t *p,
+				    const subtilis_type_t *type,
+				    subtilis_ir_arg_t *args, size_t num_args,
+				    size_t ptr, subtilis_error_t *err)
+{
+	size_t reg;
+
+	reg = subtilis_ir_section_add_i32_call_ptr(p->current, num_args, args,
+						   ptr, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_var(type, reg, err);
+}
+
 static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
 {
 	subtilis_ir_operand_t ret_reg;
@@ -407,13 +425,13 @@ static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
 }
 
 static void prv_array_of(const subtilis_type_t *element_type,
-			 subtilis_type_t *type)
+			 subtilis_type_t *type, subtilis_error_t *err)
 {
 	type->type = SUBTILIS_TYPE_ARRAY_STRING;
 }
 
 static void prv_vector_of(const subtilis_type_t *element_type,
-			  subtilis_type_t *type)
+			  subtilis_type_t *type, subtilis_error_t *err)
 {
 	type->type = SUBTILIS_TYPE_VECTOR_STRING;
 }
@@ -425,8 +443,10 @@ static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
 	subtilis_exp_delete(a1);
 }
 
-static subtilis_exp_t *prv_load_from_mem(subtilis_parser_t *p, size_t mem_reg,
-					 size_t loc, subtilis_error_t *err)
+static subtilis_exp_t *prv_load_from_mem(subtilis_parser_t *p,
+					 const subtilis_type_t *type,
+					 size_t mem_reg, size_t loc,
+					 subtilis_error_t *err)
 {
 	size_t reg;
 
@@ -469,7 +489,8 @@ static void prv_copy_col(subtilis_parser_t *p, subtilis_exp_t *e1,
 }
 
 static void prv_element_type(const subtilis_type_t *type,
-			     subtilis_type_t *element_type)
+			     subtilis_type_t *element_type,
+			     subtilis_error_t *err)
 {
 	element_type->type = SUBTILIS_TYPE_BYTE;
 }
@@ -1145,6 +1166,7 @@ subtilis_type_if subtilis_type_if_string = {
 	.indexed_sub = NULL,
 	.indexed_read = NULL,
 	.set = NULL,
+	.zero_buf = NULL,
 	.append = prv_append,
 	.indexed_address = NULL,
 	.load_mem = prv_load_from_mem,
@@ -1175,6 +1197,7 @@ subtilis_type_if subtilis_type_if_string = {
 	.abs = NULL,
 	.is_inf = NULL,
 	.call = prv_call,
+	.call_ptr = prv_call_ptr,
 	.ret = prv_ret,
 	.print = subtilis_string_type_print,
 	.destructor = NULL,

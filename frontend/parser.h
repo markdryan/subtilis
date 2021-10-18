@@ -39,6 +39,9 @@ struct subtilis_parser_t_ {
 	size_t num_calls;
 	size_t max_calls;
 	subtilis_parser_call_t **calls;
+	size_t num_call_addrs;
+	size_t max_call_addrs;
+	subtilis_parser_call_addr_t **call_addrs;
 	int32_t eflag_offset;
 	int32_t error_offset;
 	subtilis_settings_t settings;

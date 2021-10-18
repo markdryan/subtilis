@@ -32,13 +32,21 @@ void subtilis_parser_lookup_assignment_var(subtilis_parser_t *p,
 subtilis_exp_t *subtilis_parser_assign_local_num(subtilis_parser_t *p,
 						 subtilis_token_t *t,
 						 const char *var_name,
-						 subtilis_type_t *id_type,
+						 const subtilis_type_t *id_type,
 						 subtilis_error_t *err);
 void subtilis_parser_create_array_ref(subtilis_parser_t *p,
 				      const char *var_name,
 				      const subtilis_type_t *id_type,
 				      subtilis_exp_t *e, bool local,
 				      subtilis_error_t *err);
+void subtilis_parser_zero_local_fn(subtilis_parser_t *p, subtilis_token_t *t,
+				   const char *var_name,
+				   const subtilis_type_t *id_type,
+				   subtilis_error_t *err);
+void subtilis_parser_assign_local_fn(subtilis_parser_t *p, subtilis_token_t *t,
+				     const char *var_name,
+				     const subtilis_type_t *id_type,
+				     subtilis_error_t *err);
 void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 				subtilis_error_t *err);
 void subtilis_parser_let(subtilis_parser_t *p, subtilis_token_t *t,

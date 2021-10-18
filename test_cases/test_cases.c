@@ -3292,7 +3292,7 @@ const subtilis_test_case_t test_cases[] = {
 	"PROCReadFile\n"
 	"\n"
 	"def PROCWriteFile\n"
-	"  f% := openout(\"Markus\")\n"
+	"  f% := openout(\"markus\")\n"
 	"  onerror\n"
 	"    tryone close# f%\n"
 	"  enderror\n"
@@ -3311,7 +3311,7 @@ const subtilis_test_case_t test_cases[] = {
 	"endproc\n"
 	"\n"
 	"def PROCReadFile\n"
-	"  g% := openin(\"Markus\")\n"
+	"  g% := openin(\"markus\")\n"
 	"\n"
 	"  onerror\n"
 	"    tryone close# g%\n"
@@ -3832,7 +3832,7 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"bget_cow",
 	"PROCWriteFile\n"
-	"f% := openin(\"Markus\")\n"
+	"f% := openin(\"markus\")\n"
 	"onerror\n"
 	"  tryone close# f%\n"
 	"enderror\n"
@@ -3844,7 +3844,7 @@ const subtilis_test_case_t test_cases[] = {
 	"print b$\n"
 	"close# f%\n"
 	"def PROCWriteFile\n"
-	"  f% := openout(\"Markus\")\n"
+	"  f% := openout(\"markus\")\n"
 	"  onerror\n"
 	"    tryone close# f%\n"
 	"  enderror\n"
@@ -4356,6 +4356,375 @@ const subtilis_test_case_t test_cases[] = {
 	"print a%{0}\n",
 	"0\n1\n2\n3\n4\n5\n",
 	},
+	{"fn_names",
+	"def FNa <-0.0\n"
+	"def FNa& <- 2\n"
+	"def FNa% <-1\n"
+	"def FNa$ <- \"hello\"\n"
+	"def FNa%(1) local dim a%(10) <- a%()\n"
+	"def FNa%{} local dim a%{4} <-a%{}\n"
+	"print FNa\n"
+	"print FNa&\n"
+	"print FNa%\n"
+	"print FNa$\n"
+	"print dim(FNa%(1)(),1)\n"
+	"print dim(FNa%{}, 1)\n",
+	"0\n2\n1\nhello\n10\n4\n",
+	},
+	{"lambda_basic",
+	"type PROCMap(a%)\n"
+	"type PROCNoArgs\n"
+	"type FNInt%\n"
+	"type FNStr$\n"
+	"type FNReal\n"
+	"type FNByte&\n"
+	"e@PROCMap := def PROC(a%)\n"
+	"  print a%\n"
+	"endproc\n"
+	"f@PROCNoArgs := def PROC\n"
+	"  print \"no args\"\n"
+	"endproc\n"
+	"i@FNInt := def FN% <- 1\n"
+	"j@FNStr := def FN$ <- \"Hello World\"\n"
+	"k@FNReal := def FN <- 10.0\n"
+	"l@FNByte := def FN& <- 127\n"
+	"e@PROCMap(10.1)\n"
+	"f@PROCNoArgs()\n"
+	"print i@FNInt()\n"
+	"print j@FNStr()\n"
+	"print k@FNReal()\n"
+	"print l@FNByte()\n",
+	"10\nno args\n1\nHello World\n10\n127\n",
+	},
+	{"lambda_string_array_fn",
+	"type FN_getStrings$(1)(len%)\n"
+	"a@FN_getStrings = def FN$(1)(len%)\n"
+	"  local dim a$(len%)\n"
+	"   for i% := 0 to dim (a$(),1)\n"
+	"    a$(i%) = str$(i%)\n"
+	"   next\n"
+	"<-a$()\n"
+	"strs$() := a@FN_getStrings(10)\n"
+	"range a$ := strs$()\n"
+	"  print a$\n"
+	"endrange\n",
+	"0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
+	},
+	{"lambda_alias",
+	"type FNByte&\n"
+	"l@FNByte = def FN& <- 127\n"
+	"print l@FNByte()\n"
+	"g@FNByte := l@FNByte\n"
+	"h@FNByte = l@FNByte\n"
+	"print g@FNByte()\n"
+	"print h@FNByte()\n",
+	"127\n127\n127\n",
+	},
+	{"lambda_nested1",
+	"type PROCEmpty\n"
+	"for i% = 0 to 9\n"
+	"  a@PROCEmpty := def PROC print \"empty\" endproc\n"
+	"  a@PROCEmpty()\n"
+	"next\n",
+	"empty\nempty\nempty\nempty\nempty\nempty\nempty\nempty\nempty\nempty\n",
+	},
+	{"lambda_in_proc",
+	"type FNHello$\n"
+	"def PROCPrint\n"
+	"  a@FNHello := def FN$ <- \"HELLO\"\n"
+	"  print a@FNHello()\n"
+	"endproc\n"
+	"PROCPrint\n",
+	"HELLO\n",
+	},
+	{"lambda_in_error_handler",
+	"type PROCEmpty\n"
+	"onerror\n"
+	"  a@PROCEmpty := def PROC print \"empty\" endproc\n"
+	"  tryone a@PROCEmpty()\n"
+	"enderror\n"
+	"error 1\n",
+	"empty\n",
+	},
+	{"call_addr_local",
+	"type PROCEmpty\n"
+	"local a@PROCEmpty = !PROCBoring\n"
+	"a@PROCEmpty()\n"
+	"def PROCBoring\n"
+	"  print \"boring\"\n"
+	"endproc\n",
+	"boring\n"
+	},
+	{"call_addr_global",
+	"type PROCEmpty\n"
+	"a@PROCEmpty = !PROCBoring\n"
+	"a@PROCEmpty()\n"
+	"def PROCBoring\n"
+	"  print \"boring\"\n"
+	"endproc\n",
+	"boring\n"
+	},
+	{"call_addr_fn",
+	"type FNStr$\n"
+	"local a@FNStr = !FNgetStr$\n"
+	"print a@FNStr()\n"
+	"def FNgetStr$\n"
+	"<-\"hello\"\n",
+	"hello\n",
+	},
+	{"call_addr_fn_params",
+	"type FNStr$(a$, b%)\n"
+	"local a@FNStr = !FNgetStr$\n"
+	"print a@FNStr(\"hello\", 3)\n"
+	"def FNgetStr$(a$, b%)\n"
+	"<-string$(b%, a$)\n",
+	"hellohellohello\n",
+	},
+	{"call_addr_on_error",
+	"type PROCEmpty\n"
+	"onerror\n"
+	"local a@PROCEmpty = !PROCBoring\n"
+	"tryone a@PROCEmpty()\n"
+	"enderror\n"
+	"error 1\n"
+	"def PROCBoring\n"
+	"  print \"boring\"\n"
+	"endproc\n",
+	"boring\n",
+	},
+	{"dim_fn_init1",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = !FNCube%, def FN%(a%) <- a% * 2, def FN%(a%) <- a% * a%\n"
+	"range c@FNMap := a@FNMap()\n"
+	"print c@FNMap(10)\n"
+	"endrange\n"
+	"def FNCube%(a%)\n"
+	"<- a% * a% * a%\n",
+	"1000\n20\n100\n",
+	},
+	{"dim_fn_init2",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = def FN%(a%) <- a% * 2, def FN%(a%) <- a% * a%,!FNCube%\n"
+	"range c@FNMap := a@FNMap()\n"
+	"print c@FNMap(10)\n"
+	"endrange\n"
+	"def FNCube%(a%)\n"
+	"<- a% * a% * a%\n",
+	"20\n100\n1000\n",
+	},
+	{"dim_fn_init3",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(3)\n"
+	"a@FNMap() = def FN%(a%) <- a% * 2, def FN%(a%) <- a% * a%,!FNCube%\n"
+	"range c@FNMap := a@FNMap()\n"
+	"print c@FNMap(10)\n"
+	"endrange\n"
+	"def FNCube%(a%)\n"
+	"<- a% * a% * a%\n",
+	"20\n100\n1000\n0\n",
+	},
+	{"dim_fn_set1",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = def FN%(a%) <- a% * 2\n"
+	"range c@FNMap := a@FNMap()\n"
+	"print c@FNMap(10)\n"
+	"endrange\n",
+	"20\n20\n20\n",
+	},
+	{"dim_fn_set2",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = !FNCube%\n"
+	"range c@FNMap := a@FNMap()\n"
+	"print c@FNMap(10)\n"
+	"endrange\n"
+	"def FNCube%(a%)\n"
+	"<- a% * a% * a%\n",
+	"1000\n1000\n1000\n",
+	},
+	{"dim_fn_zero",
+	"type FNp&\n"
+	"type PROCdoer\n"
+	"type FNi%\n"
+	"type FNr\n"
+	"local l@FNp\n"
+	"local m@FNp\n"
+	"local o@FNi\n"
+	"local p@FNr\n"
+	"local p@PROCdoer\n"
+	"print l@FNp()\n"
+	"print m@FNp()\n"
+	"print o@FNi()\n"
+	"print p@FNr()\n"
+	"p@PROCdoer()\n",
+	"0\n0\n0\n0\n",
+	},
+	{"dim_fn_zero_args",
+	"type FNp&(a%)\n"
+	"type PROCdoer(a$)\n"
+	"type FNi%(a)\n"
+	"type FNr(a&)\n"
+	"local l@FNp\n"
+	"local m@FNp\n"
+	"local o@FNi\n"
+	"local p@FNr\n"
+	"local p@PROCdoer\n"
+	"print l@FNp(10)\n"
+	"print m@FNp(11)\n"
+	"print o@FNi(3.14)\n"
+	"print p@FNr(&ff)\n"
+	"p@PROCdoer(\"hello\")\n",
+	"0\n0\n0\n0\n",
+	},
+	{"dim_fn_zero_ref",
+	"type FNStr$(a$)\n"
+	"type FNia%(2)\n"
+	"type FNba&(1)\n"
+	"type FNra(1)\n"
+	"type FNhello$(1)(a$)\n"
+	"type FNAr${}\n"
+	"type FNiv%{}\n"
+	"type FNbv&{}\n"
+	"type FNrv{}\n"
+	"local m@FNra\n"
+	"local n@FNba\n"
+	"local o@FNia\n"
+	"local p@FNStr\n"
+	"local q@FNhello\n"
+	"local r@FNAr\n"
+	"local s@FNiv\n"
+	"local t@FNbv\n"
+	"local u@FNrv\n"
+	"print len(p@FNStr(\"hI\"))\n"
+	"print dim(m@FNra(),1)\n"
+	"print dim(n@FNba(),1)\n"
+	"print dim(o@FNia(),1)\n"
+	"print dim(q@FNhello(\"hI\"),1)\n"
+	"print dim(r@FNAr(),1)\n"
+	"print dim(s@FNiv(),1)\n"
+	"print dim(t@FNbv(),1)\n"
+	"print dim(u@FNrv(),1)\n",
+	"0\n1\n1\n1\n1\n-1\n-1\n-1\n-1\n",
+	},
+	{"fn_map",
+	"dim a{10}\n"
+	"\n"
+	"range v, i% := a{}\n"
+	"  a{i%} = i%\n"
+	"endrange\n"
+	"\n"
+	"type FNMapper(a)\n"
+	"\n"
+	"PROC_map(a{}, def FN(a) <- a*a)\n"
+	"\n"
+	"range v, i% := a{}\n"
+	"  print v;\n"
+	"  if i% < dim(a{}, 1) then print \" \"; endif\n"
+	"endrange\n"
+	"print \"\"\n"
+	"\n"
+	"def PROC_map(a{}, f@FNMapper)\n"
+	"  range v, i% := a{}\n"
+	"    a{i%} = f@FNMapper(v)\n"
+	"  endrange\n"
+	"endproc\n",
+	"0 1 4 9 16 25 36 49 64 81 100\n",
+	},
+	{"fn_ret_fn",
+	"type PROCMaker(a%)\n"
+	"\n"
+	"def FNMakeMaker@PROCMaker\n"
+	"<- def PROC(a%)\n"
+	"    for i% := 1 TO a%\n"
+	"       print \"maker\"\n"
+	"    next\n"
+	"  endproc\n"
+	"a@PROCMaker = FNMakeMaker@PROCMaker()\n"
+	"a@PROCMaker(4)\n",
+	"maker\nmaker\nmaker\nmaker\n",
+	},
+	{"fn_ret_ar_fn",
+	"type PROCMaker(a%)\n"
+	"\n"
+	"def FNMakeMaker@PROCMaker(1)\n"
+	"  local dim a@PROCMaker(2)\n"
+	"  a@PROCMaker() = def PROC(a%) PROCLooper(a%, \"one\") endproc,\n"
+	"    def PROC(a%) PROCLooper(a%, \"two\") endproc,\n"
+	"    def PROC(a%) PROCLooper(a%, \"three\") endproc\n"
+	"<- a@PROCMaker()\n"
+	"\n"
+	"def PROCLooper(a%, b$)\n"
+	"  for i% := 1 TO a%\n"
+	"     print b$\n"
+	"  next\n"
+	"endproc\n"
+	"\n"
+	"a@PROCMaker() := FNMakeMaker@PROCMaker(1)()\n"
+	"print \"array returned with \";\n"
+	"print dim(a@PROCMaker(),1 );\n"
+	"print \" elements\"\n"
+	"range fn@PROCMaker, i% := a@PROCMaker()\n"
+	"   fn@PROCMaker(i% + 1)\n"
+	"endrange\n",
+	"array returned with 2 elements\none\ntwo\ntwo\nthree\nthree\nthree\n"
+	},
+	{"assign_fn_array",
+	"type PROCArgs(a%, b%)\n"
+	"dim a@PROCArgs(1)\n"
+	"a@PROCArgs() = !PROCOne\n"
+	"a@PROCArgs(1) = !PROCTwo\n"
+	"range v@PROCArgs := a@PROCArgs()\n"
+	"  v@PROCArgs(1,2)\n"
+	"endrange\n"
+	"dim vec@PROCArgs{1}\n"
+	"vec@PROCArgs{} = !PROCOne\n"
+	"vec@PROCArgs{1} = !PROCTwo\n"
+	"append(vec@PROCArgs{}, !PROCThree)\n"
+	"range v@PROCArgs := vec@PROCArgs{}\n"
+	"  v@PROCArgs(1,2)\n"
+	"endrange\n"
+	"def PROCOne(a%, b%) print \"one\" endproc\n"
+	"def PROCTwo(a%, b%) print \"two\" endproc\n"
+	"def PROCThree(a%, b%) print \"three\" endproc\n",
+	"one\ntwo\none\ntwo\nthree\n",
+	},
+	{"recursive_type",
+	"type PROC_dummy\n"
+	"type FNfn@PROC_dummy(a%)\n"
+	"\n"
+	"local a@FNfn\n"
+	"local n@PROC_dummy\n"
+	"\n"
+	"a@FNfn = def FN@PROC_dummy(a%) <- def PROC print \"dummy\" endproc\n"
+	"n@PROC_dummy = a@FNfn(10)\n"
+	"n@PROC_dummy()\n",
+	"dummy\n",
+	},
+	{"recursive_type2",
+	"type PROC_dummy(a%)\n"
+	"type PROChigher(a%, b@PROC_dummy, c@PROC_dummy)\n"
+	"\n"
+	"local a@PROChigher = def PROC(a%, b@PROC_dummy, c@PROC_dummy)\n"
+	"    b@PROC_dummy(a%)\n"
+	"    c@PROC_dummy(a%)\n"
+	"endproc\n"
+	"\n"
+	"local b@PROC_dummy = !PROCup\n"
+	"local c@PROC_dummy = !PROCdown\n"
+	"a@PROChigher(5, b@PROC_dummy, c@PROC_dummy)\n"
+	"a@PROChigher(5, !PROCup, !PROCdown)\n"
+	"\n"
+	"def PROCup(a%)\n"
+	"  for i% := 1 to a% print i% next\n"
+	"endproc\n"
+	"\n"
+	"def PROCdown(a%)\n"
+	"  for i% := a% to 1 step -1 print i% next\n"
+	"endproc\n",
+	"1\n2\n3\n4\n5\n5\n4\n3\n2\n1\n1\n2\n3\n4\n5\n5\n4\n3\n2\n1\n"},
 };
 
 /* clang-format on */

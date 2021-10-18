@@ -404,6 +404,40 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	SUBTILIS_ERROR_CONST_EXPRESSION_EXPECTED,
 	},
 	{
+	"array_bad_string_initialiser1",
+	"dim b$(1)\n"
+	"b$() = \"hello\", 5\n",
+	SUBTILIS_ERROR_CONST_STRING_EXPECTED,
+	},
+	{
+	"array_bad_string_initialiser1",
+	"dim b$(1)\n"
+	"local a$\n"
+	"b$() = a$, \"hello\"\n",
+	SUBTILIS_ERROR_CONST_STRING_EXPECTED,
+	},
+	{
+	"array_fn_string_initialiser1",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = 5\n",
+	SUBTILIS_ERROR_FN_TYPE_MISMATCH,
+	},
+	{
+	"array_fn_string_initialiser2",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = def FN%(a%) <-0, 5\n",
+	SUBTILIS_ERROR_FN_TYPE_MISMATCH,
+	},
+	{
+	"array_fn_string_initialiser3",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = 5, def FN%(a%) <-0\n",
+	SUBTILIS_ERROR_FN_TYPE_MISMATCH,
+	},
+	{
 	"array_get_dim_not_array",
 	"dim a%(10)\n"
 	"print dim(a%)\n",
@@ -736,6 +770,61 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"next\n"
 	"print i%\n",
 	SUBTILIS_ERROR_UNKNOWN_VARIABLE,
+	},
+	{"assign_func_to_proc",
+	"type PROCMap(a%)\n"
+	"a@PROCMap = def FN(a%) <-a%\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+	{"assign_proc_missing_args",
+	"type PROCMap(a%, b%)\n"
+	"a@PROCMap = def PROC(a%) endproc\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+	{"assign_fn_type_mismatch",
+	"type FNMap%\n"
+	"a@FNMap = def FN <-0.0\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+	{"bad_lambda_name1",
+	"type FNMap\n"
+	"a@FNMap = def FNu <-0.0\n",
+	SUBTILIS_ERROR_BAD_LAMBDA_NAME
+	},
+	{"bad_lambda_name2",
+	"type FNMap%\n"
+	"a@FNMap = def FNu% <-0\n",
+	SUBTILIS_ERROR_BAD_LAMBDA_NAME
+	},
+	{"assign_fn_type_mismatch2",
+	"type PROCEmpty\n"
+	"local a@PROCEmpty = 1\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
+	{"assign_fn_type_mismatch3",
+	"type PROCEmpty\n"
+	"a@PROCEmpty = 1\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+	{"proc_addr_undefined",
+	"type PROCEmpty\n"
+	"a@PROCEmpty = !PROCBoring\n"
+	"a@PROCEmpty()\n",
+	SUBTILIS_ERROR_UNKNOWN_PROCEDURE,
+	},
+	{"proc_addr_wrong_args",
+	"type FNStr$(a$, b%)\n"
+	"local a@FNStr = !FNgetStr$\n"
+	"print a@FNStr(\"hello \", 3)\n"
+	"def FNgetStr$(b%)\n"
+	"<-string$(b%, \"hello\")\n",
+	SUBTILIS_ERROR_BAD_ARG_COUNT,
+	},
+	{"proc_ptr_in_expression",
+	"type PROCMark\n"
+	"local a@PROCMark\n"
+	"print a@PROCMark()\n",
+	SUBTILIS_ERROR_EXPECTED,
 	},
 };
 

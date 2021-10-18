@@ -212,6 +212,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "movi8tofp", SUBTILIS_OP_CLASS_FREG_REG },
 	{ "movfptoi32i32", SUBTILIS_OP_CLASS_REG_REG_FREG },
 	{ "oscli", SUBTILIS_OP_CLASS_REG },
+	{ "getprocaddr", SUBTILIS_OP_CLASS_REG_I32 },
 };
 
 /*
@@ -366,6 +367,16 @@ static void prv_ensure_error_buffer(subtilis_ir_section_t *s,
 	s->error_ops = new_ops;
 }
 
+static bool prv_is_call(subtilis_ir_op_t *op)
+{
+	return (op->type == SUBTILIS_OP_CALL) ||
+	       (op->type == SUBTILIS_OP_CALLI32) ||
+	       (op->type == SUBTILIS_OP_CALLREAL) ||
+	       (op->type == SUBTILIS_OP_CALL_PTR) ||
+	       (op->type == SUBTILIS_OP_CALLI32_PTR) ||
+	       (op->type == SUBTILIS_OP_CALLREAL_PTR);
+}
+
 static void prv_ir_section_delete(subtilis_ir_section_t *s)
 {
 	size_t i;
@@ -377,9 +388,7 @@ static void prv_ir_section_delete(subtilis_ir_section_t *s)
 	subtilis_type_section_delete(s->type);
 	for (i = 0; i < s->len; i++) {
 		op = s->ops[i];
-		if ((op->type == SUBTILIS_OP_CALL) ||
-		    (op->type == SUBTILIS_OP_CALLI32) ||
-		    (op->type == SUBTILIS_OP_CALLREAL)) {
+		if (prv_is_call(op)) {
 			free(op->op.call.args);
 		} else if (op->type == SUBTILIS_OP_SYS_CALL) {
 			free(op->op.sys_call.in_regs);
@@ -392,9 +401,7 @@ static void prv_ir_section_delete(subtilis_ir_section_t *s)
 
 	for (i = 0; i < s->error_len; i++) {
 		op = s->error_ops[i];
-		if ((op->type == SUBTILIS_OP_CALL) ||
-		    (op->type == SUBTILIS_OP_CALLI32) ||
-		    (op->type == SUBTILIS_OP_CALLREAL)) {
+		if (prv_is_call(op)) {
 			free(op->op.call.args);
 		} else if (op->type == SUBTILIS_OP_SYS_CALL) {
 			free(op->op.sys_call.in_regs);
@@ -703,7 +710,7 @@ static subtilis_ir_section_t *prv_ir_prog_section_new(
 	subtilis_ir_section_type_t section_type, size_t locals,
 	subtilis_type_section_t *tp, subtilis_builtin_type_t ftype,
 	const char *file, size_t line, int32_t eflag_offset,
-	int32_t error_offset, subtilis_error_t *err)
+	int32_t error_offset, size_t *index, subtilis_error_t *err)
 
 /* clang-format on */
 {
@@ -771,11 +778,14 @@ static subtilis_ir_section_t *prv_ir_prog_section_new(
 	case SUBTILIS_TYPE_ARRAY_INTEGER:
 	case SUBTILIS_TYPE_ARRAY_BYTE:
 	case SUBTILIS_TYPE_ARRAY_STRING:
+	case SUBTILIS_TYPE_ARRAY_FN:
 	case SUBTILIS_TYPE_VECTOR_REAL:
 	case SUBTILIS_TYPE_VECTOR_INTEGER:
 	case SUBTILIS_TYPE_VECTOR_BYTE:
 	case SUBTILIS_TYPE_VECTOR_STRING:
+	case SUBTILIS_TYPE_VECTOR_FN:
 	case SUBTILIS_TYPE_STRING:
+	case SUBTILIS_TYPE_FN:
 		s->ret_reg = s->reg_counter++;
 		break;
 	default:
@@ -784,6 +794,8 @@ static subtilis_ir_section_t *prv_ir_prog_section_new(
 	}
 
 	p->sections[name_index] = s;
+	if (index)
+		*index = name_index;
 
 	return s;
 
@@ -800,7 +812,7 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(
 	subtilis_ir_prog_t *p, const char *name, size_t locals,
 	subtilis_type_section_t *tp, subtilis_builtin_type_t ftype,
 	const char *file, size_t line, int32_t eflag_offset,
-	int32_t error_offset, subtilis_error_t *err)
+	int32_t error_offset, size_t *call_index, subtilis_error_t *err)
 
 /* clang-format on */
 
@@ -813,7 +825,7 @@ subtilis_ir_section_t *subtilis_ir_prog_section_new(
 
 	return prv_ir_prog_section_new(p, name, section_type, locals, tp, ftype,
 				       file, line, eflag_offset, error_offset,
-				       err);
+				       call_index, err);
 }
 
 /* clang-format off */
@@ -821,7 +833,7 @@ void subtilis_ir_prog_asm_section_new(
 	subtilis_ir_prog_t *p, const char *name, subtilis_type_section_t *tp,
 	const char *file, size_t line, int32_t eflag_offset,
 	int32_t error_offset, subtilis_backend_asm_free_t asm_free,
-	void *asm_code, subtilis_error_t *err)
+	void *asm_code, size_t *call_index, subtilis_error_t *err)
 
 /* clang-format on */
 
@@ -830,7 +842,7 @@ void subtilis_ir_prog_asm_section_new(
 
 	s = prv_ir_prog_section_new(p, name, SUBTILIS_IR_SECTION_ASM, 0, tp,
 				    SUBTILIS_BUILTINS_MAX, file, line,
-				    eflag_offset, error_offset, err);
+				    eflag_offset, error_offset, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		asm_free(asm_code);
 		return;
@@ -1000,11 +1012,18 @@ static void prv_dump_call(subtilis_op_type_t type, subtilis_ir_call_t *c)
 	size_t i;
 
 	printf("\t");
-	if (type == SUBTILIS_OP_CALLI32)
+	if (type == SUBTILIS_OP_CALLI32 || type == SUBTILIS_OP_CALLI32_PTR)
 		printf("r%zu = ", c->reg);
-	else if (type == SUBTILIS_OP_CALLREAL)
+	else if (type == SUBTILIS_OP_CALLREAL ||
+		 type == SUBTILIS_OP_CALLREAL_PTR)
 		printf("f%zu = ", c->reg);
-	printf("call %zu", c->proc_id);
+	if ((type == SUBTILIS_OP_CALL_PTR) ||
+	    (type == SUBTILIS_OP_CALLI32_PTR) ||
+	    (type == SUBTILIS_OP_CALLREAL_PTR))
+		printf("call [%zu]", c->proc_id);
+	else
+		printf("call %zu", c->proc_id);
+
 	if (c->arg_count > 0) {
 		printf(" (");
 		printf("%s%zu",
@@ -1080,9 +1099,7 @@ static void prv_dump_section_ops(subtilis_ir_op_t **ops, size_t len)
 			prv_dump_instr(&ops[i]->op.instr);
 		else if (ops[i]->type == SUBTILIS_OP_LABEL)
 			printf("label_%zu", ops[i]->op.label);
-		else if ((ops[i]->type == SUBTILIS_OP_CALL) ||
-			 (ops[i]->type == SUBTILIS_OP_CALLI32) ||
-			 (ops[i]->type == SUBTILIS_OP_CALLREAL))
+		else if (prv_is_call(ops[i]))
 			prv_dump_call(ops[i]->type, &ops[i]->op.call);
 		else if (ops[i]->type == SUBTILIS_OP_SYS_CALL)
 			prv_dump_sys_call(&ops[i]->op.sys_call);
@@ -1130,7 +1147,7 @@ void subtilis_ir_section_add_label(subtilis_ir_section_t *s, size_t l,
 
 static void prv_add_call(subtilis_ir_section_t *s, subtilis_op_type_t type,
 			 size_t arg_count, subtilis_ir_arg_t *args,
-			 subtilis_error_t *err)
+			 size_t proc_id, subtilis_error_t *err)
 {
 	subtilis_ir_op_t *op;
 
@@ -1147,13 +1164,36 @@ static void prv_add_call(subtilis_ir_section_t *s, subtilis_op_type_t type,
 		return;
 	}
 	op->type = type;
-	op->op.call.proc_id = 0;
+	op->op.call.proc_id = proc_id;
 	op->op.call.arg_count = arg_count;
 	op->op.call.args = args;
 	if (s->in_error_handler)
 		s->error_ops[s->error_len++] = op;
 	else
 		s->ops[s->len++] = op;
+}
+
+size_t subtilis_ir_section_add_get_partial_addr(subtilis_ir_section_t *s,
+						size_t *call_site,
+						subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	size_t call_reg;
+	size_t cs;
+
+	op1.label = SIZE_MAX;
+	call_reg = subtilis_ir_section_add_instr2(
+	    s, SUBTILIS_OP_INSTR_GET_PROC_ADDR, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	if (s->in_error_handler)
+		cs = s->error_len;
+	else
+		cs = s->len;
+	*call_site = cs - 1;
+
+	return call_reg;
 }
 
 void subtilis_ir_section_add_sys_call(subtilis_ir_section_t *s, size_t call_id,
@@ -1195,19 +1235,13 @@ void subtilis_ir_section_add_call(subtilis_ir_section_t *s, size_t arg_count,
 				  subtilis_ir_arg_t *args,
 				  subtilis_error_t *err)
 {
-	prv_add_call(s, SUBTILIS_OP_CALL, arg_count, args, err);
+	prv_add_call(s, SUBTILIS_OP_CALL, arg_count, args, 0, err);
 }
 
-size_t subtilis_ir_section_add_i32_call(subtilis_ir_section_t *s,
-					size_t arg_count,
-					subtilis_ir_arg_t *args,
-					subtilis_error_t *err)
+static size_t prv_get_i32_call_reg(subtilis_ir_section_t *s)
 {
 	subtilis_ir_op_t *op;
 
-	prv_add_call(s, SUBTILIS_OP_CALLI32, arg_count, args, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return 0;
 	if (s->in_error_handler)
 		op = s->error_ops[s->error_len - 1];
 	else
@@ -1216,22 +1250,67 @@ size_t subtilis_ir_section_add_i32_call(subtilis_ir_section_t *s,
 	return op->op.call.reg;
 }
 
-size_t subtilis_ir_section_add_real_call(subtilis_ir_section_t *s,
-					 size_t arg_count,
-					 subtilis_ir_arg_t *args,
-					 subtilis_error_t *err)
+size_t subtilis_ir_section_add_i32_call(subtilis_ir_section_t *s,
+					size_t arg_count,
+					subtilis_ir_arg_t *args,
+					subtilis_error_t *err)
+{
+	prv_add_call(s, SUBTILIS_OP_CALLI32, arg_count, args, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+	return prv_get_i32_call_reg(s);
+}
+
+static size_t prv_get_real_call_reg(subtilis_ir_section_t *s)
 {
 	subtilis_ir_op_t *op;
 
-	prv_add_call(s, SUBTILIS_OP_CALLREAL, arg_count, args, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return 0;
 	if (s->in_error_handler)
 		op = s->error_ops[s->error_len - 1];
 	else
 		op = s->ops[s->len - 1];
 	op->op.call.reg = s->freg_counter++;
 	return op->op.call.reg;
+}
+
+size_t subtilis_ir_section_add_real_call(subtilis_ir_section_t *s,
+					 size_t arg_count,
+					 subtilis_ir_arg_t *args,
+					 subtilis_error_t *err)
+{
+	prv_add_call(s, SUBTILIS_OP_CALLREAL, arg_count, args, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+	return prv_get_real_call_reg(s);
+}
+
+void subtilis_ir_section_add_call_ptr(subtilis_ir_section_t *s,
+				      size_t arg_count, subtilis_ir_arg_t *args,
+				      size_t ptr, subtilis_error_t *err)
+{
+	prv_add_call(s, SUBTILIS_OP_CALL_PTR, arg_count, args, ptr, err);
+}
+
+size_t subtilis_ir_section_add_i32_call_ptr(subtilis_ir_section_t *s,
+					    size_t arg_count,
+					    subtilis_ir_arg_t *args, size_t ptr,
+					    subtilis_error_t *err)
+{
+	prv_add_call(s, SUBTILIS_OP_CALLI32_PTR, arg_count, args, ptr, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+	return prv_get_i32_call_reg(s);
+}
+
+size_t subtilis_ir_section_add_real_call_ptr(subtilis_ir_section_t *s,
+					     size_t arg_count,
+					     subtilis_ir_arg_t *args,
+					     size_t ptr, subtilis_error_t *err)
+{
+	prv_add_call(s, SUBTILIS_OP_CALLREAL_PTR, arg_count, args, ptr, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+	return prv_get_real_call_reg(s);
 }
 
 /*
@@ -1407,6 +1486,21 @@ static const char *prv_parse_match(const char *rule,
 		return rule;
 	}
 
+	if (!strcmp(instr, "callptr")) {
+		match->type = SUBTILIS_OP_CALL_PTR;
+		return rule;
+	}
+
+	if (!strcmp(instr, "calli32ptr")) {
+		match->type = SUBTILIS_OP_CALLI32_PTR;
+		return rule;
+	}
+
+	if (!strcmp(instr, "callrptr")) {
+		match->type = SUBTILIS_OP_CALLREAL_PTR;
+		return rule;
+	}
+
 	if (!strcmp(instr, "syscall")) {
 		match->type = SUBTILIS_OP_SYS_CALL;
 		return rule;
@@ -1559,11 +1653,7 @@ static bool prv_match_op(subtilis_ir_op_t *op, subtilis_ir_op_match_t *match,
 
 	if (op->type != match->type)
 		return false;
-	if (op->type == SUBTILIS_OP_CALL)
-		return true;
-	if (op->type == SUBTILIS_OP_CALLI32)
-		return true;
-	if (op->type == SUBTILIS_OP_CALLREAL)
+	if (prv_is_call(op))
 		return true;
 	if (op->type == SUBTILIS_OP_SYS_CALL)
 		return true;

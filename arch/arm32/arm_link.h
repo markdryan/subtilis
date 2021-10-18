@@ -38,6 +38,9 @@ struct subtilis_arm_link_t_ {
 	subtilis_arm_link_constant_t *constants;
 	size_t num_constants;
 	size_t max_constants;
+	subtilis_arm_link_constant_t *extrefs;
+	size_t num_extrefs;
+	size_t max_extrefs;
 };
 
 typedef struct subtilis_arm_link_t_ subtilis_arm_link_t;
@@ -50,6 +53,9 @@ void subtilis_arm_link_constant_add(subtilis_arm_link_t *link, size_t offset,
 				    size_t constant_offset,
 				    size_t constant_index,
 				    subtilis_error_t *err);
+void subtilis_arm_link_extref_add(subtilis_arm_link_t *link, size_t offset,
+				  size_t constant_offset, size_t section_index,
+				  subtilis_error_t *err);
 void subtilis_arm_link_section(subtilis_arm_link_t *link, size_t num,
 			       size_t offset);
 void subtilis_arm_link_link(subtilis_arm_link_t *link, uint8_t *buf,

@@ -1264,9 +1264,29 @@ static void prv_alloc_br_instr(void *user_data, subtilis_arm_op_t *op,
 			       subtilis_arm_br_instr_t *instr,
 			       subtilis_error_t *err)
 {
+	size_t vreg_op1;
+	bool fixed_reg_op1 = true;
+	int dist_op1 = -1;
 	subtilis_arm_reg_ud_t *ud = user_data;
 	size_t reg = 0;
 	subtilis_arm_reg_class_t *regs = NULL;
+
+	if (instr->indirect) {
+		vreg_op1 = instr->target.reg;
+		fixed_reg_op1 = subtilis_arm_reg_alloc_ensure(
+		    ud, op, ud->int_regs, ud->int_regs, &instr->target.reg,
+		    err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		if (!fixed_reg_op1) {
+			dist_op1 = subtilis_arm_reg_alloc_calculate_dist(
+			    ud, vreg_op1, op, &ud->int_regs->dist_walker,
+			    ud->int_regs);
+			if (dist_op1 == -1)
+				ud->int_regs->phys_to_virt[instr->target.reg] =
+				    INT_MAX;
+		}
+	}
 
 	/*
 	 * We need to make sure that F0 or R0 are marked as being
@@ -1285,6 +1305,9 @@ static void prv_alloc_br_instr(void *user_data, subtilis_arm_op_t *op,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
+
+	if (instr->indirect && !fixed_reg_op1)
+		ud->int_regs->next[instr->target.reg] = dist_op1;
 
 	ud->instr_count++;
 
@@ -1345,6 +1368,20 @@ static void prv_alloc_adr_instr(void *user_data, subtilis_arm_op_t *op,
 				subtilis_arm_instr_type_t type,
 				subtilis_arm_adr_instr_t *instr,
 				subtilis_error_t *err)
+{
+	subtilis_arm_reg_ud_t *ud = user_data;
+
+	subtilis_arm_reg_alloc_alloc_dest(ud, op, &instr->dest, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	ud->instr_count++;
+}
+
+static void prv_alloc_ldrp_instr(void *user_data, subtilis_arm_op_t *op,
+				 subtilis_arm_instr_type_t type,
+				 subtilis_arm_ldrp_instr_t *instr,
+				 subtilis_error_t *err)
 {
 	subtilis_arm_reg_ud_t *ud = user_data;
 
@@ -1873,6 +1910,7 @@ size_t subtilis_arm_reg_alloc(subtilis_arm_section_t *arm_s,
 	walker.br_fn = prv_alloc_br_instr;
 	walker.swi_fn = prv_alloc_swi_instr;
 	walker.ldrc_fn = prv_alloc_ldrc_instr;
+	walker.ldrp_fn = prv_alloc_ldrp_instr;
 	walker.adr_fn = prv_alloc_adr_instr;
 	walker.cmov_fn = prv_alloc_cmov_instr;
 	walker.flags_fn = prv_alloc_flags_instr;

@@ -811,6 +811,29 @@ void subtilis_add_adr(subtilis_arm_section_t *s,
 	adr->label = label;
 }
 
+void subtilis_add_ldrp(subtilis_arm_section_t *s,
+		       subtilis_arm_ccode_type_t ccode, subtilis_arm_reg_t dest,
+		       size_t section_label, size_t constant_label,
+		       subtilis_error_t *err)
+{
+	subtilis_arm_ldrp_instr_t *ldrp;
+	subtilis_arm_instr_t *instr;
+
+	prv_add_ui32_constant(s, constant_label, (uint32_t)0, false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	instr = subtilis_arm_section_add_instr(s, SUBTILIS_ARM_INSTR_LDRP, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	ldrp = &instr->operands.ldrp;
+	ldrp->ccode = ccode;
+	ldrp->dest = dest;
+	ldrp->section_label = section_label;
+	ldrp->constant_label = constant_label;
+}
+
 size_t subtilis_add_data_imm_ldr_datai(subtilis_arm_section_t *s,
 				       subtilis_arm_instr_type_t itype,
 				       subtilis_arm_ccode_type_t ccode,

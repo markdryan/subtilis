@@ -85,6 +85,40 @@ static subtilis_exp_t *prv_unary_minus_exp(subtilis_parser_t *p,
 	return subtilis_type_if_unary_minus(p, e, err);
 }
 
+static subtilis_exp_t *prv_call_addr_exp(subtilis_parser_t *p,
+					 subtilis_token_t *t,
+					 subtilis_error_t *err)
+{
+	const char *tbuf;
+	size_t call_reg;
+	size_t call_site;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_KEYWORD) ||
+	    ((t->tok.keyword.type != SUBTILIS_KEYWORD_PROC) &&
+	     (t->tok.keyword.type != SUBTILIS_KEYWORD_FN))) {
+		subtilis_error_set_procedure_expected(
+		    err, tbuf, p->l->stream->name, p->l->line);
+		return NULL;
+	}
+
+	if (t->tok.keyword.type == SUBTILIS_KEYWORD_PROC)
+		tbuf += 4;
+	else if (t->tok.keyword.type == SUBTILIS_KEYWORD_FN)
+		tbuf += 2;
+
+	call_reg = subtilis_ir_section_add_get_partial_addr(p->current,
+							    &call_site, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_partial_fn(call_reg, tbuf, call_site, err);
+}
+
 static subtilis_exp_t *prv_not_exp(subtilis_parser_t *p, subtilis_token_t *t,
 				   subtilis_error_t *err)
 {
@@ -103,8 +137,10 @@ static subtilis_exp_t *prv_not_exp(subtilis_parser_t *p, subtilis_token_t *t,
 static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,
 				      const char *tbuf, subtilis_error_t *err)
 {
+	const subtilis_symbol_t *s;
 	subtilis_exp_t *e = NULL;
 	char *var_name = NULL;
+	size_t mem_reg = SUBTILIS_IR_REG_LOCAL;
 
 	tbuf = subtilis_token_get_text(t);
 	var_name = malloc(strlen(tbuf) + 1);
@@ -118,6 +154,36 @@ static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	s = subtilis_symbol_table_lookup(p->local_st, var_name);
+	if (!s) {
+		s = subtilis_symbol_table_lookup(p->st, var_name);
+		mem_reg = SUBTILIS_IR_REG_GLOBAL;
+	}
+
+	/*
+	 * TODO: This really needs to be a loop so we can handle things like
+	 * arrays of pointers to functions that return functions.  Note it's
+	 * not currently possible to dereference anything directly returned by
+	 * a function, e.g., an array, but we should allow this I guess.
+	 */
+
+	if (s && s->t.type == SUBTILIS_TYPE_FN) {
+		tbuf = subtilis_token_get_text(t);
+		if ((t->type == SUBTILIS_TOKEN_OPERATOR) &&
+		    !strcmp(tbuf, "(")) {
+			if (s->t.params.fn.ret_val->type ==
+			    SUBTILIS_TYPE_VOID) {
+				subtilis_error_set_expected(
+				    err, "function", "procedure",
+				    p->l->stream->name, p->l->line);
+				goto cleanup;
+			}
+			e = subtilis_parser_call_ptr(p, t, s, var_name, mem_reg,
+						     err);
+			goto cleanup;
+		}
+	}
+
 	tbuf = subtilis_token_get_text(t);
 	if (t->type == SUBTILIS_TOKEN_OPERATOR) {
 		if (!strcmp(tbuf, "("))
@@ -126,6 +192,19 @@ static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,
 			e = subtils_parser_read_vector(p, t, var_name, err);
 		else
 			e = subtilis_var_lookup_var(p, var_name, err);
+
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		if (e->type.type == SUBTILIS_TYPE_FN) {
+			tbuf = subtilis_token_get_text(t);
+			if ((t->type == SUBTILIS_TOKEN_OPERATOR) &&
+			    !strcmp(tbuf, "(")) {
+				e = subtilis_parser_call_known_ptr(
+				    p, t, &e->type, e->exp.ir_op.reg, err);
+				goto cleanup;
+			}
+		}
 	} else {
 		e = subtilis_var_lookup_var(p, var_name, err);
 	}
@@ -165,21 +244,20 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			e = subtilis_parser_bracketed_exp_internal(p, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
+		} else if (!strcmp(tbuf, "-")) {
+			return prv_unary_minus_exp(p, t, err);
+
+			/* we don't want to read another token
+			 * here.It's already been read by the
+			 * recursive call to prv_priority1.
+			 */
+		} else if (!strcmp(tbuf, "!")) {
+			e = prv_call_addr_exp(p, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
 		} else {
-			if (!strcmp(tbuf, "-")) {
-				e = prv_unary_minus_exp(p, t, err);
-				if (err->type != SUBTILIS_ERROR_OK)
-					goto cleanup;
-
-				/* we don't want to read another token here.It's
-				 * already been read by the recursive call to
-				 * prv_priority1.
-				 */
-
-				return e;
-			}
 			subtilis_error_set_exp_expected(
-			    err, "( or - ", p->l->stream->name, p->l->line);
+			    err, "!, ( or - ", p->l->stream->name, p->l->line);
 			goto cleanup;
 		}
 		break;
@@ -308,6 +386,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return subtilis_parser_append_exp(p, t, err);
 		case SUBTILIS_KEYWORD_COPY:
 			return subtilis_parser_copy_exp(p, t, err);
+		case SUBTILIS_KEYWORD_DEF:
+			return subtilis_parser_lambda(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "Unexpected keyword in expression",
@@ -1046,7 +1126,6 @@ subtilis_exp_t *subtilis_curly_bracketed_arg_have_b(subtilis_parser_t *p,
 
 subtilis_exp_t *subtilis_var_lookup_ref(subtilis_parser_t *p,
 					subtilis_token_t *t, bool *local,
-					subtilis_type_t *type,
 					subtilis_error_t *err)
 {
 	const char *tbuf;
@@ -1071,7 +1150,6 @@ subtilis_exp_t *subtilis_var_lookup_ref(subtilis_parser_t *p,
 	}
 
 	if (s->t.type == SUBTILIS_TYPE_INTEGER) {
-		*type = s->t;
 		if (!s->is_reg) {
 			*local = false;
 			if (s->loc != 0) {
@@ -1117,4 +1195,32 @@ subtilis_exp_t *subtilis_var_lookup_ref(subtilis_parser_t *p,
 	subtilis_error_set_integer_variable_expected(
 	    err, subtilis_type_name(&s->t), p->l->stream->name, p->l->line);
 	return NULL;
+}
+
+void subtilis_complete_custom_type(subtilis_parser_t *p, const char *var_name,
+				   subtilis_type_t *type, subtilis_error_t *err)
+{
+	const subtilis_symbol_t *f_s;
+	const char *type_name;
+
+	type_name = strchr(var_name, '@');
+	if (!type_name) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	type_name++;
+
+	f_s = subtilis_symbol_table_lookup(p->st, type_name);
+	if (!f_s) {
+		subtilis_error_set_unknown_type(err, type_name,
+						p->l->stream->name, p->l->line);
+		return;
+	}
+
+	if (f_s->t.type != SUBTILIS_TYPE_TYPEDEF) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	subtilis_type_copy(type, &f_s->sub_t, err);
 }

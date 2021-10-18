@@ -1229,11 +1229,11 @@ static void prv_stran_misc_pre(subtilis_arm_ass_context_t *c,
 			       subtilis_error_t *err)
 {
 	const char *tbuf;
-	int8_t int_offset;
 	subtilis_arm_instr_t *instr;
 	subtilis_arm_stran_misc_instr_t *stran_misc;
-	subtilis_arm_reg_t reg;
 	bool reg_offset;
+	int8_t int_offset = 0;
+	subtilis_arm_reg_t reg = SIZE_MAX;
 	bool write_back = false;
 	bool subtract = false;
 

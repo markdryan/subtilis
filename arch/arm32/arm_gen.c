@@ -828,7 +828,7 @@ static void prv_stack_args(subtilis_arm_section_t *arm_s,
 void subtilis_arm_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 			       void *user_data,
 			       subtilis_arm_br_link_type_t link_type,
-			       subtilis_error_t *err)
+			       bool indirect, subtilis_error_t *err)
 {
 	subtilis_arm_reg_t op0;
 	subtilis_arm_instr_t *instr;
@@ -888,6 +888,13 @@ void subtilis_arm_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 			return;
 	}
 
+	if (indirect) {
+		subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false,
+					 14, 15, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
 	instr =
 	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_B, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -897,7 +904,11 @@ void subtilis_arm_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 	br->ccode = SUBTILIS_ARM_CCODE_AL;
 	br->link = true;
 	br->link_type = link_type;
-	br->target.label = call->proc_id;
+	if (indirect)
+		br->target.reg = subtilis_arm_ir_to_arm_reg(call->proc_id);
+	else
+		br->target.label = call->proc_id;
+	br->indirect = indirect;
 
 	call_site = arm_s->last_op;
 
@@ -924,11 +935,12 @@ void subtilis_arm_gen_call(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err)
 {
 	subtilis_arm_gen_call_gen(s, start, user_data,
-				  SUBTILIS_ARM_BR_LINK_VOID, err);
+				  SUBTILIS_ARM_BR_LINK_VOID, false, err);
 }
 
-void subtilis_arm_gen_calli32(subtilis_ir_section_t *s, size_t start,
-			      void *user_data, subtilis_error_t *err)
+static void prv_gen_calli32(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, bool indirect,
+			    subtilis_error_t *err)
 {
 	subtilis_arm_reg_t dest;
 	subtilis_arm_reg_t op1;
@@ -936,7 +948,7 @@ void subtilis_arm_gen_calli32(subtilis_ir_section_t *s, size_t start,
 	subtilis_ir_call_t *call = &s->ops[start]->op.call;
 
 	subtilis_arm_gen_call_gen(s, start, user_data, SUBTILIS_ARM_BR_LINK_INT,
-				  err);
+				  indirect, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -945,6 +957,25 @@ void subtilis_arm_gen_calli32(subtilis_ir_section_t *s, size_t start,
 
 	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op1,
 				 err);
+}
+
+void subtilis_arm_gen_calli32(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	prv_gen_calli32(s, start, user_data, false, err);
+}
+
+void subtilis_arm_gen_call_ptr(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_gen_call_gen(s, start, user_data,
+				  SUBTILIS_ARM_BR_LINK_VOID, true, err);
+}
+
+void subtilis_arm_gen_calli32_ptr(subtilis_ir_section_t *s, size_t start,
+				  void *user_data, subtilis_error_t *err)
+{
+	prv_gen_calli32(s, start, user_data, true, err);
 }
 
 void subtilis_arm_gen_ret(subtilis_ir_section_t *s, size_t start,
@@ -1148,6 +1179,37 @@ void subtilis_arm_gen_lca(subtilis_ir_section_t *s, size_t start,
 
 	(void)subtilis_add_explicit_ldr(arm_s, SUBTILIS_ARM_CCODE_AL, dest,
 					ir_op->operands[1].integer, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	add =
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_ADD, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	datai = &add->operands.data;
+	datai->status = false;
+	datai->ccode = SUBTILIS_ARM_CCODE_AL;
+	datai->dest = dest;
+	datai->op1 = 15;
+	datai->op2.type = SUBTILIS_ARM_OP2_REG;
+	datai->op2.op.reg = dest;
+}
+
+void subtilis_arm_gen_get_proc_addr(subtilis_ir_section_t *s, size_t start,
+				    void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t dest;
+	subtilis_arm_instr_t *add;
+	subtilis_arm_data_instr_t *datai;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *ir_op = &s->ops[start]->op.instr;
+	size_t label = arm_s->label_counter++;
+
+	dest = subtilis_arm_ir_to_arm_reg(ir_op->operands[0].reg);
+
+	subtilis_add_ldrp(arm_s, SUBTILIS_ARM_CCODE_AL, dest,
+			  ir_op->operands[1].label, label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

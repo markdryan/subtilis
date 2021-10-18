@@ -22,13 +22,34 @@
 
 subtilis_exp_t *subtilis_parser_call(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_call_known_ptr(subtilis_parser_t *p,
+					       subtilis_token_t *t,
+					       const subtilis_type_t *type,
+					       size_t reg,
+					       subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_call_ptr(subtilis_parser_t *p,
+					 subtilis_token_t *t,
+					 const subtilis_symbol_t *s,
+					 const char *var_name, size_t mem_reg,
+					 subtilis_error_t *err);
+
 void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 			 subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_lambda(subtilis_parser_t *p,
+				       subtilis_token_t *t,
+				       subtilis_error_t *err);
+
 void subtilis_parser_return(subtilis_parser_t *p, subtilis_token_t *t,
 			    subtilis_error_t *err);
 void subtilis_parser_endproc(subtilis_parser_t *p, subtilis_token_t *t,
 			     subtilis_error_t *err);
 void subtilis_parser_check_calls(subtilis_parser_t *p, subtilis_error_t *err);
 void subtilis_parser_unwind(subtilis_parser_t *p, subtilis_error_t *err);
+char *subtilis_parser_parse_call_type(subtilis_parser_t *p, subtilis_token_t *t,
+				      subtilis_type_t *type,
+				      subtilis_error_t *err);
+void subtilis_parser_call_add_addr(subtilis_parser_t *p,
+				   const subtilis_type_t *type,
+				   subtilis_exp_t *e, subtilis_error_t *err);
 
 #endif

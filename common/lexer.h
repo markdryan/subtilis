@@ -43,6 +43,13 @@ typedef enum {
 struct _subtilis_token_keyword_t {
 	int type;
 	bool supported;
+
+	/*
+	 * As the lexer does not understand or return complex types
+	 * we're just going to treat this as a scalar type, e.g.,
+	 * no subtilis_type_copy or subtilis_type_free needed here.
+	 */
+
 	subtilis_type_t id_type;
 };
 

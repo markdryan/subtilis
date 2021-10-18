@@ -99,6 +99,15 @@ static void prv_call_ldrc_fn(subtlis_arm_walker_t *walker, void *user_data,
 			&instr->operands.ldrc, err);
 }
 
+static void prv_call_ldrp_fn(subtlis_arm_walker_t *walker, void *user_data,
+			     subtilis_arm_op_t *op, subtilis_error_t *err)
+{
+	subtilis_arm_instr_t *instr = &op->op.instr;
+
+	walker->ldrp_fn(walker->user_data, op, instr->type,
+			&instr->operands.ldrp, err);
+}
+
 static void prv_call_adr_fn(subtlis_arm_walker_t *walker, void *user_data,
 			    subtilis_arm_op_t *op, subtilis_error_t *err)
 {
@@ -366,9 +375,10 @@ static const subtilis_walker_fn_t walker_table[] = {
 	prv_call_stran_fn,		// SUBTILIS_ARM_INSTR_STR
 	prv_call_mtran_fn,		// SUBTILIS_ARM_INSTR_LDM
 	prv_call_mtran_fn,		// SUBTILIS_ARM_INSTR_STM
-	prv_call_br_fn,		// SUBTILIS_ARM_INSTR_B
+	prv_call_br_fn,			// SUBTILIS_ARM_INSTR_B
 	prv_call_swi_fn,		// SUBTILIS_ARM_INSTR_SWI
 	prv_call_ldrc_fn,		// SUBTILIS_ARM_INSTR_LDRC
+	prv_call_ldrp_fn,		// SUBTILIS_ARM_INSTR_LDRP
 	prv_call_cmov_fn,		// SUBTILIS_ARM_INSTR_CMOV
 	prv_call_adr_fn,		// SUBTILIS_ARM_INSTR_ADR
 	prv_call_flags_fn,		// SUBTILIS_ARM_INSTR_MSR

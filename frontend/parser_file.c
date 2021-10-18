@@ -292,6 +292,7 @@ static bool prv_block_operation_prep(subtilis_parser_t *p, subtilis_token_t *t,
 
 {
 	const char *tbuf;
+	bool scalar_ref;
 	bool check_dims = false;
 	subtilis_exp_t *val = NULL;
 	subtilis_type_t el_type;
@@ -311,7 +312,10 @@ static bool prv_block_operation_prep(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return false;
 
-	if (!subtilis_type_if_is_scalar_ref(&val->type)) {
+	scalar_ref = subtilis_type_if_is_scalar_ref(&val->type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return false;
+	if (!scalar_ref) {
 		subtilis_error_set_expected(err,
 					    "string or array of numeric types",
 					    subtilis_type_name(&val->type),
@@ -324,6 +328,7 @@ static bool prv_block_operation_prep(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 
 	*el_size = subtilis_type_if_size(&el_type, err);
+	subtilis_type_free(&el_type);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 	*arg1_tmp = val->temporary;

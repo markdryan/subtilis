@@ -42,15 +42,17 @@ static subtilis_exp_t *prv_data_size(subtilis_parser_t *p, subtilis_exp_t *e,
 	return subtilis_type_if_lsl(p, e, three, err);
 }
 
-static subtilis_exp_t *prv_zero(subtilis_parser_t *p, subtilis_error_t *err)
+static subtilis_exp_t *prv_zero(subtilis_parser_t *p,
+				const subtilis_type_t *type,
+				subtilis_error_t *err)
 {
 	subtilis_error_set_not_supported(err, "zero on arrays",
 					 p->l->stream->name, p->l->line);
 	return NULL;
 }
 
-static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
-			 subtilis_error_t *err)
+static void prv_zero_reg(subtilis_parser_t *p, const subtilis_type_t *type,
+			 size_t reg, subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
@@ -62,7 +64,8 @@ static void prv_zero_reg(subtilis_parser_t *p, size_t reg,
 }
 
 static void prv_element_type(const subtilis_type_t *type,
-			     subtilis_type_t *element_type)
+			     subtilis_type_t *element_type,
+			     subtilis_error_t *err)
 {
 	element_type->type = SUBTILIS_TYPE_REAL;
 }
@@ -101,13 +104,15 @@ static void prv_set(subtilis_parser_t *p, const char *var_name,
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
 
+	eq_zero.label = SIZE_MAX;
+
 	subtilis_type_if_element_type(p, type, &el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		goto free_e;
 
 	e = subtilis_type_if_coerce_type(p, e, &el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		goto cleanup;
 
 	sizee = subtilis_reference_type_get_size(p, mem_reg, loc, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -148,7 +153,9 @@ static void prv_set(subtilis_parser_t *p, const char *var_name,
 		subtilis_ir_section_add_label(p->current, eq_zero.label, err);
 
 cleanup:
+	subtilis_type_free(&el_type);
 
+free_e:
 	subtilis_exp_delete(e);
 }
 
@@ -375,6 +382,21 @@ static subtilis_exp_t *prv_call(subtilis_parser_t *p,
 	return subtilis_exp_new_var(type, reg, err);
 }
 
+static subtilis_exp_t *prv_call_ptr(subtilis_parser_t *p,
+				    const subtilis_type_t *type,
+				    subtilis_ir_arg_t *args, size_t num_args,
+				    size_t ptr, subtilis_error_t *err)
+{
+	size_t reg;
+
+	reg = subtilis_ir_section_add_i32_call_ptr(p->current, num_args, args,
+						   ptr, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_var(type, reg, err);
+}
+
 static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
 {
 	subtilis_ir_operand_t ret_reg;
@@ -395,7 +417,7 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.size = prv_size,
 	.data_size = prv_data_size,
 	.zero = prv_zero,
-	.zero_ref = NULL,
+	.zero_ref = subtilis_array_create_1el,
 	.new_ref = NULL,
 	.assign_ref = NULL,
 	.assign_ref_no_rc = NULL,
@@ -416,6 +438,7 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.indexed_sub = prv_indexed_sub,
 	.indexed_read = prv_indexed_read,
 	.set = prv_array_set,
+	.zero_buf = subtilis_array_zero_buf_i32,
 	.append = NULL,
 	.indexed_address = prv_indexed_address,
 	.load_mem = NULL,
@@ -447,6 +470,7 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.abs = prv_abs,
 	.is_inf = NULL,
 	.call = prv_call,
+	.call_ptr = prv_call_ptr,
 	.ret = prv_ret,
 	.destructor = NULL,
 };
@@ -460,6 +484,13 @@ static void prv_vector_set(subtilis_parser_t *p, const char *var_name,
 	prv_set(p, var_name, type, mem_reg, loc, e, true, err);
 }
 
+static void prv_vector_zero_ref(subtilis_parser_t *p,
+				const subtilis_type_t *type, size_t mem_reg,
+				size_t loc, bool push, subtilis_error_t *err)
+{
+	subtilis_array_type_zero_ref(p, type, loc, mem_reg, push, err);
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_vector_float64 = {
 	.is_const = false,
@@ -471,7 +502,7 @@ subtilis_type_if subtilis_type_vector_float64 = {
 	.size = prv_size,
 	.data_size = prv_data_size,
 	.zero = prv_zero,
-	.zero_ref = NULL,
+	.zero_ref = prv_vector_zero_ref,
 	.new_ref = NULL,
 	.assign_ref = NULL,
 	.assign_ref_no_rc = NULL,
@@ -492,6 +523,7 @@ subtilis_type_if subtilis_type_vector_float64 = {
 	.indexed_sub = prv_indexed_sub,
 	.indexed_read = prv_indexed_read,
 	.set = prv_vector_set,
+	.zero_buf = subtilis_array_zero_buf_i32,
 	.append = prv_append,
 	.indexed_address = prv_indexed_address,
 	.load_mem = NULL,
@@ -523,6 +555,7 @@ subtilis_type_if subtilis_type_vector_float64 = {
 	.abs = prv_abs,
 	.is_inf = NULL,
 	.call = prv_call,
+	.call_ptr = prv_call_ptr,
 	.ret = prv_ret,
 	.destructor = NULL,
 };

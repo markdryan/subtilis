@@ -26,6 +26,9 @@ void subtilis_array_type_init(subtilis_parser_t *p, const char *var_name,
 			      const subtilis_type_t *element_type,
 			      subtilis_type_t *type, subtilis_exp_t **e,
 			      size_t dims, subtilis_error_t *err);
+void subtilis_array_create_1el(subtilis_parser_t *p,
+			       const subtilis_type_t *type, size_t mem_reg,
+			       size_t loc, bool push, subtilis_error_t *err);
 void subtilis_array_type_vector_init(subtilis_parser_t *p,
 				     const subtilis_type_t *element_type,
 				     subtilis_type_t *type,
@@ -35,12 +38,13 @@ void subtilis_array_type_zero_ref(subtilis_parser_t *p,
 				  size_t mem_reg, bool push,
 				  subtilis_error_t *err);
 void subtilis_array_type_allocate(subtilis_parser_t *p, const char *var_name,
-				  subtilis_type_t *type, size_t loc,
+				  const subtilis_type_t *type, size_t loc,
 				  subtilis_exp_t **e,
-				  subtilis_ir_operand_t store_reg,
+				  subtilis_ir_operand_t store_reg, bool push,
 				  subtilis_error_t *err);
 void subtilis_array_type_vector_alloc(subtilis_parser_t *p, size_t loc,
-				      subtilis_type_t *type, subtilis_exp_t *e,
+				      const subtilis_type_t *type,
+				      subtilis_exp_t *e,
 				      subtilis_ir_operand_t store_reg,
 				      subtilis_error_t *err);
 void subtlis_array_type_copy_param_ref(subtilis_parser_t *p,
@@ -128,5 +132,11 @@ void subtilis_array_append_ref_array(subtilis_parser_t *p, subtilis_exp_t *a1,
 				     subtilis_exp_t *a2, subtilis_error_t *err);
 void subtilis_array_type_dup(subtilis_exp_t *src, subtilis_exp_t *dst,
 			     subtilis_error_t *err);
+void subtilis_array_zero_buf_i32(subtilis_parser_t *p,
+				 const subtilis_type_t *type, size_t data_reg,
+				 size_t size_reg, subtilis_error_t *err);
+void subtilis_array_zero_buf_i8(subtilis_parser_t *p,
+				const subtilis_type_t *type, size_t data_reg,
+				size_t size_reg, subtilis_error_t *err);
 
 #endif
