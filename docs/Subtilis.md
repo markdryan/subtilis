@@ -1142,6 +1142,164 @@ print a${3}
 
 will print "hello to the world".
 
+### Function Pointers, Lambdas and Higher Order Functions
+
+Subtilis allows the address of existing functions to be taken, stored in a variable and
+passed to and returned from procedures.  It also allows the creation of lambda or unnamed
+functions.  Before a lambda function or the address of a function or procedure can be assigned
+to a variable or pass to and from a function a new type must be created to represent the type
+of the variable.  Types are created with the new *type* keyword.  The *type* keyword is followed
+by a function prototype.  For example,
+
+```
+type FNReduce%(a%, b%)
+```
+
+Defines a new type called *FNReduce* which represents functions that take two integer input
+parameters and that return an integer.  The names of the parameters is unimportant in the type
+statement, but the types of the parameters are.  Note that,
+
+```
+type FNReduce%(a%, b%)
+```
+
+and
+
+```
+type FNReduce%(ONE%, TWO%)
+```
+
+are identical.  Also note that the name of the type does not include the return type of the function, i.e.,
+the name of the type we just defined is *FNReduce* and not *FNReduce%*.
+
+Instances of user defined types are declared using the *@* operator.  A variable name is followed by *@* which is
+followed by the type name.  So to create a variable that points to a function that takes two integer arguments
+and that returns an integer one might type.
+
+```
+local a@FNReduce
+```
+
+It's also possible to create user defined types that store pointers to procedures, simply by replacing FN
+with PROC, e.g.,
+
+```
+type PROCDoSomething(a$)
+local b@PROCDoSomething
+```
+
+Is a type that represents a procedure that takes a single string argument.
+
+
+As with all other variables, function pointers that are not explicitly initialised are set to their zero
+value.  What that means, differs depending on the type of the function.  The zero value for any user defined
+procedure type is a procedure that does nothing.   The zero value for functions type that return numeric types
+is a pointer to a function that returns the zero value of the appropriate type.  The zero values for strings
+and vectors are pointers to functions that return empty strings and vectors, respectively.  The zero value for a
+function returning an array is a special case.  It's a pointer to a function that returns an array of the
+correct dimensions that contains a single element.  This is because Subtilis requires that all arrays have
+at least one element.  
+
+To invoke a function through a function pointer, the name of the function needs to be precedeed by all the
+relevant arguments in brackets.  Note the brackets are mandatory, even if the procedure or function type
+accepts no arguments.
+
+So for example,
+
+```
+print a@FNReduce(1,1)
+b@PROCDoSomething()
+```
+
+will print out 0, the value returned by the expression a@FNReduce(1,1) which invokes the zero value
+for function pointers returning integers.
+
+Variables of function pointers can be initialised in two ways.  They can be assigned the pointer of a
+name function or procedure declared anywhere in the source file, or they can be initialised with a lambda function.
+
+The *!* operator is used to take the address of a named function.  You simply prefix the function name with the
+*'*!* operator.  Note that in Subtilis, the function name contains the full return type of the function, unlike the
+type name.  So to initialise a@FNReduce to point to a named function we might do something like this.
+
+```
+type FNReduce%(a%, b%)
+a@FNReduce := !FNAdd%
+print a@FNReduce(1, 2)
+
+def FNAdd%(a%, b%) <- a% + b%
+```
+
+Lambda functions are function or procedure definitions without a name that can be used in an expression
+context.  For example, let's create another instance of FNReduce and assign it a lambda function.
+
+```
+b@FNReduce = def FN%(a%, b%) <- a%*b%
+print b@FNReduce(1,2)
+```
+
+This code snippet should output 2.
+
+Arrays and vectors of function pointers in the same way as they are for all the other types.
+For example,
+
+```
+type PROCprinter(a$)
+dim vec@PROCprinter{1}
+vec@PROCprinter{} = def PROC(a$) print "hello " + a$ endproc
+
+append(vec@PROCprinter{}, def PROC(a$) print "goodbye " + a$ endproc)
+
+range a@PROCprinter := vec@PROCprinter{}
+    a@PROCprinter("Subtilis")
+endrange
+```
+
+should output
+
+```
+hello Subtilis
+hello Subtilis
+goodbye Subtilis
+```
+
+Note *hello Subtilis* is output twice as the vector initially contained two elements and both of
+those elements were initialised to point to the first lambda function.
+
+Function pointers can be passed to functions and returned from them.  For example,
+
+```
+type FNReduce%(a%, b%)
+dim vec@FNReduce{1}
+vec@FNReduce{} = FNMakeAdder@FNReduce, FNMakeMultiplier@FNReduce
+
+range a@FNReduce := vec@FNReduce{}
+    PROCReducer(10, 10, a@FNReduce)
+endrange
+
+def FNMakeAdder@FNReduce <- def FN%(a%, b%) <- a% + b%
+def FNMakeMultiplier@FNReduce <- def FN%(a%, b%) <- a% * b%
+
+def PROCReducer(a%, b%, fn@FNReduce)
+    print fn@FNReduce(a%, b%)
+endproc
+```
+
+FNMakeAdder@FNReduce and FNMakeMultiplier@FNReduce both return lambda functions and PROCReducer
+accepts a function pointer as an argument.
+
+It's possible to recreate recursive types using the type keyword.  For example it's possible
+to create a type that represents a pointer to a procedure that accepts a function pointer as an argument.
+For example, if we wanted to take the address of PROCReducer from the previous example, we could do
+so as follows.
+
+```
+type PROCHigherOrder(a%, b%, fn@FNReduce)
+ho@PROCHigherOrder = !PROCReducer
+ho@PROCHigherOrder(100, 3, def FN%(a%, b%) <- a% div b%)
+```
+
+As a final note, Subtilis does not support any form of closure and probably never will (they're too confusing).
+
 ## Current Issues with the Grammar
 
 ### Function like keywords returning integer values
@@ -1596,7 +1754,7 @@ There are also some enhancements that will need to be added to the language to m
 more palatable to the modern programmer.
 
 * Structures
-* Functions and procedures as first class types
+* Slices
 * Maps
 
 ## Tooling
