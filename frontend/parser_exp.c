@@ -171,6 +171,13 @@ static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,
 		tbuf = subtilis_token_get_text(t);
 		if ((t->type == SUBTILIS_TOKEN_OPERATOR) &&
 		    !strcmp(tbuf, "(")) {
+			if (s->t.params.fn.ret_val->type ==
+			    SUBTILIS_TYPE_VOID) {
+				subtilis_error_set_expected(
+				    err, "function", "procedure",
+				    p->l->stream->name, p->l->line);
+				goto cleanup;
+			}
 			e = subtilis_parser_call_ptr(p, t, s, var_name, mem_reg,
 						     err);
 			goto cleanup;

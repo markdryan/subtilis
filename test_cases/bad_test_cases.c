@@ -820,6 +820,12 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"<-string$(b%, \"hello\")\n",
 	SUBTILIS_ERROR_BAD_ARG_COUNT,
 	},
+	{"proc_ptr_in_expression",
+	"type PROCMark\n"
+	"local a@PROCMark\n"
+	"print a@PROCMark()\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
 };
 
 /* clang-format on */
