@@ -1145,9 +1145,9 @@ will print "hello to the world".
 ### Function Pointers, Lambdas and Higher Order Functions
 
 Subtilis allows the address of existing functions to be taken, stored in a variable and
-passed to and returned from procedures.  It also allows the creation of lambda or unnamed
+passed to and returned from functions.  It also allows the creation of lambda or unnamed
 functions.  Before a lambda function or the address of a function or procedure can be assigned
-to a variable or pass to and from a function a new type must be created to represent the type
+to a variable or passed to and from a function a new type must be created to represent the type
 of the variable.  Types are created with the new *type* keyword.  The *type* keyword is followed
 by a function prototype.  For example,
 
@@ -1172,7 +1172,7 @@ type FNReduce%(ONE%, TWO%)
 are identical.  Also note that the name of the type does not include the return type of the function, i.e.,
 the name of the type we just defined is *FNReduce* and not *FNReduce%*.
 
-Instances of user defined types are declared using the *@* operator.  A variable name is followed by *@* which is
+Instances of user defined types are declared using the **@** operator.  A variable name is followed by **@** which is
 followed by the type name.  So to create a variable that points to a function that takes two integer arguments
 and that returns an integer one might type.
 
@@ -1217,8 +1217,8 @@ for function pointers returning integers.
 Variables of function pointers can be initialised in two ways.  They can be assigned the pointer of a
 name function or procedure declared anywhere in the source file, or they can be initialised with a lambda function.
 
-The *!* operator is used to take the address of a named function.  You simply prefix the function name with the
-*'*!* operator.  Note that in Subtilis, the function name contains the full return type of the function, unlike the
+The **!** operator is used to take the address of a named function.  You simply prefix the function name with the
+**!** operator.  Note that in Subtilis, the function name contains the full return type of the function, unlike the
 type name.  So to initialise a@FNReduce to point to a named function we might do something like this.
 
 ```
@@ -1284,12 +1284,12 @@ def PROCReducer(a%, b%, fn@FNReduce)
 endproc
 ```
 
-FNMakeAdder@FNReduce and FNMakeMultiplier@FNReduce both return lambda functions and PROCReducer
+*FNMakeAdder@FNReduce* and *FNMakeMultiplier@FNReduce* both return lambda functions and *PROCReducer*
 accepts a function pointer as an argument.
 
-It's possible to recreate recursive types using the type keyword.  For example it's possible
-to create a type that represents a pointer to a procedure that accepts a function pointer as an argument.
-For example, if we wanted to take the address of PROCReducer from the previous example, we could do
+It's possible to create recursive types using the type keyword.  For example,
+a type can be created that represents a pointer to a procedure that accepts a function pointer as an argument.
+If we wanted to take the address of PROCReducer from the previous example, we could do
 so as follows.
 
 ```
@@ -1298,7 +1298,7 @@ ho@PROCHigherOrder = !PROCReducer
 ho@PROCHigherOrder(100, 3, def FN%(a%, b%) <- a% div b%)
 ```
 
-As a final note, Subtilis does not support any form of closure and probably never will (they're too confusing).
+As a final note, Subtilis does not support any form of closure and probably never will.
 
 ## Current Issues with the Grammar
 

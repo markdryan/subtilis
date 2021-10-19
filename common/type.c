@@ -222,8 +222,10 @@ const char *subtilis_type_name(const subtilis_type_t *typ)
 static void prv_full_type_name(const subtilis_type_t *typ,
 			       subtilis_buffer_t *buf, subtilis_error_t *err)
 {
-	if (typ->type == SUBTILIS_TYPE_FN)
-		return prv_fn_type_name(typ, buf, err);
+	if (typ->type == SUBTILIS_TYPE_FN) {
+		prv_fn_type_name(typ, buf, err);
+		return;
+	}
 
 	subtilis_buffer_append_string(buf, subtilis_type_name(typ), err);
 }
