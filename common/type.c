@@ -234,11 +234,19 @@ static void prv_fn_type_name(const subtilis_type_t *typ, subtilis_buffer_t *buf,
 			     subtilis_error_t *err)
 {
 	size_t i;
-	const char *fnorproc;
 	const subtilis_type_fn_t *fn_type = &typ->params.fn;
 
-	fnorproc = fn_type->ret_val ? "FN(" : "PROC(";
-	subtilis_buffer_append_string(buf, fnorproc, err);
+	if (fn_type->ret_val) {
+		subtilis_buffer_append_string(buf, "FN", err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		prv_full_type_name(fn_type->ret_val, buf, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		subtilis_buffer_append_string(buf, "(", err);
+	} else {
+		subtilis_buffer_append_string(buf, "PROC(", err);
+	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

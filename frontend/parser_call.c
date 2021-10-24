@@ -1708,6 +1708,24 @@ void subtilis_parser_endproc(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_lexer_get(p->l, t, err);
 }
 
+struct subtilis_check_call_ud_t_ {
+	size_t i;
+	size_t line;
+};
+
+typedef struct subtilis_check_call_ud_t_ subtilis_check_call_ud_t;
+
+static void prv_arg_check_failed(subtilis_parser_t *p, const char *expected,
+				 const char *got, void *ud,
+				 subtilis_error_t *err)
+{
+	subtilis_check_call_ud_t *call_ud = (subtilis_check_call_ud_t *)ud;
+
+	subtilis_error_set_bad_arg_type(err, call_ud->i + 1, expected, got,
+					p->l->stream->name, call_ud->line,
+					__FILE__, __LINE__);
+}
+
 static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 			   subtilis_error_t *err)
 {
@@ -1715,12 +1733,11 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 	size_t call_index;
 	size_t i;
 	subtilis_type_section_t *st;
-	const char *expected_typname;
-	const char *got_typname;
 	size_t new_reg;
 	subtilis_op_instr_type_t itype;
 	subtilis_ir_reg_type_t reg_type;
 	subtilis_ir_call_t *call_site;
+	subtilis_check_call_ud_t call_ud;
 	subtilis_type_section_t *ct = call->call_type;
 
 	if (!subtilis_string_pool_find(p->prog->string_pool, call->name,
@@ -1828,12 +1845,11 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 			itype = SUBTILIS_OP_INSTR_SIGNX_8_TO_32;
 			reg_type = SUBTILIS_IR_REG_TYPE_INTEGER;
 		} else {
-			expected_typname =
-			    subtilis_type_name(&st->parameters[i]);
-			got_typname = subtilis_type_name(&ct->parameters[i]);
-			subtilis_error_set_bad_arg_type(
-			    err, i + 1, expected_typname, got_typname,
-			    p->l->stream->name, call->line, __FILE__, __LINE__);
+			call_ud.i = i;
+			call_ud.line = call->line;
+			subtilis_type_compare_diag_custom(
+			    p, &st->parameters[i], &ct->parameters[i], &call_ud,
+			    prv_arg_check_failed, err);
 			return;
 		}
 

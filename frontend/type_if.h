@@ -849,6 +849,15 @@ subtilis_ir_reg_type_t subtilis_type_if_reg_type(const subtilis_type_t *type);
 
 size_t subtilis_type_if_destructor(const subtilis_type_t *type);
 
+typedef void (*subtilis_type_cmp_diag_fn_t)(subtilis_parser_t *p,
+					    const char *expected,
+					    const char *got, void *ud,
+					    subtilis_error_t *err);
+void subtilis_type_compare_diag_custom(subtilis_parser_t *p,
+				       const subtilis_type_t *t1,
+				       const subtilis_type_t *t2, void *ud,
+				       subtilis_type_cmp_diag_fn_t diag_fn,
+				       subtilis_error_t *err);
 void subtilis_type_compare_diag(subtilis_parser_t *p, const subtilis_type_t *t1,
 				const subtilis_type_t *t2,
 				subtilis_error_t *err);
