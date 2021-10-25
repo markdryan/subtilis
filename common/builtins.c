@@ -71,7 +71,7 @@ subtilis_type_section_t *subtilis_builtin_ts(subtilis_builtin_type_t type,
 			goto cleanup;
 	}
 	ts = subtilis_type_section_new(&f->ret_type, f->num_parameters, params,
-				       err);
+				       NULL, err);
 
 cleanup:
 	for (i = 0; i < f->num_parameters; i++)

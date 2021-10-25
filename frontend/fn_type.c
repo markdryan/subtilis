@@ -50,7 +50,7 @@ static size_t prv_generate_zero_fn(subtilis_parser_t *p,
 		return SIZE_MAX;
 	p->local_st = local_st;
 
-	stype = subtilis_type_section_new(type, 0, NULL, err);
+	stype = subtilis_type_section_new(type, 0, NULL, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

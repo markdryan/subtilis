@@ -142,6 +142,7 @@ bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b)
 subtilis_type_section_t *
 subtilis_type_section_new(const subtilis_type_t *rtype, size_t num_parameters,
 			  const subtilis_type_t *parameters,
+			  subtilis_check_args_t *check_args,
 			  subtilis_error_t *err)
 
 {
@@ -167,7 +168,6 @@ subtilis_type_section_new(const subtilis_type_t *rtype, size_t num_parameters,
 	subtilis_type_init_copy(ftype->params.fn.ret_val, rtype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
-
 	ftype->params.fn.num_params = num_parameters;
 	for (i = 0; i < num_parameters; i++) {
 		ftype->params.fn.params[i] =
@@ -183,7 +183,7 @@ subtilis_type_section_new(const subtilis_type_t *rtype, size_t num_parameters,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 	}
-
+	stype->check_args = check_args;
 	stype->int_regs = 0;
 	stype->fp_regs = 0;
 
@@ -224,6 +224,8 @@ on_error:
 
 void subtilis_type_section_delete(subtilis_type_section_t *stype)
 {
+	size_t i;
+
 	if (!stype)
 		return;
 
@@ -231,6 +233,11 @@ void subtilis_type_section_delete(subtilis_type_section_t *stype)
 	if (stype->ref_count != 0)
 		return;
 	subtilis_type_free(&stype->type);
+	if (stype->check_args) {
+		for (i = 0; i < stype->type.params.fn.num_params; i++)
+			free(stype->check_args[i].arg_name);
+		free(stype->check_args);
+	}
 	free(stype);
 }
 

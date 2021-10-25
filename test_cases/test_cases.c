@@ -4738,6 +4738,15 @@ const subtilis_test_case_t test_cases[] = {
 	"endrange\n",
 	"20\n100\n20\n100\n",
 	},
+	{"function_ptr_param",
+	"type FNMap$(a$)\n"
+	"PROCMapper(\"hello\", !FNstr$)\n"
+	"def FNstr$(a$) <- a$ + a$\n"
+	"def PROCMapper(s$, a@FNMap)\n"
+	"  print a@FNMap(s$)\n"
+	"endproc\n",
+	"hellohello\n",
+	},
 };
 
 /* clang-format on */

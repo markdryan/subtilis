@@ -29,7 +29,8 @@ prv_create_section(subtilis_arm_op_pool_t *pool,
 	subtilis_arm_reg_t op2;
 	subtilis_type_section_t *stype = NULL;
 
-	stype = subtilis_type_section_new(&subtilis_type_void, 0, NULL, err);
+	stype =
+	    subtilis_type_section_new(&subtilis_type_void, 0, NULL, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 

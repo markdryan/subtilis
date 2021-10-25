@@ -105,15 +105,16 @@ static void prv_delete_ptypes(subtilis_type_t *ptypes, size_t num_args)
 	free(ptypes);
 }
 
-static subtilis_parser_param_t *prv_call_parameters(subtilis_parser_t *p,
-						    subtilis_exp_t **args,
-						    size_t num_args,
-						    subtilis_error_t *err)
+static subtilis_parser_param_t *
+prv_call_parameters(subtilis_parser_t *p, subtilis_exp_t **args,
+		    size_t num_args, subtilis_check_args_t **check_args,
+		    subtilis_error_t *err)
 {
 	size_t nop;
 	size_t i;
 	subtilis_parser_param_t *params = NULL;
 	subtilis_exp_t *e = NULL;
+	subtilis_check_args_t *an = NULL;
 
 	params = malloc(num_args * sizeof(*params));
 	if (!params) {
@@ -124,6 +125,23 @@ static subtilis_parser_param_t *prv_call_parameters(subtilis_parser_t *p,
 		params[i].type.type = SUBTILIS_TYPE_VOID;
 
 	for (i = 0; i < num_args; i++) {
+		if (args[i]->partial_name) {
+			if (!an) {
+				an = calloc(num_args, sizeof(*an));
+				if (!an) {
+					subtilis_error_set_oom(err);
+					goto on_error;
+				}
+			}
+			an[i].arg_name =
+			    malloc(strlen(args[i]->partial_name) + 1);
+			if (!an[i].arg_name) {
+				subtilis_error_set_oom(err);
+				goto on_error;
+			}
+			strcpy(an[i].arg_name, args[i]->partial_name);
+			an[i].call_site = args[i]->call_site;
+		}
 		e = subtilis_type_if_exp_to_var(p, args[i], err);
 		args[i] = NULL;
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -140,9 +158,17 @@ static subtilis_parser_param_t *prv_call_parameters(subtilis_parser_t *p,
 		e = NULL;
 	}
 
+	*check_args = an;
+
 	return params;
 
 on_error:
+
+	if (an) {
+		for (i = 0; i < num_args; i++)
+			free(an[i].arg_name);
+		free(an);
+	}
 
 	subtilis_exp_delete(e);
 	prv_delete_params(params, num_args);
@@ -359,6 +385,7 @@ subtilis_exp_t *subtilis_parser_call(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_type_t fn_type;
 	subtilis_exp_t *poss_args[SUBTILIS_MAX_ARGS];
 	size_t i;
+	subtilis_check_args_t *check_args = NULL;
 	size_t num_poss_args = 0;
 	bool vector = false;
 	subtilis_type_section_t *stype = NULL;
@@ -435,7 +462,8 @@ subtilis_exp_t *subtilis_parser_call(subtilis_parser_t *p, subtilis_token_t *t,
 				goto on_error;
 		}
 
-		params = prv_call_parameters(p, poss_args, num_poss_args, err);
+		params = prv_call_parameters(p, poss_args, num_poss_args,
+					     &check_args, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto on_error;
 		args = prv_parser_to_ir_args(params, num_poss_args, err);
@@ -453,7 +481,8 @@ subtilis_exp_t *subtilis_parser_call(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	stype = subtilis_type_section_new(&fn_type, num_poss_args, ptypes, err);
+	stype = subtilis_type_section_new(&fn_type, num_poss_args, ptypes,
+					  check_args, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 	prv_delete_ptypes(ptypes, num_poss_args);
@@ -475,6 +504,11 @@ on_error:
 		subtilis_exp_delete(poss_args[i]);
 
 	prv_delete_ptypes(ptypes, num_poss_args);
+	if (check_args) {
+		for (i = 0; i < num_poss_args; i++)
+			free(check_args[i].arg_name);
+		free(check_args);
+	}
 	prv_delete_params(params, num_poss_args);
 	free(args);
 	free(name);
@@ -1137,7 +1171,8 @@ static void prv_def_internal(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	stype = subtilis_type_section_new(fn_type, num_params, params, err);
+	stype =
+	    subtilis_type_section_new(fn_type, num_params, params, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 	prv_delete_ptypes(params, num_params);
@@ -1723,12 +1758,14 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 {
 	size_t index;
 	size_t call_index;
+	size_t param_call_index;
 	size_t i;
 	subtilis_type_section_t *st;
 	size_t new_reg;
 	subtilis_op_instr_type_t itype;
 	subtilis_ir_reg_type_t reg_type;
 	subtilis_ir_call_t *call_site;
+	subtilis_ir_inst_t *param_call_site;
 	subtilis_check_call_ud_t call_ud;
 	subtilis_type_fn_t *fn_st;
 	subtilis_type_fn_t *fn_ct;
@@ -1809,6 +1846,39 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 	}
 
 	for (i = 0; i < fn_st->num_params; i++) {
+		if (ct->check_args && ct->check_args[i].arg_name) {
+			/*
+			 * Someone has passed a pointer to an existing function
+			 * as an argument.  We can't do the parameter type
+			 * checking or getprocaddr resolution at the call site
+			 * so we need to do it here.  The type of the parameter
+			 * in fn_ct->params[i] is incomplete at this stage so we
+			 * need to look up the actual function whose address was
+			 * taken, now it's been seen and patch up the
+			 * getprocaddr instruction.
+			 */
+
+			if (!subtilis_string_pool_find(
+				p->prog->string_pool,
+				ct->check_args[i].arg_name,
+				&param_call_index)) {
+				subtilis_error_set_unknown_procedure(
+				    err, ct->check_args[i].arg_name,
+				    p->l->stream->name, call->line);
+				return;
+			}
+			subtilis_type_copy(
+			    fn_ct->params[i],
+			    &p->prog->sections[param_call_index]->type->type,
+			    err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+
+			param_call_site =
+			    &call->s->ops[ct->check_args[i].call_site]
+				 ->op.instr;
+			param_call_site->operands[1].label = param_call_index;
+		}
 		if (subtilis_type_eq(fn_st->params[i], fn_ct->params[i]))
 			continue;
 

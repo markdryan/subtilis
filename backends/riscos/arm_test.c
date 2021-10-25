@@ -1399,7 +1399,8 @@ static int prv_test_encode(void)
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	stype = subtilis_type_section_new(&subtilis_type_void, 0, NULL, &err);
+	stype =
+	    subtilis_type_section_new(&subtilis_type_void, 0, NULL, NULL, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

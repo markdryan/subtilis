@@ -2514,7 +2514,7 @@ static subtilis_ir_section_t *prv_add_args(subtilis_parser_t *p,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 	}
-	ts = subtilis_type_section_new(rtype, arg_count, params, err);
+	ts = subtilis_type_section_new(rtype, arg_count, params, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

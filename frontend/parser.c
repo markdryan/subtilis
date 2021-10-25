@@ -69,7 +69,8 @@ subtilis_parser_t *subtilis_parser_new(subtilis_lexer_t *l,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	stype = subtilis_type_section_new(&subtilis_type_void, 0, NULL, err);
+	stype =
+	    subtilis_type_section_new(&subtilis_type_void, 0, NULL, NULL, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 

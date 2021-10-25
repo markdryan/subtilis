@@ -99,8 +99,16 @@ struct subtilis_type_t_ {
 	} params;
 };
 
+struct subtilis_check_args_t_ {
+	char *arg_name;
+	size_t call_site;
+};
+
+typedef struct subtilis_check_args_t_ subtilis_check_args_t;
+
 struct subtilis_type_section_t_ {
 	subtilis_type_t type;
+	subtilis_check_args_t *check_args;
 	size_t ref_count;
 	size_t int_regs;
 	size_t fp_regs;
@@ -112,6 +120,7 @@ typedef struct subtilis_type_section_t_ subtilis_type_section_t;
 subtilis_type_section_t *
 subtilis_type_section_new(const subtilis_type_t *rtype, size_t num_parameters,
 			  const subtilis_type_t *parameters,
+			  subtilis_check_args_t *check_args,
 			  subtilis_error_t *err);
 void subtilis_type_section_delete(subtilis_type_section_t *stype);
 bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b);
