@@ -98,13 +98,14 @@ void subtilis_exp_return_default_value(subtilis_parser_t *p,
 
 	end_label.label = p->current->end_label;
 	if ((p->current == p->main) ||
-	    (p->current->type->return_type.type == SUBTILIS_TYPE_VOID)) {
+	    (p->current->type->type.params.fn.ret_val->type ==
+	     SUBTILIS_TYPE_VOID)) {
 		subtilis_ir_section_add_instr_no_reg(
 		    p->current, SUBTILIS_OP_INSTR_JMP, end_label, err);
 		return;
 	}
 
-	subtilis_type_if_zero_reg(p, &p->current->type->return_type,
+	subtilis_type_if_zero_reg(p, p->current->type->type.params.fn.ret_val,
 				  p->current->ret_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -154,7 +155,8 @@ void subtilis_exp_handle_errors(subtilis_parser_t *p, subtilis_error_t *err)
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	} else if ((p->current == p->main) ||
-		   (p->current->type->return_type.type == SUBTILIS_TYPE_VOID)) {
+		   (p->current->type->type.params.fn.ret_val->type ==
+		    SUBTILIS_TYPE_VOID)) {
 		/*
 		 * There's no error handler so we need to return.  We can jump
 		 * straight to the exit code for the procedure as theres no

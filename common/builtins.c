@@ -55,6 +55,7 @@ subtilis_type_section_t *subtilis_builtin_ts(subtilis_builtin_type_t type,
 	const subtilis_builtin_t *f;
 	subtilis_type_t *params;
 	size_t i;
+	subtilis_type_section_t *ts = NULL;
 
 	f = &subtilis_builtin_list[type];
 	params = malloc(sizeof(subtilis_type_t) * f->num_parameters);
@@ -63,7 +64,19 @@ subtilis_type_section_t *subtilis_builtin_ts(subtilis_builtin_type_t type,
 		return NULL;
 	}
 	for (i = 0; i < f->num_parameters; i++)
-		params[i] = f->arg_types[i];
-	return subtilis_type_section_new(&f->ret_type, f->num_parameters,
-					 params, err);
+		params[i].type = SUBTILIS_TYPE_VOID;
+	for (i = 0; i < f->num_parameters; i++) {
+		subtilis_type_copy(&params[i], &f->arg_types[i], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+	ts = subtilis_type_section_new(&f->ret_type, f->num_parameters, params,
+				       err);
+
+cleanup:
+	for (i = 0; i < f->num_parameters; i++)
+		subtilis_type_free(&params[i]);
+	free(params);
+
+	return ts;
 }

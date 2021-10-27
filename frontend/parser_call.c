@@ -92,6 +92,19 @@ static void prv_delete_params(subtilis_parser_param_t *params, size_t num_args)
 	free(params);
 }
 
+static void prv_delete_ptypes(subtilis_type_t *ptypes, size_t num_args)
+{
+	size_t i;
+
+	if (!ptypes)
+		return;
+
+	for (i = 0; i < num_args; i++)
+		subtilis_type_free(&ptypes[i]);
+
+	free(ptypes);
+}
+
 static subtilis_parser_param_t *prv_call_parameters(subtilis_parser_t *p,
 						    subtilis_exp_t **args,
 						    size_t num_args,
@@ -443,6 +456,8 @@ subtilis_exp_t *subtilis_parser_call(subtilis_parser_t *p, subtilis_token_t *t,
 	stype = subtilis_type_section_new(&fn_type, num_poss_args, ptypes, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
+	prv_delete_ptypes(ptypes, num_poss_args);
+	ptypes = NULL;
 
 	/* Ownership of stypes, args and name passed to this function. */
 
@@ -459,8 +474,8 @@ on_error:
 	for (i = 0; i < num_poss_args; i++)
 		subtilis_exp_delete(poss_args[i]);
 
+	prv_delete_ptypes(ptypes, num_poss_args);
 	prv_delete_params(params, num_poss_args);
-	free(ptypes);
 	free(args);
 	free(name);
 
@@ -890,8 +905,8 @@ static size_t prv_init_block_variables(subtilis_parser_t *p,
 	size_t source_reg = SUBTILIS_IR_REG_TEMP_START;
 
 	dest_op.reg = SUBTILIS_IR_REG_LOCAL;
-	for (i = 0; i < stype->num_parameters; i++) {
-		t = &stype->parameters[i];
+	for (i = 0; i < stype->type.params.fn.num_params; i++) {
+		t = stype->type.params.fn.params[i];
 		if (subtilis_type_if_is_array(t) ||
 		    subtilis_type_if_is_vector(t)) {
 			blocks++;
@@ -1103,7 +1118,6 @@ static void prv_def_internal(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_exp_t *e;
 	size_t blocks;
 	subtilis_ir_operand_t zero_op;
-	size_t i;
 	size_t num_params = 0;
 	subtilis_type_t *params = NULL;
 	const subtilis_symbol_t **symbols = NULL;
@@ -1123,6 +1137,7 @@ static void prv_def_internal(subtilis_parser_t *p, subtilis_token_t *t,
 	stype = subtilis_type_section_new(fn_type, num_params, params, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
+	prv_delete_ptypes(params, num_params);
 	params = NULL;
 
 	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "[")) {
@@ -1222,9 +1237,7 @@ static void prv_def_internal(subtilis_parser_t *p, subtilis_token_t *t,
 on_error:
 
 	free(symbols);
-	for (i = 0; params && i < num_params; i++)
-		subtilis_type_free(&params[i]);
-	free(params);
+	prv_delete_ptypes(params, num_params);
 	free(name);
 }
 
@@ -1268,8 +1281,6 @@ static size_t prv_lambda_internal(subtilis_parser_t *p, subtilis_token_t *t,
 				  subtilis_type_t *type, subtilis_error_t *err)
 {
 	subtilis_type_t fn_type;
-	subtilis_type_section_t *stype;
-	size_t i;
 	subtilis_symbol_table_t *old_local_st;
 	subtilis_ir_section_t *old_current;
 	size_t call_index = SIZE_MAX;
@@ -1294,31 +1305,7 @@ static size_t prv_lambda_internal(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
-	type->type = SUBTILIS_TYPE_FN;
-	type->params.fn.ret_val = calloc(1, sizeof(fn_type));
-	if (!type->params.fn.ret_val) {
-		subtilis_error_set_oom(err);
-		goto on_error;
-	}
-	subtilis_type_init_copy(type->params.fn.ret_val, &fn_type, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto on_error;
-
-	stype = p->current->type;
-	type->params.fn.num_params = stype->num_parameters;
-	for (i = 0; i < stype->num_parameters; i++) {
-		type->params.fn.params[i] =
-		    calloc(1, sizeof(*type->params.fn.params[i]));
-		if (!type->params.fn.params[i]) {
-			subtilis_error_set_oom(err);
-			goto on_error;
-		}
-
-		subtilis_type_init_copy(type->params.fn.params[i],
-					&stype->parameters[i], err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto on_error;
-	}
+	subtilis_type_copy(type, &p->current->type->type, err);
 
 on_error:
 
@@ -1650,7 +1637,8 @@ void subtilis_parser_return(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 
-	subtilis_type_init_copy(&fn_type, &p->current->type->return_type, err);
+	subtilis_type_init_copy(&fn_type,
+				p->current->type->type.params.fn.ret_val, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	if (fn_type.type == SUBTILIS_TYPE_VOID) {
@@ -1692,7 +1680,8 @@ void subtilis_parser_endproc(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 
-	if (p->current->type->return_type.type != SUBTILIS_TYPE_VOID) {
+	if (p->current->type->type.params.fn.ret_val->type !=
+	    SUBTILIS_TYPE_VOID) {
 		subtilis_error_set_proc_in_fn(err, p->l->stream->name,
 					      p->l->line);
 		return;
@@ -1738,13 +1727,15 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 	subtilis_ir_reg_type_t reg_type;
 	subtilis_ir_call_t *call_site;
 	subtilis_check_call_ud_t call_ud;
+	subtilis_type_fn_t *fn_st;
+	subtilis_type_fn_t *fn_ct;
 	subtilis_type_section_t *ct = call->call_type;
 
 	if (!subtilis_string_pool_find(p->prog->string_pool, call->name,
 				       &index)) {
 		if (!ct)
 			subtilis_error_set_assertion_failed(err);
-		else if (ct->return_type.type == SUBTILIS_TYPE_VOID)
+		else if (ct->type.params.fn.ret_val->type == SUBTILIS_TYPE_VOID)
 			subtilis_error_set_unknown_procedure(
 			    err, call->name, p->l->stream->name, call->line);
 		else
@@ -1780,23 +1771,26 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 	}
 
 	st = p->prog->sections[index]->type;
+	fn_ct = &ct->type.params.fn;
+	fn_st = &st->type.params.fn;
 
-	if ((st->return_type.type == SUBTILIS_TYPE_VOID) &&
-	    (ct->return_type.type != SUBTILIS_TYPE_VOID)) {
+	if ((fn_st->ret_val->type == SUBTILIS_TYPE_VOID) &&
+	    (ct->type.params.fn.ret_val->type != SUBTILIS_TYPE_VOID)) {
 		subtilis_error_set_procedure_expected(
 		    err, call->name, p->l->stream->name, call->line);
 		return;
-	} else if ((st->return_type.type != SUBTILIS_TYPE_VOID) &&
-		   (ct->return_type.type == SUBTILIS_TYPE_VOID)) {
+	} else if ((st->type.params.fn.ret_val->type != SUBTILIS_TYPE_VOID) &&
+		   (ct->type.params.fn.ret_val->type == SUBTILIS_TYPE_VOID)) {
 		subtilis_error_set_function_expected(
 		    err, call->name, p->l->stream->name, call->line);
 		return;
 	}
 
-	if (st->num_parameters != ct->num_parameters) {
+	if (st->type.params.fn.num_params != ct->type.params.fn.num_params) {
 		subtilis_error_set_bad_arg_count(
-		    err, ct->num_parameters, st->num_parameters,
-		    p->l->stream->name, call->line);
+		    err, ct->type.params.fn.num_params,
+		    st->type.params.fn.num_params, p->l->stream->name,
+		    call->line);
 		return;
 	}
 
@@ -1811,8 +1805,8 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 		return;
 	}
 
-	for (i = 0; i < st->num_parameters; i++) {
-		if (subtilis_type_eq(&st->parameters[i], &ct->parameters[i]))
+	for (i = 0; i < fn_st->num_params; i++) {
+		if (subtilis_type_eq(fn_st->params[i], fn_ct->params[i]))
 			continue;
 
 		/*
@@ -1824,31 +1818,31 @@ static void prv_check_call(subtilis_parser_t *p, subtilis_parser_call_t *call,
 		 * advance.
 		 */
 
-		if ((st->parameters[i].type == SUBTILIS_TYPE_REAL) &&
-		    (ct->parameters[i].type == SUBTILIS_TYPE_INTEGER)) {
+		if ((fn_st->params[i]->type == SUBTILIS_TYPE_REAL) &&
+		    (fn_ct->params[i]->type == SUBTILIS_TYPE_INTEGER)) {
 			itype = SUBTILIS_OP_INSTR_MOV_I32_FP;
 			reg_type = SUBTILIS_IR_REG_TYPE_REAL;
-		} else if ((st->parameters[i].type == SUBTILIS_TYPE_REAL) &&
-			   (ct->parameters[i].type == SUBTILIS_TYPE_BYTE)) {
+		} else if ((fn_st->params[i]->type == SUBTILIS_TYPE_REAL) &&
+			   (fn_ct->params[i]->type == SUBTILIS_TYPE_BYTE)) {
 			itype = SUBTILIS_OP_INSTR_MOV_I8_FP;
 			reg_type = SUBTILIS_IR_REG_TYPE_REAL;
-		} else if (((st->parameters[i].type == SUBTILIS_TYPE_INTEGER) ||
-			    (st->parameters[i].type == SUBTILIS_TYPE_BYTE)) &&
-			   (ct->parameters[i].type == SUBTILIS_TYPE_REAL)) {
+		} else if (((fn_st->params[i]->type == SUBTILIS_TYPE_INTEGER) ||
+			    (fn_st->params[i]->type == SUBTILIS_TYPE_BYTE)) &&
+			   (fn_ct->params[i]->type == SUBTILIS_TYPE_REAL)) {
 			itype = SUBTILIS_OP_INSTR_MOV_FP_I32;
 			reg_type = SUBTILIS_IR_REG_TYPE_INTEGER;
-		} else if ((st->parameters[i].type == SUBTILIS_TYPE_BYTE) &&
-			   (ct->parameters[i].type == SUBTILIS_TYPE_INTEGER)) {
+		} else if ((fn_st->params[i]->type == SUBTILIS_TYPE_BYTE) &&
+			   (fn_ct->params[i]->type == SUBTILIS_TYPE_INTEGER)) {
 			continue;
-		} else if ((st->parameters[i].type == SUBTILIS_TYPE_INTEGER) &&
-			   (ct->parameters[i].type == SUBTILIS_TYPE_BYTE)) {
+		} else if ((fn_st->params[i]->type == SUBTILIS_TYPE_INTEGER) &&
+			   (fn_ct->params[i]->type == SUBTILIS_TYPE_BYTE)) {
 			itype = SUBTILIS_OP_INSTR_SIGNX_8_TO_32;
 			reg_type = SUBTILIS_IR_REG_TYPE_INTEGER;
 		} else {
 			call_ud.i = i;
 			call_ud.line = call->line;
 			subtilis_type_compare_diag_custom(
-			    p, &st->parameters[i], &ct->parameters[i], &call_ud,
+			    p, fn_st->params[i], fn_ct->params[i], &call_ud,
 			    prv_arg_check_failed, err);
 			return;
 		}
@@ -1876,6 +1870,7 @@ static void prv_check_call_addr(subtilis_parser_t *p,
 	const char *expected_typname;
 	const char *got_typname;
 	subtilis_ir_inst_t *call_site;
+	subtilis_type_fn_t *fn_st;
 	subtilis_type_fn_t *ct_fn_type = &call_addr->call_type.params.fn;
 	subtilis_type_type_t ct_ret_type = ct_fn_type->ret_val->type;
 
@@ -1901,33 +1896,33 @@ static void prv_check_call_addr(subtilis_parser_t *p,
 		call_index += call_addr->s->handler_offset;
 
 	st = p->prog->sections[index]->type;
+	fn_st = &st->type.params.fn;
 
-	if ((st->return_type.type == SUBTILIS_TYPE_VOID) &&
+	if ((fn_st->ret_val->type == SUBTILIS_TYPE_VOID) &&
 	    (ct_ret_type != SUBTILIS_TYPE_VOID)) {
 		subtilis_error_set_procedure_expected(
 		    err, call_addr->name, p->l->stream->name, call_addr->line);
 		return;
-	} else if ((st->return_type.type != SUBTILIS_TYPE_VOID) &&
+	} else if ((fn_st->ret_val->type != SUBTILIS_TYPE_VOID) &&
 		   (ct_ret_type == SUBTILIS_TYPE_VOID)) {
 		subtilis_error_set_function_expected(
 		    err, call_addr->name, p->l->stream->name, call_addr->line);
 		return;
 	}
 
-	if (st->num_parameters != ct_fn_type->num_params) {
+	if (fn_st->num_params != ct_fn_type->num_params) {
 		subtilis_error_set_bad_arg_count(
-		    err, ct_fn_type->num_params, st->num_parameters,
+		    err, ct_fn_type->num_params, fn_st->num_params,
 		    p->l->stream->name, call_addr->line);
 		return;
 	}
 
 	call_site = &call_addr->s->ops[call_index]->op.instr;
 
-	for (i = 0; i < st->num_parameters; i++) {
-		if (!subtilis_type_eq(&st->parameters[i],
+	for (i = 0; i < fn_st->num_params; i++) {
+		if (!subtilis_type_eq(fn_st->params[i],
 				      ct_fn_type->params[i])) {
-			expected_typname =
-			    subtilis_type_name(&st->parameters[i]);
+			expected_typname = subtilis_type_name(fn_st->params[i]);
 			got_typname = subtilis_type_name(ct_fn_type->params[i]);
 			subtilis_error_set_bad_arg_type(
 			    err, i + 1, expected_typname, got_typname,

@@ -2500,7 +2500,7 @@ static subtilis_ir_section_t *prv_add_args(subtilis_parser_t *p,
 {
 	subtilis_type_section_t *ts;
 	subtilis_type_t *params;
-	subtilis_ir_section_t *current;
+	subtilis_ir_section_t *current = NULL;
 	size_t j;
 	size_t i = 0;
 
@@ -2516,21 +2516,19 @@ static subtilis_ir_section_t *prv_add_args(subtilis_parser_t *p,
 	}
 	ts = subtilis_type_section_new(rtype, arg_count, params, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return NULL;
+		goto cleanup;
 
 	current = subtilis_ir_prog_section_new(
 	    p->prog, name, 0, ts, SUBTILIS_BUILTINS_MAX, "builtin", 0,
 	    p->eflag_offset, p->error_offset, NULL, err);
 
-	return current;
-
 cleanup:
 
 	for (j = 0; j < i; j++)
-		subtilis_type_free(&params[i]);
+		subtilis_type_free(&params[j]);
 	free(params);
 
-	return NULL;
+	return current;
 }
 
 subtilis_ir_section_t *
