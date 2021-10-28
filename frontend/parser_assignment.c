@@ -251,6 +251,7 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_exp_t *indices[SUBTILIS_MAX_DIMENSIONS];
 	size_t dims = 0;
 
+	array_type.type = SUBTILIS_TYPE_VOID;
 	subtilis_type_if_array_of(p, id_type, &array_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -279,6 +280,7 @@ static void prv_assign_vector(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_exp_t *indices[1];
 	size_t dims = 0;
 
+	vector_type.type = SUBTILIS_TYPE_VOID;
 	subtilis_type_if_vector_of(p, id_type, &vector_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;

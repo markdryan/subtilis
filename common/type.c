@@ -90,6 +90,7 @@ static void prv_fn_type_free(subtilis_type_fn_t *typ)
 {
 	size_t i;
 
+	subtilis_type_free(typ->ret_val);
 	free(typ->ret_val);
 	for (i = 0; i < typ->num_params; i++) {
 		subtilis_type_free(typ->params[i]);
@@ -300,7 +301,8 @@ void subtilis_type_free(subtilis_type_t *typ)
 {
 	if (typ->type == SUBTILIS_TYPE_FN)
 		prv_fn_type_free(&typ->params.fn);
-	else if (typ->type == SUBTILIS_TYPE_ARRAY_FN)
+	else if ((typ->type == SUBTILIS_TYPE_ARRAY_FN) ||
+		 (typ->type == SUBTILIS_TYPE_VECTOR_FN))
 		prv_fn_type_free(&typ->params.array.params.fn);
 }
 
@@ -323,10 +325,10 @@ static void prv_init_copy_fn(subtilis_type_fn_t *dst,
 		subtilis_error_set_oom(err);
 		return;
 	}
+	dst->num_params = 0;
 	subtilis_type_init_copy(dst->ret_val, src->ret_val, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	dst->num_params = 0;
 	for (i = 0; i < src->num_params; i++) {
 		dst->params[i] = calloc(1, sizeof(*dst->params[i]));
 		if (!dst->params[i]) {
@@ -377,6 +379,13 @@ void subtilis_type_copy_from_fn(subtilis_type_t *dst,
 {
 	subtilis_type_free(dst);
 	subtilis_type_init_copy_from_fn(dst, src, err);
+}
+
+void subtilis_type_to_from_fn(subtilis_type_fn_t *dst,
+			      const subtilis_type_t *src, subtilis_error_t *err)
+{
+	prv_fn_type_free(dst);
+	prv_init_copy_fn(dst, &src->params.fn, err);
 }
 
 void subtilis_type_init_to_from_fn(subtilis_type_fn_t *dst,

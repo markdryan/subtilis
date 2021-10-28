@@ -183,6 +183,7 @@ static void prv_zero_reg(subtilis_parser_t *p, const subtilis_type_t *type,
 static void prv_array_of(const subtilis_type_t *element_type,
 			 subtilis_type_t *type, subtilis_error_t *err)
 {
+	subtilis_type_free(type);
 	type->type = SUBTILIS_TYPE_ARRAY_FN;
 	subtilis_type_init_to_from_fn(&type->params.array.params.fn,
 				      element_type, err);
@@ -191,6 +192,7 @@ static void prv_array_of(const subtilis_type_t *element_type,
 static void prv_vector_of(const subtilis_type_t *element_type,
 			  subtilis_type_t *type, subtilis_error_t *err)
 {
+	subtilis_type_free(type);
 	type->type = SUBTILIS_TYPE_VECTOR_FN;
 	subtilis_type_init_to_from_fn(&type->params.array.params.fn,
 				      element_type, err);

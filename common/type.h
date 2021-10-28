@@ -130,6 +130,9 @@ void subtilis_type_copy_from_fn(subtilis_type_t *dst,
 void subtilis_type_init_copy_from_fn(subtilis_type_t *dst,
 				     const subtilis_type_fn_t *src,
 				     subtilis_error_t *err);
+void subtilis_type_to_from_fn(subtilis_type_fn_t *dst,
+			      const subtilis_type_t *src,
+			      subtilis_error_t *err);
 void subtilis_type_init_to_from_fn(subtilis_type_fn_t *dst,
 				   const subtilis_type_t *src,
 				   subtilis_error_t *err);

@@ -371,7 +371,7 @@ subtilis_exp_t *subtilis_parser_call(subtilis_parser_t *p, subtilis_token_t *t,
 
 	name = prv_proc_name_and_type(p, t, &fn_type, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return NULL;
+		goto on_error;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1033,6 +1033,7 @@ static char *prv_initial_proc_fn_type(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_type_copy(ftype, &fn_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
+	subtilis_type_free(&fn_type);
 	return name;
 
 on_error:
@@ -1098,6 +1099,8 @@ static char *prv_initial_lambda_proc_fn_type(subtilis_parser_t *p,
 	subtilis_type_copy(ftype, &fn_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
+
+	subtilis_type_free(&fn_type);
 
 	return name;
 

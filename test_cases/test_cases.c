@@ -4724,7 +4724,20 @@ const subtilis_test_case_t test_cases[] = {
 	"def PROCdown(a%)\n"
 	"  for i% := a% to 1 step -1 print i% next\n"
 	"endproc\n",
-	"1\n2\n3\n4\n5\n5\n4\n3\n2\n1\n1\n2\n3\n4\n5\n5\n4\n3\n2\n1\n"},
+	"1\n2\n3\n4\n5\n5\n4\n3\n2\n1\n1\n2\n3\n4\n5\n5\n4\n3\n2\n1\n"
+	},
+	{"dim_fn_print",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(1)\n"
+	"a@FNMap(0) = def FN%(a%) <- a% * 2\n"
+	"a@FNMap(1) = def FN%(a%) <- a% * a%\n"
+	"print a@FNMap(0)(10)\n"
+	"print a@FNMap(1)(10)\n"
+	"range c@FNMap := a@FNMap()\n"
+	"print c@FNMap(10)\n"
+	"endrange\n",
+	"20\n100\n20\n100\n",
+	},
 };
 
 /* clang-format on */

@@ -139,6 +139,7 @@ static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	const subtilis_symbol_t *s;
 	subtilis_exp_t *e = NULL;
+	subtilis_exp_t *e1 = NULL;
 	char *var_name = NULL;
 	size_t mem_reg = SUBTILIS_IR_REG_LOCAL;
 
@@ -200,8 +201,12 @@ static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,
 			tbuf = subtilis_token_get_text(t);
 			if ((t->type == SUBTILIS_TOKEN_OPERATOR) &&
 			    !strcmp(tbuf, "(")) {
-				e = subtilis_parser_call_known_ptr(
+				e1 = subtilis_parser_call_known_ptr(
 				    p, t, &e->type, e->exp.ir_op.reg, err);
+				if (err->type == SUBTILIS_ERROR_OK) {
+					subtilis_exp_delete(e);
+					e = e1;
+				}
 				goto cleanup;
 			}
 		}
