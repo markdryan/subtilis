@@ -119,6 +119,7 @@ void subtilis_array_type_init(subtilis_parser_t *p, const char *var_name,
 		return;
 	}
 
+	type->type = SUBTILIS_TYPE_VOID;
 	subtilis_type_if_array_of(p, element_type, type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -144,6 +145,7 @@ void subtilis_array_type_vector_init(subtilis_parser_t *p,
 				     subtilis_type_t *type,
 				     subtilis_error_t *err)
 {
+	type->type = SUBTILIS_TYPE_VOID;
 	subtilis_type_if_vector_of(p, element_type, type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;

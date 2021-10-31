@@ -950,6 +950,7 @@ static void prv_create_array(subtilis_parser_t *p,
 		return;
 	}
 
+	type.type = SUBTILIS_TYPE_VOID;
 	subtilis_array_type_init(p, var_name, element_type, &type, &e[0], dims,
 				 err);
 	if (err->type != SUBTILIS_ERROR_OK)

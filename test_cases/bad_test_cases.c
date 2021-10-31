@@ -826,6 +826,24 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"print a@PROCMark()\n",
 	SUBTILIS_ERROR_EXPECTED,
 	},
+	{"bad_function_ptr_param1",
+	"type FNMap$(a%)\n"
+	"PROCMapper(10, !FNstr$)\n"
+	"def FNstr$(a$) <- a$ + a$\n"
+	"def PROCMapper(s%, a@FNMap)\n"
+	"  print a@FNMap(s%)\n"
+	"endproc\n",
+	SUBTILIS_ERROR_BAD_ARG_TYPE,
+	},
+	{"bad_function_ptr_param2",
+	"type FNMap%(a$)\n"
+	"PROCMapper(\"hello\", !FNstr$)\n"
+	"def FNstr$(a$) <- a$ + a$\n"
+	"def PROCMapper(s$, a@FNMap)\n"
+	"  print a@FNMap(s$)\n"
+	"endproc\n",
+	SUBTILIS_ERROR_BAD_ARG_TYPE,
+	},
 };
 
 /* clang-format on */

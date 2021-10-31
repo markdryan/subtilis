@@ -19,7 +19,7 @@ jobs:
         wget https://raw.githubusercontent.com/torvalds/linux/master/scripts/spelling.txt
         wget https://raw.githubusercontent.com/torvalds/linux/master/scripts/const_structs.checkpatch
         perl checkpatch.pl --no-tree -f --strict --show-types --ignore NEW_TYPEDEFS --ignore PREFER_KERNEL_TYPES --ignore SPLIT_STRING --ignore UNNECESSARY_PARENTHESES --ignore SPDX_LICENSE_TAG --ignore OPEN_ENDED_LINE --ignore BOOL_MEMBER --ignore BIT_MACRO  --ignore PREFER_FALLTHROUGH --ignore MISSING_SPACE --ignore REPEATED_WORD --ignore ARRAY_SIZE --ignore CAMELCASE --ignore CONST_STRUCT *.[ch] common/*.[ch] frontend/*.[ch] test_cases/*.[ch] arch/arm32/*.[ch] backends/riscos/*.[ch] backends/riscos_common/*.[ch] backends/ptd/*.[ch]
-    - name: make check
+    - name: build
       run: |
         make
         make inter
@@ -28,4 +28,6 @@ jobs:
     - name: make check
       run: make check
     - name: sanatizer
-      run: CFLAGS="-g -fsanitize=address -fno-omit-frame-pointer -Wall -Werror" make check
+      run: |
+        make clean
+        CFLAGS="-g -fsanitize=address -fno-omit-frame-pointer -Wall -Werror" make check

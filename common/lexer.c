@@ -687,7 +687,7 @@ static void prv_process_call(subtilis_lexer_t *l, subtilis_token_t *t,
 	const char *tbuf;
 	subtilis_type_t id_type;
 
-	t->type = SUBTILIS_TOKEN_KEYWORD;
+	t->type = SUBTILIS_TOKEN_IDENTIFIER;
 	prv_validate_identifier(l, t, ch, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -703,11 +703,15 @@ static void prv_process_call(subtilis_lexer_t *l, subtilis_token_t *t,
 		t->tok.keyword.supported = true;
 		t->tok.keyword.id_type.type = SUBTILIS_TYPE_VOID;
 	} else {
-		id_type = t->tok.id_type;
+		subtilis_type_init_copy(&id_type, &t->tok.id_type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		subtilis_type_free(&t->tok.id_type);
 		t->tok.keyword.id_type = id_type;
 		t->tok.keyword.type = SUBTILIS_KEYWORD_FN;
 		t->tok.keyword.supported = true;
 	}
+	t->type = SUBTILIS_TOKEN_KEYWORD;
 }
 
 static bool prv_process_keyword(subtilis_lexer_t *l, char ch,
@@ -974,10 +978,19 @@ subtilis_token_t *subtilis_token_new(subtilis_error_t *err)
 
 void subtilis_token_claim(subtilis_token_t *dest, subtilis_token_t *src)
 {
+	/*
+	 * This is truly horrid.
+	 */
+	if (dest->type == SUBTILIS_TOKEN_IDENTIFIER)
+		subtilis_type_free(&dest->tok.id_type);
+	else if (dest->type == SUBTILIS_TOKEN_KEYWORD)
+		subtilis_type_free(&dest->tok.keyword.id_type);
 	subtilis_buffer_free(&dest->buf);
 	*dest = *src;
-	if (src->tok.id_type.type == SUBTILIS_TYPE_FN)
+	if (src->type == SUBTILIS_TOKEN_IDENTIFIER)
 		src->tok.id_type.params.fn.ret_val = NULL;
+	else if (dest->type == SUBTILIS_TOKEN_KEYWORD)
+		src->tok.keyword.id_type.params.fn.ret_val = NULL;
 	subtilis_buffer_init(&src->buf, 1);
 }
 
@@ -1008,8 +1021,10 @@ void subtilis_token_delete(subtilis_token_t *t)
 	if (!t)
 		return;
 
-	if (t->tok.id_type.type == SUBTILIS_TYPE_FN)
-		free(t->tok.id_type.params.fn.ret_val);
+	if (t->type == SUBTILIS_TOKEN_IDENTIFIER)
+		subtilis_type_free(&t->tok.id_type);
+	else if (t->type == SUBTILIS_TOKEN_KEYWORD)
+		subtilis_type_free(&t->tok.keyword.id_type);
 
 	subtilis_buffer_free(&t->buf);
 	free(t);
@@ -1017,10 +1032,13 @@ void subtilis_token_delete(subtilis_token_t *t)
 
 static void prv_reinit_token(subtilis_token_t *t)
 {
-	if (t->tok.id_type.type == SUBTILIS_TYPE_FN)
-		free(t->tok.id_type.params.fn.ret_val);
+	if (t->type == SUBTILIS_TOKEN_IDENTIFIER)
+		subtilis_type_free(&t->tok.id_type);
+	else if (t->type == SUBTILIS_TOKEN_KEYWORD)
+		subtilis_type_free(&t->tok.keyword.id_type);
 	t->type = SUBTILIS_TOKEN_EOF;
 	memset(&t->tok, 0, sizeof(t->tok));
+	t->tok.id_type.type = SUBTILIS_TYPE_VOID;
 	subtilis_buffer_reset(&t->buf);
 }
 

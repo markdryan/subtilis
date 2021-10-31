@@ -1210,9 +1210,11 @@ size_t subtilis_type_if_destructor(const subtilis_type_t *type)
 	return fn(type);
 }
 
-void subtilis_type_compare_diag(subtilis_parser_t *p, const subtilis_type_t *t1,
-				const subtilis_type_t *t2,
-				subtilis_error_t *err)
+void subtilis_type_compare_diag_custom(subtilis_parser_t *p,
+				       const subtilis_type_t *t1,
+				       const subtilis_type_t *t2, void *ud,
+				       subtilis_type_cmp_diag_fn_t diag_fn,
+				       subtilis_error_t *err)
 {
 	subtilis_error_t err1;
 	subtilis_buffer_t buf1;
@@ -1237,18 +1239,31 @@ void subtilis_type_compare_diag(subtilis_parser_t *p, const subtilis_type_t *t1,
 	if (err1.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_error_set_bad_conversion(
-	    err, subtilis_buffer_get_string(&buf1),
-	    subtilis_buffer_get_string(&buf2), p->l->stream->name, p->l->line);
+	diag_fn(p, subtilis_buffer_get_string(&buf1),
+		subtilis_buffer_get_string(&buf2), ud, err);
 	subtilis_buffer_free(&buf2);
 	subtilis_buffer_free(&buf1);
 
 	return;
 
 cleanup:
-	subtilis_error_set_bad_conversion(err, subtilis_type_name(t1),
-					  subtilis_type_name(t2),
-					  p->l->stream->name, p->l->line);
+	diag_fn(p, subtilis_type_name(t1), subtilis_type_name(t2), ud, err);
 	subtilis_buffer_free(&buf2);
 	subtilis_buffer_free(&buf1);
+}
+
+static void prv_diag_custom_default(subtilis_parser_t *p, const char *expected,
+				    const char *got, void *ud,
+				    subtilis_error_t *err)
+{
+	subtilis_error_set_bad_conversion(err, expected, got,
+					  p->l->stream->name, p->l->line);
+}
+
+void subtilis_type_compare_diag(subtilis_parser_t *p, const subtilis_type_t *t1,
+				const subtilis_type_t *t2,
+				subtilis_error_t *err)
+{
+	subtilis_type_compare_diag_custom(p, t1, t2, NULL,
+					  prv_diag_custom_default, err);
 }

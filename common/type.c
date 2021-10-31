@@ -90,6 +90,7 @@ static void prv_fn_type_free(subtilis_type_fn_t *typ)
 {
 	size_t i;
 
+	subtilis_type_free(typ->ret_val);
 	free(typ->ret_val);
 	for (i = 0; i < typ->num_params; i++) {
 		subtilis_type_free(typ->params[i]);
@@ -138,12 +139,15 @@ bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b)
 	}
 }
 
-subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
-						   size_t num_parameters,
-						   subtilis_type_t *parameters,
-						   subtilis_error_t *err)
+subtilis_type_section_t *
+subtilis_type_section_new(const subtilis_type_t *rtype, size_t num_parameters,
+			  const subtilis_type_t *parameters,
+			  subtilis_check_args_t *check_args,
+			  subtilis_error_t *err)
+
 {
 	size_t i;
+	subtilis_type_t *ftype;
 	subtilis_type_section_t *stype = malloc(sizeof(*stype));
 
 	if (!stype) {
@@ -152,16 +156,39 @@ subtilis_type_section_t *subtilis_type_section_new(const subtilis_type_t *rtype,
 	}
 
 	stype->ref_count = 1;
-	subtilis_type_init_copy(&stype->return_type, rtype, err);
+
+	ftype = &stype->type;
+	ftype->type = SUBTILIS_TYPE_FN;
+	ftype->params.fn.ret_val = calloc(1, sizeof(*ftype->params.fn.ret_val));
+	if (!ftype->params.fn.ret_val) {
+		subtilis_error_set_oom(err);
+		goto on_error;
+	}
+	ftype->params.fn.ret_val->type = SUBTILIS_TYPE_VOID;
+	subtilis_type_init_copy(ftype->params.fn.ret_val, rtype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
-	stype->num_parameters = num_parameters;
-	stype->parameters = parameters;
+	ftype->params.fn.num_params = num_parameters;
+	for (i = 0; i < num_parameters; i++) {
+		ftype->params.fn.params[i] =
+		    calloc(1, sizeof(*ftype->params.fn.params[i]));
+		if (!ftype->params.fn.params[i]) {
+			subtilis_error_set_oom(err);
+			goto on_error;
+		}
+		ftype->params.fn.params[i]->type = SUBTILIS_TYPE_VOID;
+
+		subtilis_type_init_copy(ftype->params.fn.params[i],
+					&parameters[i], err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+	}
+	stype->check_args = check_args;
 	stype->int_regs = 0;
 	stype->fp_regs = 0;
 
-	for (i = 0; i < num_parameters; i++) {
-		switch (parameters[i].type) {
+	for (i = 0; i < ftype->params.fn.num_params; i++) {
+		switch (ftype->params.fn.params[i]->type) {
 		case SUBTILIS_TYPE_INTEGER:
 		case SUBTILIS_TYPE_BYTE:
 		case SUBTILIS_TYPE_STRING:
@@ -197,15 +224,20 @@ on_error:
 
 void subtilis_type_section_delete(subtilis_type_section_t *stype)
 {
+	size_t i;
+
 	if (!stype)
 		return;
 
 	stype->ref_count--;
 	if (stype->ref_count != 0)
 		return;
-	subtilis_type_free(&stype->return_type);
-
-	free(stype->parameters);
+	subtilis_type_free(&stype->type);
+	if (stype->check_args) {
+		for (i = 0; i < stype->type.params.fn.num_params; i++)
+			free(stype->check_args[i].arg_name);
+		free(stype->check_args);
+	}
 	free(stype);
 }
 
@@ -234,11 +266,19 @@ static void prv_fn_type_name(const subtilis_type_t *typ, subtilis_buffer_t *buf,
 			     subtilis_error_t *err)
 {
 	size_t i;
-	const char *fnorproc;
 	const subtilis_type_fn_t *fn_type = &typ->params.fn;
 
-	fnorproc = fn_type->ret_val ? "FN(" : "PROC(";
-	subtilis_buffer_append_string(buf, fnorproc, err);
+	if (fn_type->ret_val) {
+		subtilis_buffer_append_string(buf, "FN", err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		prv_full_type_name(fn_type->ret_val, buf, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		subtilis_buffer_append_string(buf, "(", err);
+	} else {
+		subtilis_buffer_append_string(buf, "PROC(", err);
+	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -268,7 +308,8 @@ void subtilis_type_free(subtilis_type_t *typ)
 {
 	if (typ->type == SUBTILIS_TYPE_FN)
 		prv_fn_type_free(&typ->params.fn);
-	else if (typ->type == SUBTILIS_TYPE_ARRAY_FN)
+	else if ((typ->type == SUBTILIS_TYPE_ARRAY_FN) ||
+		 (typ->type == SUBTILIS_TYPE_VECTOR_FN))
 		prv_fn_type_free(&typ->params.array.params.fn);
 }
 
@@ -291,10 +332,10 @@ static void prv_init_copy_fn(subtilis_type_fn_t *dst,
 		subtilis_error_set_oom(err);
 		return;
 	}
+	dst->num_params = 0;
 	subtilis_type_init_copy(dst->ret_val, src->ret_val, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	dst->num_params = 0;
 	for (i = 0; i < src->num_params; i++) {
 		dst->params[i] = calloc(1, sizeof(*dst->params[i]));
 		if (!dst->params[i]) {
@@ -345,6 +386,13 @@ void subtilis_type_copy_from_fn(subtilis_type_t *dst,
 {
 	subtilis_type_free(dst);
 	subtilis_type_init_copy_from_fn(dst, src, err);
+}
+
+void subtilis_type_to_from_fn(subtilis_type_fn_t *dst,
+			      const subtilis_type_t *src, subtilis_error_t *err)
+{
+	prv_fn_type_free(dst);
+	prv_init_copy_fn(dst, &src->params.fn, err);
 }
 
 void subtilis_type_init_to_from_fn(subtilis_type_fn_t *dst,

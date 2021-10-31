@@ -765,7 +765,7 @@ static subtilis_ir_section_t *prv_ir_prog_section_new(
 	s->locals = locals;
 	s->end_label = subtilis_ir_section_new_label(s);
 	s->nofree_label = subtilis_ir_section_new_label(s);
-	switch (s->type->return_type.type) {
+	switch (s->type->type.params.fn.ret_val->type) {
 	case SUBTILIS_TYPE_VOID:
 		s->ret_reg = SIZE_MAX;
 		break;
@@ -875,7 +875,7 @@ void subtilis_ir_prog_dump(subtilis_ir_prog_t *p)
 		s = p->sections[i];
 		if (s->section_type != SUBTILIS_IR_SECTION_IR)
 			continue;
-		if (s->type->return_type.type == SUBTILIS_TYPE_VOID)
+		if (s->type->type.params.fn.ret_val->type == SUBTILIS_TYPE_VOID)
 			printf("PROC%s\n----------------\n\n",
 			       p->string_pool->strings[i]);
 		else
