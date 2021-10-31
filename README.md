@@ -1,9 +1,6 @@
 # Subtilis
 
-[![Build Status](https://travis-ci.org/markdryan/subtilis.svg?branch=master)](https://travis-ci.org/markdryan/subtilis)
-
-
-A BASIC compiler for retro computers.
+A BASIC-like compiler for retro computers.
 
 BASIC is over 50 years old and may not be the most respected of computer
 languages, but it, at least the BBC variant of BASIC, is not that bad really.
