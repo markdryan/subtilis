@@ -746,6 +746,25 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	 "MOV PC, R14\n"
 	 "]\n",
 	 "7\n",
+	},
+	{"assembler_lambda",
+	"type FNInteger%(a%)\n"
+	"a@FNInteger = def FN%(a%) [\n"
+	"MOV r0, r0, LSL 1\n"
+	"MOV PC, R14\n"
+	"]\n"
+	"print a@FNInteger(10)\n",
+	"20\n"
+	},
+	{"assembler_fn_address",
+	"type FNInteger%(a%)\n"
+	"a@FNInteger = !FNDbl%\n"
+	"def FNDbl%(a%) [\n"
+	"  MOV r0, r0, LSL 1\n"
+	"  MOV PC, R14\n"
+	"]\n"
+	"print a@FNInteger(10)\n",
+	"20\n",
 	}
 };
 
