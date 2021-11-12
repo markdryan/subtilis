@@ -34,16 +34,35 @@
  *  ----------------------------------
  * | Pointer to Data   |           4 |
  *  ----------------------------------
- * | Destructor        |           8 |
+ * | Pointer to Heap   |           8 |
  *  ----------------------------------
- * | Size of DIM 1     |          12 |
+ * | Destructor        |          12 |
  *  ----------------------------------
- * | Size of DIM n     | 4 * n * 4   |
+ * | Size of DIM 1     |          16 |
+ *  ----------------------------------
+ * | Size of DIM n     | 12 + (n * 4)|
+ *  ----------------------------------
+ */
+
+/*
+ * Vectors have the same layout in memory as a 1 dimensional array.
+ *
+ *  ----------------------------------
+ * | Size in Bytes     |           0 |
+ *  ----------------------------------
+ * | Pointer to Data   |           4 |
+ *  ----------------------------------
+ * | Pointer to Heap   |           8 |
+ *  ----------------------------------
+ * | Destructor        |          12 |
+ *  ----------------------------------
+ * | Vector Length     |          16 |
  *  ----------------------------------
  */
 
 #define SUBTIILIS_ARRAY_SIZE_OFF SUBTIILIS_REFERENCE_SIZE_OFF
 #define SUBTIILIS_ARRAY_DATA_OFF SUBTIILIS_REFERENCE_DATA_OFF
+#define SUBTIILIS_ARRAY_HEAP_OFF SUBTIILIS_REFERENCE_HEAP_OFF
 #define SUBTIILIS_ARRAY_DESTRUCTOR_OFF SUBTIILIS_REFERENCE_DESTRUCTOR_OFF
 #define SUBTIILIS_ARRAY_DIMS_OFF (SUBTIILIS_REFERENCE_DESTRUCTOR_OFF + 4)
 
@@ -57,13 +76,15 @@ size_t subtilis_array_type_size(const subtilis_type_t *type)
 
 	/*
 	 * We need, on 32 bit builds,
-	 * 4 bytes for the pointer
 	 * 4 bytes for the size
+	 * 4 bytes for the data pointer
+	 * 4 bytes for the heap pointer
 	 * 4 bytes for the destructor
-	 * 4 bytes for each dimension unknown at compile time.
+	 * 4 bytes for each dimension.
 	 */
 
-	size = SUBTIILIS_REFERENCE_SIZE + type->params.array.num_dims * 4;
+	size = SUBTIILIS_REFERENCE_SIZE +
+	       (type->params.array.num_dims * sizeof(uint32_t));
 
 	return size;
 }
@@ -154,10 +175,10 @@ void subtilis_array_type_vector_init(subtilis_parser_t *p,
 	type->params.array.dims[0] = SUBTILIS_DYNAMIC_DIMENSION;
 }
 
-void subtilis_array_type_zero_ref(subtilis_parser_t *p,
-				  const subtilis_type_t *type, size_t loc,
-				  size_t mem_reg, bool push,
-				  subtilis_error_t *err)
+void subtilis_array_type_vector_zero_ref(subtilis_parser_t *p,
+					 const subtilis_type_t *type,
+					 size_t loc, size_t mem_reg, bool push,
+					 subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t base;
@@ -356,7 +377,8 @@ static void prv_dynamic_vector_alloc(subtilis_parser_t *p, size_t loc,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_array_type_zero_ref(p, type, loc, store_reg.reg, false, err);
+	subtilis_array_type_vector_zero_ref(p, type, loc, store_reg.reg, false,
+					    err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -420,8 +442,8 @@ void subtilis_array_type_vector_alloc(subtilis_parser_t *p, size_t loc,
 {
 	if (e->type.type == SUBTILIS_TYPE_CONST_INTEGER) {
 		if (e->exp.ir_op.integer < 0) {
-			subtilis_array_type_zero_ref(p, type, loc,
-						     store_reg.reg, true, err);
+			subtilis_array_type_vector_zero_ref(
+			    p, type, loc, store_reg.reg, true, err);
 			return;
 		}
 
@@ -520,6 +542,7 @@ static void prv_copy_ref_base(subtilis_parser_t *p, const subtilis_type_t *t,
 	subtilis_ir_operand_t ref_start;
 	subtilis_ir_operand_t size;
 	subtilis_ir_operand_t data;
+	subtilis_ir_operand_t heap;
 	subtilis_ir_operand_t ref_label;
 	subtilis_ir_operand_t skip_ref_label;
 	size_t i;
@@ -587,9 +610,22 @@ static void prv_copy_ref_base(subtilis_parser_t *p, const subtilis_type_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	soffset.integer += sizeof(int32_t);
+	doffset.integer += sizeof(int32_t);
+
+	heap.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, source_reg, soffset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_STOREO_I32, heap,
+					  dest_reg, doffset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	if (ref) {
 		subtilis_ir_section_add_instr_no_reg(
-		    p->current, SUBTILIS_OP_INSTR_REF, data, err);
+		    p->current, SUBTILIS_OP_INSTR_REF, heap, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
@@ -666,16 +702,6 @@ cleanup:
 	subtilis_exp_delete(e);
 }
 
-/*
- * Initialise a temporary reference on the caller's stack with the
- * contents of an array variable on the callee's stack.  This is called
- * directly after the callee's ret has executed so his stack is still
- * presevered.
- *
- * TODO: This is a bit risky though.  Might be better, and faster, to
- * allocate space for this variable on the caller's stack.
- */
-
 void subtlis_array_type_copy_ret(subtilis_parser_t *p, const subtilis_type_t *t,
 				 size_t dest_reg, size_t source_reg,
 				 subtilis_error_t *err)
@@ -693,37 +719,12 @@ void subtlis_array_type_copy_ret(subtilis_parser_t *p, const subtilis_type_t *t,
 	subtilis_reference_inc_cleanup_stack(p, t, err);
 }
 
-/*
- * t1 is the target array.  If it has a dynamic dim that's treated as a
- * match.
- */
-
 void subtilis_array_type_match(subtilis_parser_t *p, const subtilis_type_t *t1,
 			       const subtilis_type_t *t2, subtilis_error_t *err)
 {
-	size_t i;
-
-	if (t1->type != t2->type) {
+	if (!subtilis_type_eq(t1, t2))
 		subtilis_error_set_array_type_mismatch(err, p->l->stream->name,
 						       p->l->line);
-		return;
-	}
-
-	if (t1->params.array.num_dims != t2->params.array.num_dims) {
-		subtilis_error_set_array_type_mismatch(err, p->l->stream->name,
-						       p->l->line);
-		return;
-	}
-
-	for (i = 0; i < t1->params.array.num_dims; i++) {
-		if (t1->params.array.dims[i] == -1)
-			continue;
-		if (t1->params.array.dims[i] != t2->params.array.dims[i]) {
-			subtilis_error_set_array_type_mismatch(
-			    err, p->l->stream->name, p->l->line);
-			return;
-		}
-	}
 }
 
 void subtilis_array_type_assign_ref(subtilis_parser_t *p,

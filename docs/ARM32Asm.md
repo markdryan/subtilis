@@ -199,9 +199,11 @@ Strings and arrays have a similar layout in memory.  Strings are laid out as fol
 | ------------------|-------------|
 | Size in Bytes     |           0 |
 | Pointer to Data   |           4 |
+| Pointer to Heap   |           8 |
+| Destructor        |          12 |
 
-
-Strings are not zero terminated in Subtilis.
+Strings are not zero terminated in Subtilis.  The destructor is not used for strings
+but all reference types need to have them for the cleanup routine to work.
 
 Arrays are laid out as follows:
 
@@ -210,10 +212,20 @@ Arrays are laid out as follows:
 |-------------------|-------------|
 | Size in Bytes     |           0 |
 | Pointer to Data   |           4 |
-| Destructor        |           8 |
-| Size of DIM 1     |          12 |
-| Size of DIM n     | 8 + (n * 4) |
+| Pointer to Heap   |           8 |
+| Destructor        |          12 |
+| Size of DIM 1     |          16 |
+| Size of DIM n     | 12 + (n * 4)|
 
+Vectors have the same representation in memory as a zero element array, e.g.,
+
+|                   | Byte offset |
+|-------------------|-------------|
+| Size in Bytes     |           0 |
+| Pointer to Data   |           4 |
+| Pointer to Heap   |           8 |
+| Destructor        |          12 |
+| Vector Length     |          16 |
 
 The size of the array object is determined by the number of dimensions it has that are not known at compile time.  When arrays are passed to functions any compile time information related to the size of its dimensions does not get passed to the function.  Therefore, if you pass a two dimensional array to a procedure the array object accessible inside the procedure will consist of 20 bytes, the final 8 bytes of which will hold the size of the two dimensions.
 

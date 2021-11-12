@@ -488,7 +488,7 @@ static void prv_vector_zero_ref(subtilis_parser_t *p,
 				const subtilis_type_t *type, size_t mem_reg,
 				size_t loc, bool push, subtilis_error_t *err)
 {
-	subtilis_array_type_zero_ref(p, type, loc, mem_reg, push, err);
+	subtilis_array_type_vector_zero_ref(p, type, loc, mem_reg, push, err);
 }
 
 /* clang-format off */
