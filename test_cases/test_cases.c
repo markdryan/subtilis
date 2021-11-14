@@ -4755,6 +4755,15 @@ const subtilis_test_case_t test_cases[] = {
 	"print b$\n",
 	"hello mark\nOo m\n",
 	},
+	{"fn_zero_dim",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = def FN%(a%) <- a% * 2, def FN%(a%) <- a% * 3\n"
+	"range c@FNMap := a@FNMap()\n"
+	"  print c@FNMap(10)\n"
+	"endrange\n",
+	"20\n30\n0\n",
+	},
 };
 
 /* clang-format on */

@@ -844,6 +844,12 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"endproc\n",
 	SUBTILIS_ERROR_BAD_ARG_TYPE,
 	},
+	{"bad_function_for",
+	"type PROCVoid\n"
+	"for a@PROCVoid = def PROC endproc to def PROC endproc\n"
+	"next\n",
+	SUBTILIS_ERROR_NUMERIC_EXPECTED,
+	}
 };
 
 /* clang-format on */
