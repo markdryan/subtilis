@@ -4747,6 +4747,14 @@ const subtilis_test_case_t test_cases[] = {
 	"endproc\n",
 	"hellohello\n",
 	},
+	{"mid_str_cow",
+	"a$ := \"hello mark\"\n"
+	"b$ := mid$(a$, 4, 4)\n"
+	"left$(b$,1) = \"O\"\n"
+	"print a$\n"
+	"print b$\n",
+	"hello mark\nOo m\n",
+	},
 };
 
 /* clang-format on */

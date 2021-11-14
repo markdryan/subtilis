@@ -601,7 +601,7 @@ size_t subtilis_reference_type_copy_on_write(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	heap_reg.reg = subtilis_reference_get_data(p, store_reg, loc, err);
+	heap_reg.reg = subtilis_reference_get_heap(p, store_reg, loc, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
