@@ -106,6 +106,18 @@ void subtlis_array_type_copy_param_ref(subtilis_parser_t *p,
 				       subtilis_ir_operand_t source_reg,
 				       size_t source_offset,
 				       subtilis_error_t *err);
+
+/*
+ * Returns a temporary variable that slices the vector identified by
+ * mem_reg/loc.
+ */
+subtilis_exp_t *subtilis_array_type_slice_vector(subtilis_parser_t *p,
+						 const subtilis_type_t *type,
+						 size_t mem_reg, size_t loc,
+						 subtilis_exp_t *index1,
+						 subtilis_exp_t *index2,
+						 subtilis_error_t *err);
+
 /*
  * Creates a new array reference, initialising it with the value in e.
  */

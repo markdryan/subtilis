@@ -147,6 +147,7 @@ size_t subtilis_reference_type_grow(subtilis_parser_t *p, size_t a1_loc,
 				    size_t a1_mem_reg, size_t a1_size_reg,
 				    size_t new_size_reg, size_t a2_size_reg,
 				    subtilis_error_t *err);
+
 void subtilis_reference_type_push_reference(subtilis_parser_t *p,
 					    const subtilis_type_t *type,
 					    size_t reg, size_t loc,

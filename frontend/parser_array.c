@@ -88,7 +88,8 @@ subtilis_exp_t *subtils_parser_read_vector(subtilis_parser_t *p,
 {
 	size_t mem_reg;
 	const subtilis_symbol_t *s;
-	subtilis_exp_t *indices[1];
+	size_t indices_count;
+	subtilis_exp_t *indices[2] = {NULL, NULL};
 	subtilis_exp_t *e = NULL;
 
 	s = subtilis_symbol_table_lookup(p->local_st, var_name);
@@ -110,7 +111,8 @@ subtilis_exp_t *subtils_parser_read_vector(subtilis_parser_t *p,
 		return NULL;
 	}
 
-	indices[0] = subtilis_curly_bracketed_arg_have_b(p, t, err);
+	indices_count =
+	    subtilis_curly_bracketed_slice_have_b(p, t, indices, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -118,17 +120,23 @@ subtilis_exp_t *subtils_parser_read_vector(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	if (!indices[0]) {
+	if (indices_count == 0) {
 		/* What we have here is an array reference. */
 		e = subtilis_exp_new_var_block(p, &s->t, mem_reg, s->loc, err);
-	} else {
+	} else if (indices_count == 1) {
+		/* And here we're reading an individual entry. */
 		e = subtilis_type_if_indexed_read(p, var_name, &s->t, mem_reg,
 						  s->loc, indices, 1, err);
+	} else {
+		/* We have a slice */
+		e = subtilis_array_type_slice_vector(
+		    p, &s->t, mem_reg, s->loc, indices[0], indices[1], err);
 	}
 
 cleanup:
 
 	subtilis_exp_delete(indices[0]);
+	subtilis_exp_delete(indices[1]);
 
 	return e;
 }
