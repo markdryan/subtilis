@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "/*"
-echo " * Copyright (c) 2020 Mark Ryan"
+echo " * Copyright (c) 2020-2021 Mark Ryan"
 echo " *"
 echo " * Licensed under the Apache License, Version 2.0 (the "License");"
 echo " * you may not use this file except in compliance with the License."
