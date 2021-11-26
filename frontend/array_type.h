@@ -119,6 +119,16 @@ subtilis_exp_t *subtilis_array_type_slice_vector(subtilis_parser_t *p,
 						 subtilis_error_t *err);
 
 /*
+ * Returns a temporary variable that slices the 1d array identified by
+ * mem_reg/loc.
+ */
+subtilis_exp_t *subtilis_array_type_slice_array(subtilis_parser_t *p,
+						const subtilis_type_t *type,
+						size_t mem_reg, size_t loc,
+						subtilis_exp_t *index1,
+						subtilis_exp_t *index2,
+						subtilis_error_t *err);
+/*
  * Creates a new array reference, initialising it with the value in e.
  */
 void subtilis_array_type_create_ref(subtilis_parser_t *p, const char *var_name,

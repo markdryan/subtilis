@@ -4900,6 +4900,45 @@ const subtilis_test_case_t test_cases[] = {
 	"endrange\n",
 	"0\n0\n104\n101\n108\n108\n111\n0\n0\n0\n0\n",
 	},
+	{"array_slice_const",
+	"dim a%(10)\n"
+	"a%() = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"range v% := a%(:3)\n"
+	"  print v%\n"
+	"endrange\n"
+	"print dim(a%(:3), 1)\n",
+	"1\n2\n3\n2\n",
+	},
+	{"array_slice_empty_var",
+	"dim a%(10)\n"
+	"a%() = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"b% := 0\n"
+	"onerror print err enderror\n"
+	"print dim(a%(b%:b%), 1)\n",
+	"10\n",
+	},
+	{"array_slice_int_var",
+	"dim a%(10)\n"
+	"a%() = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"b% := 1\n"
+	"c% := 3\n"
+	"range v% := a%(b% : c%)\n"
+	"  print v%\n"
+	"endrange\n"
+	"print dim(a%(b% : c%), 1)\n",
+	"2\n3\n1\n",
+	},
+	{"array_slice_real_var",
+	"dim a(10)\n"
+	"a() = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"b% := 1\n"
+	"c% := 3\n"
+	"range v := a(b% : c%)\n"
+	"  print v\n"
+	"endrange\n"
+	"print dim(a(b% : c%), 1)\n",
+	"2\n3\n1\n",
+	},
 };
 
 /* clang-format on */

@@ -56,8 +56,12 @@ subtilis_exp_t *subtils_parser_read_array(subtilis_parser_t *p,
 		goto cleanup;
 	}
 
-	dims = subtilis_var_bracketed_int_args_have_b(
-	    p, t, indices, SUBTILIS_MAX_DIMENSIONS, err);
+	if (s->t.params.array.num_dims == 1)
+		dims =
+		    subtilis_round_bracketed_slice_have_b(p, t, indices, err);
+	else
+		dims = subtilis_var_bracketed_int_args_have_b(
+		    p, t, indices, SUBTILIS_MAX_DIMENSIONS, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -68,6 +72,10 @@ subtilis_exp_t *subtils_parser_read_array(subtilis_parser_t *p,
 	if (dims == 0) {
 		/* What we have here is an array reference. */
 		e = subtilis_exp_new_var_block(p, &s->t, mem_reg, s->loc, err);
+	} else if ((s->t.params.array.num_dims == 1) && (dims == 2)) {
+		/* We have a slice. */
+		e = subtilis_array_type_slice_array(
+		    p, &s->t, mem_reg, s->loc, indices[0], indices[1], err);
 	} else {
 		e = subtilis_type_if_indexed_read(p, var_name, &s->t, mem_reg,
 						  s->loc, indices, dims, err);

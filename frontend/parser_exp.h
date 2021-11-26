@@ -87,6 +87,14 @@ size_t subtilis_curly_bracketed_slice_have_b(subtilis_parser_t *p,
 					     subtilis_token_t *t,
 					     subtilis_exp_t **ee,
 					     subtilis_error_t *err);
+/*
+ * Parses a 1d array used in expression form.   Return values are the
+ * same as subtilis_curly_bracketed_slice_have_b.
+ */
+size_t subtilis_round_bracketed_slice_have_b(subtilis_parser_t *p,
+					     subtilis_token_t *t,
+					     subtilis_exp_t **ee,
+					     subtilis_error_t *err);
 subtilis_exp_t *subtilis_curly_bracketed_arg_have_b(subtilis_parser_t *p,
 						    subtilis_token_t *t,
 						    subtilis_error_t *err);

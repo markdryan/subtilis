@@ -198,7 +198,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	{ "bad_index_count",
 	  "DIM a%(10)\n"
 	  "PRINT a%(11,12)\n",
-	  SUBTILIS_ERROR_BAD_INDEX_COUNT,
+	  SUBTILIS_ERROR_EXPECTED,
 	},
 	{ "zero_step",
 	  "FOR I%=0 TO 10 STEP 0\n"
@@ -862,6 +862,17 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"a%{} = 1,2,3,4,5,6,7,8,9,10,11\n"
 	"b%{} := a%{-1 : 0}\n",
 	SUBTILIS_ERROR_BAD_SLICE,
+	},
+	{"array_empty_slice",
+	"dim a%(10)\n"
+	"a%() = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"b%() := a%(3:3)\n",
+	SUBTILIS_ERROR_BAD_SLICE,
+	},
+	{"array_2d_slice",
+	"local dim a%(10,10)\n"
+	"b%() := a%(1:2)\n",
+	SUBTILIS_ERROR_EXPECTED,
 	},
 };
 
