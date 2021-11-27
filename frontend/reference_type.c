@@ -35,6 +35,7 @@ void subtilis_reference_type_init_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 	subtilis_ir_operand_t zero;
 	subtilis_ir_operand_t gtzero;
 
+	zero.label = SIZE_MAX;
 	op0.reg = source_reg;
 
 	op1.integer = SUBTIILIS_REFERENCE_SIZE_OFF;
