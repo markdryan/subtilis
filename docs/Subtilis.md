@@ -1216,7 +1216,7 @@ same way as it is when you initialise one array reference with the contents of a
 write to the slice, the contents of the original collection will also change.  However, it should be noted that
 vectors are copy on append (assuming that their elements are referred to by another vector), so if you slice a
 vector and then append to the new slice, the slice and the original vector will no longer share the same set
-of elements.  Modifying the elements of the slice will have not effect on the vector.  For example,
+of elements.  Modifying the elements of the slice will have no effect on the vector.  For example,
 
 ```
 dim a%{5}
@@ -1270,7 +1270,7 @@ endproc
 ```
 
 Note how we use the copy statement in conjunction with a slice of the byte buffer to copy the contents
-of e$ to the buffer starting at element 5.
+of e$ to the buffer starting at the 5th element (index 4).
 
 
 ### Function Pointers, Lambdas and Higher Order Functions
@@ -1885,7 +1885,6 @@ There are also some enhancements that will need to be added to the language to m
 more palatable to the modern programmer.
 
 * Structures
-* Slices
 * Maps
 
 ## Tooling
