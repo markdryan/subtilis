@@ -198,7 +198,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	{ "bad_index_count",
 	  "DIM a%(10)\n"
 	  "PRINT a%(11,12)\n",
-	  SUBTILIS_ERROR_BAD_INDEX_COUNT,
+	  SUBTILIS_ERROR_EXPECTED,
 	},
 	{ "zero_step",
 	  "FOR I%=0 TO 10 STEP 0\n"
@@ -676,11 +676,6 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"append a%(), \"hello\"\n",
 	SUBTILIS_ERROR_EXPECTED,
 	},
-	{"copy_temp",
-	"a$ = \"aa\"\n"
-	"copy(a$+\"1\", \"a\")\n",
-	SUBTILIS_ERROR_TEMPORARY_NOT_ALLOWED,
-	},
 	{"get_hash_temp",
 	"a$ = \"aa\"\n"
 	"x$ := get#(0, a$+\"1\")\n",
@@ -843,6 +838,41 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"  print a@FNMap(s$)\n"
 	"endproc\n",
 	SUBTILIS_ERROR_BAD_ARG_TYPE,
+	},
+	{"bad_function_for",
+	"type PROCVoid\n"
+	"for a@PROCVoid = def PROC endproc to def PROC endproc\n"
+	"next\n",
+	SUBTILIS_ERROR_NUMERIC_EXPECTED,
+	},
+	{"vector_slice_bad_index1",
+	"dim a%{10}\n"
+	"a%{} = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"b%{} := a%{2 : 1}\n",
+	SUBTILIS_ERROR_BAD_SLICE,
+	},
+	{"vector_slice_bad_index2",
+	"dim a%{10}\n"
+	"a%{} = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"b%{} := a%{-3 : -1}\n",
+	SUBTILIS_ERROR_BAD_SLICE,
+	},
+	{"vector_slice_bad_index3",
+	"dim a%{10}\n"
+	"a%{} = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"b%{} := a%{-1 : 0}\n",
+	SUBTILIS_ERROR_BAD_SLICE,
+	},
+	{"array_empty_slice",
+	"dim a%(10)\n"
+	"a%() = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"b%() := a%(3:3)\n",
+	SUBTILIS_ERROR_BAD_SLICE,
+	},
+	{"array_2d_slice",
+	"local dim a%(10,10)\n"
+	"b%() := a%(1:2)\n",
+	SUBTILIS_ERROR_EXPECTED,
 	},
 };
 

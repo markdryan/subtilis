@@ -76,6 +76,25 @@ size_t subtilis_var_bracketed_args_have_b(subtilis_parser_t *p,
 					  subtilis_token_t *t,
 					  subtilis_exp_t **e, size_t max,
 					  subtilis_error_t *err);
+/*
+ * Parses a vector used in expression form.  The return value can be
+ * - 0 indicating we have a vector reference.
+ * - 1 indicating that we are indexing a vector.
+ * - 2 indicating that we have a slice.  e[1] may be NULL in this case
+ *     indicating that we're slicing to the end of the array.
+ */
+size_t subtilis_curly_bracketed_slice_have_b(subtilis_parser_t *p,
+					     subtilis_token_t *t,
+					     subtilis_exp_t **ee,
+					     subtilis_error_t *err);
+/*
+ * Parses a 1d array used in expression form.   Return values are the
+ * same as subtilis_curly_bracketed_slice_have_b.
+ */
+size_t subtilis_round_bracketed_slice_have_b(subtilis_parser_t *p,
+					     subtilis_token_t *t,
+					     subtilis_exp_t **ee,
+					     subtilis_error_t *err);
 subtilis_exp_t *subtilis_curly_bracketed_arg_have_b(subtilis_parser_t *p,
 						    subtilis_token_t *t,
 						    subtilis_error_t *err);

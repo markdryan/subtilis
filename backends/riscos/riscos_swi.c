@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Mark Ryan
+ * Copyright (c) 2020-2021 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -195,7 +195,67 @@ const subtilis_arm_swi_t subtilis_riscos_swi_list[] = {
 	{ 0x400A6, "Font_FindField", 0x6, 0x6 },
 	{ 0x400A7, "Font_ApplyFields", 0xf, 0x8 },
 	{ 0x400A8, "Font_LookupFont", 0x7, 0xfc },
+	{ 0x400C0, "Wimp_Initialise", 0xf, 0x3 },
+	{ 0x400C1, "Wimp_CreateWindow", 0x2, 0x1 },
+	{ 0x400C2, "Wimp_CreateIcon", 0x3, 0x1 },
+	{ 0x400C3, "Wimp_DeleteWindow", 0x2, 0x2 },
+	{ 0x400C4, "Wimp_DeleteIcon", 0x2, 0x2 },
+	{ 0x400C5, "Wimp_OpenWindow", 0x2f, 0x6 },
+	{ 0x400C6, "Wimp_CloseWindow", 0xe, 0x1 },
+	{ 0x400C7, "Wimp_Poll", 0xb, 0x7 },
+	{ 0x400C8, "Wimp_RedrawWindow", 0x2, 0x0 },
+	{ 0x400C9, "Wimp_UpdateWindow", 0x2, 0x1 },
+	{ 0x400CA, "Wimp_GetRectangle", 0x2, 0x1 },
+	{ 0x400CB, "Wimp_GetWindowState", 0x6, 0xe },
+	{ 0x400CC, "Wimp_GetWindowInfo", 0x2, 0x2 },
+	{ 0x400CD, "Wimp_SetIconState", 0x2, 0x1 },
+	{ 0x400CE, "Wimp_GetIconState", 0x2, 0x2 },
+	{ 0x400CF, "Wimp_GetPointerInfo", 0x2, 0x1 },
+	{ 0x400D0, "Wimp_DragBox", 0xe, 0x1 },
+	{ 0x400D1, "Wimp_ForceRedraw", 0x1f, 0x1 },
+	{ 0x400D2, "Wimp_SetCaretPosition", 0x3f, 0x0 },
+	{ 0x400D3, "Wimp_GetCaretPosition", 0x2, 0x1 },
+	{ 0x400D4, "Wimp_CreateMenu", 0xe, 0x1 },
+	{ 0x400D5, "Wimp_DecodeMenu", 0xe, 0x1 },
+	{ 0x400D6, "Wimp_WhichIcon", 0xf, 0x1 },
+	{ 0x400D7, "Wimp_SetExtent", 0x3, 0x1 },
+	{ 0x400D8, "Wimp_SetPointerShape", 0x3f, 0x1 },
+	{ 0x400D9, "Wimp_OpenTemplate", 0x2, 0x1 },
+	{ 0x400DA, "Wimp_CloseTemplate", 0x0, 0x1 },
+	{ 0x400DB, "Wimp_LoadTemplate", 0x7e, 0x7d },
+	{ 0x400DC, "Wimp_ProcessKey", 0x1, 0x1 },
+	{ 0x400DD, "Wimp_CloseDown", 0x3, 0x1 },
+	{ 0x400DE, "Wimp_StartTask", 0x1, 0x1 },
+	{ 0x400DF, "Wimp_ReportError", 0x3f, 0x3 },
+	{ 0x400E0, "Wimp_GetWindowOutline", 0x2, 0x3 },
+	{ 0x400E1, "Wimp_PollIdle", 0xf, 0x7 },
+	{ 0x400E2, "Wimp_PlotIcon", 0x36, 0x1 },
+	{ 0x400E3, "Wimp_SetMode", 0x1, 0x1 },
+	{ 0x400E4, "Wimp_SetPalette", 0x2, 0x1 },
+	{ 0x400E5, "Wimp_ReadPalette", 0x6, 0x1 },
+	{ 0x400E6, "Wimp_SetColour", 0x1, 0x1 },
+	{ 0x400E7, "Wimp_SendMessage", 0xf, 0x5 },
+	{ 0x400E8, "Wimp_CreateSubMenu", 0xe, 0x1 },
+	{ 0x400E9, "Wimp_SpriteOp", 0xff, 0x7e },
+	{ 0x400EA, "Wimp_BaseOfSprites", 0x0, 0x3 },
+	{ 0x400EB, "Wimp_BlockCopy", 0x7f, 0x0 },
+	{ 0x400EC, "Wimp_SlotSize", 0x3, 0x7 },
 	{ 0x400ED, "Wimp_ReadPixTrans", 0xc7, 0xc1 },
+	{ 0x400EE, "Wimp_ClaimFreeMemory", 0x3, 0x7, },
+	{ 0x400EF, "Wimp_CommandWindow", 0x1, 0x1 },
+	{ 0x400F0, "Wimp_TextColour", 0x1, 0x1 },
+	{ 0x400F1, "Wimp_TransferBlock", 0x1f, 0x1 },
+	{ 0x400F2, "Wimp_ReadSysInfo", 0x1, 0x3 },
+	{ 0x400F3, "Wimp_SetFontColours", 0x6, 0x1 },
+	{ 0x400F4, "Wimp_GetMenuState", 0xf, 0x3 },
+	{ 0x400F5, "Wimp_RegisterFilter", 0x0, 0x0 },
+	{ 0x400F6, "Wimp_AddMessages", 0x1, 0x0 },
+	{ 0x400F7, "Wimp_RemoveMessages", 0x0 },
+	{ 0x400F8, "Wimp_SetColourMapping", 0xff, 0x0 },
+	{ 0x400F9, "Wimp_TextOp", 0x1, 0x1 },
+	{ 0x400FA, "Wimp_SetWatchdogState", 0x3, 0x0 },
+	{ 0x400FB, "Wimp_Extend", 0x1, 0x0 },
+	{ 0x400FC, "Wimp_ResizeIcon", 0x3f, 0x0 },
 };
 
 const size_t subtilis_riscos_known_swis = sizeof(subtilis_riscos_swi_list) /
@@ -378,5 +438,65 @@ const size_t subtilis_riscos_swi_index[] = {
 	72, // "OS_WriteEnv"
 	70, // "OS_WriteN"
 	1, // "OS_WriteS"
-	176, // "Wimp_ReadPixTrans"
+	230, // "Wimp_AddMessages"
+	218, // "Wimp_BaseOfSprites"
+	219, // "Wimp_BlockCopy"
+	222, // "Wimp_ClaimFreeMemory"
+	205, // "Wimp_CloseDown"
+	202, // "Wimp_CloseTemplate"
+	182, // "Wimp_CloseWindow"
+	223, // "Wimp_CommandWindow"
+	178, // "Wimp_CreateIcon"
+	196, // "Wimp_CreateMenu"
+	216, // "Wimp_CreateSubMenu"
+	177, // "Wimp_CreateWindow"
+	197, // "Wimp_DecodeMenu"
+	180, // "Wimp_DeleteIcon"
+	179, // "Wimp_DeleteWindow"
+	192, // "Wimp_DragBox"
+	235, // "Wimp_Extend"
+	193, // "Wimp_ForceRedraw"
+	195, // "Wimp_GetCaretPosition"
+	190, // "Wimp_GetIconState"
+	228, // "Wimp_GetMenuState"
+	191, // "Wimp_GetPointerInfo"
+	186, // "Wimp_GetRectangle"
+	188, // "Wimp_GetWindowInfo"
+	208, // "Wimp_GetWindowOutline"
+	187, // "Wimp_GetWindowState"
+	176, // "Wimp_Initialise"
+	203, // "Wimp_LoadTemplate"
+	201, // "Wimp_OpenTemplate"
+	181, // "Wimp_OpenWindow"
+	210, // "Wimp_PlotIcon"
+	183, // "Wimp_Poll"
+	209, // "Wimp_PollIdle"
+	204, // "Wimp_ProcessKey"
+	213, // "Wimp_ReadPalette"
+	221, // "Wimp_ReadPixTrans"
+	226, // "Wimp_ReadSysInfo"
+	184, // "Wimp_RedrawWindow"
+	229, // "Wimp_RegisterFilter"
+	231, // "Wimp_RemoveMessages"
+	207, // "Wimp_ReportError"
+	236, // "Wimp_ResizeIcon"
+	215, // "Wimp_SendMessage"
+	194, // "Wimp_SetCaretPosition"
+	214, // "Wimp_SetColour"
+	232, // "Wimp_SetColourMapping"
+	199, // "Wimp_SetExtent"
+	227, // "Wimp_SetFontColours"
+	189, // "Wimp_SetIconState"
+	211, // "Wimp_SetMode"
+	212, // "Wimp_SetPalette"
+	200, // "Wimp_SetPointerShape"
+	234, // "Wimp_SetWatchdogState"
+	220, // "Wimp_SlotSize"
+	217, // "Wimp_SpriteOp"
+	206, // "Wimp_StartTask"
+	224, // "Wimp_TextColour"
+	233, // "Wimp_TextOp"
+	225, // "Wimp_TransferBlock"
+	185, // "Wimp_UpdateWindow"
+	198, // "Wimp_WhichIcon"
 };

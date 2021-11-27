@@ -4747,6 +4747,198 @@ const subtilis_test_case_t test_cases[] = {
 	"endproc\n",
 	"hellohello\n",
 	},
+	{"mid_str_cow",
+	"a$ := \"hello mark\"\n"
+	"b$ := mid$(a$, 4, 4)\n"
+	"left$(b$,1) = \"O\"\n"
+	"print a$\n"
+	"print b$\n",
+	"hello mark\nOo m\n",
+	},
+	{"fn_zero_dim",
+	"type FNMap%(a%)\n"
+	"dim a@FNMap(2)\n"
+	"a@FNMap() = def FN%(a%) <- a% * 2, def FN%(a%) <- a% * 3\n"
+	"range c@FNMap := a@FNMap()\n"
+	"  print c@FNMap(10)\n"
+	"endrange\n",
+	"20\n30\n0\n",
+	},
+	{"vector_slice_int",
+	"dim a%{10}\n"
+	"a%{} = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"range v% := a%{1 : 3}\n"
+	"  print v%\n"
+	"endrange\n"
+	"print dim(a%{1 : 3}, 1)\n",
+	"2\n3\n1\n",
+	},
+	{"vector_slice_const_var",
+	"dim a%{10}\n"
+	"a%{} = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"b% := 1\n"
+	"c% := 3\n"
+	"range v% := a%{1 : c%}\n"
+	"  print v%\n"
+	"endrange\n"
+	"range v% := a%{b% : 3}\n"
+	"  print v%\n"
+	"endrange\n"
+	"print dim(a%{1 : c%})\n"
+	"print dim(a%{b% : 3})\n",
+	"2\n3\n2\n3\n1\n1\n",
+	},
+	{"vector_slice_const_whole",
+	"dim a%{10}\n"
+	"a%{} = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"range v% := a%{0 : 11}\n"
+	"  print v%\n"
+	"endrange\n"
+	"print dim(a%{0 : 11}, 1)\n",
+	"1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n10\n",
+	},
+	{"vector_slice_var_whole",
+	"dim a%{10}\n"
+	"a%{} = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"b% := 0\n"
+	"range v% := a%{b% : dim(a%{}, 1)+1}\n"
+	"  print v%\n"
+	"endrange\n"
+	"print dim(a%{b% : dim(a%{}, 1)+1}, 1)\n",
+	"1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n10\n",
+	},
+	{"vector_slice_reference",
+	"dim a%{10}\n"
+	"a%{} = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"range v% := a%{:}\n"
+	"  print v%\n"
+	"endrange\n"
+	"print dim(a%{0:}, 1)\n",
+	"1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n10\n",
+	},
+	{"vector_slice_partial",
+	"dim a%{10}\n"
+	"a%{} = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"range v% := a%{8 : }\n"
+	"  print v%\n"
+	"endrange\n"
+	"print dim(a%{8 : }, 1)\n",
+	"9\n10\n11\n2\n",
+	},
+	{"vector_slice_empty_const",
+	"dim a%{10}\n"
+	"a%{} = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"b%{} := a%{1 : 1}\n"
+	"range v% := b%{}\n"
+	"  print v%\n"
+	"endrange\n"
+	"print dim(b%{}, 1)\n",
+	"-1\n",
+	},
+	{"vector_slice_empty_var",
+	"dim a%{10}\n"
+	"a%{} = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"d% := 1\n"
+	"b%{} := a%{d% : d%}\n"
+	"range v% := b%{}\n"
+	"  print v%\n"
+	"endrange\n"
+	"print dim(b%{}, 1)\n",
+	"-1\n",
+	},
+	{"vector_slice_int_var",
+	"dim a%{10}\n"
+	"a%{} = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"b% := 1\n"
+	"c% := 3\n"
+	"range v% := a%{b% : c%}\n"
+	"  print v%\n"
+	"endrange\n"
+	"print dim(a%{b% : c%}, 1)\n",
+	"2\n3\n1\n",
+	},
+	{"vector_slice_string",
+	"dim a${5}\n"
+	"a${} = \"one\", \"two\", \"three\", \"four\", \"five\"\n"
+	"range s$ := a${1 : 3}\n"
+	"  print s$\n"
+	"endrange\n",
+	"two\nthree\n",
+	},
+	{"slice_append",
+	"dim a%{5}\n"
+	"a%{} = 1,2,3,4,5,6\n"
+	"b%{} := a%{1 : 3}\n"
+	"b%{0} = 100\n"
+	"b%{1} = 101\n"
+	"range v% := a%{}\n"
+	"  print v%\n"
+	"endrange\n"
+	"print \"\"\n"
+	"range v% := b%{}\n"
+	"print v%\n"
+	"endrange\n"
+	"print \"\"\n"
+	"append(b%{}, 102)\n"
+	"range v% := a%{}\n"
+	"  print v%\n"
+	"endrange\n"
+	"print \"\"\n"
+	"range v% := b%{}\n"
+	"  print v%\n"
+	"endrange\n",
+	"1\n100\n101\n4\n5\n6\n\n"
+	"100\n101\n\n"
+	"1\n100\n101\n4\n5\n6\n\n"
+	"100\n101\n102\n",
+	},
+	{"copy_into_slice",
+	"dim a&{10}\n"
+	"copy(a&{2 : 7}, \"hello\")\n"
+	"range v& := a&{}\n"
+	"  print v&\n"
+	"endrange\n",
+	"0\n0\n104\n101\n108\n108\n111\n0\n0\n0\n0\n",
+	},
+	{"array_slice_const",
+	"dim a%(10)\n"
+	"a%() = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"range v% := a%(:3)\n"
+	"  print v%\n"
+	"endrange\n"
+	"print dim(a%(:3), 1)\n",
+	"1\n2\n3\n2\n",
+	},
+	{"array_slice_empty_var",
+	"dim a%(10)\n"
+	"a%() = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"b% := 0\n"
+	"onerror print err enderror\n"
+	"print dim(a%(b%:b%), 1)\n",
+	"10\n",
+	},
+	{"array_slice_int_var",
+	"dim a%(10)\n"
+	"a%() = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"b% := 1\n"
+	"c% := 3\n"
+	"range v% := a%(b% : c%)\n"
+	"  print v%\n"
+	"endrange\n"
+	"print dim(a%(b% : c%), 1)\n",
+	"2\n3\n1\n",
+	},
+	{"array_slice_real_var",
+	"dim a(10)\n"
+	"a() = 1,2,3,4,5,6,7,8,9,10,11\n"
+	"b% := 1\n"
+	"c% := 3\n"
+	"range v := a(b% : c%)\n"
+	"  print v\n"
+	"endrange\n"
+	"print dim(a(b% : c%), 1)\n",
+	"2\n3\n1\n",
+	},
 };
 
 /* clang-format on */

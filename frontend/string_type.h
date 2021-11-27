@@ -44,8 +44,9 @@ subtilis_exp_t *subtilis_string_zt_non_const(subtilis_parser_t *p,
 size_t subtilis_string_type_lca_const(subtilis_parser_t *p, const char *str,
 				      size_t len, subtilis_error_t *err);
 void subtilis_string_init_from_ptr(subtilis_parser_t *p, size_t mem_reg,
-				   size_t loc, size_t lca_reg, size_t size_reg,
-				   bool push, subtilis_error_t *err);
+				   size_t loc, size_t source_reg,
+				   size_t size_reg, size_t data_reg,
+				   subtilis_error_t *err);
 void subtilis_string_init_from_lca(subtilis_parser_t *p, size_t mem_reg,
 				   size_t loc, size_t lca_reg, size_t size_reg,
 				   bool push, subtilis_error_t *err);

@@ -99,19 +99,7 @@ void subtilis_parser_copy(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	if (objs[0]->temporary) {
-		subtilis_error_set_temporary_not_allowed(
-		    err, "first argument to copy", p->l->stream->name,
-		    p->l->line);
-		goto cleanup;
-	}
-
 	subtilis_type_if_memcpy(p, objs[0], objs[1], err);
-	return;
-
-cleanup:
-	subtilis_exp_delete(objs[1]);
-	subtilis_exp_delete(objs[0]);
 }
 
 subtilis_exp_t *subtilis_parser_copy_exp(subtilis_parser_t *p,

@@ -1086,6 +1086,108 @@ size_t subtilis_var_bracketed_args_have_b(subtilis_parser_t *p,
 	return prv_bracketed_args_have_b(p, t, e, max, NULL, err);
 }
 
+static size_t prv_slice_have_b(subtilis_parser_t *p, subtilis_token_t *t,
+			       const char *b, subtilis_exp_t **ee,
+			       subtilis_error_t *err)
+{
+	const char *tbuf;
+	char expected[3];
+
+	ee[0] = NULL;
+	ee[1] = NULL;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, b))
+		return 0;
+
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, ":")) {
+		ee[0] = subtilis_exp_new_int32(0, err);
+	} else {
+		ee[0] = subtilis_parser_priority7(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return 0;
+
+		ee[0] = subtilis_type_if_to_int(p, ee[0], err);
+	}
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, b))
+		return 1;
+
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ":")) {
+		subtilis_error_set_expected(err, ":", tbuf, p->l->stream->name,
+					    p->l->line);
+		goto cleanup;
+	}
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, b)) {
+		/*
+		 * If ee[0] is constant 0, either because the programmer
+		 * specified 0 or omitted the first slice parameter, there's no
+		 * point in slicing the vector.  We want to return 0 to indicate
+		 * that we should take a vector reference instead.
+		 */
+		if ((ee[0]->type.type == SUBTILIS_TYPE_CONST_INTEGER) &&
+		    (ee[0]->exp.ir_op.integer == 0))
+			return 0;
+		ee[1] = NULL;
+		return 2;
+	}
+
+	ee[1] = subtilis_parser_priority7(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	ee[1] = subtilis_type_if_to_int(p, ee[1], err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return 0;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, b)) {
+		expected[0] = b[0];
+		expected[1] = ' ';
+		expected[2] = 0;
+		subtilis_error_set_expected(err, expected, tbuf,
+					    p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
+	return 2;
+
+cleanup:
+	subtilis_exp_delete(ee[1]);
+	subtilis_exp_delete(ee[0]);
+
+	return 0;
+}
+
+size_t subtilis_curly_bracketed_slice_have_b(subtilis_parser_t *p,
+					     subtilis_token_t *t,
+					     subtilis_exp_t **ee,
+					     subtilis_error_t *err)
+{
+	return prv_slice_have_b(p, t, "}", ee, err);
+}
+
+size_t subtilis_round_bracketed_slice_have_b(subtilis_parser_t *p,
+					     subtilis_token_t *t,
+					     subtilis_exp_t **ee,
+					     subtilis_error_t *err)
+{
+	return prv_slice_have_b(p, t, ")", ee, err);
+}
+
 subtilis_exp_t *subtilis_curly_bracketed_arg_have_b(subtilis_parser_t *p,
 						    subtilis_token_t *t,
 						    subtilis_error_t *err)

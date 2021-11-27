@@ -1096,7 +1096,7 @@ The example will print "hello!"
 
 Two forms of the copy statement are provided.  The statement form, which is depicted in the examples
 above, and an expression form.  The expression form evaluates to its first argument, the expression
-form is useful when the destination is a temorary, e.g., a value returned from a function or keyword,
+form is useful when the destination is a temporary, e.g., a value returned from a function or keyword,
 e.g.,
 
 ```
@@ -1141,6 +1141,137 @@ print a${3}
 ```
 
 will print "hello to the world".
+
+### Slices
+
+It is possible to slice vectors and one-dimensional arrays to create new collections that contain
+a portion of the elements of the original collection.  Slicing a vector creates
+a new vector and slicing a 1 dimensional array creates a new 1d array.  Slicing is performed using the ':'
+operator, which is preceded and followed by two optional integer values.  The first value specifies
+the index of the first element that is to be part of the new slice.  The second value specifies the
+first element that will not be part of the new slice.  Each of these integers are optional.
+If the first integer is missing the compiler assumes a default value of 0.  If the second integer is
+missing the compiler assumes a default of the number of elements in the collection that is being sliced.
+
+For example, in the following code snippet
+
+```
+local dim a%{10}
+a%{} = 1,2,3,4,5,6,7,8,9,10,11
+b%{} := a%{1:3}
+c%{} := a%{:3}
+d%{} := a%{7:}
+e%{} := a%{:}
+```
+
+The vector b%{} contains two elements 2 and 3, c%{} contains 3 elements 1,2 and 3, d%{}
+contains 4 elements 8, 9, 10 and 11, and e% contains the same elements as a%.  In fact,
+
+```
+e%{} := a%{:}
+```
+
+is equivalent to writing
+```
+e%{} := a%{}
+```
+
+When slicing a vector it is possible to create an empty vector, for example
+
+```
+local dim a%{10}
+a%{} = 1,2,3,4,5,6,7,8,9,10,11
+print dim(a%{1:1}, 1)
+```
+
+will output -1, indicating that the new slice contains 0 elements.  It is not possible to create a
+zero element array when slicing, as the language does not allow zero element arrays.  So if we try
+to rewrite the previous example using arrays instead of vectors we'll get a compile error, e.g.,
+
+```
+local dim a%(10)
+a%() = 1,2,3,4,5,6,7,8,9,10,11
+print dim(a%(1:1), 1)
+```
+
+will not compile.
+
+When slicing vectors the first index must always be less than or equal to the second index.  When slicing
+arrays the first index must be less than the second index.  In all cases however, the second index must be
+no greater than the number of elements in the array or vector.  The constraints are enforced by the language,
+at compile time where possible and at run-time otherwise.  For example,
+
+```
+def PROC_slicer(b%)
+    local dim a%(10)
+    print dim(a%(b%:b%), 1)
+endproc
+```
+
+will generate a runtime error (as we're trying to create an array slice with 0 elements).
+
+When a vector or an array is sliced, a new container is created that points to the data of its parent.  The
+block of data holding the actual elements is now shared between the original collection and the slice, much the
+same way as it is when you initialise one array reference with the contents of another array.  If you then
+write to the slice, the contents of the original collection will also change.  However, it should be noted that
+vectors are copy on append (assuming that their elements are referred to by another vector), so if you slice a
+vector and then append to the new slice, the slice and the original vector will no longer share the same set
+of elements.  Modifying the elements of the slice will have not effect on the vector.  For example,
+
+```
+dim a%{5}
+a%{} = 1,2,3,4,5,6
+
+b%{} := a%{1 : 3}
+b%{0} = 100
+b%{1} = 101
+
+range v% := a%{}
+  print v%;
+  print " ";
+endrange
+print ""
+
+append(b%{}, 102)
+b%{0} = 99
+range v% := a%{}
+  print v%;
+  print " ";
+endrange
+print ""
+
+range v% := b%{}
+  print v%;
+  print " ";
+endrange
+print ""
+```
+
+Will print
+
+```
+1 100 101 4 5 6
+1 100 101 4 5 6
+99 101 102
+```
+
+Slices can be used in combination with the copy statement to build up arbitrary structures in memory
+containing mixed types.  This is useful when you need to have precise control over the layout of data
+in memory, for example when programming the WIMP is RiscOS.  For example, a procedure to display an
+error dialog in Subtilis could be written like this:
+
+```
+def PROCdisplayError(e$)
+    local dim eblock&(len(e$) + 4)
+    eblock&(0) = 255
+    copy(eblock&(4:), e$)
+    sys "Wimp_ReportError", eblock&(), 1, app$
+endproc
+```
+
+Note how we use the copy statement in conjunction with a slice of the byte buffer to copy the contents
+of e$ to the buffer starting at element 5.
+
 
 ### Function Pointers, Lambdas and Higher Order Functions
 

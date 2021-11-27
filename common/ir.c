@@ -840,9 +840,9 @@ void subtilis_ir_prog_asm_section_new(
 {
 	subtilis_ir_section_t *s;
 
-	s = prv_ir_prog_section_new(p, name, SUBTILIS_IR_SECTION_ASM, 0, tp,
-				    SUBTILIS_BUILTINS_MAX, file, line,
-				    eflag_offset, error_offset, NULL, err);
+	s = prv_ir_prog_section_new(
+	    p, name, SUBTILIS_IR_SECTION_ASM, 0, tp, SUBTILIS_BUILTINS_MAX,
+	    file, line, eflag_offset, error_offset, call_index, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		asm_free(asm_code);
 		return;
