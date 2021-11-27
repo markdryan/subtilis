@@ -455,15 +455,25 @@ static subtilis_arm_op_t *prv_insert_op(subtilis_arm_section_t *s,
 	size_t old_ptr;
 	subtilis_arm_op_t *op;
 
-	ptr = subtilis_arm_op_pool_alloc(s->op_pool, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return NULL;
+	/*
+	 * We need to figure out the pointer before we do the alloc,
+	 * as the alloc may invalidate pos.
+	 */
 
 	if (pos->prev == SIZE_MAX)
 		old_ptr = s->first_op;
 	else
 		old_ptr = s->op_pool->ops[pos->prev].next;
 
+	ptr = subtilis_arm_op_pool_alloc(s->op_pool, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	/*
+	 * pos may have been invalidated by the alloc.
+	 */
+
+	pos = &s->op_pool->ops[old_ptr];
 	op = &s->op_pool->ops[ptr];
 	memset(op, 0, sizeof(*op));
 	op->next = old_ptr;
