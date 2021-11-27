@@ -852,6 +852,7 @@ subtilis_exp_t *subtilis_array_type_slice_vector(subtilis_parser_t *p,
 	const subtilis_symbol_t *s;
 	subtilis_ir_operand_t empty;
 	subtilis_ir_operand_t not_empty;
+	subtilis_exp_t *max_dim = NULL;
 
 	subtilis_ir_operand_t op0;
 	char *tmp_name = NULL;
@@ -893,17 +894,19 @@ subtilis_exp_t *subtilis_array_type_slice_vector(subtilis_parser_t *p,
 	 * Finally, we need to check that index2 <= max_dim + 1.
 	 */
 
-	if (index2)
+	if (index2) {
 		prv_check_slice_index2(p, type, index1, index2, source_reg,
 				       error_label, err);
-	else
+	} else {
 		index2 = prv_calc_max_dim(p, type, source_reg, err);
+		max_dim = index2;
+	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
 	s = subtilis_symbol_table_insert_tmp(p->local_st, type, &tmp_name, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return NULL;
+		goto cleanup;
 
 	dest_reg = subtilis_reference_get_pointer(p, SUBTILIS_IR_REG_LOCAL,
 						  s->loc, err);
@@ -933,10 +936,12 @@ subtilis_exp_t *subtilis_array_type_slice_vector(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	subtilis_exp_delete(max_dim);
 	return subtilis_exp_new_tmp_var(type, dest_reg, tmp_name, err);
 
 cleanup:
 
+	subtilis_exp_delete(max_dim);
 	free(tmp_name);
 
 	return NULL;
