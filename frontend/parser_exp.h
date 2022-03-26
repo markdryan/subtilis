@@ -104,5 +104,9 @@ subtilis_exp_t *subtilis_var_lookup_ref(subtilis_parser_t *p,
 void subtilis_complete_custom_type(subtilis_parser_t *p, const char *var_name,
 				   subtilis_type_t *type,
 				   subtilis_error_t *err);
+const subtilis_symbol_t *subtilis_parser_get_symbol(subtilis_parser_t *p,
+						    const char *var_name,
+						    size_t *mem_reg,
+						    subtilis_error_t *err);
 
 #endif

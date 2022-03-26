@@ -37,18 +37,9 @@ subtilis_exp_t *subtils_parser_read_array(subtilis_parser_t *p,
 	subtilis_exp_t *e = NULL;
 	size_t dims = 0;
 
-	s = subtilis_symbol_table_lookup(p->local_st, var_name);
-	if (s) {
-		mem_reg = SUBTILIS_IR_REG_LOCAL;
-	} else {
-		s = subtilis_symbol_table_lookup(p->st, var_name);
-		if (!s) {
-			subtilis_error_set_unknown_variable(
-			    err, var_name, p->l->stream->name, p->l->line);
-			return NULL;
-		}
-		mem_reg = SUBTILIS_IR_REG_GLOBAL;
-	}
+	s = subtilis_parser_get_symbol(p, var_name, &mem_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
 
 	if (!subtilis_type_if_is_array(&s->t)) {
 		subtilis_error_not_array(err, var_name, p->l->stream->name,
@@ -100,18 +91,9 @@ subtilis_exp_t *subtils_parser_read_vector(subtilis_parser_t *p,
 	subtilis_exp_t *indices[2] = {NULL, NULL};
 	subtilis_exp_t *e = NULL;
 
-	s = subtilis_symbol_table_lookup(p->local_st, var_name);
-	if (s) {
-		mem_reg = SUBTILIS_IR_REG_LOCAL;
-	} else {
-		s = subtilis_symbol_table_lookup(p->st, var_name);
-		if (!s) {
-			subtilis_error_set_unknown_variable(
-			    err, var_name, p->l->stream->name, p->l->line);
-			return NULL;
-		}
-		mem_reg = SUBTILIS_IR_REG_GLOBAL;
-	}
+	s = subtilis_parser_get_symbol(p, var_name, &mem_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
 
 	if (!subtilis_type_if_is_vector(&s->t)) {
 		subtilis_error_not_vector(err, var_name, p->l->stream->name,

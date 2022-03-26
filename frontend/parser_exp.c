@@ -1331,3 +1331,26 @@ void subtilis_complete_custom_type(subtilis_parser_t *p, const char *var_name,
 
 	subtilis_type_copy(type, &f_s->sub_t, err);
 }
+
+const subtilis_symbol_t *subtilis_parser_get_symbol(subtilis_parser_t *p,
+						    const char *var_name,
+						    size_t *mem_reg,
+						    subtilis_error_t *err)
+{
+	const subtilis_symbol_t *s;
+
+	s = subtilis_symbol_table_lookup(p->local_st, var_name);
+	if (s) {
+		*mem_reg = SUBTILIS_IR_REG_LOCAL;
+	} else {
+		s = subtilis_symbol_table_lookup(p->st, var_name);
+		if (!s) {
+			subtilis_error_set_unknown_variable(
+			    err, var_name, p->l->stream->name, p->l->line);
+			return NULL;
+		}
+		*mem_reg = SUBTILIS_IR_REG_GLOBAL;
+	}
+
+	return s;
+}
