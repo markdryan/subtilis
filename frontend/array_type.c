@@ -89,6 +89,13 @@ size_t subtilis_array_type_size(const subtilis_type_t *type)
 	return size;
 }
 
+void subtilis_array_type_swap(subtilis_parser_t *p, const subtilis_type_t *type,
+			      size_t reg1, size_t reg2, subtilis_error_t *err)
+{
+	subtilis_reference_type_swap(p, reg1, reg2,
+				     subtilis_array_type_size(type) - 4, err);
+}
+
 void subtilis_array_create_1el(subtilis_parser_t *p,
 			       const subtilis_type_t *type, size_t mem_reg,
 			       size_t loc, bool push, subtilis_error_t *err)

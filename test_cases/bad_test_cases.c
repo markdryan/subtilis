@@ -874,6 +874,61 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"b%() := a%(1:2)\n",
 	SUBTILIS_ERROR_EXPECTED,
 	},
+	{"swap_numeric",
+	"local a%\n"
+	"local b\n"
+	"swap a%, b\n",
+	SUBTILIS_ERROR_SWAP_TYPE_MISMATCH,
+	},
+	{"swap_numeric_constant",
+	"local a%\n"
+	"swap a%, 10\n",
+	SUBTILIS_ERROR_LVALUE_EXPECTED,
+	},
+	{"swap_string_constant",
+	"local a$\n"
+	"swap a$, \"hello\"\n",
+	SUBTILIS_ERROR_LVALUE_EXPECTED,
+	},
+	{"swap_fn_mismatch",
+	"type FNOne(a%)\n"
+	"type FNTwo(a$)\n"
+	"local a@FNOne\n"
+	"local b@FNTwo\n"
+	"swap a@FNOne, b@FNTwo\n",
+	SUBTILIS_ERROR_SWAP_TYPE_MISMATCH,
+	},
+	{"swap_array_mismatch",
+	"dim a%(1)\n"
+	"dim b%(1,1)\n"
+	"swap a%(), b%()\n",
+	SUBTILIS_ERROR_SWAP_TYPE_MISMATCH,
+	},
+	{"swap_array_mismatch2",
+	"dim a%(1)\n"
+	"dim b%(2)\n"
+	"swap a%(), b%()\n",
+	SUBTILIS_ERROR_SWAP_TYPE_MISMATCH,
+	},
+	{"swap_array_slice",
+	 "c% := 10\n"
+	 "dim a%(c%)\n"
+	 "dim b%(c%)\n"
+	 "swap a%(), b%(5:6)\n",
+	 SUBTILIS_ERROR_LVALUE_EXPECTED,
+	},
+	{"swap_vector_slice",
+	 "dim a%{10}\n"
+	 "dim b%{10}\n"
+	 "swap a%{}, b%{5:6}\n",
+	 SUBTILIS_ERROR_LVALUE_EXPECTED,
+	},
+	{"swap_string",
+	 "a$ := \"hello\"\n"
+	 "b$ := \"world\"\n"
+	 "swap b$, left$(a$)\n",
+	 SUBTILIS_ERROR_LVALUE_EXPECTED,
+	},
 };
 
 /* clang-format on */

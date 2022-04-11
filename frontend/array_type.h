@@ -22,6 +22,8 @@
 #include "parser.h"
 
 size_t subtilis_array_type_size(const subtilis_type_t *type);
+void subtilis_array_type_swap(subtilis_parser_t *p, const subtilis_type_t *type,
+			      size_t reg1, size_t reg2, subtilis_error_t *err);
 
 /*
  * Create a one element array of the appropriate dimension and type.  The single

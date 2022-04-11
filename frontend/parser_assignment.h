@@ -51,5 +51,7 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 				subtilis_error_t *err);
 void subtilis_parser_let(subtilis_parser_t *p, subtilis_token_t *t,
 			 subtilis_error_t *err);
+void subtilis_parser_swap(subtilis_parser_t *p, subtilis_token_t *t,
+			  subtilis_error_t *err);
 
 #endif

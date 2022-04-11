@@ -20,6 +20,9 @@
 #include "expression.h"
 #include "parser.h"
 
+bool subtilis_exp_get_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
+			     subtilis_ir_operand_t *op, subtilis_type_t *type,
+			     subtilis_error_t *err);
 subtilis_exp_t *subtilis_parser_priority7(subtilis_parser_t *p,
 					  subtilis_token_t *t,
 					  subtilis_error_t *err);
@@ -108,5 +111,9 @@ const subtilis_symbol_t *subtilis_parser_get_symbol(subtilis_parser_t *p,
 						    const char *var_name,
 						    size_t *mem_reg,
 						    subtilis_error_t *err);
+
+void subtilis_exp_swap_int32_mem(subtilis_parser_t *p, size_t dest_reg,
+				 size_t source_reg, int32_t off,
+				 subtilis_error_t *err);
 
 #endif

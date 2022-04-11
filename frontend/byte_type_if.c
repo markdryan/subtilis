@@ -105,6 +105,9 @@ subtilis_type_if subtilis_type_const_byte = {
 	.ret = NULL,
 	.print = NULL,
 	.destructor = NULL,
+	.swap_reg_reg = NULL,
+	.swap_reg_mem = NULL,
+	.swap_mem_mem = NULL,
 };
 
 /* clang-format on */
@@ -792,6 +795,88 @@ static void prv_print(subtilis_parser_t *p, subtilis_exp_t *e,
 	subtilis_type_int32.print(p, e, err);
 }
 
+static void prv_swap_reg_reg(subtilis_parser_t *p, const subtilis_type_t *type,
+			     size_t reg1, size_t reg2, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t tmp;
+
+	op1.reg = reg1;
+	op2.reg = reg2;
+
+	tmp.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOV, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      op2, tmp, err);
+}
+
+static void prv_swap_reg_mem(subtilis_parser_t *p, const subtilis_type_t *type,
+			     size_t reg1, size_t reg2, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t zero;
+	subtilis_ir_operand_t tmp;
+
+	op1.reg = reg1;
+	op2.reg = reg2;
+	zero.integer = 0;
+
+	tmp.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOV, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I8, op1, op2, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I8, tmp, op2, zero, err);
+}
+
+static void prv_swap_mem_mem(subtilis_parser_t *p, const subtilis_type_t *type,
+			     size_t reg1, size_t reg2, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t zero;
+	subtilis_ir_operand_t tmp;
+	subtilis_ir_operand_t tmp2;
+
+	op1.reg = reg1;
+	op2.reg = reg2;
+	zero.integer = 0;
+
+	tmp.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I8, op1, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tmp2.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I8, op2, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I8, tmp, op2, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I8, tmp2, op1, zero, err);
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_byte_if = {
 	.is_const = false,
@@ -864,6 +949,9 @@ subtilis_type_if subtilis_type_byte_if = {
 	.ret = prv_ret,
 	.print = prv_print,
 	.destructor = NULL,
+	.swap_reg_reg = prv_swap_reg_reg,
+	.swap_reg_mem = prv_swap_reg_mem,
+	.swap_mem_mem = prv_swap_mem_mem,
 };
 
 /* clang-format on */

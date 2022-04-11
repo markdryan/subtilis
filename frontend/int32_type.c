@@ -21,6 +21,7 @@
 
 #include "builtins_ir.h"
 #include "int32_type.h"
+#include "parser_exp.h"
 #include "reference_type.h"
 #include "string_type.h"
 
@@ -977,6 +978,9 @@ subtilis_type_if subtilis_type_const_int32 = {
 	.ret = NULL,
 	.print = NULL,
 	.destructor = NULL,
+	.swap_reg_reg = NULL,
+	.swap_reg_mem = NULL,
+	.swap_mem_mem = NULL,
 };
 
 /* clang-format on */
@@ -2183,6 +2187,62 @@ cleanup:
 	subtilis_exp_delete(e);
 }
 
+static void prv_swap_reg_reg(subtilis_parser_t *p, const subtilis_type_t *type,
+			     size_t reg1, size_t reg2, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t tmp;
+
+	op1.reg = reg1;
+	op2.reg = reg2;
+
+	tmp.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOV, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      op2, tmp, err);
+}
+
+static void prv_swap_reg_mem(subtilis_parser_t *p, const subtilis_type_t *type,
+			     size_t reg1, size_t reg2, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t zero;
+	subtilis_ir_operand_t tmp;
+
+	op1.reg = reg1;
+	op2.reg = reg2;
+	zero.integer = 0;
+
+	tmp.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOV, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op1, op2, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, tmp, op2, zero, err);
+}
+
+static void prv_swap_mem_mem(subtilis_parser_t *p, const subtilis_type_t *type,
+			     size_t reg1, size_t reg2, subtilis_error_t *err)
+{
+	subtilis_exp_swap_int32_mem(p, reg1, reg2, 0, err);
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_int32 = {
 	.is_const = false,
@@ -2256,6 +2316,9 @@ subtilis_type_if subtilis_type_int32 = {
 	.ret = prv_ret,
 	.print = prv_print,
 	.destructor = NULL,
+	.swap_reg_reg = prv_swap_reg_reg,
+	.swap_reg_mem = prv_swap_reg_mem,
+	.swap_mem_mem = prv_swap_mem_mem,
 };
 
 /* clang-format on */

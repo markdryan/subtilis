@@ -343,6 +343,12 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_BAD_SLICE */
 	{"Bad slice (%s to %s)\n", 2},
+
+	/* SUBTILIS_ERROR_SWAP_TYPE_MISMATCH */
+	{"Swap type mismatch\n", 0},
+
+	/* SUBTILIS_ERROR_LVALUE EXPECTED */
+	{"Lvalue expected\n", 0},
 };
 
 /* clang-format on */

@@ -56,6 +56,9 @@ void subtilis_reference_type_assign_no_rc(subtilis_parser_t *p,
 void subtilis_reference_type_ref(subtilis_parser_t *p, size_t mem_reg,
 				 size_t loc, bool check_size,
 				 subtilis_error_t *err);
+void subtilis_reference_type_swap(subtilis_parser_t *p, size_t reg1,
+				  size_t reg2, int32_t limit,
+				  subtilis_error_t *err);
 void subtilis_reference_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
 					   subtilis_exp_t *e, bool check_size,
 					   subtilis_error_t *err);
