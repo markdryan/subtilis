@@ -17,6 +17,7 @@
 #include "variable.h"
 #include "expression.h"
 #include "globals.h"
+#include "parser_exp.h"
 #include "reference_type.h"
 #include "type_if.h"
 
@@ -58,17 +59,9 @@ subtilis_exp_t *subtilis_var_lookup_var(subtilis_parser_t *p, const char *tbuf,
 	size_t reg;
 	const subtilis_symbol_t *s;
 
-	reg = SUBTILIS_IR_REG_LOCAL;
-	s = subtilis_symbol_table_lookup(p->local_st, tbuf);
-	if (!s) {
-		s = subtilis_symbol_table_lookup(p->st, tbuf);
-		if (!s) {
-			subtilis_error_set_unknown_variable(
-			    err, tbuf, p->l->stream->name, p->l->line);
-			return NULL;
-		}
-		reg = SUBTILIS_IR_REG_GLOBAL;
-	}
+	s = subtilis_parser_get_symbol(p, tbuf, &reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
 
 	if (subtilis_type_if_is_numeric(&s->t) ||
 	    s->t.type == SUBTILIS_TYPE_FN) {

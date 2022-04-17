@@ -120,6 +120,11 @@ typedef void (*subtilis_type_if_print_t)(subtilis_parser_t *p,
 					 subtilis_exp_t *e,
 					 subtilis_error_t *err);
 
+typedef void (*subtilis_type_if_swap_t)(subtilis_parser_t *p,
+					const subtilis_type_t *type,
+					size_t reg1, size_t reg2,
+					subtilis_error_t *err);
+
 struct subtilis_type_if_ {
 	bool is_const;
 	bool is_numeric;
@@ -197,6 +202,9 @@ struct subtilis_type_if_ {
 	subtilis_type_if_reg_t ret;
 	subtilis_type_if_print_t print;
 	subtilis_type_if_size_t destructor;
+	subtilis_type_if_swap_t swap_reg_reg;
+	subtilis_type_if_swap_t swap_reg_mem;
+	subtilis_type_if_swap_t swap_mem_mem;
 };
 
 typedef struct subtilis_type_if_ subtilis_type_if;
@@ -846,6 +854,31 @@ subtilis_ir_reg_type_t subtilis_type_if_reg_type(const subtilis_type_t *type);
 /*
  * Returns the destructor of a reference type.  0 if no destructor is needed.
  */
+
+/*
+ * Swaps the values in the register reg1 and reg2.
+ */
+
+void subtilis_type_if_swap_reg_reg(subtilis_parser_t *p,
+				   const subtilis_type_t *type, size_t reg1,
+				   size_t reg2, subtilis_error_t *err);
+
+/*
+ * Swaps the values in the register reg1 and the memory location pointed to
+ * by reg2.
+ */
+
+void subtilis_type_if_swap_reg_mem(subtilis_parser_t *p,
+				   const subtilis_type_t *type, size_t reg1,
+				   size_t reg2, subtilis_error_t *err);
+
+/*
+ * Swaps the values pointed to by reg1 and reg2.
+ */
+
+void subtilis_type_if_swap_mem_mem(subtilis_parser_t *p,
+				   const subtilis_type_t *type, size_t reg1,
+				   size_t reg2, subtilis_error_t *err);
 
 size_t subtilis_type_if_destructor(const subtilis_type_t *type);
 

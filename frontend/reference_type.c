@@ -226,6 +226,19 @@ void subtilis_reference_type_copy_ret(subtilis_parser_t *p,
 	subtilis_reference_inc_cleanup_stack(p, t, err);
 }
 
+void subtilis_reference_type_swap(subtilis_parser_t *p, size_t reg1,
+				  size_t reg2, int32_t limit,
+				  subtilis_error_t *err)
+{
+	int32_t i;
+
+	for (i = 0; i <= limit; i += 4) {
+		subtilis_exp_swap_int32_mem(p, reg1, reg2, i, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+}
+
 void subtilis_reference_type_ref(subtilis_parser_t *p, size_t mem_reg,
 				 size_t loc, bool check_size,
 				 subtilis_error_t *err)

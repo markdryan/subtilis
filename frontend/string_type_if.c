@@ -1134,6 +1134,13 @@ static subtilis_exp_t *prv_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 	return prv_compare(p, a1, a2, swapped, SUBTILIS_OP_INSTR_GTEI_I32, err);
 }
 
+static void prv_swap_mem_mem(subtilis_parser_t *p, const subtilis_type_t *type,
+			     size_t reg1, size_t reg2, subtilis_error_t *err)
+{
+	subtilis_reference_type_swap(p, reg1, reg2,
+				     SUBTIILIS_REFERENCE_DESTRUCTOR_OFF, err);
+}
+
 /* clang-format off */
 subtilis_type_if subtilis_type_if_string = {
 	.is_const = false,
@@ -1201,6 +1208,9 @@ subtilis_type_if subtilis_type_if_string = {
 	.ret = prv_ret,
 	.print = subtilis_string_type_print,
 	.destructor = NULL,
+	.swap_reg_reg = NULL,
+	.swap_reg_mem = NULL,
+	.swap_mem_mem = prv_swap_mem_mem,
 };
 
 /* clang-format on */

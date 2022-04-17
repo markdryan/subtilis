@@ -1194,6 +1194,48 @@ subtilis_exp_t *subtilis_type_if_coerce_type(subtilis_parser_t *p,
 	return fn(p, e, type, err);
 }
 
+void subtilis_type_if_swap_reg_reg(subtilis_parser_t *p,
+				   const subtilis_type_t *type, size_t reg1,
+				   size_t reg2, subtilis_error_t *err)
+{
+	subtilis_type_if_swap_t fn;
+
+	fn = prv_type_map[type->type]->swap_reg_reg;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(p, type, reg1, reg2, err);
+}
+
+void subtilis_type_if_swap_reg_mem(subtilis_parser_t *p,
+				   const subtilis_type_t *type, size_t reg1,
+				   size_t reg2, subtilis_error_t *err)
+{
+	subtilis_type_if_swap_t fn;
+
+	fn = prv_type_map[type->type]->swap_reg_mem;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(p, type, reg1, reg2, err);
+}
+
+void subtilis_type_if_swap_mem_mem(subtilis_parser_t *p,
+				   const subtilis_type_t *type, size_t reg1,
+				   size_t reg2, subtilis_error_t *err)
+{
+	subtilis_type_if_swap_t fn;
+
+	fn = prv_type_map[type->type]->swap_mem_mem;
+	if (!fn) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+	fn(p, type, reg1, reg2, err);
+}
+
 subtilis_ir_reg_type_t subtilis_type_if_reg_type(const subtilis_type_t *type)
 {
 	return prv_type_map[type->type]->param_type;

@@ -126,6 +126,8 @@ typedef enum {
 	SUBTILIS_ERROR_ASS_BAD_REAL_IMM,
 	SUBTILIS_ERROR_ASS_LABEL_MISSING_COLON,
 	SUBTILIS_ERROR_BAD_SLICE,
+	SUBTILIS_ERROR_SWAP_TYPE_MISMATCH,
+	SUBTILIS_ERROR_LVALUE_EXPECTED,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -417,6 +419,12 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_bad_slice(e, num1, num2, file, line)                \
 	subtilis_error_set_int(e, SUBTILIS_ERROR_BAD_SLICE, num1, num2, file,  \
 			       line, __FILE__, __LINE__)
+#define subtilis_error_set_swap_type_mismatch(e, file, line)                   \
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_SWAP_TYPE_MISMATCH, file,  \
+				  line, __FILE__, __LINE__)
+#define subtilis_error_set_lvalue_expected(e, file, line)                      \
+	subtilis_error_set_syntax(e, SUBTILIS_ERROR_LVALUE_EXPECTED, file,     \
+				  line, __FILE__, __LINE__)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,

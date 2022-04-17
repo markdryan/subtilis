@@ -31,6 +31,7 @@
 #include "parser_output.h"
 #include "parser_rnd.h"
 #include "parser_string.h"
+#include "reference_type.h"
 #include "type_if.h"
 #include "variable.h"
 
@@ -132,6 +133,64 @@ static subtilis_exp_t *prv_not_exp(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 	return subtilis_type_if_not(p, e, err);
+}
+
+bool subtilis_exp_get_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
+			     subtilis_ir_operand_t *op, subtilis_type_t *type,
+			     subtilis_error_t *err)
+{
+	const subtilis_symbol_t *s;
+	const char *tbuf;
+	size_t mem_reg;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return false;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_IDENTIFIER)) {
+		subtilis_error_set_lvalue_expected(err, p->l->stream->name,
+						   p->l->line);
+		return false;
+	}
+
+	s = subtilis_parser_get_symbol(p, tbuf, &mem_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return false;
+
+	if (subtilis_type_if_is_numeric(&s->t) ||
+	    (s->t.type == SUBTILIS_TYPE_FN) ||
+	    (s->t.type == SUBTILIS_TYPE_STRING)) {
+		subtilis_type_copy(type, &s->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return false;
+		if (s->is_reg) {
+			op->reg = s->loc;
+			return true;
+		}
+		op->reg =
+		    subtilis_reference_get_pointer(p, mem_reg, s->loc, err);
+		return false;
+	}
+
+	/*
+	 * Need special handling for arrays and vectors
+	 */
+
+	if (subtilis_type_if_is_array(&s->t)) {
+		op->reg =
+		    subtils_parser_array_lvalue(p, t, s, mem_reg, type, err);
+		return false;
+	}
+
+	if (subtilis_type_if_is_vector(&s->t)) {
+		op->reg =
+		    subtils_parser_vector_lvalue(p, t, s, mem_reg, type, err);
+		return false;
+	}
+
+	subtilis_error_set_assertion_failed(err);
+	return false;
 }
 
 static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,
@@ -1330,4 +1389,60 @@ void subtilis_complete_custom_type(subtilis_parser_t *p, const char *var_name,
 	}
 
 	subtilis_type_copy(type, &f_s->sub_t, err);
+}
+
+const subtilis_symbol_t *subtilis_parser_get_symbol(subtilis_parser_t *p,
+						    const char *var_name,
+						    size_t *mem_reg,
+						    subtilis_error_t *err)
+{
+	const subtilis_symbol_t *s;
+
+	s = subtilis_symbol_table_lookup(p->local_st, var_name);
+	if (s) {
+		*mem_reg = SUBTILIS_IR_REG_LOCAL;
+	} else {
+		s = subtilis_symbol_table_lookup(p->st, var_name);
+		if (!s) {
+			subtilis_error_set_unknown_variable(
+			    err, var_name, p->l->stream->name, p->l->line);
+			return NULL;
+		}
+		*mem_reg = SUBTILIS_IR_REG_GLOBAL;
+	}
+
+	return s;
+}
+
+void subtilis_exp_swap_int32_mem(subtilis_parser_t *p, size_t dest_reg,
+				 size_t source_reg, int32_t off,
+				 subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t tmp1;
+	subtilis_ir_operand_t tmp2;
+	subtilis_ir_operand_t d;
+	subtilis_ir_operand_t s;
+
+	d.reg = dest_reg;
+	s.reg = source_reg;
+
+	op2.integer = off;
+	tmp1.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, s, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tmp2.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, d, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, tmp1, d, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, tmp2, s, op2, err);
 }

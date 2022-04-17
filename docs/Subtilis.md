@@ -442,6 +442,49 @@ FOR I% = 0 TO 10
 NEXT
 ```
 
+### SWAP
+
+SWAP can be used to swap two variables of the same type.  It can be used for any type of variable
+and works mostly as expected with the exception that both l-values must be of the
+exact same type.  For example, BBC BASIC V permits,
+
+```
+SWAP a%, b
+```
+
+but Subtilis does not.  This will result in an error when tried in a Subtilis program.
+Another implication of this restricition is that it is not possible to swap arrays that
+have the same element type but have different dimensions.  For example, in Subtilis you
+cannot do
+
+```
+dim a%(1)
+dim b%(1, 1)
+swap a%(), b%()
+```
+
+This restriction also applies to arrays with the same number of dimensions if the size of
+the arrays are known to the compiler.  For example,
+
+```
+dim a%(10)
+dim b%(9)
+swap a%(), b%()
+```
+
+will not compile as both a%() and b%() have a different type.  This restriction does not
+apply to vectors as the size of a vector is not encoded within its type.
+
+You can however, swap elements of an array or vector with their scalar counterparts as
+both l-values are of the same type, e.g.,
+
+```
+a% := 10
+local dim b%(0)
+b%() = 7
+swap b%(0), a%
+```
+
 ### Keywords that act like Functions
 
 Keywords that act like functions, e.g., LEN, ASC, COS, SIN and RND, are parsed like

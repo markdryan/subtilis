@@ -37,18 +37,9 @@ subtilis_exp_t *subtils_parser_read_array(subtilis_parser_t *p,
 	subtilis_exp_t *e = NULL;
 	size_t dims = 0;
 
-	s = subtilis_symbol_table_lookup(p->local_st, var_name);
-	if (s) {
-		mem_reg = SUBTILIS_IR_REG_LOCAL;
-	} else {
-		s = subtilis_symbol_table_lookup(p->st, var_name);
-		if (!s) {
-			subtilis_error_set_unknown_variable(
-			    err, var_name, p->l->stream->name, p->l->line);
-			return NULL;
-		}
-		mem_reg = SUBTILIS_IR_REG_GLOBAL;
-	}
+	s = subtilis_parser_get_symbol(p, var_name, &mem_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
 
 	if (!subtilis_type_if_is_array(&s->t)) {
 		subtilis_error_not_array(err, var_name, p->l->stream->name,
@@ -89,6 +80,77 @@ cleanup:
 	return e;
 }
 
+size_t subtils_parser_array_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
+				   const subtilis_symbol_t *s, size_t mem_reg,
+				   subtilis_type_t *type, subtilis_error_t *err)
+{
+	subtilis_exp_t *indices[SUBTILIS_MAX_DIMENSIONS];
+	size_t i;
+	subtilis_exp_t *e;
+	size_t dims;
+	const char *tbuf;
+	size_t ret_val = SIZE_MAX;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || (strcmp(tbuf, "("))) {
+		subtilis_error_set_expected(err, "(", tbuf, p->l->stream->name,
+					    p->l->line);
+		return SIZE_MAX;
+	}
+
+	if (s->t.params.array.num_dims == 1)
+		dims =
+		    subtilis_round_bracketed_slice_have_b(p, t, indices, err);
+	else
+		dims = subtilis_var_bracketed_int_args_have_b(
+		    p, t, indices, SUBTILIS_MAX_DIMENSIONS, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	if (dims == 0) {
+		/* What we have here is an array reference. */
+
+		subtilis_type_copy(type, &s->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		ret_val =
+		    subtilis_reference_get_pointer(p, mem_reg, s->loc, err);
+		goto cleanup;
+	} else if ((s->t.params.array.num_dims == 1) && (dims == 2)) {
+		subtilis_error_set_lvalue_expected(err, p->l->stream->name,
+						   p->l->line);
+		goto cleanup;
+	}
+
+	/*
+	 * Otherwise we have an array element.  We need to compute its
+	 * address.
+	 */
+
+	subtilis_type_if_element_type(p, &s->t, type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_array_index_calc(p, s->key, &s->t, mem_reg, s->loc,
+				      indices, dims, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	ret_val = e->exp.ir_op.reg;
+	subtilis_exp_delete(e);
+
+cleanup:
+
+	for (i = 0; i < dims; i++)
+		subtilis_exp_delete(indices[i]);
+
+	return ret_val;
+}
+
 subtilis_exp_t *subtils_parser_read_vector(subtilis_parser_t *p,
 					   subtilis_token_t *t,
 					   const char *var_name,
@@ -100,18 +162,9 @@ subtilis_exp_t *subtils_parser_read_vector(subtilis_parser_t *p,
 	subtilis_exp_t *indices[2] = {NULL, NULL};
 	subtilis_exp_t *e = NULL;
 
-	s = subtilis_symbol_table_lookup(p->local_st, var_name);
-	if (s) {
-		mem_reg = SUBTILIS_IR_REG_LOCAL;
-	} else {
-		s = subtilis_symbol_table_lookup(p->st, var_name);
-		if (!s) {
-			subtilis_error_set_unknown_variable(
-			    err, var_name, p->l->stream->name, p->l->line);
-			return NULL;
-		}
-		mem_reg = SUBTILIS_IR_REG_GLOBAL;
-	}
+	s = subtilis_parser_get_symbol(p, var_name, &mem_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
 
 	if (!subtilis_type_if_is_vector(&s->t)) {
 		subtilis_error_not_vector(err, var_name, p->l->stream->name,
@@ -147,6 +200,77 @@ cleanup:
 	subtilis_exp_delete(indices[1]);
 
 	return e;
+}
+
+size_t subtils_parser_vector_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
+				    const subtilis_symbol_t *s, size_t mem_reg,
+				    subtilis_type_t *type,
+				    subtilis_error_t *err)
+{
+	subtilis_exp_t *indices[SUBTILIS_MAX_DIMENSIONS];
+	size_t i;
+	subtilis_exp_t *e;
+	size_t dims;
+	const char *tbuf;
+	size_t ret_val = SIZE_MAX;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || (strcmp(tbuf, "{"))) {
+		subtilis_error_set_expected(err, "{", tbuf, p->l->stream->name,
+					    p->l->line);
+		return SIZE_MAX;
+	}
+
+	dims = subtilis_curly_bracketed_slice_have_b(p, t, indices, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	if (dims > 1) {
+		/* It's a slice which is not allowed. */
+
+		subtilis_error_set_lvalue_expected(err, p->l->stream->name,
+						   p->l->line);
+		goto cleanup;
+	}
+
+	if (dims == 0) {
+		/* What we have here is a vector reference. */
+
+		subtilis_type_copy(type, &s->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		ret_val =
+		    subtilis_reference_get_pointer(p, mem_reg, s->loc, err);
+		goto cleanup;
+	}
+
+	/*
+	 * Otherwise we have an array element.  We need to compute its
+	 * address.
+	 */
+
+	subtilis_type_if_element_type(p, &s->t, type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_array_index_calc(p, s->key, &s->t, mem_reg, s->loc,
+				      indices, dims, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	ret_val = e->exp.ir_op.reg;
+	subtilis_exp_delete(e);
+
+cleanup:
+
+	for (i = 0; i < dims; i++)
+		subtilis_exp_delete(indices[i]);
+
+	return ret_val;
 }
 
 subtilis_exp_t *

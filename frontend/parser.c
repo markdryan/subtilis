@@ -672,7 +672,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_STRS */
 	NULL, /* SUBTILIS_KEYWORD_SUM */
 	NULL, /* SUBTILIS_KEYWORD_SUMLEN */
-	NULL, /* SUBTILIS_KEYWORD_SWAP */
+	subtilis_parser_swap, /* SUBTILIS_KEYWORD_SWAP */
 	subtilis_parser_sys, /* SUBTILIS_KEYWORD_SYS */
 	NULL, /* SUBTILIS_KEYWORD_TAB */
 	NULL, /* SUBTILIS_KEYWORD_TAN */

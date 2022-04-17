@@ -689,3 +689,65 @@ void subtilis_parser_let(subtilis_parser_t *p, subtilis_token_t *t,
 
 	subtilis_parser_assignment(p, t, err);
 }
+
+void subtilis_parser_swap(subtilis_parser_t *p, subtilis_token_t *t,
+			  subtilis_error_t *err)
+{
+	const char *tbuf;
+	bool lreg;
+	bool rreg;
+	subtilis_ir_operand_t lop;
+	subtilis_ir_operand_t rop;
+	subtilis_type_t ltype;
+	subtilis_type_t rtype;
+
+	ltype.type = SUBTILIS_TYPE_VOID;
+	rtype.type = SUBTILIS_TYPE_VOID;
+
+	lreg = subtilis_exp_get_lvalue(p, t, &lop, &ltype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	tbuf = subtilis_token_get_text(t);
+	if (t->type != SUBTILIS_TOKEN_OPERATOR || strcmp(tbuf, ",")) {
+		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
+					    p->l->line);
+		goto cleanup;
+	}
+
+	rreg = subtilis_exp_get_lvalue(p, t, &rop, &rtype, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (!subtilis_type_eq(&ltype, &rtype)) {
+		subtilis_error_set_swap_type_mismatch(err, p->l->stream->name,
+						      p->l->line);
+		goto cleanup;
+	}
+
+	if (lreg) {
+		if (rreg)
+			subtilis_type_if_swap_reg_reg(p, &ltype, lop.reg,
+						      rop.reg, err);
+		else
+			subtilis_type_if_swap_reg_mem(p, &ltype, lop.reg,
+						      rop.reg, err);
+	} else if (rreg) {
+		subtilis_type_if_swap_reg_mem(p, &ltype, rop.reg, lop.reg, err);
+	} else {
+		subtilis_type_if_swap_mem_mem(p, &ltype, lop.reg, rop.reg, err);
+	}
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_lexer_get(p->l, t, err);
+
+cleanup:
+
+	subtilis_type_free(&rtype);
+	subtilis_type_free(&ltype);
+}

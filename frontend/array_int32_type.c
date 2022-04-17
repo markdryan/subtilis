@@ -463,6 +463,9 @@ subtilis_type_if subtilis_type_array_int32 = {
 	.call_ptr = prv_call_ptr,
 	.ret = prv_ret,
 	.destructor = NULL,
+	.swap_reg_reg = NULL,
+	.swap_reg_mem = NULL,
+	.swap_mem_mem = subtilis_array_type_swap,
 };
 
 /* clang-format on */
@@ -549,6 +552,9 @@ subtilis_type_if subtilis_type_vector_int32 = {
 	.call_ptr = prv_call_ptr,
 	.ret = prv_ret,
 	.destructor = NULL,
+	.swap_reg_reg = NULL,
+	.swap_reg_mem = NULL,
+	.swap_mem_mem = subtilis_array_type_swap,
 };
 
 /* clang-format on */
