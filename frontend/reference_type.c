@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "array_type.h"
+#include "builtins_ir.h"
 #include "expression.h"
 #include "parser_exp.h"
 #include "reference_type.h"
@@ -1211,15 +1212,11 @@ static void prv_deref(subtilis_parser_t *p, size_t mem_reg, size_t loc,
 		      bool destructor, subtilis_error_t *err)
 {
 	subtilis_ir_operand_t el_start;
-	subtilis_ir_operand_t destruct;
 	subtilis_ir_operand_t offset;
 	subtilis_ir_operand_t size;
 	subtilis_ir_operand_t op2;
-	subtilis_ir_operand_t ref_count;
 	subtilis_ir_operand_t non_zero;
 	subtilis_ir_operand_t zero;
-	subtilis_ir_operand_t no_destruct_label;
-	subtilis_ir_operand_t destruct_label;
 
 	non_zero.label = subtilis_ir_section_new_label(p->current);
 	zero.label = subtilis_ir_section_new_label(p->current);
@@ -1245,53 +1242,9 @@ static void prv_deref(subtilis_parser_t *p, size_t mem_reg, size_t loc,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	/*
-	 * TODO: This is temporary to handle arrays of strings.  Ultimately,
-	 * we'll need a more comprehensive solution to deal with structures
-	 * and arrays of structures, but first we'll need function pointer
-	 * support.
-	 */
-
 	if (destructor) {
-		destruct_label.label =
-		    subtilis_ir_section_new_label(p->current);
-		no_destruct_label.label =
-		    subtilis_ir_section_new_label(p->current);
-		op2.integer = loc + SUBTIILIS_REFERENCE_DESTRUCTOR_OFF;
-		destruct.reg = subtilis_ir_section_add_instr(
-		    p->current, SUBTILIS_OP_INSTR_LOADO_I32, el_start, op2,
-		    err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-		ref_count.reg = subtilis_ir_section_add_instr2(
-		    p->current, SUBTILIS_OP_INSTR_GETREF, offset, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-		op2.integer = 1;
-		ref_count.reg = subtilis_ir_section_add_instr(
-		    p->current, SUBTILIS_OP_INSTR_EQI_I32, ref_count, op2, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-		destruct.reg = subtilis_ir_section_add_instr(
-		    p->current, SUBTILIS_OP_INSTR_AND_I32, destruct, ref_count,
-		    err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-		subtilis_ir_section_add_instr_reg(
-		    p->current, SUBTILIS_OP_INSTR_JMPC, destruct,
-		    destruct_label, no_destruct_label, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-		subtilis_ir_section_add_label(p->current, destruct_label.label,
-					      err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-
-		subtilis_array_type_deref_els(p, offset.reg, size.reg, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-		subtilis_ir_section_add_label(p->current,
-					      no_destruct_label.label, err);
+		subtilis_builtin_ir_call_deref_array_els(p, el_start.reg,
+							 size.reg, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
