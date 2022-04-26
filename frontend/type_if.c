@@ -21,6 +21,7 @@
 #include "array_fn_type.h"
 #include "array_int32_type.h"
 #include "array_string_type.h"
+#include "builtins_ir.h"
 #include "byte_type_if.h"
 #include "float64_type.h"
 #include "fn_type.h"
@@ -291,8 +292,7 @@ void subtilis_type_if_zero_reg(subtilis_parser_t *p,
 	fn(p, type, reg, err);
 }
 
-void subtilis_type_if_array_of(subtilis_parser_t *p,
-			       const subtilis_type_t *element_type,
+void subtilis_type_if_array_of(const subtilis_type_t *element_type,
 			       subtilis_type_t *type, subtilis_error_t *err)
 {
 	subtilis_type_if_typeof_t fn;
@@ -310,8 +310,7 @@ void subtilis_type_if_array_of(subtilis_parser_t *p,
 	fn(element_type, type, err);
 }
 
-void subtilis_type_if_vector_of(subtilis_parser_t *p,
-				const subtilis_type_t *element_type,
+void subtilis_type_if_vector_of(const subtilis_type_t *element_type,
 				subtilis_type_t *type, subtilis_error_t *err)
 {
 	subtilis_type_if_typeof_t fn;
@@ -1241,15 +1240,17 @@ subtilis_ir_reg_type_t subtilis_type_if_reg_type(const subtilis_type_t *type)
 	return prv_type_map[type->type]->param_type;
 }
 
-size_t subtilis_type_if_destructor(const subtilis_type_t *type)
+size_t subtilis_type_if_destructor(subtilis_parser_t *p,
+				   const subtilis_type_t *type,
+				   subtilis_error_t *err)
 {
-	subtilis_type_if_size_t fn;
+	subtilis_type_if_destruct_t fn;
 
 	fn = prv_type_map[type->type]->destructor;
 	if (!fn)
-		return 0;
+		return SIZE_MAX;
 
-	return fn(type);
+	return fn(p, type, err);
 }
 
 void subtilis_type_compare_diag_custom(subtilis_parser_t *p,
@@ -1308,4 +1309,11 @@ void subtilis_type_compare_diag(subtilis_parser_t *p, const subtilis_type_t *t1,
 {
 	subtilis_type_compare_diag_custom(p, t1, t2, NULL,
 					  prv_diag_custom_default, err);
+}
+
+size_t subtilis_type_if_destruct_deref(subtilis_parser_t *p,
+				       const subtilis_type_t *type,
+				       subtilis_error_t *err)
+{
+	return subtilis_builtin_ir_call_deref(p, err);
 }

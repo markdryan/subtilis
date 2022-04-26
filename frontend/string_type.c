@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "builtins_helper.h"
+#include "builtins_ir.h"
 #include "reference_type.h"
 #include "string_type.h"
 #include "type_if.h"
@@ -33,14 +34,14 @@
  *  ----------------------------------
  * | Pointer to Heap   |           8 |
  *  ----------------------------------
- * | Destructor        |           12 |
+ * | Original Size     |          12 |
  *  ----------------------------------
  */
 
 #define SUBTIILIS_STRING_SIZE_OFF SUBTIILIS_REFERENCE_SIZE_OFF
 #define SUBTIILIS_STRING_DATA_OFF SUBTIILIS_REFERENCE_DATA_OFF
 #define SUBTIILIS_STRING_HEAP_OFF SUBTIILIS_REFERENCE_HEAP_OFF
-#define SUBTIILIS_STRING_DESTRUCTOR_OFF SUBTIILIS_REFERENCE_DESTRUCTOR_OFF
+#define SUBTIILIS_STRING_ORIG_SIZE_OFF SUBTIILIS_REFERENCE_ORIG_SIZE_OFF
 
 static size_t prv_add_string_constant(subtilis_parser_t *p, const char *str,
 				      size_t len, subtilis_error_t *err)
@@ -66,6 +67,12 @@ cleanup:
 
 	free(buf);
 	return SIZE_MAX;
+}
+
+void subtilis_string_init_type(subtilis_parser_t *p, subtilis_type_t *type,
+			       subtilis_error_t *err)
+{
+	type->type = SUBTILIS_TYPE_STRING;
 }
 
 size_t subtilis_string_type_lca_const(subtilis_parser_t *p, const char *str,
@@ -252,7 +259,9 @@ subtilis_exp_t *subtilis_string_type_new_tmp_from_char(subtilis_parser_t *p,
 	size_t reg;
 	char *tmp_name = NULL;
 
-	type.type = SUBTILIS_TYPE_STRING;
+	subtilis_string_init_type(p, &type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 	s = subtilis_symbol_table_insert_tmp(p->local_st, &type, &tmp_name,
 					     err);
 	subtilis_type_free(&type);

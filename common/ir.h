@@ -1933,7 +1933,6 @@ struct subtilis_ir_section_t_ {
 	size_t cleanup_stack;
 	size_t cleanup_stack_nop;
 	size_t cleanup_stack_reg;
-	bool destructor_needed;
 	void *asm_code;
 	subtilis_backend_asm_free_t asm_free_fn;
 };

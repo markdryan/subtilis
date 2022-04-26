@@ -98,14 +98,14 @@ void subtilis_reference_type_init_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	op1.integer = SUBTIILIS_REFERENCE_DESTRUCTOR_OFF;
+	op1.integer = SUBTIILIS_REFERENCE_ORIG_SIZE_OFF;
 	copy.reg = subtilis_ir_section_add_instr(
 	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	op1.reg = dest_mem_reg;
-	op2.integer = dest_loc + SUBTIILIS_REFERENCE_DESTRUCTOR_OFF;
+	op2.integer = dest_loc + SUBTIILIS_REFERENCE_ORIG_SIZE_OFF;
 	subtilis_ir_section_add_instr_reg(
 	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, copy, op1, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -115,6 +115,29 @@ void subtilis_reference_type_init_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 		subtilis_ir_section_add_label(p->current, zero.label, err);
 }
 
+void subtilis_reference_push_ref(subtilis_parser_t *p, const subtilis_type_t *t,
+				 size_t reg, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op2;
+
+	op2.reg = reg;
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_PUSH_I32, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.integer = subtilis_type_if_destructor(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	op2.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_GET_PROC_ADDR, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_PUSH_I32, op2, err);
+}
+
 /*
  * This function is called when initialising string parameters of a function
  * and a procedure.  As we're only setting up the procedure at this point
@@ -122,9 +145,10 @@ void subtilis_reference_type_init_ref(subtilis_parser_t *p, size_t dest_mem_reg,
  * cleanup stack isn't yet set up.
  */
 
-void subtilis_reference_type_copy_ref(subtilis_parser_t *p, size_t dest_mem_reg,
-				      size_t dest_loc, size_t source_reg,
-				      subtilis_error_t *err)
+void subtilis_reference_type_copy_ref(subtilis_parser_t *p,
+				      const subtilis_type_t *t,
+				      size_t dest_mem_reg, size_t dest_loc,
+				      size_t source_reg, subtilis_error_t *err)
 {
 	subtilis_ir_operand_t store_op;
 	subtilis_ir_operand_t op2;
@@ -145,8 +169,7 @@ void subtilis_reference_type_copy_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 		op2.reg = dest_mem_reg;
 	}
 
-	subtilis_ir_section_add_instr_no_reg(
-	    p->current, SUBTILIS_OP_INSTR_PUSH_I32, op2, err);
+	subtilis_reference_push_ref(p, t, op2.reg, err);
 }
 
 /*
@@ -202,7 +225,7 @@ void subtilis_reference_type_copy_ret(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	op2.integer = SUBTIILIS_REFERENCE_DESTRUCTOR_OFF;
+	op2.integer = SUBTIILIS_REFERENCE_ORIG_SIZE_OFF;
 	op1.reg = subtilis_ir_section_add_instr(
 	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, s, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -219,8 +242,7 @@ void subtilis_reference_type_copy_ret(subtilis_parser_t *p,
 	 * We don't want to overwrite the data before we've copied it.
 	 */
 
-	subtilis_ir_section_add_instr_no_reg(
-	    p->current, SUBTILIS_OP_INSTR_PUSH_I32, d, err);
+	subtilis_reference_push_ref(p, t, d.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -327,8 +349,7 @@ void subtilis_reference_type_push_reference(subtilis_parser_t *p,
 		op2.reg = reg;
 	}
 
-	subtilis_ir_section_add_instr_no_reg(
-	    p->current, SUBTILIS_OP_INSTR_PUSH_I32, op2, err);
+	subtilis_reference_push_ref(p, type, op2.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -350,8 +371,9 @@ void subtilis_reference_type_new_ref(subtilis_parser_t *p,
 					       err);
 }
 
-static void prv_call_deref(subtilis_parser_t *p, subtilis_ir_operand_t address,
-			   subtilis_error_t *err)
+void reference_type_call_deref(subtilis_parser_t *p,
+			       subtilis_ir_operand_t address,
+			       subtilis_error_t *err)
 {
 	if (p->backend.caps & SUBTILIS_BACKEND_HAVE_ALLOC)
 		subtilis_ir_section_add_instr_no_reg(
@@ -380,7 +402,7 @@ void subtilis_reference_type_assign_ref(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	prv_call_deref(p, copy, err);
+	reference_type_call_deref(p, copy, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -565,7 +587,7 @@ size_t subtilis_reference_type_re_malloc(subtilis_parser_t *p, size_t store_reg,
 
 	if (heap_known_valid) {
 		data.reg = heap_reg;
-		prv_call_deref(p, data, err);
+		reference_type_call_deref(p, data, err);
 	} else {
 		subtilis_reference_type_deref(p, store_reg, loc, err);
 	}
@@ -695,15 +717,6 @@ static void prv_ensure_cleanup_stack(subtilis_parser_t *p,
 		instr->operands[0].reg = p->current->cleanup_stack;
 		instr->operands[1].integer = 0;
 	}
-
-	/*
-	 * Extra cleanup code is needed at the end of the function if the
-	 * function contains a variable that has a destructor, e.g., an
-	 * array of strings.  We only want to add this code if necessary.
-	 */
-
-	p->current->destructor_needed =
-	    p->current->destructor_needed || destructor_needed;
 }
 
 void subtilis_reference_inc_cleanup_stack(subtilis_parser_t *p,
@@ -713,8 +726,7 @@ void subtilis_reference_inc_cleanup_stack(subtilis_parser_t *p,
 	subtilis_ir_operand_t op2;
 	subtilis_ir_operand_t dest;
 
-	prv_ensure_cleanup_stack(p, subtilis_type_if_destructor(type) != 0,
-				 err);
+	prv_ensure_cleanup_stack(p, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -756,27 +768,32 @@ size_t subtilis_reference_type_raw_alloc(subtilis_parser_t *p, size_t size_reg,
 	return op.reg;
 }
 
-void subtilis_reference_type_set_destructor(subtilis_parser_t *p,
-					    const subtilis_type_t *type,
-					    size_t store_reg, size_t loc,
-					    subtilis_error_t *err)
+size_t subtilis_reference_type_get_orig_size(subtilis_parser_t *p,
+					     size_t mem_reg, size_t loc,
+					     subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op1;
-	subtilis_ir_operand_t destructor;
+	subtilis_ir_operand_t op2;
+
+	op1.reg = mem_reg;
+	op2.integer = loc + SUBTIILIS_REFERENCE_ORIG_SIZE_OFF;
+	return subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op1, op2, err);
+}
+
+void subtilis_reference_type_set_orig_size(subtilis_parser_t *p, size_t mem_reg,
+					   size_t loc, size_t size_reg,
+					   subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t dest;
 	subtilis_ir_operand_t store_op;
 
-	store_op.reg = store_reg;
-
-	op1.integer = (int32_t)subtilis_type_if_destructor(type);
-	destructor.reg = subtilis_ir_section_add_instr2(
-	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	op1.integer = loc + SUBTIILIS_REFERENCE_DESTRUCTOR_OFF;
-	subtilis_ir_section_add_instr_reg(p->current,
-					  SUBTILIS_OP_INSTR_STOREO_I32,
-					  destructor, store_op, op1, err);
+	dest.reg = size_reg;
+	store_op.reg = mem_reg;
+	op1.integer = loc + SUBTIILIS_REFERENCE_ORIG_SIZE_OFF;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, dest, store_op, op1, err);
 }
 
 size_t subtilis_reference_type_alloc(subtilis_parser_t *p,
@@ -796,6 +813,11 @@ size_t subtilis_reference_type_alloc(subtilis_parser_t *p,
 	subtilis_ir_section_add_instr_reg(p->current,
 					  SUBTILIS_OP_INSTR_STOREO_I32, size_op,
 					  store_op, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	subtilis_reference_type_set_orig_size(p, store_reg, loc, size_op.reg,
+					      err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
@@ -819,10 +841,6 @@ size_t subtilis_reference_type_alloc(subtilis_parser_t *p,
 	op1.integer = loc + SUBTIILIS_REFERENCE_HEAP_OFF;
 	subtilis_ir_section_add_instr_reg(
 	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op, store_op, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
-	subtilis_reference_type_set_destructor(p, type, store_reg, loc, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
@@ -869,6 +887,12 @@ static size_t prv_resize_with_realloc(subtilis_parser_t *p, size_t loc,
 	op0.reg = size_reg;
 	op1.reg = store_reg;
 	op2.integer = loc + SUBTIILIS_REFERENCE_SIZE_OFF;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op0, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	op2.integer = loc + SUBTIILIS_REFERENCE_ORIG_SIZE_OFF;
 	subtilis_ir_section_add_instr_reg(
 	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op0, op1, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -977,7 +1001,7 @@ static size_t prv_resize_with_malloc(subtilis_parser_t *p, size_t loc,
 	 * block and we don't want to call any destructors.
 	 */
 
-	prv_call_deref(p, heap, err);
+	reference_type_call_deref(p, heap, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
@@ -1025,6 +1049,13 @@ static size_t prv_resize_with_malloc(subtilis_parser_t *p, size_t loc,
 		return SIZE_MAX;
 
 	op2.integer = loc + SUBTIILIS_REFERENCE_SIZE_OFF;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_STOREO_I32,
+					  new_size, store, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	op2.integer = loc + SUBTIILIS_REFERENCE_ORIG_SIZE_OFF;
 	subtilis_ir_section_add_instr_reg(p->current,
 					  SUBTILIS_OP_INSTR_STOREO_I32,
 					  new_size, store, op2, err);
@@ -1163,6 +1194,11 @@ size_t subtilis_reference_type_grow(subtilis_parser_t *p, size_t a1_loc,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
+	subtilis_reference_type_set_orig_size(p, a1_mem_reg, a1_loc,
+					      new_size_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
 	subtilis_reference_set_data(p, dest_reg, a1_mem_reg, a1_loc, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
@@ -1242,14 +1278,7 @@ static void prv_deref(subtilis_parser_t *p, size_t mem_reg, size_t loc,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	if (destructor) {
-		subtilis_builtin_ir_call_deref_array_els(p, el_start.reg,
-							 size.reg, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-	}
-
-	prv_call_deref(p, offset, err);
+	reference_type_call_deref(p, offset, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1257,19 +1286,34 @@ static void prv_deref(subtilis_parser_t *p, size_t mem_reg, size_t loc,
 }
 
 void subtilis_reference_type_pop_and_deref(subtilis_parser_t *p,
-					   bool ref_of_ref,
 					   subtilis_error_t *err)
 {
 	size_t reg;
 	subtilis_ir_operand_t op2;
 	subtilis_ir_operand_t dest;
+	size_t fn_addr;
+	subtilis_ir_arg_t *ir_args = malloc(sizeof(*ir_args));
+
+	if (!ir_args) {
+		subtilis_error_set_oom(err);
+		return;
+	}
+
+	fn_addr = subtilis_ir_section_add_instr1(
+	    p->current, SUBTILIS_OP_INSTR_POP_I32, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	reg = subtilis_ir_section_add_instr1(p->current,
 					     SUBTILIS_OP_INSTR_POP_I32, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	prv_deref(p, reg, 0, ref_of_ref, err);
+	ir_args[0].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	ir_args[0].reg = reg;
+	ir_args[0].nop = SIZE_MAX;
+
+	subtilis_ir_section_add_call_ptr(p->current, 1, ir_args, fn_addr, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1315,7 +1359,6 @@ void subtilis_reference_deallocate_refs(subtilis_parser_t *p,
 					size_t level, subtilis_error_t *err)
 {
 	size_t i;
-	bool ref_of_ref;
 	const subtilis_symbol_t *s;
 	subtilis_symbol_level_t *l = &st->levels[level];
 
@@ -1324,8 +1367,7 @@ void subtilis_reference_deallocate_refs(subtilis_parser_t *p,
 		if (!subtilis_type_if_is_reference(&s->t) || s->no_rc)
 			continue;
 
-		ref_of_ref = !(subtilis_type_if_destructor(&s->t) == 0);
-		subtilis_reference_type_pop_and_deref(p, ref_of_ref, err);
+		subtilis_reference_type_pop_and_deref(p, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}

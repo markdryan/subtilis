@@ -36,7 +36,7 @@
  *  ----------------------------------
  * | Pointer to Heap   |           8 |
  *  ----------------------------------
- * | Destructor        |          12 |
+ * | Original Size     |          12 |
  *  ----------------------------------
  * | Size of DIM 1     |          16 |
  *  ----------------------------------
@@ -54,7 +54,7 @@
  *  ----------------------------------
  * | Pointer to Heap   |           8 |
  *  ----------------------------------
- * | Destructor        |          12 |
+ * | Original Size     |          12 |
  *  ----------------------------------
  * | Vector Length     |          16 |
  *  ----------------------------------
@@ -63,8 +63,8 @@
 #define SUBTIILIS_ARRAY_SIZE_OFF SUBTIILIS_REFERENCE_SIZE_OFF
 #define SUBTIILIS_ARRAY_DATA_OFF SUBTIILIS_REFERENCE_DATA_OFF
 #define SUBTIILIS_ARRAY_HEAP_OFF SUBTIILIS_REFERENCE_HEAP_OFF
-#define SUBTIILIS_ARRAY_DESTRUCTOR_OFF SUBTIILIS_REFERENCE_DESTRUCTOR_OFF
-#define SUBTIILIS_ARRAY_DIMS_OFF (SUBTIILIS_REFERENCE_DESTRUCTOR_OFF + 4)
+#define SUBTIILIS_ARRAY_ORIG_SIZE_OFF SUBTIILIS_REFERENCE_ORIG_SIZE_OFF
+#define SUBTIILIS_ARRAY_DIMS_OFF (SUBTIILIS_REFERENCE_ORIG_SIZE_OFF + 4)
 
 size_t subtilis_array_type_size(const subtilis_type_t *type)
 {
@@ -148,7 +148,7 @@ void subtilis_array_type_init(subtilis_parser_t *p, const char *var_name,
 	}
 
 	type->type = SUBTILIS_TYPE_VOID;
-	subtilis_type_if_array_of(p, element_type, type, err);
+	subtilis_type_if_array_of(element_type, type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -168,13 +168,12 @@ void subtilis_array_type_init(subtilis_parser_t *p, const char *var_name,
 	}
 }
 
-void subtilis_array_type_vector_init(subtilis_parser_t *p,
-				     const subtilis_type_t *element_type,
+void subtilis_array_type_vector_init(const subtilis_type_t *element_type,
 				     subtilis_type_t *type,
 				     subtilis_error_t *err)
 {
 	type->type = SUBTILIS_TYPE_VOID;
-	subtilis_type_if_vector_of(p, element_type, type, err);
+	subtilis_type_if_vector_of(element_type, type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -213,7 +212,8 @@ void subtilis_array_type_vector_zero_ref(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_reference_type_set_destructor(p, type, mem_reg, loc, err);
+	subtilis_reference_type_set_orig_size(p, mem_reg, loc,
+					      zero->exp.ir_op.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -713,6 +713,7 @@ static size_t prv_slice_set_sizes(subtilis_parser_t *p,
 				  subtilis_exp_t *index2, subtilis_error_t *err)
 {
 	size_t size_reg;
+	size_t orig_size_reg;
 	subtilis_exp_t *one = NULL;
 	subtilis_exp_t *size = NULL;
 	subtilis_exp_t *index1_dup = NULL;
@@ -759,6 +760,16 @@ static size_t prv_slice_set_sizes(subtilis_parser_t *p,
 	size = NULL;
 
 	subtilis_reference_type_set_size(p, dest_reg, 0, size_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	orig_size_reg =
+	    subtilis_reference_type_get_orig_size(p, source_reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_reference_type_set_orig_size(p, dest_reg, 0, orig_size_reg,
+					      err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1238,8 +1249,7 @@ static void prv_copy_ref_base(subtilis_parser_t *p, const subtilis_type_t *t,
 	 * We don't want to overwrite the data before we've copied it.
 	 */
 
-	subtilis_ir_section_add_instr_no_reg(
-	    p->current, SUBTILIS_OP_INSTR_PUSH_I32, ref_start, err);
+	subtilis_reference_push_ref(p, t, ref_start.reg, err);
 }
 
 void subtlis_array_type_copy_param_ref(subtilis_parser_t *p,

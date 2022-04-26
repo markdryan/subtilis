@@ -61,7 +61,7 @@ static void prv_local_array_ref(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_type_if_array_of(p, type, &array_type, err);
+	subtilis_type_if_array_of(type, &array_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -106,7 +106,7 @@ static void prv_local_vector_ref(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_type_if_vector_of(p, type, &vector_type, err);
+	subtilis_type_if_vector_of(type, &vector_type, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		subtilis_exp_delete(e);
 		return;

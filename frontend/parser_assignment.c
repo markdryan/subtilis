@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "array_type.h"
+#include "builtins_ir.h"
 #include "parser_array.h"
 #include "parser_assignment.h"
 #include "parser_call.h"
@@ -252,7 +253,7 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 	size_t dims = 0;
 
 	array_type.type = SUBTILIS_TYPE_VOID;
-	subtilis_type_if_array_of(p, id_type, &array_type, err);
+	subtilis_type_if_array_of(id_type, &array_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -281,7 +282,7 @@ static void prv_assign_vector(subtilis_parser_t *p, subtilis_token_t *t,
 	size_t dims = 0;
 
 	vector_type.type = SUBTILIS_TYPE_VOID;
-	subtilis_type_if_vector_of(p, id_type, &vector_type, err);
+	subtilis_type_if_vector_of(id_type, &vector_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -448,7 +449,6 @@ static void prv_assignment_local(subtilis_parser_t *p, subtilis_token_t *t,
 	if (e->temporary) {
 		(void)subtilis_symbol_table_promote_tmp(
 		    p->local_st, &e->type, e->temporary, var_name, err);
-
 		subtilis_exp_delete(e);
 		return;
 	}

@@ -145,7 +145,6 @@ void subtilis_type_to_from_fn(subtilis_type_fn_t *dst,
 void subtilis_type_init_to_from_fn(subtilis_type_fn_t *dst,
 				   const subtilis_type_t *src,
 				   subtilis_error_t *err);
-
 void subtilis_type_free(subtilis_type_t *typ);
 
 extern const subtilis_type_t subtilis_type_const_real;

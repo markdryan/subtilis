@@ -22,6 +22,9 @@
 #include "parser.h"
 
 typedef size_t (*subtilis_type_if_size_t)(const subtilis_type_t *type);
+typedef size_t (*subtilis_type_if_destruct_t)(subtilis_parser_t *p,
+					      const subtilis_type_t *type,
+					      subtilis_error_t *err);
 typedef void (*subtilis_type_if_typeof_t)(const subtilis_type_t *element_type,
 					  subtilis_type_t *type,
 					  subtilis_error_t *err);
@@ -201,7 +204,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_call_ptr_t call_ptr;
 	subtilis_type_if_reg_t ret;
 	subtilis_type_if_print_t print;
-	subtilis_type_if_size_t destructor;
+	subtilis_type_if_destruct_t destructor;
 	subtilis_type_if_swap_t swap_reg_reg;
 	subtilis_type_if_swap_t swap_reg_mem;
 	subtilis_type_if_swap_t swap_mem_mem;
@@ -326,8 +329,7 @@ void subtilis_type_if_const_of(const subtilis_type_t *type,
  * element_type into type.
  */
 
-void subtilis_type_if_array_of(subtilis_parser_t *p,
-			       const subtilis_type_t *element_type,
+void subtilis_type_if_array_of(const subtilis_type_t *element_type,
 			       subtilis_type_t *type, subtilis_error_t *err);
 
 /*
@@ -335,8 +337,7 @@ void subtilis_type_if_array_of(subtilis_parser_t *p,
  * element_type into type.
  */
 
-void subtilis_type_if_vector_of(subtilis_parser_t *p,
-				const subtilis_type_t *element_type,
+void subtilis_type_if_vector_of(const subtilis_type_t *element_type,
 				subtilis_type_t *type, subtilis_error_t *err);
 
 /*
@@ -880,7 +881,9 @@ void subtilis_type_if_swap_mem_mem(subtilis_parser_t *p,
 				   const subtilis_type_t *type, size_t reg1,
 				   size_t reg2, subtilis_error_t *err);
 
-size_t subtilis_type_if_destructor(const subtilis_type_t *type);
+size_t subtilis_type_if_destructor(subtilis_parser_t *p,
+				   const subtilis_type_t *type,
+				   subtilis_error_t *err);
 
 typedef void (*subtilis_type_cmp_diag_fn_t)(subtilis_parser_t *p,
 					    const char *expected,
@@ -894,5 +897,8 @@ void subtilis_type_compare_diag_custom(subtilis_parser_t *p,
 void subtilis_type_compare_diag(subtilis_parser_t *p, const subtilis_type_t *t1,
 				const subtilis_type_t *t2,
 				subtilis_error_t *err);
+size_t subtilis_type_if_destruct_deref(subtilis_parser_t *p,
+				       const subtilis_type_t *type,
+				       subtilis_error_t *err);
 
 #endif

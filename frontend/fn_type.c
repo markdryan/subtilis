@@ -181,22 +181,22 @@ static void prv_zero_reg(subtilis_parser_t *p, const subtilis_type_t *type,
 	    p->current, SUBTILIS_OP_INSTR_GET_PROC_ADDR, op0, op1, err);
 }
 
-static void prv_array_of(const subtilis_type_t *element_type,
-			 subtilis_type_t *type, subtilis_error_t *err)
+static void prv_array_of(const subtilis_type_t *el_type, subtilis_type_t *type,
+			 subtilis_error_t *err)
 {
 	subtilis_type_free(type);
 	type->type = SUBTILIS_TYPE_ARRAY_FN;
-	subtilis_type_init_to_from_fn(&type->params.array.params.fn,
-				      element_type, err);
+	subtilis_type_init_to_from_fn(&type->params.array.params.fn, el_type,
+				      err);
 }
 
-static void prv_vector_of(const subtilis_type_t *element_type,
-			  subtilis_type_t *type, subtilis_error_t *err)
+static void prv_vector_of(const subtilis_type_t *el_type, subtilis_type_t *type,
+			  subtilis_error_t *err)
 {
 	subtilis_type_free(type);
 	type->type = SUBTILIS_TYPE_VECTOR_FN;
-	subtilis_type_init_to_from_fn(&type->params.array.params.fn,
-				      element_type, err);
+	subtilis_type_init_to_from_fn(&type->params.array.params.fn, el_type,
+				      err);
 }
 
 static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
