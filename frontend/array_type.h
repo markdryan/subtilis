@@ -48,8 +48,7 @@ void subtilis_array_type_init(subtilis_parser_t *p, const char *var_name,
  * Initialise type to be a vector whose element type is supplied by
  * element_type. Vector always have a single dynamic dimension.
  */
-void subtilis_array_type_vector_init(subtilis_parser_t *p,
-				     const subtilis_type_t *element_type,
+void subtilis_array_type_vector_init(const subtilis_type_t *element_type,
 				     subtilis_type_t *type,
 				     subtilis_error_t *err);
 /*

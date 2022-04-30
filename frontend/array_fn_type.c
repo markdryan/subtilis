@@ -20,6 +20,7 @@
 #include "array_fn_type.h"
 #include "array_type.h"
 #include "builtins_helper.h"
+#include "builtins_ir.h"
 #include "collection.h"
 #include "reference_type.h"
 
@@ -121,6 +122,7 @@ static void prv_set(subtilis_parser_t *p, const char *var_name,
 
 	eq_zero.label = SIZE_MAX;
 
+	el_type.type = SUBTILIS_TYPE_VOID;
 	subtilis_type_if_element_type(p, type, &el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto free_e;
@@ -507,7 +509,7 @@ subtilis_type_if subtilis_type_array_fn = {
 	.call = prv_call,
 	.call_ptr = prv_call_ptr,
 	.ret = prv_ret,
-	.destructor = NULL,
+	.destructor = subtilis_type_if_destruct_deref,
 	.swap_reg_reg = NULL,
 	.swap_reg_mem = NULL,
 	.swap_mem_mem = subtilis_array_type_swap,
@@ -589,7 +591,7 @@ subtilis_type_if subtilis_type_vector_fn = {
 	.call = prv_call,
 	.call_ptr = prv_call_ptr,
 	.ret = prv_ret,
-	.destructor = NULL,
+	.destructor = subtilis_type_if_destruct_deref,
 	.swap_reg_reg = NULL,
 	.swap_reg_mem = NULL,
 	.swap_mem_mem = subtilis_array_type_swap,

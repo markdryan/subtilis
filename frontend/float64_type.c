@@ -728,14 +728,14 @@ static void prv_zero_reg(subtilis_parser_t *p, const subtilis_type_t *type,
 	    p->current, SUBTILIS_OP_INSTR_MOVI_REAL, op0, op1, err);
 }
 
-static void prv_array_of(const subtilis_type_t *element_type,
-			 subtilis_type_t *type, subtilis_error_t *err)
+static void prv_array_of(const subtilis_type_t *el_type, subtilis_type_t *type,
+			 subtilis_error_t *err)
 {
 	type->type = SUBTILIS_TYPE_ARRAY_REAL;
 }
 
-static void prv_vector_of(const subtilis_type_t *element_type,
-			  subtilis_type_t *type, subtilis_error_t *err)
+static void prv_vector_of(const subtilis_type_t *el_type, subtilis_type_t *type,
+			  subtilis_error_t *err)
 {
 	type->type = SUBTILIS_TYPE_VECTOR_REAL;
 }

@@ -4865,6 +4865,17 @@ const subtilis_test_case_t test_cases[] = {
 	"endrange\n",
 	"two\nthree\n",
 	},
+	{"vector_slice_return",
+	"a${} := FNSlice${}()\n"
+	"range x$ := a${}\n"
+	"  print x$\n"
+	"endrange\n"
+	"def FNSlice${}\n"
+	"  local dim a${2}\n"
+	"a${} = \"one\", \"two\", \"three\"\n"
+	"<-a${0:1}\n",
+	"one\n",
+	},
 	{"slice_append",
 	"dim a%{5}\n"
 	"a%{} = 1,2,3,4,5,6\n"

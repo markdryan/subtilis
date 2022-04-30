@@ -739,6 +739,9 @@ static subtilis_ir_section_t *prv_ir_prog_section_new(
 
 	if (name_index < p->num_sections) {
 		if (p->sections[name_index]) {
+			if (index)
+				*index = name_index;
+
 			subtilis_error_set_already_defined(err, name, file,
 							   line);
 			goto cleanup;

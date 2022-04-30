@@ -83,5 +83,9 @@ subtilis_exp_t *subtilis_builtin_ir_call_str_to_int32(subtilis_parser_t *p,
 						      size_t str_reg,
 						      size_t base_reg,
 						      subtilis_error_t *err);
+size_t subtilis_builtin_ir_deref_array_els(subtilis_parser_t *p,
+					   subtilis_error_t *err);
+size_t subtilis_builtin_ir_call_deref(subtilis_parser_t *p,
+				      subtilis_error_t *err);
 
 #endif

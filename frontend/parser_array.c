@@ -1048,7 +1048,7 @@ static void prv_create_vector(subtilis_parser_t *p,
 	subtilis_type_t type;
 	const subtilis_symbol_t *s;
 
-	subtilis_array_type_vector_init(p, element_type, &type, err);
+	subtilis_array_type_vector_init(element_type, &type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

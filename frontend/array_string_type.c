@@ -19,6 +19,7 @@
 
 #include "array_string_type.h"
 #include "array_type.h"
+#include "builtins_ir.h"
 #include "collection.h"
 #include "reference_type.h"
 #include "string_type.h"
@@ -435,7 +436,11 @@ static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
 	    p->current, SUBTILIS_OP_INSTR_RET_I32, ret_reg, err);
 }
 
-static size_t prv_destructor(const subtilis_type_t *type) { return 1; }
+static size_t prv_destructor(subtilis_parser_t *p, const subtilis_type_t *type,
+			     subtilis_error_t *err)
+{
+	return subtilis_builtin_ir_deref_array_els(p, err);
+}
 
 /* clang-format off */
 subtilis_type_if subtilis_type_array_string = {

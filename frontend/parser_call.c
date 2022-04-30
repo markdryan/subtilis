@@ -299,7 +299,7 @@ static void prv_process_array_fn_type(subtilis_parser_t *p,
 	subtilis_type_init_copy(&fn_type_old, fn_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	subtilis_type_if_array_of(p, &fn_type_old, fn_type, err);
+	subtilis_type_if_array_of(&fn_type_old, fn_type, err);
 	subtilis_type_free(&fn_type_old);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -324,7 +324,7 @@ static void prv_process_vector_fn_type(subtilis_parser_t *p, const char *name,
 	subtilis_type_init_copy(&fn_type_old, fn_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	subtilis_type_if_vector_of(p, &fn_type_old, fn_type, err);
+	subtilis_type_if_vector_of(&fn_type_old, fn_type, err);
 	subtilis_type_free(&fn_type_old);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -545,7 +545,7 @@ static void prv_process_array_param_type(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_type_if_array_of(p, type, ptype, err);
+	subtilis_type_if_array_of(type, ptype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -579,7 +579,7 @@ static void prv_process_vector_param_type(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_type_if_vector_of(p, type, ptype, err);
+	subtilis_type_if_vector_of(type, ptype, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -713,7 +713,7 @@ static bool prv_complete_array_type(subtilis_parser_t *p, subtilis_token_t *t,
 		subtilis_type_init_copy(&id_type, fn_type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return false;
-		subtilis_type_if_array_of(p, &id_type, fn_type, err);
+		subtilis_type_if_array_of(&id_type, fn_type, err);
 		subtilis_type_free(&id_type);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return false;
@@ -949,8 +949,9 @@ static size_t prv_init_block_variables(subtilis_parser_t *p,
 			    p, t, dest_op, symbols[i]->loc, source_op, 0, err);
 		} else if (t->type == SUBTILIS_TYPE_STRING) {
 			blocks++;
-			subtilis_reference_type_copy_ref(
-			    p, dest_op.reg, symbols[i]->loc, source_reg++, err);
+			subtilis_reference_type_copy_ref(p, t, dest_op.reg,
+							 symbols[i]->loc,
+							 source_reg++, err);
 		} else if (subtilis_type_if_reg_type(t) ==
 			   SUBTILIS_IR_REG_TYPE_INTEGER) {
 			source_reg++;
@@ -1034,7 +1035,7 @@ static void prv_complete_proc_fn_type(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
-		subtilis_type_if_vector_of(p, &id_type, fn_type, err);
+		subtilis_type_if_vector_of(&id_type, fn_type, err);
 		subtilis_type_free(&id_type);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
@@ -1660,8 +1661,7 @@ void subtilis_parser_unwind(subtilis_parser_t *p, subtilis_error_t *err)
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_reference_type_pop_and_deref(p, p->current->destructor_needed,
-					      err);
+	subtilis_reference_type_pop_and_deref(p, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

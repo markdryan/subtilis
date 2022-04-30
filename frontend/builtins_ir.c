@@ -17,6 +17,7 @@
 #include <stdlib.h>
 
 #include "../common/error_codes.h"
+#include "array_type.h"
 #include "builtins_ir.h"
 #include "globals.h"
 #include "parser_exp.h"
@@ -2153,6 +2154,158 @@ cleanup:
 	p->current = old_current;
 }
 
+static void prv_builtins_ir_deref_array_els(subtilis_parser_t *p,
+					    subtilis_ir_section_t *current,
+					    subtilis_error_t *err)
+{
+	subtilis_ir_section_t *old_current;
+	subtilis_ir_operand_t no_destruct_label;
+	subtilis_ir_operand_t destruct_label;
+	subtilis_ir_operand_t getref_label;
+	subtilis_ir_operand_t deref_label;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t ref_count;
+	subtilis_ir_operand_t el_start;
+	subtilis_ir_operand_t offset;
+	subtilis_ir_operand_t size;
+	subtilis_ir_operand_t orig_size;
+
+	old_current = p->current;
+	p->current = current;
+
+	getref_label.label = subtilis_ir_section_new_label(p->current);
+	destruct_label.label = subtilis_ir_section_new_label(p->current);
+	deref_label.label = subtilis_ir_section_new_label(p->current);
+	no_destruct_label.label = subtilis_ir_section_new_label(p->current);
+
+	el_start.reg = SUBTILIS_IR_REG_TEMP_START;
+
+	op2.integer = SUBTIILIS_REFERENCE_SIZE_OFF;
+	size.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, el_start, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op2.integer = SUBTIILIS_REFERENCE_HEAP_OFF;
+	offset.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, el_start, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  size, getref_label, no_destruct_label,
+					  err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, getref_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	ref_count.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_GETREF, offset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	op2.integer = 1;
+	ref_count.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_EQI_I32, ref_count, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  ref_count, destruct_label,
+					  deref_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	subtilis_ir_section_add_label(p->current, destruct_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op2.integer = SUBTIILIS_REFERENCE_ORIG_SIZE_OFF;
+	orig_size.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, el_start, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_array_type_deref_els(p, offset.reg, orig_size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, deref_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	reference_type_call_deref(p, offset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, no_destruct_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_arg(p->current, SUBTILIS_OP_INSTR_RET,
+					     err);
+
+cleanup:
+	p->current = old_current;
+}
+
+static void prv_builtins_ir_call_deref(subtilis_parser_t *p,
+				       subtilis_ir_section_t *current,
+				       subtilis_error_t *err)
+{
+	subtilis_ir_section_t *old_current;
+	subtilis_ir_operand_t el_start;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t offset;
+	subtilis_ir_operand_t size;
+	subtilis_ir_operand_t no_destruct_label;
+	subtilis_ir_operand_t destruct_label;
+
+	old_current = p->current;
+	p->current = current;
+
+	el_start.reg = SUBTILIS_IR_REG_TEMP_START;
+
+	destruct_label.label = subtilis_ir_section_new_label(p->current);
+	no_destruct_label.label = subtilis_ir_section_new_label(p->current);
+
+	op2.integer = SUBTIILIS_REFERENCE_SIZE_OFF;
+	size.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, el_start, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  size, destruct_label,
+					  no_destruct_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, destruct_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op2.integer = SUBTIILIS_REFERENCE_HEAP_OFF;
+	offset.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, el_start, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	reference_type_call_deref(p, offset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, no_destruct_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_arg(p->current, SUBTILIS_OP_INSTR_RET,
+					     err);
+
+cleanup:
+	p->current = old_current;
+}
+
 static size_t prv_find_first_stop_hex(subtilis_parser_t *p,
 				      subtilis_ir_operand_t str_data,
 				      subtilis_ir_operand_t str_len,
@@ -2492,11 +2645,13 @@ cleanup:
 	p->current = old_current;
 }
 
-static subtilis_ir_section_t *prv_add_args(subtilis_parser_t *p,
-					   const char *name, size_t arg_count,
-					   const subtilis_type_t **ptype,
-					   const subtilis_type_t *rtype,
-					   subtilis_error_t *err)
+static subtilis_ir_section_t *prv_add_args_ci(subtilis_parser_t *p,
+					      const char *name,
+					      size_t arg_count,
+					      const subtilis_type_t **ptype,
+					      const subtilis_type_t *rtype,
+					      size_t *call_index,
+					      subtilis_error_t *err)
 {
 	subtilis_type_section_t *ts;
 	subtilis_type_t *params;
@@ -2520,7 +2675,7 @@ static subtilis_ir_section_t *prv_add_args(subtilis_parser_t *p,
 
 	current = subtilis_ir_prog_section_new(
 	    p->prog, name, 0, ts, SUBTILIS_BUILTINS_MAX, "builtin", 0,
-	    p->eflag_offset, p->error_offset, NULL, err);
+	    p->eflag_offset, p->error_offset, call_index, err);
 
 cleanup:
 
@@ -2529,6 +2684,15 @@ cleanup:
 	free(params);
 
 	return current;
+}
+
+static subtilis_ir_section_t *prv_add_args(subtilis_parser_t *p,
+					   const char *name, size_t arg_count,
+					   const subtilis_type_t **ptype,
+					   const subtilis_type_t *rtype,
+					   subtilis_error_t *err)
+{
+	return prv_add_args_ci(p, name, arg_count, ptype, rtype, NULL, err);
 }
 
 subtilis_ir_section_t *
@@ -2710,4 +2874,50 @@ subtilis_exp_t *subtilis_builtin_ir_call_str_to_int32(subtilis_parser_t *p,
 	return subtilis_parser_call_2_arg_fn(
 	    p, "_str_to_int32", str_reg, base_reg, SUBTILIS_IR_REG_TYPE_INTEGER,
 	    SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_integer, true, err);
+}
+
+size_t subtilis_builtin_ir_deref_array_els(subtilis_parser_t *p,
+					   subtilis_error_t *err)
+{
+	subtilis_ir_section_t *fn;
+	const subtilis_type_t *ptype[2];
+	size_t call_index;
+	const char *name = "_deref_array";
+
+	ptype[0] = &subtilis_type_integer;
+
+	fn = prv_add_args_ci(p, name, 1, ptype, &subtilis_type_void,
+			     &call_index, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
+			return SIZE_MAX;
+		subtilis_error_init(err);
+	} else {
+		prv_builtins_ir_deref_array_els(p, fn, err);
+	}
+
+	return call_index;
+}
+
+size_t subtilis_builtin_ir_call_deref(subtilis_parser_t *p,
+				      subtilis_error_t *err)
+{
+	subtilis_ir_section_t *fn;
+	const subtilis_type_t *ptype[1];
+	size_t call_index;
+	const char *name = "_call_deref";
+
+	ptype[0] = &subtilis_type_integer;
+
+	fn = prv_add_args_ci(p, name, 1, ptype, &subtilis_type_void,
+			     &call_index, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
+			return SIZE_MAX;
+		subtilis_error_init(err);
+	} else {
+		prv_builtins_ir_call_deref(p, fn, err);
+	}
+
+	return call_index;
 }

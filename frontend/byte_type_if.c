@@ -18,7 +18,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "builtins_ir.h"
 #include "byte_type_if.h"
 #include "int32_type.h"
 #include "reference_type.h"
@@ -164,14 +163,14 @@ static void prv_zero_reg(subtilis_parser_t *p, const subtilis_type_t *type,
 	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op0, op1, err);
 }
 
-static void prv_array_of(const subtilis_type_t *element_type,
-			 subtilis_type_t *type, subtilis_error_t *err)
+static void prv_array_of(const subtilis_type_t *el_type, subtilis_type_t *type,
+			 subtilis_error_t *err)
 {
 	type->type = SUBTILIS_TYPE_ARRAY_BYTE;
 }
 
-static void prv_vector_of(const subtilis_type_t *element_type,
-			  subtilis_type_t *type, subtilis_error_t *err)
+static void prv_vector_of(const subtilis_type_t *el_type, subtilis_type_t *type,
+			  subtilis_error_t *err)
 {
 	type->type = SUBTILIS_TYPE_VECTOR_BYTE;
 }

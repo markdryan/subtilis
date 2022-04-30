@@ -31,7 +31,9 @@ static subtilis_exp_t *prv_exp_to_var_const(subtilis_parser_t *p,
 	const subtilis_symbol_t *s;
 	subtilis_type_t type;
 
-	type.type = SUBTILIS_TYPE_STRING;
+	subtilis_string_init_type(p, &type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
 	s = subtilis_symbol_table_insert_tmp(p->local_st, &type, NULL, err);
 	subtilis_type_free(&type);
@@ -424,14 +426,14 @@ static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
 	    p->current, SUBTILIS_OP_INSTR_RET_I32, ret_reg, err);
 }
 
-static void prv_array_of(const subtilis_type_t *element_type,
-			 subtilis_type_t *type, subtilis_error_t *err)
+static void prv_array_of(const subtilis_type_t *el_type, subtilis_type_t *type,
+			 subtilis_error_t *err)
 {
 	type->type = SUBTILIS_TYPE_ARRAY_STRING;
 }
 
-static void prv_vector_of(const subtilis_type_t *element_type,
-			  subtilis_type_t *type, subtilis_error_t *err)
+static void prv_vector_of(const subtilis_type_t *el_type, subtilis_type_t *type,
+			  subtilis_error_t *err)
 {
 	type->type = SUBTILIS_TYPE_VECTOR_STRING;
 }
@@ -1138,7 +1140,7 @@ static void prv_swap_mem_mem(subtilis_parser_t *p, const subtilis_type_t *type,
 			     size_t reg1, size_t reg2, subtilis_error_t *err)
 {
 	subtilis_reference_type_swap(p, reg1, reg2,
-				     SUBTIILIS_REFERENCE_DESTRUCTOR_OFF, err);
+				     SUBTIILIS_REFERENCE_ORIG_SIZE_OFF, err);
 }
 
 /* clang-format off */
@@ -1207,7 +1209,7 @@ subtilis_type_if subtilis_type_if_string = {
 	.call_ptr = prv_call_ptr,
 	.ret = prv_ret,
 	.print = subtilis_string_type_print,
-	.destructor = NULL,
+	.destructor = subtilis_type_if_destruct_deref,
 	.swap_reg_reg = NULL,
 	.swap_reg_mem = NULL,
 	.swap_mem_mem = prv_swap_mem_mem,
