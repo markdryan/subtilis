@@ -536,6 +536,7 @@ subtilis_type_if subtilis_type_fn = {
 	.is_integer = false,
 	.is_array = false,
 	.is_vector = false,
+	.alignment = SUBTILIS_CONFIG_POINTER_SIZE,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = prv_size,
 	.data_size = NULL,

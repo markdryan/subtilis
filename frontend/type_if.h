@@ -134,6 +134,7 @@ struct subtilis_type_if_ {
 	bool is_integer;
 	bool is_array;
 	bool is_vector;
+	size_t alignment;
 	subtilis_ir_reg_type_t param_type;
 	subtilis_type_if_size_t size;
 	subtilis_type_if_unary_t data_size;
@@ -214,12 +215,20 @@ typedef struct subtilis_type_if_ subtilis_type_if;
 
 /*
  * Returns the size of the type in bytes.  For reference types
- * this is the size of the reference, e.g., 16 bytes for a one
+ * this is the size of the reference, e.g., 24 bytes for a one
  * dimensional array on 32 bit builds.
  */
 
 size_t subtilis_type_if_size(const subtilis_type_t *type,
 			     subtilis_error_t *err);
+
+/*
+ * Returns the requested alignment of the type.  For scalar
+ * types this is equal to the size of the type.  For reference types and
+ * strings it's equal to the size of a pointer.
+ */
+
+size_t subtilis_type_if_align(const subtilis_type_t *type);
 
 /*
  * For reference types only.  Returns the size of the data pointed

@@ -162,6 +162,11 @@ size_t subtilis_type_if_size(const subtilis_type_t *type, subtilis_error_t *err)
 	return fn(type);
 }
 
+size_t subtilis_type_if_align(const subtilis_type_t *type)
+{
+	return prv_type_map[type->type]->alignment;
+}
+
 subtilis_exp_t *subtilis_type_if_data_size(subtilis_parser_t *p,
 					   const subtilis_type_t *type,
 					   subtilis_exp_t *e,
