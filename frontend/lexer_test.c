@@ -363,6 +363,8 @@ static int prv_check_keywords(subtilis_lexer_t *l, subtilis_token_t *t)
 	for (i = 0; i < SUBTILIS_KEYWORD_TOKENS; i++) {
 		if (subtilis_keywords_list[i].type == SUBTILIS_KEYWORD_REM)
 			continue;
+		if (subtilis_keywords_list[i].type == SUBTILIS_KEYWORD_REC)
+			continue;
 
 		subtilis_lexer_get(l, t, &err);
 		if (err.type != SUBTILIS_ERROR_OK) {
@@ -371,8 +373,9 @@ static int prv_check_keywords(subtilis_lexer_t *l, subtilis_token_t *t)
 		}
 
 		if (t->type != SUBTILIS_TOKEN_KEYWORD) {
-			fprintf(stderr, "Expected token type %d got %d\n",
-				t->type, SUBTILIS_TOKEN_KEYWORD);
+			fprintf(stderr, "Expected token type %d got %d:%s\n",
+				SUBTILIS_TOKEN_KEYWORD, t->type,
+				subtilis_token_get_text(t));
 			return 1;
 		}
 
@@ -410,6 +413,8 @@ static int prv_test_keywords(void)
 	subtilis_buffer_init(&buf, 4096);
 	for (j = 0; j < SUBTILIS_KEYWORD_TOKENS; j++) {
 		if (subtilis_keywords_list[j].type == SUBTILIS_KEYWORD_REM)
+			continue;
+		if (subtilis_keywords_list[j].type == SUBTILIS_KEYWORD_REC)
 			continue;
 		subtilis_buffer_append(&buf, subtilis_keywords_list[j].str,
 				       strlen(subtilis_keywords_list[j].str),
@@ -642,6 +647,74 @@ static int prv_check_procedure_call(subtilis_lexer_t *l, subtilis_token_t *t)
 	return 0;
 }
 
+static int prv_check_rec(subtilis_lexer_t *l, subtilis_token_t *t)
+{
+	subtilis_error_t err;
+	int i;
+	const char *const names[] = {"RECINVOKEME", "RECinvokeme",
+				     "RECinvokeme22"};
+	const char *tbuf;
+
+	subtilis_error_init(&err);
+
+	for (i = 0; i < 3; i++) {
+		subtilis_lexer_get(l, t, &err);
+		if (err.type != SUBTILIS_ERROR_OK) {
+			subtilis_error_fprintf(stderr, &err, true);
+			return 1;
+		}
+
+		if (t->type != SUBTILIS_TOKEN_KEYWORD) {
+			fprintf(stderr,
+				"SUBTILIS_TOKEN_KEYWORD expected.  Found %d\n",
+				t->type);
+			return 1;
+		}
+
+		if (t->tok.keyword.type != SUBTILIS_KEYWORD_REC) {
+			fprintf(stderr,
+				"SUBTILIS_TOKEN_KEYWORD expected.  Found %d\n",
+				t->tok.keyword.type);
+			return 1;
+		}
+
+		tbuf = subtilis_token_get_text(t);
+		if (strcmp(names[i], tbuf)) {
+			fprintf(stderr,
+				"Unexpected record name %s, expected %s\n",
+				tbuf, names[i]);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static int prv_check_bad_rec(subtilis_lexer_t *l, subtilis_token_t *t)
+{
+	subtilis_error_t err;
+	int i;
+
+	for (i = 0; i < 4; i++) {
+		subtilis_error_init(&err);
+		subtilis_lexer_get(l, t, &err);
+		if (err.type == SUBTILIS_ERROR_BAD_REC_NAME)
+			continue;
+
+		if (err.type == SUBTILIS_ERROR_OK) {
+			fprintf(stderr, "Error expected\n");
+			return 1;
+		}
+		fprintf(stderr, "SUBTILIS_ERROR_BAD_REC_NAME expected, "
+				"got");
+		subtilis_error_fprintf(stderr, &err, true);
+		fprintf(stderr, "\n");
+		return 1;
+	}
+
+	return 0;
+}
+
 static int prv_check_empty(subtilis_lexer_t *l, subtilis_token_t *t)
 {
 	subtilis_error_t err;
@@ -677,6 +750,36 @@ static int prv_test_procedure_call(void)
 	return res;
 }
 
+static int prv_test_rec(void)
+{
+	size_t i;
+	int res = 0;
+	const char *str = "RECINVOKEME RECinvokeme RECinvokeme22";
+
+	printf("lexer_test_rec");
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |= prv_test_wrapper(str, buffer_sizes[i], prv_check_rec);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
+}
+
+static int prv_test_bad_rec(void)
+{
+	size_t i;
+	int res = 0;
+	const char *str = "RECINVOKEME& RECinvokeme% RECinvokeme$ "
+			  "RECinvokeme2&";
+
+	printf("lexer_test_bad_rec");
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |=
+		    prv_test_wrapper(str, buffer_sizes[i], prv_check_bad_rec);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
+}
+
 static int prv_test_empty(void)
 {
 	size_t i;
@@ -697,7 +800,7 @@ static int prv_check_bad_proc_name(subtilis_lexer_t *l, subtilis_token_t *t,
 	subtilis_error_t err;
 	int i;
 
-	for (i = 0; i < 2; i++) {
+	for (i = 0; i < 5; i++) {
 		subtilis_error_init(&err);
 		subtilis_lexer_get(l, t, &err);
 		if (err.type != err_type) {
@@ -719,12 +822,34 @@ static int prv_test_proc_typed(void)
 {
 	size_t i;
 	int res = 0;
-	const char *str = "PROCcalculate% PROCcalculate$";
+	const char *str = "PROCcalculate% PROCcalculate$ PROCcalculate& "
+			  "PROCcalculate@ PROCcalculate@a";
 
 	printf("lexer_proc_typed");
 	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
 		res |= prv_test_wrapper(str, buffer_sizes[i],
 					prv_check_proc_typed);
+	printf(": [%s]\n", res ? "FAIL" : "OK");
+
+	return res;
+}
+
+static int prv_check_rec_typed(subtilis_lexer_t *l, subtilis_token_t *t)
+{
+	return prv_check_bad_proc_name(l, t, SUBTILIS_ERROR_BAD_REC_NAME);
+}
+
+static int prv_test_rec_typed(void)
+{
+	size_t i;
+	int res = 0;
+	const char *str = "RECcalculate% RECcalculate$ RECcalculate& "
+			  "RECcalculate@ RECcalculate@a";
+
+	printf("lexer_rec_typed");
+	for (i = 0; i < sizeof(buffer_sizes) / sizeof(size_t); i++)
+		res |=
+		    prv_test_wrapper(str, buffer_sizes[i], prv_check_rec_typed);
 	printf(": [%s]\n", res ? "FAIL" : "OK");
 
 	return res;
@@ -1440,8 +1565,11 @@ int lexer_test(void)
 	failure |= prv_test_string_hash_var_upper_too_long();
 	failure |= prv_test_keywords();
 	failure |= prv_test_procedure_call();
+	failure |= prv_test_rec();
+	failure |= prv_test_bad_rec();
 	failure |= prv_test_empty();
 	failure |= prv_test_proc_typed();
+	failure |= prv_test_rec_typed();
 	failure |= prv_test_fn_typed();
 	failure |= prv_test_int();
 	failure |= prv_test_real();

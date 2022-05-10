@@ -87,5 +87,14 @@ size_t subtilis_builtin_ir_deref_array_els(subtilis_parser_t *p,
 					   subtilis_error_t *err);
 size_t subtilis_builtin_ir_call_deref(subtilis_parser_t *p,
 				      subtilis_error_t *err);
+size_t subtilis_builtin_ir_rec_deref(subtilis_parser_t *p,
+				     const subtilis_type_t *type,
+				     const char *name, subtilis_error_t *err);
+void subtilis_builtin_ir_rec_zero(subtilis_parser_t *p,
+				  const subtilis_type_t *type, size_t base_reg,
+				  subtilis_error_t *err);
+void subtilis_builtin_ir_rec_copy(subtilis_parser_t *p,
+				  const subtilis_type_t *type, size_t dest_reg,
+				  size_t src_reg, subtilis_error_t *err);
 
 #endif

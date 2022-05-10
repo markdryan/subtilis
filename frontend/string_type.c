@@ -538,6 +538,30 @@ void subtilis_string_type_new_ref(subtilis_parser_t *p,
 	subtilis_exp_delete(e);
 }
 
+void subtilis_string_type_new_field_ref(subtilis_parser_t *p,
+					const subtilis_type_t *type,
+					size_t mem_reg, size_t loc,
+					subtilis_exp_t *e,
+					subtilis_error_t *err)
+{
+	switch (e->type.type) {
+	case SUBTILIS_TYPE_STRING:
+		subtilis_reference_type_init_ref(
+		    p, mem_reg, loc, e->exp.ir_op.reg, true, true, err);
+		break;
+	case SUBTILIS_TYPE_CONST_STRING:
+		prv_init_string_from_const(p, mem_reg, loc, &e->exp.str, false,
+					   err);
+		break;
+	default:
+		subtilis_error_set_string_expected(err, p->l->stream->name,
+						   p->l->line);
+		break;
+	}
+
+	subtilis_exp_delete(e);
+}
+
 void subtilis_string_type_assign_new_ref(subtilis_parser_t *p,
 					 const subtilis_type_t *type,
 					 size_t mem_reg, size_t loc,

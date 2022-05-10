@@ -29,6 +29,11 @@ static size_t prv_size(const subtilis_type_t *type)
 	return subtilis_array_type_size(type);
 }
 
+static size_t prv_align(const subtilis_type_t *type)
+{
+	return SUBTILIS_CONFIG_POINTER_SIZE;
+}
+
 static subtilis_exp_t *prv_data_size(subtilis_parser_t *p, subtilis_exp_t *e,
 				     subtilis_error_t *err)
 {
@@ -449,14 +454,14 @@ subtilis_type_if subtilis_type_array_string = {
 	.is_integer = false,
 	.is_array = true,
 	.is_vector = false,
-	.alignment = SUBTILIS_CONFIG_POINTER_SIZE,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = prv_size,
+	.alignment = prv_align,
 	.data_size = prv_data_size,
 	.zero = prv_zero,
 	.zero_ref = subtilis_array_create_1el,
 	.new_ref = NULL,
-	.assign_ref = NULL,
+	.assign_ref = subtilis_array_type_assign_ref_exp,
 	.assign_ref_no_rc = NULL,
 	.zero_reg = prv_zero_reg,
 	.copy_ret = subtlis_array_type_copy_ret,
@@ -537,14 +542,14 @@ subtilis_type_if subtilis_type_vector_string = {
 	.is_integer = false,
 	.is_array = false,
 	.is_vector = true,
-	.alignment = SUBTILIS_CONFIG_POINTER_SIZE,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = prv_size,
+	.alignment = prv_align,
 	.data_size = prv_data_size,
 	.zero = prv_zero,
 	.zero_ref = prv_vector_zero_ref,
 	.new_ref = NULL,
-	.assign_ref = NULL,
+	.assign_ref = subtilis_array_type_assign_ref_exp,
 	.assign_ref_no_rc = NULL,
 	.zero_reg = prv_zero_reg,
 	.copy_ret = subtlis_array_type_copy_ret,

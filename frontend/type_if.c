@@ -27,6 +27,7 @@
 #include "fn_type.h"
 #include "int32_type.h"
 #include "local_buffer_type_if.h"
+#include "rec_type_if.h"
 #include "string_type_if.h"
 #include "type_if.h"
 
@@ -52,6 +53,7 @@ static subtilis_type_if *prv_type_map[] = {
 	&subtilis_type_vector_byte,
 	&subtilis_type_vector_string,
 	&subtilis_type_vector_fn,
+	&subtilis_type_rec,
 	&subtilis_type_if_local_buffer,
 	NULL,
 };
@@ -162,9 +164,15 @@ size_t subtilis_type_if_size(const subtilis_type_t *type, subtilis_error_t *err)
 	return fn(type);
 }
 
-size_t subtilis_type_if_align(const subtilis_type_t *type)
+size_t subtilis_type_if_align(const subtilis_type_t *type,
+			      subtilis_error_t *err)
 {
-	return prv_type_map[type->type]->alignment;
+	subtilis_type_if_size_t fn;
+
+	fn = prv_type_map[type->type]->alignment;
+	if (!fn)
+		return subtilis_type_if_size(type, err);
+	return fn(type);
 }
 
 subtilis_exp_t *subtilis_type_if_data_size(subtilis_parser_t *p,

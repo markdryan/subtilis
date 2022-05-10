@@ -84,7 +84,7 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_KEYWORD_UNEXPECTED */
 	{"Unexpected keyword %s.\n", 1},
 
-	/* SUBTILIS_ID_EXPECTED */
+	/* SUBTILIS_ERROR_ID_EXPECTED */
 	{"Identifer expected found %s.\n", 1},
 
 	/* SUBTILIS_ERROR_NOT_SUPPORTED */
@@ -349,6 +349,19 @@ static subtilis_error_desc_t prv_errors[] = {
 
 	/* SUBTILIS_ERROR_LVALUE EXPECTED */
 	{"Lvalue expected\n", 0},
+
+	/* SUBTILIS_ERROR_TYPE_ALREADY_DEFINED */
+	{"Already defined\n", 0},
+
+	/* SUBTILIS_ERROR_UNKNOWN FIELD */
+	{"Field %s not found.\n", 1},
+
+	/* SUBTILIS_ERROR_BAD_REC_NAME */
+	{"Bad record name: %s.\n", 1},
+
+	/* SUBTILIS_ERROR_EMPTY_REC */
+
+	{"Record %s has no fields.\n", 1},
 };
 
 /* clang-format on */

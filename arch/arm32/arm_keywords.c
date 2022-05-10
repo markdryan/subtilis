@@ -59,6 +59,7 @@ const subtilis_keyword_t subtilis_arm_keywords_list[] = {
 	{"PI",        SUBTILIS_ARM_KEYWORD_PI,          true},
 	{"PROC",      SUBTILIS_KEYWORD_PROC,            true},
 	{"RAD",       SUBTILIS_ARM_KEYWORD_RAD,         true},
+	{"REC",       SUBTILIS_KEYWORD_REC,             true},
 	{"REM",       SUBTILIS_KEYWORD_REM,             true},
 	{"RIGHT$",    SUBTILIS_ARM_KEYWORD_RIGHT_STR,   true},
 	{"ROR",       SUBTILIS_ARM_KEYWORD_ROR,         true},

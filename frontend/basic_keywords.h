@@ -171,10 +171,10 @@ enum {
 /* clang-format on */
 
 /*
- * PROC and FN are upper case only.
+ * REC, PROC and FN are upper case only.
  */
 
-#define SUBTILIS_KEYWORD_TOKENS ((SUBTILIS_KEYWORD_MAX * 2) - 2)
+#define SUBTILIS_KEYWORD_TOKENS ((SUBTILIS_KEYWORD_MAX * 2) - 3)
 
 extern const subtilis_keyword_t subtilis_keywords_list[SUBTILIS_KEYWORD_TOKENS];
 

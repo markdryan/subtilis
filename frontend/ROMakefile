@@ -2,7 +2,7 @@
 
 COMPONENT = frontend
 
-OBJS = builtins_helper builtins_ir basic_keywords call expression globals hash_table parser symbol_table symbol_table_test variable type_if fn_type float64_type int32_type byte_type_if array_float64_type array_int32_type array_byte_type array_string_type array_fn_type array_type parser_array parser_assignment parser_call parser_compound parser_cond parser_exp parser_file parser_math parser_error parser_graphics parser_input parser_loops parser_output parser_os parser_mem parser_string parser_rnd string_type_if string_type reference_type local_buffer_type collection
+OBJS = builtins_helper builtins_ir basic_keywords call expression globals hash_table parser symbol_table symbol_table_test variable type_if fn_type float64_type int32_type byte_type_if array_float64_type array_int32_type array_byte_type array_string_type array_fn_type array_type parser_array parser_assignment parser_call parser_compound parser_cond parser_exp parser_file parser_math parser_error parser_graphics parser_input parser_loops parser_output parser_os parser_mem parser_rec parser_string parser_rnd rec_type rec_type_if string_type_if string_type reference_type local_buffer_type collection
 
 
 CFLAGS ?= -Wxla -Otime

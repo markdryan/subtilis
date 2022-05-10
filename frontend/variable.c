@@ -71,7 +71,8 @@ subtilis_exp_t *subtilis_var_lookup_var(subtilis_parser_t *p, const char *tbuf,
 		} else {
 			return subtilis_exp_new_var(&s->t, s->loc, err);
 		}
-	} else if (s->t.type == SUBTILIS_TYPE_STRING) {
+	} else if ((s->t.type == SUBTILIS_TYPE_STRING) ||
+		   (s->t.type == SUBTILIS_TYPE_REC)) {
 		/*
 		 * We have a reference type.  We return a pointer to it.
 		 */

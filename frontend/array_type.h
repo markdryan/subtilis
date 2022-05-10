@@ -83,7 +83,7 @@ void subtilis_array_type_vector_alloc(subtilis_parser_t *p, size_t loc,
 				      const subtilis_type_t *type,
 				      subtilis_exp_t *e,
 				      subtilis_ir_operand_t store_reg,
-				      subtilis_error_t *err);
+				      bool push, subtilis_error_t *err);
 
 /*
  * Allocates a new array of size e + 1 and of type t and updates the variable
@@ -135,6 +135,19 @@ subtilis_exp_t *subtilis_array_type_slice_array(subtilis_parser_t *p,
 void subtilis_array_type_create_ref(subtilis_parser_t *p, const char *var_name,
 				    const subtilis_symbol_t *s, size_t mem_reg,
 				    subtilis_exp_t *e, subtilis_error_t *err);
+
+/*
+ * Used to initialise array references inside a structure, during
+ * structure initialisation.  These array references are uninitialised
+ * before this function is called, which is unusual for array variables
+ * which normally must be always initialised.
+ */
+
+void subtilis_array_type_init_field(subtilis_parser_t *p,
+				    const subtilis_type_t *type, size_t mem_reg,
+				    size_t loc, subtilis_exp_t *e,
+				    subtilis_error_t *err);
+
 /*
  * Initialise a temporary reference on the caller's stack with the
  * contents of an array variable on the callee's stack.  This is called
@@ -160,6 +173,11 @@ void subtilis_array_type_match(subtilis_parser_t *p, const subtilis_type_t *t1,
  * dest_mem_reg/loc.  The existing reference pointed to be dest_mem_reg/loc
  * is dereferenced.
  */
+void subtilis_array_type_assign_ref_exp(subtilis_parser_t *p,
+					const subtilis_type_t *type,
+					size_t mem_reg, size_t loc,
+					subtilis_exp_t *e,
+					subtilis_error_t *err);
 void subtilis_array_type_assign_ref(subtilis_parser_t *p,
 				    const subtilis_type_t *type,
 				    size_t dest_mem_reg, size_t dest_loc,

@@ -123,6 +123,7 @@ const subtilis_keyword_t subtilis_keywords_list[] = {
 	{"QUIT",      SUBTILIS_KEYWORD_QUIT,         true},
 	{"RAD",       SUBTILIS_KEYWORD_RAD,          true},
 	{"RANGE",     SUBTILIS_KEYWORD_RANGE,        true},
+	{"REC",       SUBTILIS_KEYWORD_REC,          true},
 	{"RECTANGLE", SUBTILIS_KEYWORD_RECTANGLE,    true},
 	{"REM",       SUBTILIS_KEYWORD_REM,          true},
 	{"REPEAT",    SUBTILIS_KEYWORD_REPEAT,       true},
