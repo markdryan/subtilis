@@ -23,6 +23,11 @@
 #include "string_type_if.h"
 #include "symbol_table.h"
 
+static size_t prv_align(const subtilis_type_t *type)
+{
+	return SUBTILIS_CONFIG_POINTER_SIZE;
+}
+
 static subtilis_exp_t *prv_exp_to_var_const(subtilis_parser_t *p,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err)
@@ -296,9 +301,9 @@ subtilis_type_if subtilis_type_if_const_string = {
 	.is_integer = false,
 	.is_array = false,
 	.is_vector = false,
-	.alignment = 1,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = NULL,
+	.alignment = NULL,
 	.data_size = NULL,
 	.zero = NULL,
 	.zero_ref = NULL,
@@ -1151,9 +1156,9 @@ subtilis_type_if subtilis_type_if_string = {
 	.is_integer = false,
 	.is_array = false,
 	.is_vector = false,
-	.alignment = SUBTILIS_CONFIG_POINTER_SIZE,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = subtilis_string_type_size,
+	.alignment = prv_align,
 	.data_size = prv_data_size,
 	.zero = NULL,
 	.zero_ref = prv_zero_ref,

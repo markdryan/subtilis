@@ -22,6 +22,7 @@
 #include "parser_call.h"
 #include "parser_compound.h"
 #include "parser_exp.h"
+#include "rec_type.h"
 #include "reference_type.h"
 #include "type_if.h"
 
@@ -227,6 +228,24 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 			    p, &type, SUBTILIS_IR_REG_LOCAL, s->loc, e, err);
 			e = NULL;
 		}
+	} else if (type.type == SUBTILIS_TYPE_REC) {
+		subtilis_complete_custom_type(p, var_name, &type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		if (value_present) {
+			subtilis_error_set_not_supported(
+			    err, "REC initialisation", p->l->stream->name,
+			    p->l->line);
+			goto cleanup;
+		}
+		s = subtilis_symbol_table_insert(p->local_st, var_name, &type,
+						 err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		subtilis_rec_type_zero(p, &type, SUBTILIS_IR_REG_LOCAL, s->loc,
+				       true, err);
 	} else {
 		subtilis_error_set_assertion_failed(err);
 	}

@@ -141,7 +141,10 @@ cleanup:
 	return call_index;
 }
 
-static size_t prv_size(const subtilis_type_t *type) { return sizeof(int32_t); }
+static size_t prv_size(const subtilis_type_t *type)
+{
+	return SUBTILIS_CONFIG_POINTER_SIZE;
+}
 
 static subtilis_exp_t *prv_zero(subtilis_parser_t *p,
 				const subtilis_type_t *type,
@@ -536,9 +539,9 @@ subtilis_type_if subtilis_type_fn = {
 	.is_integer = false,
 	.is_array = false,
 	.is_vector = false,
-	.alignment = SUBTILIS_CONFIG_POINTER_SIZE,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = prv_size,
+	.alignment = NULL,
 	.data_size = NULL,
 	.zero = prv_zero,
 	.zero_ref = NULL,

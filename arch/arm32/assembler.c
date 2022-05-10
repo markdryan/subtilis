@@ -4211,6 +4211,7 @@ static void prv_parse_keyword(subtilis_arm_ass_context_t *c, const char *name,
 	 */
 	case SUBTILIS_KEYWORD_FN:
 	case SUBTILIS_KEYWORD_PROC:
+	case SUBTILIS_KEYWORD_REC:
 		prv_parse_identifier(c, err);
 		break;
 	case SUBTILIS_ARM_KEYWORD_ALIGN:

@@ -322,7 +322,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"DIM a%(1)\n"
 	"DIM b%(1)\n"
 	"a%() += b()\n",
-	SUBTILIS_ERROR_ASSIGNMENT_OP_EXPECTED
+	SUBTILIS_ERROR_EXPECTED
 	},
 	{
 	"array_bad_arg_int",
@@ -928,6 +928,54 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	 "b$ := \"world\"\n"
 	 "swap b$, left$(a$)\n",
 	 SUBTILIS_ERROR_LVALUE_EXPECTED,
+	},
+	{"rec_var_dim",
+	 "a% = 10\n"
+	 "type RECData (\n"
+	 "dim arr%(a%)\n"
+	 ")\n",
+	 SUBTILIS_ERROR_CONST_INTEGER_EXPECTED
+	},
+	{"rec_bad_keyword",
+	 "type RECData ( draw arr%(a%) )\n",
+	 SUBTILIS_ERROR_EXPECTED
+	},
+	{"rec_bad_dim",
+	 "type RECData ( dim a%() )\n",
+	 SUBTILIS_ERROR_CONST_INTEGER_EXPECTED
+	},
+	{"rec_id_expected",
+	 "type RECData ( a%, b% )\n",
+	 SUBTILIS_ERROR_ID_EXPECTED
+	},
+	{"rec_type_mismatch",
+	"type RECData ( a% )\n"
+	"type RECData2 ( a% )\n"
+	"local a@RECData\n"
+	"local b@RECData2\n"
+	"a@RECData = b@RECData2\n",
+	SUBTILIS_ERROR_BAD_CONVERSION
+	},
+	{"rec_type_already_defined",
+	"type RECData ( a% )\n"
+	"type RECData ( a% )\n",
+	SUBTILIS_ERROR_ALREADY_DEFINED
+	},
+	{"rec_field_already_defined",
+	 "type RECData ( a% a% )\n",
+	SUBTILIS_ERROR_ALREADY_DEFINED
+	},
+	{"rec_field_array_reference",
+	 "type RECData ( a%() )\n",
+	SUBTILIS_ERROR_ID_EXPECTED
+	},
+	{"rec_field_vector_reference",
+	 "type RECData ( a%{} )\n",
+	SUBTILIS_ERROR_ID_EXPECTED
+	},
+	{"rec_no_fields",
+	 "type RECa2 ( )\n",
+	 SUBTILIS_ERROR_EMPTY_REC
 	},
 };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Mark Ryan
+ * Copyright (c) 2022 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_KEYWORD_H__
-#define __SUBTILIS_KEYWORD_H__
+#ifndef __SUBTILIS_PARSER_REC_H
+#define __SUBTILIS_PARSER_REC_H
 
-#include <stdbool.h>
+#include "expression.h"
+#include "parser.h"
 
-/* clang-format off */
-
-enum {
-	SUBTILIS_KEYWORD_FN,
-	SUBTILIS_KEYWORD_PROC,
-	SUBTILIS_KEYWORD_REC,
-	SUBTILIS_KEYWORD_REM,
-	SUBTILIS_KEYWORD_COMMON_MAX
-};
-
-/* clang-format on */
-
-struct _subtilis_keyword_t {
-	const char *str;
-	int type;
-	bool supported;
-};
-
-typedef struct _subtilis_keyword_t subtilis_keyword_t;
+char *subtilis_parser_parse_rec_type(subtilis_parser_t *p, subtilis_token_t *t,
+				     subtilis_type_t *type,
+				     subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_rec_exp(subtilis_parser_t *p,
+					subtilis_token_t *t,
+					const subtilis_type_t *type,
+					size_t mem_reg, size_t loc,
+					subtilis_error_t *err);
 
 #endif

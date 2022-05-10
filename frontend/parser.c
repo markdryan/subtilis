@@ -32,6 +32,7 @@
 #include "parser_mem.h"
 #include "parser_os.h"
 #include "parser_output.h"
+#include "parser_rec.h"
 #include "parser_string.h"
 #include "reference_type.h"
 #include "string_type.h"
@@ -418,12 +419,30 @@ cleanup:
 static void prv_parser_type(subtilis_parser_t *p, subtilis_token_t *t,
 			    subtilis_error_t *err)
 {
+	const char *tbuf;
 	char *name;
 	subtilis_type_t type;
 
 	type.type = SUBTILIS_TYPE_VOID;
 
-	name = subtilis_parser_parse_call_type(p, t, &type, err);
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_KEYWORD) ||
+	    ((t->tok.keyword.type != SUBTILIS_KEYWORD_PROC) &&
+	     (t->tok.keyword.type != SUBTILIS_KEYWORD_FN) &&
+	     (t->tok.keyword.type != SUBTILIS_KEYWORD_REC))) {
+		subtilis_error_set_expected(err, "REC, PROC or FN", tbuf,
+					    p->l->stream->name, p->l->line);
+		return;
+	}
+
+	if (t->tok.keyword.type == SUBTILIS_KEYWORD_REC)
+		name = subtilis_parser_parse_rec_type(p, t, &type, err);
+	else
+		name = subtilis_parser_parse_call_type(p, t, &type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
@@ -434,6 +453,10 @@ static void prv_parser_type(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	subtilis_symbol_table_insert_type(p->st, name, &type, err);
+	if (err->type == SUBTILIS_ERROR_TYPE_ALREADY_DEFINED) {
+		subtilis_error_set_already_defined(
+		    err, name, p->l->stream->name, p->l->line);
+	}
 
 on_error:
 	subtilis_type_free(&type);
@@ -551,6 +574,7 @@ cleanup:
 static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_FN */
 	prv_proc, /* SUBTILIS_KEYWORD_PROC */
+	NULL, /* SUBTILIS_KEYWORD_REC */
 	NULL, /* SUBTILIS_KEYWORD_REM */
 	NULL, /* SUBTILIS_KEYWORD_ABS */
 	NULL, /* SUBTILIS_KEYWORD_ACS */

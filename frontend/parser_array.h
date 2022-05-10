@@ -20,10 +20,29 @@
 #include "expression.h"
 #include "parser.h"
 
+struct subtilis_array_desc_t_ {
+	const char *name;
+	const subtilis_type_t *t;
+	size_t reg;
+	size_t loc;
+};
+
+typedef struct subtilis_array_desc_t_ subtilis_array_desc_t;
+
 subtilis_exp_t *subtils_parser_read_array(subtilis_parser_t *p,
 					  subtilis_token_t *t,
 					  const char *var_name,
 					  subtilis_error_t *err);
+
+/* clang-format off */
+subtilis_exp_t *subtils_parser_read_array_with_type(subtilis_parser_t *p,
+						    subtilis_token_t *t,
+						    const subtilis_type_t *type,
+						    size_t mem_reg, size_t loc,
+						    const char *var_name,
+						    subtilis_error_t *err);
+/* clang-format on */
+
 size_t subtils_parser_array_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
 				   const subtilis_symbol_t *s, size_t mem_reg,
 				   subtilis_type_t *type,
@@ -37,6 +56,19 @@ subtilis_exp_t *subtils_parser_read_vector(subtilis_parser_t *p,
 					   const char *var_name,
 					   subtilis_error_t *err);
 
+/* clang-format off */
+subtilis_exp_t *subtils_parser_read_vector_with_type(subtilis_parser_t *p,
+						     subtilis_token_t *t,
+						     const subtilis_type_t *typ,
+						     size_t mem_reg, size_t loc,
+						     const char *var_name,
+						     subtilis_error_t *err);
+/* clang-format on */
+
+size_t parser_array_var_bracketed_int_args(subtilis_parser_t *p,
+					   subtilis_token_t *t,
+					   subtilis_exp_t **e, size_t max,
+					   bool *vec, subtilis_error_t *err);
 subtilis_exp_t *
 subtils_parser_element_address(subtilis_parser_t *p, subtilis_token_t *t,
 			       const subtilis_symbol_t *s, size_t mem_reg,
@@ -44,8 +76,8 @@ subtils_parser_element_address(subtilis_parser_t *p, subtilis_token_t *t,
 void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
 				  bool local, subtilis_error_t *err);
 void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
-					    subtilis_token_t *t, size_t mem_reg,
-					    const subtilis_symbol_t *s,
+					    subtilis_token_t *t,
+					    const subtilis_array_desc_t *d,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err);
 subtilis_exp_t *subtilis_parser_get_dim(subtilis_parser_t *p,

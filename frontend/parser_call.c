@@ -1053,10 +1053,6 @@ static char *prv_initial_proc_fn_type(subtilis_parser_t *p, subtilis_token_t *t,
 
 	fn_type.type = SUBTILIS_TYPE_VOID;
 
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return NULL;
-
 	name = prv_proc_name_and_type(p, t, &fn_type, keep_prefix, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
@@ -1302,6 +1298,10 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 
 	local_st = subtilis_symbol_table_new(err);
 	p->local_st = local_st;
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
+	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 

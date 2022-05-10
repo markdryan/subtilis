@@ -1518,7 +1518,10 @@ static void prv_init_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 		s = subtilis_symbol_table_insert(p->st, var_name, type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		if (!subtilis_type_if_is_numeric(type)) {
+		if (type->type == SUBTILIS_TYPE_REC) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		} else if (!subtilis_type_if_is_numeric(type)) {
 			subtilis_type_if_zero_ref(
 			    p, type, SUBTILIS_IR_REG_GLOBAL, s->loc, true, err);
 			if (err->type != SUBTILIS_ERROR_OK)
@@ -1567,6 +1570,9 @@ static void prv_init_local_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 			for_ctx->loc = p->current->freg_counter++;
 		(void)subtilis_symbol_table_insert_reg(
 		    p->local_st, var_name, &for_ctx->type, for_ctx->loc, err);
+		return;
+	} else if (type->type == SUBTILIS_TYPE_REC) {
+		subtilis_error_set_assertion_failed(err);
 		return;
 	}
 
