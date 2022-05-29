@@ -275,38 +275,16 @@ static void prv_clear_new_array(subtilis_parser_t *p,
 	subtilis_type_if_zero_buf(p, type, data, sizee, err);
 }
 
-static void prv_1d_dynamic_alloc(subtilis_parser_t *p, size_t loc,
-				 const subtilis_type_t *type, subtilis_exp_t *e,
-				 subtilis_ir_operand_t store_reg, bool push,
-				 subtilis_error_t *err)
+static void prv_1d_static_alloc(subtilis_parser_t *p, size_t loc,
+				const subtilis_type_t *type, subtilis_exp_t *e,
+				subtilis_ir_operand_t store_reg, bool push,
+				subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t one;
-	subtilis_ir_operand_t zero;
-	subtilis_ir_operand_t condee;
 	subtilis_ir_operand_t size;
 	size_t data;
-	subtilis_ir_operand_t ok_label;
-	subtilis_ir_operand_t error_label;
 	subtilis_exp_t *sizee = NULL;
-
-	error_label = subtilis_array_type_error_label(p);
-	ok_label.label = subtilis_ir_section_new_label(p->current);
-
-	zero.integer = 0;
-	condee.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_GTEI_I32, e->exp.ir_op, zero, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
-					  condee, ok_label, error_label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_ir_section_add_label(p->current, ok_label.label, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 
 	op1.integer = ((int32_t)loc) + SUBTIILIS_ARRAY_DIMS_OFF;
 	subtilis_ir_section_add_instr_reg(p->current,
@@ -342,10 +320,40 @@ static void prv_1d_dynamic_alloc(subtilis_parser_t *p, size_t loc,
 	if (push)
 		subtilis_reference_type_push_reference(p, type, store_reg.reg,
 						       loc, err);
-
 cleanup:
 
 	subtilis_exp_delete(sizee);
+}
+
+static void prv_1d_dynamic_alloc(subtilis_parser_t *p, size_t loc,
+				 const subtilis_type_t *type, subtilis_exp_t *e,
+				 subtilis_ir_operand_t store_reg, bool push,
+				 subtilis_error_t *err)
+{
+	subtilis_ir_operand_t ok_label;
+	subtilis_ir_operand_t error_label;
+	subtilis_ir_operand_t zero;
+	subtilis_ir_operand_t condee;
+
+	error_label = subtilis_array_type_error_label(p);
+	ok_label.label = subtilis_ir_section_new_label(p->current);
+
+	zero.integer = 0;
+	condee.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_GTEI_I32, e->exp.ir_op, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  condee, ok_label, error_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, ok_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_1d_static_alloc(p, loc, type, e, store_reg, push, err);
 }
 
 static void prv_dynamic_vector_alloc(subtilis_parser_t *p, size_t loc,
@@ -461,8 +469,8 @@ void subtilis_array_type_vector_alloc(subtilis_parser_t *p, size_t loc,
 			return;
 		e = subtilis_type_if_exp_to_var(p, e, err);
 		if (err->type == SUBTILIS_ERROR_OK)
-			prv_1d_dynamic_alloc(p, loc, type, e, store_reg, push,
-					     err);
+			prv_1d_static_alloc(p, loc, type, e, store_reg, push,
+					    err);
 		subtilis_exp_delete(e);
 	} else {
 		prv_dynamic_vector_alloc(p, loc, type, e, store_reg, push, err);
