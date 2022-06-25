@@ -169,6 +169,7 @@ bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b)
 	case SUBTILIS_TYPE_ARRAY_STRING:
 	case SUBTILIS_TYPE_ARRAY_BYTE:
 	case SUBTILIS_TYPE_ARRAY_FN:
+	case SUBTILIS_TYPE_VECTOR_FN: /* fn vectors need extra checks */
 		return prv_array_type_match(a, b);
 	case SUBTILIS_TYPE_FN:
 		return prv_fn_type_match(&a->params.fn, &b->params.fn);

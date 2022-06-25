@@ -1009,6 +1009,22 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	 "a@RECa2 = ( 10, 2001 )\n",
 	 SUBTILIS_ERROR_RIGHT_BKT_EXPECTED,
 	},
+	{"vector_fn_mismatch",
+	 "type PROCfn(a%)\n"
+	 "type PROCfn2(a%, b%)\n"
+	 "dim a@PROCfn{1}\n"
+	 "dim a@PROCfn2{1}\n"
+	 "a@PROCfn{} = a@PROCfn2{}\n",
+	 SUBTILIS_ERROR_FN_TYPE_MISMATCH,
+	},
+	{"array_fn_mismatch",
+	 "type PROCfn(a%)\n"
+	 "type PROCfn2(a%, b%)\n"
+	 "dim a@PROCfn(1)\n"
+	 "dim a@PROCfn2(1)\n"
+	 "a@PROCfn() = a@PROCfn2()\n",
+	 SUBTILIS_ERROR_FN_TYPE_MISMATCH,
+	},
 };
 
 /* clang-format on */
