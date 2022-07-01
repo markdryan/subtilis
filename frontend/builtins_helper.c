@@ -19,6 +19,8 @@
 
 #include "builtins_helper.h"
 #include "parser_exp.h"
+#include "reference_type.h"
+#include "type_if.h"
 
 void subtilis_builtin_memset_i32(subtilis_parser_t *p, size_t base_reg,
 				 size_t size_reg, size_t val_reg,
@@ -119,4 +121,69 @@ void subtilis_builtin_memset_i64(subtilis_parser_t *p, size_t base_reg,
 
 	(void)subtilis_exp_add_call(p, name, SUBTILIS_BUILTINS_MEMSETI64, NULL,
 				    args, &subtilis_type_void, 4, true, err);
+}
+
+void subtilis_builtin_bzero_reg(subtilis_parser_t *p, size_t base_reg,
+				size_t loc, size_t size_reg,
+				subtilis_error_t *err)
+{
+	subtilis_exp_t *val_exp = NULL;
+
+	val_exp = subtilis_exp_new_int32(0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	val_exp = subtilis_type_if_exp_to_var(p, val_exp, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	base_reg = subtilis_reference_get_pointer(p, base_reg, loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_builtin_memset_i8(p, base_reg, size_reg,
+				   val_exp->exp.ir_op.reg, err);
+
+cleanup:
+
+	subtilis_exp_delete(val_exp);
+}
+
+void subtilis_builtin_bzero(subtilis_parser_t *p, size_t base_reg, size_t loc,
+			    size_t size, subtilis_error_t *err)
+{
+	subtilis_exp_t *size_exp = NULL;
+	subtilis_exp_t *val_exp = NULL;
+
+	size_exp = subtilis_exp_new_int32((int32_t)size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	size_exp = subtilis_type_if_exp_to_var(p, size_exp, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	val_exp = subtilis_exp_new_int32(0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	val_exp = subtilis_type_if_exp_to_var(p, val_exp, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	base_reg = subtilis_reference_get_pointer(p, base_reg, loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (size & 3)
+		subtilis_builtin_memset_i8(p, base_reg, size_exp->exp.ir_op.reg,
+					   val_exp->exp.ir_op.reg, err);
+	else
+		subtilis_builtin_memset_i32(p, base_reg,
+					    size_exp->exp.ir_op.reg,
+					    val_exp->exp.ir_op.reg, err);
+cleanup:
+
+	subtilis_exp_delete(val_exp);
+	subtilis_exp_delete(size_exp);
 }

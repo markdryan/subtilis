@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Mark Ryan
+ * Copyright (c) 2021 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "array_int32_type.h"
+#include "array_rec_type.h"
 #include "array_type.h"
 #include "builtins_helper.h"
+#include "builtins_ir.h"
 #include "collection.h"
+#include "rec_type.h"
 #include "reference_type.h"
 
 static size_t prv_size(const subtilis_type_t *type)
@@ -37,15 +39,25 @@ static subtilis_exp_t *prv_data_size(subtilis_parser_t *p,
 				     const subtilis_type_t *type,
 				     subtilis_exp_t *e, subtilis_error_t *err)
 {
-	subtilis_exp_t *two;
+	subtilis_exp_t *el_size;
+	subtilis_type_t typ;
+	int32_t data_size;
 
-	two = subtilis_exp_new_int32(2, err);
+	typ.type = SUBTILIS_TYPE_VOID;
+	subtilis_type_copy_from_rec(&typ, &type->params.array.params.rec, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		subtilis_exp_delete(e);
 		return NULL;
 	}
 
-	return subtilis_type_if_lsl(p, e, two, err);
+	data_size = (int32_t)subtilis_type_rec_size(&typ);
+	el_size = subtilis_exp_new_int32(data_size, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return subtilis_type_if_mul(p, e, el_size, err);
 }
 
 static subtilis_exp_t *prv_zero(subtilis_parser_t *p,
@@ -73,7 +85,8 @@ static void prv_element_type(const subtilis_type_t *type,
 			     subtilis_type_t *element_type,
 			     subtilis_error_t *err)
 {
-	element_type->type = SUBTILIS_TYPE_INTEGER;
+	subtilis_type_copy_from_rec(element_type,
+				    &type->params.array.params.rec, err);
 }
 
 static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -85,6 +98,23 @@ static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
 static void prv_copy_col(subtilis_parser_t *p, subtilis_exp_t *e1,
 			 subtilis_exp_t *e2, subtilis_error_t *err)
 {
+	bool scalar;
+	subtilis_type_t typ;
+
+	typ.type = SUBTILIS_TYPE_VOID;
+	prv_element_type(&e1->type, &typ, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	scalar = subtilis_type_rec_is_scalar(&typ);
+	subtilis_type_free(&typ);
+
+	if (!scalar) {
+		subtilis_error_set_not_supported(
+		    err, "copy on arrays of non-scalar RECs",
+		    p->l->stream->name, p->l->line);
+		return;
+	}
 	subtilis_collection_copy_scalar(p, e1, e2, false, err);
 }
 
@@ -94,8 +124,8 @@ prv_indexed_read(subtilis_parser_t *p, const char *var_name,
 		 subtilis_exp_t **indices, size_t index_count,
 		 subtilis_error_t *err)
 {
-	return subtilis_array_read(p, var_name, type, &subtilis_type_integer,
-				   mem_reg, loc, indices, index_count, err);
+	return subtilis_array_index_calc(p, var_name, type, mem_reg, loc,
+					 indices, index_count, err);
 }
 
 static void prv_set(subtilis_parser_t *p, const char *var_name,
@@ -103,14 +133,15 @@ static void prv_set(subtilis_parser_t *p, const char *var_name,
 		    subtilis_exp_t *e, bool check_size, subtilis_error_t *err)
 {
 	subtilis_type_t el_type;
-	size_t ptr;
 	size_t sizee;
+	//	size_t ptr;
 	subtilis_ir_operand_t gt_zero;
 	subtilis_ir_operand_t eq_zero;
 	subtilis_ir_operand_t op0;
 
 	eq_zero.label = SIZE_MAX;
 
+	el_type.type = SUBTILIS_TYPE_VOID;
 	subtilis_type_if_element_type(p, type, &el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto free_e;
@@ -137,13 +168,12 @@ static void prv_set(subtilis_parser_t *p, const char *var_name,
 			goto cleanup;
 	}
 
-	ptr = subtilis_reference_get_data(p, mem_reg, loc, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+	//	ptr = subtilis_reference_get_data(p, mem_reg, loc, err);
+	//	if (err->type != SUBTILIS_ERROR_OK)
+	//		goto cleanup;
 
-	subtilis_builtin_memset_i32(p, ptr, sizee, e->exp.ir_op.reg, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+	subtilis_error_set_assertion_failed(err);
+	goto cleanup;
 
 	if (check_size)
 		subtilis_ir_section_add_label(p->current, eq_zero.label, err);
@@ -162,6 +192,79 @@ static void prv_array_set(subtilis_parser_t *p, const char *var_name,
 	prv_set(p, var_name, type, mem_reg, loc, e, false, err);
 }
 
+static void prv_zero_non_scalar(subtilis_parser_t *p,
+				const subtilis_type_t *type, size_t data_reg,
+				size_t size_reg, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t condee;
+	subtilis_ir_operand_t el_addr;
+	subtilis_ir_operand_t last_addr;
+	subtilis_ir_operand_t loop_label;
+	subtilis_ir_operand_t end_label;
+
+	loop_label.label = subtilis_ir_section_new_label(p->current);
+	end_label.label = subtilis_ir_section_new_label(p->current);
+
+	op2.reg = data_reg;
+	el_addr.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOV, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.reg = size_reg;
+	op1.reg = data_reg;
+	last_addr.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, loop_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rec_type_zero(p, type, el_addr.reg, 0, false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op2.integer = (int32_t)subtilis_type_rec_size(type);
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, el_addr, el_addr, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	condee.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LT_I32, el_addr, last_addr, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  condee, loop_label, end_label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_label(p->current, end_label.label, err);
+}
+
+static void prv_zero_buf(subtilis_parser_t *p, const subtilis_type_t *type,
+			 size_t data_reg, size_t size_reg,
+			 subtilis_error_t *err)
+{
+	subtilis_type_t el_type;
+
+	subtilis_type_if_element_type(p, type, &el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (subtilis_type_rec_can_zero_fill(&el_type))
+		subtilis_builtin_bzero_reg(p, data_reg, 0, size_reg, err);
+	else
+		prv_zero_non_scalar(p, &el_type, data_reg, size_reg, err);
+
+	subtilis_type_free(&el_type);
+}
+
 static subtilis_exp_t *
 prv_indexed_address(subtilis_parser_t *p, const char *var_name,
 		    const subtilis_type_t *type, size_t mem_reg, size_t loc,
@@ -175,22 +278,22 @@ prv_indexed_address(subtilis_parser_t *p, const char *var_name,
 static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
 		       subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	if ((a2->type.type == SUBTILIS_TYPE_ARRAY_INTEGER) ||
-	    (a2->type.type == SUBTILIS_TYPE_VECTOR_INTEGER)) {
+	/*
+	if ((a2->type.type == SUBTILIS_TYPE_ARRAY_FN) ||
+	    (a2->type.type == SUBTILIS_TYPE_VECTOR_FN)) {
 		subtilis_array_append_scalar_array(p, a1, a2, err);
 		return;
-	} else if (subtilis_type_if_is_numeric(&a2->type)) {
-		a2 = subtilis_type_if_to_int(p, a2, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
+	} else if (a2->type.type == SUBTILIS_TYPE_FN) {
 		subtilis_array_append_scalar(p, a1, a2, err);
 		return;
 	}
-	subtilis_error_set_expected(err, "integer or array of integers",
+	subtilis_error_set_expected(err, "fn or collection of fn",
 				    subtilis_type_name(&a2->type),
 				    p->l->stream->name, p->l->line);
+	*/
 
-cleanup:
+	subtilis_error_set_assertion_failed(err);
+
 	subtilis_exp_delete(a2);
 	subtilis_exp_delete(a1);
 }
@@ -201,8 +304,18 @@ static void prv_indexed_write(subtilis_parser_t *p, const char *var_name,
 			      subtilis_exp_t **indices, size_t index_count,
 			      subtilis_error_t *err)
 {
-	subtilis_array_write(p, var_name, type, &subtilis_type_integer, mem_reg,
-			     loc, e, indices, index_count, err);
+	subtilis_type_t fn_type;
+
+	subtilis_type_init_copy_from_fn(&fn_type, &type->params.array.params.fn,
+					err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return;
+	}
+
+	subtilis_array_write(p, var_name, type, &fn_type, mem_reg, loc, e,
+			     indices, index_count, err);
+	subtilis_type_free(&fn_type);
 }
 
 static void prv_indexed_add(subtilis_parser_t *p, const char *var_name,
@@ -211,8 +324,8 @@ static void prv_indexed_add(subtilis_parser_t *p, const char *var_name,
 			    subtilis_exp_t **indices, size_t index_count,
 			    subtilis_error_t *err)
 {
-	subtilis_array_add(p, var_name, type, &subtilis_type_integer, mem_reg,
-			   loc, e, indices, index_count, err);
+	subtilis_error_set_not_supported(err, "+= on collections of REC",
+					 p->l->stream->name, p->l->line);
 }
 
 static void prv_indexed_sub(subtilis_parser_t *p, const char *var_name,
@@ -221,14 +334,14 @@ static void prv_indexed_sub(subtilis_parser_t *p, const char *var_name,
 			    subtilis_exp_t **indices, size_t index_count,
 			    subtilis_error_t *err)
 {
-	subtilis_array_sub(p, var_name, type, &subtilis_type_integer, mem_reg,
-			   loc, e, indices, index_count, err);
+	subtilis_error_set_not_supported(err, "-= on collections of REC",
+					 p->l->stream->name, p->l->line);
 }
 
 static subtilis_exp_t *prv_unary_minus(subtilis_parser_t *p, subtilis_exp_t *e,
 				       subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "unary - on arrays",
+	subtilis_error_set_not_supported(err, "unary - on collections of REC",
 					 p->l->stream->name, p->l->line);
 	return NULL;
 }
@@ -237,23 +350,23 @@ static subtilis_exp_t *prv_add(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, bool swapped,
 			       subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "+ on arrays", p->l->stream->name,
-					 p->l->line);
+	subtilis_error_set_not_supported(err, "+ on collections of REC",
+					 p->l->stream->name, p->l->line);
 	return NULL;
 }
 
 static subtilis_exp_t *prv_mul(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "* on arrays", p->l->stream->name,
-					 p->l->line);
+	subtilis_error_set_not_supported(err, "* on collections of REC",
+					 p->l->stream->name, p->l->line);
 	return NULL;
 }
 
 static subtilis_exp_t *prv_and(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "AND on arrays",
+	subtilis_error_set_not_supported(err, "AND on collections of REC",
 					 p->l->stream->name, p->l->line);
 	return NULL;
 }
@@ -261,7 +374,7 @@ static subtilis_exp_t *prv_and(subtilis_parser_t *p, subtilis_exp_t *a1,
 static subtilis_exp_t *prv_or(subtilis_parser_t *p, subtilis_exp_t *a1,
 			      subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "OR on arrays",
+	subtilis_error_set_not_supported(err, "OR on collections of REC",
 					 p->l->stream->name, p->l->line);
 	return NULL;
 }
@@ -269,7 +382,7 @@ static subtilis_exp_t *prv_or(subtilis_parser_t *p, subtilis_exp_t *a1,
 static subtilis_exp_t *prv_eor(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "EOR on arrays",
+	subtilis_error_set_not_supported(err, "EOR on collections of REC",
 					 p->l->stream->name, p->l->line);
 	return NULL;
 }
@@ -277,7 +390,7 @@ static subtilis_exp_t *prv_eor(subtilis_parser_t *p, subtilis_exp_t *a1,
 static subtilis_exp_t *prv_not(subtilis_parser_t *p, subtilis_exp_t *e,
 			       subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "NOT on arrays",
+	subtilis_error_set_not_supported(err, "NOT on collections of REC",
 					 p->l->stream->name, p->l->line);
 	return NULL;
 }
@@ -285,15 +398,15 @@ static subtilis_exp_t *prv_not(subtilis_parser_t *p, subtilis_exp_t *e,
 static subtilis_exp_t *prv_eq(subtilis_parser_t *p, subtilis_exp_t *a1,
 			      subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "= on arrays", p->l->stream->name,
-					 p->l->line);
+	subtilis_error_set_not_supported(err, "= on collections of REC",
+					 p->l->stream->name, p->l->line);
 	return NULL;
 }
 
 static subtilis_exp_t *prv_neq(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "<> on arrays",
+	subtilis_error_set_not_supported(err, "<> on collections of REC",
 					 p->l->stream->name, p->l->line);
 	return NULL;
 }
@@ -302,15 +415,15 @@ static subtilis_exp_t *prv_sub(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, bool swapped,
 			       subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "- on arrays", p->l->stream->name,
-					 p->l->line);
+	subtilis_error_set_not_supported(err, "- on collections of REC",
+					 p->l->stream->name, p->l->line);
 	return NULL;
 }
 
 static subtilis_exp_t *prv_div(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "DIV on arrays",
+	subtilis_error_set_not_supported(err, "DIV on collections of REC",
 					 p->l->stream->name, p->l->line);
 	return NULL;
 }
@@ -318,7 +431,7 @@ static subtilis_exp_t *prv_div(subtilis_parser_t *p, subtilis_exp_t *a1,
 static subtilis_exp_t *prv_mod(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "MOD on arrays",
+	subtilis_error_set_not_supported(err, "MOD on collections of REC",
 					 p->l->stream->name, p->l->line);
 	return NULL;
 }
@@ -327,7 +440,7 @@ static subtilis_exp_t *prv_pow(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, bool swapped,
 			       subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "pow on arrays",
+	subtilis_error_set_not_supported(err, "pow on on collections of RECs",
 					 p->l->stream->name, p->l->line);
 	return NULL;
 }
@@ -335,7 +448,7 @@ static subtilis_exp_t *prv_pow(subtilis_parser_t *p, subtilis_exp_t *a1,
 static subtilis_exp_t *prv_lsl(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "<< on arrays",
+	subtilis_error_set_not_supported(err, "<< on collections of REC",
 					 p->l->stream->name, p->l->line);
 	return NULL;
 }
@@ -343,7 +456,7 @@ static subtilis_exp_t *prv_lsl(subtilis_parser_t *p, subtilis_exp_t *a1,
 static subtilis_exp_t *prv_lsr(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, ">> on arrays",
+	subtilis_error_set_not_supported(err, ">> on collections of REC",
 					 p->l->stream->name, p->l->line);
 	return NULL;
 }
@@ -351,7 +464,7 @@ static subtilis_exp_t *prv_lsr(subtilis_parser_t *p, subtilis_exp_t *a1,
 static subtilis_exp_t *prv_asr(subtilis_parser_t *p, subtilis_exp_t *a1,
 			       subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, ">>> on arrays",
+	subtilis_error_set_not_supported(err, ">>> on collections of REC",
 					 p->l->stream->name, p->l->line);
 	return NULL;
 }
@@ -359,7 +472,7 @@ static subtilis_exp_t *prv_asr(subtilis_parser_t *p, subtilis_exp_t *a1,
 static subtilis_exp_t *prv_abs(subtilis_parser_t *p, subtilis_exp_t *e,
 			       subtilis_error_t *err)
 {
-	subtilis_error_set_not_supported(err, "ABS on arrays",
+	subtilis_error_set_not_supported(err, "ABS on collections of REC",
 					 p->l->stream->name, p->l->line);
 	return NULL;
 }
@@ -402,8 +515,32 @@ static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
 	    p->current, SUBTILIS_OP_INSTR_RET_I32, ret_reg, err);
 }
 
+static size_t prv_destructor(subtilis_parser_t *p, const subtilis_type_t *type,
+			     subtilis_error_t *err)
+{
+	subtilis_type_t el_type;
+	size_t call_index = SIZE_MAX;
+
+	el_type.type = SUBTILIS_TYPE_VOID;
+	subtilis_type_if_element_type(p, type, &el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	if (!subtilis_type_rec_need_deref(&el_type)) {
+		call_index = subtilis_type_if_destruct_deref(p, type, err);
+		goto cleanup;
+	}
+
+	call_index = subtilis_builtin_ir_deref_array_recs(p, &el_type, err);
+
+cleanup:
+	subtilis_type_free(&el_type);
+
+	return call_index;
+}
+
 /* clang-format off */
-subtilis_type_if subtilis_type_array_int32 = {
+subtilis_type_if subtilis_type_array_rec = {
 	.is_const = false,
 	.is_numeric = false,
 	.is_integer = false,
@@ -414,7 +551,7 @@ subtilis_type_if subtilis_type_array_int32 = {
 	.alignment = prv_align,
 	.data_size = prv_data_size,
 	.zero = prv_zero,
-	.zero_ref = subtilis_array_create_1el,
+	.zero_ref = NULL,
 	.new_ref = NULL,
 	.assign_ref = subtilis_array_type_assign_ref_exp,
 	.assign_ref_no_rc = NULL,
@@ -436,7 +573,7 @@ subtilis_type_if subtilis_type_array_int32 = {
 	.indexed_read = prv_indexed_read,
 	.append = NULL,
 	.set = prv_array_set,
-	.zero_buf = subtilis_array_zero_buf_i32,
+	.zero_buf = prv_zero_buf,
 	.indexed_address = prv_indexed_address,
 	.load_mem = NULL,
 	.to_int32 = NULL,
@@ -469,7 +606,7 @@ subtilis_type_if subtilis_type_array_int32 = {
 	.call = prv_call,
 	.call_ptr = prv_call_ptr,
 	.ret = prv_ret,
-	.destructor = subtilis_type_if_destruct_deref,
+	.destructor = prv_destructor,
 	.swap_reg_reg = NULL,
 	.swap_reg_mem = NULL,
 	.swap_mem_mem = subtilis_array_type_swap,
@@ -484,16 +621,9 @@ static void prv_vector_set(subtilis_parser_t *p, const char *var_name,
 	prv_set(p, var_name, type, mem_reg, loc, e, true, err);
 }
 
-static void prv_vector_zero_ref(subtilis_parser_t *p,
-				const subtilis_type_t *type, size_t mem_reg,
-				size_t loc, bool push, subtilis_error_t *err)
-{
-	subtilis_array_type_vector_zero_ref(p, type, loc, mem_reg, push, err);
-}
-
 /* clang-format off */
 
-subtilis_type_if subtilis_type_vector_int32 = {
+subtilis_type_if subtilis_type_vector_rec = {
 	.is_const = false,
 	.is_numeric = false,
 	.is_integer = false,
@@ -504,7 +634,7 @@ subtilis_type_if subtilis_type_vector_int32 = {
 	.alignment = prv_align,
 	.data_size = prv_data_size,
 	.zero = prv_zero,
-	.zero_ref = prv_vector_zero_ref,
+	.zero_ref = NULL,
 	.new_ref = NULL,
 	.assign_ref = subtilis_array_type_assign_ref_exp,
 	.assign_ref_no_rc = NULL,
@@ -526,7 +656,7 @@ subtilis_type_if subtilis_type_vector_int32 = {
 	.indexed_read = prv_indexed_read,
 	.append = prv_append,
 	.set = prv_vector_set,
-	.zero_buf = subtilis_array_zero_buf_i32,
+	.zero_buf = prv_zero_buf,
 	.indexed_address = prv_indexed_address,
 	.load_mem = NULL,
 	.to_int32 = NULL,
@@ -559,7 +689,7 @@ subtilis_type_if subtilis_type_vector_int32 = {
 	.call = prv_call,
 	.call_ptr = prv_call_ptr,
 	.ret = prv_ret,
-	.destructor = subtilis_type_if_destruct_deref,
+	.destructor = prv_destructor,
 	.swap_reg_reg = NULL,
 	.swap_reg_mem = NULL,
 	.swap_mem_mem = subtilis_array_type_swap,

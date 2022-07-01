@@ -54,13 +54,19 @@ static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
 static void prv_array_of(const subtilis_type_t *el_type, subtilis_type_t *type,
 			 subtilis_error_t *err)
 {
-	subtilis_error_set_assertion_failed(err);
+	subtilis_type_free(type);
+	type->type = SUBTILIS_TYPE_ARRAY_REC;
+	subtilis_type_init_to_from_rec(&type->params.array.params.rec, el_type,
+				       err);
 }
 
 static void prv_vector_of(const subtilis_type_t *el_type, subtilis_type_t *type,
 			  subtilis_error_t *err)
 {
-	subtilis_error_set_assertion_failed(err);
+	subtilis_type_free(type);
+	type->type = SUBTILIS_TYPE_VECTOR_REC;
+	subtilis_type_init_to_from_rec(&type->params.array.params.rec, el_type,
+				       err);
 }
 
 static subtilis_exp_t *prv_load_from_mem(subtilis_parser_t *p,

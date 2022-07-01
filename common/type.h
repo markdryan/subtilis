@@ -36,11 +36,13 @@ typedef enum {
 	SUBTILIS_TYPE_ARRAY_BYTE,
 	SUBTILIS_TYPE_ARRAY_STRING,
 	SUBTILIS_TYPE_ARRAY_FN,
+	SUBTILIS_TYPE_ARRAY_REC,
 	SUBTILIS_TYPE_VECTOR_REAL,
 	SUBTILIS_TYPE_VECTOR_INTEGER,
 	SUBTILIS_TYPE_VECTOR_BYTE,
 	SUBTILIS_TYPE_VECTOR_STRING,
 	SUBTILIS_TYPE_VECTOR_FN,
+	SUBTILIS_TYPE_VECTOR_REC,
 	SUBTILIS_TYPE_REC,
 	SUBTILIS_TYPE_LOCAL_BUFFER,
 	SUBTILIS_TYPE_TYPEDEF,
@@ -90,6 +92,7 @@ struct subtilis_type_array_t_ {
 	int32_t dims[SUBTILIS_MAX_DIMENSIONS];
 	union {
 		subtilis_type_fn_t fn;
+		subtilis_type_rec_t rec;
 	} params;
 };
 
@@ -167,6 +170,18 @@ void subtilis_type_to_from_fn(subtilis_type_fn_t *dst,
 void subtilis_type_init_to_from_fn(subtilis_type_fn_t *dst,
 				   const subtilis_type_t *src,
 				   subtilis_error_t *err);
+void subtilis_type_to_from_rec(subtilis_type_rec_t *dst,
+			       const subtilis_type_t *src,
+			       subtilis_error_t *err);
+void subtilis_type_init_to_from_rec(subtilis_type_rec_t *dst,
+				    const subtilis_type_t *src,
+				    subtilis_error_t *err);
+void subtilis_type_copy_from_rec(subtilis_type_t *dst,
+				 const subtilis_type_rec_t *src,
+				 subtilis_error_t *err);
+void subtilis_type_init_copy_from_rec(subtilis_type_t *dst,
+				      const subtilis_type_rec_t *src,
+				      subtilis_error_t *err);
 void subtilis_type_init_rec(subtilis_type_t *dst, const char *name,
 			    subtilis_error_t *err);
 size_t subtilis_type_rec_find_field(const subtilis_type_rec_t *rec,
@@ -176,6 +191,7 @@ void subtilis_type_rec_add_field(subtilis_type_t *dst, const char *name,
 				 uint32_t alignment, uint32_t size,
 				 int32_t vec_dim, subtilis_error_t *err);
 bool subtilis_type_rec_is_scalar(const subtilis_type_t *typ);
+bool subtilis_type_rec_can_zero_fill(const subtilis_type_t *typ);
 size_t subtilis_type_rec_zero_fill_size(const subtilis_type_t *typ);
 uint32_t subtilis_type_rec_field_offset_id(const subtilis_type_rec_t *rec,
 					   size_t id);
@@ -183,6 +199,7 @@ uint32_t subtilis_type_rec_field_offset(subtilis_type_t *typ, const char *name);
 size_t subtilis_type_rec_size(const subtilis_type_t *typ);
 size_t subtilis_type_rec_align(const subtilis_type_t *typ);
 bool subtilis_type_rec_need_deref(const subtilis_type_t *typ);
+bool subtilis_type_rec_need_zero_alloc(const subtilis_type_t *typ);
 void subtilis_type_free(subtilis_type_t *typ);
 
 extern const subtilis_type_t subtilis_type_const_real;

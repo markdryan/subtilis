@@ -21,6 +21,7 @@
 #include "parser_array.h"
 #include "parser_call.h"
 #include "parser_exp.h"
+#include "parser_rec.h"
 #include "reference_type.h"
 #include "string_type.h"
 #include "type_if.h"
@@ -47,6 +48,36 @@ subtilis_exp_t *subtils_parser_read_array(subtilis_parser_t *p,
 						   var_name, err);
 }
 
+static subtilis_exp_t *
+prv_read_rec_el(subtilis_parser_t *p, subtilis_token_t *t,
+		const subtilis_type_t *type, subtilis_exp_t **indices,
+		size_t dims, size_t mem_reg, size_t loc, const char *var_name,
+		subtilis_error_t *err)
+{
+	subtilis_type_t el_type;
+	subtilis_exp_t *offset;
+	subtilis_exp_t *e;
+
+	offset = subtilis_array_index_calc(p, var_name, type, mem_reg, loc,
+					   indices, dims, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	el_type.type = SUBTILIS_TYPE_VOID;
+	subtilis_type_if_element_type(p, type, &el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(offset);
+		return NULL;
+	}
+
+	e = subtilis_parser_rec_exp(p, t, &el_type, offset->exp.ir_op.reg, 0,
+				    err);
+	subtilis_exp_delete(offset);
+	subtilis_type_free(&el_type);
+
+	return e;
+}
+
 /* clang-format off */
 subtilis_exp_t *subtils_parser_read_array_with_type(subtilis_parser_t *p,
 						    subtilis_token_t *t,
@@ -59,6 +90,8 @@ subtilis_exp_t *subtils_parser_read_array_with_type(subtilis_parser_t *p,
 {
 	subtilis_exp_t *indices[SUBTILIS_MAX_DIMENSIONS];
 	size_t i;
+	bool rec;
+	const char *tbuf;
 	subtilis_exp_t *e = NULL;
 	size_t dims = 0;
 
@@ -75,16 +108,43 @@ subtilis_exp_t *subtils_parser_read_array_with_type(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	tbuf = subtilis_token_get_text(t);
+	rec = (t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, ".");
+
+	if (rec && (type->type != SUBTILIS_TYPE_ARRAY_REC)) {
+		subtilis_error_set_expected(err, "Collection of RECs",
+					    subtilis_type_name(type),
+					    p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
 	if (dims == 0) {
+		if (rec) {
+			subtilis_error_set_expected(
+			    err, "Array of RECs", "Array of RECs reference",
+			    p->l->stream->name, p->l->line);
+			goto cleanup;
+		}
 		/* What we have here is an array reference. */
 		e = subtilis_exp_new_var_block(p, type, mem_reg, loc, err);
 	} else if ((type->params.array.num_dims == 1) && (dims == 2)) {
+		if (rec) {
+			subtilis_error_set_expected(
+			    err, "Array of RECs", "Slice of RECs",
+			    p->l->stream->name, p->l->line);
+			goto cleanup;
+		}
 		/* We have a slice. */
 		e = subtilis_array_type_slice_array(
 		    p, type, mem_reg, loc, indices[0], indices[1], err);
 	} else {
-		e = subtilis_type_if_indexed_read(p, var_name, type, mem_reg,
-						  loc, indices, dims, err);
+		if (rec)
+			e = prv_read_rec_el(p, t, type, &indices[0], dims,
+					    mem_reg, loc, var_name, err);
+		else
+			e = subtilis_type_if_indexed_read(p, var_name, type,
+							  mem_reg, loc, indices,
+							  dims, err);
 	}
 
 cleanup:
@@ -199,6 +259,8 @@ subtilis_exp_t *subtils_parser_read_vector_with_type(subtilis_parser_t *p,
 
 {
 	size_t indices_count;
+	bool rec;
+	const char *tbuf;
 	subtilis_exp_t *indices[2] = {NULL, NULL};
 	subtilis_exp_t *e = NULL;
 
@@ -211,14 +273,41 @@ subtilis_exp_t *subtils_parser_read_vector_with_type(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	tbuf = subtilis_token_get_text(t);
+	rec = (t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, ".");
+	if (rec && (typ->type != SUBTILIS_TYPE_VECTOR_REC)) {
+		subtilis_error_set_expected(err, "Collection of RECs",
+					    subtilis_type_name(typ),
+					    p->l->stream->name, p->l->line);
+		goto cleanup;
+	}
+
 	if (indices_count == 0) {
+		if (rec) {
+			subtilis_error_set_expected(
+			    err, "Vector of RECs", "Vector of RECs  reference",
+			    p->l->stream->name, p->l->line);
+			goto cleanup;
+		}
+
 		/* What we have here is an array reference. */
 		e = subtilis_exp_new_var_block(p, typ, mem_reg, loc, err);
 	} else if (indices_count == 1) {
 		/* And here we're reading an individual entry. */
-		e = subtilis_type_if_indexed_read(p, var_name, typ, mem_reg,
-						  loc, indices, 1, err);
+		if (rec)
+			e = prv_read_rec_el(p, t, typ, &indices[0], 1, mem_reg,
+					    loc, var_name, err);
+		else
+			e = subtilis_type_if_indexed_read(
+			    p, var_name, typ, mem_reg, loc, indices, 1, err);
 	} else {
+		if (rec) {
+			subtilis_error_set_expected(
+			    err, "Vector of RECs", "Slice of RECs",
+			    p->l->stream->name, p->l->line);
+			goto cleanup;
+		}
+
 		/* We have a slice */
 		e = subtilis_array_type_slice_vector(
 		    p, typ, mem_reg, loc, indices[0], indices[1], err);
@@ -1179,7 +1268,8 @@ void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		if (element_type.type == SUBTILIS_TYPE_FN) {
+		if ((element_type.type == SUBTILIS_TYPE_FN) ||
+		    (element_type.type == SUBTILIS_TYPE_REC)) {
 			subtilis_complete_custom_type(p, var_name,
 						      &element_type, err);
 			if (err->type != SUBTILIS_ERROR_OK)

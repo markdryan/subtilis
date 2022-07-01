@@ -60,11 +60,13 @@ static const char *const prv_fixed_type_names[] = {
 	"array of bytes", /* SUBTILIS_TYPE_ARRAY_BYTE */
 	"array of strings", /* SUBTILIS_TYPE_ARRAY_STRING */
 	"array of functions", /* SUBTILIS_TYPE_ARRAY_FN */
+	"array of RECs", /* SUBTILIS_TYPE_ARRAY_REC */
 	"vector of reals", /* SUBTILIS_TYPE_VECTOR_REAL */
 	"vector of ints", /* SUBTILIS_TYPE_VECTOR_INTEGER */
 	"vector of bytes", /* SUBTILIS_TYPE_VECTOR_BYTE */
 	"vector of strings", /* SUBTILIS_TYPE_VECTOR_STRING */
 	"vector of functions", /* SUBTILIS_TYPE_VECTOR_STRING */
+	"vector of RECs", /* SUBTILIS_TYPE_VECTOR_REC */
 	"rec",  /* SUBTILIS_TYPE_REC */
 	"local buffer",  /* SUBTILIS_TYPE_LOCAL_BUFFER */
 	"type",  /* SUBTILIS_TYPE_TYPEDEF */
@@ -155,7 +157,10 @@ static bool prv_array_type_match(const subtilis_type_t *t1,
 	    (t1->type == SUBTILIS_TYPE_VECTOR_FN))
 		return prv_fn_type_match(&t1->params.array.params.fn,
 					 &t2->params.array.params.fn);
-
+	else if ((t1->type == SUBTILIS_TYPE_ARRAY_REC) ||
+		 (t1->type == SUBTILIS_TYPE_VECTOR_REC))
+		return prv_rec_type_match(&t1->params.array.params.rec,
+					  &t2->params.array.params.rec);
 	return true;
 }
 
@@ -170,6 +175,8 @@ bool subtilis_type_eq(const subtilis_type_t *a, const subtilis_type_t *b)
 	case SUBTILIS_TYPE_ARRAY_BYTE:
 	case SUBTILIS_TYPE_ARRAY_FN:
 	case SUBTILIS_TYPE_VECTOR_FN: /* fn vectors need extra checks */
+	case SUBTILIS_TYPE_ARRAY_REC:
+	case SUBTILIS_TYPE_VECTOR_REC: /* rec vectors need extra checks */
 		return prv_array_type_match(a, b);
 	case SUBTILIS_TYPE_FN:
 		return prv_fn_type_match(&a->params.fn, &b->params.fn);
@@ -238,11 +245,13 @@ subtilis_type_section_new(const subtilis_type_t *rtype, size_t num_parameters,
 		case SUBTILIS_TYPE_ARRAY_STRING:
 		case SUBTILIS_TYPE_ARRAY_BYTE:
 		case SUBTILIS_TYPE_ARRAY_FN:
+		case SUBTILIS_TYPE_ARRAY_REC:
 		case SUBTILIS_TYPE_VECTOR_REAL:
 		case SUBTILIS_TYPE_VECTOR_INTEGER:
 		case SUBTILIS_TYPE_VECTOR_STRING:
 		case SUBTILIS_TYPE_VECTOR_BYTE:
 		case SUBTILIS_TYPE_VECTOR_FN:
+		case SUBTILIS_TYPE_VECTOR_REC:
 		case SUBTILIS_TYPE_FN:
 		case SUBTILIS_TYPE_REC:
 			stype->int_regs++;
@@ -301,12 +310,42 @@ const char *subtilis_type_name(const subtilis_type_t *typ)
 static void prv_full_type_name(const subtilis_type_t *typ,
 			       subtilis_buffer_t *buf, subtilis_error_t *err)
 {
-	if (typ->type == SUBTILIS_TYPE_FN) {
+	const char *vec_of = "vector of ";
+	const char *array_of = "array of ";
+
+	switch (typ->type) {
+	case SUBTILIS_TYPE_FN:
 		prv_fn_type_name(typ, buf, err);
 		return;
-	} else if (typ->type == SUBTILIS_TYPE_REC) {
+	case SUBTILIS_TYPE_REC:
 		prv_rec_type_name(typ, buf, err);
 		return;
+	case SUBTILIS_TYPE_ARRAY_FN:
+		subtilis_buffer_append_string(buf, array_of, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		prv_fn_type_name(typ, buf, err);
+		return;
+	case SUBTILIS_TYPE_VECTOR_FN:
+		subtilis_buffer_append_string(buf, vec_of, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		prv_fn_type_name(typ, buf, err);
+		return;
+	case SUBTILIS_TYPE_ARRAY_REC:
+		subtilis_buffer_append_string(buf, array_of, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		prv_rec_type_name(typ, buf, err);
+		return;
+	case SUBTILIS_TYPE_VECTOR_REC:
+		subtilis_buffer_append_string(buf, vec_of, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		prv_rec_type_name(typ, buf, err);
+		return;
+	default:
+		break;
 	}
 
 	subtilis_buffer_append_string(buf, subtilis_type_name(typ), err);
@@ -397,6 +436,9 @@ void subtilis_type_free(subtilis_type_t *typ)
 	else if ((typ->type == SUBTILIS_TYPE_ARRAY_FN) ||
 		 (typ->type == SUBTILIS_TYPE_VECTOR_FN))
 		prv_fn_type_free(&typ->params.array.params.fn);
+	else if ((typ->type == SUBTILIS_TYPE_ARRAY_REC) ||
+		 (typ->type == SUBTILIS_TYPE_VECTOR_REC))
+		prv_rec_type_free(&typ->params.array.params.rec);
 }
 
 void subtilis_type_copy(subtilis_type_t *dst, const subtilis_type_t *src,
@@ -515,6 +557,14 @@ void subtilis_type_init_copy(subtilis_type_t *dst, const subtilis_type_t *src,
 		       sizeof(src->params.array.dims));
 		prv_init_copy_fn(&dst->params.array.params.fn,
 				 &src->params.array.params.fn, err);
+	} else if ((src->type == SUBTILIS_TYPE_ARRAY_REC) ||
+		   (src->type == SUBTILIS_TYPE_VECTOR_REC)) {
+		dst->type = src->type;
+		dst->params.array.num_dims = src->params.array.num_dims;
+		memcpy(dst->params.array.dims, src->params.array.dims,
+		       sizeof(src->params.array.dims));
+		prv_init_copy_rec(&dst->params.array.params.rec,
+				  &src->params.array.params.rec, err);
 	} else {
 		*dst = *src;
 	}
@@ -536,6 +586,22 @@ void subtilis_type_copy_from_fn(subtilis_type_t *dst,
 	subtilis_type_init_copy_from_fn(dst, src, err);
 }
 
+void subtilis_type_init_copy_from_rec(subtilis_type_t *dst,
+				      const subtilis_type_rec_t *src,
+				      subtilis_error_t *err)
+{
+	dst->type = SUBTILIS_TYPE_REC;
+	prv_init_copy_rec(&dst->params.rec, src, err);
+}
+
+void subtilis_type_copy_from_rec(subtilis_type_t *dst,
+				 const subtilis_type_rec_t *src,
+				 subtilis_error_t *err)
+{
+	subtilis_type_free(dst);
+	subtilis_type_init_copy_from_rec(dst, src, err);
+}
+
 void subtilis_type_to_from_fn(subtilis_type_fn_t *dst,
 			      const subtilis_type_t *src, subtilis_error_t *err)
 {
@@ -548,6 +614,21 @@ void subtilis_type_init_to_from_fn(subtilis_type_fn_t *dst,
 				   subtilis_error_t *err)
 {
 	prv_init_copy_fn(dst, &src->params.fn, err);
+}
+
+void subtilis_type_to_from_rec(subtilis_type_rec_t *dst,
+			       const subtilis_type_t *src,
+			       subtilis_error_t *err)
+{
+	prv_rec_type_free(dst);
+	prv_init_copy_rec(dst, &src->params.rec, err);
+}
+
+void subtilis_type_init_to_from_rec(subtilis_type_rec_t *dst,
+				    const subtilis_type_t *src,
+				    subtilis_error_t *err)
+{
+	prv_init_copy_rec(dst, &src->params.rec, err);
 }
 
 subtilis_type_section_t *
@@ -732,6 +813,33 @@ bool subtilis_type_rec_is_scalar(const subtilis_type_t *typ)
 	return true;
 }
 
+bool subtilis_type_rec_can_zero_fill(const subtilis_type_t *typ)
+{
+	subtilis_type_t *field;
+	size_t i;
+	const subtilis_type_rec_t *rec = &typ->params.rec;
+
+	for (i = 0; i < rec->num_fields; i++) {
+		field = &rec->field_types[i];
+		switch (field->type) {
+		case SUBTILIS_TYPE_REAL:
+		case SUBTILIS_TYPE_INTEGER:
+		case SUBTILIS_TYPE_BYTE:
+		case SUBTILIS_TYPE_STRING:
+		case SUBTILIS_TYPE_LOCAL_BUFFER:
+			break;
+		case SUBTILIS_TYPE_REC:
+			if (!subtilis_type_rec_can_zero_fill(field))
+				return false;
+			break;
+		default:
+			return false;
+		}
+	}
+
+	return true;
+}
+
 size_t subtilis_type_rec_zero_fill_size(const subtilis_type_t *typ)
 {
 	subtilis_type_t *field;
@@ -781,6 +889,42 @@ bool subtilis_type_rec_need_deref(const subtilis_type_t *typ)
 			break;
 		default:
 			return true;
+		}
+	}
+	return false;
+}
+
+bool subtilis_type_rec_need_zero_alloc(const subtilis_type_t *typ)
+{
+	subtilis_type_t *field;
+	size_t i;
+	const subtilis_type_rec_t *rec = &typ->params.rec;
+
+	for (i = 0; i < rec->num_fields; i++) {
+		field = &rec->field_types[i];
+		switch (field->type) {
+		case SUBTILIS_TYPE_ARRAY_REAL:
+		case SUBTILIS_TYPE_ARRAY_INTEGER:
+		case SUBTILIS_TYPE_ARRAY_BYTE:
+		case SUBTILIS_TYPE_ARRAY_STRING:
+		case SUBTILIS_TYPE_ARRAY_FN:
+		case SUBTILIS_TYPE_ARRAY_REC:
+			return true;
+		case SUBTILIS_TYPE_VECTOR_REAL:
+		case SUBTILIS_TYPE_VECTOR_INTEGER:
+		case SUBTILIS_TYPE_VECTOR_BYTE:
+		case SUBTILIS_TYPE_VECTOR_STRING:
+		case SUBTILIS_TYPE_VECTOR_FN:
+		case SUBTILIS_TYPE_VECTOR_REC:
+			if (rec->fields[i].vec_dim != -1)
+				return true;
+			break;
+		case SUBTILIS_TYPE_REC:
+			if (subtilis_type_rec_need_zero_alloc(field))
+				return true;
+			break;
+		default:
+			break;
 		}
 	}
 	return false;

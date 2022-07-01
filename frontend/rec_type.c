@@ -34,39 +34,8 @@ static void prv_rec_memset_zero(subtilis_parser_t *p,
 
 {
 	size_t size = subtilis_type_rec_size(type);
-	subtilis_exp_t *size_exp = NULL;
-	subtilis_exp_t *val_exp = NULL;
 
-	size_exp = subtilis_exp_new_int32((int32_t)size, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	size_exp = subtilis_type_if_exp_to_var(p, size_exp, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	val_exp = subtilis_exp_new_int32(0, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-	val_exp = subtilis_type_if_exp_to_var(p, val_exp, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	mem_reg = subtilis_reference_get_pointer(p, mem_reg, loc, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	if (size & 3)
-		subtilis_builtin_memset_i8(p, mem_reg, size_exp->exp.ir_op.reg,
-					   val_exp->exp.ir_op.reg, err);
-	else
-		subtilis_builtin_memset_i32(p, mem_reg, size_exp->exp.ir_op.reg,
-					    val_exp->exp.ir_op.reg, err);
-
-cleanup:
-
-	subtilis_exp_delete(val_exp);
-	subtilis_exp_delete(size_exp);
+	subtilis_builtin_bzero(p, mem_reg, loc, size, err);
 }
 
 void subtilis_rec_type_init_array(subtilis_parser_t *p,
@@ -221,17 +190,12 @@ void subtilis_rec_type_zero(subtilis_parser_t *p, const subtilis_type_t *type,
 			    size_t mem_reg, size_t loc, bool push,
 			    subtilis_error_t *err)
 {
-	subtilis_ir_operand_t op1;
-	subtilis_ir_operand_t op2;
 	size_t zfs = subtilis_type_rec_zero_fill_size(type);
 
 	if (subtilis_type_rec_size(type) - zfs < 16) {
 		subtilis_rec_type_zero_body(p, type, mem_reg, loc, zfs, err);
 	} else {
-		op1.reg = mem_reg;
-		op2.integer = loc;
-		mem_reg = subtilis_ir_section_add_instr(
-		    p->current, SUBTILIS_OP_INSTR_ADDI_I32, op1, op2, err);
+		mem_reg = subtilis_reference_get_pointer(p, mem_reg, loc, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		loc = 0;

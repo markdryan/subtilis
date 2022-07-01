@@ -20,6 +20,7 @@
 #include "array_float64_type.h"
 #include "array_fn_type.h"
 #include "array_int32_type.h"
+#include "array_rec_type.h"
 #include "array_string_type.h"
 #include "builtins_ir.h"
 #include "byte_type_if.h"
@@ -48,11 +49,13 @@ static subtilis_type_if *prv_type_map[] = {
 	&subtilis_type_array_byte,
 	&subtilis_type_array_string,
 	&subtilis_type_array_fn,
+	&subtilis_type_array_rec,
 	&subtilis_type_vector_float64,
 	&subtilis_type_vector_int32,
 	&subtilis_type_vector_byte,
 	&subtilis_type_vector_string,
 	&subtilis_type_vector_fn,
+	&subtilis_type_vector_rec,
 	&subtilis_type_rec,
 	&subtilis_type_if_local_buffer,
 	NULL,
@@ -180,7 +183,7 @@ subtilis_exp_t *subtilis_type_if_data_size(subtilis_parser_t *p,
 					   subtilis_exp_t *e,
 					   subtilis_error_t *err)
 {
-	subtilis_type_if_unary_t fn = prv_type_map[type->type]->data_size;
+	subtilis_type_if_dsize_t fn = prv_type_map[type->type]->data_size;
 
 	if (!fn) {
 		subtilis_exp_delete(e);
@@ -188,7 +191,7 @@ subtilis_exp_t *subtilis_type_if_data_size(subtilis_parser_t *p,
 		return NULL;
 	}
 
-	return fn(p, e, err);
+	return fn(p, type, e, err);
 }
 
 subtilis_exp_t *subtilis_type_if_zero(subtilis_parser_t *p,
@@ -1176,7 +1179,11 @@ bool subtilis_type_if_is_scalar_ref(const subtilis_type_t *type,
 						       err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return false;
-		retval = subtilis_type_if_is_numeric(&element_type);
+		if ((type->type == SUBTILIS_TYPE_ARRAY_REC) ||
+		    (type->type == SUBTILIS_TYPE_VECTOR_REC))
+			retval = subtilis_type_rec_is_scalar(&element_type);
+		else
+			retval = subtilis_type_if_is_numeric(&element_type);
 		subtilis_type_free(&element_type);
 		return retval;
 	}

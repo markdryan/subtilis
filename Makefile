@@ -48,6 +48,7 @@ COMMON =\
 	array_float64_type.c \
 	array_string_type.c \
 	array_fn_type.c \
+	array_rec_type.c \
 	fn_type.c \
 	array_type.c \
 	sizet_vector.c \

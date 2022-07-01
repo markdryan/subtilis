@@ -36,6 +36,10 @@ typedef enum {
 	SUBTILIS_ASSIGN_TYPE_UNKNOWN,
 } subtilis_assign_type_t;
 
+static void prv_assign_field(subtilis_parser_t *p, subtilis_token_t *t,
+			     const subtilis_type_t *type, size_t reg,
+			     size_t loc, subtilis_error_t *err);
+
 static subtilis_exp_t *prv_assignment_operator(subtilis_parser_t *p,
 					       const char *var_name,
 					       subtilis_exp_t *e,
@@ -169,6 +173,59 @@ prv_get_ass_op(subtilis_parser_t *p, subtilis_token_t *t, subtilis_error_t *err)
 	return at;
 }
 
+static void prv_assign_col_field(subtilis_parser_t *p, subtilis_token_t *t,
+				 size_t dims, subtilis_exp_t **indices,
+				 const char *var_name,
+				 const subtilis_type_t *array_type,
+				 subtilis_error_t *err)
+{
+	subtilis_exp_t *offset;
+	size_t mem_reg;
+	bool new_global;
+	const subtilis_symbol_t *s;
+	subtilis_type_t el_type;
+
+	if ((array_type->type != SUBTILIS_TYPE_ARRAY_REC) &&
+	    (array_type->type != SUBTILIS_TYPE_VECTOR_REC)) {
+		subtilis_error_set_expected(err, "Collection of RECs",
+					    subtilis_type_name(array_type),
+					    p->l->stream->name, p->l->line);
+		return;
+	}
+
+	if (dims == 0) {
+		subtilis_error_set_expected(err, "Collection of RECs",
+					    "Collection reference",
+					    p->l->stream->name, p->l->line);
+		return;
+	}
+
+	subtilis_parser_lookup_assignment_var(p, t, var_name, &s, &mem_reg,
+					      &new_global, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	if (new_global) {
+		subtilis_error_set_unknown_variable(
+		    err, var_name, p->l->stream->name, p->l->line);
+		return;
+	}
+
+	offset = subtilis_array_index_calc(p, var_name, &s->t, mem_reg, s->loc,
+					   indices, dims, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_type_if_element_type(p, &s->t, &el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(offset);
+		return;
+	}
+
+	prv_assign_field(p, t, &el_type, offset->exp.ir_op.reg, 0, err);
+	subtilis_exp_delete(offset);
+	subtilis_type_free(&el_type);
+}
+
 static void prv_assign_array_or_vector(subtilis_parser_t *p,
 				       subtilis_token_t *t, size_t dims,
 				       subtilis_exp_t **indices,
@@ -191,6 +248,12 @@ static void prv_assign_array_or_vector(subtilis_parser_t *p,
 		goto cleanup;
 
 	tbuf = subtilis_token_get_text(t);
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, ".")) {
+		prv_assign_col_field(p, t, dims, indices, var_name, array_type,
+				     err);
+		goto cleanup;
+	}
+
 	at = prv_get_ass_op(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		prv_missing_operator_error(p, tbuf, var_name, err);
@@ -855,6 +918,10 @@ static void prv_assign_field(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	e = subtilis_parser_expression(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	e = subtilis_type_if_coerce_type(p, e, type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

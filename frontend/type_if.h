@@ -22,6 +22,10 @@
 #include "parser.h"
 
 typedef size_t (*subtilis_type_if_size_t)(const subtilis_type_t *type);
+typedef subtilis_exp_t *(*subtilis_type_if_dsize_t)(subtilis_parser_t *p,
+						    const subtilis_type_t *type,
+						    subtilis_exp_t *e,
+						    subtilis_error_t *err);
 typedef size_t (*subtilis_type_if_destruct_t)(subtilis_parser_t *p,
 					      const subtilis_type_t *type,
 					      subtilis_error_t *err);
@@ -137,7 +141,7 @@ struct subtilis_type_if_ {
 	subtilis_ir_reg_type_t param_type;
 	subtilis_type_if_size_t size;
 	subtilis_type_if_size_t alignment;
-	subtilis_type_if_unary_t data_size;
+	subtilis_type_if_dsize_t data_size;
 	subtilis_type_if_zero_t zero;
 	subtilis_type_if_zeroref_t zero_ref;
 	subtilis_type_if_initref_t new_ref;

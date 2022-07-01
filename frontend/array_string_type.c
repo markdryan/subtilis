@@ -34,8 +34,9 @@ static size_t prv_align(const subtilis_type_t *type)
 	return SUBTILIS_CONFIG_POINTER_SIZE;
 }
 
-static subtilis_exp_t *prv_data_size(subtilis_parser_t *p, subtilis_exp_t *e,
-				     subtilis_error_t *err)
+static subtilis_exp_t *prv_data_size(subtilis_parser_t *p,
+				     const subtilis_type_t *type,
+				     subtilis_exp_t *e, subtilis_error_t *err)
 {
 	subtilis_exp_t *sizee;
 	size_t string_size = subtilis_string_type_size(&subtilis_type_string);

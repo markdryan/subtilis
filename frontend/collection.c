@@ -59,11 +59,18 @@ void subtilis_collection_copy_scalar(subtilis_parser_t *p, subtilis_exp_t *obj1,
 
 		ptr2 =
 		    subtilis_reference_get_data(p, obj2->exp.ir_op.reg, 0, err);
+	} else if ((obj2->type.type == SUBTILIS_TYPE_REC) &&
+		   subtilis_type_rec_is_scalar(&obj2->type)) {
+		op1.integer = subtilis_type_rec_size(&obj2->type);
+		size2.reg = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op1, err);
+		ptr2 = obj2->exp.ir_op.reg;
 	} else {
 		if (err->type == SUBTILIS_ERROR_OK)
 			subtilis_error_set_expected(
 			    err,
-			    "string, constant string or array of numeric types",
+			    "string, constant string or array of numeric types "
+			    "or scalar RECS",
 			    subtilis_type_name(&obj2->type), p->l->stream->name,
 			    p->l->line);
 		goto cleanup;
