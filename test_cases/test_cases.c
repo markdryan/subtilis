@@ -5488,6 +5488,23 @@ const subtilis_test_case_t test_cases[] = {
 	"next\n",
 	"0\n1\n0\n0\n\n1\n2\n3\n2\n\n2\n3\n6\n4\n\n3\n4\n9\n6\n\n",
 	},
+	{"rec_copy_non_scalar",
+	"type RECref (\n"
+	"     dim a%(10)\n"
+	")\n"
+	"\n"
+	"dim a@RECref(1)\n"
+	"for i% := 0 to dim(a@RECref(0).a%(), 1)\n"
+	"    a@RECref(0).a%(i%) = i%\n"
+	"next\n"
+	"\n"
+	"dim b@RECref(1)\n"
+	"copy(b@RECref(), a@RECref())\n"
+	"range v% := b@RECref(0).a%()\n"
+	"      print v%\n"
+	"endrange\n",
+	"0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
+	},
 };
 
 /* clang-format on */

@@ -20,6 +20,7 @@
 #include "../common/error_codes.h"
 #include "array_type.h"
 #include "builtins_helper.h"
+#include "builtins_ir.h"
 #include "expression.h"
 #include "parser_call.h"
 #include "reference_type.h"
@@ -2377,16 +2378,34 @@ void subtilis_array_type_copy_els(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	if (deref) {
-		subtilis_reference_type_deref(p, counter.reg, 0, err);
+	/*
+	 * RECords are a special case.  They're not reference types but
+	 * they can hold references.  If we get here, our RECord is not
+	 * scalar.
+	 */
+
+	if (el_type->type == SUBTILIS_TYPE_REC) {
+		if (deref) {
+			subtilis_builtin_ir_rec_copy(p, el_type, counter.reg,
+						     counter2.reg, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		} else {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+	} else {
+		if (deref) {
+			subtilis_reference_type_deref(p, counter.reg, 0, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		}
+
+		subtilis_reference_type_init_ref(p, counter.reg, 0,
+						 counter2.reg, true, true, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
-
-	subtilis_reference_type_init_ref(p, counter.reg, 0, counter2.reg, true,
-					 true, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 
 	op2.integer = subtilis_type_if_size(el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)

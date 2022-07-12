@@ -92,7 +92,7 @@ size_t subtilis_builtin_ir_call_deref(subtilis_parser_t *p,
 				      subtilis_error_t *err);
 size_t subtilis_builtin_ir_rec_deref(subtilis_parser_t *p,
 				     const subtilis_type_t *type,
-				     const char *name, subtilis_error_t *err);
+				     subtilis_error_t *err);
 void subtilis_builtin_ir_rec_zero(subtilis_parser_t *p,
 				  const subtilis_type_t *type, size_t base_reg,
 				  subtilis_error_t *err);

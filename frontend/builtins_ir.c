@@ -3298,12 +3298,16 @@ size_t subtilis_builtin_ir_call_deref(subtilis_parser_t *p,
 
 size_t subtilis_builtin_ir_rec_deref(subtilis_parser_t *p,
 				     const subtilis_type_t *type,
-				     const char *name,
 				     subtilis_error_t *err)
 {
 	subtilis_ir_section_t *fn;
 	const subtilis_type_t *ptype[1];
 	size_t call_index;
+	char *name;
+
+	name = subtilis_rec_type_deref_fn_name(type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
 
 	ptype[0] = &subtilis_type_integer;
 
@@ -3311,15 +3315,21 @@ size_t subtilis_builtin_ir_rec_deref(subtilis_parser_t *p,
 			     &call_index, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
-			return SIZE_MAX;
+			goto on_error;
 		subtilis_error_init(err);
 	} else {
 		prv_builtins_ir_gen_rec_deref(p, type, fn, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return SIZE_MAX;
+			goto on_error;
 	}
 
+	free(name);
 	return call_index;
+
+on_error:
+
+	free(name);
+	return SIZE_MAX;
 }
 
 void subtilis_builtin_ir_rec_zero(subtilis_parser_t *p,

@@ -318,3 +318,24 @@ void subtilis_rec_type_copy(subtilis_parser_t *p, const subtilis_type_t *type,
 		subtilis_builtin_ir_rec_copy(p, type, dest_reg, src_reg, err);
 	}
 }
+
+char *subtilis_rec_type_deref_fn_name(const subtilis_type_t *type,
+				      subtilis_error_t *err)
+{
+	char *fn_name;
+	int name_len;
+	const subtilis_type_rec_t *rec = &type->params.rec;
+	const char *deref = "_deref";
+
+	name_len = strlen(rec->name);
+	fn_name = malloc(name_len + 1 + 1 + strlen(deref));
+	if (!fn_name) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+	fn_name[0] = '_';
+	strcpy(&fn_name[1], rec->name);
+	strcpy(&fn_name[name_len + 1], deref);
+
+	return fn_name;
+}

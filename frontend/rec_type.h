@@ -46,5 +46,6 @@ void subtilis_rec_type_init_field(subtilis_parser_t *p,
 				  subtilis_type_field_t *field, size_t mem_reg,
 				  size_t loc, bool memset,
 				  subtilis_error_t *err);
-
+char *subtilis_rec_type_deref_fn_name(const subtilis_type_t *t,
+				      subtilis_error_t *err);
 #endif

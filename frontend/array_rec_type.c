@@ -110,9 +110,7 @@ static void prv_copy_col(subtilis_parser_t *p, subtilis_exp_t *e1,
 	subtilis_type_free(&typ);
 
 	if (!scalar) {
-		subtilis_error_set_not_supported(
-		    err, "copy on arrays of non-scalar RECs",
-		    p->l->stream->name, p->l->line);
+		subtilis_collection_copy_ref(p, e1, e2, err);
 		return;
 	}
 	subtilis_collection_copy_scalar(p, e1, e2, false, err);
@@ -124,8 +122,20 @@ prv_indexed_read(subtilis_parser_t *p, const char *var_name,
 		 subtilis_exp_t **indices, size_t index_count,
 		 subtilis_error_t *err)
 {
-	return subtilis_array_index_calc(p, var_name, type, mem_reg, loc,
-					 indices, index_count, err);
+	subtilis_exp_t *e;
+
+	e = subtilis_array_index_calc(p, var_name, type, mem_reg, loc, indices,
+				      index_count, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_type_if_element_type(p, type, &e->type, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return e;
 }
 
 static void prv_set(subtilis_parser_t *p, const char *var_name,
@@ -278,20 +288,6 @@ prv_indexed_address(subtilis_parser_t *p, const char *var_name,
 static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
 		       subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	/*
-	if ((a2->type.type == SUBTILIS_TYPE_ARRAY_FN) ||
-	    (a2->type.type == SUBTILIS_TYPE_VECTOR_FN)) {
-		subtilis_array_append_scalar_array(p, a1, a2, err);
-		return;
-	} else if (a2->type.type == SUBTILIS_TYPE_FN) {
-		subtilis_array_append_scalar(p, a1, a2, err);
-		return;
-	}
-	subtilis_error_set_expected(err, "fn or collection of fn",
-				    subtilis_type_name(&a2->type),
-				    p->l->stream->name, p->l->line);
-	*/
-
 	subtilis_error_set_assertion_failed(err);
 
 	subtilis_exp_delete(a2);

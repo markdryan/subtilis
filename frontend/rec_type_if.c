@@ -166,28 +166,12 @@ static void prv_swap_mem_mem(subtilis_parser_t *p, const subtilis_type_t *type,
 static size_t prv_destructor(subtilis_parser_t *p, const subtilis_type_t *type,
 			     subtilis_error_t *err)
 {
-	char *fn_name;
-	int name_len;
 	size_t call_index = SIZE_MAX;
-	const char *deref = "_deref";
-	const subtilis_type_rec_t *rec = &type->params.rec;
 
 	if (!subtilis_type_rec_need_deref(type))
 		return SIZE_MAX;
 
-	name_len = strlen(rec->name);
-	fn_name = malloc(name_len + 1 + 1 + strlen(deref));
-	if (!fn_name) {
-		subtilis_error_set_oom(err);
-		return SIZE_MAX;
-	}
-	fn_name[0] = '_';
-	strcpy(&fn_name[1], rec->name);
-	strcpy(&fn_name[name_len + 1], deref);
-
-	call_index = subtilis_builtin_ir_rec_deref(p, type, fn_name, err);
-
-	free(fn_name);
+	call_index = subtilis_builtin_ir_rec_deref(p, type, err);
 
 	return call_index;
 }
