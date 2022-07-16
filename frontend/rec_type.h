@@ -30,6 +30,16 @@ void subtilis_type_rec_copy_ref(subtilis_parser_t *p,
 				const subtilis_type_t *type, size_t dest_reg,
 				size_t loc, size_t src_reg,
 				subtilis_error_t *err);
+
+/*
+ * Here we don 't care about the existing contents of the record we're
+ * overwriting and we don't want to ref anything.
+ */
+
+void subtilis_rec_type_tmp_copy(subtilis_parser_t *p,
+				const subtilis_type_t *type, size_t dest_reg,
+				size_t loc, size_t src_reg,
+				subtilis_error_t *err);
 void subtilis_rec_type_copy(subtilis_parser_t *p, const subtilis_type_t *type,
 			    size_t dest_reg, size_t loc, size_t src_reg,
 			    subtilis_error_t *err);

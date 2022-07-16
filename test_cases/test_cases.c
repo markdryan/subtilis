@@ -5505,6 +5505,52 @@ const subtilis_test_case_t test_cases[] = {
 	"endrange\n",
 	"0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
 	},
+	{"range_global_empty_slice",
+	"dim a{1}\n"
+	"range x = a{0:0}\n"
+	"  print x\n"
+	"endrange\n"
+	"print x\n",
+	"0\n",
+	},
+	{"range_rec_local_new",
+	"type RECscalar (\n"
+	"     a%\n"
+	"     b\n"
+	")\n"
+	"\n"
+	"dim a@RECscalar(1)\n"
+	"for i% := 0 to dim(a@RECscalar(), 1)\n"
+	"    a@RECscalar(i%).a% = 1 * (i% + 1)\n"
+	"    a@RECscalar(i%).b = 2 * (i% + 1)\n"
+	"next\n"
+	"\n"
+	"range v@RECscalar := a@RECscalar()\n"
+	"    print v@RECscalar.a%\n"
+	"    print v@RECscalar.b\n"
+	 "endrange\n",
+	 "1\n2\n2\n4\n",
+	},
+	{"range_rec_global_new",
+	"type RECscalar (\n"
+	"     a%\n"
+	"     b\n"
+	")\n"
+	"\n"
+	"dim a@RECscalar(1)\n"
+	"for i% := 0 to dim(a@RECscalar(), 1)\n"
+	"    a@RECscalar(i%).a% = 1 * (i% + 1)\n"
+	"    a@RECscalar(i%).b = 2 * (i% + 1)\n"
+	"next\n"
+	"\n"
+	"range v@RECscalar = a@RECscalar()\n"
+	"    print v@RECscalar.a%\n"
+	"    print v@RECscalar.b\n"
+	 "endrange\n"
+	"print v@RECscalar.a%\n"
+	"print v@RECscalar.b\n",
+	 "1\n2\n2\n4\n2\n4\n",
+	},
 };
 
 /* clang-format on */

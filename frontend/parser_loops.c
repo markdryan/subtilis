@@ -24,6 +24,7 @@
 #include "parser_error.h"
 #include "parser_exp.h"
 #include "parser_loops.h"
+#include "rec_type.h"
 #include "reference_type.h"
 #include "type_if.h"
 
@@ -1245,6 +1246,22 @@ static void prv_assign_range_var(subtilis_parser_t *p,
 {
 	subtilis_exp_t *val;
 
+	if (var->for_ctx.type.type == SUBTILIS_TYPE_REC) {
+		if (new_locals)
+			/*
+			 * Special handling for RECs.  We just memcpy.
+			 */
+
+			subtilis_rec_type_tmp_copy(
+			    p, &var->for_ctx.type, var->for_ctx.reg,
+			    var->for_ctx.loc, ptr.reg, err);
+		else
+			subtilis_rec_type_copy(p, &var->for_ctx.type,
+					       var->for_ctx.reg,
+					       var->for_ctx.loc, ptr.reg, err);
+		return;
+	}
+
 	val = subtilis_type_if_load_from_mem(p, &var->for_ctx.type, ptr.reg, 0,
 					     err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1507,6 +1524,7 @@ static void prv_init_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	subtilis_ir_operand_t op1;
 	const subtilis_symbol_t *s;
+	subtilis_exp_t *e;
 	bool new_global = false;
 
 	subtilis_parser_lookup_assignment_var(p, t, var_name, &s, &op1.reg,
@@ -1515,22 +1533,41 @@ static void prv_init_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 
 	if (new_global) {
-		s = subtilis_symbol_table_insert(p->st, var_name, type, err);
+		if ((type->type == SUBTILIS_TYPE_REC) ||
+		    (type->type == SUBTILIS_TYPE_FN))
+			subtilis_complete_custom_type(p, var_name,
+						      &for_ctx->type, err);
+		else
+			subtilis_type_copy(&for_ctx->type, type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		if (type->type == SUBTILIS_TYPE_REC) {
-			subtilis_error_set_assertion_failed(err);
+
+		s = subtilis_symbol_table_insert(p->st, var_name,
+						 &for_ctx->type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		} else if (!subtilis_type_if_is_numeric(type)) {
-			subtilis_type_if_zero_ref(
-			    p, type, SUBTILIS_IR_REG_GLOBAL, s->loc, true, err);
+		if (type->type == SUBTILIS_TYPE_REC)
+			subtilis_rec_type_zero(p, &for_ctx->type,
+					       SUBTILIS_IR_REG_GLOBAL, s->loc,
+					       true, err);
+		else if (subtilis_type_if_is_numeric(&for_ctx->type) ||
+			 for_ctx->type.type == SUBTILIS_TYPE_FN) {
+			e = subtilis_type_if_zero(p, &for_ctx->type, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-		}
+			subtilis_type_if_assign_to_mem(
+			    p, SUBTILIS_IR_REG_GLOBAL, s->loc, e, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		} else if (!subtilis_type_if_is_numeric(&for_ctx->type))
+			subtilis_type_if_zero_ref(p, &for_ctx->type,
+						  SUBTILIS_IR_REG_GLOBAL,
+						  s->loc, true, err);
+	} else {
+		subtilis_type_copy(&for_ctx->type, &s->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 	}
-	subtilis_type_copy(&for_ctx->type, &s->t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 
 	for_ctx->is_reg = s->is_reg;
 	for_ctx->reg = op1.reg;
@@ -1572,20 +1609,39 @@ static void prv_init_local_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 		    p->local_st, var_name, &for_ctx->type, for_ctx->loc, err);
 		return;
 	} else if (type->type == SUBTILIS_TYPE_REC) {
-		subtilis_error_set_assertion_failed(err);
-		return;
+		/*
+		 * TODO: So this isn't ideal.  The range loop value
+		 * variable has copy semantics, so we need to
+		 * allocate a block of memory large enough to copy the
+		 * loop variable.  We only really need to do this
+		 * if we know that the range variable will be modified.
+		 */
+
+		subtilis_complete_custom_type(p, var_name, &for_ctx->type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		(void)subtilis_symbol_table_insert_no_rc(p->local_st, var_name,
+							 &for_ctx->type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		subtilis_type_copy(&for_ctx->type, type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 	}
+
+	/*
+	 * There's no need to initialise the range var as its lifetime is
+	 * restricted to the lifetime of the loop and it's value will be
+	 * set during the first iteration.
+	 */
 
 	s = subtilis_symbol_table_insert_no_rc(p->local_st, var_name, type,
 					       err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	subtilis_type_if_zero_ref(p, type, SUBTILIS_IR_REG_LOCAL, s->loc, false,
-				  err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 	for_ctx->is_reg = s->is_reg;
-	for_ctx->type = s->t;
 	for_ctx->reg = SUBTILIS_IR_REG_LOCAL;
 	for_ctx->loc = s->loc;
 }

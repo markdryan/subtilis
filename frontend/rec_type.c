@@ -276,35 +276,54 @@ void subtilis_type_rec_copy_ref(subtilis_parser_t *p,
 	}
 }
 
+static void prv_memcpy_struct(subtilis_parser_t *p, const subtilis_type_t *type,
+			      size_t dest_reg, size_t loc, size_t src_reg,
+			      subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op;
+	size_t size_reg;
+
+	dest_reg = subtilis_reference_get_pointer(p, dest_reg, loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	op.integer = subtilis_type_rec_size(type);
+	size_reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_reference_type_memcpy_dest(p, dest_reg, src_reg, size_reg,
+					    err);
+}
+
+void subtilis_rec_type_tmp_copy(subtilis_parser_t *p,
+				const subtilis_type_t *type, size_t dest_reg,
+				size_t loc, size_t src_reg,
+				subtilis_error_t *err)
+{
+	if (subtilis_type_rec_is_scalar(type) &&
+	    subtilis_type_rec_zero_fill_size(type) <= 16)
+		subtilis_type_rec_copy_ref(p, type, dest_reg, loc, src_reg,
+					   err);
+	else
+		prv_memcpy_struct(p, type, dest_reg, loc, src_reg, err);
+}
+
 void subtilis_rec_type_copy(subtilis_parser_t *p, const subtilis_type_t *type,
 			    size_t dest_reg, size_t loc, size_t src_reg,
 			    subtilis_error_t *err)
 {
-	size_t size_reg;
-	subtilis_ir_operand_t op;
 	size_t zfs;
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t op2;
 
-	if (subtilis_type_rec_is_scalar(type) &&
-	    (subtilis_type_rec_zero_fill_size(type) > 16)) {
-		dest_reg =
-		    subtilis_reference_get_pointer(p, dest_reg, loc, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-
-		op.integer = subtilis_type_rec_size(type);
-		size_reg = subtilis_ir_section_add_instr2(
-		    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-
-		subtilis_reference_type_memcpy_dest(p, dest_reg, src_reg,
-						    size_reg, err);
+	zfs = subtilis_type_rec_zero_fill_size(type);
+	if (subtilis_type_rec_is_scalar(type) && (zfs > 16)) {
+		prv_memcpy_struct(p, type, dest_reg, loc, src_reg, err);
 		return;
 	}
 
-	zfs = subtilis_type_rec_zero_fill_size(type);
 	if (subtilis_type_rec_size(type) - zfs < 16) {
 		subtilis_type_rec_copy_ref(p, type, dest_reg, loc, src_reg,
 					   err);
