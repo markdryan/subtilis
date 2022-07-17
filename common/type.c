@@ -21,9 +21,9 @@
 
 #define SUBTILIS_FIELD_GRANULARITY 16
 
-static void prv_fn_type_name(const subtilis_type_t *typ, subtilis_buffer_t *buf,
-			     subtilis_error_t *err);
-static void prv_rec_type_name(const subtilis_type_t *typ,
+static void prv_fn_type_name(const subtilis_type_fn_t *fn_type,
+			     subtilis_buffer_t *buf, subtilis_error_t *err);
+static void prv_rec_type_name(const subtilis_type_rec_t *rec_type,
 			      subtilis_buffer_t *buf, subtilis_error_t *err);
 const subtilis_type_t subtilis_type_const_real = {SUBTILIS_TYPE_CONST_REAL};
 
@@ -315,34 +315,34 @@ static void prv_full_type_name(const subtilis_type_t *typ,
 
 	switch (typ->type) {
 	case SUBTILIS_TYPE_FN:
-		prv_fn_type_name(typ, buf, err);
+		prv_fn_type_name(&typ->params.fn, buf, err);
 		return;
 	case SUBTILIS_TYPE_REC:
-		prv_rec_type_name(typ, buf, err);
+		prv_rec_type_name(&typ->params.rec, buf, err);
 		return;
 	case SUBTILIS_TYPE_ARRAY_FN:
 		subtilis_buffer_append_string(buf, array_of, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		prv_fn_type_name(typ, buf, err);
+		prv_fn_type_name(&typ->params.array.params.fn, buf, err);
 		return;
 	case SUBTILIS_TYPE_VECTOR_FN:
 		subtilis_buffer_append_string(buf, vec_of, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		prv_fn_type_name(typ, buf, err);
+		prv_fn_type_name(&typ->params.array.params.fn, buf, err);
 		return;
 	case SUBTILIS_TYPE_ARRAY_REC:
 		subtilis_buffer_append_string(buf, array_of, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		prv_rec_type_name(typ, buf, err);
+		prv_rec_type_name(&typ->params.array.params.rec, buf, err);
 		return;
 	case SUBTILIS_TYPE_VECTOR_REC:
 		subtilis_buffer_append_string(buf, vec_of, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		prv_rec_type_name(typ, buf, err);
+		prv_rec_type_name(&typ->params.array.params.rec, buf, err);
 		return;
 	default:
 		break;
@@ -351,11 +351,10 @@ static void prv_full_type_name(const subtilis_type_t *typ,
 	subtilis_buffer_append_string(buf, subtilis_type_name(typ), err);
 }
 
-static void prv_fn_type_name(const subtilis_type_t *typ, subtilis_buffer_t *buf,
-			     subtilis_error_t *err)
+static void prv_fn_type_name(const subtilis_type_fn_t *fn_type,
+			     subtilis_buffer_t *buf, subtilis_error_t *err)
 {
 	size_t i;
-	const subtilis_type_fn_t *fn_type = &typ->params.fn;
 
 	if (fn_type->ret_val) {
 		subtilis_buffer_append_string(buf, "FN", err);
@@ -384,11 +383,10 @@ static void prv_fn_type_name(const subtilis_type_t *typ, subtilis_buffer_t *buf,
 	subtilis_buffer_append_string(buf, ")", err);
 }
 
-static void prv_rec_type_name(const subtilis_type_t *typ,
+static void prv_rec_type_name(const subtilis_type_rec_t *rec_type,
 			      subtilis_buffer_t *buf, subtilis_error_t *err)
 {
 	size_t i;
-	const subtilis_type_rec_t *rec_type = &typ->params.rec;
 
 	subtilis_buffer_append_string(buf, rec_type->name, err);
 	if (err->type != SUBTILIS_ERROR_OK)
