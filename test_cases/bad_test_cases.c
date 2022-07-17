@@ -1025,6 +1025,23 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	 "a@PROCfn() = a@PROCfn2()\n",
 	 SUBTILIS_ERROR_FN_TYPE_MISMATCH,
 	},
+	{"bad_range_rec_type",
+	"type RECscalar (\n"
+	"     a%\n"
+	"     b\n"
+	")\n"
+	"type RECscalar2 (\n"
+	"     z\n"
+	"     f\n"
+	")\n"
+	"\n"
+	"dim a@RECscalar(1)\n"
+	"range v@RECscalar2 = a@RECscalar()\n"
+	"    print v@RECscalar2.a%\n"
+	"    print v@RECscalar2.b\n"
+	"endrange\n",
+	SUBTILIS_ERROR_RANGE_TYPE_MISMATCH,
+	},
 };
 
 /* clang-format on */

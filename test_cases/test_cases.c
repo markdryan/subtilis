@@ -5546,10 +5546,30 @@ const subtilis_test_case_t test_cases[] = {
 	"range v@RECscalar = a@RECscalar()\n"
 	"    print v@RECscalar.a%\n"
 	"    print v@RECscalar.b\n"
-	 "endrange\n"
+	"endrange\n"
 	"print v@RECscalar.a%\n"
 	"print v@RECscalar.b\n",
 	 "1\n2\n2\n4\n2\n4\n",
+	},
+	{"range_tilde_global",
+	 "dim b%(4)\n"
+	"range ~, a% = b%()\n"
+	"    print a%\n"
+	"endrange\n",
+	"0\n1\n2\n3\n4\n",
+	},
+	{"range_tilde_local",
+	"type RECel (\n"
+	"     a$\n"
+	"     b%\n"
+	"     d\n"
+	"     dim c(10)\n"
+	")\n"
+	"dim a@RECel(4)\n"
+	"range v@RECel, i% := a@RECel()\n"
+	"  print a@RECel(i%).b%\n"
+	"endrange\n",
+	"0\n0\n0\n0\n0\n",
 	},
 };
 

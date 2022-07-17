@@ -1764,13 +1764,13 @@ The RANGE keyword introduces a new convenience looping construct for iterating t
 of an array or a vector.  The syntax is
 
 ```
-range [local] var [,index]* [:=|=] array or vector
+range [local] (var|~) [,index]* (:=|=) array or vector
 endrange
 ```
 
 *array or vector* is an array or vector reference.  It can be of any type and any dimension.
 *var* is a variable.  Its type must match the element type of the *array or vector*.  It must
-be a scalar variable, e.g., a% or b$.  It cannot be an element of an array or vector, e.g., a$(0).
+cannot be an element of an array or vector, e.g., a$(0).
 The *var* variable can be followed by one or more optional *index* variables.  They do not need to
 be present, but if they are, the number of index variables provided must match the number of
 dimensions of the *array or vector*.
@@ -1796,6 +1796,28 @@ This code will print
 4, 3
 5, 4
 6, 5
+```
+
+A '~' can be specified in place of the var variable.  This signifies to the compiler that we want
+to execute the loop body once for each element in the collection, but that we don't actually care
+about the elements in the collection.  Using the ~ in place of a variable name allows the compiler
+to generate more efficient code as it doesn't need to generate code to copy an element out of a
+collection into a variable that won't be used.  For example,
+
+```
+dim b%(3)
+range ~, a% = b%()
+    print a%
+endrange
+```
+
+will print
+
+```
+0
+1
+2
+3
 ```
 
 If the local keyword is provided or the := assigment operator is used, then new local variables will be
