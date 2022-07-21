@@ -1050,6 +1050,22 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"b@PROCMark = a@RECmixed(0).b@PROCMark(\" everyone in\")\n",
 	SUBTILIS_ERROR_EXPECTED,
 	},
+	{"bad_type_rec_proc_assign",
+	"type PROCMark\n"
+	"type RECmixed ( b@PROCMark )\n"
+	"dim a@RECmixed(1)\n"
+	"a@RECmixed(0).b@PROCMark = \n"
+	"  def PROC(a$) print \"Hello\" + a$ endproc\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+	{"bad_type_rec_proc_assign_partial",
+	"type PROCMark\n"
+	"type RECmixed ( b@PROCMark )\n"
+	"dim a@RECmixed(1)\n"
+	"a@RECmixed(0).b@PROCMark = !PROClater\n"
+	"def PROClater(a$) endproc\n",
+	SUBTILIS_ERROR_BAD_ARG_COUNT,
+	},
 };
 
 /* clang-format on */

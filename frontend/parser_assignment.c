@@ -709,6 +709,13 @@ static void prv_assign_fn_field(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	if (e->partial_name)
+		subtilis_parser_call_add_addr(p, type, e, err);
+	else
+		e = subtilis_type_if_coerce_type(p, e, type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	subtilis_type_if_assign_to_mem(p, reg, loc, e, err);
 }
 
