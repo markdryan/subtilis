@@ -260,6 +260,12 @@ static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,
 		    !strcmp(tbuf, "(")) {
 			e1 = subtilis_parser_call_known_ptr(
 			    p, t, &e->type, e->exp.ir_op.reg, err);
+			if ((err->type == SUBTILIS_ERROR_OK) && !e1) {
+				subtilis_error_set_expected(
+					err, "function", "procedure",
+					p->l->stream->name, p->l->line);
+				goto cleanup;
+			}
 		} else if ((e->type.type == SUBTILIS_TYPE_REC) &&
 			   (t->type == SUBTILIS_TOKEN_OPERATOR) &&
 			   !strcmp(tbuf, ".")) {

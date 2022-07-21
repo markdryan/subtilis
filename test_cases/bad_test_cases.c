@@ -1042,6 +1042,14 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"endrange\n",
 	SUBTILIS_ERROR_RANGE_TYPE_MISMATCH,
 	},
+	{"bad_rec_proc_assign",
+	"type PROCMark(a$)\n"
+	"type RECmixed ( b@PROCMark )\n"
+	"dim a@RECmixed(1)\n"
+	"a@RECmixed(0).b@PROCMark = def PROC(a$) print \"Hello\" + a$ endproc\n"
+	"b@PROCMark = a@RECmixed(0).b@PROCMark(\" everyone in\")\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
 };
 
 /* clang-format on */
