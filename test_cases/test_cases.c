@@ -5571,6 +5571,21 @@ const subtilis_test_case_t test_cases[] = {
 	"endrange\n",
 	"0\n0\n0\n0\n0\n",
 	},
+	{"rec_proc_field_call",
+	"type PROCMark(a%, b%)\n"
+	"type RECmixed ( b@PROCMark )\n"
+	"dim a@RECmixed(1)\n"
+	"a@RECmixed(0).b@PROCMark = def PROC(a%, b%) print a% + b% endproc\n"
+	"a@RECmixed(0).b@PROCMark(10, 11)\n",
+	"21\n",
+	},
+	{"array_proc_call",
+	"type PROCMark\n"
+	"dim a@PROCMark(1)\n"
+	"a@PROCMark(0) = def PROC print \"Hello\" endproc\n"
+	"a@PROCMark(0)()\n",
+	"Hello\n",
+	},
 };
 
 /* clang-format on */

@@ -254,6 +254,25 @@ static void prv_assign_array_or_vector(subtilis_parser_t *p,
 		goto cleanup;
 	}
 
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "(")) {
+		/*
+		 * We have a procedure call, and not an assignment.
+		 */
+
+		s = subtilis_parser_get_symbol(p, var_name, &op1.reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		e = subtilis_type_if_indexed_read(p, var_name, &s->t,
+						  op1.reg, s->loc, indices,
+						  dims, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		(void) subtilis_parser_call_known_ptr(p, t, &e->type,
+						      e->exp.ir_op.reg, err);
+		goto cleanup;
+	}
+
 	at = prv_get_ass_op(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		prv_missing_operator_error(p, tbuf, var_name, err);
@@ -698,6 +717,21 @@ static void prv_assign_fn_field(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	subtilis_exp_t *e;
 	const char *tbuf = subtilis_token_get_text(t);
+
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "(")) {
+		/*
+		 * We have a procedure call, and not an assignment.
+		 */
+
+		e = subtilis_type_if_load_from_mem(p, type, reg, loc, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		(void) subtilis_parser_call_known_ptr(p, t, type,
+						      e->exp.ir_op.reg, err);
+		subtilis_exp_delete(e);
+		return;
+	}
 
 	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, "=")) {
 		subtilis_error_set_assignment_op_expected(
