@@ -1066,6 +1066,13 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"def PROClater(a$) endproc\n",
 	SUBTILIS_ERROR_BAD_ARG_COUNT,
 	},
+	{"bad_rec_type_init",
+	"type RECmixed ( a% b% )\n"
+	"local c@RECmixed = (10, 11)\n"
+	"local d@RECmixed = 1.11\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+
 };
 
 /* clang-format on */

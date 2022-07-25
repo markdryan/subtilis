@@ -415,9 +415,17 @@ static void prv_rec_init(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_exp_t *e;
 
 	tbuf = subtilis_token_get_text(t);
-	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, "(")) {
-		subtilis_error_set_expected(err, "(", tbuf, p->l->stream->name,
-					    p->l->line);
+	if (!((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "("))) {
+		e = subtilis_parser_priority7(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		e = subtilis_type_if_coerce_type(p, e, type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_rec_type_copy(p, type, mem_reg, loc, e->exp.ir_op.reg,
+				       true, err);
 		return;
 	}
 

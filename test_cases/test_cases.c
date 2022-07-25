@@ -5598,6 +5598,14 @@ const subtilis_test_case_t test_cases[] = {
 	"endrange\n",
 	"0\n0\n0\n1\n2\n3\n",
 	},
+	{"rec_init_copy",
+	"type RECmixed ( a% b% )\n"
+	"local c@RECmixed = (10, 11)\n"
+	"local d@RECmixed = c@RECmixed\n"
+	"print d@RECmixed.a%\n"
+	"print d@RECmixed.b%\n",
+	"10\n11\n",
+	},
 };
 
 /* clang-format on */
