@@ -42,6 +42,12 @@ static subtilis_exp_t *prv_call_ptr(subtilis_parser_t *p,
 	return NULL;
 }
 
+static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
+				      subtilis_error_t *err)
+{
+	return e;
+}
+
 static void prv_ret(subtilis_parser_t *p, size_t reg, subtilis_error_t *err)
 {
 	subtilis_ir_operand_t ret_reg;
@@ -82,7 +88,7 @@ static void prv_assign_to_mem(subtilis_parser_t *p, size_t mem_reg, size_t loc,
 			      subtilis_exp_t *e, subtilis_error_t *err)
 {
 	subtilis_rec_type_copy(p, &e->type, mem_reg, loc, e->exp.ir_op.reg,
-			       err);
+			       false, err);
 	subtilis_exp_delete(e);
 }
 
@@ -90,7 +96,9 @@ static void prv_assign_to_new_mem(subtilis_parser_t *p, size_t mem_reg,
 				  size_t loc, subtilis_exp_t *e,
 				  subtilis_error_t *err)
 {
-	subtilis_error_set_assertion_failed(err);
+	subtilis_rec_type_copy(p, &e->type, mem_reg, loc, e->exp.ir_op.reg,
+			       true, err);
+	subtilis_exp_delete(e);
 }
 
 static void prv_dup(subtilis_exp_t *e1, subtilis_exp_t *e2,
@@ -197,7 +205,7 @@ subtilis_type_if subtilis_type_rec = {
 	.array_of = prv_array_of,
 	.vector_of = prv_vector_of,
 	.element_type = NULL,
-	.exp_to_var = NULL,
+	.exp_to_var = prv_exp_to_var,
 	.copy_var = NULL,
 	.dup = prv_dup,
 	.copy_col = prv_copy_col,

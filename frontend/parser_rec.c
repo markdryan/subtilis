@@ -302,6 +302,8 @@ subtilis_exp_t *subtilis_parser_rec_exp(subtilis_parser_t *p,
 	     field_type->type == SUBTILIS_TYPE_FN)) {
 		e = subtilis_type_if_load_from_mem(p, field_type, mem_reg, loc,
 						   err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
 		subtilis_lexer_get(p->l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
@@ -311,6 +313,8 @@ subtilis_exp_t *subtilis_parser_rec_exp(subtilis_parser_t *p,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return NULL;
 		e = subtilis_exp_new_var(field_type, reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
 		subtilis_lexer_get(p->l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;

@@ -211,7 +211,7 @@ void subtilis_rec_type_zero(subtilis_parser_t *p, const subtilis_type_t *type,
 
 void subtilis_type_rec_copy_ref(subtilis_parser_t *p,
 				const subtilis_type_t *type, size_t dest_reg,
-				size_t loc, size_t src_reg,
+				size_t loc, size_t src_reg, bool new_rec,
 				subtilis_error_t *err)
 {
 	size_t i;
@@ -241,7 +241,8 @@ void subtilis_type_rec_copy_ref(subtilis_parser_t *p,
 				return;
 
 			subtilis_rec_type_copy(p, field_type, dest_reg,
-					       loc + offset, ptr_reg, err);
+					       loc + offset, ptr_reg, new_rec,
+					       err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 		} else if (subtilis_type_if_is_reference(field_type)) {
@@ -252,8 +253,16 @@ void subtilis_type_rec_copy_ref(subtilis_parser_t *p,
 			e = subtilis_exp_new_var(field_type, ptr_reg, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-			subtilis_type_if_assign_ref(p, field_type, dest_reg,
-						    loc + offset, e, err);
+			if (new_rec) {
+				subtilis_reference_type_init_ref(
+				    p, dest_reg, loc + offset, e->exp.ir_op.reg,
+				    true, true, err);
+				subtilis_exp_delete(e);
+			} else {
+				subtilis_type_if_assign_ref(
+				    p, field_type, dest_reg, loc + offset, e,
+				    err);
+			}
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 		} else if (field_type->type == SUBTILIS_TYPE_FN ||
@@ -305,14 +314,14 @@ void subtilis_rec_type_tmp_copy(subtilis_parser_t *p,
 	if (subtilis_type_rec_is_scalar(type) &&
 	    subtilis_type_rec_zero_fill_size(type) <= 16)
 		subtilis_type_rec_copy_ref(p, type, dest_reg, loc, src_reg,
-					   err);
+					   true, err);
 	else
 		prv_memcpy_struct(p, type, dest_reg, loc, src_reg, err);
 }
 
 void subtilis_rec_type_copy(subtilis_parser_t *p, const subtilis_type_t *type,
 			    size_t dest_reg, size_t loc, size_t src_reg,
-			    subtilis_error_t *err)
+			    bool new_rec, subtilis_error_t *err)
 {
 	size_t zfs;
 	subtilis_ir_operand_t op1;
@@ -326,7 +335,7 @@ void subtilis_rec_type_copy(subtilis_parser_t *p, const subtilis_type_t *type,
 
 	if (subtilis_type_rec_size(type) - zfs < 16) {
 		subtilis_type_rec_copy_ref(p, type, dest_reg, loc, src_reg,
-					   err);
+					   new_rec, err);
 	} else {
 		op1.reg = dest_reg;
 		op2.integer = loc;
@@ -334,7 +343,8 @@ void subtilis_rec_type_copy(subtilis_parser_t *p, const subtilis_type_t *type,
 		    p->current, SUBTILIS_OP_INSTR_ADDI_I32, op1, op2, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		subtilis_builtin_ir_rec_copy(p, type, dest_reg, src_reg, err);
+		subtilis_builtin_ir_rec_copy(p, type, dest_reg, src_reg,
+					     new_rec, err);
 	}
 }
 

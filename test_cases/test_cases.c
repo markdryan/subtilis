@@ -5586,6 +5586,18 @@ const subtilis_test_case_t test_cases[] = {
 	"a@PROCMark(0)()\n",
 	"Hello\n",
 	},
+	{"append_rec",
+	"type RECScalar (a% b c&)\n"
+	"dim a@RECScalar{0}\n"
+	"local b@RECScalar = ( 1, 2, 3 )\n"
+	"append(a@RECScalar{}, b@RECScalar)\n"
+	"range ~, i% := a@RECScalar{}\n"
+	"  print a@RECScalar{i%}.a%\n"
+	"  print a@RECScalar{i%}.b\n"
+	"  print a@RECScalar{i%}.c&\n"
+	"endrange\n",
+	"0\n0\n0\n1\n2\n3\n",
+	},
 };
 
 /* clang-format on */

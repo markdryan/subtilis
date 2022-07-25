@@ -1297,9 +1297,9 @@ static void prv_assign_range_var(subtilis_parser_t *p,
 			    p, &var->for_ctx.type, var->for_ctx.reg,
 			    var->for_ctx.loc, ptr.reg, err);
 		else
-			subtilis_rec_type_copy(p, &var->for_ctx.type,
-					       var->for_ctx.reg,
-					       var->for_ctx.loc, ptr.reg, err);
+			subtilis_rec_type_copy(
+			    p, &var->for_ctx.type, var->for_ctx.reg,
+			    var->for_ctx.loc, ptr.reg, false, err);
 		return;
 	}
 

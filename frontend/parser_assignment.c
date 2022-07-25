@@ -263,13 +263,12 @@ static void prv_assign_array_or_vector(subtilis_parser_t *p,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		e = subtilis_type_if_indexed_read(p, var_name, &s->t,
-						  op1.reg, s->loc, indices,
-						  dims, err);
+		e = subtilis_type_if_indexed_read(p, var_name, &s->t, op1.reg,
+						  s->loc, indices, dims, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		(void) subtilis_parser_call_known_ptr(p, t, &e->type,
-						      e->exp.ir_op.reg, err);
+		(void)subtilis_parser_call_known_ptr(p, t, &e->type,
+						     e->exp.ir_op.reg, err);
 		goto cleanup;
 	}
 
@@ -727,8 +726,8 @@ static void prv_assign_fn_field(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
-		(void) subtilis_parser_call_known_ptr(p, t, type,
-						      e->exp.ir_op.reg, err);
+		(void)subtilis_parser_call_known_ptr(p, t, type,
+						     e->exp.ir_op.reg, err);
 		subtilis_exp_delete(e);
 		return;
 	}

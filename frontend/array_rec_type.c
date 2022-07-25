@@ -288,8 +288,12 @@ prv_indexed_address(subtilis_parser_t *p, const char *var_name,
 static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
 		       subtilis_exp_t *a2, subtilis_error_t *err)
 {
-	subtilis_error_set_assertion_failed(err);
+	if (a2->type.type == SUBTILIS_TYPE_REC) {
+		subtilis_array_append_scalar(p, a1, a2, err);
+		return;
+	}
 
+	subtilis_error_set_assertion_failed(err);
 	subtilis_exp_delete(a2);
 	subtilis_exp_delete(a1);
 }

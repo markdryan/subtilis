@@ -98,6 +98,7 @@ void subtilis_builtin_ir_rec_zero(subtilis_parser_t *p,
 				  subtilis_error_t *err);
 void subtilis_builtin_ir_rec_copy(subtilis_parser_t *p,
 				  const subtilis_type_t *type, size_t dest_reg,
-				  size_t src_reg, subtilis_error_t *err);
+				  size_t src_reg, bool new_rec,
+				  subtilis_error_t *err);
 
 #endif

@@ -2387,7 +2387,7 @@ void subtilis_array_type_copy_els(subtilis_parser_t *p,
 	if (el_type->type == SUBTILIS_TYPE_REC) {
 		if (deref) {
 			subtilis_builtin_ir_rec_copy(p, el_type, counter.reg,
-						     counter2.reg, err);
+						     counter2.reg, false, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 		} else {
@@ -2571,7 +2571,7 @@ static void prv_check_arrays_compat(subtilis_parser_t *p,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
-		if (el_type->type != el_type2.type)
+		if (!subtilis_type_eq(el_type, &el_type2))
 			subtilis_error_set_array_type_mismatch(
 			    err, p->l->stream->name, p->l->line);
 

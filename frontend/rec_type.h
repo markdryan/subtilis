@@ -28,7 +28,7 @@ void subtilis_rec_type_zero_body(subtilis_parser_t *p,
 				 subtilis_error_t *err);
 void subtilis_type_rec_copy_ref(subtilis_parser_t *p,
 				const subtilis_type_t *type, size_t dest_reg,
-				size_t loc, size_t src_reg,
+				size_t loc, size_t src_reg, bool new_rec,
 				subtilis_error_t *err);
 
 /*
@@ -42,7 +42,7 @@ void subtilis_rec_type_tmp_copy(subtilis_parser_t *p,
 				subtilis_error_t *err);
 void subtilis_rec_type_copy(subtilis_parser_t *p, const subtilis_type_t *type,
 			    size_t dest_reg, size_t loc, size_t src_reg,
-			    subtilis_error_t *err);
+			    bool new_rec, subtilis_error_t *err);
 void subtilis_rec_type_init_array(subtilis_parser_t *p,
 				  const subtilis_type_t *type,
 				  const char *var_name, size_t mem_reg,

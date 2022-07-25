@@ -1054,7 +1054,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"type PROCMark\n"
 	"type RECmixed ( b@PROCMark )\n"
 	"dim a@RECmixed(1)\n"
-	"a@RECmixed(0).b@PROCMark = \n"
+	"a@RECmixed(0).b@PROCMark =\n"
 	"  def PROC(a$) print \"Hello\" + a$ endproc\n",
 	SUBTILIS_ERROR_BAD_CONVERSION,
 	},

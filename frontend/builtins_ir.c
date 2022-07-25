@@ -2944,7 +2944,7 @@ cleanup:
 static void prv_builtins_ir_gen_rec_copy(subtilis_parser_t *p,
 					 const subtilis_type_t *type,
 					 subtilis_ir_section_t *current,
-					 subtilis_error_t *err)
+					 bool new_rec, subtilis_error_t *err)
 {
 	subtilis_ir_section_t *old_current;
 
@@ -2953,7 +2953,7 @@ static void prv_builtins_ir_gen_rec_copy(subtilis_parser_t *p,
 
 	subtilis_type_rec_copy_ref(p, type, SUBTILIS_IR_REG_TEMP_START,
 				   0, SUBTILIS_IR_REG_TEMP_START + 1,
-				   err);
+				   new_rec, err);
 
 	subtilis_ir_section_add_label(p->current, p->current->end_label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -3375,12 +3375,26 @@ cleanup:
 void subtilis_builtin_ir_rec_copy(subtilis_parser_t *p,
 				  const subtilis_type_t *type,
 				  size_t dest_reg, size_t src_reg,
-				  subtilis_error_t *err)
+				  bool new_rec, subtilis_error_t *err)
 {
 	subtilis_ir_section_t *fn;
 	const subtilis_type_t *ptype[2];
-	const char * const copy = "_copy";
+	const char *copy = "_copy";
 	char *name;
+
+	if (subtilis_type_rec_need_deref(type) && new_rec)
+		/*
+		 * Then we want to do an init rather than a copy.
+		 * As these are two different actions we'll need
+		 * separate functions with different names.
+		 */
+
+		copy = "_new";
+
+	/*
+	 * If new_rec is true but the structure contains no references
+	 * we can just leave it set to true as it will be ignored.
+	 */
 
 	name = malloc(strlen(type->params.rec.name) + strlen(copy)
 		      + 1 + 1);
@@ -3399,7 +3413,7 @@ void subtilis_builtin_ir_rec_copy(subtilis_parser_t *p,
 			goto cleanup;
 		subtilis_error_init(err);
 	} else {
-		prv_builtins_ir_gen_rec_copy(p, type, fn, err);
+		prv_builtins_ir_gen_rec_copy(p, type, fn, new_rec, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 	}

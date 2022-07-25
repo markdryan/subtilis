@@ -262,8 +262,8 @@ static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,
 			    p, t, &e->type, e->exp.ir_op.reg, err);
 			if ((err->type == SUBTILIS_ERROR_OK) && !e1) {
 				subtilis_error_set_expected(
-					err, "function", "procedure",
-					p->l->stream->name, p->l->line);
+				    err, "function", "procedure",
+				    p->l->stream->name, p->l->line);
 				goto cleanup;
 			}
 		} else if ((e->type.type == SUBTILIS_TYPE_REC) &&
