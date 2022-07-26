@@ -242,6 +242,8 @@ static void prv_assign_array_or_vector(subtilis_parser_t *p,
 	subtilis_exp_t *e = NULL;
 	bool new_global = false;
 	bool local;
+	subtilis_type_t el_type;
+	char scratch[32];
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -285,10 +287,6 @@ static void prv_assign_array_or_vector(subtilis_parser_t *p,
 		goto cleanup;
 	}
 
-	e = subtilis_parser_expression(p, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
 	subtilis_parser_lookup_assignment_var(p, t, var_name, &s, &op1.reg,
 					      &new_global, err);
 	if (err->type == SUBTILIS_ERROR_UNKNOWN_VARIABLE ||
@@ -296,12 +294,52 @@ static void prv_assign_array_or_vector(subtilis_parser_t *p,
 		if (at != SUBTILIS_ASSIGN_TYPE_CREATE_EQUAL)
 			goto cleanup;
 		subtilis_error_init(err);
+		if (dims != 0) {
+			sprintf(scratch, "%zu", dims);
+			subtilis_error_bad_index(
+			    err, scratch, p->l->stream->name, p->l->line);
+			goto cleanup;
+		}
+		e = subtilis_parser_expression(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
 		subtilis_parser_create_array_ref(p, var_name, array_type, e,
 						 true, err);
 		return;
 	} else if (err->type != SUBTILIS_ERROR_OK) {
 		goto cleanup;
-	} else if (new_global) {
+	}
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	/*
+	 * Check to see whether we're resetting a structure.
+	 */
+
+	tbuf = subtilis_token_get_text(t);
+	if (((array_type->type == SUBTILIS_TYPE_ARRAY_REC) ||
+	     (array_type->type == SUBTILIS_TYPE_VECTOR_REC)) &&
+	    (dims > 0) && !strcmp(tbuf, "(")) {
+		e = subtilis_type_if_indexed_address(
+		    p, var_name, &s->t, op1.reg, s->loc, indices, dims, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		subtilis_type_if_element_type(p, &s->t, &el_type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		subtilis_parser_rec_reset(p, t, &el_type, e->exp.ir_op.reg, 0,
+					  err);
+		subtilis_type_free(&el_type);
+		goto cleanup;
+	}
+
+	e = subtilis_parser_priority7(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (new_global) {
 		if (dims != 0) {
 			subtilis_error_set_unknown_variable(
 			    err, var_name, p->l->stream->name, p->l->line);
@@ -944,7 +982,7 @@ static void prv_assign_field(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	/*
-	 * Otherwise it's a numeric value.
+	 * Otherwise it's a numeric value or a REC
 	 */
 
 	at = prv_get_ass_op(p, t, err);
@@ -957,7 +995,17 @@ static void prv_assign_field(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 	}
 
-	e = subtilis_parser_expression(p, t, err);
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((type->type == SUBTILIS_TYPE_REC) && !strcmp(tbuf, "(")) {
+		subtilis_parser_rec_reset(p, t, type, reg, offset, err);
+		return;
+	}
+
+	e = subtilis_parser_priority7(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1079,7 +1127,18 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 		}
 	}
 
-	e = subtilis_parser_expression(p, t, err);
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((type.type == SUBTILIS_TYPE_REC) &&
+	    (at == SUBTILIS_ASSIGN_TYPE_EQUAL) && !strcmp(tbuf, "(")) {
+		subtilis_parser_rec_reset(p, t, &type, op1.reg, s->loc, err);
+		goto cleanup;
+	}
+
+	e = subtilis_parser_priority7(p, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

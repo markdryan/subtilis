@@ -1339,6 +1339,28 @@ cleanup:
 	subtilis_exp_delete(e);
 }
 
+void subtilis_array_type_reset_field(subtilis_parser_t *p,
+				     const subtilis_type_t *type,
+				     size_t mem_reg, size_t loc,
+				     subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t dest_reg;
+	subtilis_ir_operand_t source_reg;
+
+	dest_reg.reg = mem_reg;
+	source_reg.reg = e->exp.ir_op.reg;
+
+	subtilis_array_type_match(p, type, &e->type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_array_type_assign_ref(p, type, mem_reg, loc, e->exp.ir_op.reg,
+				       err);
+cleanup:
+
+	subtilis_exp_delete(e);
+}
+
 void subtlis_array_type_copy_ret(subtilis_parser_t *p, const subtilis_type_t *t,
 				 size_t dest_reg, size_t source_reg,
 				 subtilis_error_t *err)

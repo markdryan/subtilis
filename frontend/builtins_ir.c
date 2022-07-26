@@ -3296,18 +3296,14 @@ size_t subtilis_builtin_ir_call_deref(subtilis_parser_t *p,
 	return call_index;
 }
 
-size_t subtilis_builtin_ir_rec_deref(subtilis_parser_t *p,
-				     const subtilis_type_t *type,
-				     subtilis_error_t *err)
+static size_t prv_get_rec_deref_fn(subtilis_parser_t *p,
+				   const char *name,
+				   const subtilis_type_t *type,
+				   subtilis_error_t *err)
 {
 	subtilis_ir_section_t *fn;
 	const subtilis_type_t *ptype[1];
-	size_t call_index;
-	char *name;
-
-	name = subtilis_rec_type_deref_fn_name(type, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
+	size_t call_index = SIZE_MAX;
 
 	ptype[0] = &subtilis_type_integer;
 
@@ -3315,21 +3311,58 @@ size_t subtilis_builtin_ir_rec_deref(subtilis_parser_t *p,
 			     &call_index, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
-			goto on_error;
+			return SIZE_MAX;
 		subtilis_error_init(err);
 	} else {
 		prv_builtins_ir_gen_rec_deref(p, type, fn, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			goto on_error;
+			return SIZE_MAX;
 	}
 
+	return call_index;
+}
+
+size_t subtilis_builtin_ir_rec_deref(subtilis_parser_t *p,
+				     const subtilis_type_t *type,
+				     subtilis_error_t *err)
+{
+	char *name;
+	size_t call_index;
+
+	name = subtilis_rec_type_deref_fn_name(type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	call_index = prv_get_rec_deref_fn(p, name, type, err);
 	free(name);
 	return call_index;
+}
 
-on_error:
+void subtilis_builtin_call_ir_rec_deref(subtilis_parser_t *p,
+					const subtilis_type_t *type,
+					size_t base_reg,
+					subtilis_error_t *err)
+{
+	char *name;
+	const subtilis_type_t *ptype[1];
+
+	ptype[0] = &subtilis_type_integer;
+	name = subtilis_rec_type_deref_fn_name(type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	(void)prv_get_rec_deref_fn(p, name, type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	(void)subtilis_parser_call_1_arg_fn(
+		p, name, base_reg, SUBTILIS_BUILTINS_MAX,
+		SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_void, false,
+		err);
+
+cleanup:
 
 	free(name);
-	return SIZE_MAX;
 }
 
 void subtilis_builtin_ir_rec_zero(subtilis_parser_t *p,

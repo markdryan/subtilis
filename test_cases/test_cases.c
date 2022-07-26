@@ -5606,6 +5606,109 @@ const subtilis_test_case_t test_cases[] = {
 	"print d@RECmixed.b%\n",
 	"10\n11\n",
 	},
+	{"rec_reset",
+	"type RECref ( dim v%{1} )\n"
+	"type RECScalar (\n"
+	"     a%\n"
+	"     b$\n"
+	"     dim c%(1)\n"
+	"     d@RECref\n"
+	")\n"
+	"\n"
+	"local a@RECScalar = ( 10, \"hello\", ( 1, 2), ( (3, 4)))\n"
+	"a@RECScalar = (100, \"goodbye\", ( 10, 20), (( 2 )))\n"
+	"\n"
+	"print a@RECScalar.a%\n"
+	"print a@RECScalar.b$\n"
+	"print a@RECScalar.c%(0)\n"
+	"print a@RECScalar.c%(1)\n"
+	"print a@RECScalar.d@RECref.v%{0}\n"
+	"print a@RECScalar.d@RECref.v%{1}\n"
+	"\n"
+	"a@RECScalar = (100, \"goodbye\", ( 10, 20), ())\n"
+	"print a@RECScalar.d@RECref.v%{0}\n"
+	"print a@RECScalar.d@RECref.v%{1}\n",
+	"100\ngoodbye\n10\n20\n2\n2\n0\n0\n",
+	},
+	{"rec_reset_partial",
+	"type RECref ( dim v%{1} )\n"
+	"type RECScalar (\n"
+	"     dim f(1)\n"
+	"     a%\n"
+	"     b$\n"
+	"     c\n"
+	"     d$\n"
+	"     e@RECref\n"
+	")\n"
+	"\n"
+	"local a@RECScalar = ( ( 7, 8), 10, \"hello\", 3.14, \"ignore me\","
+	"( ( 1, 1 ) ) )\n"
+	"append(a@RECScalar.e@RECref.v%{}, 2)\n"
+	"a@RECScalar = ( (9, 10), 100, \"goodbye\" )\n"
+	"\n"
+	"print a@RECScalar.f(0)\n"
+	"print a@RECScalar.f(1)\n"
+	"print a@RECScalar.a%\n"
+	"print a@RECScalar.b$\n"
+	"print a@RECScalar.c\n"
+	"print a@RECScalar.d$\n"
+	"print dim(a@RECScalar.e@RECref.v%{}, 1)\n"
+	"print a@RECScalar.e@RECref.v%{0}\n"
+	"print a@RECScalar.e@RECref.v%{1}\n",
+	"9\n10\n100\ngoodbye\n0\n\n1\n0\n0\n",
+	},
+	{"array_rec_reset",
+	"type RECScalar ( a% b$ c& )\n"
+	"dim b@RECScalar(2)\n"
+	"b@RECScalar(0) = ( 1, \"hello\", 3 )\n"
+	"b@RECScalar(0) = ( 4, \"goodbye\", 6 )\n"
+	"print b@RECScalar(0).a%\n"
+	"print b@RECScalar(0).b$\n"
+	"print b@RECScalar(0).c&\n",
+	"4\ngoodbye\n6\n",
+	},
+	{"field_rec_reset",
+	"type RECNested (\n"
+	"   a$\n"
+	"   dim b%(1)\n"
+	")\n"
+	"type RECScalar (\n"
+	"     a%\n"
+	"     b\n"
+	"     c&\n"
+	"     d@RECNested\n"
+	")\n"
+	"a@RECScalar := ()\n"
+	"b$ = \"hello\"\n"
+	"dim c%(1)\n"
+	"c%() = 1, 2\n"
+	"a@RECScalar.d@RECNested = (b$, c%())\n"
+	"print a@RECScalar.a%\n"
+	"print a@RECScalar.b\n"
+	"print a@RECScalar.c&\n"
+	"print a@RECScalar.d@RECNested.a$\n"
+	"print a@RECScalar.d@RECNested.b%(0)\n"
+	"print a@RECScalar.d@RECNested.b%(1)\n",
+	"0\n0\n0\nhello\n1\n2\n",
+	},
+	{"rec_empty_reset",
+	"type RECs (\n"
+	"   dim a%(1)\n"
+	"   s$\n"
+	"   b\n"
+	")\n"
+	"\n"
+	"a@RECs = ()\n"
+	"a@RECs.a%() = 1\n"
+	"a@RECs.s$ = \"Subtilis BASIC\"\n"
+	"a@RECs.b = 3.14\n"
+	"a@RECs = ()\n"
+	"print a@RECs.a%(0)\n"
+	"print a@RECs.a%(1)\n"
+	"print a@RECs.s$\n"
+	"print a@RECs.b\n",
+	"0\n0\n\n0\n",
+	},
 };
 
 /* clang-format on */

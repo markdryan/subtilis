@@ -149,6 +149,15 @@ void subtilis_array_type_init_field(subtilis_parser_t *p,
 				    subtilis_error_t *err);
 
 /*
+ * Used to reset an existing array of vector to a new reference.
+ */
+
+void subtilis_array_type_reset_field(subtilis_parser_t *p,
+				     const subtilis_type_t *type,
+				     size_t mem_reg, size_t loc,
+				     subtilis_exp_t *e, subtilis_error_t *err);
+
+/*
  * Initialise a temporary reference on the caller's stack with the
  * contents of an array variable on the callee's stack.  This is called
  * directly after the callee's ret has executed so his stack is still

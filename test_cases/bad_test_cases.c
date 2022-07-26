@@ -1003,12 +1003,6 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	 "local a@RECa2 = ( 10, )\n",
 	 SUBTILIS_ERROR_EXP_EXPECTED,
 	},
-	{"rec_type_dbl_init",
-	 "type RECa2 ( a% x& y a$ dim ar$(1))\n"
-	 "a@RECa2 = ( 10, 2001 )\n"
-	 "a@RECa2 = ( 10, 2001 )\n",
-	 SUBTILIS_ERROR_RIGHT_BKT_EXPECTED,
-	},
 	{"vector_fn_mismatch",
 	 "type PROCfn(a%)\n"
 	 "type PROCfn2(a%, b%)\n"
@@ -1025,7 +1019,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	 "a@PROCfn() = a@PROCfn2()\n",
 	 SUBTILIS_ERROR_FN_TYPE_MISMATCH,
 	},
-	{"bad_range_rec_type",
+	{"range_rec_type",
 	"type RECscalar (\n"
 	"     a%\n"
 	"     b\n"
@@ -1042,7 +1036,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"endrange\n",
 	SUBTILIS_ERROR_RANGE_TYPE_MISMATCH,
 	},
-	{"bad_rec_proc_assign",
+	{"rec_proc_assign",
 	"type PROCMark(a$)\n"
 	"type RECmixed ( b@PROCMark )\n"
 	"dim a@RECmixed(1)\n"
@@ -1050,7 +1044,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"b@PROCMark = a@RECmixed(0).b@PROCMark(\" everyone in\")\n",
 	SUBTILIS_ERROR_EXPECTED,
 	},
-	{"bad_type_rec_proc_assign",
+	{"type_rec_proc_assign",
 	"type PROCMark\n"
 	"type RECmixed ( b@PROCMark )\n"
 	"dim a@RECmixed(1)\n"
@@ -1058,7 +1052,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"  def PROC(a$) print \"Hello\" + a$ endproc\n",
 	SUBTILIS_ERROR_BAD_CONVERSION,
 	},
-	{"bad_type_rec_proc_assign_partial",
+	{"type_rec_proc_assign_partial",
 	"type PROCMark\n"
 	"type RECmixed ( b@PROCMark )\n"
 	"dim a@RECmixed(1)\n"
@@ -1066,13 +1060,19 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"def PROClater(a$) endproc\n",
 	SUBTILIS_ERROR_BAD_ARG_COUNT,
 	},
-	{"bad_rec_type_init",
+	{"rec_type_init",
 	"type RECmixed ( a% b% )\n"
 	"local c@RECmixed = (10, 11)\n"
 	"local d@RECmixed = 1.11\n",
 	SUBTILIS_ERROR_BAD_CONVERSION,
 	},
-
+	{"nested_array_ref_assign_to_el",
+	"dim a%(10)\n"
+	"repeat\n"
+	"  b%(0) := a%()\n"
+	"until false\n",
+	SUBTILIS_ERROR_BAD_INDEX,
+	},
 };
 
 /* clang-format on */

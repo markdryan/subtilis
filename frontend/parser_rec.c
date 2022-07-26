@@ -403,6 +403,47 @@ static void prv_array_field_init(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_array_type_init_field(p, type, mem_reg, loc, e, err);
 }
 
+static void prv_array_field_reset(subtilis_parser_t *p, subtilis_token_t *t,
+				  const subtilis_type_field_t *field,
+				  const subtilis_type_t *type, size_t mem_reg,
+				  size_t loc, subtilis_error_t *err)
+{
+	const char *tbuf;
+	subtilis_exp_t *e;
+	subtilis_array_desc_t d;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "(")) {
+		e = subtilis_parser_expression(p, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		d.name = field->name;
+		d.t = type;
+		d.reg = mem_reg;
+		d.loc = loc;
+
+		subtilis_parser_array_init_list(p, t, &d, e, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		tbuf = subtilis_token_get_text(t);
+		if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ")")) {
+			subtilis_error_set_expected(
+			    err, ")", tbuf, p->l->stream->name, p->l->line);
+			return;
+		}
+		subtilis_lexer_get(p->l, t, err);
+		return;
+	}
+
+	e = subtilis_parser_priority7(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_array_type_reset_field(p, type, mem_reg, loc, e, err);
+}
+
 static void prv_rec_init(subtilis_parser_t *p, subtilis_token_t *t,
 			 const subtilis_type_t *type, size_t mem_reg,
 			 size_t loc, bool push, subtilis_error_t *err)
@@ -538,4 +579,145 @@ void subtilis_parser_rec_init(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 
 	prv_rec_init(p, t, type, mem_reg, loc, push, err);
+}
+
+static void prv_rec_reset(subtilis_parser_t *p, subtilis_token_t *t,
+			  const subtilis_type_t *type, size_t mem_reg,
+			  size_t loc, subtilis_error_t *err)
+{
+	const char *tbuf;
+	size_t id;
+	const subtilis_type_rec_t *rec;
+	const subtilis_type_t *field_type;
+	uint32_t offset;
+	subtilis_exp_t *e;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, ")")) {
+		subtilis_rec_type_deref(p, type, mem_reg, loc, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_rec_type_zero(p, type, mem_reg, loc, false, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_lexer_get(p->l, t, err);
+		return;
+	}
+
+	rec = &type->params.rec;
+
+	for (id = 0; id < rec->num_fields; id++) {
+		field_type = &rec->field_types[id];
+		offset = subtilis_type_rec_field_offset_id(rec, id);
+		if (subtilis_type_if_is_numeric(field_type) ||
+		    field_type->type == SUBTILIS_TYPE_FN) {
+			e = subtilis_parser_priority7(p, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			e = subtilis_type_if_coerce_type(p, e, field_type, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			subtilis_type_if_assign_to_mem(p, mem_reg, loc + offset,
+						       e, err);
+		} else if (field_type->type == SUBTILIS_TYPE_STRING) {
+			e = subtilis_parser_priority7(p, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			subtilis_type_if_assign_to_mem(p, mem_reg, loc + offset,
+						       e, err);
+		} else if (subtilis_type_if_is_array(field_type) ||
+			   subtilis_type_if_is_vector(field_type)) {
+			prv_array_field_reset(p, t, &rec->fields[id],
+					      field_type, mem_reg, loc + offset,
+					      err);
+		} else if (field_type->type == SUBTILIS_TYPE_REC) {
+			tbuf = subtilis_token_get_text(t);
+			if ((t->type != SUBTILIS_TOKEN_OPERATOR) ||
+			    strcmp(tbuf, "(")) {
+				subtilis_error_set_expected(err, "(", tbuf,
+							    p->l->stream->name,
+							    p->l->line);
+				return;
+			}
+			subtilis_lexer_get(p->l, t, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+
+			prv_rec_reset(p, t, field_type, mem_reg, loc + offset,
+				      err);
+		} else {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		tbuf = subtilis_token_get_text(t);
+		if (t->type == SUBTILIS_TOKEN_OPERATOR) {
+			if (!strcmp(tbuf, ",")) {
+				if (id < rec->num_fields - 1) {
+					subtilis_lexer_get(p->l, t, err);
+					if (err->type != SUBTILIS_ERROR_OK)
+						return;
+				}
+				continue;
+			}
+			if (!strcmp(tbuf, ")"))
+				break;
+		}
+		subtilis_error_set_expected(err, ", or )", tbuf,
+					    p->l->stream->name, p->l->line);
+		return;
+	}
+
+	if (strcmp(tbuf, ")")) {
+		subtilis_error_set_expected(err, ")", tbuf, p->l->stream->name,
+					    p->l->line);
+		return;
+	}
+
+	/*
+	 * I could add a type_if interface for this, a reset method.
+	 * The main motivation would be to avoid de-allocing and re-allocing
+	 * arrays, or vectors when their size hasn't changed, that have a
+	 * single owner.  We'd have to do a ref count check though and since
+	 * we know the heap will have a block of the correct size, allocation
+	 * should be fast, so it's not worth the effort.
+	 */
+
+	for (id = id + 1; id < rec->num_fields; id++) {
+		field_type = &rec->field_types[id];
+		offset = subtilis_type_rec_field_offset_id(rec, id);
+		if (subtilis_type_if_is_reference(field_type)) {
+			subtilis_reference_type_deref(p, mem_reg, offset + loc,
+						      err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		} else if (field_type->type == SUBTILIS_TYPE_REC) {
+			subtilis_rec_type_deref(p, field_type, mem_reg,
+						offset + loc, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		}
+		subtilis_rec_type_init_field(p, field_type, &rec->fields[id],
+					     mem_reg, offset + loc, false, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	subtilis_lexer_get(p->l, t, err);
+}
+
+void subtilis_parser_rec_reset(subtilis_parser_t *p, subtilis_token_t *t,
+			       const subtilis_type_t *type, size_t mem_reg,
+			       size_t loc, subtilis_error_t *err)
+{
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_rec_reset(p, t, type, mem_reg, loc, err);
 }

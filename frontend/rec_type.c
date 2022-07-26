@@ -368,3 +368,17 @@ char *subtilis_rec_type_deref_fn_name(const subtilis_type_t *type,
 
 	return fn_name;
 }
+
+void subtilis_rec_type_deref(subtilis_parser_t *p, const subtilis_type_t *type,
+			     size_t mem_reg, size_t loc, subtilis_error_t *err)
+{
+	size_t base_reg;
+
+	if (!subtilis_type_rec_need_deref(type))
+		return;
+
+	base_reg = subtilis_reference_get_pointer(p, mem_reg, loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_builtin_call_ir_rec_deref(p, type, base_reg, err);
+}
