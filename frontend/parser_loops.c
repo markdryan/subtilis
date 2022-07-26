@@ -1078,13 +1078,6 @@ static subtilis_range_var_t *prv_get_varnames(subtilis_parser_t *p,
 		    p, t, &range_vars[0].type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		if ((range_vars[0].type.type == SUBTILIS_TYPE_REC) ||
-		    (range_vars[0].type.type == SUBTILIS_TYPE_FN)) {
-			subtilis_complete_custom_type(p, range_vars[0].name,
-						      &range_vars[0].type, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				goto cleanup;
-		}
 	} else if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "~")) {
 		/*
 		 * We can't set the type of the range variable until we've

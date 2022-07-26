@@ -304,18 +304,25 @@ static void prv_indexed_write(subtilis_parser_t *p, const char *var_name,
 			      subtilis_exp_t **indices, size_t index_count,
 			      subtilis_error_t *err)
 {
-	subtilis_type_t fn_type;
+	subtilis_type_t rec_type;
 
-	subtilis_type_init_copy_from_fn(&fn_type, &type->params.array.params.fn,
-					err);
-	if (err->type != SUBTILIS_ERROR_OK) {
-		subtilis_exp_delete(e);
-		return;
-	}
+	subtilis_type_init_copy_from_rec(&rec_type,
+					 &type->params.array.params.rec, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
 
-	subtilis_array_write(p, var_name, type, &fn_type, mem_reg, loc, e,
+	e = subtilis_type_if_coerce_type(p, e, &rec_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto free_type;
+
+	subtilis_array_write(p, var_name, type, &rec_type, mem_reg, loc, e,
 			     indices, index_count, err);
-	subtilis_type_free(&fn_type);
+
+free_type:
+	subtilis_type_free(&rec_type);
+
+cleanup:
+	subtilis_exp_delete(e);
 }
 
 static void prv_indexed_add(subtilis_parser_t *p, const char *var_name,

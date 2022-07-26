@@ -5709,6 +5709,24 @@ const subtilis_test_case_t test_cases[] = {
 	"print a@RECs.b\n",
 	"0\n0\n\n0\n",
 	},
+	{"fn_array_ref_assign",
+	"type FNtest%(a)\n"
+	"dim a@FNtest(10)\n"
+	"a@FNtest() = def FN%(a) <- a+ 1.0, def FN%(a) <-a+ 2.0\n"
+	"b@FNtest() = a@FNtest()\n"
+	"print b@FNtest(0)(1)\n"
+	"print b@FNtest(1)(1)\n",
+	"2\n3\n",
+	},
+	{"rec_array_ref_assign",
+	"type RECtest(a)\n"
+	"dim a@RECtest(10)\n"
+	"dim b@RECtest(10)\n"
+	"a@RECtest(0).a = 10\n"
+	"b@RECtest() = a@RECtest()\n"
+	"print a@RECtest(0).a\n",
+	"10\n",
+	},
 };
 
 /* clang-format on */

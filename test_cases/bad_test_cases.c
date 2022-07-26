@@ -1073,6 +1073,12 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"until false\n",
 	SUBTILIS_ERROR_BAD_INDEX,
 	},
+	{"array_rec_assign_bad_type",
+	"type RECtest(a)\n"
+	"dim a@RECtest(10)\n"
+	"a@RECtest(0) = 10\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
 };
 
 /* clang-format on */

@@ -658,7 +658,18 @@ char *subtilis_parser_get_assignment_var(subtilis_parser_t *p,
 		return NULL;
 	}
 	strcpy(var_name, tbuf);
-	subtilis_type_copy(id_type, &t->tok.id_type, err);
+
+	/* We need special handling here.  If it's a REC of an FN
+	 * to get the full type from the symbol table.  The type we get
+	 * from the lexer is incomplete.  It knows that we have a
+	 * custom type but it doesn't know all the details of that type.
+	 */
+
+	if ((t->tok.id_type.type == SUBTILIS_TYPE_FN) ||
+	    (t->tok.id_type.type == SUBTILIS_TYPE_REC))
+		subtilis_complete_custom_type(p, var_name, id_type, err);
+	else
+		subtilis_type_copy(id_type, &t->tok.id_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1081,19 +1092,6 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 					      &new_global, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-
-	/* We need special handling here.  If it's a new global we need
-	 * to get the full type from the symbol table.  The type we get
-	 * from the lexer is incomplete.  It knows that we have a
-	 * custom type but it doesn't know all the details of that type.
-	 */
-
-	if ((type.type == SUBTILIS_TYPE_FN) ||
-	    (type.type == SUBTILIS_TYPE_REC)) {
-		subtilis_complete_custom_type(p, var_name, &type, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-	}
 
 	if (!new_global && (type.type == SUBTILIS_TYPE_REC) &&
 	    !strcmp(tbuf, ".")) {
