@@ -231,7 +231,7 @@ static void prv_assign_array_or_vector(subtilis_parser_t *p,
 				       subtilis_exp_t **indices,
 				       const char *var_name,
 				       const subtilis_type_t *array_type,
-				       subtilis_error_t *err)
+				       bool array, subtilis_error_t *err)
 {
 	const char *tbuf;
 	size_t i;
@@ -307,6 +307,16 @@ static void prv_assign_array_or_vector(subtilis_parser_t *p,
 						 true, err);
 		return;
 	} else if (err->type != SUBTILIS_ERROR_OK) {
+		goto cleanup;
+	}
+
+	if (s && (array != subtilis_type_if_is_array(&s->t))) {
+		if (array)
+			subtilis_error_set_expected(
+			    err, "{", "(", p->l->stream->name, p->l->line);
+		else
+			subtilis_error_set_expected(
+			    err, "(", "{", p->l->stream->name, p->l->line);
 		goto cleanup;
 	}
 
@@ -417,7 +427,7 @@ static void prv_assign_array(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	prv_assign_array_or_vector(p, t, dims, indices, var_name, &array_type,
-				   err);
+				   true, err);
 
 cleanup:
 
@@ -445,7 +455,7 @@ static void prv_assign_vector(subtilis_parser_t *p, subtilis_token_t *t,
 		dims = 1;
 
 	prv_assign_array_or_vector(p, t, dims, indices, var_name, &vector_type,
-				   err);
+				   false, err);
 
 cleanup:
 	subtilis_type_free(&vector_type);
@@ -695,6 +705,7 @@ void subtilis_parser_lookup_assignment_var(subtilis_parser_t *p,
 /* clang-format on */
 
 {
+	*new_global = false;
 	*s = subtilis_symbol_table_lookup(p->local_st, var_name);
 	if (*s) {
 		*mem_reg = SUBTILIS_IR_REG_LOCAL;

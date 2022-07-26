@@ -1079,6 +1079,22 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"a@RECtest(0) = 10\n",
 	SUBTILIS_ERROR_BAD_CONVERSION,
 	},
+	{"array_curly",
+	"dim a%{1}\n"
+	"a%(0) = 1\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
+	{"vector_round",
+	"dim a%(1)\n"
+	"a%{0} = 1\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
+	{"array_field_curly",
+	"type RECar ( dim a%(1) )\n"
+	"a@RECar = ()\n"
+	"a@RECar.a%{0} = 10\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
 };
 
 /* clang-format on */

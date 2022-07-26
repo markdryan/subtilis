@@ -3994,7 +3994,7 @@ const subtilis_test_case_t test_cases[] = {
 	{"append_vector_array_ints",
 	"c% := 7\n"
 	"local dim a&{c%}\n"
-	"a&() = 1\n"
+	"a&{} = 1\n"
 	"local dim b&(7)\n"
 	"b&() = 2,3,4,5,6,7,8,9\n"
 	"c&{} := a&{}\n"
