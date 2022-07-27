@@ -2518,6 +2518,104 @@ cleanup:
 	p->current = old_current;
 }
 
+static void prv_builtins_ir_gen_ref_grow(subtilis_parser_t *p,
+					 subtilis_ir_section_t *current,
+					 subtilis_error_t *err)
+{
+	subtilis_ir_section_t *old_current;
+	size_t a1_mem_reg;
+	size_t a1_size_reg;
+	size_t new_size_reg;
+	size_t a2_size_reg;
+	subtilis_ir_operand_t ret_val;
+	subtilis_ir_operand_t end_label;
+
+	old_current = p->current;
+	p->current = current;
+
+	end_label.label = current->end_label;
+	a1_mem_reg = SUBTILIS_IR_REG_TEMP_START;
+	a1_size_reg = SUBTILIS_IR_REG_TEMP_START + 1;
+	new_size_reg = SUBTILIS_IR_REG_TEMP_START + 2;
+	a2_size_reg = SUBTILIS_IR_REG_TEMP_START + 3;
+	ret_val.reg = current->ret_reg;
+
+	subtilis_reference_type_grow(p, 0, a1_mem_reg, a1_size_reg,
+				     new_size_reg, a2_size_reg, ret_val.reg,
+				     err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(current, end_label.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg(
+	    p->current, SUBTILIS_OP_INSTR_RET_I32, ret_val, err);
+
+cleanup:
+	p->current = old_current;
+}
+
+subtilis_exp_t *
+subtilis_builtin_ir_call_ref_grow(subtilis_parser_t *p, size_t a1_mem_reg,
+				  size_t a1_size_reg, size_t new_size_reg,
+				  size_t a2_size_reg, subtilis_error_t *err)
+{
+	subtilis_ir_section_t *fn;
+	subtilis_ir_arg_t *args = NULL;
+	char *name_dup = NULL;
+	const subtilis_type_t *ptype[4];
+	const char *const name = "_ref_grow";
+
+	ptype[0] = &subtilis_type_integer;
+	ptype[1] = &subtilis_type_integer;
+	ptype[2] = &subtilis_type_integer;
+	ptype[3] = &subtilis_type_integer;
+
+	fn = prv_add_args(p, name, 4, ptype, &subtilis_type_integer, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
+			return NULL;
+		subtilis_error_init(err);
+	} else {
+		prv_builtins_ir_gen_ref_grow(p, fn, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+	}
+
+	args = malloc(sizeof(*args) * 4);
+	if (!args) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+
+	name_dup = malloc(strlen(name) + 1);
+	if (!name_dup) {
+		subtilis_error_set_oom(err);
+		goto cleanup;
+	}
+	strcpy(name_dup, name);
+
+	args[0].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[0].reg = a1_mem_reg;
+	args[1].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[1].reg = a1_size_reg;
+	args[2].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[2].reg = new_size_reg;
+	args[3].type = SUBTILIS_IR_REG_TYPE_INTEGER;
+	args[3].reg = a2_size_reg;
+
+	return subtilis_exp_add_call(p, name_dup, SUBTILIS_BUILTINS_MAX, NULL,
+				     args, &subtilis_type_integer, 4, true,
+				     err);
+
+cleanup:
+	free(args);
+
+	return NULL;
+}
+
 static size_t prv_find_first_stop_hex(subtilis_parser_t *p,
 				      subtilis_ir_operand_t str_data,
 				      subtilis_ir_operand_t str_len,

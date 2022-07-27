@@ -3335,6 +3335,7 @@ void subtilis_string_type_add_eq(subtilis_parser_t *p, size_t store_reg,
 	subtilis_ir_operand_t a2_data;
 	subtilis_ir_operand_t store;
 	bool a2_gt_0;
+	subtilis_exp_t *e;
 
 	a2_data.reg = SIZE_MAX;
 	a2_size.reg = SIZE_MAX;
@@ -3356,10 +3357,16 @@ void subtilis_string_type_add_eq(subtilis_parser_t *p, size_t store_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest_reg = subtilis_reference_type_grow(p, loc, store_reg, a1_size.reg,
-						new_size.reg, a2_size.reg, err);
+	store_reg = subtilis_reference_get_pointer(p, store_reg, loc, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	e = subtilis_builtin_ir_call_ref_grow(p, store_reg, a1_size.reg,
+					      new_size.reg, a2_size.reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	dest_reg = e->exp.ir_op.reg;
+	subtilis_exp_delete(e);
 
 	subtilis_reference_type_memcpy_dest(p, dest_reg, a2_data.reg,
 					    a2_size.reg, err);

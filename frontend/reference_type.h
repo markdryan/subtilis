@@ -151,13 +151,13 @@ size_t subtilis_reference_type_realloc(subtilis_parser_t *p, size_t loc,
  * variable is currently zero, we just do a malloc, if its > 0 and is the sole
  * owner of its block we can realloc it (which might be a nop if the current
  * heap block has enough space available), or we do a malloc and a copy.  In
- * any case a register is returned that points to the first free byte of the
+ * any case a pointer is returned that points to the first free byte of the
  * variable's heap block.
  */
-size_t subtilis_reference_type_grow(subtilis_parser_t *p, size_t a1_loc,
-				    size_t a1_mem_reg, size_t a1_size_reg,
-				    size_t new_size_reg, size_t a2_size_reg,
-				    subtilis_error_t *err);
+void subtilis_reference_type_grow(subtilis_parser_t *p, size_t a1_loc,
+				  size_t a1_mem_reg, size_t a1_size_reg,
+				  size_t new_size_reg, size_t a2_size_reg,
+				  size_t ret_reg, subtilis_error_t *err);
 
 void subtilis_reference_type_push_reference(subtilis_parser_t *p,
 					    const subtilis_type_t *type,
