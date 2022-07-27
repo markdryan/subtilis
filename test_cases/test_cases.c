@@ -5727,6 +5727,56 @@ const subtilis_test_case_t test_cases[] = {
 	"print a@RECtest(0).a\n",
 	"10\n",
 	},
+	{"rec_append_array_scalar",
+	"type RECScalar (\n"
+	"     a%\n"
+	"     b\n"
+	"     c&\n"
+	")\n"
+	"\n"
+	"dim a@RECScalar{0}\n"
+	"dim b@RECScalar(2)\n"
+	"\n"
+	"a@RECScalar{0} = ( -1, -2, -3 )\n"
+	"b@RECScalar(0) = ( 1, 2, 3 )\n"
+	"b@RECScalar(1) = ( 4, 5, 6 )\n"
+	"b@RECScalar(2) = ( 7, 8, 9 )\n"
+	"append(a@RECScalar{}, b@RECScalar())\n"
+	"\n"
+	"range ~, i% := a@RECScalar{}\n"
+	"  print a@RECScalar{i%}.a%\n"
+	"  print a@RECScalar{i%}.b\n"
+	"  print a@RECScalar{i%}.c&\n"
+	"endrange\n",
+	"-1\n-2\n-3\n1\n2\n3\n4\n5\n6\n7\n8\n9\n",
+	},
+	{"rec_append_array_ref",
+	"type RECref ( a$ )\n"
+	"\n"
+	"type RECouter (\n"
+	"     a%\n"
+	"     b\n"
+	"     d@RECref\n"
+	"     c&\n"
+	")\n"
+	"\n"
+	"dim a@RECouter{0}\n"
+	"dim b@RECouter(2)\n"
+	"\n"
+	"a@RECouter{0} = ( -1, -2, (\"one\"), -3 )\n"
+	"b@RECouter(0) = ( 1, 2, (\"two\"), 3 )\n"
+	"b@RECouter(1) = ( 4, 5, (\"three\"), 6 )\n"
+	"b@RECouter(2) = ( 7, 8, (\"four\"), 9 )\n"
+	"append(a@RECouter{}, b@RECouter())\n"
+	"\n"
+	"range ~, i% := a@RECouter{}\n"
+	"  print a@RECouter{i%}.a%\n"
+	"  print a@RECouter{i%}.b\n"
+	"  print a@RECouter{i%}.d@RECref.a$\n"
+	"  print a@RECouter{i%}.c&\n"
+	"endrange\n",
+	"-1\n-2\none\n-3\n1\n2\ntwo\n3\n4\n5\nthree\n6\n7\n8\nfour\n9\n",
+	},
 };
 
 /* clang-format on */

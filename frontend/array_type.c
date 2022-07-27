@@ -2405,17 +2405,9 @@ void subtilis_array_type_copy_els(subtilis_parser_t *p,
 	 * they can hold references.  If we get here, our RECord is not
 	 * scalar.
 	 */
-
 	if (el_type->type == SUBTILIS_TYPE_REC) {
-		if (deref) {
-			subtilis_builtin_ir_rec_copy(p, el_type, counter.reg,
-						     counter2.reg, false, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-		} else {
-			subtilis_error_set_assertion_failed(err);
-			return;
-		}
+		subtilis_builtin_ir_rec_copy(p, el_type, counter.reg,
+					     counter2.reg, !deref, err);
 	} else {
 		if (deref) {
 			subtilis_reference_type_deref(p, counter.reg, 0, err);
@@ -2425,9 +2417,9 @@ void subtilis_array_type_copy_els(subtilis_parser_t *p,
 
 		subtilis_reference_type_init_ref(p, counter.reg, 0,
 						 counter2.reg, true, true, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
 	}
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
 
 	op2.integer = subtilis_type_if_size(el_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
