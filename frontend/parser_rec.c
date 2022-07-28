@@ -467,6 +467,13 @@ static void prv_rec_init(subtilis_parser_t *p, subtilis_token_t *t,
 
 		subtilis_rec_type_copy(p, type, mem_reg, loc, e->exp.ir_op.reg,
 				       true, err);
+		subtilis_exp_delete(e);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (push && subtilis_type_rec_need_deref(type))
+			subtilis_reference_type_push_reference(p, type, mem_reg,
+							       loc, err);
 		return;
 	}
 
@@ -563,9 +570,12 @@ static void prv_rec_init(subtilis_parser_t *p, subtilis_token_t *t,
 			return;
 	}
 
-	if (push && subtilis_type_rec_need_deref(type))
+	if (push && subtilis_type_rec_need_deref(type)) {
 		subtilis_reference_type_push_reference(p, type, mem_reg, loc,
 						       err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 
 	subtilis_lexer_get(p->l, t, err);
 }

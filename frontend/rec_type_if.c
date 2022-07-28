@@ -24,13 +24,30 @@
 
 /* clang-format on */
 
+static void prv_zero_reg(subtilis_parser_t *p, const subtilis_type_t *type,
+			 size_t reg, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	subtilis_ir_operand_t op1;
+
+	op0.reg = reg;
+	op1.integer = 0;
+	subtilis_ir_section_add_instr_no_reg2(
+	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op0, op1, err);
+}
+
 static subtilis_exp_t *prv_call(subtilis_parser_t *p,
 				const subtilis_type_t *type,
 				subtilis_ir_arg_t *args, size_t num_args,
 				subtilis_error_t *err)
 {
-	subtilis_error_set_assertion_failed(err);
-	return NULL;
+	size_t reg;
+
+	reg = subtilis_ir_section_add_i32_call(p->current, num_args, args, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_var(type, reg, err);
 }
 
 static subtilis_exp_t *prv_call_ptr(subtilis_parser_t *p,
@@ -38,8 +55,14 @@ static subtilis_exp_t *prv_call_ptr(subtilis_parser_t *p,
 				    subtilis_ir_arg_t *args, size_t num_args,
 				    size_t ptr, subtilis_error_t *err)
 {
-	subtilis_error_set_assertion_failed(err);
-	return NULL;
+	size_t reg;
+
+	reg = subtilis_ir_section_add_i32_call_ptr(p->current, num_args, args,
+						   ptr, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	return subtilis_exp_new_var(type, reg, err);
 }
 
 static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -200,8 +223,8 @@ subtilis_type_if subtilis_type_rec = {
 	.new_ref = NULL,
 	.assign_ref = NULL,
 	.assign_ref_no_rc = NULL,
-	.zero_reg = NULL,
-	.copy_ret = NULL,
+	.zero_reg = prv_zero_reg,
+	.copy_ret = subtilis_rec_type_copy_ret,
 	.array_of = prv_array_of,
 	.vector_of = prv_vector_of,
 	.element_type = NULL,
@@ -209,7 +232,7 @@ subtilis_type_if subtilis_type_rec = {
 	.copy_var = NULL,
 	.dup = prv_dup,
 	.copy_col = prv_copy_col,
-	.assign_reg = NULL,
+	.assign_reg = subtilis_rec_type_assign_to_reg,
 	.assign_mem = prv_assign_to_mem,
 	.assign_new_mem = prv_assign_to_new_mem,
 	.indexed_write = NULL,

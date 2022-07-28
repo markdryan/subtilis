@@ -60,5 +60,10 @@ char *subtilis_rec_type_deref_fn_name(const subtilis_type_t *t,
 				      subtilis_error_t *err);
 void subtilis_rec_type_deref(subtilis_parser_t *p, const subtilis_type_t *type,
 			     size_t mem_reg, size_t loc, subtilis_error_t *err);
+void subtilis_rec_type_copy_ret(subtilis_parser_t *p, const subtilis_type_t *t,
+				size_t dest_reg, size_t source_reg,
+				subtilis_error_t *err);
+void subtilis_rec_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
+				     subtilis_exp_t *e, subtilis_error_t *err);
 
 #endif

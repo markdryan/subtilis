@@ -5777,6 +5777,108 @@ const subtilis_test_case_t test_cases[] = {
 	"endrange\n",
 	"-1\n-2\none\n-3\n1\n2\ntwo\n3\n4\n5\nthree\n6\n7\n8\nfour\n9\n",
 	},
+	{"rec_ref_fn",
+	"type RECRef (a% b$ c&)\n"
+	"\n"
+	"a@RECRef = ( 1, \"hello\", 3)\n"
+	"b@RECRef = ( 4, \" goodbye\", 5)\n"
+	"c@RECRef := FNAdd@RECRef(a@RECRef, b@RECRef)\n"
+	"print c@RECRef.a%\n"
+	"print c@RECRef.b$\n"
+	"print c@RECRef.c&\n"
+	"\n"
+	"def FNAdd@RECRef(a@RECRef, b@RECRef)\n"
+	"    a@RECRef.a% += b@RECRef.a%\n"
+	"    a@RECRef.b$ += b@RECRef.b$\n"
+	"    a@RECRef.c& += b@RECRef.c&\n"
+	"<-a@RECRef\n",
+	"5\nhello goodbye\n8\n",
+	},
+	{"rec_scalar_fn",
+	"type RECScalar ( a% b c& )\n"
+	"\n"
+	"a@RECScalar = ( 1, 10.0, 3)\n"
+	"b@RECScalar = ( 4, 10.0, 5)\n"
+	"c@RECScalar = FNAdd@RECScalar(a@RECScalar, b@RECScalar)\n"
+	"print c@RECScalar.a%\n"
+	"print c@RECScalar.b\n"
+	"print c@RECScalar.c&\n"
+	"\n"
+	"def FNAdd@RECScalar(a@RECScalar, b@RECScalar)\n"
+	"    a@RECScalar.a% += b@RECScalar.a%\n"
+	"    a@RECScalar.b += b@RECScalar.b\n"
+	"    a@RECScalar.c& += b@RECScalar.c&\n"
+	"<-a@RECScalar\n",
+	"5\n20\n8\n",
+	},
+	{"rec_ref_fn_lambda",
+	"type RECRef (\n"
+	"     a%\n"
+	"     b$\n"
+	"     c&\n"
+	")\n"
+	"type FNPtr@RECRef(a@RECRef, b@RECRef)\n"
+	"fn@FNPtr = def FN@RECRef(a@RECRef, b@RECRef)\n"
+	"    a@RECRef.a% += b@RECRef.a%\n"
+	"    a@RECRef.b$ += b@RECRef.b$\n"
+	"    a@RECRef.c& += b@RECRef.c&\n"
+	"<-a@RECRef\n"
+	"\n"
+	"a@RECRef = ( 1, \"hello\", 3)\n"
+	"b@RECRef = ( 4, \" goodbye\", 5)\n"
+	"c@RECRef := fn@FNPtr(a@RECRef, b@RECRef)\n"
+	"print c@RECRef.a%\n"
+	"print c@RECRef.b$\n"
+	"print c@RECRef.c&\n",
+	"5\nhello goodbye\n8\n",
+	},
+	{"rec_ref_fn_ptr",
+	"type RECRef (\n"
+	"     a%\n"
+	"     b$\n"
+	"     c&\n"
+	")\n"
+	"type FNPtr@RECRef(a@RECRef, b@RECRef)\n"
+	"fn@FNPtr = !FNAdd@RECRef\n"
+	"\n"
+	"a@RECRef = ( 1, \"hello\", 3)\n"
+	"b@RECRef = ( 4, \" goodbye\", 5)\n"
+	"c@RECRef := fn@FNPtr(a@RECRef, b@RECRef)\n"
+	"print c@RECRef.a%\n"
+	"print c@RECRef.b$\n"
+	"print c@RECRef.c&\n"
+	"\n"
+	"def FNAdd@RECRef(a@RECRef, b@RECRef)\n"
+	"    a@RECRef.a% += b@RECRef.a%\n"
+	"    a@RECRef.b$ += b@RECRef.b$\n"
+	"    a@RECRef.c& += b@RECRef.c&\n"
+	"<-a@RECRef\n",
+	"5\nhello goodbye\n8\n",
+	},
+	{"rec_scalar_vec_fn",
+	"type RECar ( a% )\n"
+	"dim a@RECar(9)\n"
+	"dim b@RECar(9)\n"
+	"for i% := 0 to 9\n"
+	"  a@RECar(i%).a% = i%\n"
+	"  b@RECar(i%).a% = 10 + i%\n"
+	"next\n"
+	"c@RECar{} := FNappend@RECar{}(a@RECar(), b@RECar())\n"
+	"range v@RECar := c@RECar{}\n"
+	"  print v@RECar.a%\n"
+	"endrange\n"
+	"def FNappend@RECar{}(a@RECar(1), b@RECar(1))\n"
+	"    local dim c@RECar{}\n"
+	"    range v@RECar := a@RECar()\n"
+	"        append(c@RECar{}, v@RECar)\n"
+	"    endrange\n"
+	"    range v@RECar := b@RECar()\n"
+	"        append(c@RECar{}, v@RECar)\n"
+	"    endrange\n"
+	"<-c@RECar{}\n",
+	"0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n"
+	"10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n",
+	},
 };
 
 /* clang-format on */

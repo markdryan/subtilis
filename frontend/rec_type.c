@@ -382,3 +382,50 @@ void subtilis_rec_type_deref(subtilis_parser_t *p, const subtilis_type_t *type,
 		return;
 	subtilis_builtin_call_ir_rec_deref(p, type, base_reg, err);
 }
+
+void subtilis_rec_type_copy_ret(subtilis_parser_t *p, const subtilis_type_t *t,
+				size_t dest_reg, size_t source_reg,
+				subtilis_error_t *err)
+{
+	subtilis_rec_type_tmp_copy(p, t, dest_reg, 0, source_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (!subtilis_type_rec_need_deref(t))
+		return;
+
+	/*
+	 * It's important that this comes last as the reference we're
+	 * copying might be left on the stack of a previous function.
+	 * We don't want to overwrite the data before we've copied it.
+	 */
+
+	subtilis_reference_push_ref(p, t, dest_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_reference_inc_cleanup_stack(p, t, err);
+}
+
+/*
+ * Used when returning RECs from functions.  Here we just want to
+ * copy the pointer to the REC into the integer register used to
+ * return a value from the function and potentially ref it.
+ */
+
+void subtilis_rec_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
+				     subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op0;
+	bool ref_needed = subtilis_type_rec_need_deref(&e->type);
+
+	op0.reg = reg;
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      op0, e->exp.ir_op, err);
+	subtilis_exp_delete(e);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (ref_needed)
+		subtilis_reference_type_ref(p, reg, 0, false, err);
+}
