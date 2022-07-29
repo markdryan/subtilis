@@ -58,8 +58,15 @@ void subtilis_rec_type_init_field(subtilis_parser_t *p,
 				  subtilis_error_t *err);
 char *subtilis_rec_type_deref_fn_name(const subtilis_type_t *t,
 				      subtilis_error_t *err);
+char *subtilis_rec_type_ref_fn_name(const subtilis_type_t *t,
+				    subtilis_error_t *err);
 void subtilis_rec_type_deref(subtilis_parser_t *p, const subtilis_type_t *type,
 			     size_t mem_reg, size_t loc, subtilis_error_t *err);
+void subtilis_rec_type_ref_gen(subtilis_parser_t *p,
+			       const subtilis_type_t *type, size_t mem_reg,
+			       size_t loc, subtilis_error_t *err);
+void subtilis_rec_type_ref(subtilis_parser_t *p, const subtilis_type_t *type,
+			   size_t mem_reg, size_t loc, subtilis_error_t *err);
 void subtilis_rec_type_copy_ret(subtilis_parser_t *p, const subtilis_type_t *t,
 				size_t dest_reg, size_t source_reg,
 				subtilis_error_t *err);

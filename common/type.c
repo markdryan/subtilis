@@ -866,6 +866,48 @@ size_t subtilis_type_rec_zero_fill_size(const subtilis_type_t *typ)
 	return size;
 }
 
+/*
+ * Here we're assuming that a record that has 4 or more references
+ * is worth creating a ref method for.
+ */
+
+static size_t prv_rec_need_ref_count(const subtilis_type_t *typ)
+{
+	subtilis_type_t *field;
+	size_t i;
+	const subtilis_type_rec_t *rec = &typ->params.rec;
+	size_t num = 0;
+	size_t rec_num;
+
+	for (i = 0; i < rec->num_fields; i++) {
+		field = &rec->field_types[i];
+		switch (field->type) {
+		case SUBTILIS_TYPE_REAL:
+		case SUBTILIS_TYPE_INTEGER:
+		case SUBTILIS_TYPE_BYTE:
+		case SUBTILIS_TYPE_LOCAL_BUFFER:
+		case SUBTILIS_TYPE_FN:
+			break;
+		case SUBTILIS_TYPE_REC:
+			rec_num = prv_rec_need_ref_count(field);
+			if (rec_num >= 4)
+				rec_num = 1;
+			num += rec_num;
+			break;
+		default:
+			num++;
+			break;
+		}
+	}
+
+	return num;
+}
+
+bool subtilis_type_rec_need_ref_fn(const subtilis_type_t *typ)
+{
+	return prv_rec_need_ref_count(typ) >= 4;
+}
+
 bool subtilis_type_rec_need_deref(const subtilis_type_t *typ)
 {
 	subtilis_type_t *field;

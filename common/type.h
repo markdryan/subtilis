@@ -198,6 +198,7 @@ uint32_t subtilis_type_rec_field_offset_id(const subtilis_type_rec_t *rec,
 uint32_t subtilis_type_rec_field_offset(subtilis_type_t *typ, const char *name);
 size_t subtilis_type_rec_size(const subtilis_type_t *typ);
 size_t subtilis_type_rec_align(const subtilis_type_t *typ);
+bool subtilis_type_rec_need_ref_fn(const subtilis_type_t *typ);
 bool subtilis_type_rec_need_deref(const subtilis_type_t *typ);
 bool subtilis_type_rec_need_zero_alloc(const subtilis_type_t *typ);
 void subtilis_type_free(subtilis_type_t *typ);

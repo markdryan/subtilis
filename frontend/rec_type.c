@@ -348,25 +348,36 @@ void subtilis_rec_type_copy(subtilis_parser_t *p, const subtilis_type_t *type,
 	}
 }
 
-char *subtilis_rec_type_deref_fn_name(const subtilis_type_t *type,
-				      subtilis_error_t *err)
+static char *prv_make_ref_fn_name(const subtilis_type_t *type, const char *base,
+				  subtilis_error_t *err)
 {
 	char *fn_name;
 	int name_len;
 	const subtilis_type_rec_t *rec = &type->params.rec;
-	const char *deref = "_deref";
 
 	name_len = strlen(rec->name);
-	fn_name = malloc(name_len + 1 + 1 + strlen(deref));
+	fn_name = malloc(name_len + 1 + 1 + strlen(base));
 	if (!fn_name) {
 		subtilis_error_set_oom(err);
 		return NULL;
 	}
 	fn_name[0] = '_';
 	strcpy(&fn_name[1], rec->name);
-	strcpy(&fn_name[name_len + 1], deref);
+	strcpy(&fn_name[name_len + 1], base);
 
 	return fn_name;
+}
+
+char *subtilis_rec_type_deref_fn_name(const subtilis_type_t *type,
+				      subtilis_error_t *err)
+{
+	return prv_make_ref_fn_name(type, "_deref", err);
+}
+
+char *subtilis_rec_type_ref_fn_name(const subtilis_type_t *type,
+				    subtilis_error_t *err)
+{
+	return prv_make_ref_fn_name(type, "_ref", err);
 }
 
 void subtilis_rec_type_deref(subtilis_parser_t *p, const subtilis_type_t *type,
@@ -381,6 +392,50 @@ void subtilis_rec_type_deref(subtilis_parser_t *p, const subtilis_type_t *type,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	subtilis_builtin_call_ir_rec_deref(p, type, base_reg, err);
+}
+
+void subtilis_rec_type_ref(subtilis_parser_t *p, const subtilis_type_t *type,
+			   size_t mem_reg, size_t loc, subtilis_error_t *err)
+{
+	if (subtilis_type_rec_need_ref_fn(type)) {
+		mem_reg = subtilis_reference_get_pointer(p, mem_reg, loc, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		subtilis_builtin_call_ir_rec_ref(p, type, mem_reg, err);
+		return;
+	}
+	subtilis_rec_type_ref_gen(p, type, mem_reg, loc, err);
+}
+
+void subtilis_rec_type_ref_gen(subtilis_parser_t *p,
+			       const subtilis_type_t *type, size_t mem_reg,
+			       size_t loc, subtilis_error_t *err)
+{
+	bool check_size;
+	size_t i;
+	size_t offset;
+	subtilis_type_t *field;
+	const subtilis_type_rec_t *rec = &type->params.rec;
+
+	for (i = 0; i < rec->num_fields; i++) {
+		field = &rec->field_types[i];
+
+		if (!subtilis_type_if_is_reference(field) &&
+		    (field->type != SUBTILIS_TYPE_REC))
+			continue;
+
+		offset = loc + subtilis_type_rec_field_offset_id(rec, i);
+		if (subtilis_type_if_is_reference(field)) {
+			check_size = !subtilis_type_if_is_array(field);
+			subtilis_reference_type_ref(p, mem_reg, offset,
+						    check_size, err);
+		} else {
+			subtilis_rec_type_ref(p, field, mem_reg, offset, err);
+		}
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 }
 
 void subtilis_rec_type_copy_ret(subtilis_parser_t *p, const subtilis_type_t *t,
@@ -422,10 +477,12 @@ void subtilis_rec_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
 	op0.reg = reg;
 	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
 					      op0, e->exp.ir_op, err);
-	subtilis_exp_delete(e);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		goto cleanup;
 
 	if (ref_needed)
-		subtilis_reference_type_ref(p, reg, 0, false, err);
+		subtilis_rec_type_ref(p, &e->type, reg, 0, err);
+
+cleanup:
+	subtilis_exp_delete(e);
 }

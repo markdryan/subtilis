@@ -5879,6 +5879,75 @@ const subtilis_test_case_t test_cases[] = {
 	"0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n"
 	"10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n",
 	},
+	{"rec_fn_return_zero_rec_ref",
+	"type RECScalar (\n"
+	"     a%\n"
+	"     b$\n"
+	"     c&\n"
+	")\n"
+	"\n"
+	"a@RECScalar := FNAdd@RECScalar()\n"
+	"print a@RECScalar.a%\n"
+	"print a@RECScalar.b$\n"
+	"print a@RECScalar.c&\n"
+	"\n"
+	"def FNAdd@RECScalar\n"
+	"    local a@RECScalar\n"
+	"<-a@RECScalar\n",
+	"0\n\n0\n",
+	},
+	{"rec_fn_return_rec_multiple_ref",
+	"type RECScalar (\n"
+	"     dim a%(1)\n"
+	"     b$\n"
+	"     dim c$(2)\n"
+	")\n"
+	"\n"
+	"a@RECScalar := FNAdd@RECScalar()\n"
+	"local b@RECScalar = ( ( 3, 4),\n"
+	"\"quiet\", (\"but\", \"not\", \"raining\" ))\n"
+	"print a@RECScalar.a%(0)\n"
+	"print a@RECScalar.a%(1)\n"
+	"print a@RECScalar.b$\n"
+	"print a@RECScalar.c$(0)\n"
+	"print a@RECScalar.c$(1)\n"
+	"print a@RECScalar.c$(2)\n"
+	"\n"
+	"def FNAdd@RECScalar\n"
+	"    local a@RECScalar = ( ( 1, 2), \"hello\",\n"
+	"    (\"goodbye\", \"forever\" ))\n"
+	"<-a@RECScalar\n",
+	"1\n2\nhello\ngoodbye\nforever\n\n",
+	},
+	{"rec_fn_return_rec_nested_ref",
+	"type RECinner (\n"
+	"     dim a%(1)\n"
+	"     b$\n"
+	"     dim c$(2)\n"
+	"     d$\n"
+	")\n"
+	"\n"
+	"type RECref (\n"
+	"     a@RECinner\n"
+	"     name$\n"
+	")\n"
+	"\n"
+	"a@RECref := FNAdd@RECref()\n"
+	"print a@RECref.name$\n"
+	"print a@RECref.a@RECinner.a%(0)\n"
+	"print a@RECref.a@RECinner.a%(1)\n"
+	"print a@RECref.a@RECinner.b$\n"
+	"print a@RECref.a@RECinner.c$(0)\n"
+	"print a@RECref.a@RECinner.c$(1)\n"
+	"print a@RECref.a@RECinner.c$(2)\n"
+	"print a@RECref.a@RECinner.d$\n"
+	"\n"
+	"def FNAdd@RECref\n"
+	"    local a@RECref = ( ( ( 1, 2), \"hello\",\n"
+	"       (\"goodbye\", \"forever\" ), \"whoops\"), \"outer\")\n"
+	"<-a@RECref\n",
+	"outer\n1\n2\nhello\ngoodbye\nforever\n\nwhoops\n",
+	},
 };
 
 /* clang-format on */

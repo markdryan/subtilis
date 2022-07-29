@@ -3008,6 +3008,27 @@ cleanup:
 	p->current = old_current;
 }
 
+static void prv_builtins_ir_gen_rec_ref(subtilis_parser_t *p,
+					const subtilis_type_t *type,
+					subtilis_ir_section_t *current,
+					subtilis_error_t *err)
+{
+	subtilis_ir_section_t *old_current;
+
+	old_current = p->current;
+	p->current = current;
+
+	subtilis_rec_type_ref_gen(p, type, SUBTILIS_IR_REG_TEMP_START, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_arg(p->current, SUBTILIS_OP_INSTR_RET,
+					     err);
+
+cleanup:
+	p->current = old_current;
+}
+
 static void prv_builtins_ir_gen_rec_zero(subtilis_parser_t *p,
 					 const subtilis_type_t *type,
 					 subtilis_ir_section_t *current,
@@ -3450,6 +3471,54 @@ void subtilis_builtin_call_ir_rec_deref(subtilis_parser_t *p,
 		return;
 
 	(void)prv_get_rec_deref_fn(p, name, type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	(void)subtilis_parser_call_1_arg_fn(
+		p, name, base_reg, SUBTILIS_BUILTINS_MAX,
+		SUBTILIS_IR_REG_TYPE_INTEGER, &subtilis_type_void, false,
+		err);
+
+cleanup:
+
+	free(name);
+}
+
+static void prv_get_rec_ref_fn(subtilis_parser_t *p, const char *name,
+			       const subtilis_type_t *type,
+			       subtilis_error_t *err)
+{
+	subtilis_ir_section_t *fn;
+	const subtilis_type_t *ptype[1];
+	size_t call_index = SIZE_MAX;
+
+	ptype[0] = &subtilis_type_integer;
+
+	fn = prv_add_args_ci(p, name, 1, ptype, &subtilis_type_void,
+			     &call_index, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		if (err->type != SUBTILIS_ERROR_ALREADY_DEFINED)
+			return;
+		subtilis_error_init(err);
+	} else {
+		prv_builtins_ir_gen_rec_ref(p, type, fn, err);
+	}
+}
+
+void subtilis_builtin_call_ir_rec_ref(subtilis_parser_t *p,
+				      const subtilis_type_t *type,
+				      size_t base_reg,
+				      subtilis_error_t *err)
+{
+	char *name;
+	const subtilis_type_t *ptype[1];
+
+	ptype[0] = &subtilis_type_integer;
+	name = subtilis_rec_type_ref_fn_name(type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_get_rec_ref_fn(p, name, type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
