@@ -566,7 +566,6 @@ void subtilis_parser_assign_local_rec(subtilis_parser_t *p, subtilis_token_t *t,
 				      subtilis_error_t *err)
 {
 	subtilis_type_t type;
-	const subtilis_symbol_t *s;
 
 	subtilis_type_init_copy(&type, id_type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -576,12 +575,7 @@ void subtilis_parser_assign_local_rec(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	s = subtilis_symbol_table_insert(p->local_st, var_name, &type, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_parser_rec_init(p, t, &type, SUBTILIS_IR_REG_LOCAL, s->loc,
-				 true, err);
+	subtilis_parser_rec_init(p, t, &type, var_name, true, true, err);
 
 cleanup:
 	subtilis_type_free(&type);
@@ -1124,16 +1118,15 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	if (new_global) {
-		s = subtilis_symbol_table_insert(p->st, var_name, &type, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-
 		if ((type.type == SUBTILIS_TYPE_REC) &&
 		    (at == SUBTILIS_ASSIGN_TYPE_EQUAL)) {
-			subtilis_parser_rec_init(p, t, &type, op1.reg, s->loc,
+			subtilis_parser_rec_init(p, t, &type, var_name, false,
 						 true, err);
 			goto cleanup;
 		}
+		s = subtilis_symbol_table_insert(p->st, var_name, &type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
 	}
 
 	subtilis_lexer_get(p->l, t, err);

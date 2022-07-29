@@ -234,18 +234,18 @@ void subtilis_parser_local(subtilis_parser_t *p, subtilis_token_t *t,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		s = subtilis_symbol_table_insert(p->local_st, var_name, &type,
-						 err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-
-		if (value_present)
-			subtilis_parser_rec_init(p, t, &type,
-						 SUBTILIS_IR_REG_LOCAL, s->loc,
+		if (value_present) {
+			subtilis_parser_rec_init(p, t, &type, var_name, true,
 						 true, err);
-		else
+		} else {
+			s = subtilis_symbol_table_insert(p->local_st, var_name,
+							 &type, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				goto cleanup;
+
 			subtilis_rec_type_zero(p, &type, SUBTILIS_IR_REG_LOCAL,
 					       s->loc, true, err);
+		}
 	} else {
 		subtilis_error_set_assertion_failed(err);
 	}

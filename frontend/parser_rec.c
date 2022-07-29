@@ -457,6 +457,10 @@ static void prv_rec_init(subtilis_parser_t *p, subtilis_token_t *t,
 
 	tbuf = subtilis_token_get_text(t);
 	if (!((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "("))) {
+		/*
+		 * We're copying one REC into another.  There's no
+		 * initialisation list here.
+		 */
 		e = subtilis_parser_priority7(p, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
@@ -580,15 +584,73 @@ static void prv_rec_init(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_lexer_get(p->l, t, err);
 }
 
-void subtilis_parser_rec_init(subtilis_parser_t *p, subtilis_token_t *t,
-			      const subtilis_type_t *type, size_t mem_reg,
-			      size_t loc, bool push, subtilis_error_t *err)
+static void prv_rec_init_check_tmp(subtilis_parser_t *p, subtilis_token_t *t,
+				   const subtilis_type_t *type,
+				   const char *var_name, bool push,
+				   subtilis_error_t *err)
 {
+	const subtilis_symbol_t *s;
+	subtilis_exp_t *e = NULL;
+
+	e = subtilis_parser_priority7(p, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	e = subtilis_type_if_coerce_type(p, e, type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (e->temporary) {
+		(void)subtilis_symbol_table_promote_tmp(
+		    p->local_st, type, e->temporary, var_name, err);
+	} else {
+		s = subtilis_symbol_table_insert(p->local_st, var_name, type,
+						 err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		subtilis_rec_type_copy(p, type, SUBTILIS_IR_REG_LOCAL, s->loc,
+				       e->exp.ir_op.reg, true, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		if (push && subtilis_type_rec_need_deref(type))
+			subtilis_reference_type_push_reference(
+			    p, type, SUBTILIS_IR_REG_LOCAL, s->loc, err);
+	}
+
+cleanup:
+	subtilis_exp_delete(e);
+}
+
+void subtilis_parser_rec_init(subtilis_parser_t *p, subtilis_token_t *t,
+			      const subtilis_type_t *type, const char *var_name,
+			      bool local, bool push, subtilis_error_t *err)
+{
+	const subtilis_symbol_t *s;
+	const char *tbuf;
+
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	prv_rec_init(p, t, type, mem_reg, loc, push, err);
+	/*
+	 * Special case here.  If we're creating a new local variable from a
+	 * temporary REC returned from a function we can just promote the
+	 * temporary and avoid the copy.
+	 */
+
+	tbuf = subtilis_token_get_text(t);
+	if (local &&
+	    !((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "("))) {
+		prv_rec_init_check_tmp(p, t, type, var_name, push, err);
+		return;
+	}
+	s = subtilis_symbol_table_insert(local ? p->local_st : p->st, var_name,
+					 type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	prv_rec_init(p, t, type,
+		     local ? SUBTILIS_IR_REG_LOCAL : SUBTILIS_IR_REG_GLOBAL,
+		     s->loc, push, err);
 }
 
 static void prv_rec_reset(subtilis_parser_t *p, subtilis_token_t *t,

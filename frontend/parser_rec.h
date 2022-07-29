@@ -30,8 +30,8 @@ subtilis_exp_t *subtilis_parser_rec_exp(subtilis_parser_t *p,
 					subtilis_error_t *err);
 
 void subtilis_parser_rec_init(subtilis_parser_t *p, subtilis_token_t *t,
-			      const subtilis_type_t *type, size_t mem_reg,
-			      size_t loc, bool push, subtilis_error_t *err);
+			      const subtilis_type_t *type, const char *var_name,
+			      bool local, bool push, subtilis_error_t *err);
 
 /*
  * Allow an initialiser list to initialise an existing REC.
