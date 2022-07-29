@@ -115,5 +115,7 @@ const subtilis_symbol_t *subtilis_parser_get_symbol(subtilis_parser_t *p,
 void subtilis_exp_swap_int32_mem(subtilis_parser_t *p, size_t dest_reg,
 				 size_t source_reg, int32_t off,
 				 subtilis_error_t *err);
+void subtilis_exp_swap_int8_mem(subtilis_parser_t *p, size_t reg1, size_t reg2,
+				int32_t off, subtilis_error_t *err);
 
 #endif

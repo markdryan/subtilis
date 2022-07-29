@@ -20,6 +20,7 @@
 #include "array_type.h"
 #include "builtins_helper.h"
 #include "builtins_ir.h"
+#include "parser_exp.h"
 #include "rec_type.h"
 #include "reference_type.h"
 #include "type_if.h"
@@ -485,4 +486,106 @@ void subtilis_rec_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
 
 cleanup:
 	subtilis_exp_delete(e);
+}
+
+static void prv_rec_swap_32(subtilis_parser_t *p, size_t size, size_t reg1,
+			    size_t reg2, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t start;
+	subtilis_ir_operand_t body;
+	subtilis_ir_operand_t end;
+	subtilis_ir_operand_t four;
+	subtilis_ir_operand_t sizeop;
+	subtilis_ir_operand_t counter;
+	subtilis_ir_operand_t condee;
+	subtilis_ir_operand_t ptr1;
+	subtilis_ir_operand_t ptr2;
+
+	/*
+	 * We're just going to do a memcpy, copying 4 bytes at a time
+	 * until we run out of space.  Copying the fields individually
+	 * will generate too much code and doing a memcpy might require
+	 * too much stack data, as we'd need a temporary buffer the size
+	 * of the type.
+	 */
+
+	start.label = subtilis_ir_section_new_label(p->current);
+	body.label = subtilis_ir_section_new_label(p->current);
+	end.label = subtilis_ir_section_new_label(p->current);
+	ptr1.reg = reg1;
+	ptr2.reg = reg2;
+
+	sizeop.integer = (int32_t)size;
+	counter.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, ptr1, sizeop, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_ir_section_add_label(p->current, start.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	four.integer = 4;
+	condee.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LT_I32, ptr1, counter, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  condee, body, end, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_ir_section_add_label(p->current, body.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_exp_swap_int32_mem(p, ptr1.reg, ptr2.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, ptr1, ptr1, four, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_ADDI_I32, ptr2, ptr2, four, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     start, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_ir_section_add_label(p->current, end.label, err);
+}
+
+void subtilis_rec_type_swap(subtilis_parser_t *p, const subtilis_type_t *type,
+			    size_t reg1, size_t reg2, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t ptr1;
+	subtilis_ir_operand_t ptr2;
+	size_t offset;
+	size_t i;
+	size_t size = subtilis_type_rec_size(type);
+
+	offset = size - (size & 3);
+	if (size >= 4) {
+		ptr1.reg = reg1;
+		ptr2.reg = reg2;
+		reg1 = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_MOV, ptr1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		reg2 = subtilis_ir_section_add_instr2(
+		    p->current, SUBTILIS_OP_INSTR_MOV, ptr2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		prv_rec_swap_32(p, offset, reg1, reg2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	i = 0;
+	for (; offset < size; offset++, i++) {
+		subtilis_exp_swap_int8_mem(p, reg1, reg2, i, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 }

@@ -72,5 +72,7 @@ void subtilis_rec_type_copy_ret(subtilis_parser_t *p, const subtilis_type_t *t,
 				subtilis_error_t *err);
 void subtilis_rec_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
 				     subtilis_exp_t *e, subtilis_error_t *err);
+void subtilis_rec_type_swap(subtilis_parser_t *p, const subtilis_type_t *type,
+			    size_t reg1, size_t reg2, subtilis_error_t *err);
 
 #endif

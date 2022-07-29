@@ -191,7 +191,7 @@ static subtilis_exp_t *prv_gte(subtilis_parser_t *p, subtilis_exp_t *a1,
 static void prv_swap_mem_mem(subtilis_parser_t *p, const subtilis_type_t *type,
 			     size_t reg1, size_t reg2, subtilis_error_t *err)
 {
-	subtilis_error_set_assertion_failed(err);
+	subtilis_rec_type_swap(p, type, reg1, reg2, err);
 }
 
 static size_t prv_destructor(subtilis_parser_t *p, const subtilis_type_t *type,

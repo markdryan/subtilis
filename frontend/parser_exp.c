@@ -161,6 +161,7 @@ bool subtilis_exp_get_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
 
 	if (subtilis_type_if_is_numeric(&s->t) ||
 	    (s->t.type == SUBTILIS_TYPE_FN) ||
+	    (s->t.type == SUBTILIS_TYPE_REC) ||
 	    (s->t.type == SUBTILIS_TYPE_STRING)) {
 		subtilis_type_copy(type, &s->t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -1467,4 +1468,36 @@ void subtilis_exp_swap_int32_mem(subtilis_parser_t *p, size_t dest_reg,
 
 	subtilis_ir_section_add_instr_reg(
 	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, tmp2, s, op2, err);
+}
+
+void subtilis_exp_swap_int8_mem(subtilis_parser_t *p, size_t reg1, size_t reg2,
+				int32_t off, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t zero;
+	subtilis_ir_operand_t tmp;
+	subtilis_ir_operand_t tmp2;
+
+	op1.reg = reg1;
+	op2.reg = reg2;
+	zero.integer = off;
+
+	tmp.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I8, op1, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tmp2.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I8, op2, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I8, tmp, op2, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I8, tmp2, op1, zero, err);
 }

@@ -5948,6 +5948,70 @@ const subtilis_test_case_t test_cases[] = {
 	"<-a@RECref\n",
 	"outer\n1\n2\nhello\ngoodbye\nforever\n\nwhoops\n",
 	},
+	{"rec_swap_three_bytes",
+	"type RECref (\n"
+	"     a&\n"
+	"     b&\n"
+	"     c&\n"
+	")\n"
+	"\n"
+	"\n"
+	"a@RECref := (1, 2, 3)\n"
+	"b@RECref := (7, 8, 9)\n"
+	"\n"
+	"swap a@RECref, b@RECref\n"
+	"\n"
+	"print a@RECref.a&\n"
+	"print a@RECref.b&\n"
+	"print a@RECref.c&\n"
+	"print b@RECref.a&\n"
+	"print b@RECref.b&\n"
+	"print b@RECref.c&\n",
+	"7\n8\n9\n1\n2\n3\n",
+	},
+	{"rec_swap",
+	"type RECref (\n"
+	"     a%\n"
+	"     b$\n"
+	"     c&\n"
+	")\n"
+	"\n"
+	"a@RECref := (1, \"two\", 3)\n"
+	"b@RECref := (7, \"eight\", 9)\n"
+	"\n"
+	"swap a@RECref, b@RECref\n"
+	"\n"
+	"print a@RECref.a%\n"
+	"print a@RECref.b$\n"
+	"print a@RECref.c&\n"
+	"print b@RECref.a%\n"
+	"print b@RECref.b$\n"
+	"print b@RECref.c&\n",
+	"7\neight\n9\n1\ntwo\n3\n",
+	},
+	{"rec_array_swap",
+	"type RECref (\n"
+	"     a%\n"
+	"     b$\n"
+	"     c&\n"
+	")\n"
+	"\n"
+	"dim a@RECref(0)\n"
+	"dim b@RECref(0)\n"
+	"\n"
+	"a@RECref(0) = (1, \"two\", 3)\n"
+	"b@RECref(0) = (7, \"eight\", 9)\n"
+	"\n"
+	"swap a@RECref(), b@RECref()\n"
+	"\n"
+	"print a@RECref(0).a%\n"
+	"print a@RECref(0).b$\n"
+	"print a@RECref(0).c&\n"
+	"print b@RECref(0).a%\n"
+	"print b@RECref(0).b$\n"
+	"print b@RECref(0).c&\n",
+	"7\neight\n9\n1\ntwo\n3\n",
+	},
 };
 
 /* clang-format on */
