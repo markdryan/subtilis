@@ -1183,6 +1183,31 @@ bool subtilis_type_if_is_scalar_ref(const subtilis_type_t *type,
 		    (type->type == SUBTILIS_TYPE_VECTOR_REC))
 			retval = subtilis_type_rec_is_scalar(&element_type);
 		else
+			retval = subtilis_type_if_is_numeric(&element_type) ||
+				 element_type.type == SUBTILIS_TYPE_FN;
+		subtilis_type_free(&element_type);
+		return retval;
+	}
+
+	return (type->type == SUBTILIS_TYPE_STRING);
+}
+
+bool subtilis_type_if_is_serializable_ref(const subtilis_type_t *type,
+					  subtilis_error_t *err)
+{
+	subtilis_type_t element_type;
+	bool retval;
+
+	if (subtilis_type_if_is_array(type) ||
+	    subtilis_type_if_is_vector(type)) {
+		prv_type_map[type->type]->element_type(type, &element_type,
+						       err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return false;
+		if ((type->type == SUBTILIS_TYPE_ARRAY_REC) ||
+		    (type->type == SUBTILIS_TYPE_VECTOR_REC))
+			retval = subtilis_type_rec_serializable(&element_type);
+		else
 			retval = subtilis_type_if_is_numeric(&element_type);
 		subtilis_type_free(&element_type);
 		return retval;
@@ -1273,18 +1298,47 @@ size_t subtilis_type_if_destructor(subtilis_parser_t *p,
 	return fn(p, type, err);
 }
 
-void subtilis_type_compare_diag_custom(subtilis_parser_t *p,
+void subtilis_type_diag_expected_error(subtilis_parser_t *p,
+				       const char *expected,
 				       const subtilis_type_t *t1,
-				       const subtilis_type_t *t2, void *ud,
-				       subtilis_type_cmp_diag_fn_t diag_fn,
+				       const char *subtilis_file,
+				       unsigned int subtilis_line,
 				       subtilis_error_t *err)
 {
 	subtilis_error_t err1;
 	subtilis_buffer_t buf1;
-	subtilis_buffer_t buf2;
 
-	if (subtilis_type_eq(t1, t2))
-		return;
+	subtilis_error_init(&err1);
+	subtilis_buffer_init(&buf1, 64);
+	subtilis_full_type_name(t1, &buf1, &err1);
+	if (err1.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+	subtilis_buffer_zero_terminate(&buf1, &err1);
+	if (err1.type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_error_set_expected(err, expected,
+				    subtilis_buffer_get_string(&buf1),
+				    subtilis_file, subtilis_line);
+	subtilis_buffer_free(&buf1);
+
+	return;
+
+cleanup:
+	subtilis_error_set_expected(err, expected, subtilis_type_name(t1),
+				    subtilis_file, subtilis_line);
+	subtilis_buffer_free(&buf1);
+}
+
+void subtilis_type_custom_diag_error(subtilis_parser_t *p,
+				     const subtilis_type_t *t1,
+				     const subtilis_type_t *t2, void *ud,
+				     subtilis_type_cmp_diag_fn_t diag_fn,
+				     subtilis_error_t *err)
+{
+	subtilis_error_t err1;
+	subtilis_buffer_t buf1;
+	subtilis_buffer_t buf2;
 
 	subtilis_error_init(&err1);
 	subtilis_buffer_init(&buf1, 64);
@@ -1313,6 +1367,18 @@ cleanup:
 	diag_fn(p, subtilis_type_name(t1), subtilis_type_name(t2), ud, err);
 	subtilis_buffer_free(&buf2);
 	subtilis_buffer_free(&buf1);
+}
+
+void subtilis_type_compare_diag_custom(subtilis_parser_t *p,
+				       const subtilis_type_t *t1,
+				       const subtilis_type_t *t2, void *ud,
+				       subtilis_type_cmp_diag_fn_t diag_fn,
+				       subtilis_error_t *err)
+{
+	if (subtilis_type_eq(t1, t2))
+		return;
+
+	subtilis_type_custom_diag_error(p, t1, t2, ud, diag_fn, err);
 }
 
 static void prv_diag_custom_default(subtilis_parser_t *p, const char *expected,

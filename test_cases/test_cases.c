@@ -6012,6 +6012,83 @@ const subtilis_test_case_t test_cases[] = {
 	"print b@RECref(0).c&\n",
 	"7\neight\n9\n1\ntwo\n3\n",
 	},
+	{"rec_array_put_get",
+	"type RECinner (\n"
+	"     a%\n"
+	")\n"
+	"\n"
+	"type RECscalar (\n"
+	"     a%\n"
+	"     b\n"
+	"     c@RECinner\n"
+	"     d&\n"
+	")\n"
+	"\n"
+	"PROCWriteFile\n"
+	"PROCReadFile\n"
+	"def PROCWriteFile\n"
+	"    f% := openout(\"markus\")\n"
+	"    onerror\n"
+	"      tryone close# f%\n"
+	"    enderror\n"
+	"    local dim a@RECscalar(1)\n"
+	"    a@RECscalar(0) = ( 1, 3.14, ( 2 ), &ff )\n"
+	"    a@RECscalar(1) = ( 2, 99, ( 3 ), &1f )\n"
+	"    put# f%, a@RECscalar()\n"
+	"    onerror error err enderror\n"
+	"    close# f%\n"
+	"endproc\n"
+	"def PROCReadFile\n"
+	"    f% := openin(\"markus\")\n"
+	"    onerror\n"
+	"      tryone close# f%\n"
+	"    enderror\n"
+	"    local dim a@RECscalar(1)\n"
+	"    read% := get#(f%, a@RECscalar())\n"
+	"    range ~, i% := a@RECscalar()\n"
+	"        print a@RECscalar(i%).a%\n"
+	"        print a@RECscalar(i%).b\n"
+	"        print a@RECscalar(i%).c@RECinner.a%\n"
+	"        print ~a@RECscalar(i%).d&\n"
+	"    endrange\n"
+	"    tryone close# f%\n"
+	"endproc\n",
+	"1\n3.14\n2\nFF\n2\n99\n3\n1F\n",
+	},
+	{"copy_array_fn",
+	"type PROCdo(a%)\n"
+	"\n"
+	"dim a@PROCdo(1)\n"
+	"a@PROCdo() = def PROC(a%) print a% endproc,\n"
+	"def PROC(a%) for i% := 1 to a% print 1 next endproc\n"
+	"dim b@PROCdo(1)\n"
+	"copy(b@PROCdo(), a@PROCdo())\n"
+	"\n"
+	"range c@PROCdo := b@PROCdo()\n"
+	"      c@PROCdo(4)\n"
+	"endrange\n",
+	"4\n1\n1\n1\n1\n",
+	},
+	{"copy_array_rec_fn",
+	"type PROCdo(a%)\n"
+	"type RECscalar (\n"
+	"    a@PROCdo\n"
+	")\n"
+	"\n"
+	"dim a@RECscalar(1)\n"
+	"\n"
+	"a@RECscalar(0) = (def PROC(a%) print a% endproc)\n"
+	"a@RECscalar(1) = (def PROC(a%) for i% := 1 to a% print 1 next\n"
+	"endproc)\n"
+	"\n"
+	"dim b@RECscalar(1)\n"
+	"copy(b@RECscalar(), a@RECscalar())\n"
+	"\n"
+	"range c@RECscalar := b@RECscalar()\n"
+	"      c@RECscalar.a@PROCdo(4)\n"
+	"endrange\n",
+	"4\n1\n1\n1\n1\n",
+	},
 };
 
 /* clang-format on */

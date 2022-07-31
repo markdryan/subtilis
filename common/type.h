@@ -191,6 +191,7 @@ void subtilis_type_rec_add_field(subtilis_type_t *dst, const char *name,
 				 uint32_t alignment, uint32_t size,
 				 int32_t vec_dim, subtilis_error_t *err);
 bool subtilis_type_rec_is_scalar(const subtilis_type_t *typ);
+bool subtilis_type_rec_serializable(const subtilis_type_t *typ);
 bool subtilis_type_rec_can_zero_fill(const subtilis_type_t *typ);
 size_t subtilis_type_rec_zero_fill_size(const subtilis_type_t *typ);
 uint32_t subtilis_type_rec_field_offset_id(const subtilis_type_rec_t *rec,

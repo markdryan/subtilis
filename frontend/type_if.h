@@ -355,11 +355,19 @@ void subtilis_type_if_vector_of(const subtilis_type_t *element_type,
 				subtilis_type_t *type, subtilis_error_t *err);
 
 /*
- * Returns true if type is an array of numeric types of a string.
+ * Returns true if type is an array of numeric types, function
+ * pointers or a string.
  */
 
 bool subtilis_type_if_is_scalar_ref(const subtilis_type_t *type,
 				    subtilis_error_t *err);
+
+/*
+ * Returns true if the ref type can be serialized.
+ */
+
+bool subtilis_type_if_is_serializable_ref(const subtilis_type_t *type,
+					  subtilis_error_t *err);
 
 /*
  * Writes the type of the elements contained within an array of type "type"
@@ -903,6 +911,17 @@ typedef void (*subtilis_type_cmp_diag_fn_t)(subtilis_parser_t *p,
 					    const char *expected,
 					    const char *got, void *ud,
 					    subtilis_error_t *err);
+void subtilis_type_custom_diag_error(subtilis_parser_t *p,
+				     const subtilis_type_t *t1,
+				     const subtilis_type_t *t2, void *ud,
+				     subtilis_type_cmp_diag_fn_t diag_fn,
+				     subtilis_error_t *err);
+void subtilis_type_diag_expected_error(subtilis_parser_t *p,
+				       const char *expected,
+				       const subtilis_type_t *t1,
+				       const char *subtilis_file,
+				       unsigned int subtilis_line,
+				       subtilis_error_t *err);
 void subtilis_type_compare_diag_custom(subtilis_parser_t *p,
 				       const subtilis_type_t *t1,
 				       const subtilis_type_t *t2, void *ud,

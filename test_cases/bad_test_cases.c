@@ -1095,6 +1095,16 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"a@RECar.a%{0} = 10\n",
 	SUBTILIS_ERROR_EXPECTED,
 	},
+	{"put_rec_non_scalar",
+	"type PROCdo(a%)\n"
+	"type RECref(\n"
+	"    a@PROCdo\n"
+	")\n"
+	"\n"
+	"local dim a@RECref(1)\n"
+	"put# 0, a@RECref()\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
 };
 
 /* clang-format on */

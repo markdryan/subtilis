@@ -811,6 +811,33 @@ bool subtilis_type_rec_is_scalar(const subtilis_type_t *typ)
 	return true;
 }
 
+bool subtilis_type_rec_serializable(const subtilis_type_t *typ)
+{
+	subtilis_type_t *field;
+	size_t i;
+	const subtilis_type_rec_t *rec = &typ->params.rec;
+
+	for (i = 0; i < rec->num_fields; i++) {
+		field = &rec->field_types[i];
+		switch (field->type) {
+		case SUBTILIS_TYPE_REAL:
+		case SUBTILIS_TYPE_INTEGER:
+		case SUBTILIS_TYPE_BYTE:
+		case SUBTILIS_TYPE_LOCAL_BUFFER:
+			continue;
+		case SUBTILIS_TYPE_REC:
+			if (subtilis_type_rec_serializable(field))
+				continue;
+			break;
+		default:
+			break;
+		}
+		return false;
+	}
+
+	return true;
+}
+
 bool subtilis_type_rec_can_zero_fill(const subtilis_type_t *typ)
 {
 	subtilis_type_t *field;
