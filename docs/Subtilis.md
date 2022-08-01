@@ -1474,6 +1474,169 @@ ho@PROCHigherOrder(100, 3, def FN%(a%, b%) <- a% div b%)
 
 As a final note, Subtilis does not support any form of closure and probably never will.
 
+### RECords
+
+#### Type and variable creation
+
+Subtilis supports user defined types called records.  Before a record can be used a type
+for that record must be created.  This can be done using the type keyword, also used to
+create new types for function pointers.  The type keyword is followed by a record type
+name which must begin with the string "REC" followed by a valid identifier name.  The
+record name is the followed by one or more white space separated field declarations
+enclosed by round brackets.  For example,
+
+```
+type RECPoint ( x% y% )
+```
+
+creates a new record type called RECPoint that contains two integer fields, named x% and y%.
+An instance of our new type can be created using the @ operator, e.g.,
+
+local a@RECPoint
+
+will create a new variable called a@RECPoint.  When a record is created in this way all of
+its fields are initialised to their zero value, so in this case, the two fields, as they
+are integers, will both have been initialised to zero.
+
+The fields can be access (read from and written to) using the '.' operator.  For example,
+
+```
+print a@RECPoint.x%
+print a@RECPoint.y%
+a@RECPoint.x% = 100
+a@RECPoint.y% = 200
+print a@RECPoint.x%
+print a@RECPoint.y%
+```
+
+should output
+
+```
+0
+0
+100
+200
+```
+
+#### Initialisation lists
+
+All the fields of a record can be set all at once using an initialisation list.  This can be done when
+the variable is created or at a later stage.  An initialisation list is a comma separated list
+of values (which can be constants or variables) surrounded by round brackets.  For example, to create and
+initialise a new instance of RECPoint, we might type
+
+```
+a@RECPoint := (100, 200)
+```
+
+The number of elements of the initialisation list must not exceed the number of fields of the record variable
+being initialised or assigned to.  It is possible to specify fewer elements in an initialisation list than there
+are fields in the record.  In this case the fields that aren't specified are set to their zero-value.  For example,
+
+```
+a@RECPoint = (10)
+```
+
+will set a@RECPoint.x to 10 and a@RECPoint.y to 0.  It is even possible to specify an empty initialisation list,
+which will set all the fields of the record variable to their zero value.  This is useful when declaring global
+record variables, as Subtilis provides no equivalent of the local statement for global variables.  Thus the
+statement
+
+```
+glob@RECPoint = ()
+```
+
+appearing in the top level of the program will create a new global variable of type RECPoint and will set both
+fields to zero.
+
+#### Nested records
+
+The fields of a record can be of any type, including other records, strings or arrays.  There's one exception,
+recursive record definitions are not allow (without using record pointers).  For example,
+
+```
+type RECShape (
+  name$
+  name@RECPoint
+  dim vertices@RECPoint{3}
+)
+```
+
+defines a record that contains a string, coordinates for the placement of that string and a vector of points
+that describe a shape.  All the fields of records that contain complex types such as other records or arrays
+can be initialised using an initialisation list.  Extra sets of round brackets are required to denote the contents
+of a nested type or array or vector.  For example, our shape might be fully initialised as follows.
+
+
+a@RECShape := ( "square", ( 100, 450), ( (100, 0 ), (100, 100), (100, 400), (400, 400)))
+
+#### Layout and Copy Semantics
+
+Records are not reference types.  They are value types.  When you assign one reference variable
+to another the entire contents of the source variable are copied, e.g.,
+
+```
+a@RECPoint = b@RECPoint
+```
+
+copies 8 bytes of data, two integer variables.  Global record variables are place in the main global data
+area and local record variables are placed on the stack.  Records may contain fields that are reference
+values, such as strings and arrays.  The meta data for reference fields are contained within the record
+variable itself, but the data for those fields are stored on the heap and reference counted.  The compiler
+ensures that all reference fields of a record variable are dereferenced when the record goes out of scope,
+or have their reference counts increased when the variable is copied.
+
+All fields in a record are aligned by their required alignment.  Byte fields are 1 byte aligned, integer
+fields are 4 byte aligned, real numbers are 8 byte aligned, and referenced types are aligned by the size
+of a pointer (which on RiscOS is 4 bytes).  The alignment of the record variable itself is determined by
+its field with the highest alignment.  For example,
+
+```
+type RECalign ( a& b& c)
+```
+
+will define a record variable that is 16 bytes in size and is 8 byte aligned.  Field a& is 8 byte aligned,
+as it is the first field in the structure, and occurs at offset 0 from the start of any variable defined
+using this type.  Field b& is 1 byte aligned and occurs at offset 1.  Field c is 8 byte aligned and occurs
+at offset 8.  As variables of type RECalign are required to be 8 byte aligned, field c will also be 8 byte
+aligned.
+
+Record variables can be used in almost all places that a variable of one of the standard types can be used.
+They can be passed to procedures and functions and returned from functions.  They can be used with the copy,
+append and swap keywords.  For example, the following program defines a function that adds the fields of
+two records together and returns the results in a new record.
+
+
+```
+type RECScalar ( a% b c& )
+
+a@RECScalar = ( 1, 10.0, 3)
+@RECScalar = ( 4, 10.0, 5)
+c@RECScalar = FNAdd@RECScalar(a@RECScalar, b@RECScalar)
+print c@RECScalar.a%
+print c@RECScalar.b"
+print c@RECScalar.c&
+
+def FNAdd@RECScalar(a@RECScalar, b@RECScalar)
+    a@RECScalar.a% += b@RECScalar.a%
+    a@RECScalar.b += b@RECScalar.b
+    a@RECScalar.c& += b@RECScalar.c&
+<-a@RECScalar
+```
+
+The program will print
+
+```
+5
+20
+8
+```
+
+Note that record variables are value types, they are passed to and returned from functions
+as value types, i.e., they are copied, at least conceptually.  It should be possible for
+the compiler to elide some of the copies in certain cases, but at the time of writing
+(August 2022) it can't currently do this.
+
 ## Current Issues with the Grammar
 
 ### Function like keywords returning integer values
@@ -1719,8 +1882,8 @@ no memory restriction on an application, the maximum integer value is returned.
 Can be used to read and write blocks of data from and to a file.
 
 GET# takes two comma separated parameters, a file handle and a buffer of some sorts, and returns the number of items read.
-The buffer can be an array containing numeric elements or a string.  The size of the array or string determines the
-maximum number of bytes that are actually read, e.g.,
+The buffer can be an array containing numeric elements or a string or a record containing numeric types.  The size of the
+array or string determines the maximum number of bytes that are actually read, e.g.,
 
 ```
 buf$ := string$(32, " ")
@@ -1943,14 +2106,15 @@ Here's a list of other language features that are currently not implemented but 
 * INPUT
 * INPUT# and PRINT#
 * INSTR
-* SWAP
 * The vector operations on arrays are not implemented but will be
 
 There are also some enhancements that will need to be added to the language to make it
 more palatable to the modern programmer.
 
-* Structures
 * Maps
+* Allow the results of an expression to be discarded, e.g. ~= FN@RECv()
+* PUT# and GET# should be able to write and read single variables (and not just arrays and vectors)
+
 
 ## Tooling
 
