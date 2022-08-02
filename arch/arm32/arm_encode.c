@@ -1014,6 +1014,9 @@ static void prv_encode_ldrp_instr(void *user_data, subtilis_arm_op_t *op,
 
 	ud->constants[ud->const_count - 1].section_label = instr->section_label;
 
+	if (ud->ldrc_int == SIZE_MAX)
+		ud->ldrc_int = ud->bytes_written;
+
 	stran.ccode = instr->ccode;
 	stran.dest = instr->dest;
 	stran.base = 15;
