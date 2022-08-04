@@ -6089,6 +6089,22 @@ const subtilis_test_case_t test_cases[] = {
 	"endrange\n",
 	"4\n1\n1\n1\n1\n",
 	},
+	{"mid_str_alias",
+	"c$ = \"hello mark\"\n"
+	"\n"
+	"rem alias c$ to force an alloc\n"
+	"\n"
+	"a$ = c$\n"
+	"b$ := \"LLO\"\n"
+	"mid$(a$, 2) = b$\n"
+	"print a$\n"
+	"\n"
+	"b$ = \"hello mark\"\n"
+	"mid$(a$, 2) = b$\n"
+	"print a$\n",
+	"heLLO mark\n"
+	"hehello ma\n",
+	},
 };
 
 /* clang-format on */

@@ -2477,6 +2477,7 @@ void subtilis_string_type_mid(subtilis_parser_t *p, subtilis_exp_t *str,
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t condee;
 	size_t str_len_reg;
+	size_t orig_len_reg;
 	size_t value_len_reg;
 
 	end_label.label = subtilis_ir_section_new_label(p->current);
@@ -2516,12 +2517,12 @@ void subtilis_string_type_mid(subtilis_parser_t *p, subtilis_exp_t *str,
 	}
 
 	op1.integer = SUBTIILIS_STRING_SIZE_OFF;
-	str_len_reg = subtilis_ir_section_add_instr(
+	orig_len_reg = subtilis_ir_section_add_instr(
 	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, str->exp.ir_op, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	op1.reg = str_len_reg;
+	op1.reg = orig_len_reg;
 	condee.reg = subtilis_ir_section_add_instr(
 	    p->current, (start->type.type == SUBTILIS_TYPE_CONST_INTEGER)
 			    ? SUBTILIS_OP_INSTR_GTI_I32
@@ -2541,7 +2542,7 @@ void subtilis_string_type_mid(subtilis_parser_t *p, subtilis_exp_t *str,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	op1.reg = str_len_reg;
+	op1.reg = orig_len_reg;
 	str_len_reg = subtilis_ir_section_add_instr(
 	    p->current, (start->type.type == SUBTILIS_TYPE_CONST_INTEGER)
 			    ? SUBTILIS_OP_INSTR_SUBI_I32
@@ -2570,7 +2571,7 @@ void subtilis_string_type_mid(subtilis_parser_t *p, subtilis_exp_t *str,
 		goto cleanup;
 
 	data_reg = subtilis_reference_type_copy_on_write(p, str->exp.ir_op.reg,
-							 0, str_len_reg, err);
+							 0, orig_len_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
