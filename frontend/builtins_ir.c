@@ -1821,10 +1821,21 @@ void subtilis_builtins_ir_str_to_fp(subtilis_parser_t *p,
 	subtilis_ir_operand_t plus_minus_label;
 	subtilis_ir_operand_t inf_label;
 	subtilis_ir_operand_t finish_label;
+	subtilis_symbol_table_t *old_st;
 	subtilis_exp_t *e = NULL;
 
 	old_current = p->current;
 	p->current = current;
+
+	old_st = p->local_st;
+	p->local_st = subtilis_symbol_table_new(err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	/*
+	 * Wow this is nasty.  The call to is_inf below reserves some
+	 * stack space so we need to swap out the symbol table.
+	 */
 
 	str.reg = SUBTILIS_IR_REG_TEMP_START;
 	end_label.label = current->end_label;
@@ -1928,7 +1939,13 @@ void subtilis_builtins_ir_str_to_fp(subtilis_parser_t *p,
 	subtilis_ir_section_add_instr_no_reg(
 	    current, SUBTILIS_OP_INSTR_RET_REAL, ret_val, err);
 
+	current->locals = p->local_st->max_allocated;
+
 cleanup:
+
+	subtilis_symbol_table_delete(p->local_st);
+	p->local_st = old_st;
+
 	subtilis_exp_delete(e);
 	p->current = old_current;
 }
