@@ -1399,8 +1399,10 @@ void subtilis_array_type_assign_ref_exp(subtilis_parser_t *p,
 					subtilis_exp_t *e,
 					subtilis_error_t *err)
 {
-	subtilis_array_type_assign_ref(p, type, mem_reg, loc, e->exp.ir_op.reg,
-				       err);
+	subtilis_type_compare_diag(p, type, &e->type, err);
+	if (err->type == SUBTILIS_ERROR_OK)
+		subtilis_array_type_assign_ref(p, type, mem_reg, loc,
+					       e->exp.ir_op.reg, err);
 	subtilis_exp_delete(e);
 }
 

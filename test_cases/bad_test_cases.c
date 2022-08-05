@@ -1105,6 +1105,16 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"put# 0, a@RECref()\n",
 	SUBTILIS_ERROR_EXPECTED,
 	},
+	{"assign_string_to_string_vector",
+	"local dim lines${}\n"
+	"\n"
+	"lines$ = FNGetLine$(lines${})\n"
+	"\n"
+	"def FNGetLine$(lines${})\n"
+	"   line$ := \"\"\n"
+	"<- line$\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
 };
 
 /* clang-format on */

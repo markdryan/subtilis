@@ -38,7 +38,7 @@ static subtilis_exp_t *prv_exp_to_var_const(subtilis_parser_t *p,
 
 	subtilis_string_init_type(p, &type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		goto free_e;
 
 	s = subtilis_symbol_table_insert_tmp(p->local_st, &type, NULL, err);
 	subtilis_type_free(&type);
@@ -59,6 +59,9 @@ static subtilis_exp_t *prv_exp_to_var_const(subtilis_parser_t *p,
 	return subtilis_exp_new_var(&s->t, reg, err);
 
 cleanup:
+	subtilis_type_free(&type);
+
+free_e:
 
 	subtilis_exp_delete(e);
 
