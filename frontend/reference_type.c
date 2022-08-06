@@ -24,6 +24,9 @@
 #include "reference_type.h"
 #include "type_if.h"
 
+static void prv_deref(subtilis_parser_t *p, size_t mem_reg, size_t loc,
+		      bool destructor, subtilis_error_t *err);
+
 void subtilis_reference_type_init_ref(subtilis_parser_t *p, size_t dest_mem_reg,
 				      size_t dest_loc, size_t source_reg,
 				      bool check_size, bool ref,
@@ -394,15 +397,25 @@ void subtilis_reference_type_assign_ref(subtilis_parser_t *p,
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t copy;
 
-	op0.reg = dest_mem_reg;
-	op1.integer = dest_loc + SUBTIILIS_REFERENCE_HEAP_OFF;
+	/*
+	 * For vectors we need to check before we deref
+	 */
 
-	copy.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+	if (check_size) {
+		prv_deref(p, dest_mem_reg, dest_loc, false, err);
+	} else {
+		op0.reg = dest_mem_reg;
+		op1.integer = dest_loc + SUBTIILIS_REFERENCE_HEAP_OFF;
 
-	reference_type_call_deref(p, copy, err);
+		copy.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		reference_type_call_deref(p, copy, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -605,6 +618,10 @@ size_t subtilis_reference_type_re_malloc(subtilis_parser_t *p, size_t store_reg,
 	if (size_reg != new_size_reg) {
 		subtilis_reference_type_set_size(p, store_reg, loc,
 						 new_size_reg, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+		subtilis_reference_type_set_orig_size(p, store_reg, loc,
+						      new_size_reg, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return SIZE_MAX;
 	}

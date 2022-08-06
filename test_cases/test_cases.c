@@ -6105,6 +6105,34 @@ const subtilis_test_case_t test_cases[] = {
 	"heLLO mark\n"
 	"hehello ma\n",
 	},
+	{"assign_empty_vector_from_tmp",
+	"local dim lines${}\n"
+	"lines${} = FNConsumeBuffer${}(lines${})\n"
+	"print dim(lines${}, 1)\n"
+	"def FNConsumeBuffer${}(lines${})\n"
+	"<- lines${}",
+	"-1\n",
+	},
+	{"append_vector_string_return",
+	"lines${} := FNGetLines${}()\n"
+	"range s$ := lines${}\n"
+	"  print s$\n"
+	"endrange\n"
+	"\n"
+	"def FNGetLines${}\n"
+	"    local dim lines${}\n"
+	"    for i% := 0 to 1\n"
+	"        lines${} = FNFillBuffer${}(lines${})\n"
+	"    next\n"
+	"<-lines${}\n"
+	"\n"
+	"def FNFillBuffer${}(lines${})\n"
+	"      s$ := string$(16, \"a\")\n"
+	"      append(lines${}, s$)\n"
+	"<-lines${}\n",
+	"aaaaaaaaaaaaaaaa\n"
+	"aaaaaaaaaaaaaaaa\n"
+	},
 };
 
 /* clang-format on */
