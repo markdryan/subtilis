@@ -861,6 +861,10 @@ static void prv_read_string_table(subtilis_parser_t *p, size_t array_base,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	subtilis_reference_type_deref(p, array_ptr.reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	subtilis_string_init_from_lca(p, array_ptr.reg, 0, lca_offset.reg,
 				      size.reg, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)

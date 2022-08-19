@@ -6175,6 +6175,70 @@ const subtilis_test_case_t test_cases[] = {
 	"<-lines@RECint{}\n",
 	"16\n16\n",
 	},
+	{"reset_vector_string_slice",
+	"local dim lines${5}\n"
+	"lines${} = \"one\", \"two\", \"three\", \"four\", \"five\", \"six\"\n"
+	"\n"
+	"def FNSliceReset${}(a${})\n"
+	"  a${} = \"hello\", \"goodbye\"\n"
+	"<-a${}\n"
+	"\n"
+	"lines2${} = FNSliceReset${}(lines${1:3})\n"
+	"range s$ := lines2${}\n"
+	"  print s$\n"
+	"endrange\n",
+	"hello\ngoodbye\n",
+	},
+	{"set_vector_string_slice",
+	"local dim lines${5}\n"
+	"lines${} = \"one\", \"two\", \"three\", \"four\", \"five\", \"six\"\n"
+	"\n"
+	"def FNSliceReset${}(a${})\n"
+	"  a${} = \"hello\"\n"
+	"<-a${}\n"
+	"\n"
+	"lines2${} = FNSliceReset${}(lines${1:3})\n"
+	"range s$ := lines2${}\n"
+	"  print s$\n"
+	"endrange\n",
+	"hello\nhello\n",
+	},
+	{"append_vector_string_slice",
+	"local dim lines${5}\n"
+	"lines${} = \"one\", \"two\", \"three\", \"four\", \"five\", \"six\"\n"
+	"\n"
+	"def FNSliceAppend${}(a${})\n"
+	"  append(a${}, \"three\")\n"
+	"<-a${}\n"
+	"\n"
+	"lines2${} = FNSliceAppend${}(lines${1:3})\n"
+	"range s$ := lines2${}\n"
+	"  print s$\n"
+	"endrange\n",
+	"two\nthree\nthree\n",
+	},
+	{"append_vector_slice_rec",
+	"type RECStr ( a$ )\n"
+	"\n"
+	"local dim lines@RECStr{5}\n"
+	"lines@RECStr{0}.a$ = \"one\"\n"
+	"lines@RECStr{1}.a$ = \"two\"\n"
+	"lines@RECStr{2}.a$ = \"three\"\n"
+	"lines@RECStr{3}.a$ = \"four\"\n"
+	"lines@RECStr{4}.a$ = \"five\"\n"
+	"lines@RECStr{5}.a$ = \"six\"\n"
+	"\n"
+	"def FNSliceReset@RECStr{}(a@RECStr{})\n"
+	"  local b@RECStr = ( \"hello\" )\n"
+	"  append(a@RECStr{}, b@RECStr)\n"
+	"<-a@RECStr{}\n"
+	"\n"
+	"lines2@RECStr{} = FNSliceReset@RECStr{}(lines@RECStr{1:3})\n"
+	"range a@RECStr := lines2@RECStr{}\n"
+	"  print a@RECStr.a$\n"
+	"endrange\n",
+	"two\nthree\nhello\n",
+	},
 };
 
 /* clang-format on */
