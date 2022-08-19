@@ -1887,7 +1887,7 @@ array or string determines the maximum number of bytes that are actually read, e
 
 ```
 buf$ := string$(32, " ")
-chars_read% := get#(handle#, buf$)
+chars_read% := get#(handle%, buf$)
 ```
 
 will read up to 32 bytes into buf$.  If there are fewer than 32 bytes in the file, the number of bytes actually read
@@ -1898,7 +1898,7 @@ assuming that there were 15 bytes left in the file pointed to by handle# and the
 
 ```
 dim buf%(10)
-ints_read% := get#(handle#, buf%())
+ints_read% := get#(handle%, buf%())
 ```
 
 ints_read% would be set to 3 and not 15 as only 3 complete integers were read.
@@ -2114,6 +2114,10 @@ more palatable to the modern programmer.
 * Maps
 * Allow the results of an expression to be discarded, e.g. ~= FN@RECv()
 * PUT# and GET# should be able to write and read single variables (and not just arrays and vectors)
+* Optimisation for append of constant strings.  Currently, it generates a temporary and appends the temporary.
+* It also does this when assiging a constant string to an element in a vector.
+* In a related note it would be nice to be able to append REC literals directly, without having to manually create a temporary variable first.
+* Maybe some sort of way to specify the initial allocation size of a vector, to avoid reallocs, e.g., dim a${} reserve 64.
 
 
 ## Tooling
