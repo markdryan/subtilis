@@ -71,6 +71,42 @@ static void prv_zero_reg(subtilis_parser_t *p, const subtilis_type_t *type,
 	    p->current, SUBTILIS_OP_INSTR_MOVI_I32, op0, op1, err);
 }
 
+static void prv_assign_ref(subtilis_parser_t *p, const subtilis_type_t *type,
+			   size_t dest_mem_reg, size_t dest_loc,
+			   size_t source_reg, subtilis_error_t *err)
+{
+	size_t data_ptr;
+	bool check_size = subtilis_type_if_is_vector(type);
+
+	data_ptr =
+	    subtilis_reference_get_pointer(p, dest_mem_reg, dest_loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_builtin_call_ir_deref_array_els(p, type, data_ptr, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_reference_type_init_ref(p, dest_mem_reg, dest_loc, source_reg,
+					 check_size, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_array_type_copy_dims(p, type, dest_mem_reg, dest_loc,
+				      source_reg, err);
+}
+
+static void prv_assign_array_ref_exp(subtilis_parser_t *p,
+				     const subtilis_type_t *type,
+				     size_t mem_reg, size_t loc,
+				     subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_type_compare_diag(p, type, &e->type, err);
+	if (err->type == SUBTILIS_ERROR_OK)
+		prv_assign_ref(p, type, mem_reg, loc, e->exp.ir_op.reg, err);
+	subtilis_exp_delete(e);
+}
+
 static void prv_element_type(const subtilis_type_t *type,
 			     subtilis_type_t *element_type,
 			     subtilis_error_t *err)
@@ -462,7 +498,7 @@ subtilis_type_if subtilis_type_array_string = {
 	.zero = prv_zero,
 	.zero_ref = subtilis_array_create_1el,
 	.new_ref = NULL,
-	.assign_ref = subtilis_array_type_assign_ref_exp,
+	.assign_ref = prv_assign_array_ref_exp,
 	.assign_ref_no_rc = NULL,
 	.zero_reg = prv_zero_reg,
 	.copy_ret = subtlis_array_type_copy_ret,
@@ -550,7 +586,7 @@ subtilis_type_if subtilis_type_vector_string = {
 	.zero = prv_zero,
 	.zero_ref = prv_vector_zero_ref,
 	.new_ref = NULL,
-	.assign_ref = subtilis_array_type_assign_ref_exp,
+	.assign_ref = prv_assign_array_ref_exp,
 	.assign_ref_no_rc = NULL,
 	.zero_reg = prv_zero_reg,
 	.copy_ret = subtlis_array_type_copy_ret,

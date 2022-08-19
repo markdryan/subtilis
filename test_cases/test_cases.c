@@ -6133,6 +6133,48 @@ const subtilis_test_case_t test_cases[] = {
 	"aaaaaaaaaaaaaaaa\n"
 	"aaaaaaaaaaaaaaaa\n"
 	},
+	{"append_vector_rec_ref_return",
+	"type RECstr ( a$ )\n"
+	"\n"
+	"lines@RECstr{} := FNGetLines@RECstr{}()\n"
+	"range s@RECstr := lines@RECstr{}\n"
+	"  print s@RECstr.a$\n"
+	"endrange\n"
+	"\n"
+	"def FNGetLines@RECstr{}\n"
+	"    local dim lines@RECstr{}\n"
+	"    for i% := 0 to 1\n"
+	"        lines@RECstr{} = FNFillBuffer@RECstr{}(lines@RECstr{})\n"
+	"    next\n"
+	"<-lines@RECstr{}\n"
+	"\n"
+	"def FNFillBuffer@RECstr{}(lines@RECstr{})\n"
+	"      local a@RECstr = ( string$(16, \"a\") )\n"
+	"      append(lines@RECstr{}, a@RECstr)\n"
+	"<-lines@RECstr{}\n",
+	"aaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaa\n",
+	},
+	{"append_vector_rec_noref_return",
+	"type RECint ( a% )\n"
+	"\n"
+	"lines@RECint{} := FNGetLines@RECint{}()\n"
+	"range s@RECint := lines@RECint{}\n"
+	"  print s@RECint.a%\n"
+	"endrange\n"
+	"\n"
+	"def FNGetLines@RECint{}\n"
+	"    local dim lines@RECint{}\n"
+	"    for i% := 0 to 1\n"
+	"        lines@RECint{} = FNFillBuffer@RECint{}(lines@RECint{})\n"
+	"    next\n"
+	"<-lines@RECint{}\n"
+	"\n"
+	"def FNFillBuffer@RECint{}(lines@RECint{})\n"
+	"      local a@RECint = ( 16 )\n"
+	"      append(lines@RECint{}, a@RECint)\n"
+	"<-lines@RECint{}\n",
+	"16\n16\n",
+	},
 };
 
 /* clang-format on */

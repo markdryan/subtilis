@@ -1146,13 +1146,10 @@ void subtilis_parser_array_assign_reference(subtilis_parser_t *p,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err)
 {
-	if (subtilis_type_eq(d->t, &e->type)) {
-		subtilis_array_type_assign_ref(p, d->t, d->reg, d->loc,
-					       e->exp.ir_op.reg, err);
-		subtilis_exp_delete(e);
-	} else {
+	if (subtilis_type_eq(d->t, &e->type))
+		subtilis_type_if_assign_ref(p, d->t, d->reg, d->loc, e, err);
+	else
 		subtilis_parser_array_init_list(p, t, d, e, err);
-	}
 }
 
 static void prv_create_vector(subtilis_parser_t *p,

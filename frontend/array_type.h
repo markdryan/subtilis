@@ -191,6 +191,10 @@ void subtilis_array_type_assign_ref(subtilis_parser_t *p,
 				    const subtilis_type_t *type,
 				    size_t dest_mem_reg, size_t dest_loc,
 				    size_t source_reg, subtilis_error_t *err);
+void subtilis_array_type_copy_dims(subtilis_parser_t *p,
+				   const subtilis_type_t *type,
+				   size_t dest_mem_reg, size_t dest_loc,
+				   size_t source_reg, subtilis_error_t *err);
 void subtilis_array_type_assign_to_reg(subtilis_parser_t *p, size_t reg,
 				       subtilis_exp_t *e,
 				       subtilis_error_t *err);
@@ -251,6 +255,9 @@ subtilis_exp_t *subtilis_array_type_dynamic_size(subtilis_parser_t *p,
  */
 void subtilis_array_type_deref_els(subtilis_parser_t *p, size_t data_reg,
 				   size_t size_reg, subtilis_error_t *err);
+void subtilis_array_type_ref_els(subtilis_parser_t *p,
+				 const subtilis_type_t *type, size_t data_reg,
+				 size_t size_reg, subtilis_error_t *err);
 void subtilis_array_type_deref_recs(subtilis_parser_t *p, size_t data_reg,
 				    size_t size_reg, size_t el_size_reg,
 				    size_t el_destruct_reg,

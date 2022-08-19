@@ -69,6 +69,58 @@ static subtilis_exp_t *prv_zero(subtilis_parser_t *p,
 	return NULL;
 }
 
+static void prv_assign_ref(subtilis_parser_t *p, const subtilis_type_t *type,
+			   const subtilis_type_t *el_type, size_t dest_mem_reg,
+			   size_t dest_loc, size_t source_reg,
+			   subtilis_error_t *err)
+{
+	size_t data_ptr;
+	bool check_size = subtilis_type_if_is_vector(type);
+
+	data_ptr =
+	    subtilis_reference_get_pointer(p, dest_mem_reg, dest_loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_builtin_ir_call_deref_array_recs(p, el_type, data_ptr, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_reference_type_init_ref(p, dest_mem_reg, dest_loc, source_reg,
+					 check_size, true, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_array_type_copy_dims(p, type, dest_mem_reg, dest_loc,
+				      source_reg, err);
+}
+
+static void prv_assign_array_ref_exp(subtilis_parser_t *p,
+				     const subtilis_type_t *type,
+				     size_t mem_reg, size_t loc,
+				     subtilis_exp_t *e, subtilis_error_t *err)
+{
+	subtilis_type_t el_type;
+
+	subtilis_type_compare_diag(p, type, &e->type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	el_type.type = SUBTILIS_TYPE_VOID;
+	subtilis_type_if_element_type(p, type, &el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	if (!subtilis_type_rec_need_deref(&el_type)) {
+		subtilis_array_type_assign_ref_exp(p, type, mem_reg, loc, e,
+						   err);
+		return;
+	}
+
+	prv_assign_ref(p, type, &el_type, mem_reg, loc, e->exp.ir_op.reg, err);
+
+cleanup:
+	subtilis_exp_delete(e);
+}
+
 static void prv_zero_reg(subtilis_parser_t *p, const subtilis_type_t *type,
 			 size_t reg, subtilis_error_t *err)
 {
@@ -572,7 +624,7 @@ subtilis_type_if subtilis_type_array_rec = {
 	.zero = prv_zero,
 	.zero_ref = NULL,
 	.new_ref = NULL,
-	.assign_ref = subtilis_array_type_assign_ref_exp,
+	.assign_ref = prv_assign_array_ref_exp,
 	.assign_ref_no_rc = NULL,
 	.zero_reg = prv_zero_reg,
 	.copy_ret = subtlis_array_type_copy_ret,
@@ -655,7 +707,7 @@ subtilis_type_if subtilis_type_vector_rec = {
 	.zero = prv_zero,
 	.zero_ref = NULL,
 	.new_ref = NULL,
-	.assign_ref = subtilis_array_type_assign_ref_exp,
+	.assign_ref = prv_assign_array_ref_exp,
 	.assign_ref_no_rc = NULL,
 	.zero_reg = prv_zero_reg,
 	.copy_ret = subtlis_array_type_copy_ret,

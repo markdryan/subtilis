@@ -85,9 +85,17 @@ subtilis_exp_t *subtilis_builtin_ir_call_str_to_int32(subtilis_parser_t *p,
 						      subtilis_error_t *err);
 size_t subtilis_builtin_ir_deref_array_els(subtilis_parser_t *p,
 					   subtilis_error_t *err);
+void subtilis_builtin_call_ir_deref_array_els(subtilis_parser_t *p,
+					      const subtilis_type_t *type,
+					      size_t base_reg,
+					      subtilis_error_t *err);
 size_t subtilis_builtin_ir_deref_array_recs(subtilis_parser_t *p,
 					    const subtilis_type_t *el_type,
 					    subtilis_error_t *err);
+void subtilis_builtin_ir_call_deref_array_recs(subtilis_parser_t *p,
+					       const subtilis_type_t *el_type,
+					       size_t base_reg,
+					       subtilis_error_t *err);
 size_t subtilis_builtin_ir_call_deref(subtilis_parser_t *p,
 				      subtilis_error_t *err);
 size_t subtilis_builtin_ir_rec_deref(subtilis_parser_t *p,

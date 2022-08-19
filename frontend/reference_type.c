@@ -388,6 +388,12 @@ void reference_type_call_deref(subtilis_parser_t *p,
 		    err);
 }
 
+/*
+ * This cannot be used for arrays of reference types, e.g., arrays of
+ * strings, or for arrays of recs that need dereffing.  It assumes
+ * that we're dealing with an array of scalar types.
+ */
+
 void subtilis_reference_type_assign_ref(subtilis_parser_t *p,
 					size_t dest_mem_reg, size_t dest_loc,
 					size_t source_reg, bool check_size,
@@ -413,8 +419,6 @@ void subtilis_reference_type_assign_ref(subtilis_parser_t *p,
 			return;
 
 		reference_type_call_deref(p, copy, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
 	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
