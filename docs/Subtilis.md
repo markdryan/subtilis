@@ -1492,13 +1492,15 @@ type RECPoint ( x% y% )
 creates a new record type called RECPoint that contains two integer fields, named x% and y%.
 An instance of our new type can be created using the @ operator, e.g.,
 
+```
 local a@RECPoint
+```
 
-will create a new variable called a@RECPoint.  When a record is created in this way all of
+will create a new variable called a<!-- -->@RECPoint.  When a record is created in this way all of
 its fields are initialised to their zero value, so in this case, the two fields, as they
 are integers, will both have been initialised to zero.
 
-The fields can be access (read from and written to) using the '.' operator.  For example,
+The fields can be accessed (read from and written to) using the '.' operator.  For example,
 
 ```
 print a@RECPoint.x%
@@ -1537,7 +1539,7 @@ are fields in the record.  In this case the fields that aren't specified are set
 a@RECPoint = (10)
 ```
 
-will set a@RECPoint.x to 10 and a@RECPoint.y to 0.  It is even possible to specify an empty initialisation list,
+will set a<!-- -->@RECPoint.x to 10 and a<!-- -->@RECPoint.y to 0.  It is even possible to specify an empty initialisation list,
 which will set all the fields of the record variable to their zero value.  This is useful when declaring global
 record variables, as Subtilis provides no equivalent of the local statement for global variables.  Thus the
 statement
@@ -1567,8 +1569,9 @@ that describe a shape.  All the fields of records that contain complex types suc
 can be initialised using an initialisation list.  Extra sets of round brackets are required to denote the contents
 of a nested type or array or vector.  For example, our shape might be fully initialised as follows.
 
-
+```
 a@RECShape := ( "square", ( 100, 450), ( (100, 0 ), (100, 100), (100, 400), (400, 400)))
+```
 
 #### Layout and Copy Semantics
 
@@ -1579,7 +1582,7 @@ to another the entire contents of the source variable are copied, e.g.,
 a@RECPoint = b@RECPoint
 ```
 
-copies 8 bytes of data, two integer variables.  Global record variables are place in the main global data
+copies 8 bytes of data, two integer variables.  Global record variables are placed in the main global data
 area and local record variables are placed on the stack.  Records may contain fields that are reference
 values, such as strings and arrays.  The meta data for reference fields are contained within the record
 variable itself, but the data for those fields are stored on the heap and reference counted.  The compiler
@@ -1610,8 +1613,8 @@ two records together and returns the results in a new record.
 ```
 type RECScalar ( a% b c& )
 
-a@RECScalar = ( 1, 10.0, 3)
-@RECScalar = ( 4, 10.0, 5)
+a@RECScalar = ( 1, 10.0, 3 )
+@RECScalar = ( 4, 10.0, 5 )
 c@RECScalar = FNAdd@RECScalar(a@RECScalar, b@RECScalar)
 print c@RECScalar.a%
 print c@RECScalar.b"
