@@ -2956,7 +2956,6 @@ void subtilis_array_append_ref_array(subtilis_parser_t *p, subtilis_exp_t *a1,
 	size_t new_size_reg;
 	subtilis_ir_operand_t op1;
 	bool a2_dynamic;
-	subtilis_exp_t *e;
 
 	a2_size_zero.label = SIZE_MAX;
 
@@ -3012,12 +3011,10 @@ void subtilis_array_append_ref_array(subtilis_parser_t *p, subtilis_exp_t *a1,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_builtin_ir_call_ref_grow(p, a1->exp.ir_op.reg, a1_size.reg,
-					      new_size_reg, a2_size.reg, err);
+	dest_reg = prv_grow_wrapper(p, &el_type, a1->exp.ir_op.reg, a1_size.reg,
+				    new_size_reg, a2_size.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	dest_reg = e->exp.ir_op.reg;
-	subtilis_exp_delete(e);
 
 	a2_data.reg = subtilis_reference_get_data(p, a2->exp.ir_op.reg, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)

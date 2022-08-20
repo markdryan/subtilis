@@ -6239,6 +6239,50 @@ const subtilis_test_case_t test_cases[] = {
 	"endrange\n",
 	"two\nthree\nhello\n",
 	},
+	{"append_vector_array_string_return",
+	"lines${} := FNGetLines${}()\n"
+	"range s$ := lines${}\n"
+	"  print s$\n"
+	"endrange\n"
+	"\n"
+	"def FNGetLines${}\n"
+	"    local dim lines${}\n"
+	"    for i% := 0 to 1\n"
+	"        lines${} = FNFillBuffer${}(lines${})\n"
+	"    next\n"
+	"<-lines${}\n"
+	"\n"
+	"def FNFillBuffer${}(lines${})\n"
+	"      local dim a$(1)\n"
+	"      a$() = string$(16, \"a\"), string$(16, \"b\")\n"
+	"      append(lines${}, a$())\n"
+	"<-lines${}\n",
+	"aaaaaaaaaaaaaaaa\nbbbbbbbbbbbbbbbb\n"
+	"aaaaaaaaaaaaaaaa\nbbbbbbbbbbbbbbbb\n",
+	},
+	{"append_vector_array_rec_ref_return",
+	"type RECStr ( s$ )\n"
+	"lines@RECStr{} := FNGetLines@RECStr{}()\n"
+	"range a@RECStr := lines@RECStr{}\n"
+	"  print a@RECStr.s$\n"
+	"endrange\n"
+	"\n"
+	"def FNGetLines@RECStr{}\n"
+	"    local dim lines@RECStr{}\n"
+	"    for i% := 0 to 1\n"
+	"        lines@RECStr{} = FNFillBuffer@RECStr{}(lines@RECStr{})\n"
+	"    next\n"
+	"<-lines@RECStr{}\n"
+	"\n"
+	"def FNFillBuffer@RECStr{}(lines@RECStr{})\n"
+	"      local dim a@RECStr(1)\n"
+	"      a@RECStr(0) = ( string$(16, \"a\") )\n"
+	"      a@RECStr(1) = ( string$(16, \"b\") )\n"
+	"      append(lines@RECStr{}, a@RECStr())\n"
+	"<-lines@RECStr{}\n",
+	"aaaaaaaaaaaaaaaa\nbbbbbbbbbbbbbbbb\n"
+	"aaaaaaaaaaaaaaaa\nbbbbbbbbbbbbbbbb\n",
+	},
 };
 
 /* clang-format on */
