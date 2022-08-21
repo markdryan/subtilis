@@ -6283,6 +6283,19 @@ const subtilis_test_case_t test_cases[] = {
 	"aaaaaaaaaaaaaaaa\nbbbbbbbbbbbbbbbb\n"
 	"aaaaaaaaaaaaaaaa\nbbbbbbbbbbbbbbbb\n",
 	},
+	{"string_nc_c_1/4_byte_eq_neq",
+	"a$ := \"hello\" + chr$(10)\n"
+	"print right$(a$) <> chr$(10)  rem 0\n"
+	"print right$(a$) <> chr$(11)  rem -1\n"
+	"print right$(a$) = chr$(10)   rem -1\n"
+	"print right$(a$) = chr$(11)   rem 0\n"
+	"b$ := \"ello\"\n"
+	"print b$ <> \"ello\"            rem 0\n"
+	"print b$ <> \"elld\"            rem -1\n"
+	"print b$ = \"ello\"             rem -1\n"
+	"print b$ = \"ellp\"             rem 0\n",
+	"0\n-1\n-1\n0\n0\n-1\n-1\n0\n",
+	},
 };
 
 /* clang-format on */

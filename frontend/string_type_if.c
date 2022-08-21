@@ -588,11 +588,11 @@ static subtilis_exp_t *prv_eq_non_const_const(subtilis_parser_t *p,
 	if (a2_len == 1)
 		eq = prv_compare_fixed_len(p, a1_ptr, const_ptr,
 					   SUBTILIS_OP_INSTR_LOADO_I8,
-					   SUBTILIS_OP_INSTR_EQI_I32, err);
+					   SUBTILIS_OP_INSTR_EQ_I32, err);
 	else if (a2_len == 4)
 		eq = prv_compare_fixed_len(p, a1_ptr, const_ptr,
 					   SUBTILIS_OP_INSTR_LOADO_I32,
-					   SUBTILIS_OP_INSTR_EQI_I32, err);
+					   SUBTILIS_OP_INSTR_EQ_I32, err);
 	else
 		eq = subtilis_string_type_eq(p, a1_ptr, const_ptr,
 					     len1->exp.ir_op.reg, err);
@@ -805,11 +805,11 @@ static subtilis_exp_t *prv_neq_non_const_const(subtilis_parser_t *p,
 	if (a2_len == 1)
 		eq = prv_compare_fixed_len(p, a1_ptr, const_ptr,
 					   SUBTILIS_OP_INSTR_LOADO_I8,
-					   SUBTILIS_OP_INSTR_EQI_I32, err);
+					   SUBTILIS_OP_INSTR_EQ_I32, err);
 	else if (a2_len == 4)
 		eq = prv_compare_fixed_len(p, a1_ptr, const_ptr,
 					   SUBTILIS_OP_INSTR_LOADO_I32,
-					   SUBTILIS_OP_INSTR_EQI_I32, err);
+					   SUBTILIS_OP_INSTR_EQ_I32, err);
 	else
 		eq = subtilis_string_type_eq(p, a1_ptr, const_ptr,
 					     len1->exp.ir_op.reg, err);
