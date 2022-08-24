@@ -1059,14 +1059,14 @@ cleanup:
  * slice parameter to determine whether we're just going to return the full
  * string or a portion of the string.  The code generates a runtime jump
  * to the end label if we're taking the whole string or a jump to a partial
- * label which is added right at the bottom of this function if we're actually
- * slicing the string.  The current length of the string is returned.
+ * label if we're actually slicing the string.  The current length of the
+ * string is returned in a register.
  */
 
 static size_t prv_left_right_non_const(subtilis_parser_t *p, size_t str_reg,
 				       size_t arg2_reg, bool arg2_const,
-				       subtilis_ir_operand_t end,
-				       size_t ptr_reg, subtilis_error_t *err)
+				       subtilis_ir_operand_t partial,
+				       subtilis_error_t *err)
 {
 	subtilis_ir_operand_t less_zero;
 	subtilis_ir_operand_t gt_len;
@@ -1075,7 +1075,6 @@ static size_t prv_left_right_non_const(subtilis_parser_t *p, size_t str_reg,
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
 	subtilis_ir_operand_t full_string;
-	subtilis_ir_operand_t partial;
 	size_t len_reg;
 
 	op0.reg = str_reg;
@@ -1086,7 +1085,6 @@ static size_t prv_left_right_non_const(subtilis_parser_t *p, size_t str_reg,
 		return SIZE_MAX;
 
 	full_string.label = subtilis_ir_section_new_label(p->current);
-	partial.label = subtilis_ir_section_new_label(p->current);
 
 	if (!arg2_const) {
 		op0.reg = arg2_reg;
@@ -1136,20 +1134,6 @@ static size_t prv_left_right_non_const(subtilis_parser_t *p, size_t str_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	op0.reg = ptr_reg;
-	op1.reg = str_reg;
-	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
-					      op0, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
-	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
-					     end, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
-
-	subtilis_ir_section_add_label(p->current, partial.label, err);
-
 	return len_reg;
 }
 
@@ -1158,45 +1142,72 @@ static subtilis_exp_t *prv_left_non_const(subtilis_parser_t *p, size_t str_reg,
 					  subtilis_error_t *err)
 {
 	subtilis_ir_operand_t end;
-	size_t data_reg;
 	const subtilis_symbol_t *s;
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
+	size_t ptr_reg;
+	size_t len_reg;
+	subtilis_ir_operand_t partial;
+	size_t dest_data_reg;
 	char *tmp_name = NULL;
-	size_t ptr_reg = p->current->reg_counter++;
+	size_t dest_len_reg = p->current->reg_counter++;
 
+	partial.label = subtilis_ir_section_new_label(p->current);
 	end.label = subtilis_ir_section_new_label(p->current);
 	s = subtilis_symbol_table_insert_tmp(p->local_st, &subtilis_type_string,
 					     &tmp_name, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
-	(void)prv_left_right_non_const(p, str_reg, left_reg, left_const, end,
-				       ptr_reg, err);
+	len_reg = prv_left_right_non_const(p, str_reg, left_reg, left_const,
+					   partial, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	data_reg = subtilis_reference_get_data(p, str_reg, 0, err);
+	/*
+	 * Code for dealing with the full string goes here.
+	 */
+
+	op0.reg = dest_len_reg;
+	op1.reg = len_reg;
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      op0, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_string_init_from_ptr(p, SUBTILIS_IR_REG_LOCAL, s->loc, str_reg,
-				      left_reg, data_reg, err);
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     end, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	op0.reg = ptr_reg;
-	op1.reg = subtilis_reference_get_pointer(p, SUBTILIS_IR_REG_LOCAL,
-						 s->loc, err);
+	/* If we're actually slicing, we end up here. */
+
+	subtilis_ir_section_add_label(p->current, partial.label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	op0.reg = dest_len_reg;
+	op1.reg = left_reg;
 	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
 					      op0, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
 	subtilis_ir_section_add_label(p->current, end.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	dest_data_reg = subtilis_reference_get_data(p, str_reg, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_string_init_from_ptr(p, SUBTILIS_IR_REG_LOCAL, s->loc, str_reg,
+				      dest_len_reg, dest_data_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	ptr_reg = subtilis_reference_get_pointer(p, SUBTILIS_IR_REG_LOCAL,
+						 s->loc, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1408,18 +1419,53 @@ static subtilis_exp_t *prv_right_non_const(subtilis_parser_t *p, size_t str_reg,
 	const subtilis_symbol_t *s;
 	subtilis_ir_operand_t op0;
 	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
 	size_t len_reg;
+	size_t ptr_reg;
+	subtilis_ir_operand_t partial;
 	char *tmp_name = NULL;
-	size_t ptr_reg = p->current->reg_counter++;
+	size_t dest_data_reg = p->current->reg_counter++;
+	size_t dest_len_reg = p->current->reg_counter++;
 
 	end.label = subtilis_ir_section_new_label(p->current);
+	partial.label = subtilis_ir_section_new_label(p->current);
 	s = subtilis_symbol_table_insert_tmp(p->local_st, &subtilis_type_string,
 					     &tmp_name, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
 	len_reg = prv_left_right_non_const(p, str_reg, right_reg, right_const,
-					   end, ptr_reg, err);
+					   partial, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	/*
+	 * Code for dealing with the full string goes here.
+	 */
+
+	op0.reg = dest_len_reg;
+	op1.reg = len_reg;
+	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
+					      op0, op1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op0.reg = dest_data_reg;
+	op1.reg = str_reg;
+	op2.integer = SUBTIILIS_STRING_DATA_OFF;
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I32, op0, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     end, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	/* If we're actually slicing, we end up here. */
+
+	subtilis_ir_section_add_label(p->current, partial.label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -1429,34 +1475,36 @@ static subtilis_exp_t *prv_right_non_const(subtilis_parser_t *p, size_t str_reg,
 
 	op0.reg = data_reg;
 	op1.reg = len_reg;
-	op0.reg = subtilis_ir_section_add_instr(
+	op1.reg = subtilis_ir_section_add_instr(
 	    p->current, SUBTILIS_OP_INSTR_ADD_I32, op0, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	op0.reg = dest_data_reg;
+	op2.reg = right_reg;
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_SUB_I32,
+					  op0, op1, op2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	op0.reg = dest_len_reg;
 	op1.reg = right_reg;
-	data_reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_SUB_I32, op0, op1, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	subtilis_string_init_from_ptr(p, SUBTILIS_IR_REG_LOCAL, s->loc, str_reg,
-				      right_reg, data_reg, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
-	op0.reg = ptr_reg;
-	op1.reg = subtilis_reference_get_pointer(p, SUBTILIS_IR_REG_LOCAL,
-						 s->loc, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
 	subtilis_ir_section_add_instr_no_reg2(p->current, SUBTILIS_OP_INSTR_MOV,
 					      op0, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
 	subtilis_ir_section_add_label(p->current, end.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_string_init_from_ptr(p, SUBTILIS_IR_REG_LOCAL, s->loc, str_reg,
+				      dest_len_reg, dest_data_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	ptr_reg = subtilis_reference_get_pointer(p, SUBTILIS_IR_REG_LOCAL,
+						 s->loc, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

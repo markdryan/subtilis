@@ -6296,6 +6296,39 @@ const subtilis_test_case_t test_cases[] = {
 	"print b$ = \"ellp\"             rem 0\n",
 	"0\n-1\n-1\n0\n0\n-1\n-1\n0\n",
 	},
+	{"right_str_non_const_full_in_block",
+	"local dim av${}\n"
+	"local existing%\n"
+	"a$ := \"a\"\n"
+	"if 1 then\n"
+	"  existing% = right$(a$) <> chr$(10)\n"
+	"endif\n"
+	"append(av${}, a$)\n"
+	"print av${0}\n",
+	"a\n",
+	},
+	{"left_str_non_const_full_in_block",
+	"local dim av${}\n"
+	"local existing%\n"
+	"a$ := \"a\"\n"
+	"if 1 then\n"
+	"  existing% = left$(a$) <> chr$(10)\n"
+	"endif\n"
+	"append(av${}, a$)\n"
+	"print av${0}\n",
+	"a\n",
+	},
+	{"mid_str_non_const_full_in_block",
+	"local dim av${}\n"
+	"local existing%\n"
+	"a$ := \"a\"\n"
+	"if 1 then\n"
+	"  existing% = mid$(a$,1) <> chr$(10)\n"
+	"endif\n"
+	"append(av${}, a$)\n"
+	"print av${0}\n",
+	"a\n",
+	},
 };
 
 /* clang-format on */
