@@ -1115,6 +1115,16 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"<- line$\n",
 	SUBTILIS_ERROR_BAD_CONVERSION,
 	},
+	{"assign_rec_to_existing_vec_rec",
+	"type RECop ( op% )\n"
+	"\n"
+	"local dim r@RECop{}\n"
+	"r@RECop = FNGetRec@RECop{}()\n"
+	"def FNGetRec@RECop{}\n"
+	"  local dim a@RECop{}\n"
+	"<-a@RECop{}\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
 };
 
 /* clang-format on */

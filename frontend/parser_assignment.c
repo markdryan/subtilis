@@ -1127,6 +1127,17 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 		s = subtilis_symbol_table_insert(p->st, var_name, &type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
+	} else {
+		/*
+		 * We need to check that the id type matches the type in the
+		 * symbol table.  The compiler can still generate correct code
+		 * because it knows the correct type, but the code still looks
+		 * weird.
+		 */
+
+		subtilis_type_compare_diag(p, &type, &s->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
 	}
 
 	subtilis_lexer_get(p->l, t, err);
