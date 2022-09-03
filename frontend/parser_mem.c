@@ -160,8 +160,11 @@ subtilis_exp_t *subtilis_parser_append_exp(subtilis_parser_t *p,
 					   subtilis_token_t *t,
 					   subtilis_error_t *err)
 {
+	bool check_size;
+	bool tmp;
 	subtilis_exp_t *objs[2] = {NULL, NULL};
 	subtilis_exp_t *retval = NULL;
+	const subtilis_symbol_t *s;
 
 	prv_mem_statement(p, t, &objs[0], err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -171,11 +174,48 @@ subtilis_exp_t *subtilis_parser_append_exp(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	tmp = objs[0]->temporary;
+
 	subtilis_type_if_append(p, objs[0], objs[1], err);
 	objs[0] = NULL;
 	objs[1] = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
+
+	/*
+	 * If we're appending to a non-temporary variable with a ref
+	 * count of 1 we  need to temporarily increase its reference
+	 * count for the remainder of the current block.  This is to prevent
+	 * a use after free error  which can happen when appending to an
+	 * existing variable and then assigning the return value to that same
+	 * variable.
+	 *
+	 * We could just push the existing reference, rather than making a copy
+	 * and make some fake entry in the symbol table, with a size of 0, but
+	 * this seems a bit hacky.  Would result in smaller code if we could get
+	 * it to work though.
+	 */
+
+	if (subtilis_type_if_is_reference(&retval->type) && !tmp) {
+		check_size = !subtilis_type_if_is_array(&retval->type);
+		s = subtilis_symbol_table_insert_tmp(p->local_st,
+						     &retval->type,
+						     NULL, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		subtilis_reference_type_init_ref(p, SUBTILIS_IR_REG_LOCAL,
+						 s->loc, retval->exp.ir_op.reg,
+						 check_size, true, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		subtilis_reference_type_push_reference(p, &retval->type,
+						       SUBTILIS_IR_REG_LOCAL,
+						       s->loc, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
 
 	return retval;
 

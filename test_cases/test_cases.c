@@ -6329,6 +6329,33 @@ const subtilis_test_case_t test_cases[] = {
 	"print av${0}\n",
 	"a\n",
 	},
+	{"append_assign_to_self_int",
+	"local dim a%{1}\n"
+	"a%{} = append(a%{}, 1)\n"
+	"print dim(a%{}, 1)\n",
+	"2\n",
+	},
+	{"append_assign_to_self_string",
+	"local dim a${1}\n"
+	"a${} = append(a${}, \"string\")\n"
+	"print dim(a${}, 1)\n",
+	"2\n",
+	},
+	{"append_assign_to_self_nested",
+	"local dim a%{1}\n"
+	"for i% := 1 to 10\n"
+	"  a%{} = append(a%{}, 1)\n"
+	"next\n"
+	"print dim(a%{}, 1)\n",
+	"11\n",
+	},
+	{"append_assign_to_self_empty",
+	"local dim a%{}\n"
+	"local dim b%{}\n"
+	"a%{} = append(a%{}, b%{})\n"
+	"print dim(a%{}, 1)\n",
+	 "-1\n",
+	},
 };
 
 /* clang-format on */
