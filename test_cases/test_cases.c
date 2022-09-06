@@ -6356,6 +6356,10 @@ const subtilis_test_case_t test_cases[] = {
 	"print dim(a%{}, 1)\n",
 	 "-1\n",
 	},
+	{"osargs",
+	 "print osargs$\n",
+	 "unit_test\n",
+	},
 };
 
 /* clang-format on */

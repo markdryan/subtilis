@@ -213,6 +213,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "movfptoi32i32", SUBTILIS_OP_CLASS_REG_REG_FREG },
 	{ "oscli", SUBTILIS_OP_CLASS_REG },
 	{ "getprocaddr", SUBTILIS_OP_CLASS_REG_I32 },
+	{ "osargs", SUBTILIS_OP_CLASS_REG },
 };
 
 /*
@@ -915,7 +916,7 @@ void subtilis_ir_prog_delete(subtilis_ir_prog_t *p)
 	free(p);
 }
 
-static void prv_dump_instr(subtilis_ir_inst_t *instr)
+void prv_dump_instr(subtilis_ir_inst_t *instr)
 {
 	if (op_desc[instr->type].cls == SUBTILIS_OP_CLASS_NONE) {
 		printf("\t%s", op_desc[instr->type].name);

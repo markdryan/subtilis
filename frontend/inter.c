@@ -22,14 +22,15 @@
 #include "parser.h"
 #include "vm.h"
 
-static void prv_run_prog(subtilis_parser_t *p, subtilis_error_t *err)
+static void prv_run_prog(subtilis_parser_t *p, int argc, char *argv[],
+			 subtilis_error_t *err)
 {
 	subtilis_buffer_t b;
 	subitlis_vm_t *vm = NULL;
 
 	subtilis_buffer_init(&b, 1024);
 
-	vm = subitlis_vm_new(p->prog, p->st, err);
+	vm = subitlis_vm_new(p->prog, p->st, argc, argv, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -59,8 +60,8 @@ int main(int argc, char *argv[])
 	subtilis_lexer_t *l = NULL;
 	subtilis_parser_t *p = NULL;
 
-	if (argc != 2) {
-		fprintf(stderr, "Usage: inter file\n");
+	if (argc < 2) {
+		fprintf(stderr, "Usage: inter file args\n");
 		return 1;
 	}
 
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
 
 	subtilis_ir_prog_dump(p->prog);
 
-	prv_run_prog(p, &err);
+	prv_run_prog(p, argc, argv, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

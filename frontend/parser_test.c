@@ -105,6 +105,7 @@ static int prv_check_eval_res(subtilis_lexer_t *l, subtilis_parser_t *p,
 	const char *tbuf;
 	subitlis_vm_t *vm = NULL;
 	int retval = 1;
+	char *argv[2] = {"./inter", "unit_test"};
 
 	subtilis_error_init(&err);
 	subtilis_buffer_init(&b, 1024);
@@ -119,7 +120,7 @@ static int prv_check_eval_res(subtilis_lexer_t *l, subtilis_parser_t *p,
 		goto cleanup;
 	}
 
-	vm = subitlis_vm_new(p->prog, p->st, &err);
+	vm = subitlis_vm_new(p->prog, p->st, 2, argv, &err);
 	prv_check_for_error(l, expected_err, &err);
 	if (err.type != SUBTILIS_ERROR_OK) {
 		subtilis_error_fprintf(stderr, &err, true);

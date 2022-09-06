@@ -28,6 +28,7 @@
 #include "parser_input.h"
 #include "parser_math.h"
 #include "parser_mem.h"
+#include "parser_os.h"
 #include "parser_output.h"
 #include "parser_rec.h"
 #include "parser_rnd.h"
@@ -475,6 +476,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return subtilis_parser_copy_exp(p, t, err);
 		case SUBTILIS_KEYWORD_DEF:
 			return subtilis_parser_lambda(p, t, err);
+		case SUBTILIS_KEYWORD_OSARGS_STR:
+			return subtilis_parser_osargs(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "Unexpected keyword in expression",

@@ -1790,6 +1790,16 @@ typedef enum {
 	 */
 
 	SUBTILIS_OP_INSTR_GET_PROC_ADDR,
+
+	/*
+	 * osargs r0
+	 *
+	 * Stores a pointer to the NULL terminated string used to launch
+	 * the current program.  This should include the program name in
+	 * addition to any arguments.
+	 */
+
+	SUBTILIS_OP_INSTR_OS_ARGS,
 } subtilis_op_instr_type_t;
 
 typedef enum {

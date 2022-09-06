@@ -2598,6 +2598,34 @@ void subtilis_riscos_oscli(subtilis_ir_section_t *s, size_t start,
 				       err);
 }
 
+void subtilis_riscos_osargs(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err)
+{
+	subtilis_arm_reg_t buffer;
+	subtilis_arm_reg_t one;
+	subtilis_arm_section_t *arm_s = user_data;
+	subtilis_ir_inst_t *osargs = &s->ops[start]->op.instr;
+
+	buffer = subtilis_arm_ir_to_arm_reg(osargs->operands[0].reg);
+
+	/* OS_GetEnv */
+	/* read_mask = 0x0 = */
+	/* write_mask = 0x7 = r0, r1, r2 */
+	subtilis_arm_add_swi(arm_s, SUBTILIS_ARM_CCODE_AL, 0x20000 + 0x10, 0x0,
+			     0x7, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	one = subtilis_arm_ir_to_arm_reg(arm_s->reg_counter++);
+	subtilis_arm_gen_sete_load_reg(arm_s, s, SUBTILIS_ARM_CCODE_VS, one,
+				       err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_VC, false, buffer, 0,
+				 err);
+}
+
 void subtilis_riscos_asm_free(void *asm_code)
 {
 	subtilis_arm_section_t *arm_s = asm_code;

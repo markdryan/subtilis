@@ -24,5 +24,8 @@ void subtilis_parser_sys(subtilis_parser_t *p, subtilis_token_t *t,
 			 subtilis_error_t *err);
 void subtilis_parser_oscli(subtilis_parser_t *p, subtilis_token_t *t,
 			   subtilis_error_t *err);
+subtilis_exp_t *subtilis_parser_osargs(subtilis_parser_t *p,
+				       subtilis_token_t *t,
+				       subtilis_error_t *err);
 
 #endif

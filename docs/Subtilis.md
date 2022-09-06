@@ -2052,6 +2052,10 @@ next
 will generate a runtime error as it will try to access the first element of the vector which does not exist.
 The body of a for loop is always executed at least once.
 
+### OSARGS$
+
+OSARG$ returns a string containing the commandline used to launch the running program.
+
 ## New Scalar Types
 
 ### Byte

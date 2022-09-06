@@ -198,8 +198,7 @@ subtilis_exp_t *subtilis_parser_append_exp(subtilis_parser_t *p,
 
 	if (subtilis_type_if_is_reference(&retval->type) && !tmp) {
 		check_size = !subtilis_type_if_is_array(&retval->type);
-		s = subtilis_symbol_table_insert_tmp(p->local_st,
-						     &retval->type,
+		s = subtilis_symbol_table_insert_tmp(p->local_st, &retval->type,
 						     NULL, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
@@ -210,9 +209,8 @@ subtilis_exp_t *subtilis_parser_append_exp(subtilis_parser_t *p,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		subtilis_reference_type_push_reference(p, &retval->type,
-						       SUBTILIS_IR_REG_LOCAL,
-						       s->loc, err);
+		subtilis_reference_type_push_reference(
+		    p, &retval->type, SUBTILIS_IR_REG_LOCAL, s->loc, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 	}

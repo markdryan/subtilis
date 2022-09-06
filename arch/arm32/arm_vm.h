@@ -48,6 +48,7 @@ struct subtilis_arm_vm_t_ {
 	uint32_t fpa_status;
 	uint8_t *memory;
 	size_t mem_size;
+	size_t mem_end;
 	size_t stack_size;
 	size_t heap_size;
 	size_t code_size;
@@ -71,7 +72,8 @@ typedef struct subtilis_arm_vm_t_ subtilis_arm_vm_t;
 
 subtilis_arm_vm_t *subtilis_arm_vm_new(uint8_t *code, size_t code_size,
 				       size_t mem_size, int32_t start_address,
-				       bool vfp, subtilis_error_t *err);
+				       bool vfp, int argc, char **argv,
+				       subtilis_error_t *err);
 void subtilis_arm_vm_delete(subtilis_arm_vm_t *vm);
 void subtilis_arm_vm_run(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 			 subtilis_error_t *err);

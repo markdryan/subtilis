@@ -42,6 +42,7 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	subtilis_arm_prog_t *arm_p = NULL;
 	subtilis_arm_vm_t *vm = NULL;
 	uint8_t *code = NULL;
+	char *argv[2] = {"./runptd", "unit_test"};
 
 	subtilis_error_init(&err);
 	subtilis_buffer_init(&b, 1024);
@@ -90,7 +91,8 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	//		printf("0x%x\n",code[i]);
 	///	}
 	vm = subtilis_arm_vm_new(code, code_size, 512 * 1024,
-				 SUBTILIS_PTD_PROGRAM_START, true, &err);
+				 SUBTILIS_PTD_PROGRAM_START, true, 2, argv,
+				 &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

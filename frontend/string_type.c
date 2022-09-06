@@ -474,6 +474,152 @@ cleanup:
 }
 
 /*
+ * Creates a new temporary string from a zero terminated string in
+ * memory, pointed to by register reg.
+ */
+
+subtilis_exp_t *subtilis_string_new_str_from_zt(subtilis_parser_t *p,
+						size_t reg,
+						subtilis_error_t *err)
+{
+	subtilis_ir_operand_t zero;
+	subtilis_ir_operand_t one;
+	subtilis_ir_operand_t reg_copy;
+	subtilis_ir_operand_t reg_orig;
+	subtilis_ir_operand_t byte;
+	subtilis_ir_operand_t size;
+	subtilis_ir_operand_t start;
+	subtilis_ir_operand_t next;
+	subtilis_ir_operand_t end;
+	subtilis_ir_operand_t empty;
+	subtilis_ir_operand_t full;
+	subtilis_ir_operand_t real_end;
+	const subtilis_symbol_t *s;
+	subtilis_exp_t *e;
+	char *tmp_name = NULL;
+
+	/*
+	 * Compute length of string.
+	 */
+
+	start.label = subtilis_ir_section_new_label(p->current);
+	next.label = subtilis_ir_section_new_label(p->current);
+	end.label = subtilis_ir_section_new_label(p->current);
+	empty.label = subtilis_ir_section_new_label(p->current);
+	real_end.label = subtilis_ir_section_new_label(p->current);
+	full.label = subtilis_ir_section_new_label(p->current);
+
+	zero.integer = 0;
+
+	reg_orig.reg = reg;
+	reg_copy.reg = subtilis_ir_section_add_instr2(
+	    p->current, SUBTILIS_OP_INSTR_MOV, reg_orig, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_label(p->current, start.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	byte.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I8, reg_copy, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  byte, next, end, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_label(p->current, next.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	one.integer = 1;
+	subtilis_ir_section_add_instr_reg(p->current,
+					  SUBTILIS_OP_INSTR_ADDI_I32, reg_copy,
+					  reg_copy, one, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     start, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_ir_section_add_label(p->current, end.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	size.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_SUB_I32, reg_copy, reg_orig, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	s = subtilis_symbol_table_insert_tmp(p->local_st, &subtilis_type_string,
+					     &tmp_name, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_reg(p->current, SUBTILIS_OP_INSTR_JMPC,
+					  size, full, empty, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, full.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_string_init_from_lca(p, SUBTILIS_IR_REG_LOCAL, s->loc, reg,
+				      size.reg, false, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_instr_no_reg(p->current, SUBTILIS_OP_INSTR_JMP,
+					     real_end, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, empty.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_string_type_zero_ref(p, &subtilis_type_string,
+				      SUBTILIS_IR_REG_LOCAL, s->loc, false,
+				      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_ir_section_add_label(p->current, real_end.label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_reference_type_push_reference(
+	    p, &subtilis_type_string, SUBTILIS_IR_REG_LOCAL, s->loc, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	reg = subtilis_reference_get_pointer(p, SUBTILIS_IR_REG_LOCAL, s->loc,
+					     err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e = subtilis_exp_new_var(&subtilis_type_string, reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	e->temporary = tmp_name;
+
+	return e;
+
+cleanup:
+
+	free(tmp_name);
+
+	return NULL;
+}
+
+/*
  * Copies a variable string appending a null character to
  * the end of the new string.  This is needed for SYS calls.
  */

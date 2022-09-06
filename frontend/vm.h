@@ -56,13 +56,14 @@ struct subitlis_vm_t_ {
 	FILE * files[SUBTILIS_VM_MAX_FILES];
 
 	// clang-format on
+	size_t cmd_line_ptr;
 };
 
 typedef struct subitlis_vm_t_ subitlis_vm_t;
 
 subitlis_vm_t *subitlis_vm_new(subtilis_ir_prog_t *p,
-			       subtilis_symbol_table_t *st,
-			       subtilis_error_t *err);
+			       subtilis_symbol_table_t *st, int argc,
+			       char *argv[], subtilis_error_t *err);
 void subitlis_vm_run(subitlis_vm_t *vm, subtilis_buffer_t *b,
 		     subtilis_error_t *err);
 void subitlis_vm_delete(subitlis_vm_t *vm);

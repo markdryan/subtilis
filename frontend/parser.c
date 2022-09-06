@@ -664,6 +664,7 @@ static const subtilis_keyword_fn keyword_fns[] = {
 	NULL, /* SUBTILIS_KEYWORD_OPENUP */
 	NULL, /* SUBTILIS_KEYWORD_OR */
 	subtilis_parser_origin, /* SUBTILIS_KEYWORD_ORIGIN */
+	NULL, /* SUBTILIS_KEYWORD_OSARGS_STR */
 	subtilis_parser_oscli, /* SUBTILIS_KEYWORD_OSCLI */
 	NULL, /* SUBTILIS_KEYWORD_OTHERWISE */
 	NULL, /* SUBTILIS_KEYWORD_PI */

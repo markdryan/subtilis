@@ -434,3 +434,28 @@ cleanup:
 
 	subtilis_exp_delete(command);
 }
+
+subtilis_exp_t *subtilis_parser_osargs(subtilis_parser_t *p,
+				       subtilis_token_t *t,
+				       subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_exp_t *e;
+
+	reg = subtilis_ir_section_add_instr1(p->current,
+					     SUBTILIS_OP_INSTR_OS_ARGS, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	e = subtilis_string_new_str_from_zt(p, reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return e;
+}

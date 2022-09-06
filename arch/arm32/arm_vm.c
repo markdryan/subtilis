@@ -26,11 +26,15 @@
 
 subtilis_arm_vm_t *subtilis_arm_vm_new(uint8_t *code, size_t code_size,
 				       size_t mem_size, int32_t start_address,
-				       bool vfp, subtilis_error_t *err)
+				       bool vfp, int argc, char **argv,
+				       subtilis_error_t *err)
 {
+	size_t cmd_line_size;
+	size_t cmd_line_size_aligned;
 	double dummy_float = 1.0;
 	uint32_t *lower_word = (uint32_t *)((void *)&dummy_float);
 	subtilis_arm_vm_t *arm_vm = calloc(1, sizeof(*arm_vm));
+	char *cmd_line = NULL;
 
 	if (!arm_vm) {
 		subtilis_error_set_oom(err);
@@ -50,6 +54,22 @@ subtilis_arm_vm_t *subtilis_arm_vm_new(uint8_t *code, size_t code_size,
 	arm_vm->reverse_fpa_consts = !vfp && (*lower_word) == 0;
 	arm_vm->start_address = start_address;
 	arm_vm->vfp = vfp;
+
+	cmd_line = subtilis_make_cmdline(argc, argv, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto fail;
+	cmd_line_size = strlen(cmd_line) + 1;
+	cmd_line_size_aligned = cmd_line_size;
+	if (cmd_line_size_aligned & 3)
+		cmd_line_size_aligned += 4 - (cmd_line_size_aligned & 3);
+
+	/*
+	 * 4 for the error code and cmd_line_size_aligned for the osargs
+	 */
+
+	arm_vm->mem_end = mem_size - (4 + cmd_line_size_aligned);
+	memcpy(&arm_vm->memory[arm_vm->mem_end], cmd_line, cmd_line_size);
+	free(cmd_line);
 
 	return arm_vm;
 
@@ -1331,8 +1351,8 @@ static void prv_process_swi(subtilis_arm_vm_t *arm_vm, subtilis_buffer_t *b,
 	case 0x10 + 0x20000:
 	case 0x10:
 		/* OS_GetEnv */
-		arm_vm->regs[0] = 0;
-		arm_vm->regs[1] = arm_vm->start_address + arm_vm->mem_size - 4;
+		arm_vm->regs[0] = arm_vm->start_address + arm_vm->mem_end;
+		arm_vm->regs[1] = arm_vm->start_address + arm_vm->mem_end;
 		arm_vm->regs[2] = 0;
 		break;
 	case 0xd4 + 0x20000:
