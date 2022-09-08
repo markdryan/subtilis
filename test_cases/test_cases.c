@@ -6357,8 +6357,17 @@ const subtilis_test_case_t test_cases[] = {
 	 "-1\n",
 	},
 	{"osargs",
-	 "print osargs$\n",
-	 "unit_test\n",
+	"print osargs$\n",
+	"unit_test\n",
+	},
+	{"mid_str_var",
+	"list$ := \"hello world\"\n"
+	"start% := 4\n"
+	"end% := 20\n"
+	"print mid$(list$,start%, end%)\n"
+	"print start%\n"
+	"print end%\n",
+	"lo world\n4\n20\n",
 	},
 };
 

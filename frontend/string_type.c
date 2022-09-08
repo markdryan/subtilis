@@ -2114,8 +2114,8 @@ static size_t prv_mid_str_check(subtilis_parser_t *p, size_t start_reg,
 			goto cleanup;
 
 		subtilis_ir_section_add_instr_reg(
-		    p->current, SUBTILIS_OP_INSTR_JMPC, condee, len_too_big,
-		    len_ok, err);
+		    p->current, SUBTILIS_OP_INSTR_JMPC, condee, len_ok,
+		    len_too_big, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
@@ -2124,19 +2124,13 @@ static size_t prv_mid_str_check(subtilis_parser_t *p, size_t start_reg,
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
-		op0.reg = len_reg;
+		op1.reg = len_reg;
 		subtilis_ir_section_add_instr_no_reg2(
-		    p->current, SUBTILIS_OP_INSTR_MOV, op0, to_copy, err);
+		    p->current, SUBTILIS_OP_INSTR_MOV, to_copy, op1, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 
 		subtilis_ir_section_add_label(p->current, len_ok.label, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-
-		op1.reg = len_reg;
-		subtilis_ir_section_add_instr_no_reg2(
-		    p->current, SUBTILIS_OP_INSTR_MOV, to_copy, op1, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 	}
