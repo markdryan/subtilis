@@ -6369,6 +6369,13 @@ const subtilis_test_case_t test_cases[] = {
 	"print end%\n",
 	"lo world\n4\n20\n",
 	},
+	{"memcmp_2",
+	"s$ := \"  -w  \"\n"
+	"s1$ := mid$(s$, 3, 2)\n"
+	"print s1$\n"
+	"print s1$ = \"-w\"\n",
+	"-w\n-1\n",
+	},
 };
 
 /* clang-format on */
