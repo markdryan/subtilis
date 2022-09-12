@@ -48,6 +48,7 @@ static subtilis_exp_t **prv_get_args(subtilis_parser_t *p, subtilis_token_t *t,
 			e = subtilis_parser_priority7(p, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
+			tbuf = subtilis_token_get_text(t);
 		}
 
 		if (count == max_count) {
