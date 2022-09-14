@@ -157,7 +157,7 @@ void subtilis_reference_type_copy_ref(subtilis_parser_t *p,
 	subtilis_ir_operand_t op2;
 
 	subtilis_reference_type_init_ref(p, dest_mem_reg, dest_loc, source_reg,
-					 false, true, err);
+					 true, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

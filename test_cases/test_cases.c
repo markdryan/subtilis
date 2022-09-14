@@ -6376,6 +6376,12 @@ const subtilis_test_case_t test_cases[] = {
 	"print s1$ = \"-w\"\n",
 	"-w\n-1\n",
 	},
+	{"pass_return_empty_string",
+	 "b$ := FNReadFile$(\"\")\n"
+	 "print b$"
+	 "def FNReadFile$(fname$) <-fname$\n",
+	 "\n",
+	},
 };
 
 /* clang-format on */
