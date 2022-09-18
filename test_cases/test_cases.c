@@ -6382,6 +6382,23 @@ const subtilis_test_case_t test_cases[] = {
 	 "def FNReadFile$(fname$) <-fname$\n",
 	 "\n",
 	},
+	{"return_rec_vector_global",
+	"type REClines (\n"
+	"  dim nums%{}\n"
+	")\n"
+	"\n"
+	"a@REClines = FNfill@REClines(10)\n"
+	"print dim(a@REClines.nums%{}, 1)\n"
+	"\n"
+	"def FNfill@REClines(a%)\n"
+	"  local a@REClines\n"
+	"\n"
+	"  for i% := 0 to a%\n"
+	"    append(a@REClines.nums%{}, i%)\n"
+	"  next\n"
+	"<-a@REClines\n",
+	"10\n",
+	},
 };
 
 /* clang-format on */

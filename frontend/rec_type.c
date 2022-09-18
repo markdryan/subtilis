@@ -255,10 +255,17 @@ void subtilis_type_rec_copy_ref(subtilis_parser_t *p,
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 			if (new_rec) {
-				subtilis_reference_type_init_ref(
-				    p, dest_reg, loc + offset, e->exp.ir_op.reg,
-				    true, true, err);
-				subtilis_exp_delete(e);
+				if (subtilis_type_if_is_array(field_type) ||
+				    subtilis_type_if_is_vector(field_type)) {
+					subtilis_array_type_init_field(
+					    p, field_type, dest_reg,
+					    loc + offset, e, err);
+				} else {
+					subtilis_reference_type_init_ref(
+					    p, dest_reg, loc + offset,
+					    e->exp.ir_op.reg, true, true, err);
+					subtilis_exp_delete(e);
+				}
 			} else {
 				subtilis_type_if_assign_ref(
 				    p, field_type, dest_reg, loc + offset, e,
