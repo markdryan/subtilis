@@ -120,6 +120,10 @@ static size_t *prv_process_input_args(subtilis_parser_t *p,
 				goto cleanup;
 			subtilis_exp_delete(e);
 			args[i] = subtilis_exp_new_int32_var(ptr, err);
+		} else if (e->type.type == SUBTILIS_TYPE_REC) {
+			args[i] =
+			    subtilis_exp_new_int32_var(e->exp.ir_op.reg, err);
+			subtilis_exp_delete(e);
 		} else {
 			subtilis_error_set_sys_bad_args(err, p->l->stream->name,
 							p->l->line);

@@ -1796,21 +1796,22 @@ will not compile as the compiler knows that OS_Write0 only expects a single inpu
 
 The compiler will accept any type (variable or constant) as an input argument although some types
 are modified before being passed to the system call.  Reals are cast to integers and strings are
-zero-terminated and may be copied.  The only valid type for an output argument is an integer variable.
+zero-terminated and may be copied, RECords are passed by reference.  The only valid type for an output argument is an integer variable.
 
 Some system calls expect buffers to be passed as arguments.  There's no way in Subtilis to create a
-buffer at the moment, so you need to use integer arrays, e.g.,
+buffer at the moment, so you need to use integer arrays or records, e.g.,
 
 ```
-DIM block%(2)
-DIM block2%(1)
+type RECeigenv ( x% y% )
+
+local DIM block%(2)
+local a@RECeigenv
 block%(0)=4
 block%(1)=5
 block%(2)=-1
-SYS "OS_ReadVduVariables",block%(),block2%()
+SYS "OS_ReadVduVariables",block%(),a@RECeigenv
+print a@RECeigenv.x%; print " "; print a@RECeigenv.y%
 ```
-
-In the future we'll have structures and byte arrays, but for now all there is are integer arrays.
 
 A word of caution.  As in BBC BASIC there's no obligation to provide values for all the registers
 used by a system call.  For example, you can do,
