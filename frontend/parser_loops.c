@@ -323,6 +323,13 @@ static void prv_init_scalar_var(subtilis_parser_t *p, subtilis_token_t *t,
 			return;
 
 		if (new_global) {
+			if (p->current->proc_called) {
+				subtilis_error_set_global_after_proc(
+				    err, var_name, p->l->stream->name,
+				    p->l->line);
+				return;
+			}
+
 			s = subtilis_symbol_table_insert(p->st, var_name, type,
 							 err);
 			if (err->type != SUBTILIS_ERROR_OK)
@@ -1584,6 +1591,12 @@ static void prv_init_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 
 	if (new_global) {
+		if (p->current->proc_called) {
+			subtilis_error_set_global_after_proc(
+			    err, var_name, p->l->stream->name, p->l->line);
+			return;
+		}
+
 		subtilis_type_copy(&for_ctx->type, type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;

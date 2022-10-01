@@ -1168,6 +1168,24 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"endproc\n",
 	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
 	},
+	{"global_for_after_proc",
+	"PROCdo\n"
+	"for i% = 1 to 10 next\n"
+	"def PROCdo\n"
+	"  print i%\n"
+	"endproc\n",
+	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
+	},
+	{"global_ranger_after_proc",
+	"dim a%(10)\n"
+	"PROCdo\n"
+	"range ~, i% = a%()\n"
+	"endrange\n"
+	"def PROCdo\n"
+	"  print i%\n"
+	"endproc\n",
+	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
+	},
 };
 
 /* clang-format on */

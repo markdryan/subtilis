@@ -1773,7 +1773,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "  next\n"
 	 "  b%() = a%()\n"
 	 "ENDPROC\n"
-	 "for i% = 0 to 10\n"
+	 "for i% := 0 to 10\n"
 	 "  print b%(i%)\n"
 	 "next\n",
 	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
@@ -1932,7 +1932,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "c% := 10\n"
 	 "dim a(c%)\n"
 	 "a() = FNArr(1)()\n"
-	 "for i% = 0 to dim(a(),1)\n"
+	 "for i% := 0 to dim(a(),1)\n"
 	 "  print a(i%)\n"
 	 "next\n"
 	 "\n"
@@ -1979,7 +1979,7 @@ const subtilis_test_case_t test_cases[] = {
 	{"array_local_return_fn",
 	 "c% := 10\n"
 	 "local a() = FNArr(1)()\n"
-	 "for i% = 0 to dim(a(),1)\n"
+	 "for i% := 0 to dim(a(),1)\n"
 	 "  print a(i%)\n"
 	 "next\n"
 	 "\n"
