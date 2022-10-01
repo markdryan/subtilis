@@ -497,11 +497,11 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	},
 	{ "assembler_fpa_cos_and_sin",
 	 "LOCAL a\n"
-	 "PROCCheck(FNSIN(0), 0)\n"
-	 "PROCCheck(FNCOS(0), 1)\n"
 	 "LET a = 0\n"
 	 "LET b = 30\n"
 	 "LET c = 60\n"
+	 "PROCCheck(FNSIN(0), 0)\n"
+	 "PROCCheck(FNCOS(0), 1)\n"
 	 "PROCCheck(FNSIN(a), 0)\n"
 	 "PROCCheck(FNCOS(a), 1)\n"
 	 "PROCCheck(FNSIN(RAD(30)), 0.5)\n"
@@ -535,6 +535,7 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	  "]\n",
 	 "-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n"},
 	{ "assembler_fpa_trig",
+	  "LOCAL A\n"
 	  "PRINT INT(FNTAN(RAD(45)))\n"
 	  "A = RAD(45)\n"
 	  "PRINT INT(FNTAN(A))\n"

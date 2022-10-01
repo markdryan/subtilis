@@ -316,6 +316,9 @@ const subtilis_test_case_t test_cases[] = {
 	  "LOCAL b\n"
 	  "LOCAL c\n"
 	  "LOCAL d\n"
+	  "LOCAL e%\n"
+	  "LOCAL f\n"
+	  "LOCAL h\n"
 	  "\n"
 	  "LET x = 2.0\n"
 	  "LET y = 3.14\n"
@@ -544,6 +547,7 @@ const subtilis_test_case_t test_cases[] = {
 	"LOCAL d\n"
 	"LOCAL e\n"
 	"LOCAL f\n"
+	"LOCAL a%\n"
 	"\n"
 	"LET a = 1\n"
 	"LET b = 2\n"
@@ -621,6 +625,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "-1\n"},
 	{"cos_and_sin",
 	 "LOCAL a\n"
+	 "LOCAL b\n"
+	 "LOCAL c\n"
 	 "PROCCheck(SIN(0), 0)\n"
 	 "PROCCheck(COS(0), 1)\n"
 	 "LET a = 0\n"
@@ -650,6 +656,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "-1\n"},
 	{"sqr",
 	 "PROCCheck(SQR(2), 1.414)\n"
+	 "LOCAL a\n"
+	 "LOCAL A\n"
 	 "LET A=2\n"
 	 "PROCCheck(SQR(A), 1.414)\n"
 	 "DEF PROCCheck(a, e)\n"
@@ -1337,7 +1345,7 @@ const subtilis_test_case_t test_cases[] = {
 	{ "logrange",
 	"PROCLogZero\n"
 	"PROCLnNeg\n"
-	"A = 10\n"
+	"A := 10\n"
 	"PRINT 105 / A\n"
 	"\n"
 	"DEF PROCLogZero\n"
@@ -1900,8 +1908,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "10\n",
 	},
 	{"array_return_ref_fn",
-	 "a() = FNArr(1)()\n"
-	 "for i% = 0 to dim(a(),1)\n"
+	 "a() := FNArr(1)()\n"
+	 "for i% := 0 to dim(a(),1)\n"
 	 "  print a(i%)\n"
 	 "next\n"
 	 "\n"
@@ -2291,8 +2299,9 @@ const subtilis_test_case_t test_cases[] = {
 	 "Mark you really are very old and have written a great compiler\n"
 	},
 	{"string_array_fn",
-	 "a$() := FNMark$(1)()\n"
 	 "dim ab%(1)\n"
+	 "local i%\n"
+	 "a$() := FNMark$(1)()\n"
 	 "for i% = 0 to dim(a$(),1)-1\n"
 	 "  print a$(i%);\n"
 	 "  print \" \";\n"
@@ -2322,8 +2331,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "hello\nhello\n",
 	},
 	{"string_array_fn3",
-	 "a$() = FNHello$(1)()\n"
-	 "for i% = 0 to 10\n"
+	 "a$() := FNHello$(1)()\n"
+	 "for i% := 0 to 10\n"
 	 "print a$(i%)\n"
 	 "next\n"
 	 "\n"
@@ -3047,12 +3056,12 @@ const subtilis_test_case_t test_cases[] = {
 	 "print val(\"+1s\")\n"
 	 "print val(\"3230\")\n"
 	 "\n"
-	 "a$ = \"-12.23\"\n"
+	 "a$ := \"-12.23\"\n"
 	 "PROCCheck(val(a$), -12.23)\n"
 	 "a$ = \"-12.23i\"\n"
 	 "PROCCheck(val(a$), -12.23)\n"
 	 "a$ = \"-12.\"\n"
-	 "b = val(a$)\n"
+	 "b := val(a$)\n"
 	 "print b\n"
 	 "a$ = \"+1s\"\n"
 	 "b = val(a$)\n"
@@ -3340,7 +3349,7 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"ext_test",
 	"PROCCreateFile(\"markus\", string$(33, \"!\"))\n"
-	"f% = openin(\"markus\")\n"
+	"f% := openin(\"markus\")\n"
 	"onerror tryone close# f% enderror\n"
 	"print ext#(f%)\n"
 	"close# f%\n"
@@ -3357,7 +3366,7 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"ptr_test",
 	"PROCCreateFile(\"markus\", string$(16, \"!\") + string$(16,\"@\"))\n"
-	"f% = openin(\"markus\")\n"
+	"f% := openin(\"markus\")\n"
 	"print ptr#(f%)\n"
 	"onerror\n"
 	"  print \"whoops\"\n"
@@ -3499,14 +3508,14 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"byte_fn",
 	"print FNByteSum&(100, 100)\n"
-	"a& = 140\n"
-	"b& = 130\n"
+	"a& := 140\n"
+	"b& := 130\n"
 	"print FNByteSum&(a&, b&)\n"
 	"print FNIntSum%(a&, b&)\n"
 	"print FNByteSumDBL&(a&, b&)\n"
 	"print FNDBLSum(a&, b&)\n"
-	"c = 140\n"
-	"d = 130\n"
+	"c := 140\n"
+	"d := 130\n"
 	"print FNByteSum&(c, d)\n"
 	"def FNByteSum&(a&, b&)\n"
 	"<- a& + b&\n"
@@ -3802,7 +3811,7 @@ const subtilis_test_case_t test_cases[] = {
 	"Seeya Mark\nHello Mark\n",
 	},
 	{"copy_string_array",
-	"a$() = FNCopy$(1)()\n"
+	"a$() := FNCopy$(1)()\n"
 	"for i% := 0 to dim(a$(),1)\n"
 	"  print a$(i%)\n"
 	"next\n"
@@ -3817,7 +3826,7 @@ const subtilis_test_case_t test_cases[] = {
 	"Hello\nHello\nHello\nHello\nHello\nHello\nHello\n"
 	},
 	{"copy_string_array_to_empty",
-	"a$() = FNCopy$(1)()\n"
+	"a$() := FNCopy$(1)()\n"
 	"for i% := 0 to dim(a$(),1)\n"
 	"  print a$(i%)\n"
 	"next\n"
@@ -4413,9 +4422,9 @@ const subtilis_test_case_t test_cases[] = {
 	{"lambda_alias",
 	"type FNByte&\n"
 	"l@FNByte = def FN& <- 127\n"
-	"print l@FNByte()\n"
 	"g@FNByte := l@FNByte\n"
 	"h@FNByte = l@FNByte\n"
+	"print l@FNByte()\n"
 	"print g@FNByte()\n"
 	"print h@FNByte()\n",
 	"127\n127\n127\n",
@@ -4674,12 +4683,12 @@ const subtilis_test_case_t test_cases[] = {
 	{"assign_fn_array",
 	"type PROCArgs(a%, b%)\n"
 	"dim a@PROCArgs(1)\n"
+	"dim vec@PROCArgs{1}\n"
 	"a@PROCArgs() = !PROCOne\n"
 	"a@PROCArgs(1) = !PROCTwo\n"
 	"range v@PROCArgs := a@PROCArgs()\n"
 	"  v@PROCArgs(1,2)\n"
 	"endrange\n"
-	"dim vec@PROCArgs{1}\n"
 	"vec@PROCArgs{} = !PROCOne\n"
 	"vec@PROCArgs{1} = !PROCTwo\n"
 	"append(vec@PROCArgs{}, !PROCThree)\n"
@@ -4962,7 +4971,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "swap b@PROCa, c@PROCa(0)\n"
 	 "b@PROCa(4)\n"
 	 "rem get around a bug in the parser\n"
-	 "d@PROCa = c@PROCa(0)\n"
+	 "d@PROCa := c@PROCa(0)\n"
 	 "d@PROCa(4)\n",
 	 "16\n8\n12\n8\n",
 	},
@@ -6183,7 +6192,7 @@ const subtilis_test_case_t test_cases[] = {
 	"  a${} = \"hello\", \"goodbye\"\n"
 	"<-a${}\n"
 	"\n"
-	"lines2${} = FNSliceReset${}(lines${1:3})\n"
+	"lines2${} := FNSliceReset${}(lines${1:3})\n"
 	"range s$ := lines2${}\n"
 	"  print s$\n"
 	"endrange\n",
@@ -6197,7 +6206,7 @@ const subtilis_test_case_t test_cases[] = {
 	"  a${} = \"hello\"\n"
 	"<-a${}\n"
 	"\n"
-	"lines2${} = FNSliceReset${}(lines${1:3})\n"
+	"lines2${} := FNSliceReset${}(lines${1:3})\n"
 	"range s$ := lines2${}\n"
 	"  print s$\n"
 	"endrange\n",
@@ -6211,7 +6220,7 @@ const subtilis_test_case_t test_cases[] = {
 	"  append(a${}, \"three\")\n"
 	"<-a${}\n"
 	"\n"
-	"lines2${} = FNSliceAppend${}(lines${1:3})\n"
+	"lines2${} := FNSliceAppend${}(lines${1:3})\n"
 	"range s$ := lines2${}\n"
 	"  print s$\n"
 	"endrange\n",
@@ -6233,7 +6242,7 @@ const subtilis_test_case_t test_cases[] = {
 	"  append(a@RECStr{}, b@RECStr)\n"
 	"<-a@RECStr{}\n"
 	"\n"
-	"lines2@RECStr{} = FNSliceReset@RECStr{}(lines@RECStr{1:3})\n"
+	"lines2@RECStr{} := FNSliceReset@RECStr{}(lines@RECStr{1:3})\n"
 	"range a@RECStr := lines2@RECStr{}\n"
 	"  print a@RECStr.a$\n"
 	"endrange\n",

@@ -356,6 +356,11 @@ static void prv_assign_array_or_vector(subtilis_parser_t *p,
 			goto cleanup;
 		}
 		local = (at == SUBTILIS_ASSIGN_TYPE_CREATE_EQUAL);
+		if (!local && p->current->proc_called) {
+			subtilis_error_set_global_after_proc(
+			    err, var_name, p->l->stream->name, p->l->line);
+			goto cleanup;
+		}
 		subtilis_parser_create_array_ref(p, var_name, array_type, e,
 						 local, err);
 		return;
@@ -1118,6 +1123,11 @@ void subtilis_parser_assignment(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 
 	if (new_global) {
+		if (p->current->proc_called) {
+			subtilis_error_set_global_after_proc(
+			    err, var_name, p->l->stream->name, p->l->line);
+			goto cleanup;
+		}
 		if ((type.type == SUBTILIS_TYPE_REC) &&
 		    (at == SUBTILIS_ASSIGN_TYPE_EQUAL)) {
 			subtilis_parser_rec_init(p, t, &type, var_name, false,

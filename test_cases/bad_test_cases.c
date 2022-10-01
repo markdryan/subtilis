@@ -340,7 +340,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	},
 	{
 	"array_bad_fn_bad_assign",
-	"a%() = FNArr%\n"
+	"a%() := FNArr%\n"
 	"def FNArr%\n"
 	"<-0\n",
 	SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH
@@ -1124,6 +1124,49 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"  local dim a@RECop{}\n"
 	"<-a@RECop{}\n",
 	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+	{"global_array_after_proc",
+	"PROCdo\n"
+	"dim tokens$(1)\n"
+	"tokens$() = \"Hello\", \"World\"\n"
+	"\n"
+	"def PROCdo\n"
+	"for i% := 0 to dim(tokens$(),1)\n"
+	"  print tokens$(i%)\n"
+	"next\n"
+	"endproc\n",
+	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
+	},
+	{"global_array_ref_after_proc",
+	"dim tokens$(1)\n"
+	"tokens$() = \"Hello\", \"World\"\n"
+	"PROCdo\n"
+	"tok$() = tokens$()\n"
+	"def PROCdo\n"
+	"for i% := 0 to dim(tok$(),1)\n"
+	"  print tok$(i%)\n"
+	"next\n"
+	"endproc\n",
+	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
+	},
+	{"global_int_after_proc",
+	"PROCA\n"
+	"a%=12\n"
+	"def PROCA\n"
+	"  print a%\n"
+	"endproc\n",
+	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
+	},
+	{"global_proc_ref_after_proc",
+	"type RECstr (a$)\n"
+	"type PROCVoid\n"
+	"a@PROCVoid=!PROCA\n"
+	"a@PROCVoid()\n"
+	"a@RECstr = (\"hello\")\n"
+	"def PROCA\n"
+	"  print a@RECstr.a$\n"
+	"endproc\n",
+	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
 	},
 };
 

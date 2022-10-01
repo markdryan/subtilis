@@ -362,6 +362,10 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_EMPTY_REC */
 
 	{"Record %s has no fields.\n", 1},
+
+	/* SUBTILIS_ERROR_GLOBAL_AFTER_PROC */
+
+	{"Global variable %s declared after procedure or function call\n", 1},
 };
 
 /* clang-format on */

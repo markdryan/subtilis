@@ -401,17 +401,17 @@ static const subtilis_test_case_t riscos_vfp_test_cases[] = {
 	"]\n",
 	"4\n"},
 	{"assembler_stran_misc",
+	"dim a%(1)\n"
+	"dim b%(1)\n"
 	"print FNSignE%\n"
 	"print FNSignEH%\n"
 	"print FNUnsignH%\n"
 	"print FNDword%\n"
 	"\n"
-	"dim a%(1)\n"
 	"a%(0) = &ffff0000\n"
 	"PROCStoreH(a%())\n"
 	"print ~a%(0)\n"
 	"\n"
-	"dim b%(1)\n"
 	"PROCStoreD(b%())\n"
 	"print b%(0)\n"
 	"print b%(1)\n"

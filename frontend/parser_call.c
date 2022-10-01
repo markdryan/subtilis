@@ -498,6 +498,8 @@ subtilis_exp_t *subtilis_parser_call(subtilis_parser_t *p, subtilis_token_t *t,
 
 	subtilis_type_free(&fn_type);
 
+	p->current->proc_called = true;
+
 	return ret_val;
 
 on_error:
@@ -1470,6 +1472,8 @@ subtilis_exp_t *subtilis_parser_call_known_ptr(subtilis_parser_t *p,
 		goto on_error;
 	prv_delete_params(params, num_args);
 	params = NULL;
+
+	p->current->proc_called = true;
 
 	return subtilis_exp_add_call_ptr(p, ir_args, type->params.fn.ret_val,
 					 reg, num_args, err);

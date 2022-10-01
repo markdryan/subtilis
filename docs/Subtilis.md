@@ -185,11 +185,12 @@ works just as well.  Again note the lack of an END statement.
 
 ### Local and Global Variables
 
-When a new variable is defined using var = or LET var = and that variable has not
+When a new variable is defined using var = or LET var = or DIM and that variable has not
 been declared LOCAL, the compiler will try to create a new global variable.  However,
 Subtilis is much more restrictive than BBC BASIC when creating global variables.
-Global variables can only be created at the top level of the main procedure.  So although
-they can be read from and written to anywhere in the program, they cannot be declared,
+Global variables can only be created at the top level of the main procedure before any
+procedures or functions have been called.  So although they can be read from and written
+to anywhere in the program, they cannot be declared,
 i.e., defined for the first time, in a user defined function or procedure or in a 
 compound statement such as IF.
 
@@ -273,7 +274,7 @@ ENDPROC
 
 
 which will be much faster, will generate less code and won't interfere with
-other parts of your code.  Note the programs in the threex examples above
+other parts of your code.  Note the programs in the three examples above
 are equivalent.  In both cases the local variable I% is declared in the
 outermost scope of the procedure, i.e., is accessible outside of the FOR
 loop.
@@ -288,6 +289,24 @@ NEXT
 ```
 
 is allowed and recommended in Subtilis.
+
+The restriction that global variables must be defined before any procedures or functions
+have been called is also quite restrictive.  For example,
+
+```
+PROCA
+a% = 10
+```
+
+will not compile.  Neither, unfortunately, will
+
+```
+a% = FNCompute%
+```
+
+This restriction is temporary and will be removed at some point in the future,
+but for the time being it remains in place and ensures that global variables
+are not accessed inside functions and procedures before they are initialised.
 
 The LOCAL keyword can be used anywhere inside a function or procedure.  Local variables,
 are scoped.  Local variables defined in a block are only available within that block.

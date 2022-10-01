@@ -132,6 +132,7 @@ typedef enum {
 	SUBTILIS_ERROR_UNKNOWN_FIELD,
 	SUBTILIS_ERROR_BAD_REC_NAME,
 	SUBTILIS_ERROR_EMPTY_REC,
+	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -438,6 +439,9 @@ void subtilis_error_init(subtilis_error_t *e);
 	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_REC_NAME, name, file, line)
 #define subtilis_error_set_empty_rec(e, name, file, line)                      \
 	subtilis_error_set1(e, SUBTILIS_ERROR_EMPTY_REC, name, file, line)
+#define subtilis_error_set_global_after_proc(e, name, file, line)              \
+	subtilis_error_set1(e, SUBTILIS_ERROR_GLOBAL_AFTER_PROC, name, file,   \
+			    line)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,

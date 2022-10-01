@@ -1244,9 +1244,15 @@ void subtilis_parser_create_array(subtilis_parser_t *p, subtilis_token_t *t,
 		subtilis_lexer_get(p->l, t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
+		tbuf = subtilis_token_get_text(t);
 		if (t->type != SUBTILIS_TOKEN_IDENTIFIER) {
-			tbuf = subtilis_token_get_text(t);
 			subtilis_error_set_id_expected(
+			    err, tbuf, p->l->stream->name, p->l->line);
+			return;
+		}
+
+		if (!local && p->current->proc_called) {
+			subtilis_error_set_global_after_proc(
 			    err, tbuf, p->l->stream->name, p->l->line);
 			return;
 		}
