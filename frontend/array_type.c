@@ -1345,12 +1345,6 @@ void subtilis_array_type_reset_field(subtilis_parser_t *p,
 				     size_t mem_reg, size_t loc,
 				     subtilis_exp_t *e, subtilis_error_t *err)
 {
-	subtilis_ir_operand_t dest_reg;
-	subtilis_ir_operand_t source_reg;
-
-	dest_reg.reg = mem_reg;
-	source_reg.reg = e->exp.ir_op.reg;
-
 	subtilis_array_type_match(p, type, &e->type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;

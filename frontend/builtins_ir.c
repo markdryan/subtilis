@@ -3535,9 +3535,7 @@ void subtilis_builtin_call_ir_rec_deref(subtilis_parser_t *p,
 					subtilis_error_t *err)
 {
 	char *name;
-	const subtilis_type_t *ptype[1];
 
-	ptype[0] = &subtilis_type_integer;
 	name = subtilis_rec_type_deref_fn_name(type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -3583,9 +3581,7 @@ void subtilis_builtin_call_ir_rec_ref(subtilis_parser_t *p,
 				      subtilis_error_t *err)
 {
 	char *name;
-	const subtilis_type_t *ptype[1];
 
-	ptype[0] = &subtilis_type_integer;
 	name = subtilis_rec_type_ref_fn_name(type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
