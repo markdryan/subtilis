@@ -51,6 +51,7 @@ static subtilis_exp_t *prv_data_size(subtilis_parser_t *p,
 	}
 
 	data_size = (int32_t)subtilis_type_rec_size(&typ);
+	subtilis_type_free(&typ);
 	el_size = subtilis_exp_new_int32(data_size, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		subtilis_exp_delete(e);
@@ -110,12 +111,14 @@ static void prv_assign_array_ref_exp(subtilis_parser_t *p,
 		goto cleanup;
 
 	if (!subtilis_type_rec_need_deref(&el_type)) {
+		subtilis_type_free(&el_type);
 		subtilis_array_type_assign_ref_exp(p, type, mem_reg, loc, e,
 						   err);
 		return;
 	}
 
 	prv_assign_ref(p, type, &el_type, mem_reg, loc, e->exp.ir_op.reg, err);
+	subtilis_type_free(&el_type);
 
 cleanup:
 	subtilis_exp_delete(e);
@@ -137,8 +140,8 @@ static void prv_element_type(const subtilis_type_t *type,
 			     subtilis_type_t *element_type,
 			     subtilis_error_t *err)
 {
-	subtilis_type_copy_from_rec(element_type,
-				    &type->params.array.params.rec, err);
+	subtilis_type_init_copy_from_rec(element_type,
+					 &type->params.array.params.rec, err);
 }
 
 static subtilis_exp_t *prv_exp_to_var(subtilis_parser_t *p, subtilis_exp_t *e,
@@ -342,15 +345,12 @@ static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
 		       subtilis_error_t *err)
 {
 	subtilis_type_t el_type;
+	bool need_deref;
 
 	if (a2->type.type == SUBTILIS_TYPE_REC) {
 		subtilis_array_append_scalar(p, a1, a2, gran, err);
 		return;
 	}
-
-	prv_element_type(&a1->type, &el_type, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
 
 	if (gran) {
 		subtilis_error_set_too_many_args(err, 3, 2, p->l->stream->name,
@@ -358,7 +358,14 @@ static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
 		goto cleanup;
 	}
 
-	if (!subtilis_type_rec_need_deref(&el_type)) {
+	el_type.type = SUBTILIS_TYPE_VOID;
+	prv_element_type(&a1->type, &el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	need_deref = subtilis_type_rec_need_deref(&el_type);
+	subtilis_type_free(&el_type);
+	if (!need_deref) {
 		subtilis_array_append_scalar_array(p, a1, a2, err);
 		return;
 	}

@@ -1042,6 +1042,7 @@ subtilis_exp_t *subtilis_array_type_slice_array(subtilis_parser_t *p,
 	const subtilis_symbol_t *s;
 	subtilis_type_t array_type;
 	subtilis_exp_t *ret_val;
+	subtilis_exp_t *max_dim = NULL;
 	char *tmp_name = NULL;
 
 	array_type.type = SUBTILIS_TYPE_VOID;
@@ -1080,17 +1081,19 @@ subtilis_exp_t *subtilis_array_type_slice_array(subtilis_parser_t *p,
 	 * Finally, we need to check that index2 <= max_dim + 1.
 	 */
 
-	if (index2)
+	if (index2) {
 		prv_check_slice_index2(p, type, index1, index2, source_reg,
 				       error_label, err);
-	else
+	} else {
 		index2 = prv_calc_max_dim(p, type, source_reg, err);
+		max_dim = index2;
+	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
 	subtilis_type_init_copy(&array_type, type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return NULL;
+		goto cleanup;
 
 	if ((index1->type.type == SUBTILIS_TYPE_CONST_INTEGER) &&
 	    (index2->type.type == SUBTILIS_TYPE_CONST_INTEGER))
@@ -1117,6 +1120,8 @@ subtilis_exp_t *subtilis_array_type_slice_array(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	subtilis_exp_delete(max_dim);
+
 	ret_val =
 	    subtilis_exp_new_tmp_var(&array_type, dest_reg, tmp_name, err);
 	subtilis_type_free(&array_type);
@@ -1124,6 +1129,7 @@ subtilis_exp_t *subtilis_array_type_slice_array(subtilis_parser_t *p,
 
 cleanup:
 
+	subtilis_exp_delete(max_dim);
 	free(tmp_name);
 	subtilis_type_free(&array_type);
 
@@ -2900,6 +2906,7 @@ void subtilis_array_append_scalar_array(subtilis_parser_t *p,
 	subtilis_exp_t *e;
 
 	a2_size_zero.label = SIZE_MAX;
+	el_type.type = SUBTILIS_TYPE_VOID;
 
 	if (!subtilis_type_if_is_vector(&a1->type)) {
 		subtilis_error_set_expected(err, "vector",
@@ -2996,6 +3003,7 @@ void subtilis_array_append_scalar_array(subtilis_parser_t *p,
 					      err);
 
 cleanup:
+	subtilis_type_free(&el_type);
 	subtilis_exp_delete(a2);
 	subtilis_exp_delete(a1);
 }
