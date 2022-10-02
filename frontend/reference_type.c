@@ -579,17 +579,21 @@ void subtilis_reference_type_set_size(subtilis_parser_t *p, size_t mem_reg,
 	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, op0, op1, op2, err);
 }
 
+/* clang-format off */
 size_t subtilis_reference_type_re_malloc(subtilis_parser_t *p, size_t store_reg,
 					 size_t loc, size_t heap_reg,
 					 size_t data_reg, size_t size_reg,
 					 size_t new_size_reg,
+					 size_t alloc_size_reg,
 					 bool heap_known_valid,
 					 subtilis_error_t *err)
+
+/* clang-format on */
 {
 	size_t dest_reg;
 	subtilis_ir_operand_t data;
 
-	dest_reg = subtilis_reference_type_raw_alloc(p, new_size_reg, err);
+	dest_reg = subtilis_reference_type_raw_alloc(p, alloc_size_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
@@ -686,7 +690,7 @@ size_t subtilis_reference_type_copy_on_write(subtilis_parser_t *p,
 
 	dest_reg = subtilis_reference_type_re_malloc(
 	    p, store_reg, loc, heap_reg.reg, data_reg.reg, size_reg, size_reg,
-	    true, err);
+	    size_reg, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
@@ -945,6 +949,7 @@ static size_t prv_resize_with_malloc(subtilis_parser_t *p, size_t loc,
 				     size_t store_reg, size_t heap_reg,
 				     size_t data_reg, size_t old_size_reg,
 				     size_t new_size_reg, size_t delta_reg,
+				     size_t alloc_size_reg,
 				     subtilis_error_t *err)
 {
 	subtilis_ir_operand_t op2;
@@ -975,6 +980,9 @@ static size_t prv_resize_with_malloc(subtilis_parser_t *p, size_t loc,
 	store.reg = store_reg;
 	delta.reg = delta_reg;
 
+	if (alloc_size_reg == SIZE_MAX)
+		alloc_size_reg = new_size_reg;
+
 	free_space.reg = subtilis_ir_section_add_instr2(
 	    p->current, SUBTILIS_OP_INSTR_BLOCK_FREE, heap, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1001,7 +1009,8 @@ static size_t prv_resize_with_malloc(subtilis_parser_t *p, size_t loc,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	new_block.reg = subtilis_reference_type_raw_alloc(p, new_size_reg, err);
+	new_block.reg =
+	    subtilis_reference_type_raw_alloc(p, alloc_size_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
@@ -1088,6 +1097,7 @@ size_t subtilis_reference_type_realloc(subtilis_parser_t *p, size_t loc,
 				       size_t store_reg, size_t heap_reg,
 				       size_t data_reg, size_t old_size_reg,
 				       size_t new_size_reg, size_t delta_reg,
+				       size_t alloc_size_reg,
 				       subtilis_error_t *err)
 {
 	if (p->backend.caps & SUBTILIS_BACKEND_HAVE_ALLOC)
@@ -1096,12 +1106,12 @@ size_t subtilis_reference_type_realloc(subtilis_parser_t *p, size_t loc,
 
 	return prv_resize_with_malloc(p, loc, store_reg, heap_reg, data_reg,
 				      old_size_reg, new_size_reg, delta_reg,
-				      err);
+				      alloc_size_reg, err);
 }
 
 void subtilis_reference_type_grow(subtilis_parser_t *p, size_t a1_loc,
 				  size_t a1_mem_reg, size_t a1_size_reg,
-				  size_t new_size_reg, size_t a2_size_reg,
+				  size_t gran_reg, size_t a2_size_reg,
 				  size_t ret_reg, subtilis_error_t *err)
 {
 	subtilis_ir_operand_t a1_size;
@@ -1119,12 +1129,14 @@ void subtilis_reference_type_grow(subtilis_parser_t *p, size_t a1_loc,
 	subtilis_ir_operand_t copy_label;
 	subtilis_ir_operand_t alloc_only_label;
 	subtilis_ir_operand_t ptr;
+	subtilis_ir_operand_t gran;
+	size_t alloc_size_reg;
 	size_t dest_reg;
 
-	new_size.reg = new_size_reg;
 	a1_size.reg = a1_size_reg;
 	a2_size.reg = a2_size_reg;
 	store.reg = a1_mem_reg;
+	gran.reg = gran_reg;
 	ptr.reg = p->current->reg_counter++;
 
 	a1_gt_zero_label.label = subtilis_ir_section_new_label(p->current);
@@ -1132,6 +1144,20 @@ void subtilis_reference_type_grow(subtilis_parser_t *p, size_t a1_loc,
 	realloc_label.label = subtilis_ir_section_new_label(p->current);
 	copy_label.label = subtilis_ir_section_new_label(p->current);
 	alloc_only_label.label = subtilis_ir_section_new_label(p->current);
+
+	new_size.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_ADD_I32, a1_size, a2_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (gran_reg == SIZE_MAX) {
+		alloc_size_reg = new_size.reg;
+	} else {
+		alloc_size_reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_ADD_I32, a1_size, gran, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 
 	/*
 	 * Our target reference type may have a size of zero.  If so no getref
@@ -1187,7 +1213,7 @@ void subtilis_reference_type_grow(subtilis_parser_t *p, size_t a1_loc,
 
 	dest_reg = subtilis_reference_type_re_malloc(
 	    p, a1_mem_reg, a1_loc, a1_heap.reg, a1_data.reg, a1_size.reg,
-	    new_size.reg, false, err);
+	    new_size.reg, alloc_size_reg, true, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1206,17 +1232,17 @@ void subtilis_reference_type_grow(subtilis_parser_t *p, size_t a1_loc,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	dest_reg = subtilis_reference_type_raw_alloc(p, new_size.reg, err);
+	dest_reg = subtilis_reference_type_raw_alloc(p, alloc_size_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_reference_type_set_size(p, a1_mem_reg, a1_loc, new_size_reg,
+	subtilis_reference_type_set_size(p, a1_mem_reg, a1_loc, new_size.reg,
 					 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	subtilis_reference_type_set_orig_size(p, a1_mem_reg, a1_loc,
-					      new_size_reg, err);
+					      new_size.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -1245,7 +1271,7 @@ void subtilis_reference_type_grow(subtilis_parser_t *p, size_t a1_loc,
 
 	dest_reg = subtilis_reference_type_realloc(
 	    p, a1_loc, a1_mem_reg, a1_heap.reg, a1_data.reg, a1_size.reg,
-	    new_size.reg, a2_size.reg, err);
+	    new_size.reg, a2_size.reg, alloc_size_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

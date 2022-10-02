@@ -116,7 +116,7 @@ void subtilis_builtin_ir_rec_copy(subtilis_parser_t *p,
 				  subtilis_error_t *err);
 subtilis_exp_t *
 subtilis_builtin_ir_call_ref_grow(subtilis_parser_t *p, size_t a1_mem_reg,
-				  size_t a1_size_reg, size_t new_size_reg,
+				  size_t a1_size_reg, size_t gran_reg,
 				  size_t a2_size_reg, subtilis_error_t *err);
 
 #endif

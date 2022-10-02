@@ -6408,6 +6408,24 @@ const subtilis_test_case_t test_cases[] = {
 	"<-a@REClines\n",
 	"10\n",
 	},
+	{"append_gran",
+	 "local dim a{}\n"
+	 "for i% = 1 to 17\n"
+	 "append(a{}, i%, 16)\n"
+	 "next\n"
+	 "range i := a{}\n"
+	 "print i\n"
+	 "endrange\n",
+	 "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n"
+	 "15\n16\n17\n",
+	},
+	{"append_bad_gran",
+	"onerror print err enderror\n"
+	"dim a%{}\n"
+	"b% := 0\n"
+	"append(a%{},1,b%)\n",
+	"10\n",
+	},
 };
 
 /* clang-format on */

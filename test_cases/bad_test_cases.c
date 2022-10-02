@@ -1186,6 +1186,22 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"endproc\n",
 	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
 	},
+	{"append_bad_type",
+	 "dim a%{}\n"
+	 "append(a%{}, 1, \"aa\")\n",
+	 SUBTILIS_ERROR_INTEGER_EXPECTED,
+	},
+	{"append_array_array_gran",
+	 "dim a%{2}\n"
+	 "dim b%{2}\n"
+	 "append(a%{}, b%{}, 16)\n",
+	 SUBTILIS_ERROR_TOO_MANY_ARGS,
+	},
+	{"append_bad_gran",
+	 "dim a%{2}\n"
+	 "append(a%{}, 1, -1)\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
 };
 
 /* clang-format on */

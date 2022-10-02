@@ -399,7 +399,7 @@ static subtilis_exp_t *prv_zt_non_const_tmp(subtilis_parser_t *p,
 
 	reg = subtilis_reference_type_realloc(p, 0, e->exp.ir_op.reg, heap_reg,
 					      reg, old_size_reg, new_size_reg,
-					      delta_reg, err);
+					      delta_reg, SIZE_MAX, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -3463,7 +3463,7 @@ subtilis_exp_t *subtilis_string_type_add(subtilis_parser_t *p,
 			goto cleanup;
 		dest_reg = subtilis_reference_type_realloc(
 		    p, s->loc, SUBTILIS_IR_REG_LOCAL, a1_tmp_heap, a1_data.reg,
-		    a1_size.reg, new_size.reg, a2_size.reg, err);
+		    a1_size.reg, new_size.reg, a2_size.reg, SIZE_MAX, err);
 	} else {
 		s = subtilis_symbol_table_insert_tmp(
 		    p->local_st, &subtilis_type_string, &tmp_name, err);
@@ -3519,7 +3519,6 @@ void subtilis_string_type_add_eq(subtilis_parser_t *p, size_t store_reg,
 	char *a2_tmp;
 	subtilis_ir_operand_t a1_size;
 	subtilis_ir_operand_t a2_size;
-	subtilis_ir_operand_t new_size;
 	subtilis_ir_operand_t op2;
 	subtilis_ir_operand_t a2_data;
 	subtilis_ir_operand_t store;
@@ -3541,17 +3540,12 @@ void subtilis_string_type_add_eq(subtilis_parser_t *p, size_t store_reg,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	new_size.reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_ADD_I32, a1_size, a2_size, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
 	store_reg = subtilis_reference_get_pointer(p, store_reg, loc, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	e = subtilis_builtin_ir_call_ref_grow(p, store_reg, a1_size.reg,
-					      new_size.reg, a2_size.reg, err);
+					      a2_size.reg, a2_size.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	dest_reg = e->exp.ir_op.reg;

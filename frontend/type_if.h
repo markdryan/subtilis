@@ -73,7 +73,11 @@ typedef void (*subtilis_type_if_copy_collection_t)(subtilis_parser_t *p,
 						   subtilis_exp_t *e1,
 						   subtilis_exp_t *e2,
 						   subtilis_error_t *err);
-
+typedef void (*subtilis_type_if_append_t)(subtilis_parser_t *p,
+					  subtilis_exp_t *e1,
+					  subtilis_exp_t *e2,
+					  subtilis_exp_t *gran,
+					  subtilis_error_t *err);
 typedef void (*subtilis_type_if_sizet_exp_t)(subtilis_parser_t *p, size_t reg,
 					     subtilis_exp_t *e,
 					     subtilis_error_t *err);
@@ -168,7 +172,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_set_t set;
 	subtilis_type_if_reg2_t zero_buf;
 	subtilis_type_if_iread_t indexed_address;
-	subtilis_type_if_copy_collection_t append;
+	subtilis_type_if_append_t append;
 	subtilis_type_if_load_t load_mem;
 	subtilis_type_if_unary_t to_int32;
 	subtilis_type_if_coerce_t zerox;
@@ -536,11 +540,15 @@ subtilis_type_if_indexed_address(subtilis_parser_t *p, const char *var_name,
  *
  * b% will still have 10 elements and will still point to the original block
  * of data created by dim a%.  a% may or may not point to this original block
- * of data.  Only implemented for strings and 1d arrays.
+ * of data.  Only implemented for strings and vectors.  The gran parameter
+ * is optional.  If non-NULL and an allocation is needed, the size of the
+ * block of memory will be grown by gran elements, rather than 1 element.
+ * Must be NULL when appending vectors to vectors.
  */
 
 void subtilis_type_if_append(subtilis_parser_t *p, subtilis_exp_t *a1,
-			     subtilis_exp_t *a2, subtilis_error_t *err);
+			     subtilis_exp_t *a2, subtilis_exp_t *gran,
+			     subtilis_error_t *err);
 
 /*
  * Returns the scalar value stored in the memory location represented by

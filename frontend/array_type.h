@@ -271,7 +271,8 @@ void subtilis_array_type_copy_els(subtilis_parser_t *p,
  * Appends a single value (a2) to a vector (a1).
  */
 void subtilis_array_append_scalar(subtilis_parser_t *p, subtilis_exp_t *a1,
-				  subtilis_exp_t *a2, subtilis_error_t *err);
+				  subtilis_exp_t *a2, subtilis_exp_t *gran,
+				  subtilis_error_t *err);
 /*
  * Appends all the values in the scalar vector a2 to the scalar vector a1.
  */

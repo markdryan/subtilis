@@ -662,9 +662,10 @@ subtilis_type_if_indexed_address(subtilis_parser_t *p, const char *var_name,
 }
 
 void subtilis_type_if_append(subtilis_parser_t *p, subtilis_exp_t *a1,
-			     subtilis_exp_t *a2, subtilis_error_t *err)
+			     subtilis_exp_t *a2, subtilis_exp_t *gran,
+			     subtilis_error_t *err)
 {
-	subtilis_type_if_copy_collection_t fn;
+	subtilis_type_if_append_t fn;
 
 	fn = prv_type_map[a1->type.type]->append;
 	if (!fn) {
@@ -674,10 +675,11 @@ void subtilis_type_if_append(subtilis_parser_t *p, subtilis_exp_t *a1,
 		goto cleanup;
 	}
 
-	fn(p, a1, a2, err);
+	fn(p, a1, a2, gran, err);
 	return;
 
 cleanup:
+	subtilis_exp_delete(gran);
 	subtilis_exp_delete(a2);
 	subtilis_exp_delete(a1);
 }

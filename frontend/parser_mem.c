@@ -90,6 +90,46 @@ cleanup:
 	subtilis_exp_delete(objs[0]);
 }
 
+static void prv_append_statement(subtilis_parser_t *p, subtilis_token_t *t,
+				 subtilis_exp_t **objs, subtilis_error_t *err)
+{
+	const char *tbuf;
+	size_t args;
+	size_t i;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, "(")) {
+		subtilis_error_set_expected(err, "( ", tbuf, p->l->stream->name,
+					    p->l->line);
+		return;
+	}
+
+	args = subtilis_var_bracketed_args_have_b(p, t, &objs[0], 3, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (args < 2) {
+		subtilis_error_set_exp_expected(err, ")", p->l->stream->name,
+						p->l->line);
+		goto cleanup;
+	}
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	return;
+
+cleanup:
+
+	for (i = 0; i < args; i++)
+		subtilis_exp_delete(objs[i]);
+}
+
 void subtilis_parser_copy(subtilis_parser_t *p, subtilis_token_t *t,
 			  subtilis_error_t *err)
 {
@@ -135,9 +175,10 @@ cleanup:
 void subtilis_parser_append(subtilis_parser_t *p, subtilis_token_t *t,
 			    subtilis_error_t *err)
 {
-	subtilis_exp_t *objs[2] = {NULL, NULL};
+	subtilis_exp_t *objs[3] = {NULL};
+	size_t i;
 
-	prv_mem_statement(p, t, &objs[0], err);
+	prv_append_statement(p, t, objs, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -148,12 +189,12 @@ void subtilis_parser_append(subtilis_parser_t *p, subtilis_token_t *t,
 		goto cleanup;
 	}
 
-	subtilis_type_if_append(p, objs[0], objs[1], err);
+	subtilis_type_if_append(p, objs[0], objs[1], objs[2], err);
 	return;
 
 cleanup:
-	subtilis_exp_delete(objs[1]);
-	subtilis_exp_delete(objs[0]);
+	for (i = 0; i < 3; i++)
+		subtilis_exp_delete(objs[i]);
 }
 
 subtilis_exp_t *subtilis_parser_append_exp(subtilis_parser_t *p,
@@ -162,11 +203,12 @@ subtilis_exp_t *subtilis_parser_append_exp(subtilis_parser_t *p,
 {
 	bool check_size;
 	bool tmp;
-	subtilis_exp_t *objs[2] = {NULL, NULL};
+	subtilis_exp_t *objs[3] = {NULL};
 	subtilis_exp_t *retval = NULL;
 	const subtilis_symbol_t *s;
+	size_t i;
 
-	prv_mem_statement(p, t, &objs[0], err);
+	prv_append_statement(p, t, objs, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return NULL;
 
@@ -176,9 +218,10 @@ subtilis_exp_t *subtilis_parser_append_exp(subtilis_parser_t *p,
 
 	tmp = objs[0]->temporary;
 
-	subtilis_type_if_append(p, objs[0], objs[1], err);
+	subtilis_type_if_append(p, objs[0], objs[1], objs[2], err);
 	objs[0] = NULL;
 	objs[1] = NULL;
+	objs[2] = NULL;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -219,7 +262,9 @@ subtilis_exp_t *subtilis_parser_append_exp(subtilis_parser_t *p,
 
 cleanup:
 	subtilis_exp_delete(retval);
-	subtilis_exp_delete(objs[1]);
-	subtilis_exp_delete(objs[0]);
+
+	for (i = 0; i < 3; i++)
+		subtilis_exp_delete(objs[i]);
+
 	return NULL;
 }

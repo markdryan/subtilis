@@ -1202,6 +1202,22 @@ print a${3}
 
 will print "hello to the world".
 
+The append statement can take a 3rd argument when appending single values to a vector.  This third
+argument indicates the number of elements that should be reserved in the vector.  For example,
+
+```
+dim a%{}
+append(a%{}, 1, 16)
+append(a%{}, 2)
+```
+
+The first statement appends only one element to a%{} but reserves space for 16.  After the execution
+of the first statement the size of a%{} is 0 (as reported by dim(a%{},1)).  The second append statement
+should not result in any allocations or reallocations, as a%{} already has the space available for the
+second integer.
+
+The 3rd argument to append must be an integer > 0.
+
 ### Slices
 
 It is possible to slice vectors and one-dimensional arrays to create new collections that contain

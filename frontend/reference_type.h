@@ -103,14 +103,22 @@ void subtilis_reference_type_set_orig_size(subtilis_parser_t *p, size_t mem_reg,
  * vectors, or adding two strings together.  Only called when the
  * reference count > 1.  We allocate a new buffer, memcpy the old
  * contents, deref the old heap pointer and replace the data and heap pointers.
- * A register containing the data/heap pointer is returned.
+ * A register containing the data/heap pointer is returned.  The amount of
+ * data allocated may be larger than the size of the new buffer, when
+ * appending with a granularity for example.
  */
+
+/* clang-format off */
 size_t subtilis_reference_type_re_malloc(subtilis_parser_t *p, size_t store_reg,
 					 size_t loc, size_t heap_reg,
 					 size_t data_reg, size_t size_reg,
 					 size_t new_size_reg,
+					 size_t alloc_size_reg,
 					 bool heap_known_valid,
 					 subtilis_error_t *err);
+
+/* clang-format on */
+
 /*
  * Called when modifying string contents using left$, right$ or mid$.
  * We check the reference count.  If it's == 1 we just return the data
@@ -138,12 +146,15 @@ size_t subtilis_reference_type_alloc(subtilis_parser_t *p,
  * It is assumed that the variable is the sole owner of the heap block.
  * The data, heap and size fields of the variable are all updated correctly.
  * The data reg is returned.  This may or may not be equal to the heap field.
+ * The implementation may use the size specified in gran_reg to allocate more
+ * data than is needed, to avoid fragmenting the heap.  If gran_reg is set
+ * to SIZE_MAX then we just allocate new_size_reg bytes instead.
  */
 size_t subtilis_reference_type_realloc(subtilis_parser_t *p, size_t loc,
 				       size_t store_reg, size_t heap_reg,
 				       size_t data_reg, size_t old_size_reg,
 				       size_t new_size_reg, size_t delta_reg,
-				       subtilis_error_t *err);
+				       size_t gran_reg, subtilis_error_t *err);
 
 /*
  * Increases the size of the heap block assigned to the variable represented

@@ -2543,7 +2543,7 @@ void subtilis_array_type_copy_els(subtilis_parser_t *p,
 static size_t prv_grow_wrapper(subtilis_parser_t *p,
 			       const subtilis_type_t *el_type,
 			       size_t a1_mem_reg, size_t a1_size_reg,
-			       size_t new_size_reg, size_t a2_size_reg,
+			       size_t gran_reg, size_t a2_size_reg,
 			       subtilis_error_t *err)
 {
 	subtilis_ir_operand_t get_ref_label;
@@ -2620,7 +2620,7 @@ static size_t prv_grow_wrapper(subtilis_parser_t *p,
 	}
 
 	e = subtilis_builtin_ir_call_ref_grow(p, a1_mem_reg, a1_size_reg,
-					      new_size_reg, a2_size_reg, err);
+					      gran_reg, a2_size_reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 	dest_reg = e->exp.ir_op.reg;
@@ -2676,15 +2676,67 @@ static size_t prv_grow_wrapper(subtilis_parser_t *p,
 	return dest_reg;
 }
 
+static subtilis_exp_t *prv_check_gran(subtilis_parser_t *p,
+				      subtilis_exp_t *gran,
+				      subtilis_error_t *err)
+{
+	char num[32];
+	subtilis_ir_operand_t condee;
+	subtilis_ir_operand_t zero;
+	subtilis_ir_operand_t error_label;
+	subtilis_ir_operand_t ok_label;
+
+	gran = subtilis_type_if_to_int(p, gran, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	if (gran->type.type == SUBTILIS_TYPE_CONST_INTEGER) {
+		if (gran->exp.ir_op.integer <= 0) {
+			snprintf(num, sizeof(num), "%d",
+				 gran->exp.ir_op.integer);
+			subtilis_error_set_expected(err, "positive integer",
+						    num, p->l->stream->name,
+						    p->l->line);
+		}
+	} else {
+		/* Need a runtime check */
+
+		zero.integer = 0;
+		condee.reg = subtilis_ir_section_add_instr(
+		    p->current, SUBTILIS_OP_INSTR_GTI_I32, gran->exp.ir_op,
+		    zero, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+
+		error_label = subtilis_array_type_error_label(p);
+		ok_label.label = subtilis_ir_section_new_label(p->current);
+
+		subtilis_ir_section_add_instr_reg(
+		    p->current, SUBTILIS_OP_INSTR_JMPC, condee, ok_label,
+		    error_label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+
+		subtilis_ir_section_add_label(p->current, ok_label.label, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return NULL;
+	}
+
+	return gran;
+}
+
 void subtilis_array_append_scalar(subtilis_parser_t *p, subtilis_exp_t *a1,
-				  subtilis_exp_t *a2, subtilis_error_t *err)
+				  subtilis_exp_t *a2, subtilis_exp_t *gran,
+				  subtilis_error_t *err)
 {
 	subtilis_type_t el_type;
 	size_t dest_reg;
+	size_t gran_reg;
 	subtilis_ir_operand_t a1_size;
 	subtilis_ir_operand_t a2_size;
-	size_t new_size_reg;
 	subtilis_ir_operand_t op1;
+	subtilis_exp_t *el_size_e;
+	size_t el_size;
 
 	if (!subtilis_type_if_is_vector(&a1->type)) {
 		subtilis_error_set_expected(err, "dynamic 1d array",
@@ -2708,7 +2760,11 @@ void subtilis_array_append_scalar(subtilis_parser_t *p, subtilis_exp_t *a1,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto free_as;
 
-	op1.integer = subtilis_type_if_size(&el_type, err);
+	el_size = subtilis_type_if_size(&el_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto free_as;
+
+	op1.integer = el_size;
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -2722,13 +2778,26 @@ void subtilis_array_append_scalar(subtilis_parser_t *p, subtilis_exp_t *a1,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	new_size_reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_ADD_I32, a1_size, a2_size, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+	if (gran) {
+		gran = prv_check_gran(p, gran, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto free_as;
+		el_size_e = subtilis_exp_new_int32(el_size, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto free_as;
+		gran = subtilis_type_if_mul(p, gran, el_size_e, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto free_as;
+		gran = subtilis_type_if_exp_to_var(p, gran, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto free_as;
+		gran_reg = gran->exp.ir_op.reg;
+	} else {
+		gran_reg = a2_size.reg;
+	}
 
 	dest_reg = prv_grow_wrapper(p, &el_type, a1->exp.ir_op.reg, a1_size.reg,
-				    new_size_reg, a2_size.reg, err);
+				    gran_reg, a2_size.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -2756,6 +2825,7 @@ void subtilis_array_append_scalar(subtilis_parser_t *p, subtilis_exp_t *a1,
 cleanup:
 	subtilis_type_free(&el_type);
 free_as:
+	subtilis_exp_delete(gran);
 	subtilis_exp_delete(a2);
 	subtilis_exp_delete(a1);
 }
@@ -2831,7 +2901,6 @@ void subtilis_array_append_scalar_array(subtilis_parser_t *p,
 	subtilis_ir_operand_t a2_size_zero;
 	subtilis_ir_operand_t a2_size_gt_zero;
 	subtilis_ir_operand_t a2_data;
-	size_t new_size_reg;
 	subtilis_ir_operand_t op1;
 	bool a2_dynamic;
 	subtilis_exp_t *e;
@@ -2885,13 +2954,8 @@ void subtilis_array_append_scalar_array(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	new_size_reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_ADD_I32, a1_size, a2_size, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
 	e = subtilis_builtin_ir_call_ref_grow(p, a1->exp.ir_op.reg, a1_size.reg,
-					      new_size_reg, a2_size.reg, err);
+					      a2_size.reg, a2_size.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 	dest_reg = e->exp.ir_op.reg;
@@ -2953,7 +3017,6 @@ void subtilis_array_append_ref_array(subtilis_parser_t *p, subtilis_exp_t *a1,
 	subtilis_ir_operand_t a2_size_zero;
 	subtilis_ir_operand_t a2_size_gt_zero;
 	subtilis_ir_operand_t a2_data;
-	size_t new_size_reg;
 	subtilis_ir_operand_t op1;
 	bool a2_dynamic;
 
@@ -3006,13 +3069,8 @@ void subtilis_array_append_ref_array(subtilis_parser_t *p, subtilis_exp_t *a1,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	new_size_reg = subtilis_ir_section_add_instr(
-	    p->current, SUBTILIS_OP_INSTR_ADD_I32, a1_size, a2_size, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
 	dest_reg = prv_grow_wrapper(p, &el_type, a1->exp.ir_op.reg, a1_size.reg,
-				    new_size_reg, a2_size.reg, err);
+				    a2_size.reg, a2_size.reg, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

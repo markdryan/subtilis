@@ -449,8 +449,17 @@ static void prv_vector_of(const subtilis_type_t *el_type, subtilis_type_t *type,
 }
 
 static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
-		       subtilis_exp_t *a2, subtilis_error_t *err)
+		       subtilis_exp_t *a2, subtilis_exp_t *gran,
+		       subtilis_error_t *err)
 {
+	if (gran) {
+		subtilis_error_set_too_many_args(err, 3, 2, p->l->stream->name,
+						 p->l->line);
+		subtilis_exp_delete(gran);
+		subtilis_exp_delete(a2);
+		subtilis_exp_delete(a1);
+		return;
+	}
 	subtilis_string_type_add_eq(p, a1->exp.ir_op.reg, 0, a2, err);
 	subtilis_exp_delete(a1);
 }

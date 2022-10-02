@@ -173,17 +173,23 @@ static void prv_array_set(subtilis_parser_t *p, const char *var_name,
 }
 
 static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
-		       subtilis_exp_t *a2, subtilis_error_t *err)
+		       subtilis_exp_t *a2, subtilis_exp_t *gran,
+		       subtilis_error_t *err)
 {
 	if ((a2->type.type == SUBTILIS_TYPE_ARRAY_REAL) ||
 	    (a2->type.type == SUBTILIS_TYPE_VECTOR_REAL)) {
+		if (gran) {
+			subtilis_error_set_too_many_args(
+			    err, 3, 2, p->l->stream->name, p->l->line);
+			goto cleanup;
+		}
 		subtilis_array_append_scalar_array(p, a1, a2, err);
 		return;
 	} else if (subtilis_type_if_is_numeric(&a2->type)) {
 		a2 = subtilis_type_if_to_float64(p, a2, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		subtilis_array_append_scalar(p, a1, a2, err);
+		subtilis_array_append_scalar(p, a1, a2, gran, err);
 		return;
 	}
 	subtilis_error_set_expected(err, "real or array of reals",
@@ -191,6 +197,7 @@ static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
 				    p->l->stream->name, p->l->line);
 
 cleanup:
+	subtilis_exp_delete(gran);
 	subtilis_exp_delete(a2);
 	subtilis_exp_delete(a1);
 }
