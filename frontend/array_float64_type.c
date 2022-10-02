@@ -28,8 +28,14 @@ static size_t prv_size(const subtilis_type_t *type)
 	return subtilis_array_type_size(type);
 }
 
-static subtilis_exp_t *prv_data_size(subtilis_parser_t *p, subtilis_exp_t *e,
-				     subtilis_error_t *err)
+static size_t prv_align(const subtilis_type_t *type)
+{
+	return SUBTILIS_CONFIG_POINTER_SIZE;
+}
+
+static subtilis_exp_t *prv_data_size(subtilis_parser_t *p,
+				     const subtilis_type_t *type,
+				     subtilis_exp_t *e, subtilis_error_t *err)
 {
 	subtilis_exp_t *three;
 
@@ -167,17 +173,23 @@ static void prv_array_set(subtilis_parser_t *p, const char *var_name,
 }
 
 static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
-		       subtilis_exp_t *a2, subtilis_error_t *err)
+		       subtilis_exp_t *a2, subtilis_exp_t *gran,
+		       subtilis_error_t *err)
 {
 	if ((a2->type.type == SUBTILIS_TYPE_ARRAY_REAL) ||
 	    (a2->type.type == SUBTILIS_TYPE_VECTOR_REAL)) {
+		if (gran) {
+			subtilis_error_set_too_many_args(
+			    err, 3, 2, p->l->stream->name, p->l->line);
+			goto cleanup;
+		}
 		subtilis_array_append_scalar_array(p, a1, a2, err);
 		return;
 	} else if (subtilis_type_if_is_numeric(&a2->type)) {
 		a2 = subtilis_type_if_to_float64(p, a2, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		subtilis_array_append_scalar(p, a1, a2, err);
+		subtilis_array_append_scalar(p, a1, a2, gran, err);
 		return;
 	}
 	subtilis_error_set_expected(err, "real or array of reals",
@@ -185,6 +197,7 @@ static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
 				    p->l->stream->name, p->l->line);
 
 cleanup:
+	subtilis_exp_delete(gran);
 	subtilis_exp_delete(a2);
 	subtilis_exp_delete(a1);
 }
@@ -415,11 +428,12 @@ subtilis_type_if subtilis_type_array_float64 = {
 	.is_vector = false,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = prv_size,
+	.alignment = prv_align,
 	.data_size = prv_data_size,
 	.zero = prv_zero,
 	.zero_ref = subtilis_array_create_1el,
 	.new_ref = NULL,
-	.assign_ref = NULL,
+	.assign_ref = subtilis_array_type_assign_ref_exp,
 	.assign_ref_no_rc = NULL,
 	.zero_reg = prv_zero_reg,
 	.copy_ret = subtlis_array_type_copy_ret,
@@ -503,11 +517,12 @@ subtilis_type_if subtilis_type_vector_float64 = {
 	.is_vector = true,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = prv_size,
+	.alignment = prv_align,
 	.data_size = prv_data_size,
 	.zero = prv_zero,
 	.zero_ref = prv_vector_zero_ref,
 	.new_ref = NULL,
-	.assign_ref = NULL,
+	.assign_ref = subtilis_array_type_assign_ref_exp,
 	.assign_ref_no_rc = NULL,
 	.zero_reg = prv_zero_reg,
 	.copy_ret = subtlis_array_type_copy_ret,

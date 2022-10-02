@@ -28,7 +28,9 @@
 #include "parser_input.h"
 #include "parser_math.h"
 #include "parser_mem.h"
+#include "parser_os.h"
 #include "parser_output.h"
+#include "parser_rec.h"
 #include "parser_rnd.h"
 #include "parser_string.h"
 #include "reference_type.h"
@@ -141,7 +143,7 @@ bool subtilis_exp_get_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	const subtilis_symbol_t *s;
 	const char *tbuf;
-	size_t mem_reg;
+	size_t mem_reg = SUBTILIS_IR_REG_LOCAL;
 
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -160,6 +162,7 @@ bool subtilis_exp_get_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
 
 	if (subtilis_type_if_is_numeric(&s->t) ||
 	    (s->t.type == SUBTILIS_TYPE_FN) ||
+	    (s->t.type == SUBTILIS_TYPE_REC) ||
 	    (s->t.type == SUBTILIS_TYPE_STRING)) {
 		subtilis_type_copy(type, &s->t, err);
 		if (err->type != SUBTILIS_ERROR_OK)
@@ -214,63 +217,84 @@ static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	s = subtilis_symbol_table_lookup(p->local_st, var_name);
-	if (!s) {
-		s = subtilis_symbol_table_lookup(p->st, var_name);
-		mem_reg = SUBTILIS_IR_REG_GLOBAL;
+	s = subtilis_parser_get_symbol(p, var_name, &mem_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	tbuf = subtilis_token_get_text(t);
+	if ((s->t.type == SUBTILIS_TYPE_FN) &&
+	    (t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "(")) {
+		if (s->t.params.fn.ret_val->type == SUBTILIS_TYPE_VOID) {
+			subtilis_error_set_expected(
+			    err, "function", "procedure", p->l->stream->name,
+			    p->l->line);
+			goto cleanup;
+		}
+		e = subtilis_parser_call_ptr(p, t, s, var_name, mem_reg, err);
+	} else if ((s->t.type == SUBTILIS_TYPE_REC) &&
+		   (t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, ".")) {
+		e = subtilis_parser_rec_exp(p, t, &s->t, mem_reg, s->loc, err);
+	} else if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "(")) {
+		e = subtils_parser_read_array(p, t, var_name, err);
+	} else if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "{")) {
+		e = subtils_parser_read_vector(p, t, var_name, err);
+	} else {
+		e = subtilis_var_lookup_var(p, var_name, err);
 	}
 
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
 	/*
-	 * TODO: This really needs to be a loop so we can handle things like
-	 * arrays of pointers to functions that return functions.  Note it's
-	 * not currently possible to dereference anything directly returned by
-	 * a function, e.g., an array, but we should allow this I guess.
+	 * If our expression evaluates to a function pointer, which
+	 * can be called, or a container type like an array or a
+	 * record, we need to check to see whether we're performing
+	 * a chained operation on the expression.
 	 */
 
-	if (s && s->t.type == SUBTILIS_TYPE_FN) {
+	while ((e->type.type == SUBTILIS_TYPE_FN) ||
+	       (e->type.type == SUBTILIS_TYPE_REC) ||
+	       subtilis_type_if_is_array(&e->type) ||
+	       subtilis_type_if_is_vector(&e->type)) {
 		tbuf = subtilis_token_get_text(t);
-		if ((t->type == SUBTILIS_TOKEN_OPERATOR) &&
+		if ((e->type.type == SUBTILIS_TYPE_FN) &&
+		    (t->type == SUBTILIS_TOKEN_OPERATOR) &&
 		    !strcmp(tbuf, "(")) {
-			if (s->t.params.fn.ret_val->type ==
-			    SUBTILIS_TYPE_VOID) {
+			e1 = subtilis_parser_call_known_ptr(
+			    p, t, &e->type, e->exp.ir_op.reg, err);
+			if ((err->type == SUBTILIS_ERROR_OK) && !e1) {
 				subtilis_error_set_expected(
 				    err, "function", "procedure",
 				    p->l->stream->name, p->l->line);
 				goto cleanup;
 			}
-			e = subtilis_parser_call_ptr(p, t, s, var_name, mem_reg,
-						     err);
+		} else if ((e->type.type == SUBTILIS_TYPE_REC) &&
+			   (t->type == SUBTILIS_TOKEN_OPERATOR) &&
+			   !strcmp(tbuf, ".")) {
+			e1 = subtilis_parser_rec_exp(p, t, &e->type,
+						     e->exp.ir_op.reg, 0, err);
+		} else if (subtilis_type_if_is_array(&e->type) &&
+			   (t->type == SUBTILIS_TOKEN_OPERATOR) &&
+			   !strcmp(tbuf, "(")) {
+			e1 = subtils_parser_read_array_with_type(
+			    p, t, &e->type, e->exp.ir_op.reg, 0, "temporary",
+			    err);
+		} else if (subtilis_type_if_is_vector(&e->type) &&
+			   (t->type == SUBTILIS_TOKEN_OPERATOR) &&
+			   !strcmp(tbuf, "{")) {
+			e1 = subtils_parser_read_vector_with_type(
+			    p, t, &e->type, e->exp.ir_op.reg, 0, "temporary",
+			    err);
+		} else {
+			break;
+		}
+
+		subtilis_exp_delete(e);
+		if (err->type != SUBTILIS_ERROR_OK) {
+			e = NULL;
 			goto cleanup;
 		}
-	}
-
-	tbuf = subtilis_token_get_text(t);
-	if (t->type == SUBTILIS_TOKEN_OPERATOR) {
-		if (!strcmp(tbuf, "("))
-			e = subtils_parser_read_array(p, t, var_name, err);
-		else if (!strcmp(tbuf, "{"))
-			e = subtils_parser_read_vector(p, t, var_name, err);
-		else
-			e = subtilis_var_lookup_var(p, var_name, err);
-
-		if (err->type != SUBTILIS_ERROR_OK)
-			goto cleanup;
-
-		if (e->type.type == SUBTILIS_TYPE_FN) {
-			tbuf = subtilis_token_get_text(t);
-			if ((t->type == SUBTILIS_TOKEN_OPERATOR) &&
-			    !strcmp(tbuf, "(")) {
-				e1 = subtilis_parser_call_known_ptr(
-				    p, t, &e->type, e->exp.ir_op.reg, err);
-				if (err->type == SUBTILIS_ERROR_OK) {
-					subtilis_exp_delete(e);
-					e = e1;
-				}
-				goto cleanup;
-			}
-		}
-	} else {
-		e = subtilis_var_lookup_var(p, var_name, err);
+		e = e1;
 	}
 
 cleanup:
@@ -321,7 +345,7 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 				goto cleanup;
 		} else {
 			subtilis_error_set_exp_expected(
-			    err, "!, ( or - ", p->l->stream->name, p->l->line);
+			    err, tbuf, p->l->stream->name, p->l->line);
 			goto cleanup;
 		}
 		break;
@@ -452,6 +476,8 @@ static subtilis_exp_t *prv_priority1(subtilis_parser_t *p, subtilis_token_t *t,
 			return subtilis_parser_copy_exp(p, t, err);
 		case SUBTILIS_KEYWORD_DEF:
 			return subtilis_parser_lambda(p, t, err);
+		case SUBTILIS_KEYWORD_OSARGS_STR:
+			return subtilis_parser_osargs(p, t, err);
 		default:
 			subtilis_error_set_exp_expected(
 			    err, "Unexpected keyword in expression",
@@ -1445,4 +1471,36 @@ void subtilis_exp_swap_int32_mem(subtilis_parser_t *p, size_t dest_reg,
 
 	subtilis_ir_section_add_instr_reg(
 	    p->current, SUBTILIS_OP_INSTR_STOREO_I32, tmp2, s, op2, err);
+}
+
+void subtilis_exp_swap_int8_mem(subtilis_parser_t *p, size_t reg1, size_t reg2,
+				int32_t off, subtilis_error_t *err)
+{
+	subtilis_ir_operand_t op1;
+	subtilis_ir_operand_t op2;
+	subtilis_ir_operand_t zero;
+	subtilis_ir_operand_t tmp;
+	subtilis_ir_operand_t tmp2;
+
+	op1.reg = reg1;
+	op2.reg = reg2;
+	zero.integer = off;
+
+	tmp.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I8, op1, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	tmp2.reg = subtilis_ir_section_add_instr(
+	    p->current, SUBTILIS_OP_INSTR_LOADO_I8, op2, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I8, tmp, op2, zero, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_section_add_instr_reg(
+	    p->current, SUBTILIS_OP_INSTR_STOREO_I8, tmp2, op1, zero, err);
 }

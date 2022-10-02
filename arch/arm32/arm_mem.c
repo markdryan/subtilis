@@ -901,12 +901,17 @@ void subtilis_arm_mem_memcmp(subtilis_ir_section_t *s,
 	br->link_type = SUBTILIS_ARM_BR_LINK_VOID;
 	br->target.label = start_label;
 
+	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, words_reg,
+				 end_reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	subtilis_arm_section_add_label(arm_s, start_small_label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	instr =
-	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_BIC, err);
+	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_SUB, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -914,9 +919,9 @@ void subtilis_arm_mem_memcmp(subtilis_ir_section_t *s,
 	datai->status = false;
 	datai->ccode = SUBTILIS_ARM_CCODE_AL;
 	datai->dest = words_reg;
-	datai->op1 = end_reg;
+	datai->op1 = words_reg;
 	datai->op2.type = SUBTILIS_ARM_OP2_I32;
-	datai->op2.op.integer = 3;
+	datai->op2.op.integer = 4;
 
 	subtilis_arm_add_cmp(arm_s, SUBTILIS_ARM_INSTR_CMP,
 			     SUBTILIS_ARM_CCODE_AL, a1_reg, words_reg, err);

@@ -82,12 +82,15 @@ static void prv_reserve_stack(subitlis_vm_t *vm, size_t bytes,
 }
 
 subitlis_vm_t *subitlis_vm_new(subtilis_ir_prog_t *p,
-			       subtilis_symbol_table_t *st,
-			       subtilis_error_t *err)
+			       subtilis_symbol_table_t *st, int argc,
+			       char *argv[], subtilis_error_t *err)
 {
 	size_t const_size;
 	size_t i;
 	size_t ptr;
+	size_t cmd_line_size;
+	size_t adjust_size;
+	char *cmd_line = NULL;
 	subitlis_vm_t *vm = calloc(sizeof(*vm), 1);
 
 	if (!vm) {
@@ -121,7 +124,16 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_prog_t *p,
 		goto fail;
 	vm->max_constants = p->constant_pool->size;
 
-	vm->memory_size = const_size + SUBTILIS_VM_HEAP_SIZE +
+	cmd_line = subtilis_make_cmdline(argc, argv, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto fail;
+	cmd_line_size = strlen(cmd_line) + 1;
+
+	adjust_size = const_size + cmd_line_size;
+	if (adjust_size & 3)
+		adjust_size += 4 - (adjust_size & 3);
+
+	vm->memory_size = adjust_size + SUBTILIS_VM_HEAP_SIZE +
 			  st->max_allocated + vm->s->locals;
 
 	vm->memory = calloc(sizeof(uint8_t), vm->memory_size);
@@ -136,10 +148,12 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_prog_t *p,
 		       p->constant_pool->data[i].data_size);
 		ptr += p->constant_pool->data[i].data_size;
 	}
+	vm->cmd_line_ptr = ptr;
+	memcpy(&vm->memory[vm->cmd_line_ptr], cmd_line, cmd_line_size);
+	free(cmd_line);
+	cmd_line = NULL;
 
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto fail;
-	vm->regs[SUBTILIS_IR_REG_GLOBAL] = const_size + SUBTILIS_VM_HEAP_SIZE;
+	vm->regs[SUBTILIS_IR_REG_GLOBAL] = adjust_size + SUBTILIS_VM_HEAP_SIZE;
 	vm->regs[SUBTILIS_IR_REG_LOCAL] =
 	    vm->regs[SUBTILIS_IR_REG_GLOBAL] + st->max_allocated;
 	vm->top = vm->memory_size;
@@ -150,7 +164,7 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_prog_t *p,
 
 	subtilis_vm_heap_init(&vm->heap);
 	vm->heap.free_list =
-	    subtilis_vm_heap_new_block(const_size, SUBTILIS_VM_HEAP_SIZE);
+	    subtilis_vm_heap_new_block(adjust_size, SUBTILIS_VM_HEAP_SIZE);
 	if (!vm->heap.free_list) {
 		subtilis_error_set_oom(err);
 		goto fail;
@@ -159,7 +173,7 @@ subitlis_vm_t *subitlis_vm_new(subtilis_ir_prog_t *p,
 	return vm;
 
 fail:
-
+	free(cmd_line);
 	subitlis_vm_delete(vm);
 	return NULL;
 }
@@ -1785,6 +1799,12 @@ static void prv_getprocaddr(subitlis_vm_t *vm, subtilis_buffer_t *b,
 	vm->regs[ops[0].reg] = ops[1].label;
 }
 
+static void prv_getcmdline(subitlis_vm_t *vm, subtilis_buffer_t *b,
+			   subtilis_ir_operand_t *ops, subtilis_error_t *err)
+{
+	vm->regs[ops[0].reg] = vm->cmd_line_ptr;
+}
+
 /* clang-format off */
 static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_addi32,                        /* SUBTILIS_OP_INSTR_ADD_I32 */
@@ -1941,8 +1961,9 @@ static subtilis_vm_op_fn op_execute_fns[] = {
 	prv_signx8to32,                    /* SUBTILIS_OP_INSTR_SIGNX_8_TO_32 */
 	prv_movi8tofp,                     /* SUBTILIS_OP_INSTR_MOV_I8_FP */
 	prv_movfpi32i32,                   /* SUBTILIS_OP_INSTR_MOV_FP_I32_I32*/
-	prv_oscli,			   /* SUBTILIS_OP_INSTR_OSCLI */
-	prv_getprocaddr,		   /* SUBTILIS_OP_INSTR_GET_PROC_ADDR */
+	prv_oscli,                         /* SUBTILIS_OP_INSTR_OSCLI */
+	prv_getprocaddr,                   /* SUBTILIS_OP_INSTR_GET_PROC_ADDR */
+	prv_getcmdline,                    /* SUBTILIS_OP_INSTR_OS_ARGS */
 };
 
 /* clang-format on */

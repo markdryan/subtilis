@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Mark Ryan
+ * Copyright (c) 2021 Mark Ryan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_KEYWORD_H__
-#define __SUBTILIS_KEYWORD_H__
+#ifndef __SUBTILIS_ARRAY_REC_TYPE_H
+#define __SUBTILIS_ARRAY_REC_TYPE_H
 
-#include <stdbool.h>
+#include "type_if.h"
 
-/* clang-format off */
-
-enum {
-	SUBTILIS_KEYWORD_FN,
-	SUBTILIS_KEYWORD_PROC,
-	SUBTILIS_KEYWORD_REC,
-	SUBTILIS_KEYWORD_REM,
-	SUBTILIS_KEYWORD_COMMON_MAX
-};
-
-/* clang-format on */
-
-struct _subtilis_keyword_t {
-	const char *str;
-	int type;
-	bool supported;
-};
-
-typedef struct _subtilis_keyword_t subtilis_keyword_t;
+extern subtilis_type_if subtilis_type_array_rec;
+extern subtilis_type_if subtilis_type_vector_rec;
 
 #endif

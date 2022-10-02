@@ -23,6 +23,11 @@
 #include "string_type_if.h"
 #include "symbol_table.h"
 
+static size_t prv_align(const subtilis_type_t *type)
+{
+	return SUBTILIS_CONFIG_POINTER_SIZE;
+}
+
 static subtilis_exp_t *prv_exp_to_var_const(subtilis_parser_t *p,
 					    subtilis_exp_t *e,
 					    subtilis_error_t *err)
@@ -33,7 +38,7 @@ static subtilis_exp_t *prv_exp_to_var_const(subtilis_parser_t *p,
 
 	subtilis_string_init_type(p, &type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
+		goto free_e;
 
 	s = subtilis_symbol_table_insert_tmp(p->local_st, &type, NULL, err);
 	subtilis_type_free(&type);
@@ -54,6 +59,9 @@ static subtilis_exp_t *prv_exp_to_var_const(subtilis_parser_t *p,
 	return subtilis_exp_new_var(&s->t, reg, err);
 
 cleanup:
+	subtilis_type_free(&type);
+
+free_e:
 
 	subtilis_exp_delete(e);
 
@@ -298,6 +306,7 @@ subtilis_type_if subtilis_type_if_const_string = {
 	.is_vector = false,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = NULL,
+	.alignment = NULL,
 	.data_size = NULL,
 	.zero = NULL,
 	.zero_ref = NULL,
@@ -364,8 +373,9 @@ static void prv_zero_ref(subtilis_parser_t *p, const subtilis_type_t *type,
 	subtilis_string_type_zero_ref(p, type, mem_reg, loc, push, err);
 }
 
-static subtilis_exp_t *prv_data_size(subtilis_parser_t *p, subtilis_exp_t *e,
-				     subtilis_error_t *err)
+static subtilis_exp_t *prv_data_size(subtilis_parser_t *p,
+				     const subtilis_type_t *type,
+				     subtilis_exp_t *e, subtilis_error_t *err)
 {
 	return e;
 }
@@ -439,8 +449,17 @@ static void prv_vector_of(const subtilis_type_t *el_type, subtilis_type_t *type,
 }
 
 static void prv_append(subtilis_parser_t *p, subtilis_exp_t *a1,
-		       subtilis_exp_t *a2, subtilis_error_t *err)
+		       subtilis_exp_t *a2, subtilis_exp_t *gran,
+		       subtilis_error_t *err)
 {
+	if (gran) {
+		subtilis_error_set_too_many_args(err, 3, 2, p->l->stream->name,
+						 p->l->line);
+		subtilis_exp_delete(gran);
+		subtilis_exp_delete(a2);
+		subtilis_exp_delete(a1);
+		return;
+	}
 	subtilis_string_type_add_eq(p, a1->exp.ir_op.reg, 0, a2, err);
 	subtilis_exp_delete(a1);
 }
@@ -578,11 +597,11 @@ static subtilis_exp_t *prv_eq_non_const_const(subtilis_parser_t *p,
 	if (a2_len == 1)
 		eq = prv_compare_fixed_len(p, a1_ptr, const_ptr,
 					   SUBTILIS_OP_INSTR_LOADO_I8,
-					   SUBTILIS_OP_INSTR_EQI_I32, err);
+					   SUBTILIS_OP_INSTR_EQ_I32, err);
 	else if (a2_len == 4)
 		eq = prv_compare_fixed_len(p, a1_ptr, const_ptr,
 					   SUBTILIS_OP_INSTR_LOADO_I32,
-					   SUBTILIS_OP_INSTR_EQI_I32, err);
+					   SUBTILIS_OP_INSTR_EQ_I32, err);
 	else
 		eq = subtilis_string_type_eq(p, a1_ptr, const_ptr,
 					     len1->exp.ir_op.reg, err);
@@ -795,11 +814,11 @@ static subtilis_exp_t *prv_neq_non_const_const(subtilis_parser_t *p,
 	if (a2_len == 1)
 		eq = prv_compare_fixed_len(p, a1_ptr, const_ptr,
 					   SUBTILIS_OP_INSTR_LOADO_I8,
-					   SUBTILIS_OP_INSTR_EQI_I32, err);
+					   SUBTILIS_OP_INSTR_EQ_I32, err);
 	else if (a2_len == 4)
 		eq = prv_compare_fixed_len(p, a1_ptr, const_ptr,
 					   SUBTILIS_OP_INSTR_LOADO_I32,
-					   SUBTILIS_OP_INSTR_EQI_I32, err);
+					   SUBTILIS_OP_INSTR_EQ_I32, err);
 	else
 		eq = subtilis_string_type_eq(p, a1_ptr, const_ptr,
 					     len1->exp.ir_op.reg, err);
@@ -1152,6 +1171,7 @@ subtilis_type_if subtilis_type_if_string = {
 	.is_vector = false,
 	.param_type = SUBTILIS_IR_REG_TYPE_INTEGER,
 	.size = subtilis_string_type_size,
+	.alignment = prv_align,
 	.data_size = prv_data_size,
 	.zero = NULL,
 	.zero_ref = prv_zero_ref,

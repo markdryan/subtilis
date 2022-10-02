@@ -30,6 +30,8 @@ typedef enum {
 } subtilis_token_end_t;
 
 static void prv_skip_line(subtilis_lexer_t *l, subtilis_error_t *err);
+static void prv_process_float(subtilis_lexer_t *l, subtilis_token_t *t,
+			      subtilis_error_t *err);
 
 typedef subtilis_token_end_t (*token_end_t)(subtilis_lexer_t *,
 					    subtilis_token_t *, char ch,
@@ -262,6 +264,11 @@ static void prv_process_complex_operator(subtilis_lexer_t *l,
 	ch1 = l->buffer[l->index];
 	if ((ch == '-') && (ch1 >= '0' && ch1 <= '9')) {
 		prv_process_negative_decimal(l, t, err);
+		return;
+	}
+
+	if ((ch == '.') && (ch1 >= '0' && ch1 <= '9')) {
+		prv_process_float(l, t, err);
 		return;
 	}
 
@@ -581,18 +588,24 @@ static void prv_complete_custom_type(subtilis_lexer_t *l, subtilis_token_t *t,
 	if (i > 4)
 		i = 4;
 	prefix[i] = 0;
-	if (strncmp(prefix, "FN", 2) && strncmp(prefix, "PROC", 4)) {
-		subtilis_error_set_bad_type_name(err, tbuf, l->stream->name,
-						 l->line);
-		return;
-	}
 
 	/*
 	 * The lexer doesn't know the complete type of the token as this
 	 * information is stored in the symbol table to which it doesn't have
 	 * access.  It does know however, that we have a custom type and the
-	 * type is either a function or a procedure.
+	 * type is either a record, a function or a procedure.
 	 */
+
+	if (!strncmp(prefix, "REC", 3)) {
+		subtilis_type_init_rec(&t->tok.id_type, tbuf, err);
+		return;
+	}
+
+	if (strncmp(prefix, "FN", 2) && strncmp(prefix, "PROC", 4)) {
+		subtilis_error_set_bad_type_name(err, tbuf, l->stream->name,
+						 l->line);
+		return;
+	}
 
 	t->tok.id_type.type = SUBTILIS_TYPE_FN;
 	t->tok.id_type.params.fn.num_params = 0;
@@ -605,27 +618,33 @@ static void prv_complete_custom_type(subtilis_lexer_t *l, subtilis_token_t *t,
 	t->tok.id_type.params.fn.ret_val->type = SUBTILIS_TYPE_VOID;
 }
 
+static char prv_complete_identifier(subtilis_lexer_t *l, subtilis_token_t *t,
+				    char ch, subtilis_error_t *err)
+{
+	for (;;) {
+		prv_ensure_input(l, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return 0;
+		if (l->index == l->buf_end)
+			break;
+
+		ch = l->buffer[l->index];
+		if (!((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+		      (ch >= '0' && ch <= '9') || (ch == '_')))
+			break;
+		prv_set_next_with_err(l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return 0;
+	}
+
+	return ch;
+}
+
 static void prv_validate_identifier(subtilis_lexer_t *l, subtilis_token_t *t,
 				    char ch, subtilis_error_t *err)
 {
 	if (ch == 0) {
-		for (;;) {
-			prv_ensure_input(l, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			if (l->index == l->buf_end)
-				break;
-
-			ch = l->buffer[l->index];
-			if (!((ch >= 'A' && ch <= 'Z') ||
-			      (ch >= 'a' && ch <= 'z') ||
-			      (ch >= '0' && ch <= '9') || (ch == '_')))
-				break;
-			prv_set_next_with_err(l, t, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-		}
-
+		ch = prv_complete_identifier(l, t, ch, err);
 		if (l->index == l->buf_end) {
 			t->tok.id_type.type = SUBTILIS_TYPE_REAL;
 		} else if (ch == '$') {
@@ -670,8 +689,6 @@ static void prv_validate_identifier(subtilis_lexer_t *l, subtilis_token_t *t,
 	}
 
 	prv_check_token_buffer(l, t, err, SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 }
 
 static void prv_process_identifier(subtilis_lexer_t *l, subtilis_token_t *t,
@@ -712,6 +729,31 @@ static void prv_process_call(subtilis_lexer_t *l, subtilis_token_t *t,
 		t->tok.keyword.supported = true;
 	}
 	t->type = SUBTILIS_TOKEN_KEYWORD;
+}
+
+static void prv_process_rec(subtilis_lexer_t *l, subtilis_token_t *t,
+			    const char *tbuf, char ch, subtilis_error_t *err)
+{
+	if (ch == '&' || ch == '%' || ch == '@' || ch == '$' ||
+	    (strlen(tbuf) == 3)) {
+		subtilis_error_set_bad_rec_name(err, tbuf, l->stream->name,
+						l->line);
+		return;
+	}
+
+	ch = prv_complete_identifier(l, t, ch, err);
+	if (ch == '&' || ch == '%' || ch == '@' || ch == '$') {
+		subtilis_error_set_bad_rec_name(err, tbuf, l->stream->name,
+						l->line);
+		return;
+	}
+
+	prv_check_token_buffer(l, t, err, SUBTILIS_ERROR_IDENTIFIER_TOO_LONG);
+
+	t->type = SUBTILIS_TOKEN_KEYWORD;
+	t->tok.keyword.type = SUBTILIS_KEYWORD_REC;
+	t->tok.keyword.supported = true;
+	t->tok.keyword.id_type.type = SUBTILIS_TYPE_VOID;
 }
 
 static bool prv_process_keyword(subtilis_lexer_t *l, char ch,
@@ -789,10 +831,23 @@ static bool prv_process_keyword(subtilis_lexer_t *l, char ch,
 		possible_fn = strncmp(tbuf, "FN", 2) == 0;
 		if (possible_proc || possible_fn) {
 			subtilis_buffer_remove_terminator(&t->buf);
-			if (ch != '$' && ch != '%' && ch != '&' && ch != '@')
+			if (ch != '$' && ch != '%' && ch != '&' && ch != '@') {
 				ch = 0;
+			} else if (possible_proc) {
+				subtilis_error_set_bad_proc_name(
+				    err, tbuf, l->stream->name, l->line);
+				return false;
+			}
 			prv_process_call(l, t, possible_proc, ch, err);
 			return false;
+		}
+
+		if (strncmp(tbuf, "REC", 3) == 0) {
+			if (strcmp(tbuf, "RECTANGLE")) {
+				subtilis_buffer_remove_terminator(&t->buf);
+				prv_process_rec(l, t, tbuf, ch, err);
+				return false;
+			}
 		}
 	}
 
@@ -871,7 +926,8 @@ static bool prv_process_token(subtilis_lexer_t *l, subtilis_token_t *t,
 		return false;
 	}
 
-	if (ch == '<' || ch == '>' || ch == '+' || ch == '-' || ch == ':') {
+	if (ch == '<' || ch == '>' || ch == '+' || ch == '-' || ch == ':' ||
+	    ch == '.') {
 		prv_process_complex_operator(l, t, err);
 		return false;
 	}
@@ -893,11 +949,6 @@ static bool prv_process_token(subtilis_lexer_t *l, subtilis_token_t *t,
 
 	if (ch == '%') {
 		prv_process_binary(l, t, err);
-		return false;
-	}
-
-	if (ch == '.') {
-		prv_process_float(l, t, err);
 		return false;
 	}
 

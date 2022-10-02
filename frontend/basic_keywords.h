@@ -109,6 +109,7 @@ enum {
 	SUBTILIS_KEYWORD_OPENUP,
 	SUBTILIS_KEYWORD_OR,
 	SUBTILIS_KEYWORD_ORIGIN,
+	SUBTILIS_KEYWORD_OSARGS_STR,
 	SUBTILIS_KEYWORD_OSCLI,
 	SUBTILIS_KEYWORD_OTHERWISE,
 	SUBTILIS_KEYWORD_PI,
@@ -171,10 +172,10 @@ enum {
 /* clang-format on */
 
 /*
- * PROC and FN are upper case only.
+ * REC, PROC and FN are upper case only.
  */
 
-#define SUBTILIS_KEYWORD_TOKENS ((SUBTILIS_KEYWORD_MAX * 2) - 2)
+#define SUBTILIS_KEYWORD_TOKENS ((SUBTILIS_KEYWORD_MAX * 2) - 3)
 
 extern const subtilis_keyword_t subtilis_keywords_list[SUBTILIS_KEYWORD_TOKENS];
 

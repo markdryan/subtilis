@@ -26,6 +26,7 @@
 #include "parser_compound.h"
 #include "parser_error.h"
 #include "parser_exp.h"
+#include "rec_type.h"
 #include "reference_type.h"
 #include "type_if.h"
 
@@ -260,7 +261,8 @@ static char *prv_proc_name_and_type(subtilis_parser_t *p, subtilis_token_t *t,
 		return NULL;
 	}
 
-	if (type->type == SUBTILIS_TYPE_FN) {
+	if ((type->type == SUBTILIS_TYPE_FN) ||
+	    (type->type == SUBTILIS_TYPE_REC)) {
 		subtilis_complete_custom_type(p, tbuf, type, err);
 		if (err->type != SUBTILIS_ERROR_OK) {
 			free(name);
@@ -496,6 +498,8 @@ subtilis_exp_t *subtilis_parser_call(subtilis_parser_t *p, subtilis_token_t *t,
 
 	subtilis_type_free(&fn_type);
 
+	p->current->proc_called = true;
+
 	return ret_val;
 
 on_error:
@@ -608,6 +612,13 @@ static void prv_process_param(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 	strcpy(var_name, tbuf);
 
+	if ((type.type == SUBTILIS_TYPE_FN) ||
+	    (type.type == SUBTILIS_TYPE_REC)) {
+		subtilis_complete_custom_type(p, var_name, &type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	}
+
 	subtilis_lexer_get(p->l, t, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
@@ -666,6 +677,17 @@ static void prv_process_param(subtilis_parser_t *p, subtilis_token_t *t,
 		*num_iparams += 1;
 		*symbol = subtilis_symbol_table_insert_reg(
 		    p->local_st, var_name, ptype, reg_num, err);
+	} else if (type.type == SUBTILIS_TYPE_REC) {
+		subtilis_type_copy(ptype, &type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+
+		subtilis_complete_custom_type(p, var_name, ptype, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		*num_iparams += 1;
+		*symbol = subtilis_symbol_table_insert(p->local_st, var_name,
+						       ptype, err);
 	} else {
 		/* reference type */
 
@@ -935,6 +957,7 @@ static size_t prv_init_block_variables(subtilis_parser_t *p,
 	const subtilis_type_t *t;
 	subtilis_ir_operand_t dest_op;
 	subtilis_ir_operand_t source_op;
+	size_t rs;
 	size_t blocks = 0;
 	size_t source_reg = SUBTILIS_IR_REG_TEMP_START;
 
@@ -952,6 +975,20 @@ static size_t prv_init_block_variables(subtilis_parser_t *p,
 			subtilis_reference_type_copy_ref(p, t, dest_op.reg,
 							 symbols[i]->loc,
 							 source_reg++, err);
+		} else if (t->type == SUBTILIS_TYPE_REC) {
+			subtilis_rec_type_copy(p, t, dest_op.reg,
+					       symbols[i]->loc, source_reg++,
+					       true, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return 0;
+			if (subtilis_type_rec_need_deref(t)) {
+				blocks++;
+				rs = subtilis_reference_get_pointer(
+				    p, dest_op.reg, symbols[i]->loc, err);
+				if (err->type != SUBTILIS_ERROR_OK)
+					return 0;
+				subtilis_reference_push_ref(p, t, rs, err);
+			}
 		} else if (subtilis_type_if_reg_type(t) ==
 			   SUBTILIS_IR_REG_TYPE_INTEGER) {
 			source_reg++;
@@ -1053,10 +1090,6 @@ static char *prv_initial_proc_fn_type(subtilis_parser_t *p, subtilis_token_t *t,
 
 	fn_type.type = SUBTILIS_TYPE_VOID;
 
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return NULL;
-
 	name = prv_proc_name_and_type(p, t, &fn_type, keep_prefix, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
@@ -1107,7 +1140,9 @@ static char *prv_initial_lambda_proc_fn_type(subtilis_parser_t *p,
 			    err, name, p->l->stream->name, p->l->line);
 			goto on_error;
 		}
-	} else if ((fn_type.type != SUBTILIS_TYPE_FN) && (strlen(name) != 1)) {
+	} else if ((fn_type.type != SUBTILIS_TYPE_FN &&
+		    fn_type.type != SUBTILIS_TYPE_REC) &&
+		   (strlen(name) != 1)) {
 		subtilis_error_set_bad_lambda_name(
 		    err, name, p->l->stream->name, p->l->line);
 		goto on_error;
@@ -1305,6 +1340,10 @@ void subtilis_parser_def(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
 
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto on_error;
+
 	name = prv_initial_proc_fn_type(p, t, &return_type, false, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
@@ -1434,6 +1473,8 @@ subtilis_exp_t *subtilis_parser_call_known_ptr(subtilis_parser_t *p,
 	prv_delete_params(params, num_args);
 	params = NULL;
 
+	p->current->proc_called = true;
+
 	return subtilis_exp_add_call_ptr(p, ir_args, type->params.fn.ret_val,
 					 reg, num_args, err);
 
@@ -1477,7 +1518,8 @@ static void prv_parse_param_type(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	if (type.type == SUBTILIS_TYPE_FN) {
+	if ((type.type == SUBTILIS_TYPE_FN) ||
+	    (type.type == SUBTILIS_TYPE_REC)) {
 		subtilis_complete_custom_type(p, tbuf, &type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
@@ -1544,6 +1586,7 @@ char *subtilis_parser_parse_call_type(subtilis_parser_t *p, subtilis_token_t *t,
 		name[strlen(name) - 1] = 0;
 		break;
 	case SUBTILIS_TYPE_FN:
+	case SUBTILIS_TYPE_REC:
 		at = strchr(name, '@');
 		if (!at) {
 			subtilis_error_set_assertion_failed(err);

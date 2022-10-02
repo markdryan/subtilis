@@ -20,6 +20,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+#include "error.h"
 
 const char *subtilis_utils_basename(const char *path);
 /*
@@ -29,4 +32,5 @@ const char *subtilis_utils_basename(const char *path);
 int32_t subtilis_get_i32_time(void);
 
 bool subtils_get_file_size(FILE *f, int32_t *size);
+char *subtilis_make_cmdline(int argc, char **argv, subtilis_error_t *err);
 #endif

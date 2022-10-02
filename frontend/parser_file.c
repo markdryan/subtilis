@@ -312,14 +312,13 @@ static bool prv_block_operation_prep(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return false;
 
-	scalar_ref = subtilis_type_if_is_scalar_ref(&val->type, err);
+	scalar_ref = subtilis_type_if_is_serializable_ref(&val->type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return false;
 	if (!scalar_ref) {
-		subtilis_error_set_expected(err,
-					    "string or array of numeric types",
-					    subtilis_type_name(&val->type),
-					    p->l->stream->name, p->l->line);
+		subtilis_type_diag_expected_error(
+		    p, "string or array of scalar types", &val->type,
+		    p->l->stream->name, p->l->line, err);
 		goto cleanup;
 	}
 

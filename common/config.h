@@ -75,4 +75,8 @@
 #define SUBTILIS_CONFIG_CONSTANT_ARRAY_GRAN 256
 #endif
 
+#ifndef SUBTILIS_CONFIG_POINTER_SIZE
+#define SUBTILIS_CONFIG_POINTER_SIZE sizeof(int32_t)
+#endif
+
 #endif

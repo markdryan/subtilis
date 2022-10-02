@@ -171,6 +171,7 @@ prv_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 {
 	subtilis_symbol_t *sym;
 	size_t align_bytes;
+	size_t required_alignment;
 	char *key_dup = NULL;
 
 	sym = subtilis_hashtable_find(st->h, key);
@@ -191,9 +192,12 @@ prv_symbol_table_insert(subtilis_symbol_table_t *st, const char *key,
 	 */
 
 	if (size > 0) {
-		align_bytes = st->allocated % size;
+		required_alignment = subtilis_type_if_align(id_type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto on_error;
+		align_bytes = st->allocated % required_alignment;
 		if (align_bytes > 0)
-			st->allocated += size - align_bytes;
+			st->allocated += required_alignment - align_bytes;
 	}
 
 	sym = prv_symbol_new(key_dup, st->allocated, id_type, sub_type, size,
@@ -336,6 +340,10 @@ void subtilis_symbol_table_insert_type(subtilis_symbol_table_t *st,
 				       const subtilis_type_t *type,
 				       subtilis_error_t *err)
 {
+	if (subtilis_hashtable_find(st->h, name)) {
+		subtilis_error_set_type_already_defined(err);
+		return;
+	}
 	(void)prv_symbol_table_insert(st, name, &subtilis_type_typedef, type, 0,
 				      st->level, false, err);
 }

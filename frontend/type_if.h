@@ -22,6 +22,10 @@
 #include "parser.h"
 
 typedef size_t (*subtilis_type_if_size_t)(const subtilis_type_t *type);
+typedef subtilis_exp_t *(*subtilis_type_if_dsize_t)(subtilis_parser_t *p,
+						    const subtilis_type_t *type,
+						    subtilis_exp_t *e,
+						    subtilis_error_t *err);
 typedef size_t (*subtilis_type_if_destruct_t)(subtilis_parser_t *p,
 					      const subtilis_type_t *type,
 					      subtilis_error_t *err);
@@ -69,7 +73,11 @@ typedef void (*subtilis_type_if_copy_collection_t)(subtilis_parser_t *p,
 						   subtilis_exp_t *e1,
 						   subtilis_exp_t *e2,
 						   subtilis_error_t *err);
-
+typedef void (*subtilis_type_if_append_t)(subtilis_parser_t *p,
+					  subtilis_exp_t *e1,
+					  subtilis_exp_t *e2,
+					  subtilis_exp_t *gran,
+					  subtilis_error_t *err);
 typedef void (*subtilis_type_if_sizet_exp_t)(subtilis_parser_t *p, size_t reg,
 					     subtilis_exp_t *e,
 					     subtilis_error_t *err);
@@ -136,7 +144,8 @@ struct subtilis_type_if_ {
 	bool is_vector;
 	subtilis_ir_reg_type_t param_type;
 	subtilis_type_if_size_t size;
-	subtilis_type_if_unary_t data_size;
+	subtilis_type_if_size_t alignment;
+	subtilis_type_if_dsize_t data_size;
 	subtilis_type_if_zero_t zero;
 	subtilis_type_if_zeroref_t zero_ref;
 	subtilis_type_if_initref_t new_ref;
@@ -163,7 +172,7 @@ struct subtilis_type_if_ {
 	subtilis_type_if_set_t set;
 	subtilis_type_if_reg2_t zero_buf;
 	subtilis_type_if_iread_t indexed_address;
-	subtilis_type_if_copy_collection_t append;
+	subtilis_type_if_append_t append;
 	subtilis_type_if_load_t load_mem;
 	subtilis_type_if_unary_t to_int32;
 	subtilis_type_if_coerce_t zerox;
@@ -214,12 +223,21 @@ typedef struct subtilis_type_if_ subtilis_type_if;
 
 /*
  * Returns the size of the type in bytes.  For reference types
- * this is the size of the reference, e.g., 16 bytes for a one
+ * this is the size of the reference, e.g., 24 bytes for a one
  * dimensional array on 32 bit builds.
  */
 
 size_t subtilis_type_if_size(const subtilis_type_t *type,
 			     subtilis_error_t *err);
+
+/*
+ * Returns the requested alignment of the type.  For scalar
+ * types this is equal to the size of the type.  For reference types and
+ * strings it's equal to the size of a pointer.
+ */
+
+size_t subtilis_type_if_align(const subtilis_type_t *type,
+			      subtilis_error_t *err);
 
 /*
  * For reference types only.  Returns the size of the data pointed
@@ -341,11 +359,19 @@ void subtilis_type_if_vector_of(const subtilis_type_t *element_type,
 				subtilis_type_t *type, subtilis_error_t *err);
 
 /*
- * Returns true if type is an array of numeric types of a string.
+ * Returns true if type is an array of numeric types, function
+ * pointers or a string.
  */
 
 bool subtilis_type_if_is_scalar_ref(const subtilis_type_t *type,
 				    subtilis_error_t *err);
+
+/*
+ * Returns true if the ref type can be serialized.
+ */
+
+bool subtilis_type_if_is_serializable_ref(const subtilis_type_t *type,
+					  subtilis_error_t *err);
 
 /*
  * Writes the type of the elements contained within an array of type "type"
@@ -514,11 +540,15 @@ subtilis_type_if_indexed_address(subtilis_parser_t *p, const char *var_name,
  *
  * b% will still have 10 elements and will still point to the original block
  * of data created by dim a%.  a% may or may not point to this original block
- * of data.  Only implemented for strings and 1d arrays.
+ * of data.  Only implemented for strings and vectors.  The gran parameter
+ * is optional.  If non-NULL and an allocation is needed, the size of the
+ * block of memory will be grown by gran elements, rather than 1 element.
+ * Must be NULL when appending vectors to vectors.
  */
 
 void subtilis_type_if_append(subtilis_parser_t *p, subtilis_exp_t *a1,
-			     subtilis_exp_t *a2, subtilis_error_t *err);
+			     subtilis_exp_t *a2, subtilis_exp_t *gran,
+			     subtilis_error_t *err);
 
 /*
  * Returns the scalar value stored in the memory location represented by
@@ -889,6 +919,17 @@ typedef void (*subtilis_type_cmp_diag_fn_t)(subtilis_parser_t *p,
 					    const char *expected,
 					    const char *got, void *ud,
 					    subtilis_error_t *err);
+void subtilis_type_custom_diag_error(subtilis_parser_t *p,
+				     const subtilis_type_t *t1,
+				     const subtilis_type_t *t2, void *ud,
+				     subtilis_type_cmp_diag_fn_t diag_fn,
+				     subtilis_error_t *err);
+void subtilis_type_diag_expected_error(subtilis_parser_t *p,
+				       const char *expected,
+				       const subtilis_type_t *t1,
+				       const char *subtilis_file,
+				       unsigned int subtilis_line,
+				       subtilis_error_t *err);
 void subtilis_type_compare_diag_custom(subtilis_parser_t *p,
 				       const subtilis_type_t *t1,
 				       const subtilis_type_t *t2, void *ud,

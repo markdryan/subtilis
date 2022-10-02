@@ -85,7 +85,38 @@ subtilis_exp_t *subtilis_builtin_ir_call_str_to_int32(subtilis_parser_t *p,
 						      subtilis_error_t *err);
 size_t subtilis_builtin_ir_deref_array_els(subtilis_parser_t *p,
 					   subtilis_error_t *err);
+void subtilis_builtin_call_ir_deref_array_els(subtilis_parser_t *p,
+					      const subtilis_type_t *type,
+					      size_t base_reg,
+					      subtilis_error_t *err);
+size_t subtilis_builtin_ir_deref_array_recs(subtilis_parser_t *p,
+					    const subtilis_type_t *el_type,
+					    subtilis_error_t *err);
+void subtilis_builtin_ir_call_deref_array_recs(subtilis_parser_t *p,
+					       const subtilis_type_t *el_type,
+					       size_t base_reg,
+					       subtilis_error_t *err);
 size_t subtilis_builtin_ir_call_deref(subtilis_parser_t *p,
 				      subtilis_error_t *err);
+size_t subtilis_builtin_ir_rec_deref(subtilis_parser_t *p,
+				     const subtilis_type_t *type,
+				     subtilis_error_t *err);
+void subtilis_builtin_call_ir_rec_deref(subtilis_parser_t *p,
+					const subtilis_type_t *type,
+					size_t base_reg, subtilis_error_t *err);
+void subtilis_builtin_call_ir_rec_ref(subtilis_parser_t *p,
+				      const subtilis_type_t *type,
+				      size_t base_reg, subtilis_error_t *err);
+void subtilis_builtin_ir_rec_zero(subtilis_parser_t *p,
+				  const subtilis_type_t *type, size_t base_reg,
+				  subtilis_error_t *err);
+void subtilis_builtin_ir_rec_copy(subtilis_parser_t *p,
+				  const subtilis_type_t *type, size_t dest_reg,
+				  size_t src_reg, bool new_rec,
+				  subtilis_error_t *err);
+subtilis_exp_t *
+subtilis_builtin_ir_call_ref_grow(subtilis_parser_t *p, size_t a1_mem_reg,
+				  size_t a1_size_reg, size_t gran_reg,
+				  size_t a2_size_reg, subtilis_error_t *err);
 
 #endif

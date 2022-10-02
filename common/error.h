@@ -128,6 +128,11 @@ typedef enum {
 	SUBTILIS_ERROR_BAD_SLICE,
 	SUBTILIS_ERROR_SWAP_TYPE_MISMATCH,
 	SUBTILIS_ERROR_LVALUE_EXPECTED,
+	SUBTILIS_ERROR_TYPE_ALREADY_DEFINED,
+	SUBTILIS_ERROR_UNKNOWN_FIELD,
+	SUBTILIS_ERROR_BAD_REC_NAME,
+	SUBTILIS_ERROR_EMPTY_REC,
+	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
 } subtilis_error_type_t;
 
 struct _subtilis_error_t {
@@ -425,6 +430,18 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_lvalue_expected(e, file, line)                      \
 	subtilis_error_set_syntax(e, SUBTILIS_ERROR_LVALUE_EXPECTED, file,     \
 				  line, __FILE__, __LINE__)
+#define subtilis_error_set_type_already_defined(e)                             \
+	subtilis_error_set_basic(e, SUBTILIS_ERROR_TYPE_ALREADY_DEFINED,       \
+				 __FILE__, __LINE__)
+#define subtilis_error_set_unknown_field(e, name, file, line)                  \
+	subtilis_error_set1(e, SUBTILIS_ERROR_UNKNOWN_FIELD, name, file, line)
+#define subtilis_error_set_bad_rec_name(e, name, file, line)                   \
+	subtilis_error_set1(e, SUBTILIS_ERROR_BAD_REC_NAME, name, file, line)
+#define subtilis_error_set_empty_rec(e, name, file, line)                      \
+	subtilis_error_set1(e, SUBTILIS_ERROR_EMPTY_REC, name, file, line)
+#define subtilis_error_set_global_after_proc(e, name, file, line)              \
+	subtilis_error_set1(e, SUBTILIS_ERROR_GLOBAL_AFTER_PROC, name, file,   \
+			    line)
 
 void subtilis_error_set_full(subtilis_error_t *e, subtilis_error_type_t type,
 			     const char *data1, const char *data2,

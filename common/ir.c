@@ -213,6 +213,7 @@ static const subtilis_ir_op_desc_t op_desc[] = {
 	{ "movfptoi32i32", SUBTILIS_OP_CLASS_REG_REG_FREG },
 	{ "oscli", SUBTILIS_OP_CLASS_REG },
 	{ "getprocaddr", SUBTILIS_OP_CLASS_REG_I32 },
+	{ "osargs", SUBTILIS_OP_CLASS_REG },
 };
 
 /*
@@ -782,13 +783,16 @@ static subtilis_ir_section_t *prv_ir_prog_section_new(
 	case SUBTILIS_TYPE_ARRAY_BYTE:
 	case SUBTILIS_TYPE_ARRAY_STRING:
 	case SUBTILIS_TYPE_ARRAY_FN:
+	case SUBTILIS_TYPE_ARRAY_REC:
 	case SUBTILIS_TYPE_VECTOR_REAL:
 	case SUBTILIS_TYPE_VECTOR_INTEGER:
 	case SUBTILIS_TYPE_VECTOR_BYTE:
 	case SUBTILIS_TYPE_VECTOR_STRING:
 	case SUBTILIS_TYPE_VECTOR_FN:
+	case SUBTILIS_TYPE_VECTOR_REC:
 	case SUBTILIS_TYPE_STRING:
 	case SUBTILIS_TYPE_FN:
+	case SUBTILIS_TYPE_REC:
 		s->ret_reg = s->reg_counter++;
 		break;
 	default:
@@ -912,7 +916,7 @@ void subtilis_ir_prog_delete(subtilis_ir_prog_t *p)
 	free(p);
 }
 
-static void prv_dump_instr(subtilis_ir_inst_t *instr)
+void prv_dump_instr(subtilis_ir_inst_t *instr)
 {
 	if (op_desc[instr->type].cls == SUBTILIS_OP_CLASS_NONE) {
 		printf("\t%s", op_desc[instr->type].name);

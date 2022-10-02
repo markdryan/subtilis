@@ -24,6 +24,7 @@
 #include "parser_error.h"
 #include "parser_exp.h"
 #include "parser_loops.h"
+#include "rec_type.h"
 #include "reference_type.h"
 #include "type_if.h"
 
@@ -322,6 +323,13 @@ static void prv_init_scalar_var(subtilis_parser_t *p, subtilis_token_t *t,
 			return;
 
 		if (new_global) {
+			if (p->current->proc_called) {
+				subtilis_error_set_global_after_proc(
+				    err, var_name, p->l->stream->name,
+				    p->l->line);
+				return;
+			}
+
 			s = subtilis_symbol_table_insert(p->st, var_name, type,
 							 err);
 			if (err->type != SUBTILIS_ERROR_OK)
@@ -1072,16 +1080,26 @@ static subtilis_range_var_t *prv_get_varnames(subtilis_parser_t *p,
 	}
 
 	tbuf = subtilis_token_get_text(t);
-	if (t->type != SUBTILIS_TOKEN_IDENTIFIER) {
+	if (t->type == SUBTILIS_TOKEN_IDENTIFIER) {
+		range_vars[0].name = subtilis_parser_get_assignment_var(
+		    p, t, &range_vars[0].type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	} else if ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "~")) {
+		/*
+		 * We can't set the type of the range variable until we've
+		 * evaluated the collection.
+		 */
+
+		range_vars[0].name = NULL;
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+	} else {
 		subtilis_error_set_id_expected(err, tbuf, p->l->stream->name,
 					       p->l->line);
 		goto cleanup;
 	}
-
-	range_vars[0].name =
-	    subtilis_parser_get_assignment_var(p, t, &range_vars[0].type, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
 
 	var_count = 1;
 	tbuf = subtilis_token_get_text(t);
@@ -1135,6 +1153,9 @@ prv_get_range_vars(subtilis_parser_t *p, subtilis_token_t *t, size_t *count,
 	const char *tbuf;
 	size_t i;
 	subtilis_type_t el_type;
+	subtilis_buffer_t buf;
+	subtilis_error_t err2;
+	const char *error_type_name;
 	subtilis_exp_t *e = NULL;
 	size_t var_count = 0;
 	subtilis_range_var_t *range_vars = NULL;
@@ -1203,12 +1224,33 @@ prv_get_range_vars(subtilis_parser_t *p, subtilis_token_t *t, size_t *count,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	if (el_type.type != range_vars[0].type.type) {
-		subtilis_error_set_range_type_mismatch(
-		    err, range_vars[0].name, subtilis_type_name(&e->type),
-		    p->l->stream->name, p->l->line);
-		subtilis_type_free(&el_type);
-		goto cleanup;
+	if (range_vars[0].name) {
+		if (!subtilis_type_eq(&el_type, &range_vars[0].type)) {
+			subtilis_error_init(&err2);
+			subtilis_buffer_init(&buf, 64);
+			subtilis_full_type_name(&e->type, &buf, &err2);
+			if (err2.type == SUBTILIS_ERROR_OK)
+				subtilis_buffer_zero_terminate(&buf, &err2);
+			error_type_name =
+			    (err2.type != SUBTILIS_ERROR_OK)
+				? subtilis_type_name(&e->type)
+				: subtilis_buffer_get_string(&buf);
+			subtilis_error_set_range_type_mismatch(
+			    err, range_vars[0].name, error_type_name,
+			    p->l->stream->name, p->l->line);
+			subtilis_buffer_free(&buf);
+			subtilis_type_free(&el_type);
+			goto cleanup;
+		}
+	} else {
+		/*
+		 * If we're ignoring the range variable we can simply
+		 * copy it's type from that of the collection.
+		 */
+
+		subtilis_type_copy(&range_vars[0].type, &el_type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
 	}
 	subtilis_type_free(&el_type);
 
@@ -1244,6 +1286,22 @@ static void prv_assign_range_var(subtilis_parser_t *p,
 				 bool new_locals, subtilis_error_t *err)
 {
 	subtilis_exp_t *val;
+
+	if (var->for_ctx.type.type == SUBTILIS_TYPE_REC) {
+		if (new_locals)
+			/*
+			 * Special handling for RECs.  We just memcpy.
+			 */
+
+			subtilis_rec_type_tmp_copy(
+			    p, &var->for_ctx.type, var->for_ctx.reg,
+			    var->for_ctx.loc, ptr.reg, err);
+		else
+			subtilis_rec_type_copy(
+			    p, &var->for_ctx.type, var->for_ctx.reg,
+			    var->for_ctx.loc, ptr.reg, false, err);
+		return;
+	}
 
 	val = subtilis_type_if_load_from_mem(p, &var->for_ctx.type, ptr.reg, 0,
 					     err);
@@ -1325,9 +1383,11 @@ static size_t prv_range_loop_start(subtilis_parser_t *p, subtilis_exp_t *e,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	prv_assign_range_var(p, ptr, &range_vars[0], new_locals, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
+	if (range_vars[0].name) {
+		prv_assign_range_var(p, ptr, &range_vars[0], new_locals, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+	}
 
 	return ptr.reg;
 }
@@ -1428,9 +1488,11 @@ static size_t prv_range_loop_start_index(subtilis_parser_t *p,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return SIZE_MAX;
 
-	prv_assign_range_var(p, ptr, &range_vars[0], new_locals, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return SIZE_MAX;
+	if (range_vars[0].name) {
+		prv_assign_range_var(p, ptr, &range_vars[0], new_locals, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+	}
 
 	return ptr.reg;
 }
@@ -1499,6 +1561,19 @@ static void prv_range_loop_end_index(subtilis_parser_t *p, size_t var_count,
 	}
 }
 
+static void prv_init_tilde_var(subtilis_for_context_t *for_ctx,
+			       const subtilis_type_t *type,
+			       subtilis_error_t *err)
+{
+	subtilis_type_copy(&for_ctx->type, type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	for_ctx->is_reg = false;
+	for_ctx->reg = SIZE_MAX;
+	for_ctx->loc = SIZE_MAX;
+}
+
 static void prv_init_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 			       subtilis_for_context_t *for_ctx,
 			       const char *var_name,
@@ -1507,6 +1582,7 @@ static void prv_init_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 {
 	subtilis_ir_operand_t op1;
 	const subtilis_symbol_t *s;
+	subtilis_exp_t *e;
 	bool new_global = false;
 
 	subtilis_parser_lookup_assignment_var(p, t, var_name, &s, &op1.reg,
@@ -1515,19 +1591,42 @@ static void prv_init_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 
 	if (new_global) {
-		s = subtilis_symbol_table_insert(p->st, var_name, type, err);
+		if (p->current->proc_called) {
+			subtilis_error_set_global_after_proc(
+			    err, var_name, p->l->stream->name, p->l->line);
+			return;
+		}
+
+		subtilis_type_copy(&for_ctx->type, type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		if (!subtilis_type_if_is_numeric(type)) {
-			subtilis_type_if_zero_ref(
-			    p, type, SUBTILIS_IR_REG_GLOBAL, s->loc, true, err);
+
+		s = subtilis_symbol_table_insert(p->st, var_name,
+						 &for_ctx->type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		if (type->type == SUBTILIS_TYPE_REC)
+			subtilis_rec_type_zero(p, &for_ctx->type,
+					       SUBTILIS_IR_REG_GLOBAL, s->loc,
+					       true, err);
+		else if (subtilis_type_if_is_numeric(&for_ctx->type) ||
+			 for_ctx->type.type == SUBTILIS_TYPE_FN) {
+			e = subtilis_type_if_zero(p, &for_ctx->type, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-		}
+			subtilis_type_if_assign_to_mem(
+			    p, SUBTILIS_IR_REG_GLOBAL, s->loc, e, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+		} else if (!subtilis_type_if_is_numeric(&for_ctx->type))
+			subtilis_type_if_zero_ref(p, &for_ctx->type,
+						  SUBTILIS_IR_REG_GLOBAL,
+						  s->loc, true, err);
+	} else {
+		subtilis_type_copy(&for_ctx->type, &s->t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 	}
-	subtilis_type_copy(&for_ctx->type, &s->t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 
 	for_ctx->is_reg = s->is_reg;
 	for_ctx->reg = op1.reg;
@@ -1552,11 +1651,7 @@ static void prv_init_local_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 	    type->type == SUBTILIS_TYPE_FN) {
 		for_ctx->is_reg = true;
 
-		if (type->type != SUBTILIS_TYPE_FN)
-			subtilis_type_copy(&for_ctx->type, type, err);
-		else
-			subtilis_complete_custom_type(p, var_name,
-						      &for_ctx->type, err);
+		subtilis_type_copy(&for_ctx->type, type, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
@@ -1568,18 +1663,40 @@ static void prv_init_local_range_var(subtilis_parser_t *p, subtilis_token_t *t,
 		(void)subtilis_symbol_table_insert_reg(
 		    p->local_st, var_name, &for_ctx->type, for_ctx->loc, err);
 		return;
+	} else if (type->type == SUBTILIS_TYPE_REC) {
+		/*
+		 * TODO: So this isn't ideal.  The range loop value
+		 * variable has copy semantics, so we need to
+		 * allocate a block of memory large enough to copy the
+		 * loop variable.  We only really need to do this
+		 * if we know that the range variable will be modified.
+		 */
+
+		subtilis_type_copy(&for_ctx->type, type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		(void)subtilis_symbol_table_insert_no_rc(p->local_st, var_name,
+							 &for_ctx->type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		subtilis_type_copy(&for_ctx->type, type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 	}
+
+	/*
+	 * There's no need to initialise the range var as its lifetime is
+	 * restricted to the lifetime of the loop and it's value will be
+	 * set during the first iteration.
+	 */
 
 	s = subtilis_symbol_table_insert_no_rc(p->local_st, var_name, type,
 					       err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	subtilis_type_if_zero_ref(p, type, SUBTILIS_IR_REG_LOCAL, s->loc, false,
-				  err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
 	for_ctx->is_reg = s->is_reg;
-	for_ctx->type = s->t;
 	for_ctx->reg = SUBTILIS_IR_REG_LOCAL;
 	for_ctx->loc = s->loc;
 }
@@ -1606,7 +1723,18 @@ static void prv_range_compound(subtilis_parser_t *p, subtilis_token_t *t,
 	 */
 
 	if (!new_locals) {
-		for (i = 0; i < var_count; i++) {
+		if (range_vars[0].name)
+			prv_init_range_var(p, t, &range_vars[0].for_ctx,
+					   range_vars[0].name,
+					   &range_vars[0].type, err);
+
+		else
+			prv_init_tilde_var(&range_vars[0].for_ctx,
+					   &range_vars[0].type, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		for (i = 1; i < var_count; i++) {
 			prv_init_range_var(p, t, &range_vars[i].for_ctx,
 					   range_vars[i].name,
 					   &range_vars[i].type, err);
@@ -1622,7 +1750,14 @@ static void prv_range_compound(subtilis_parser_t *p, subtilis_token_t *t,
 		return;
 
 	if (new_locals) {
-		for (i = 0; i < var_count; i++) {
+		if (range_vars[0].name)
+			prv_init_local_range_var(p, t, &range_vars[0].for_ctx,
+						 range_vars[0].name,
+						 &range_vars[0].type, err);
+		else
+			prv_init_tilde_var(&range_vars[0].for_ctx,
+					   &range_vars[0].type, err);
+		for (i = 1; i < var_count; i++) {
 			prv_init_local_range_var(p, t, &range_vars[i].for_ctx,
 						 range_vars[i].name,
 						 &range_vars[i].type, err);

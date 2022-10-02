@@ -25,9 +25,11 @@ jobs:
         make inter
         make runro
         make runptd
-    - name: make check
-      run: make check
     - name: sanatizer
       run: |
-        make clean
+        make clean || true
         CFLAGS="-g -fsanitize=address -fno-omit-frame-pointer -Wall -Werror" make check
+    - name: make check
+      run: |
+        make clean || true
+        make check

@@ -148,6 +148,8 @@ bool subtilis_riscos_sys_check(size_t call_id, uint32_t *in_regs,
 			       size_t swi_count);
 void subtilis_riscos_oscli(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err);
+void subtilis_riscos_osargs(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err);
 void subtilis_riscos_asm_free(void *asm_code);
 
 #endif

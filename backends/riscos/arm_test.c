@@ -497,11 +497,11 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	},
 	{ "assembler_fpa_cos_and_sin",
 	 "LOCAL a\n"
-	 "PROCCheck(FNSIN(0), 0)\n"
-	 "PROCCheck(FNCOS(0), 1)\n"
 	 "LET a = 0\n"
 	 "LET b = 30\n"
 	 "LET c = 60\n"
+	 "PROCCheck(FNSIN(0), 0)\n"
+	 "PROCCheck(FNCOS(0), 1)\n"
 	 "PROCCheck(FNSIN(a), 0)\n"
 	 "PROCCheck(FNCOS(a), 1)\n"
 	 "PROCCheck(FNSIN(RAD(30)), 0.5)\n"
@@ -535,6 +535,7 @@ static const subtilis_test_case_t riscos_fpa_test_cases[] = {
 	  "]\n",
 	 "-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n-1\n"},
 	{ "assembler_fpa_trig",
+	  "LOCAL A\n"
 	  "PRINT INT(FNTAN(RAD(45)))\n"
 	  "A = RAD(45)\n"
 	  "PRINT INT(FNTAN(A))\n"
@@ -997,6 +998,7 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	subtilis_arm_prog_t *arm_p = NULL;
 	subtilis_arm_vm_t *vm = NULL;
 	uint8_t *code = NULL;
+	char *argv[2] = {"./runro", "unit_test"};
 
 	subtilis_error_init(&err);
 	subtilis_buffer_init(&b, 1024);
@@ -1046,8 +1048,8 @@ static int prv_test_example(subtilis_lexer_t *l, subtilis_parser_t *p,
 	//		printf("0x%x\n",code[i]);
 	///	}
 	vm = subtilis_arm_vm_new(code, code_size, 512 * 1024,
-				 SUBTILIS_RISCOS_ARM2_PROGRAM_START, false,
-				 &err);
+				 SUBTILIS_RISCOS_ARM2_PROGRAM_START, false, 2,
+				 argv, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

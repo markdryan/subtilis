@@ -322,7 +322,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	"DIM a%(1)\n"
 	"DIM b%(1)\n"
 	"a%() += b()\n",
-	SUBTILIS_ERROR_ASSIGNMENT_OP_EXPECTED
+	SUBTILIS_ERROR_EXPECTED
 	},
 	{
 	"array_bad_arg_int",
@@ -340,7 +340,7 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	},
 	{
 	"array_bad_fn_bad_assign",
-	"a%() = FNArr%\n"
+	"a%() := FNArr%\n"
 	"def FNArr%\n"
 	"<-0\n",
 	SUBTILIS_ERROR_ARRAY_TYPE_MISMATCH
@@ -928,6 +928,279 @@ const subtilis_bad_test_case_t bad_test_cases[] = {
 	 "b$ := \"world\"\n"
 	 "swap b$, left$(a$)\n",
 	 SUBTILIS_ERROR_LVALUE_EXPECTED,
+	},
+	{"rec_var_dim",
+	 "a% = 10\n"
+	 "type RECData (\n"
+	 "dim arr%(a%)\n"
+	 ")\n",
+	 SUBTILIS_ERROR_CONST_INTEGER_EXPECTED
+	},
+	{"rec_bad_keyword",
+	 "type RECData ( draw arr%(a%) )\n",
+	 SUBTILIS_ERROR_EXPECTED
+	},
+	{"rec_bad_dim",
+	 "type RECData ( dim a%() )\n",
+	 SUBTILIS_ERROR_CONST_INTEGER_EXPECTED
+	},
+	{"rec_id_expected",
+	 "type RECData ( a%, b% )\n",
+	 SUBTILIS_ERROR_ID_EXPECTED
+	},
+	{"rec_type_mismatch",
+	"type RECData ( a% )\n"
+	"type RECData2 ( a% )\n"
+	"local a@RECData\n"
+	"local b@RECData2\n"
+	"a@RECData = b@RECData2\n",
+	SUBTILIS_ERROR_BAD_CONVERSION
+	},
+	{"rec_type_already_defined",
+	"type RECData ( a% )\n"
+	"type RECData ( a% )\n",
+	SUBTILIS_ERROR_ALREADY_DEFINED
+	},
+	{"rec_field_already_defined",
+	 "type RECData ( a% a% )\n",
+	SUBTILIS_ERROR_ALREADY_DEFINED
+	},
+	{"rec_field_array_reference",
+	 "type RECData ( a%() )\n",
+	SUBTILIS_ERROR_ID_EXPECTED
+	},
+	{"rec_field_vector_reference",
+	 "type RECData ( a%{} )\n",
+	SUBTILIS_ERROR_ID_EXPECTED
+	},
+	{"rec_no_fields",
+	 "type RECa2 ( )\n",
+	 SUBTILIS_ERROR_EMPTY_REC
+	},
+	{"rec_type_in_proc",
+	 "def PROCMark\n"
+	 "  type RECa2 ( a% )\n"
+	 "endproc\n",
+	SUBTILIS_ERROR_TYPE_NOT_AT_TOP_LEVEL
+	},
+	{"rec_type_init_too_many_fields",
+	 "type RECa2 ( a% )\n"
+	 "local a@RECa2 = ( 10, 11)\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
+	{"rec_type_init_wrong_type",
+	 "type RECa2 ( dim a%(1) )\n"
+	 "local a@RECa2 = ( \"hello\" )\n",
+	 SUBTILIS_ERROR_NOT_ARRAY_OR_VECTOR,
+	},
+	{"rec_type_init_missing_r_bracket",
+	"type RECa2 ( a% )\n"
+	"local a@RECa2 = ( 10\n",
+	 SUBTILIS_ERROR_EXPECTED,
+	},
+	{"rec_type_init_missing_exp",
+	 "type RECa2 ( a% b% )\n"
+	 "local a@RECa2 = ( 10, )\n",
+	 SUBTILIS_ERROR_EXP_EXPECTED,
+	},
+	{"vector_fn_mismatch",
+	 "type PROCfn(a%)\n"
+	 "type PROCfn2(a%, b%)\n"
+	 "dim a@PROCfn{1}\n"
+	 "dim a@PROCfn2{1}\n"
+	 "a@PROCfn{} = a@PROCfn2{}\n",
+	 SUBTILIS_ERROR_FN_TYPE_MISMATCH,
+	},
+	{"array_fn_mismatch",
+	 "type PROCfn(a%)\n"
+	 "type PROCfn2(a%, b%)\n"
+	 "dim a@PROCfn(1)\n"
+	 "dim a@PROCfn2(1)\n"
+	 "a@PROCfn() = a@PROCfn2()\n",
+	 SUBTILIS_ERROR_FN_TYPE_MISMATCH,
+	},
+	{"range_rec_type",
+	"type RECscalar (\n"
+	"     a%\n"
+	"     b\n"
+	")\n"
+	"type RECscalar2 (\n"
+	"     z\n"
+	"     f\n"
+	")\n"
+	"\n"
+	"dim a@RECscalar(1)\n"
+	"range v@RECscalar2 = a@RECscalar()\n"
+	"    print v@RECscalar2.a%\n"
+	"    print v@RECscalar2.b\n"
+	"endrange\n",
+	SUBTILIS_ERROR_RANGE_TYPE_MISMATCH,
+	},
+	{"rec_proc_assign",
+	"type PROCMark(a$)\n"
+	"type RECmixed ( b@PROCMark )\n"
+	"dim a@RECmixed(1)\n"
+	"a@RECmixed(0).b@PROCMark = def PROC(a$) print \"Hello\" + a$ endproc\n"
+	"b@PROCMark = a@RECmixed(0).b@PROCMark(\" everyone in\")\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
+	{"type_rec_proc_assign",
+	"type PROCMark\n"
+	"type RECmixed ( b@PROCMark )\n"
+	"dim a@RECmixed(1)\n"
+	"a@RECmixed(0).b@PROCMark =\n"
+	"  def PROC(a$) print \"Hello\" + a$ endproc\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+	{"type_rec_proc_assign_partial",
+	"type PROCMark\n"
+	"type RECmixed ( b@PROCMark )\n"
+	"dim a@RECmixed(1)\n"
+	"a@RECmixed(0).b@PROCMark = !PROClater\n"
+	"def PROClater(a$) endproc\n",
+	SUBTILIS_ERROR_BAD_ARG_COUNT,
+	},
+	{"rec_type_init",
+	"type RECmixed ( a% b% )\n"
+	"local c@RECmixed = (10, 11)\n"
+	"local d@RECmixed = 1.11\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+	{"nested_array_ref_assign_to_el",
+	"dim a%(10)\n"
+	"repeat\n"
+	"  b%(0) := a%()\n"
+	"until false\n",
+	SUBTILIS_ERROR_BAD_INDEX,
+	},
+	{"array_rec_assign_bad_type",
+	"type RECtest(a)\n"
+	"dim a@RECtest(10)\n"
+	"a@RECtest(0) = 10\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+	{"array_curly",
+	"dim a%{1}\n"
+	"a%(0) = 1\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
+	{"vector_round",
+	"dim a%(1)\n"
+	"a%{0} = 1\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
+	{"array_field_curly",
+	"type RECar ( dim a%(1) )\n"
+	"a@RECar = ()\n"
+	"a@RECar.a%{0} = 10\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
+	{"put_rec_non_scalar",
+	"type PROCdo(a%)\n"
+	"type RECref(\n"
+	"    a@PROCdo\n"
+	")\n"
+	"\n"
+	"local dim a@RECref(1)\n"
+	"put# 0, a@RECref()\n",
+	SUBTILIS_ERROR_EXPECTED,
+	},
+	{"assign_string_to_string_vector",
+	"local dim lines${}\n"
+	"\n"
+	"lines$ = FNGetLine$(lines${})\n"
+	"\n"
+	"def FNGetLine$(lines${})\n"
+	"   line$ := \"\"\n"
+	"<- line$\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+	{"assign_rec_to_existing_vec_rec",
+	"type RECop ( op% )\n"
+	"\n"
+	"local dim r@RECop{}\n"
+	"r@RECop = FNGetRec@RECop{}()\n"
+	"def FNGetRec@RECop{}\n"
+	"  local dim a@RECop{}\n"
+	"<-a@RECop{}\n",
+	SUBTILIS_ERROR_BAD_CONVERSION,
+	},
+	{"global_array_after_proc",
+	"PROCdo\n"
+	"dim tokens$(1)\n"
+	"tokens$() = \"Hello\", \"World\"\n"
+	"\n"
+	"def PROCdo\n"
+	"for i% := 0 to dim(tokens$(),1)\n"
+	"  print tokens$(i%)\n"
+	"next\n"
+	"endproc\n",
+	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
+	},
+	{"global_array_ref_after_proc",
+	"dim tokens$(1)\n"
+	"tokens$() = \"Hello\", \"World\"\n"
+	"PROCdo\n"
+	"tok$() = tokens$()\n"
+	"def PROCdo\n"
+	"for i% := 0 to dim(tok$(),1)\n"
+	"  print tok$(i%)\n"
+	"next\n"
+	"endproc\n",
+	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
+	},
+	{"global_int_after_proc",
+	"PROCA\n"
+	"a%=12\n"
+	"def PROCA\n"
+	"  print a%\n"
+	"endproc\n",
+	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
+	},
+	{"global_proc_ref_after_proc",
+	"type RECstr (a$)\n"
+	"type PROCVoid\n"
+	"a@PROCVoid=!PROCA\n"
+	"a@PROCVoid()\n"
+	"a@RECstr = (\"hello\")\n"
+	"def PROCA\n"
+	"  print a@RECstr.a$\n"
+	"endproc\n",
+	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
+	},
+	{"global_for_after_proc",
+	"PROCdo\n"
+	"for i% = 1 to 10 next\n"
+	"def PROCdo\n"
+	"  print i%\n"
+	"endproc\n",
+	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
+	},
+	{"global_ranger_after_proc",
+	"dim a%(10)\n"
+	"PROCdo\n"
+	"range ~, i% = a%()\n"
+	"endrange\n"
+	"def PROCdo\n"
+	"  print i%\n"
+	"endproc\n",
+	SUBTILIS_ERROR_GLOBAL_AFTER_PROC,
+	},
+	{"append_bad_type",
+	 "dim a%{}\n"
+	 "append(a%{}, 1, \"aa\")\n",
+	 SUBTILIS_ERROR_INTEGER_EXPECTED,
+	},
+	{"append_array_array_gran",
+	 "dim a%{2}\n"
+	 "dim b%{2}\n"
+	 "append(a%{}, b%{}, 16)\n",
+	 SUBTILIS_ERROR_TOO_MANY_ARGS,
+	},
+	{"append_bad_gran",
+	 "dim a%{2}\n"
+	 "append(a%{}, 1, -1)\n",
+	 SUBTILIS_ERROR_EXPECTED,
 	},
 };
 

@@ -75,3 +75,33 @@ bool subtils_get_file_size(FILE *f, int32_t *size)
 
 	return true;
 }
+
+char *subtilis_make_cmdline(int argc, char **argv, subtilis_error_t *err)
+{
+	size_t size = 0;
+	size_t i;
+	char *ret_val;
+
+	for (i = 1; i < argc; i++)
+		size += strlen(argv[i]) + 1;
+
+	if (size < 2) {
+		subtilis_error_set_assertion_failed(err);
+		return NULL;
+	}
+
+	ret_val = malloc(size);
+	if (!ret_val) {
+		subtilis_error_set_oom(err);
+		return NULL;
+	}
+	ret_val[0] = 0;
+
+	for (i = 1; i < argc - 1; i++) {
+		strcat(ret_val, argv[i]);
+		strcat(ret_val, " ");
+	}
+	strcat(ret_val, argv[i]);
+
+	return ret_val;
+}

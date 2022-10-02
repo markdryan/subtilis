@@ -24,6 +24,7 @@ COMMON =\
 	parser_output.c \
 	parser_os.c \
 	parser_string.c \
+	parser_rec.c \
 	parser_rnd.c \
 	expression.c \
 	ir.c \
@@ -47,9 +48,12 @@ COMMON =\
 	array_float64_type.c \
 	array_string_type.c \
 	array_fn_type.c \
+	array_rec_type.c \
 	fn_type.c \
 	array_type.c \
 	sizet_vector.c \
+	rec_type.c \
+	rec_type_if.c \
 	string_type_if.c \
 	string_type.c \
 	reference_type.c \

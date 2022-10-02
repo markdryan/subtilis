@@ -1687,15 +1687,24 @@ static void prv_init_two_links(subtilis_arm_reg_ud_t *ud, subtilis_arm_ss_t *ss,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	/*
+	 * Need to be a bit careful here.  Adding ops can invalidate our
+	 * pointers to op1 and op2 so we need to refresh them before using
+	 * them.
+	 */
+
+	op1 = &ud->arm_s->op_pool->ops[link1->op];
 	prv_sub_section_int_links(ud, &common_save, SUBTILIS_ARM_CCODE_AL,
 				  offsets, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	op1 = &ud->arm_s->op_pool->ops[link1->op];
 	prv_sub_section_int_links(ud, &link1_save, ccode, offsets, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	op2 = &ud->arm_s->op_pool->ops[link2->op];
 	prv_sub_section_int_links(ud, &link2_save, SUBTILIS_ARM_CCODE_AL,
 				  offsets, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1710,15 +1719,18 @@ static void prv_init_two_links(subtilis_arm_reg_ud_t *ud, subtilis_arm_ss_t *ss,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	op1 = &ud->arm_s->op_pool->ops[link1->op];
 	prv_sub_section_real_links(ud, &common_save, SUBTILIS_ARM_CCODE_AL,
 				   offsets, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	op1 = &ud->arm_s->op_pool->ops[link1->op];
 	prv_sub_section_real_links(ud, &link1_save, ccode, offsets, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
+	op2 = &ud->arm_s->op_pool->ops[link2->op];
 	prv_sub_section_real_links(ud, &link2_save, SUBTILIS_ARM_CCODE_AL,
 				   offsets, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)

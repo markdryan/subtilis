@@ -413,6 +413,14 @@ void subtilis_arm_subsections_calculate(subtilis_arm_subsections_t *sss,
 					    err);
 					if (err->type != SUBTILIS_ERROR_OK)
 						return;
+
+					/*
+					 * Inserting or adding an instruction
+					 * could invalidate our pointer.  Let's
+					 * refresh it.
+					 */
+
+					op = &arm_s->op_pool->ops[ptr];
 				}
 			}
 		}

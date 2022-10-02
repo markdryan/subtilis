@@ -48,6 +48,7 @@ static subtilis_exp_t **prv_get_args(subtilis_parser_t *p, subtilis_token_t *t,
 			e = subtilis_parser_priority7(p, t, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				goto cleanup;
+			tbuf = subtilis_token_get_text(t);
 		}
 
 		if (count == max_count) {
@@ -119,6 +120,10 @@ static size_t *prv_process_input_args(subtilis_parser_t *p,
 				goto cleanup;
 			subtilis_exp_delete(e);
 			args[i] = subtilis_exp_new_int32_var(ptr, err);
+		} else if (e->type.type == SUBTILIS_TYPE_REC) {
+			args[i] =
+			    subtilis_exp_new_int32_var(e->exp.ir_op.reg, err);
+			subtilis_exp_delete(e);
 		} else {
 			subtilis_error_set_sys_bad_args(err, p->l->stream->name,
 							p->l->line);
@@ -433,4 +438,29 @@ void subtilis_parser_oscli(subtilis_parser_t *p, subtilis_token_t *t,
 cleanup:
 
 	subtilis_exp_delete(command);
+}
+
+subtilis_exp_t *subtilis_parser_osargs(subtilis_parser_t *p,
+				       subtilis_token_t *t,
+				       subtilis_error_t *err)
+{
+	size_t reg;
+	subtilis_exp_t *e;
+
+	reg = subtilis_ir_section_add_instr1(p->current,
+					     SUBTILIS_OP_INSTR_OS_ARGS, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	e = subtilis_string_new_str_from_zt(p, reg, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	subtilis_lexer_get(p->l, t, err);
+	if (err->type != SUBTILIS_ERROR_OK) {
+		subtilis_exp_delete(e);
+		return NULL;
+	}
+
+	return e;
 }

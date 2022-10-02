@@ -316,6 +316,9 @@ const subtilis_test_case_t test_cases[] = {
 	  "LOCAL b\n"
 	  "LOCAL c\n"
 	  "LOCAL d\n"
+	  "LOCAL e%\n"
+	  "LOCAL f\n"
+	  "LOCAL h\n"
 	  "\n"
 	  "LET x = 2.0\n"
 	  "LET y = 3.14\n"
@@ -544,6 +547,7 @@ const subtilis_test_case_t test_cases[] = {
 	"LOCAL d\n"
 	"LOCAL e\n"
 	"LOCAL f\n"
+	"LOCAL a%\n"
 	"\n"
 	"LET a = 1\n"
 	"LET b = 2\n"
@@ -621,6 +625,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "-1\n"},
 	{"cos_and_sin",
 	 "LOCAL a\n"
+	 "LOCAL b\n"
+	 "LOCAL c\n"
 	 "PROCCheck(SIN(0), 0)\n"
 	 "PROCCheck(COS(0), 1)\n"
 	 "LET a = 0\n"
@@ -650,6 +656,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "-1\n"},
 	{"sqr",
 	 "PROCCheck(SQR(2), 1.414)\n"
+	 "LOCAL a\n"
+	 "LOCAL A\n"
 	 "LET A=2\n"
 	 "PROCCheck(SQR(A), 1.414)\n"
 	 "DEF PROCCheck(a, e)\n"
@@ -1337,7 +1345,7 @@ const subtilis_test_case_t test_cases[] = {
 	{ "logrange",
 	"PROCLogZero\n"
 	"PROCLnNeg\n"
-	"A = 10\n"
+	"A := 10\n"
 	"PRINT 105 / A\n"
 	"\n"
 	"DEF PROCLogZero\n"
@@ -1765,7 +1773,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "  next\n"
 	 "  b%() = a%()\n"
 	 "ENDPROC\n"
-	 "for i% = 0 to 10\n"
+	 "for i% := 0 to 10\n"
 	 "  print b%(i%)\n"
 	 "next\n",
 	 "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
@@ -1900,8 +1908,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "10\n",
 	},
 	{"array_return_ref_fn",
-	 "a() = FNArr(1)()\n"
-	 "for i% = 0 to dim(a(),1)\n"
+	 "a() := FNArr(1)()\n"
+	 "for i% := 0 to dim(a(),1)\n"
 	 "  print a(i%)\n"
 	 "next\n"
 	 "\n"
@@ -1924,7 +1932,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "c% := 10\n"
 	 "dim a(c%)\n"
 	 "a() = FNArr(1)()\n"
-	 "for i% = 0 to dim(a(),1)\n"
+	 "for i% := 0 to dim(a(),1)\n"
 	 "  print a(i%)\n"
 	 "next\n"
 	 "\n"
@@ -1971,7 +1979,7 @@ const subtilis_test_case_t test_cases[] = {
 	{"array_local_return_fn",
 	 "c% := 10\n"
 	 "local a() = FNArr(1)()\n"
-	 "for i% = 0 to dim(a(),1)\n"
+	 "for i% := 0 to dim(a(),1)\n"
 	 "  print a(i%)\n"
 	 "next\n"
 	 "\n"
@@ -2291,8 +2299,9 @@ const subtilis_test_case_t test_cases[] = {
 	 "Mark you really are very old and have written a great compiler\n"
 	},
 	{"string_array_fn",
-	 "a$() := FNMark$(1)()\n"
 	 "dim ab%(1)\n"
+	 "local i%\n"
+	 "a$() := FNMark$(1)()\n"
 	 "for i% = 0 to dim(a$(),1)-1\n"
 	 "  print a$(i%);\n"
 	 "  print \" \";\n"
@@ -2322,8 +2331,8 @@ const subtilis_test_case_t test_cases[] = {
 	 "hello\nhello\n",
 	},
 	{"string_array_fn3",
-	 "a$() = FNHello$(1)()\n"
-	 "for i% = 0 to 10\n"
+	 "a$() := FNHello$(1)()\n"
+	 "for i% := 0 to 10\n"
 	 "print a$(i%)\n"
 	 "next\n"
 	 "\n"
@@ -3047,12 +3056,12 @@ const subtilis_test_case_t test_cases[] = {
 	 "print val(\"+1s\")\n"
 	 "print val(\"3230\")\n"
 	 "\n"
-	 "a$ = \"-12.23\"\n"
+	 "a$ := \"-12.23\"\n"
 	 "PROCCheck(val(a$), -12.23)\n"
 	 "a$ = \"-12.23i\"\n"
 	 "PROCCheck(val(a$), -12.23)\n"
 	 "a$ = \"-12.\"\n"
-	 "b = val(a$)\n"
+	 "b := val(a$)\n"
 	 "print b\n"
 	 "a$ = \"+1s\"\n"
 	 "b = val(a$)\n"
@@ -3340,7 +3349,7 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"ext_test",
 	"PROCCreateFile(\"markus\", string$(33, \"!\"))\n"
-	"f% = openin(\"markus\")\n"
+	"f% := openin(\"markus\")\n"
 	"onerror tryone close# f% enderror\n"
 	"print ext#(f%)\n"
 	"close# f%\n"
@@ -3357,7 +3366,7 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"ptr_test",
 	"PROCCreateFile(\"markus\", string$(16, \"!\") + string$(16,\"@\"))\n"
-	"f% = openin(\"markus\")\n"
+	"f% := openin(\"markus\")\n"
 	"print ptr#(f%)\n"
 	"onerror\n"
 	"  print \"whoops\"\n"
@@ -3499,14 +3508,14 @@ const subtilis_test_case_t test_cases[] = {
 	},
 	{"byte_fn",
 	"print FNByteSum&(100, 100)\n"
-	"a& = 140\n"
-	"b& = 130\n"
+	"a& := 140\n"
+	"b& := 130\n"
 	"print FNByteSum&(a&, b&)\n"
 	"print FNIntSum%(a&, b&)\n"
 	"print FNByteSumDBL&(a&, b&)\n"
 	"print FNDBLSum(a&, b&)\n"
-	"c = 140\n"
-	"d = 130\n"
+	"c := 140\n"
+	"d := 130\n"
 	"print FNByteSum&(c, d)\n"
 	"def FNByteSum&(a&, b&)\n"
 	"<- a& + b&\n"
@@ -3802,7 +3811,7 @@ const subtilis_test_case_t test_cases[] = {
 	"Seeya Mark\nHello Mark\n",
 	},
 	{"copy_string_array",
-	"a$() = FNCopy$(1)()\n"
+	"a$() := FNCopy$(1)()\n"
 	"for i% := 0 to dim(a$(),1)\n"
 	"  print a$(i%)\n"
 	"next\n"
@@ -3817,7 +3826,7 @@ const subtilis_test_case_t test_cases[] = {
 	"Hello\nHello\nHello\nHello\nHello\nHello\nHello\n"
 	},
 	{"copy_string_array_to_empty",
-	"a$() = FNCopy$(1)()\n"
+	"a$() := FNCopy$(1)()\n"
 	"for i% := 0 to dim(a$(),1)\n"
 	"  print a$(i%)\n"
 	"next\n"
@@ -3994,7 +4003,7 @@ const subtilis_test_case_t test_cases[] = {
 	{"append_vector_array_ints",
 	"c% := 7\n"
 	"local dim a&{c%}\n"
-	"a&() = 1\n"
+	"a&{} = 1\n"
 	"local dim b&(7)\n"
 	"b&() = 2,3,4,5,6,7,8,9\n"
 	"c&{} := a&{}\n"
@@ -4413,9 +4422,9 @@ const subtilis_test_case_t test_cases[] = {
 	{"lambda_alias",
 	"type FNByte&\n"
 	"l@FNByte = def FN& <- 127\n"
-	"print l@FNByte()\n"
 	"g@FNByte := l@FNByte\n"
 	"h@FNByte = l@FNByte\n"
+	"print l@FNByte()\n"
 	"print g@FNByte()\n"
 	"print h@FNByte()\n",
 	"127\n127\n127\n",
@@ -4674,12 +4683,12 @@ const subtilis_test_case_t test_cases[] = {
 	{"assign_fn_array",
 	"type PROCArgs(a%, b%)\n"
 	"dim a@PROCArgs(1)\n"
+	"dim vec@PROCArgs{1}\n"
 	"a@PROCArgs() = !PROCOne\n"
 	"a@PROCArgs(1) = !PROCTwo\n"
 	"range v@PROCArgs := a@PROCArgs()\n"
 	"  v@PROCArgs(1,2)\n"
 	"endrange\n"
-	"dim vec@PROCArgs{1}\n"
 	"vec@PROCArgs{} = !PROCOne\n"
 	"vec@PROCArgs{1} = !PROCTwo\n"
 	"append(vec@PROCArgs{}, !PROCThree)\n"
@@ -4962,7 +4971,7 @@ const subtilis_test_case_t test_cases[] = {
 	 "swap b@PROCa, c@PROCa(0)\n"
 	 "b@PROCa(4)\n"
 	 "rem get around a bug in the parser\n"
-	 "d@PROCa = c@PROCa(0)\n"
+	 "d@PROCa := c@PROCa(0)\n"
 	 "d@PROCa(4)\n",
 	 "16\n8\n12\n8\n",
 	},
@@ -5133,6 +5142,1289 @@ const subtilis_test_case_t test_cases[] = {
 	 "print g@FNStr{0}()\n"
 	 "print h@FNStr{0}()\n",
 	 "2\n1\n2\n1\nworld\nhello\nworld\nhello\n"
+	},
+	{"fn_arr_deref",
+	 "type FNMark%(1)\n"
+	 "local a@FNMark = def FN%(1) local dim a%(0) a%() = 66 <-a%()\n"
+	 "print a@FNMark()(0)\n",
+	 "66\n"
+	},
+	{"fn_vec_deref",
+	"type FNMark%{}\n"
+	"local a@FNMark = def FN%{} local dim a%{0} a%{} = 66 <-a%{}\n"
+	"print a@FNMark(){0}\n",
+	"66\n"
+	},
+	{"rec_assign_copy",
+	"type FNptr%(a%)\n"
+	"type RECData (\n"
+	"     x&\n"
+	"     y%\n"
+	"     dim a%{1}\n"
+	"     a@FNptr\n"
+	")\n"
+	"type RECPoint (\n"
+	"     a\n"
+	"     b$\n"
+	"     h@RECData\n"
+	"     dim a$(1)\n"
+	")\n"
+	"\n"
+	"local a@RECPoint\n"
+	"\n"
+	"a@RECPoint.a = 2.0\n"
+	"a@RECPoint.b$ = \"Hello World!\"\n"
+	"a@RECPoint.b$ += \" and goodbye\"\n"
+	"a@RECPoint.h@RECData.x& = -1\n"
+	"a@RECPoint.h@RECData.y% = 12\n"
+	"a@RECPoint.h@RECData.y% += 1\n"
+	"a@RECPoint.h@RECData.y% -= 10\n"
+	"a@RECPoint.h@RECData.a%{0} = 11\n"
+	"a@RECPoint.h@RECData.a%{0} += 1\n"
+	"a@RECPoint.h@RECData.a%{0} -= 2\n"
+	"a@RECPoint.h@RECData.a@FNptr = def FN%(a%) <- a% * a%\n"
+	"a@RECPoint.a$(0) = \"BASIC\"\n"
+	"a@RECPoint.a$(0) += \" is cool\"\n"
+	"\n"
+	"print a@RECPoint.a\n"
+	"print a@RECPoint.b$\n"
+	"print a@RECPoint.h@RECData.x&\n"
+	"print a@RECPoint.h@RECData.y%\n"
+	"print a@RECPoint.h@RECData.a%{0}\n"
+	"print a@RECPoint.h@RECData.a@FNptr(10)\n"
+	"print a@RECPoint.a$(0)\n"
+	"\n"
+	"local b@RECPoint\n"
+	"b@RECPoint = a@RECPoint\n"
+	"print b@RECPoint.a\n"
+	"print b@RECPoint.b$\n"
+	"print a@RECPoint.h@RECData.x&\n"
+	"print b@RECPoint.h@RECData.y%\n"
+	"print b@RECPoint.h@RECData.a%{0}\n"
+	"print b@RECPoint.h@RECData.a@FNptr(10)\n"
+	"print b@RECPoint.a$(0)\n",
+	"2\n"
+	"Hello World! and goodbye\n"
+	"-1\n"
+	"3\n"
+	"10\n"
+	"100\n"
+	"BASIC is cool\n"
+	"2\n"
+	"Hello World! and goodbye\n"
+	"-1\n"
+	"3\n"
+	"10\n"
+	"100\n"
+	"BASIC is cool\n"
+	},
+	{"rec_zero",
+	 "type FNPtr\n"
+	 "\n"
+	 "type RECInner (\n"
+	 "     dim a%(1)\n"
+	 "     dim b{1}\n"
+	 ")\n"
+	 "\n"
+	 "type RECData (\n"
+	 "     a%\n"
+	 "     c$\n"
+	 "     e&\n"
+	 "     d@FNPtr\n"
+	 "     f\n"
+	 "     dim g$(1)\n"
+	 "     h@RECInner\n"
+	 ")\n"
+	 "\n"
+	 "local a@RECData\n"
+	 "\n"
+	 "print a@RECData.a%\n"
+	 "print len(a@RECData.c$)\n"
+	 "print a@RECData.e&\n"
+	 "print a@RECData.d@FNPtr()\n"
+	 "print a@RECData.f\n"
+	 "print len(a@RECData.g$(0))\n"
+	 "print a@RECData.h@RECInner.a%(0)\n"
+	 "print a@RECData.h@RECInner.b{0}\n",
+	 "0\n0\n0\n0\n0\n0\n0\n0\n",
+	},
+	{"rec_zero_init",
+	 "type FNPtr\n"
+	 "\n"
+	 "type RECInner (\n"
+	 "     dim a%(1)\n"
+	 "     dim b{1}\n"
+	 ")\n"
+	 "\n"
+	 "type RECData (\n"
+	 "     a%\n"
+	 "     c$\n"
+	 "     e&\n"
+	 "     d@FNPtr\n"
+	 "     f\n"
+	 "     dim g$(1)\n"
+	 "     h@RECInner\n"
+	 ")\n"
+	 "\n"
+	 "local a@RECData = ()\n"
+	 "\n"
+	 "print a@RECData.a%\n"
+	 "print len(a@RECData.c$)\n"
+	 "print a@RECData.e&\n"
+	 "print a@RECData.d@FNPtr()\n"
+	 "print a@RECData.f\n"
+	 "print len(a@RECData.g$(0))\n"
+	 "print a@RECData.h@RECInner.a%(0)\n"
+	 "print a@RECData.h@RECInner.b{0}\n",
+	 "0\n0\n0\n0\n0\n0\n0\n0\n",
+	},
+	{"rec_init",
+	"type RECa1 (\n"
+	"     a%\n"
+	"     b$\n"
+	"     dim ar${1}\n"
+	")\n"
+	"\n"
+	"type RECa2 (\n"
+	"     a@RECa1\n"
+	"     dim br${1}\n"
+	"     dim nums%{2}\n"
+	"     dim reals{2}\n"
+	"     d%\n"
+	")\n"
+	"\n"
+	"local a% = 10\n"
+	"local dim ar${1}\n"
+	"ar${} = \"hello\", \"world\"\n"
+	"local a@RECa2 = ( (a%, \"inner\", ar${}), ( \"goodbye\" ),\n"
+	"( 1, 2, 3 ), ( 1.5, 2.5, 3.5 ), 1000 )\n"
+	"\n"
+	"print a@RECa2.a@RECa1.a%\n"
+	"print a@RECa2.a@RECa1.b$\n"
+	"\n"
+	"range v$ := a@RECa2.a@RECa1.ar${}\n"
+	"  print v$\n"
+	"endrange\n"
+	"\n"
+	"range v$ := a@RECa2.br${}\n"
+	"  print v$\n"
+	"endrange\n"
+	"\n"
+	"range v% := a@RECa2.nums%{}\n"
+	"  print v%\n"
+	"endrange\n"
+	"\n"
+	"range v := a@RECa2.reals{}\n"
+	"  print v\n"
+	"endrange\n"
+	"\n"
+	"print a@RECa2.d%\n",
+	"10\ninner\nhello\nworld\ngoodbye\ngoodbye\n1\n2\n3\n1.5\n2.5\n3.5\n"
+	"1000\n",
+	},
+	{"rec_partial_init",
+	"type RECInner (\n"
+	"     b\n"
+	"     dim a%(2)\n"
+	"     f%\n"
+	")\n"
+	"\n"
+	"type RECmark (\n"
+	"     a%\n"
+	"     a@RECInner\n"
+	"     c$\n"
+	"     d&\n"
+	")\n"
+	"\n"
+	"local a@RECmark = ( 10, (2.0, ( 1, 2 )))\n"
+	"print a@RECmark.a%\n"
+	"print a@RECmark.a@RECInner.b\n"
+	"print a@RECmark.a@RECInner.a%(0);\n"
+	"range v% := a@RECmark.a@RECInner.a%(1:)\n"
+	"  print \" \";\n"
+	"  print v%;\n"
+	"endrange\n"
+	"print \"\"\n"
+	"print a@RECmark.a@RECInner.f%\n"
+	"print a@RECmark.c$\n"
+	"print a@RECmark.d&\n",
+	"10\n2\n1 2 0\n0\n\n0\n",
+	},
+	{"rec_partial_init_global",
+	"type RECInner (\n"
+	"     b\n"
+	"     dim a%(2)\n"
+	"     f%\n"
+	")\n"
+	"\n"
+	"type RECmark (\n"
+	"     a%\n"
+	"     a@RECInner\n"
+	"     c$\n"
+	"     d&\n"
+	")\n"
+	"\n"
+	"a@RECmark = ( 10, (2.0, ( 1, 2 )))\n"
+	"print a@RECmark.a%\n"
+	"print a@RECmark.a@RECInner.b\n"
+	"print a@RECmark.a@RECInner.a%(0);\n"
+	"range v% := a@RECmark.a@RECInner.a%(1:)\n"
+	"  print \" \";\n"
+	"  print v%;\n"
+	"endrange\n"
+	"print \"\"\n"
+	"print a@RECmark.a@RECInner.f%\n"
+	"print a@RECmark.c$\n"
+	"print a@RECmark.d&\n",
+	"10\n2\n1 2 0\n0\n\n0\n",
+	},
+	{"rec_zero_init_local_global",
+	 "type RECmark ( a% b$ dim c%{} )\n"
+	 "a@RECmark = ()\n"
+	 "b@RECmark := ()\n"
+	 "local c@RECmark = ()\n"
+	 "print a@RECmark.a%\n"
+	 "print len(a@RECmark.b$)\n"
+	 "print dim(a@RECmark.c%{}, 1)\n"
+	 "print b@RECmark.a%\n"
+	 "print len(b@RECmark.b$)\n"
+	 "print dim(b@RECmark.c%{}, 1)\n"
+	 "print c@RECmark.a%\n"
+	 "print len(c@RECmark.b$)\n"
+	 "print dim(c@RECmark.c%{}, 1)\n",
+	 "0\n0\n-1\n0\n0\n-1\n0\n0\n-1\n",
+	},
+	{"dim_arr_rec",
+	"type FNCompute%(a)\n"
+	"type RECa2 (\n"
+	"  a%\n"
+	"  x&\n"
+	"  y\n"
+	"  dim nums%(10)\n"
+	"  dim s$(10)\n"
+	"  dim b&(4)\n"
+	")\n"
+	"type RECa1 (\n"
+	"  a@RECa2\n"
+	"  a$\n"
+	"  dim nums(20)\n"
+	"  dim fns@FNCompute(5)\n"
+	")\n"
+	"\n"
+	"dim a@RECa1(10)\n"
+	"a@RECa1(1).a@RECa2.a% = 10\n"
+	"a@RECa1(10).a@RECa2.y = 3.14\n"
+	"a@RECa1(10).a@RECa2.nums%(2) = 49\n"
+	"a@RECa1(10).a@RECa2.s$() = \"BASIC\"\n"
+	"a@RECa1(10).a@RECa2.b&() = 88\n"
+	"a@RECa1(1).a$ =  \"hello\"\n"
+	"a@RECa1(1).nums(11) =  2.14\n"
+	"a@RECa1(0).fns@FNCompute(5) = def FN%(a) <- a * 2\n"
+	"print a@RECa1(1).a@RECa2.a%\n"
+	"print a@RECa1(10).a@RECa2.y\n"
+	"print a@RECa1(10).a@RECa2.nums%(2)\n"
+	"print a@RECa1(10).a@RECa2.s$(3)\n"
+	"print a@RECa1(10).a@RECa2.b&(3)\n"
+	"print a@RECa1(1).a$\n"
+	"print a@RECa1(1).nums(11)\n"
+	"print a@RECa1(0).fns@FNCompute(5)(10)\n"
+	"print a@RECa1(10).fns@FNCompute(5)(10)\n",
+	"10\n3.14\n49\nBASIC\n88\nhello\n2.14\n20\n0\n",
+	},
+	{"dim_vec_rec",
+	"type FNCompute%(a)\n"
+	"type RECa2 (\n"
+	"  a%\n"
+	"  x&\n"
+	"  y\n"
+	"  dim nums%{10}\n"
+	"  dim s${10}\n"
+	"  dim b&{4}\n"
+	")\n"
+	"\n"
+	"type RECa1 (\n"
+	"  a@RECa2\n"
+	"  a$\n"
+	"  dim nums{20}\n"
+	"  dim fns@FNCompute{5}\n"
+	")\n"
+	"\n"
+	"dim a@RECa1{10}\n"
+	"a@RECa1{1}.a@RECa2.a% = 10\n"
+	"a@RECa1{10}.a@RECa2.y = 3.14\n"
+	"a@RECa1{10}.a@RECa2.nums%{2} = 49\n"
+	"a@RECa1{10}.a@RECa2.s${} = \"BASIC\"\n"
+	"a@RECa1{10}.a@RECa2.b&{} = 88\n"
+	"a@RECa1{1}.a$ =  \"hello\"\n"
+	"a@RECa1{1}.nums{11} =  2.14\n"
+	"a@RECa1{0}.fns@FNCompute{5} = def FN%(a) <- a * 2\n"
+	"print a@RECa1{1}.a@RECa2.a%\n"
+	"print a@RECa1{10}.a@RECa2.y\n"
+	"print a@RECa1{10}.a@RECa2.nums%{2}\n"
+	"print a@RECa1{10}.a@RECa2.s${3}\n"
+	"print a@RECa1{10}.a@RECa2.b&{3}\n"
+	"print a@RECa1{1}.a$\n"
+	"print a@RECa1{1}.nums{11}\n"
+	"print a@RECa1{0}.fns@FNCompute{5}(10)\n"
+	"print a@RECa1{10}.fns@FNCompute{5}(10)\n",
+	"10\n3.14\n49\nBASIC\n88\nhello\n2.14\n20\n0\n",
+	},
+	{"rec_copy_scalar",
+	"type RECa1(\n"
+	"     x%\n"
+	"     y%\n"
+	"     a\n"
+	"     b&\n"
+	")\n"
+	"\n"
+	"dim a@RECa1(3)\n"
+	"\n"
+	"for i% := 0 to dim(a@RECa1(),1)\n"
+	"  a@RECa1(i%).x% = i%\n"
+	"  a@RECa1(i%).y% = i% + 1\n"
+	"  a@RECa1(i%).a = i%*3\n"
+	"  a@RECa1(i%).b& = i% * 2\n"
+	"next\n"
+	"\n"
+	"dim b@RECa1(3)\n"
+	"copy(b@RECa1(), a@RECa1())\n"
+	"for i% := 0 to dim(b@RECa1(),1)\n"
+	"  print b@RECa1(i%).x%\n"
+	"  print b@RECa1(i%).y%\n"
+	"  print b@RECa1(i%).a\n"
+	"  print b@RECa1(i%).b&\n"
+	"  print \"\"\n"
+	"next\n",
+	"0\n1\n0\n0\n\n1\n2\n3\n2\n\n2\n3\n6\n4\n\n3\n4\n9\n6\n\n",
+	},
+	{"rec_copy_non_scalar",
+	"type RECref (\n"
+	"     dim a%(10)\n"
+	")\n"
+	"\n"
+	"dim a@RECref(1)\n"
+	"for i% := 0 to dim(a@RECref(0).a%(), 1)\n"
+	"    a@RECref(0).a%(i%) = i%\n"
+	"next\n"
+	"\n"
+	"dim b@RECref(1)\n"
+	"copy(b@RECref(), a@RECref())\n"
+	"range v% := b@RECref(0).a%()\n"
+	"      print v%\n"
+	"endrange\n",
+	"0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
+	},
+	{"range_global_empty_slice",
+	"dim a{1}\n"
+	"range x = a{0:0}\n"
+	"  print x\n"
+	"endrange\n"
+	"print x\n",
+	"0\n",
+	},
+	{"range_rec_local_new",
+	"type RECscalar (\n"
+	"     a%\n"
+	"     b\n"
+	")\n"
+	"\n"
+	"dim a@RECscalar(1)\n"
+	"for i% := 0 to dim(a@RECscalar(), 1)\n"
+	"    a@RECscalar(i%).a% = 1 * (i% + 1)\n"
+	"    a@RECscalar(i%).b = 2 * (i% + 1)\n"
+	"next\n"
+	"\n"
+	"range v@RECscalar := a@RECscalar()\n"
+	"    print v@RECscalar.a%\n"
+	"    print v@RECscalar.b\n"
+	 "endrange\n",
+	 "1\n2\n2\n4\n",
+	},
+	{"range_rec_global_new",
+	"type RECscalar (\n"
+	"     a%\n"
+	"     b\n"
+	")\n"
+	"\n"
+	"dim a@RECscalar(1)\n"
+	"for i% := 0 to dim(a@RECscalar(), 1)\n"
+	"    a@RECscalar(i%).a% = 1 * (i% + 1)\n"
+	"    a@RECscalar(i%).b = 2 * (i% + 1)\n"
+	"next\n"
+	"\n"
+	"range v@RECscalar = a@RECscalar()\n"
+	"    print v@RECscalar.a%\n"
+	"    print v@RECscalar.b\n"
+	"endrange\n"
+	"print v@RECscalar.a%\n"
+	"print v@RECscalar.b\n",
+	 "1\n2\n2\n4\n2\n4\n",
+	},
+	{"range_tilde_global",
+	 "dim b%(4)\n"
+	"range ~, a% = b%()\n"
+	"    print a%\n"
+	"endrange\n",
+	"0\n1\n2\n3\n4\n",
+	},
+	{"range_tilde_local",
+	"type RECel (\n"
+	"     a$\n"
+	"     b%\n"
+	"     d\n"
+	"     dim c(10)\n"
+	")\n"
+	"dim a@RECel(4)\n"
+	"range v@RECel, i% := a@RECel()\n"
+	"  print a@RECel(i%).b%\n"
+	"endrange\n",
+	"0\n0\n0\n0\n0\n",
+	},
+	{"rec_proc_field_call",
+	"type PROCMark(a%, b%)\n"
+	"type RECmixed ( b@PROCMark )\n"
+	"dim a@RECmixed(1)\n"
+	"a@RECmixed(0).b@PROCMark = def PROC(a%, b%) print a% + b% endproc\n"
+	"a@RECmixed(0).b@PROCMark(10, 11)\n",
+	"21\n",
+	},
+	{"array_proc_call",
+	"type PROCMark\n"
+	"dim a@PROCMark(1)\n"
+	"a@PROCMark(0) = def PROC print \"Hello\" endproc\n"
+	"a@PROCMark(0)()\n",
+	"Hello\n",
+	},
+	{"append_rec",
+	"type RECScalar (a% b c&)\n"
+	"dim a@RECScalar{0}\n"
+	"local b@RECScalar = ( 1, 2, 3 )\n"
+	"append(a@RECScalar{}, b@RECScalar)\n"
+	"range ~, i% := a@RECScalar{}\n"
+	"  print a@RECScalar{i%}.a%\n"
+	"  print a@RECScalar{i%}.b\n"
+	"  print a@RECScalar{i%}.c&\n"
+	"endrange\n",
+	"0\n0\n0\n1\n2\n3\n",
+	},
+	{"rec_init_copy",
+	"type RECmixed ( a% b% )\n"
+	"local c@RECmixed = (10, 11)\n"
+	"local d@RECmixed = c@RECmixed\n"
+	"print d@RECmixed.a%\n"
+	"print d@RECmixed.b%\n",
+	"10\n11\n",
+	},
+	{"rec_reset",
+	"type RECref ( dim v%{1} )\n"
+	"type RECScalar (\n"
+	"     a%\n"
+	"     b$\n"
+	"     dim c%(1)\n"
+	"     d@RECref\n"
+	")\n"
+	"\n"
+	"local a@RECScalar = ( 10, \"hello\", ( 1, 2), ( (3, 4)))\n"
+	"a@RECScalar = (100, \"goodbye\", ( 10, 20), (( 2 )))\n"
+	"\n"
+	"print a@RECScalar.a%\n"
+	"print a@RECScalar.b$\n"
+	"print a@RECScalar.c%(0)\n"
+	"print a@RECScalar.c%(1)\n"
+	"print a@RECScalar.d@RECref.v%{0}\n"
+	"print a@RECScalar.d@RECref.v%{1}\n"
+	"\n"
+	"a@RECScalar = (100, \"goodbye\", ( 10, 20), ())\n"
+	"print a@RECScalar.d@RECref.v%{0}\n"
+	"print a@RECScalar.d@RECref.v%{1}\n",
+	"100\ngoodbye\n10\n20\n2\n2\n0\n0\n",
+	},
+	{"rec_reset_partial",
+	"type RECref ( dim v%{1} )\n"
+	"type RECScalar (\n"
+	"     dim f(1)\n"
+	"     a%\n"
+	"     b$\n"
+	"     c\n"
+	"     d$\n"
+	"     e@RECref\n"
+	")\n"
+	"\n"
+	"local a@RECScalar = ( ( 7, 8), 10, \"hello\", 3.14, \"ignore me\","
+	"( ( 1, 1 ) ) )\n"
+	"append(a@RECScalar.e@RECref.v%{}, 2)\n"
+	"a@RECScalar = ( (9, 10), 100, \"goodbye\" )\n"
+	"\n"
+	"print a@RECScalar.f(0)\n"
+	"print a@RECScalar.f(1)\n"
+	"print a@RECScalar.a%\n"
+	"print a@RECScalar.b$\n"
+	"print a@RECScalar.c\n"
+	"print a@RECScalar.d$\n"
+	"print dim(a@RECScalar.e@RECref.v%{}, 1)\n"
+	"print a@RECScalar.e@RECref.v%{0}\n"
+	"print a@RECScalar.e@RECref.v%{1}\n",
+	"9\n10\n100\ngoodbye\n0\n\n1\n0\n0\n",
+	},
+	{"array_rec_reset",
+	"type RECScalar ( a% b$ c& )\n"
+	"dim b@RECScalar(2)\n"
+	"b@RECScalar(0) = ( 1, \"hello\", 3 )\n"
+	"b@RECScalar(0) = ( 4, \"goodbye\", 6 )\n"
+	"print b@RECScalar(0).a%\n"
+	"print b@RECScalar(0).b$\n"
+	"print b@RECScalar(0).c&\n",
+	"4\ngoodbye\n6\n",
+	},
+	{"field_rec_reset",
+	"type RECNested (\n"
+	"   a$\n"
+	"   dim b%(1)\n"
+	")\n"
+	"type RECScalar (\n"
+	"     a%\n"
+	"     b\n"
+	"     c&\n"
+	"     d@RECNested\n"
+	")\n"
+	"a@RECScalar := ()\n"
+	"b$ = \"hello\"\n"
+	"dim c%(1)\n"
+	"c%() = 1, 2\n"
+	"a@RECScalar.d@RECNested = (b$, c%())\n"
+	"print a@RECScalar.a%\n"
+	"print a@RECScalar.b\n"
+	"print a@RECScalar.c&\n"
+	"print a@RECScalar.d@RECNested.a$\n"
+	"print a@RECScalar.d@RECNested.b%(0)\n"
+	"print a@RECScalar.d@RECNested.b%(1)\n",
+	"0\n0\n0\nhello\n1\n2\n",
+	},
+	{"rec_empty_reset",
+	"type RECs (\n"
+	"   dim a%(1)\n"
+	"   s$\n"
+	"   b\n"
+	")\n"
+	"\n"
+	"a@RECs = ()\n"
+	"a@RECs.a%() = 1\n"
+	"a@RECs.s$ = \"Subtilis BASIC\"\n"
+	"a@RECs.b = 3.14\n"
+	"a@RECs = ()\n"
+	"print a@RECs.a%(0)\n"
+	"print a@RECs.a%(1)\n"
+	"print a@RECs.s$\n"
+	"print a@RECs.b\n",
+	"0\n0\n\n0\n",
+	},
+	{"fn_array_ref_assign",
+	"type FNtest%(a)\n"
+	"dim a@FNtest(10)\n"
+	"a@FNtest() = def FN%(a) <- a+ 1.0, def FN%(a) <-a+ 2.0\n"
+	"b@FNtest() = a@FNtest()\n"
+	"print b@FNtest(0)(1)\n"
+	"print b@FNtest(1)(1)\n",
+	"2\n3\n",
+	},
+	{"rec_array_ref_assign",
+	"type RECtest(a)\n"
+	"dim a@RECtest(10)\n"
+	"dim b@RECtest(10)\n"
+	"a@RECtest(0).a = 10\n"
+	"b@RECtest() = a@RECtest()\n"
+	"print a@RECtest(0).a\n",
+	"10\n",
+	},
+	{"rec_append_array_scalar",
+	"type RECScalar (\n"
+	"     a%\n"
+	"     b\n"
+	"     c&\n"
+	")\n"
+	"\n"
+	"dim a@RECScalar{0}\n"
+	"dim b@RECScalar(2)\n"
+	"\n"
+	"a@RECScalar{0} = ( -1, -2, -3 )\n"
+	"b@RECScalar(0) = ( 1, 2, 3 )\n"
+	"b@RECScalar(1) = ( 4, 5, 6 )\n"
+	"b@RECScalar(2) = ( 7, 8, 9 )\n"
+	"append(a@RECScalar{}, b@RECScalar())\n"
+	"\n"
+	"range ~, i% := a@RECScalar{}\n"
+	"  print a@RECScalar{i%}.a%\n"
+	"  print a@RECScalar{i%}.b\n"
+	"  print a@RECScalar{i%}.c&\n"
+	"endrange\n",
+	"-1\n-2\n-3\n1\n2\n3\n4\n5\n6\n7\n8\n9\n",
+	},
+	{"rec_append_array_ref",
+	"type RECref ( a$ )\n"
+	"\n"
+	"type RECouter (\n"
+	"     a%\n"
+	"     b\n"
+	"     d@RECref\n"
+	"     c&\n"
+	")\n"
+	"\n"
+	"dim a@RECouter{0}\n"
+	"dim b@RECouter(2)\n"
+	"\n"
+	"a@RECouter{0} = ( -1, -2, (\"one\"), -3 )\n"
+	"b@RECouter(0) = ( 1, 2, (\"two\"), 3 )\n"
+	"b@RECouter(1) = ( 4, 5, (\"three\"), 6 )\n"
+	"b@RECouter(2) = ( 7, 8, (\"four\"), 9 )\n"
+	"append(a@RECouter{}, b@RECouter())\n"
+	"\n"
+	"range ~, i% := a@RECouter{}\n"
+	"  print a@RECouter{i%}.a%\n"
+	"  print a@RECouter{i%}.b\n"
+	"  print a@RECouter{i%}.d@RECref.a$\n"
+	"  print a@RECouter{i%}.c&\n"
+	"endrange\n",
+	"-1\n-2\none\n-3\n1\n2\ntwo\n3\n4\n5\nthree\n6\n7\n8\nfour\n9\n",
+	},
+	{"rec_ref_fn",
+	"type RECRef (a% b$ c&)\n"
+	"\n"
+	"a@RECRef = ( 1, \"hello\", 3)\n"
+	"b@RECRef = ( 4, \" goodbye\", 5)\n"
+	"c@RECRef := FNAdd@RECRef(a@RECRef, b@RECRef)\n"
+	"print c@RECRef.a%\n"
+	"print c@RECRef.b$\n"
+	"print c@RECRef.c&\n"
+	"\n"
+	"def FNAdd@RECRef(a@RECRef, b@RECRef)\n"
+	"    a@RECRef.a% += b@RECRef.a%\n"
+	"    a@RECRef.b$ += b@RECRef.b$\n"
+	"    a@RECRef.c& += b@RECRef.c&\n"
+	"<-a@RECRef\n",
+	"5\nhello goodbye\n8\n",
+	},
+	{"rec_scalar_fn",
+	"type RECScalar ( a% b c& )\n"
+	"\n"
+	"a@RECScalar = ( 1, 10.0, 3)\n"
+	"b@RECScalar = ( 4, 10.0, 5)\n"
+	"c@RECScalar = FNAdd@RECScalar(a@RECScalar, b@RECScalar)\n"
+	"print c@RECScalar.a%\n"
+	"print c@RECScalar.b\n"
+	"print c@RECScalar.c&\n"
+	"\n"
+	"def FNAdd@RECScalar(a@RECScalar, b@RECScalar)\n"
+	"    a@RECScalar.a% += b@RECScalar.a%\n"
+	"    a@RECScalar.b += b@RECScalar.b\n"
+	"    a@RECScalar.c& += b@RECScalar.c&\n"
+	"<-a@RECScalar\n",
+	"5\n20\n8\n",
+	},
+	{"rec_ref_fn_lambda",
+	"type RECRef (\n"
+	"     a%\n"
+	"     b$\n"
+	"     c&\n"
+	")\n"
+	"type FNPtr@RECRef(a@RECRef, b@RECRef)\n"
+	"fn@FNPtr = def FN@RECRef(a@RECRef, b@RECRef)\n"
+	"    a@RECRef.a% += b@RECRef.a%\n"
+	"    a@RECRef.b$ += b@RECRef.b$\n"
+	"    a@RECRef.c& += b@RECRef.c&\n"
+	"<-a@RECRef\n"
+	"\n"
+	"a@RECRef = ( 1, \"hello\", 3)\n"
+	"b@RECRef = ( 4, \" goodbye\", 5)\n"
+	"c@RECRef := fn@FNPtr(a@RECRef, b@RECRef)\n"
+	"print c@RECRef.a%\n"
+	"print c@RECRef.b$\n"
+	"print c@RECRef.c&\n",
+	"5\nhello goodbye\n8\n",
+	},
+	{"rec_ref_fn_ptr",
+	"type RECRef (\n"
+	"     a%\n"
+	"     b$\n"
+	"     c&\n"
+	")\n"
+	"type FNPtr@RECRef(a@RECRef, b@RECRef)\n"
+	"fn@FNPtr = !FNAdd@RECRef\n"
+	"\n"
+	"a@RECRef = ( 1, \"hello\", 3)\n"
+	"b@RECRef = ( 4, \" goodbye\", 5)\n"
+	"c@RECRef := fn@FNPtr(a@RECRef, b@RECRef)\n"
+	"print c@RECRef.a%\n"
+	"print c@RECRef.b$\n"
+	"print c@RECRef.c&\n"
+	"\n"
+	"def FNAdd@RECRef(a@RECRef, b@RECRef)\n"
+	"    a@RECRef.a% += b@RECRef.a%\n"
+	"    a@RECRef.b$ += b@RECRef.b$\n"
+	"    a@RECRef.c& += b@RECRef.c&\n"
+	"<-a@RECRef\n",
+	"5\nhello goodbye\n8\n",
+	},
+	{"rec_scalar_vec_fn",
+	"type RECar ( a% )\n"
+	"dim a@RECar(9)\n"
+	"dim b@RECar(9)\n"
+	"for i% := 0 to 9\n"
+	"  a@RECar(i%).a% = i%\n"
+	"  b@RECar(i%).a% = 10 + i%\n"
+	"next\n"
+	"c@RECar{} := FNappend@RECar{}(a@RECar(), b@RECar())\n"
+	"range v@RECar := c@RECar{}\n"
+	"  print v@RECar.a%\n"
+	"endrange\n"
+	"def FNappend@RECar{}(a@RECar(1), b@RECar(1))\n"
+	"    local dim c@RECar{}\n"
+	"    range v@RECar := a@RECar()\n"
+	"        append(c@RECar{}, v@RECar)\n"
+	"    endrange\n"
+	"    range v@RECar := b@RECar()\n"
+	"        append(c@RECar{}, v@RECar)\n"
+	"    endrange\n"
+	"<-c@RECar{}\n",
+	"0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n"
+	"10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n",
+	},
+	{"rec_fn_return_zero_rec_ref",
+	"type RECScalar (\n"
+	"     a%\n"
+	"     b$\n"
+	"     c&\n"
+	")\n"
+	"\n"
+	"a@RECScalar := FNAdd@RECScalar()\n"
+	"print a@RECScalar.a%\n"
+	"print a@RECScalar.b$\n"
+	"print a@RECScalar.c&\n"
+	"\n"
+	"def FNAdd@RECScalar\n"
+	"    local a@RECScalar\n"
+	"<-a@RECScalar\n",
+	"0\n\n0\n",
+	},
+	{"rec_fn_return_rec_multiple_ref",
+	"type RECScalar (\n"
+	"     dim a%(1)\n"
+	"     b$\n"
+	"     dim c$(2)\n"
+	")\n"
+	"\n"
+	"a@RECScalar := FNAdd@RECScalar()\n"
+	"local b@RECScalar = ( ( 3, 4),\n"
+	"\"quiet\", (\"but\", \"not\", \"raining\" ))\n"
+	"print a@RECScalar.a%(0)\n"
+	"print a@RECScalar.a%(1)\n"
+	"print a@RECScalar.b$\n"
+	"print a@RECScalar.c$(0)\n"
+	"print a@RECScalar.c$(1)\n"
+	"print a@RECScalar.c$(2)\n"
+	"\n"
+	"def FNAdd@RECScalar\n"
+	"    local a@RECScalar = ( ( 1, 2), \"hello\",\n"
+	"    (\"goodbye\", \"forever\" ))\n"
+	"<-a@RECScalar\n",
+	"1\n2\nhello\ngoodbye\nforever\n\n",
+	},
+	{"rec_fn_return_rec_nested_ref",
+	"type RECinner (\n"
+	"     dim a%(1)\n"
+	"     b$\n"
+	"     dim c$(2)\n"
+	"     d$\n"
+	")\n"
+	"\n"
+	"type RECref (\n"
+	"     a@RECinner\n"
+	"     name$\n"
+	")\n"
+	"\n"
+	"a@RECref := FNAdd@RECref()\n"
+	"print a@RECref.name$\n"
+	"print a@RECref.a@RECinner.a%(0)\n"
+	"print a@RECref.a@RECinner.a%(1)\n"
+	"print a@RECref.a@RECinner.b$\n"
+	"print a@RECref.a@RECinner.c$(0)\n"
+	"print a@RECref.a@RECinner.c$(1)\n"
+	"print a@RECref.a@RECinner.c$(2)\n"
+	"print a@RECref.a@RECinner.d$\n"
+	"\n"
+	"def FNAdd@RECref\n"
+	"    local a@RECref = ( ( ( 1, 2), \"hello\",\n"
+	"       (\"goodbye\", \"forever\" ), \"whoops\"), \"outer\")\n"
+	"<-a@RECref\n",
+	"outer\n1\n2\nhello\ngoodbye\nforever\n\nwhoops\n",
+	},
+	{"rec_swap_three_bytes",
+	"type RECref (\n"
+	"     a&\n"
+	"     b&\n"
+	"     c&\n"
+	")\n"
+	"\n"
+	"\n"
+	"a@RECref := (1, 2, 3)\n"
+	"b@RECref := (7, 8, 9)\n"
+	"\n"
+	"swap a@RECref, b@RECref\n"
+	"\n"
+	"print a@RECref.a&\n"
+	"print a@RECref.b&\n"
+	"print a@RECref.c&\n"
+	"print b@RECref.a&\n"
+	"print b@RECref.b&\n"
+	"print b@RECref.c&\n",
+	"7\n8\n9\n1\n2\n3\n",
+	},
+	{"rec_swap",
+	"type RECref (\n"
+	"     a%\n"
+	"     b$\n"
+	"     c&\n"
+	")\n"
+	"\n"
+	"a@RECref := (1, \"two\", 3)\n"
+	"b@RECref := (7, \"eight\", 9)\n"
+	"\n"
+	"swap a@RECref, b@RECref\n"
+	"\n"
+	"print a@RECref.a%\n"
+	"print a@RECref.b$\n"
+	"print a@RECref.c&\n"
+	"print b@RECref.a%\n"
+	"print b@RECref.b$\n"
+	"print b@RECref.c&\n",
+	"7\neight\n9\n1\ntwo\n3\n",
+	},
+	{"rec_array_swap",
+	"type RECref (\n"
+	"     a%\n"
+	"     b$\n"
+	"     c&\n"
+	")\n"
+	"\n"
+	"dim a@RECref(0)\n"
+	"dim b@RECref(0)\n"
+	"\n"
+	"a@RECref(0) = (1, \"two\", 3)\n"
+	"b@RECref(0) = (7, \"eight\", 9)\n"
+	"\n"
+	"swap a@RECref(), b@RECref()\n"
+	"\n"
+	"print a@RECref(0).a%\n"
+	"print a@RECref(0).b$\n"
+	"print a@RECref(0).c&\n"
+	"print b@RECref(0).a%\n"
+	"print b@RECref(0).b$\n"
+	"print b@RECref(0).c&\n",
+	"7\neight\n9\n1\ntwo\n3\n",
+	},
+	{"rec_array_put_get",
+	"type RECinner (\n"
+	"     a%\n"
+	")\n"
+	"\n"
+	"type RECscalar (\n"
+	"     a%\n"
+	"     b\n"
+	"     c@RECinner\n"
+	"     d&\n"
+	")\n"
+	"\n"
+	"PROCWriteFile\n"
+	"PROCReadFile\n"
+	"def PROCWriteFile\n"
+	"    f% := openout(\"markus\")\n"
+	"    onerror\n"
+	"      tryone close# f%\n"
+	"    enderror\n"
+	"    local dim a@RECscalar(1)\n"
+	"    a@RECscalar(0) = ( 1, 3.14, ( 2 ), &ff )\n"
+	"    a@RECscalar(1) = ( 2, 99, ( 3 ), &1f )\n"
+	"    put# f%, a@RECscalar()\n"
+	"    onerror error err enderror\n"
+	"    close# f%\n"
+	"endproc\n"
+	"def PROCReadFile\n"
+	"    f% := openin(\"markus\")\n"
+	"    onerror\n"
+	"      tryone close# f%\n"
+	"    enderror\n"
+	"    local dim a@RECscalar(1)\n"
+	"    read% := get#(f%, a@RECscalar())\n"
+	"    range ~, i% := a@RECscalar()\n"
+	"        print a@RECscalar(i%).a%\n"
+	"        print a@RECscalar(i%).b\n"
+	"        print a@RECscalar(i%).c@RECinner.a%\n"
+	"        print ~a@RECscalar(i%).d&\n"
+	"    endrange\n"
+	"    tryone close# f%\n"
+	"endproc\n",
+	"1\n3.14\n2\nFF\n2\n99\n3\n1F\n",
+	},
+	{"copy_array_fn",
+	"type PROCdo(a%)\n"
+	"\n"
+	"dim a@PROCdo(1)\n"
+	"a@PROCdo() = def PROC(a%) print a% endproc,\n"
+	"def PROC(a%) for i% := 1 to a% print 1 next endproc\n"
+	"dim b@PROCdo(1)\n"
+	"copy(b@PROCdo(), a@PROCdo())\n"
+	"\n"
+	"range c@PROCdo := b@PROCdo()\n"
+	"      c@PROCdo(4)\n"
+	"endrange\n",
+	"4\n1\n1\n1\n1\n",
+	},
+	{"copy_array_rec_fn",
+	"type PROCdo(a%)\n"
+	"type RECscalar (\n"
+	"    a@PROCdo\n"
+	")\n"
+	"\n"
+	"dim a@RECscalar(1)\n"
+	"\n"
+	"a@RECscalar(0) = (def PROC(a%) print a% endproc)\n"
+	"a@RECscalar(1) = (def PROC(a%) for i% := 1 to a% print 1 next\n"
+	"endproc)\n"
+	"\n"
+	"dim b@RECscalar(1)\n"
+	"copy(b@RECscalar(), a@RECscalar())\n"
+	"\n"
+	"range c@RECscalar := b@RECscalar()\n"
+	"      c@RECscalar.a@PROCdo(4)\n"
+	"endrange\n",
+	"4\n1\n1\n1\n1\n",
+	},
+	{"mid_str_alias",
+	"c$ = \"hello mark\"\n"
+	"\n"
+	"rem alias c$ to force an alloc\n"
+	"\n"
+	"a$ = c$\n"
+	"b$ := \"LLO\"\n"
+	"mid$(a$, 2) = b$\n"
+	"print a$\n"
+	"\n"
+	"b$ = \"hello mark\"\n"
+	"mid$(a$, 2) = b$\n"
+	"print a$\n",
+	"heLLO mark\n"
+	"hehello ma\n",
+	},
+	{"assign_empty_vector_from_tmp",
+	"local dim lines${}\n"
+	"lines${} = FNConsumeBuffer${}(lines${})\n"
+	"print dim(lines${}, 1)\n"
+	"def FNConsumeBuffer${}(lines${})\n"
+	"<- lines${}",
+	"-1\n",
+	},
+	{"append_vector_string_return",
+	"lines${} := FNGetLines${}()\n"
+	"range s$ := lines${}\n"
+	"  print s$\n"
+	"endrange\n"
+	"\n"
+	"def FNGetLines${}\n"
+	"    local dim lines${}\n"
+	"    for i% := 0 to 1\n"
+	"        lines${} = FNFillBuffer${}(lines${})\n"
+	"    next\n"
+	"<-lines${}\n"
+	"\n"
+	"def FNFillBuffer${}(lines${})\n"
+	"      s$ := string$(16, \"a\")\n"
+	"      append(lines${}, s$)\n"
+	"<-lines${}\n",
+	"aaaaaaaaaaaaaaaa\n"
+	"aaaaaaaaaaaaaaaa\n"
+	},
+	{"append_vector_rec_ref_return",
+	"type RECstr ( a$ )\n"
+	"\n"
+	"lines@RECstr{} := FNGetLines@RECstr{}()\n"
+	"range s@RECstr := lines@RECstr{}\n"
+	"  print s@RECstr.a$\n"
+	"endrange\n"
+	"\n"
+	"def FNGetLines@RECstr{}\n"
+	"    local dim lines@RECstr{}\n"
+	"    for i% := 0 to 1\n"
+	"        lines@RECstr{} = FNFillBuffer@RECstr{}(lines@RECstr{})\n"
+	"    next\n"
+	"<-lines@RECstr{}\n"
+	"\n"
+	"def FNFillBuffer@RECstr{}(lines@RECstr{})\n"
+	"      local a@RECstr = ( string$(16, \"a\") )\n"
+	"      append(lines@RECstr{}, a@RECstr)\n"
+	"<-lines@RECstr{}\n",
+	"aaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaa\n",
+	},
+	{"append_vector_rec_noref_return",
+	"type RECint ( a% )\n"
+	"\n"
+	"lines@RECint{} := FNGetLines@RECint{}()\n"
+	"range s@RECint := lines@RECint{}\n"
+	"  print s@RECint.a%\n"
+	"endrange\n"
+	"\n"
+	"def FNGetLines@RECint{}\n"
+	"    local dim lines@RECint{}\n"
+	"    for i% := 0 to 1\n"
+	"        lines@RECint{} = FNFillBuffer@RECint{}(lines@RECint{})\n"
+	"    next\n"
+	"<-lines@RECint{}\n"
+	"\n"
+	"def FNFillBuffer@RECint{}(lines@RECint{})\n"
+	"      local a@RECint = ( 16 )\n"
+	"      append(lines@RECint{}, a@RECint)\n"
+	"<-lines@RECint{}\n",
+	"16\n16\n",
+	},
+	{"reset_vector_string_slice",
+	"local dim lines${5}\n"
+	"lines${} = \"one\", \"two\", \"three\", \"four\", \"five\", \"six\"\n"
+	"\n"
+	"def FNSliceReset${}(a${})\n"
+	"  a${} = \"hello\", \"goodbye\"\n"
+	"<-a${}\n"
+	"\n"
+	"lines2${} := FNSliceReset${}(lines${1:3})\n"
+	"range s$ := lines2${}\n"
+	"  print s$\n"
+	"endrange\n",
+	"hello\ngoodbye\n",
+	},
+	{"set_vector_string_slice",
+	"local dim lines${5}\n"
+	"lines${} = \"one\", \"two\", \"three\", \"four\", \"five\", \"six\"\n"
+	"\n"
+	"def FNSliceReset${}(a${})\n"
+	"  a${} = \"hello\"\n"
+	"<-a${}\n"
+	"\n"
+	"lines2${} := FNSliceReset${}(lines${1:3})\n"
+	"range s$ := lines2${}\n"
+	"  print s$\n"
+	"endrange\n",
+	"hello\nhello\n",
+	},
+	{"append_vector_string_slice",
+	"local dim lines${5}\n"
+	"lines${} = \"one\", \"two\", \"three\", \"four\", \"five\", \"six\"\n"
+	"\n"
+	"def FNSliceAppend${}(a${})\n"
+	"  append(a${}, \"three\")\n"
+	"<-a${}\n"
+	"\n"
+	"lines2${} := FNSliceAppend${}(lines${1:3})\n"
+	"range s$ := lines2${}\n"
+	"  print s$\n"
+	"endrange\n",
+	"two\nthree\nthree\n",
+	},
+	{"append_vector_slice_rec",
+	"type RECStr ( a$ )\n"
+	"\n"
+	"local dim lines@RECStr{5}\n"
+	"lines@RECStr{0}.a$ = \"one\"\n"
+	"lines@RECStr{1}.a$ = \"two\"\n"
+	"lines@RECStr{2}.a$ = \"three\"\n"
+	"lines@RECStr{3}.a$ = \"four\"\n"
+	"lines@RECStr{4}.a$ = \"five\"\n"
+	"lines@RECStr{5}.a$ = \"six\"\n"
+	"\n"
+	"def FNSliceReset@RECStr{}(a@RECStr{})\n"
+	"  local b@RECStr = ( \"hello\" )\n"
+	"  append(a@RECStr{}, b@RECStr)\n"
+	"<-a@RECStr{}\n"
+	"\n"
+	"lines2@RECStr{} := FNSliceReset@RECStr{}(lines@RECStr{1:3})\n"
+	"range a@RECStr := lines2@RECStr{}\n"
+	"  print a@RECStr.a$\n"
+	"endrange\n",
+	"two\nthree\nhello\n",
+	},
+	{"append_vector_array_string_return",
+	"lines${} := FNGetLines${}()\n"
+	"range s$ := lines${}\n"
+	"  print s$\n"
+	"endrange\n"
+	"\n"
+	"def FNGetLines${}\n"
+	"    local dim lines${}\n"
+	"    for i% := 0 to 1\n"
+	"        lines${} = FNFillBuffer${}(lines${})\n"
+	"    next\n"
+	"<-lines${}\n"
+	"\n"
+	"def FNFillBuffer${}(lines${})\n"
+	"      local dim a$(1)\n"
+	"      a$() = string$(16, \"a\"), string$(16, \"b\")\n"
+	"      append(lines${}, a$())\n"
+	"<-lines${}\n",
+	"aaaaaaaaaaaaaaaa\nbbbbbbbbbbbbbbbb\n"
+	"aaaaaaaaaaaaaaaa\nbbbbbbbbbbbbbbbb\n",
+	},
+	{"append_vector_array_rec_ref_return",
+	"type RECStr ( s$ )\n"
+	"lines@RECStr{} := FNGetLines@RECStr{}()\n"
+	"range a@RECStr := lines@RECStr{}\n"
+	"  print a@RECStr.s$\n"
+	"endrange\n"
+	"\n"
+	"def FNGetLines@RECStr{}\n"
+	"    local dim lines@RECStr{}\n"
+	"    for i% := 0 to 1\n"
+	"        lines@RECStr{} = FNFillBuffer@RECStr{}(lines@RECStr{})\n"
+	"    next\n"
+	"<-lines@RECStr{}\n"
+	"\n"
+	"def FNFillBuffer@RECStr{}(lines@RECStr{})\n"
+	"      local dim a@RECStr(1)\n"
+	"      a@RECStr(0) = ( string$(16, \"a\") )\n"
+	"      a@RECStr(1) = ( string$(16, \"b\") )\n"
+	"      append(lines@RECStr{}, a@RECStr())\n"
+	"<-lines@RECStr{}\n",
+	"aaaaaaaaaaaaaaaa\nbbbbbbbbbbbbbbbb\n"
+	"aaaaaaaaaaaaaaaa\nbbbbbbbbbbbbbbbb\n",
+	},
+	{"string_nc_c_1/4_byte_eq_neq",
+	"a$ := \"hello\" + chr$(10)\n"
+	"print right$(a$) <> chr$(10)  rem 0\n"
+	"print right$(a$) <> chr$(11)  rem -1\n"
+	"print right$(a$) = chr$(10)   rem -1\n"
+	"print right$(a$) = chr$(11)   rem 0\n"
+	"b$ := \"ello\"\n"
+	"print b$ <> \"ello\"            rem 0\n"
+	"print b$ <> \"elld\"            rem -1\n"
+	"print b$ = \"ello\"             rem -1\n"
+	"print b$ = \"ellp\"             rem 0\n",
+	"0\n-1\n-1\n0\n0\n-1\n-1\n0\n",
+	},
+	{"right_str_non_const_full_in_block",
+	"local dim av${}\n"
+	"local existing%\n"
+	"a$ := \"a\"\n"
+	"if 1 then\n"
+	"  existing% = right$(a$) <> chr$(10)\n"
+	"endif\n"
+	"append(av${}, a$)\n"
+	"print av${0}\n",
+	"a\n",
+	},
+	{"left_str_non_const_full_in_block",
+	"local dim av${}\n"
+	"local existing%\n"
+	"a$ := \"a\"\n"
+	"if 1 then\n"
+	"  existing% = left$(a$) <> chr$(10)\n"
+	"endif\n"
+	"append(av${}, a$)\n"
+	"print av${0}\n",
+	"a\n",
+	},
+	{"mid_str_non_const_full_in_block",
+	"local dim av${}\n"
+	"local existing%\n"
+	"a$ := \"a\"\n"
+	"if 1 then\n"
+	"  existing% = mid$(a$,1) <> chr$(10)\n"
+	"endif\n"
+	"append(av${}, a$)\n"
+	"print av${0}\n",
+	"a\n",
+	},
+	{"append_assign_to_self_int",
+	"local dim a%{1}\n"
+	"a%{} = append(a%{}, 1)\n"
+	"print dim(a%{}, 1)\n",
+	"2\n",
+	},
+	{"append_assign_to_self_string",
+	"local dim a${1}\n"
+	"a${} = append(a${}, \"string\")\n"
+	"print dim(a${}, 1)\n",
+	"2\n",
+	},
+	{"append_assign_to_self_nested",
+	"local dim a%{1}\n"
+	"for i% := 1 to 10\n"
+	"  a%{} = append(a%{}, 1)\n"
+	"next\n"
+	"print dim(a%{}, 1)\n",
+	"11\n",
+	},
+	{"append_assign_to_self_empty",
+	"local dim a%{}\n"
+	"local dim b%{}\n"
+	"a%{} = append(a%{}, b%{})\n"
+	"print dim(a%{}, 1)\n",
+	 "-1\n",
+	},
+	{"osargs",
+	"print osargs$\n",
+	"unit_test\n",
+	},
+	{"mid_str_var",
+	"list$ := \"hello world\"\n"
+	"start% := 4\n"
+	"end% := 20\n"
+	"print mid$(list$,start%, end%)\n"
+	"print start%\n"
+	"print end%\n",
+	"lo world\n4\n20\n",
+	},
+	{"memcmp_2",
+	"s$ := \"  -w  \"\n"
+	"s1$ := mid$(s$, 3, 2)\n"
+	"print s1$\n"
+	"print s1$ = \"-w\"\n",
+	"-w\n-1\n",
+	},
+	{"pass_return_empty_string",
+	 "b$ := FNReadFile$(\"\")\n"
+	 "print b$"
+	 "def FNReadFile$(fname$) <-fname$\n",
+	 "\n",
+	},
+	{"return_rec_vector_global",
+	"type REClines (\n"
+	"  dim nums%{}\n"
+	")\n"
+	"\n"
+	"a@REClines = FNfill@REClines(10)\n"
+	"print dim(a@REClines.nums%{}, 1)\n"
+	"\n"
+	"def FNfill@REClines(a%)\n"
+	"  local a@REClines\n"
+	"\n"
+	"  for i% := 0 to a%\n"
+	"    append(a@REClines.nums%{}, i%)\n"
+	"  next\n"
+	"<-a@REClines\n",
+	"10\n",
+	},
+	{"append_gran",
+	 "local dim a{}\n"
+	 "for i% = 1 to 17\n"
+	 "append(a{}, i%, 16)\n"
+	 "next\n"
+	 "range i := a{}\n"
+	 "print i\n"
+	 "endrange\n",
+	 "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n"
+	 "15\n16\n17\n",
+	},
+	{"append_bad_gran",
+	"onerror print err enderror\n"
+	"dim a%{}\n"
+	"b% := 0\n"
+	"append(a%{},1,b%)\n",
+	"10\n",
 	},
 };
 
