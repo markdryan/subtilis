@@ -156,7 +156,8 @@ cleanup:
 }
 
 size_t subtils_parser_array_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
-				   const subtilis_symbol_t *s, size_t mem_reg,
+				   const subtilis_type_t *stype, size_t loc,
+				   const char *var_name, size_t mem_reg,
 				   subtilis_type_t *type, subtilis_error_t *err)
 {
 	subtilis_exp_t *indices[SUBTILIS_MAX_DIMENSIONS];
@@ -177,7 +178,7 @@ size_t subtils_parser_array_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
 		return SIZE_MAX;
 	}
 
-	if (s->t.params.array.num_dims == 1)
+	if (stype->params.array.num_dims == 1)
 		dims =
 		    subtilis_round_bracketed_slice_have_b(p, t, indices, err);
 	else
@@ -189,13 +190,12 @@ size_t subtils_parser_array_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
 	if (dims == 0) {
 		/* What we have here is an array reference. */
 
-		subtilis_type_copy(type, &s->t, err);
+		subtilis_type_copy(type, stype, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		ret_val =
-		    subtilis_reference_get_pointer(p, mem_reg, s->loc, err);
+		ret_val = subtilis_reference_get_pointer(p, mem_reg, loc, err);
 		goto cleanup;
-	} else if ((s->t.params.array.num_dims == 1) && (dims == 2)) {
+	} else if ((stype->params.array.num_dims == 1) && (dims == 2)) {
 		subtilis_error_set_lvalue_expected(err, p->l->stream->name,
 						   p->l->line);
 		goto cleanup;
@@ -206,12 +206,12 @@ size_t subtils_parser_array_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
 	 * address.
 	 */
 
-	subtilis_type_if_element_type(p, &s->t, type, err);
+	subtilis_type_if_element_type(p, stype, type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_array_index_calc(p, s->key, &s->t, mem_reg, s->loc,
-				      indices, dims, err);
+	e = subtilis_array_index_calc(p, var_name, stype, mem_reg, loc, indices,
+				      dims, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -322,7 +322,8 @@ cleanup:
 }
 
 size_t subtils_parser_vector_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
-				    const subtilis_symbol_t *s, size_t mem_reg,
+				    const subtilis_type_t *stype, size_t loc,
+				    const char *var_name, size_t mem_reg,
 				    subtilis_type_t *type,
 				    subtilis_error_t *err)
 {
@@ -359,11 +360,10 @@ size_t subtils_parser_vector_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
 	if (dims == 0) {
 		/* What we have here is a vector reference. */
 
-		subtilis_type_copy(type, &s->t, err);
+		subtilis_type_copy(type, stype, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
-		ret_val =
-		    subtilis_reference_get_pointer(p, mem_reg, s->loc, err);
+		ret_val = subtilis_reference_get_pointer(p, mem_reg, loc, err);
 		goto cleanup;
 	}
 
@@ -372,12 +372,12 @@ size_t subtils_parser_vector_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
 	 * address.
 	 */
 
-	subtilis_type_if_element_type(p, &s->t, type, err);
+	subtilis_type_if_element_type(p, stype, type, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	e = subtilis_array_index_calc(p, s->key, &s->t, mem_reg, s->loc,
-				      indices, dims, err);
+	e = subtilis_array_index_calc(p, var_name, stype, mem_reg, loc, indices,
+				      dims, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

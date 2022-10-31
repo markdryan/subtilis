@@ -424,9 +424,9 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_bad_slice(e, num1, num2, file, line)                \
 	subtilis_error_set_int(e, SUBTILIS_ERROR_BAD_SLICE, num1, num2, file,  \
 			       line, __FILE__, __LINE__)
-#define subtilis_error_set_swap_type_mismatch(e, file, line)                   \
-	subtilis_error_set_syntax(e, SUBTILIS_ERROR_SWAP_TYPE_MISMATCH, file,  \
-				  line, __FILE__, __LINE__)
+#define subtilis_error_set_swap_type_mismatch(e, from, to, file, line)         \
+	subtilis_error_set2(e, SUBTILIS_ERROR_SWAP_TYPE_MISMATCH, from, to,    \
+			    file, line)
 #define subtilis_error_set_lvalue_expected(e, file, line)                      \
 	subtilis_error_set_syntax(e, SUBTILIS_ERROR_LVALUE_EXPECTED, file,     \
 				  line, __FILE__, __LINE__)

@@ -263,6 +263,89 @@ cleanup:
 	return NULL;
 }
 
+size_t subtilis_parser_rec_field_lvalue(subtilis_parser_t *p,
+					subtilis_token_t *t,
+					const subtilis_type_t *type,
+					size_t mem_reg, size_t loc,
+					subtilis_type_t *dst_type,
+					subtilis_error_t *err)
+{
+	size_t id;
+	const subtilis_type_t *field_type;
+	const subtilis_type_rec_t *rec;
+	const char *tbuf;
+	const char *obkt = NULL;
+	const char *cbkt = NULL;
+
+	do {
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+
+		tbuf = subtilis_token_get_text(t);
+		if ((t->type != SUBTILIS_TOKEN_IDENTIFIER)) {
+			subtilis_error_set_id_expected(
+			    err, tbuf, p->l->stream->name, p->l->line);
+			return SIZE_MAX;
+		}
+
+		rec = &type->params.rec;
+		id = subtilis_type_rec_find_field(rec, tbuf);
+		if (id == SIZE_MAX) {
+			subtilis_error_set_unknown_field(
+			    err, tbuf, p->l->stream->name, p->l->line);
+			return SIZE_MAX;
+		}
+
+		loc += (size_t)subtilis_type_rec_field_offset_id(rec, id);
+		field_type = &rec->field_types[id];
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+		tbuf = subtilis_token_get_text(t);
+		if (field_type->type != SUBTILIS_TYPE_REC)
+			break;
+		type = field_type;
+	} while ((t->type == SUBTILIS_TOKEN_OPERATOR) && !strcmp(tbuf, "."));
+
+	if (subtilis_type_if_is_array(field_type)) {
+		obkt = "(";
+		cbkt = ")";
+	} else if (subtilis_type_if_is_vector(field_type)) {
+		obkt = "{";
+		cbkt = "}";
+	}
+
+	if (obkt) {
+		tbuf = subtilis_token_get_text(t);
+		if ((t->type != SUBTILIS_TOKEN_OPERATOR) ||
+		    strcmp(tbuf, obkt)) {
+			subtilis_error_set_exp_expected(
+			    err, obkt, p->l->stream->name, p->l->line);
+			return SIZE_MAX;
+		}
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+		tbuf = subtilis_token_get_text(t);
+		if ((t->type != SUBTILIS_TOKEN_OPERATOR) ||
+		    strcmp(tbuf, cbkt)) {
+			subtilis_error_set_exp_expected(
+			    err, cbkt, p->l->stream->name, p->l->line);
+			return SIZE_MAX;
+		}
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return SIZE_MAX;
+	}
+
+	subtilis_type_copy(dst_type, field_type, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return SIZE_MAX;
+
+	return subtilis_reference_get_pointer(p, mem_reg, loc, err);
+}
+
 subtilis_exp_t *subtilis_parser_rec_exp(subtilis_parser_t *p,
 					subtilis_token_t *t,
 					const subtilis_type_t *type,
