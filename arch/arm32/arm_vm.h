@@ -63,7 +63,7 @@ struct subtilis_arm_vm_t_ {
 	uint32_t fpscr;
 	bool vfp;
 	// clang-format off
-	FILE * files[SUBTILIS_ARM_VM_MAX_FILES];
+	FILE *files[SUBTILIS_ARM_VM_MAX_FILES];
 
 	// clang-format on
 };

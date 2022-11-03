@@ -53,7 +53,7 @@ struct subitlis_vm_t_ {
 	size_t *constants;
 	size_t max_constants;
 	// clang-format off
-	FILE * files[SUBTILIS_VM_MAX_FILES];
+	FILE *files[SUBTILIS_VM_MAX_FILES];
 
 	// clang-format on
 	size_t cmd_line_ptr;
