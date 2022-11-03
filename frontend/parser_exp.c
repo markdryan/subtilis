@@ -137,6 +137,85 @@ static subtilis_exp_t *prv_not_exp(subtilis_parser_t *p, subtilis_token_t *t,
 	return subtilis_type_if_not(p, e, err);
 }
 
+bool subtilis_exp_get_lvalue_with_sym(subtilis_parser_t *p, subtilis_token_t *t,
+				      const subtilis_type_t *stype,
+				      const char *var_name, size_t mem_reg,
+				      size_t loc, subtilis_ir_operand_t *op,
+				      subtilis_type_t *type, bool is_reg,
+				      subtilis_error_t *err)
+{
+	const char *tbuf;
+
+	if (subtilis_type_if_is_numeric(stype) ||
+	    (stype->type == SUBTILIS_TYPE_FN) ||
+	    (stype->type == SUBTILIS_TYPE_STRING)) {
+		subtilis_type_copy(type, stype, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return false;
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return false;
+
+		if (is_reg) {
+			op->reg = loc;
+			return true;
+		}
+		op->reg = subtilis_reference_get_pointer(p, mem_reg, loc, err);
+
+		return false;
+	}
+
+	if (stype->type == SUBTILIS_TYPE_REC) {
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return false;
+
+		tbuf = subtilis_token_get_text(t);
+		if ((t->type != SUBTILIS_TOKEN_OPERATOR) || strcmp(tbuf, ".")) {
+			subtilis_type_copy(type, stype, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return false;
+			op->reg = subtilis_reference_get_pointer(p, mem_reg,
+								 loc, err);
+			return false;
+		}
+
+		/*
+		 * Otherwise we have a record field.  We'll recursively call
+		 * into this function via subtilis_parser_rec_field_lvalue.
+		 */
+
+		op->reg = subtilis_parser_rec_field_lvalue(p, t, stype, mem_reg,
+							   loc, type, err);
+		return false;
+	}
+
+	/*
+	 * Need special handling for arrays and vectors
+	 */
+
+	if (subtilis_type_if_is_array(stype)) {
+		op->reg = subtils_parser_array_lvalue(
+		    p, t, stype, loc, var_name, mem_reg, type, err);
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return false;
+		return false;
+	}
+
+	if (subtilis_type_if_is_vector(stype)) {
+		op->reg = subtils_parser_vector_lvalue(
+		    p, t, stype, loc, var_name, mem_reg, type, err);
+		subtilis_lexer_get(p->l, t, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return false;
+		return false;
+	}
+
+	subtilis_error_set_assertion_failed(err);
+	return false;
+}
+
 bool subtilis_exp_get_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
 			     subtilis_ir_operand_t *op, subtilis_type_t *type,
 			     subtilis_error_t *err)
@@ -160,40 +239,8 @@ bool subtilis_exp_get_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return false;
 
-	if (subtilis_type_if_is_numeric(&s->t) ||
-	    (s->t.type == SUBTILIS_TYPE_FN) ||
-	    (s->t.type == SUBTILIS_TYPE_REC) ||
-	    (s->t.type == SUBTILIS_TYPE_STRING)) {
-		subtilis_type_copy(type, &s->t, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return false;
-		if (s->is_reg) {
-			op->reg = s->loc;
-			return true;
-		}
-		op->reg =
-		    subtilis_reference_get_pointer(p, mem_reg, s->loc, err);
-		return false;
-	}
-
-	/*
-	 * Need special handling for arrays and vectors
-	 */
-
-	if (subtilis_type_if_is_array(&s->t)) {
-		op->reg =
-		    subtils_parser_array_lvalue(p, t, s, mem_reg, type, err);
-		return false;
-	}
-
-	if (subtilis_type_if_is_vector(&s->t)) {
-		op->reg =
-		    subtils_parser_vector_lvalue(p, t, s, mem_reg, type, err);
-		return false;
-	}
-
-	subtilis_error_set_assertion_failed(err);
-	return false;
+	return subtilis_exp_get_lvalue_with_sym(
+	    p, t, &s->t, s->key, mem_reg, s->loc, op, type, s->is_reg, err);
 }
 
 static subtilis_exp_t *prv_lookup_var(subtilis_parser_t *p, subtilis_token_t *t,

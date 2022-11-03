@@ -6426,6 +6426,51 @@ const subtilis_test_case_t test_cases[] = {
 	"append(a%{},1,b%)\n",
 	"10\n",
 	},
+	{"swap_rec_field",
+	"type RECA (\n"
+	"     c\n"
+	"     a%\n"
+	"     dim e$(2)\n"
+	"     dim f&{1}\n"
+	"     b$\n"
+	")\n"
+	"type RECB (c a@RECA)\n"
+	"type RECC (c a@RECB)\n"
+	"\n"
+	"a@RECC := ( 1, ( 2, ( 3, 4, (\"hello\", \"world\"), ( 100, 101), \"hooray\")))\n"
+	"c := 11\n"
+	"a% = 12\n"
+	"dim e$(2)\n"
+	"e$() = \"goodbye\", \"cruel\", \"universe\"\n"
+	"dim f&{1}\n"
+	"f&{} = 0, 1\n"
+	"b$ := \"whoops\"\n"
+	"\n"
+	"swap c, a@RECC.a@RECB.a@RECA.c\n"
+	"print c\n"
+	"print a@RECC.a@RECB.a@RECA.c\n"
+	"\n"
+	"swap a%, a@RECC.a@RECB.a@RECA.a%\n"
+	"print a%\n"
+	"print a@RECC.a@RECB.a@RECA.a%\n"
+	"\n"
+	"swap e$(), a@RECC.a@RECB.a@RECA.e$()\n"
+	"range s$ := e$() print s$ endrange\n"
+	"range s$ := a@RECC.a@RECB.a@RECA.e$() print s$ endrange\n"
+	"\n"
+	"swap f&{}, a@RECC.a@RECB.a@RECA.f&{}\n"
+	"range b& := f&{} print b& endrange\n"
+	"range b& := a@RECC.a@RECB.a@RECA.f&{} print b& endrange\n"
+	"\n"
+	"swap b$, a@RECC.a@RECB.a@RECA.b$\n"
+	"print b$\n"
+	"print a@RECC.a@RECB.a@RECA.b$\n"
+	"swap c, a@RECC.c\n"
+	"print c\n"
+	"print a@RECC.c\n",
+	"3\n11\n4\n12\nhello\nworld\n\ngoodbye\ncruel\nuniverse\n"
+	"100\n101\n0\n1\nhooray\nwhoops\n1\n3\n",
+	},
 };
 
 /* clang-format on */

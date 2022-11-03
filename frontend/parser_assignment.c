@@ -1231,6 +1231,13 @@ void subtilis_parser_let(subtilis_parser_t *p, subtilis_token_t *t,
 	subtilis_parser_assignment(p, t, err);
 }
 
+static void prv_swap_mismatch(subtilis_parser_t *p, const char *expected,
+			      const char *got, void *ud, subtilis_error_t *err)
+{
+	subtilis_error_set_swap_type_mismatch(err, expected, got,
+					      p->l->stream->name, p->l->line);
+}
+
 void subtilis_parser_swap(subtilis_parser_t *p, subtilis_token_t *t,
 			  subtilis_error_t *err)
 {
@@ -1249,10 +1256,6 @@ void subtilis_parser_swap(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	subtilis_lexer_get(p->l, t, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		goto cleanup;
-
 	tbuf = subtilis_token_get_text(t);
 	if (t->type != SUBTILIS_TOKEN_OPERATOR || strcmp(tbuf, ",")) {
 		subtilis_error_set_expected(err, ",", tbuf, p->l->stream->name,
@@ -1264,11 +1267,10 @@ void subtilis_parser_swap(subtilis_parser_t *p, subtilis_token_t *t,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	if (!subtilis_type_eq(&ltype, &rtype)) {
-		subtilis_error_set_swap_type_mismatch(err, p->l->stream->name,
-						      p->l->line);
+	subtilis_type_compare_diag_custom(p, &ltype, &rtype, NULL,
+					  prv_swap_mismatch, err);
+	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	}
 
 	if (lreg) {
 		if (rreg)
@@ -1284,8 +1286,6 @@ void subtilis_parser_swap(subtilis_parser_t *p, subtilis_token_t *t,
 	}
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-
-	subtilis_lexer_get(p->l, t, err);
 
 cleanup:
 

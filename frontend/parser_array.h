@@ -44,11 +44,13 @@ subtilis_exp_t *subtils_parser_read_array_with_type(subtilis_parser_t *p,
 /* clang-format on */
 
 size_t subtils_parser_array_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
-				   const subtilis_symbol_t *s, size_t mem_reg,
+				   const subtilis_type_t *stype, size_t loc,
+				   const char *var_name, size_t mem_reg,
 				   subtilis_type_t *type,
 				   subtilis_error_t *err);
 size_t subtils_parser_vector_lvalue(subtilis_parser_t *p, subtilis_token_t *t,
-				    const subtilis_symbol_t *s, size_t mem_reg,
+				    const subtilis_type_t *stype, size_t loc,
+				    const char *var_name, size_t mem_reg,
 				    subtilis_type_t *type,
 				    subtilis_error_t *err);
 subtilis_exp_t *subtils_parser_read_vector(subtilis_parser_t *p,

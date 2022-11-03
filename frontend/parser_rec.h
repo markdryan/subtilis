@@ -23,6 +23,12 @@
 char *subtilis_parser_parse_rec_type(subtilis_parser_t *p, subtilis_token_t *t,
 				     subtilis_type_t *type,
 				     subtilis_error_t *err);
+size_t subtilis_parser_rec_field_lvalue(subtilis_parser_t *p,
+					subtilis_token_t *t,
+					const subtilis_type_t *type,
+					size_t mem_reg, size_t loc,
+					subtilis_type_t *dst_type,
+					subtilis_error_t *err);
 subtilis_exp_t *subtilis_parser_rec_exp(subtilis_parser_t *p,
 					subtilis_token_t *t,
 					const subtilis_type_t *type,
