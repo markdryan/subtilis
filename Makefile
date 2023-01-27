@@ -1,4 +1,4 @@
-VPATH = common frontend test_cases arch/arm32 backends/riscos backends/ptd backends/riscos_common
+VPATH = common frontend test_cases arch/arm32 arch/rv32 backends/riscos backends/ptd backends/riscos_common backends/rv_bare
 
 COMMON =\
 	stream.c \
@@ -67,6 +67,9 @@ RISCOS_ARM2 =\
 	riscos_swi.c \
 	riscos_arm2.c
 
+RV_BARE = \
+	rv_bare.c
+
 PTD =\
 	ptd_swi.c \
 	ptd.c
@@ -92,6 +95,12 @@ ARM =\
 	assembler.c \
 	arm_expression.c
 
+RV =\
+	rv_core.c \
+	rv_keywords.c \
+	rv_walker.c \
+	rv_dump.c
+
 FPA =\
 	fpa_gen.c \
 	fpa_alloc.c \
@@ -108,6 +117,9 @@ SUBTRO =\
 
 SUBTPTD =\
 	subtptd.c
+
+SUBTRV =\
+	subtrv.c
 
 INTER =\
 	inter.c \
@@ -153,7 +165,10 @@ CFLAGS ?= -O3
 CFLAGS += -Wall -MMD
 
 .PHONY: all
-all: subtro subtptd
+all: subtro subtptd subtrv
+
+subtrv: $(SUBTRV:%.c=%.o) $(COMMON:%.c=%.o) $(RV:%.c=%.o) $(RV_BARE:%.c=%.o)
+	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 subtro: $(SUBTRO:%.c=%.o) $(COMMON:%.c=%.o) $(ARM:%.c=%.o) $(FPA:%.c=%.o) $(RISCOS_ARM2:%.c=%.o) $(RISCOS_COMMON:%.c=%.o)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
@@ -183,6 +198,8 @@ check: unit_tests
 	./unit_tests
 
 -include $(ARM:%.c=%.d)
+-include $(RV:%.c=%.d)
+-include $(RV_BARE:%.c=%.d)
 -include $(FPA:%.c=%.d)
 -include $(VFP:%.c=%.d)
 -include $(PTD:%.c=%.d)

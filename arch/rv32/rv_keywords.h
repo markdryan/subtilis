@@ -1,0 +1,88 @@
+/*
+ * Copyright (c) 2023 Mark Ryan
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef SUBTILIS_RV_KEYWORDS_H
+#define SUBTILIS_RV_KEYWORDS_H
+
+#include "../../common/keywords.h"
+
+/* clang-format off */
+enum {
+	SUBTILIS_RV_KEYWORD_ABS = SUBTILIS_KEYWORD_COMMON_MAX,
+	SUBTILIS_RV_KEYWORD_ALIGN,
+	SUBTILIS_RV_KEYWORD_ACS,
+	SUBTILIS_RV_KEYWORD_AND,
+	SUBTILIS_RV_KEYWORD_ASC,
+	SUBTILIS_RV_KEYWORD_ASN,
+	SUBTILIS_RV_KEYWORD_ATN,
+	SUBTILIS_RV_KEYWORD_CHR_STR,
+	SUBTILIS_RV_KEYWORD_COS,
+	SUBTILIS_RV_KEYWORD_DIV,
+	SUBTILIS_RV_KEYWORD_EOR,
+	SUBTILIS_RV_KEYWORD_EXP,
+	SUBTILIS_RV_KEYWORD_FALSE,
+	SUBTILIS_RV_KEYWORD_FOR,
+	SUBTILIS_RV_KEYWORD_INT,
+	SUBTILIS_RV_KEYWORD_LEFT_STR,
+	SUBTILIS_RV_KEYWORD_LEN,
+	SUBTILIS_RV_KEYWORD_LN,
+	SUBTILIS_RV_KEYWORD_LOG,
+	SUBTILIS_RV_KEYWORD_MID_STR,
+	SUBTILIS_RV_KEYWORD_MOD,
+	SUBTILIS_RV_KEYWORD_NEXT,
+	SUBTILIS_RV_KEYWORD_NOT,
+	SUBTILIS_RV_KEYWORD_OR,
+	SUBTILIS_RV_KEYWORD_PI,
+	SUBTILIS_RV_KEYWORD_RAD,
+	SUBTILIS_RV_KEYWORD_RIGHT_STR,
+	SUBTILIS_RV_KEYWORD_SGN,
+	SUBTILIS_RV_KEYWORD_SIN,
+	SUBTILIS_RV_KEYWORD_SQR,
+	SUBTILIS_RV_KEYWORD_STR_STR,
+	SUBTILIS_RV_KEYWORD_STRING_STR,
+	SUBTILIS_RV_KEYWORD_TAN,
+	SUBTILIS_RV_KEYWORD_TO,
+	SUBTILIS_RV_KEYWORD_TRUE,
+
+	// ARM specific
+
+	SUBTILIS_RV_KEYWORD_EQUB,
+	SUBTILIS_RV_KEYWORD_EQUD,
+	SUBTILIS_RV_KEYWORD_EQUDBL,
+	SUBTILIS_RV_KEYWORD_EQUDBLR,
+	SUBTILIS_RV_KEYWORD_EQUF,
+	SUBTILIS_RV_KEYWORD_EQUW,
+	SUBTILIS_RV_KEYWORD_EQUS,
+	SUBTILIS_RV_KEYWORD_DEF,
+
+	SUBTILIS_RV_KEYWORD_MAX
+};
+
+/* clang-format on */
+
+/*
+ * REC, PROC and FN are upper case only.
+ */
+
+#define SUBTILIS_RV_KEYWORD_TOKENS ((SUBTILIS_RV_KEYWORD_MAX * 2) - 3)
+
+/* clang-format off */
+extern const
+subtilis_keyword_t subtilis_rv_keywords_list[SUBTILIS_RV_KEYWORD_TOKENS];
+
+/* clang-format on */
+
+#endif
