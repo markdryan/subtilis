@@ -50,4 +50,7 @@ subtilis_rv_bare_generate(
 
 #define SUBTILIS_RV_CAPS 0
 
+void subtilis_rv_bare_end(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
+
 #endif

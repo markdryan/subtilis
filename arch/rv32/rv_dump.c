@@ -22,48 +22,48 @@
 /* clang-format off */
 
 static const char *const instr_desc[] = {
-	"ADDI",     // SUBTILIS_RV_ADDI,
-	"SLTI",     // SUBTILIS_RV_SLTI,
-	"SLTIU",    // SUBTILIS_RV_SLTIU,
-	"ANDI",     // SUBTILIS_RV_ANDI,
-	"ORI",      // SUBTILIS_RV_ORI,
-	"XORI",     // SUBTILIS_RV_XORI,
-	"SLLI",     // SUBTILIS_RV_SLLI,
-	"SRLI",     // SUBTILIS_RV_SRLI,
-	"SRAI",     // SUBTILIS_RV_SRAI,
-	"LUI",      // SUBTILIS_RV_LUI,
-	"AUIPC",    // SUBTILIS_RV_AUIPC,
-	"ADD",      // SUBTILIS_RV_ADD,
-	"SLT",      // SUBTILIS_RV_SLT,
-	"SLTU"      // SUBTILIS_RV_SLTU,
-	"AND",      // SUBTILIS_RV_AND,
-	"OR",       // SUBTILIS_RV_OR,
-	"XOR",      // SUBTILIS_RV_XOR,
-	"SLL",      // SUBTILIS_RV_SLL,
-	"SRL",      // SUBTILIS_RV_SRL,
-	"SUB",      // SUBTILIS_RV_SUB,
-	"SRA",      // SUBTILIS_RV_SRA,
-	"NOP",      // SUBTILIS_RV_NOP,
-	"JAL",      // SUBTILIS_RV_JAL,
-	"JALR",     // SUBTILIS_RV_JALR,
-	"BEQ",      // SUBTILIS_RV_BEQ,
-	"BNE",      // SUBTILIS_RV_BNE,
-	"BLT",      // SUBTILIS_RV_BLT,
-	"BLTU",     // SUBTILIS_RV_BLTU,
-	"BGE",      // SUBTILIS_RV_BGE,
-	"BGEU",     // SUBTILIS_RV_BGEU,
-	"LW",       // SUBTILIS_RV_LW,
-	"LH",       // SUBTILIS_RV_LH,
-	"LHU",      // SUBTILIS_RV_LHU,
-	"LB",       // SUBTILIS_RV_LB,
-	"LBU",      // SUBTILIS_RV_LBU,
-	"SW",       // SUBTILIS_RV_SW,
-	"SH",       // SUBTILIS_RV_SH,
-	"SB",       // SUBTILIS_RV_SB,
-	"FENCE",    // SUBTILIS_RV_FENCE,
-	"ECALL",    // SUBTILIS_RV_ECALL,
-	"EBREAK",   // SUBTILIS_RV_EBREAK,
-	"HINT",      // SUBTILIS_RV_HINT,
+	"addi",     // SUBTILIS_RV_ADDI,
+	"slti",     // SUBTILIS_RV_SLTI,
+	"sltiu",    // SUBTILIS_RV_SLTIU,
+	"andi",     // SUBTILIS_RV_ANDI,
+	"ori",      // SUBTILIS_RV_ORI,
+	"xori",     // SUBTILIS_RV_XORI,
+	"slli",     // SUBTILIS_RV_SLLI,
+	"srli",     // SUBTILIS_RV_SRLI,
+	"srai",     // SUBTILIS_RV_SRAI,
+	"lui",      // SUBTILIS_RV_LUI,
+	"auipc",    // SUBTILIS_RV_AUIPC,
+	"add",      // SUBTILIS_RV_ADD,
+	"slt",      // SUBTILIS_RV_SLT,
+	"sltu",     // SUBTILIS_RV_SLTU,
+	"and",      // SUBTILIS_RV_AND,
+	"or",       // SUBTILIS_RV_OR,
+	"xor",      // SUBTILIS_RV_XOR,
+	"sll",      // SUBTILIS_RV_SLL,
+	"srl",      // SUBTILIS_RV_SRL,
+	"sub",      // SUBTILIS_RV_SUB,
+	"sra",      // SUBTILIS_RV_SRA,
+	"nop",      // SUBTILIS_RV_NOP,
+	"jal",      // SUBTILIS_RV_JAL,
+	"jalr",     // SUBTILIS_RV_JALR,
+	"beq",      // SUBTILIS_RV_BEQ,
+	"bne",      // SUBTILIS_RV_BNE,
+	"blt",      // SUBTILIS_RV_BLT,
+	"bltu",     // SUBTILIS_RV_BLTU,
+	"bge",      // SUBTILIS_RV_BGE,
+	"bgeu",     // SUBTILIS_RV_BGEU,
+	"lw",       // SUBTILIS_RV_LW,
+	"lh",       // SUBTILIS_RV_LH,
+	"lhu",      // SUBTILIS_RV_LHU,
+	"lb",       // SUBTILIS_RV_LB,
+	"lbu",      // SUBTILIS_RV_LBU,
+	"sw",       // SUBTILIS_RV_SW,
+	"sh",       // SUBTILIS_RV_SH,
+	"sb",       // SUBTILIS_RV_SB,
+	"fence",    // SUBTILIS_RV_FENCE,
+	"ecall",    // SUBTILIS_RV_ECALL,
+	"ebreak",   // SUBTILIS_RV_EBREAK,
+	"hint",     // SUBTILIS_RV_HINT,
 };
 
 /* clang-format on */
@@ -119,9 +119,16 @@ static void prv_dump_i(void *user_data, subtilis_rv_op_t *op,
 		       subtilis_rv_instr_encoding_t etype,
 		       rv_itype_t *i, subtilis_error_t *err)
 {
-	if ((itype == SUBTILIS_RV_ADDI) && (i->rd == 0)
-		&& (i->rs1 == 0)) {
-		printf("\tNOP\n");
+	if ((itype == SUBTILIS_RV_ADDI) && (i->rs1 == 0)) {
+		if (i->rd == 0) {
+			printf("\tnop\n");
+		} else {
+			printf("\tmv x%zu, %d\n", i->rd, i->imm);
+		}
+	}
+
+	if ((itype == SUBTILIS_RV_ECALL) || (itype == SUBTILIS_RV_EBREAK)) {
+		printf("\t%s\n", instr_desc[itype]);
 		return;
 	}
 
@@ -135,7 +142,7 @@ static void prv_dump_sb(void *user_data, subtilis_rv_op_t *op,
 			rv_sbtype_t *sb, subtilis_error_t *err)
 {
 	printf("\t%s x%zu, x%zu, %d\n", instr_desc[itype],
-	       sb->rds1, sb->rs2, sb->imm);
+	       sb->rs1, sb->rs2, sb->imm);
 }
 
 static void prv_dump_uj(void *user_data, subtilis_rv_op_t *op,
@@ -144,7 +151,7 @@ static void prv_dump_uj(void *user_data, subtilis_rv_op_t *op,
 			rv_ujtype_t *uj, subtilis_error_t *err)
 {
 	if ((itype == SUBTILIS_RV_JAL) && (uj->rd == 0)) {
-		printf("\tJ  %d\n", uj->imm);
+		printf("\tj  %d\n", uj->imm);
 		return;
 	}
 	if (itype == SUBTILIS_RV_LUI) {

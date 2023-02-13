@@ -99,7 +99,8 @@ RV =\
 	rv_core.c \
 	rv_keywords.c \
 	rv_walker.c \
-	rv_dump.c
+	rv_dump.c \
+	rv_gen.c
 
 FPA =\
 	fpa_gen.c \

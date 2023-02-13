@@ -18,6 +18,25 @@
 
 #include "rv_bare.h"
 
+#include "../../arch/rv32/rv_gen.h"
+
+/*
+ * The linker is going to generate a simple ELF executable for us
+ * With two sections.
+ * 1. Text containing program code.
+ * 2. BSS section containing heap pointer + global data.
+ *
+ * Spike pk sets up the stack register for us so we don't need
+ * to initialise that.
+ *
+ * Our program will start with two instructions to load the address
+ * of the global pointer into x3.
+ *
+ * x2 is the stack
+ * x3 points to the start of our global data
+ * x4 is the heap pointer
+ */
+
 const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 /*
 	 {"ltii32 r_1, *, *\n"
@@ -165,7 +184,9 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 {"ltei32 *, *, *\n", subtilis_arm_gen_ltei32},
 	 {"lter *, *, *\n", subtilis_fpa_gen_lter},
 	 {"mov *, *", subtilis_arm_gen_mov},
-	 {"movii32 *, *", subtilis_arm_gen_movii32},
+*/
+	 {"movii32 *, *", subtilis_rv_gen_movii32},
+	 /*
 	 {"addii32 *, *, *", subtilis_arm_gen_addii32},
 	 {"mulii32 *, *, *", subtilis_arm_gen_mulii32},
 	 {"muli32 *, *, *", subtilis_arm_gen_muli32},
@@ -174,10 +195,14 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 {"addi32 *, *, *", subtilis_arm_gen_addi32},
 	 {"subi32 *, *, *", subtilis_arm_gen_subi32},
 	 {"storeoi8 *, *, *", subtilis_arm_gen_storeoi8},
-	 {"storeoi32 *, *, *", subtilis_arm_gen_storeoi32},
+	 */
+	 {"storeoi32 *, *, *", subtilis_rv_gen_storeoi32},
+	 /*
 	 {"loadoi8 *, *, *", subtilis_arm_gen_loadoi8},
 	 {"loadoi32 *, *, *", subtilis_arm_gen_loadoi32},
-	 {"label_1", subtilis_arm_gen_label},
+	 */
+	 {"label_1", subtilis_rv_gen_label},
+	 /*
 	 {"printstr *, *\n", subtilis_riscos_arm_printstr},
 	 {"printnl\n", subtilis_riscos_arm_printnl},
 	 {"jmp *\n", subtilis_arm_gen_jump},
@@ -240,7 +265,9 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 {"vdu *\n", subtilis_riscos_arm_vdu},
 	 {"point *, *, *\n", subtilis_riscos_arm_point},
 	 {"tint *, *, *\n", subtilis_riscos_arm_tint},
-	 {"end\n", subtilis_riscos_arm_end},
+	 */
+	 {"end\n", subtilis_rv_bare_end},
+/*
 	 {"testesc\n", subtilis_riscos_arm_testesc},
 	 {"ref *\n", subtilis_riscos_arm_ref},
 	 {"getref *, *\n", subtilis_riscos_arm_getref},
@@ -313,58 +340,180 @@ void *subtilis_rv_bare_asm_parse(subtilis_lexer_t *l, subtilis_token_t *t,
 	return NULL;
 }
 
+static void prv_add_coda(subtilis_rv_section_t *rv_s, subtilis_error_t *err)
+{
+	subtilis_rv_section_add_mv(rv_s, SUBTILIS_RV_REG_A0, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_li(rv_s, SUBTILIS_RV_REG_A7, 93, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_ecall(rv_s, err);
+}
+
+void subtilis_rv_bare_end(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	subtilis_rv_section_t *rv_s = user_data;
+
+	prv_add_coda(rv_s, err);
+}
+
+static void prv_mmap_heap(subtilis_rv_section_t *rv_s, subtilis_error_t *err)
+{
+	uint32_t heap_size = 1024 * 1024;
+
+	subtilis_rv_section_add_mv(rv_s, SUBTILIS_RV_REG_A0, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_lui(rv_s, SUBTILIS_RV_REG_A1, heap_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_addi(rv_s, SUBTILIS_RV_REG_A1,
+				     SUBTILIS_RV_REG_A1, heap_size, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_li(rv_s, SUBTILIS_RV_REG_A2, 3, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_li(rv_s, SUBTILIS_RV_REG_A3, 0x22, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_li(rv_s, SUBTILIS_RV_REG_A4, -1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_mv(rv_s, SUBTILIS_RV_REG_A5, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_li(rv_s, SUBTILIS_RV_REG_A6, 222, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_ecall(rv_s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * Store heap pointer in x4.
+	 */
+
+	subtilis_rv_section_add_mv(rv_s, SUBTILIS_RV_REG_HEAP,
+				   SUBTILIS_RV_REG_A0, err);
+}
+
 static void prv_add_preamble(subtilis_rv_section_t *rv_s, size_t globals,
 			     subtilis_error_t *err)
 {
-	size_t needed;
-//	subtilis_rv_instr_t *instr;
-	const uint32_t stack_size = 8192;
-//	const uint32_t min_heap_size = subtilis_arm_heap_min_size();
-	const uint32_t min_heap_size = 0;
-
-	/* globals needs to be divisible by 4. */
-
-	if (globals & 3)
-		globals += 4 - (globals & 3);
-	needed = globals + stack_size + min_heap_size;
-
-	if (needed > 0xffffffff) {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
-
 	/*
-	 * Need to skip next word which will contain the start address of the
-	 * data section, then we need to add an instruction to load this address
-	 * so we can set up the stack (and eventually the heap).
+	 * These first two instructions will store the address of the data
+	 * section, which we won't know until link time.
 	 */
 
-	subtilis_rv_section_add_known_jal(rv_s, 0, 4, err);
+	subtilis_rv_section_add_lui(rv_s, 3, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_rv_section_add_nop(rv_s, err);
+	subtilis_rv_section_add_addi(rv_s, 3, 0, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	/*
-	 * Not quite sure how this will work in practice.  I'm not
-	 * sure if it really makes sense to do a bare rv, rather than
-	 * an elf RV.  For now we'll just assume that we have 640kb
-	 * free for the whole program.
+	 * Set up the heap in X4.
 	 */
 
-	subtilis_rv_section_mv(rv_s, 1, SUBTILIS_RV_PROGRAM_SIZE, err);
+	prv_mmap_heap(rv_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-
 }
 
 static void prv_add_section(subtilis_ir_section_t *s,
-			    subtilis_rv_section_t *arm_s,
+			    subtilis_rv_section_t *rv_s,
 			    subtilis_ir_rule_t *parsed, size_t rule_count,
 			    subtilis_error_t *err)
 {
+	size_t lui_instr;
+	size_t addi_instr;
+	size_t spill_regs;
+	size_t stack_space;
+	subtilis_rv_instr_t *stack_addi;
+	subtilis_rv_instr_t *stack_lui;
+
+	/*
+	 * Store required stack space in x5.  At this stage we don't know
+	 * how much stack space we're going to need so we're going to have
+	 * to do an lui + addi and fill the values in later.
+	 */
+
+	subtilis_rv_section_add_lui(rv_s, 5, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	lui_instr = rv_s->last_op;
+
+	subtilis_rv_section_add_addi(rv_s, 5, 0, 0, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	addi_instr = rv_s->last_op;
+
+	/*
+	 * Reserve space on the stack.
+	 */
+
+	subtilis_rv_section_add_sub(rv_s, SUBTILIS_RV_REG_STACK,
+				    SUBTILIS_RV_REG_STACK, 5, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * Set up local pointer
+	 */
+
+	subtilis_rv_section_add_mv(rv_s, SUBTILIS_RV_REG_LOCAL,
+				   SUBTILIS_RV_REG_STACK, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_ir_match(s, parsed, rule_count, rv_s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	prv_compute_sss(arm_s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	spill_regs = subtilis_arm_reg_alloc(arm_s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	*/
+
+	spill_regs = 0;
+
+	stack_space = spill_regs + rv_s->locals;
+
+	if (stack_space & 4095) {
+		stack_addi = &rv_s->op_pool->ops[addi_instr].op.instr;
+		stack_addi->operands.i.imm = stack_space & 4095;
+	}
+
+	if (stack_space > 4096) {
+		stack_lui = &rv_s->op_pool->ops[lui_instr].op.instr;
+		stack_lui->operands.uj.imm = stack_space >> 12;
+	}
+
+
+
 #if 0
 	size_t spill_regs;
 	size_t stack_space;
@@ -431,7 +580,7 @@ static void prv_add_section(subtilis_ir_section_t *s,
 	subtilis_arm_restore_stack(arm_s, encoded, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	subtilis_arm_peephole(arm_s, err);
+//	subtilis_arm_peephole(arm_s, err);
 #endif
 }
 

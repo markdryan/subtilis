@@ -22,6 +22,28 @@
 #include "../../common/ir.h"
 #include "../../common/sizet_vector.h"
 
+#define SUBTILIS_RV_REG_STACK 2
+#define SUBTILIS_RV_REG_GLOBAL 3
+#define SUBTILIS_RV_REG_HEAP 4
+#define SUBTILIS_RV_REG_LOCAL 8
+#define SUBTILIS_RV_REG_A0 10
+#define SUBTILIS_RV_REG_A1 11
+#define SUBTILIS_RV_REG_A2 12
+#define SUBTILIS_RV_REG_A3 13
+#define SUBTILIS_RV_REG_A4 14
+#define SUBTILIS_RV_REG_A5 15
+#define SUBTILIS_RV_REG_A6 16
+#define SUBTILIS_RV_REG_A7 17
+
+/*
+ * Two register namespaces overlap for each register type, int or real.
+ * For integers register numbers < 32 are fixed and will not be altered
+ * by the register allocator.
+ */
+
+#define SUBTILIS_RV_INT_VIRT_REG_START 32
+
+
 #define RV_MAX_REG_ARGS 8
 
 typedef size_t subtilis_rv_reg_t;
@@ -47,7 +69,7 @@ struct rv_labeltype_t_ {
 typedef struct rv_labeltype_t_ rv_labeltype_t;
 
 struct rv_sbtype_t_ {
-	subtilis_rv_reg_t rds1;
+	subtilis_rv_reg_t rs1;
 	subtilis_rv_reg_t rs2;
 	uint32_t imm;
 };
@@ -279,12 +301,33 @@ subtilis_rv_section_add_utype(subtilis_rv_section_t *s,
 			      uint32_t imm,  subtilis_error_t *err);
 
 void
-subtilis_rv_section_mv(subtilis_rv_section_t *s,
-		       subtilis_rv_reg_t rd,
-		       int32_t imm,  subtilis_error_t *err);
+subtilis_rv_section_add_stype(subtilis_rv_section_t *s,
+			      subtilis_rv_instr_type_t itype,
+			      subtilis_rv_reg_t rs1,
+			      subtilis_rv_reg_t rs2,
+			      uint32_t imm, subtilis_error_t *err);
+
+void
+subtilis_rv_section_add_rtype(subtilis_rv_section_t *s,
+			      subtilis_rv_instr_type_t itype,
+			      subtilis_rv_reg_t rd,
+			      subtilis_rv_reg_t rs1,
+			      subtilis_rv_reg_t rs2,
+			      subtilis_error_t *err);
+
+
+void
+subtilis_rv_section_add_li(subtilis_rv_section_t *s,
+			   subtilis_rv_reg_t rd,
+			   int32_t imm,  subtilis_error_t *err);
+
+void subtilis_rv_section_add_label(subtilis_rv_section_t *s, size_t label,
+				   subtilis_error_t *err);
 
 #define subtilis_rv_section_add_addi(s, rd, rs1, imm, err) \
 	subtilis_rv_section_add_itype(s, SUBTILIS_RV_ADDI, rd, rs1, imm, err)
+#define subtilis_rv_section_add_mv(s, rd, rs, err) \
+	subtilis_rv_section_add_itype(s, SUBTILIS_RV_ADDI, rd, rs, 0, err)
 #define subtilis_rv_section_add_ori(s, rd, rs1, imm, err) \
 	subtilis_rv_section_add_itype(s, SUBTILIS_RV_ORI, rd, rs1, imm, err)
 #define subtilis_rv_section_add_andi(s, rd, rs1, imm, err) \
@@ -295,11 +338,47 @@ subtilis_rv_section_mv(subtilis_rv_section_t *s,
 	subtilis_rv_section_add_itype(s, SUBTILIS_RV_SLTI, rd, rs1, imm, err)
 #define subtilis_rv_section_add_sltui(s, rd, rs1, imm, err) \
 	subtilis_rv_section_add_itype(s, SUBTILIS_RV_SLTUI, rd, rs1, imm, err)
-#define subtilis_rv_section_add_not(s, rd, rs1, imm, err) \
+#define subtilis_rv_section_add_not(s, rd, rs1, err) \
 	subtilis_rv_section_add_itype(s, SUBTILIS_RV_XORI, rd, rs1, -1, err)
+
+#define subtilis_rv_section_add_add(s, rd, rs1, rs2, err) \
+	subtilis_rv_section_add_rtype(s, SUBTILIS_RV_ADD, rd, rs1, rs2, err)
+#define subtilis_rv_section_add_sub(s, rd, rs1, rs2, err) \
+	subtilis_rv_section_add_rtype(s, SUBTILIS_RV_SUB, rd, rs1, rs2, err)
+#define subtilis_rv_section_add_and(s, rd, rs1, rs2, err) \
+	subtilis_rv_section_add_rtype(s, SUBTILIS_RV_AND, rd, rs1, rs2, err)
+#define subtilis_rv_section_add_or(s, rd, rs1, rs2, err) \
+	subtilis_rv_section_add_rtype(s, SUBTILIS_RV_OR, rd, rs1, rs2, err)
+#define subtilis_rv_section_add_xor(s, rd, rs1, rs2, err) \
+	subtilis_rv_section_add_rtype(s, SUBTILIS_RV_XOR, rd, rs1, rs2, err)
+
+
+#define subtilis_rv_section_add_lb(s, rd, rs1, imm, err) \
+	subtilis_rv_section_add_itype(s, SUBTILIS_RV_LB, rd, rs1, imm, err)
+#define subtilis_rv_section_add_lh(s, rd, rs1, imm, err) \
+	subtilis_rv_section_add_itype(s, SUBTILIS_RV_LH, rd, rs1, imm, err)
+#define subtilis_rv_section_add_lw(s, rd, rs1, imm, err) \
+	subtilis_rv_section_add_itype(s, SUBTILIS_RV_LW, rd, rs1, imm, err)
+#define subtilis_rv_section_add_lbu(s, rd, rs1, imm, err) \
+	subtilis_rv_section_add_itype(s, SUBTILIS_RV_LBU, rd, rs1, imm, err)
+#define subtilis_rv_section_add_lhu(s, rd, rs1, imm, err) \
+	subtilis_rv_section_add_itype(s, SUBTILIS_RV_LHU, rd, rs1, imm, err)
+
+#define subtilis_rv_section_add_sb(s, rd, rs1, imm, err) \
+	subtilis_rv_section_add_stype(s, SUBTILIS_RV_SB, rd, rs1, imm, err)
+#define subtilis_rv_section_add_sh(s, rd, rs1, imm, err) \
+	subtilis_rv_section_add_stype(s, SUBTILIS_RV_SH, rd, rs1, imm, err)
+#define subtilis_rv_section_add_sw(s, rd, rs1, imm, err) \
+	subtilis_rv_section_add_stype(s, SUBTILIS_RV_SW, rd, rs1, imm, err)
+
+#define subtilis_rv_section_add_lui(s, rd, imm, err) \
+	subtilis_rv_section_add_utype(s, SUBTILIS_RV_LUI, rd, imm, err)
 
 #define subtilis_rv_section_add_nop(s, err) \
 	subtilis_rv_section_add_addi(s, 0, 0, 0, err)
+
+#define subtilis_rv_section_add_ecall(s, err) \
+	subtilis_rv_section_add_itype(s, SUBTILIS_RV_ECALL, 0, 0, 0, err)
 
 void
 subtilis_rv_section_add_known_jal(subtilis_rv_section_t *s,
@@ -308,5 +387,7 @@ subtilis_rv_section_add_known_jal(subtilis_rv_section_t *s,
 				  subtilis_error_t *err);
 
 void subtilis_rv_prog_dump(subtilis_rv_prog_t *p);
+
+subtilis_rv_reg_t subtilis_rv_ir_to_rv_reg(size_t ir_reg);
 
 #endif

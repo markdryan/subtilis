@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	//	subtilis_ir_prog_dump(p->prog);
+	subtilis_ir_prog_dump(p->prog);
 
 	rv_p = subtilis_rv_bare_generate(
 		pool, p->prog, riscos_rv_bare_rules, riscos_rv_bare_rules_count,
