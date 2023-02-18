@@ -87,6 +87,7 @@ ARM =\
 	fpa.c \
 	vfp.c \
 	bitset.c \
+	regs_used_virt.c \
 	arm_sub_section.c \
 	arm_peephole.c \
 	arm_mem.c \
@@ -100,7 +101,12 @@ RV =\
 	rv_keywords.c \
 	rv_walker.c \
 	rv_dump.c \
-	rv_gen.c
+	rv_gen.c \
+	rv_int_used.c \
+	rv_int_dist.c \
+	bitset.c \
+	regs_used_virt.c \
+	rv_sub_section.c
 
 FPA =\
 	fpa_gen.c \

@@ -123,8 +123,9 @@ static void prv_dump_i(void *user_data, subtilis_rv_op_t *op,
 		if (i->rd == 0) {
 			printf("\tnop\n");
 		} else {
-			printf("\tmv x%zu, %d\n", i->rd, i->imm);
+			printf("\tli x%zu, %d\n", i->rd, i->imm);
 		}
+		return;
 	}
 
 	if ((itype == SUBTILIS_RV_ECALL) || (itype == SUBTILIS_RV_EBREAK)) {
@@ -141,6 +142,11 @@ static void prv_dump_sb(void *user_data, subtilis_rv_op_t *op,
 			subtilis_rv_instr_encoding_t etype,
 			rv_sbtype_t *sb, subtilis_error_t *err)
 {
+	if (etype == SUBTILIS_RV_S_TYPE) {
+		printf("\t%s x%zu, (%d)x%zu\n", instr_desc[itype],
+		       sb->rs2, sb->imm, sb->rs1);
+		return;
+	}
 	printf("\t%s x%zu, x%zu, %d\n", instr_desc[itype],
 	       sb->rs1, sb->rs2, sb->imm);
 }
@@ -221,3 +227,38 @@ void subtilis_rv_prog_dump(subtilis_rv_prog_t *p)
 	}
 }
 
+void subtilis_rv_instr_dump(subtilis_rv_instr_t *instr)
+{
+	subtilis_error_t err;
+
+	subtilis_error_init(&err);
+
+	switch (instr->etype) {
+	case SUBTILIS_RV_R_TYPE:
+		prv_dump_r(NULL, NULL, instr->itype, instr->etype,
+			   &instr->operands.r, &err);
+		break;
+	case SUBTILIS_RV_I_TYPE:
+		prv_dump_i(NULL, NULL, instr->itype, instr->etype,
+			   &instr->operands.i, &err);
+		break;
+	case SUBTILIS_RV_LABEL_TYPE:
+		prv_dump_label_type(NULL, NULL, instr->itype, instr->etype,
+				    &instr->operands.label, &err);
+		break;
+//	SUBTILIS_RV_FENCE_TYPE
+	case SUBTILIS_RV_S_TYPE:
+	case SUBTILIS_RV_B_TYPE:
+		prv_dump_sb(NULL, NULL, instr->itype, instr->etype,
+			   &instr->operands.sb, &err);
+		break;
+	case SUBTILIS_RV_U_TYPE:
+	case SUBTILIS_RV_J_TYPE:
+		prv_dump_uj(NULL, NULL, instr->itype, instr->etype,
+			    &instr->operands.uj, &err);
+		break;
+	default:
+		break;
+
+	}
+}

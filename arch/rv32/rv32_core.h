@@ -42,6 +42,7 @@
  */
 
 #define SUBTILIS_RV_INT_VIRT_REG_START 32
+#define SUBTILIS_RV_REAL_VIRT_REG_START 32
 
 
 #define RV_MAX_REG_ARGS 8
@@ -206,6 +207,33 @@ struct subtilis_rv_call_site_t_ {
 
 typedef struct subtilis_rv_call_site_t_ subtilis_rv_call_site_t;
 
+struct subtilis_rv_ui32_constant_t_ {
+	uint32_t integer;
+	size_t label;
+	bool link_time;
+};
+
+typedef struct subtilis_rv_ui32_constant_t_ subtilis_rv_ui32_constant_t;
+
+struct subtilis_rv_real_constant_t_ {
+	double real;
+	size_t label;
+};
+
+typedef struct subtilis_rv_real_constant_t_ subtilis_rv_real_constant_t;
+
+struct subtilis_rv_constants_t_ {
+	subtilis_rv_ui32_constant_t *ui32;
+	size_t ui32_count;
+	size_t max_ui32;
+	subtilis_rv_real_constant_t *real;
+	size_t real_count;
+	size_t max_real;
+};
+
+typedef struct subtilis_rv_constants_t_ subtilis_rv_constants_t;
+
+
 struct subtilis_rv_section_t_ {
 	size_t reg_counter;
 	size_t freg_counter;
@@ -218,6 +246,7 @@ struct subtilis_rv_section_t_ {
 	size_t call_site_count;
 	size_t max_call_site_count;
 	subtilis_rv_call_site_t *call_sites;
+	subtilis_rv_constants_t constants;
 
 	subtilis_sizet_vector_t ret_sites;
 	subtilis_type_section_t *stype;
@@ -323,6 +352,9 @@ subtilis_rv_section_add_li(subtilis_rv_section_t *s,
 
 void subtilis_rv_section_add_label(subtilis_rv_section_t *s, size_t label,
 				   subtilis_error_t *err);
+void subtilis_rv_section_insert_label(subtilis_rv_section_t *s, size_t label,
+				      subtilis_rv_op_t *pos,
+				      subtilis_error_t *err);
 
 #define subtilis_rv_section_add_addi(s, rd, rs1, imm, err) \
 	subtilis_rv_section_add_itype(s, SUBTILIS_RV_ADDI, rd, rs1, imm, err)
@@ -364,12 +396,12 @@ void subtilis_rv_section_add_label(subtilis_rv_section_t *s, size_t label,
 #define subtilis_rv_section_add_lhu(s, rd, rs1, imm, err) \
 	subtilis_rv_section_add_itype(s, SUBTILIS_RV_LHU, rd, rs1, imm, err)
 
-#define subtilis_rv_section_add_sb(s, rd, rs1, imm, err) \
-	subtilis_rv_section_add_stype(s, SUBTILIS_RV_SB, rd, rs1, imm, err)
-#define subtilis_rv_section_add_sh(s, rd, rs1, imm, err) \
-	subtilis_rv_section_add_stype(s, SUBTILIS_RV_SH, rd, rs1, imm, err)
-#define subtilis_rv_section_add_sw(s, rd, rs1, imm, err) \
-	subtilis_rv_section_add_stype(s, SUBTILIS_RV_SW, rd, rs1, imm, err)
+#define subtilis_rv_section_add_sb(s, rs1, rs2, imm, err) \
+	subtilis_rv_section_add_stype(s, SUBTILIS_RV_SB, rs1, rs2, imm, err)
+#define subtilis_rv_section_add_sh(s, rs1, rs2, imm, err) \
+	subtilis_rv_section_add_stype(s, SUBTILIS_RV_SH, rs1, rs2, imm, err)
+#define subtilis_rv_section_add_sw(s, rs1, rs2, imm, err) \
+	subtilis_rv_section_add_stype(s, SUBTILIS_RV_SW, rs1, rs2, imm, err)
 
 #define subtilis_rv_section_add_lui(s, rd, imm, err) \
 	subtilis_rv_section_add_utype(s, SUBTILIS_RV_LUI, rd, imm, err)
@@ -387,7 +419,9 @@ subtilis_rv_section_add_known_jal(subtilis_rv_section_t *s,
 				  subtilis_error_t *err);
 
 void subtilis_rv_prog_dump(subtilis_rv_prog_t *p);
+void subtilis_rv_instr_dump(subtilis_rv_instr_t *instr);
 
 subtilis_rv_reg_t subtilis_rv_ir_to_rv_reg(size_t ir_reg);
+subtilis_rv_reg_t subtilis_rv_ir_to_real_reg(size_t ir_reg);
 
 #endif

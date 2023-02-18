@@ -2,7 +2,7 @@
 
 COMPONENT = common
 
-OBJS = lexer error stream utils buffer ir bitset builtins constant_pool string_pool type sizet_vector vm_heap
+OBJS = lexer error stream utils buffer ir bitset builtins constant_pool string_pool type sizet_vector vm_heap regs_used_virt
 
 CFLAGS ?= -Wxla -Otime
 

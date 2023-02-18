@@ -19,6 +19,7 @@
 #include "rv_bare.h"
 
 #include "../../arch/rv32/rv_gen.h"
+#include "../../arch/rv32/rv_sub_section.h"
 
 /*
  * The linker is going to generate a simple ELF executable for us
@@ -435,6 +436,24 @@ static void prv_add_preamble(subtilis_rv_section_t *rv_s, size_t globals,
 		return;
 }
 
+static void prv_compute_sss(subtilis_rv_section_t *rv_s,
+			    subtilis_error_t *err)
+{
+	subtilis_rv_subsections_t sss;
+
+	subtilis_rv_subsections_init(&sss);
+	subtilis_rv_subsections_calculate(&sss, rv_s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_rv_subsections_dump(&sss, rv_s);
+
+
+cleanup:
+
+	subtilis_rv_subsections_free(&sss);
+}
+
 static void prv_add_section(subtilis_ir_section_t *s,
 			    subtilis_rv_section_t *rv_s,
 			    subtilis_ir_rule_t *parsed, size_t rule_count,
@@ -459,7 +478,7 @@ static void prv_add_section(subtilis_ir_section_t *s,
 
 	lui_instr = rv_s->last_op;
 
-	subtilis_rv_section_add_addi(rv_s, 5, 0, 0, err);
+	subtilis_rv_section_add_addi(rv_s, 5, 5, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -487,11 +506,10 @@ static void prv_add_section(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	/*
-	prv_compute_sss(arm_s, err);
+	prv_compute_sss(rv_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-
+	/*
 	spill_regs = subtilis_arm_reg_alloc(arm_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;

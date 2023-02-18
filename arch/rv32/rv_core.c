@@ -83,12 +83,12 @@ void subtilis_rv_op_pool_delete(subtilis_rv_op_pool_t *pool)
 
 subtilis_rv_reg_t subtilis_rv_acquire_new_reg(subtilis_rv_section_t *s)
 {
-	return 0;
+	return subtilis_rv_ir_to_rv_reg(s->reg_counter++);
 }
 
 subtilis_rv_reg_t subtilis_rv_acquire_new_freg(subtilis_rv_section_t *s)
 {
-	return 0;
+	return subtilis_rv_ir_to_real_reg(s->freg_counter++);
 }
 
 /* clang-format off */
@@ -185,9 +185,23 @@ subtilis_rv_prog_section_new(subtilis_rv_prog_t *prog,
 	return rv_s;
 }
 /* clang-format on */
+
+static void prv_free_constants(subtilis_rv_constants_t *constants)
+{
+	free(constants->ui32);
+	free(constants->real);
+}
+
 void subtilis_rv_section_delete(subtilis_rv_section_t *s)
 {
+	if (!s)
+		return;
 
+	subtilis_type_section_delete(s->stype);
+	subtilis_sizet_vector_free(&s->ret_sites);
+	free(s->call_sites);
+	prv_free_constants(&s->constants);
+	free(s);
 }
 
 void subtilis_rv_prog_append_section(subtilis_rv_prog_t *prog,
@@ -204,16 +218,28 @@ void subtilis_rv_prog_append_section(subtilis_rv_prog_t *prog,
 }
 
 void subtilis_rv_section_max_regs(subtilis_rv_section_t *s, size_t *int_regs,
-				   size_t *real_regs)
+				  size_t *real_regs)
 {
-
+	*int_regs = subtilis_rv_ir_to_rv_reg(s->reg_counter);
+	*real_regs = subtilis_rv_ir_to_real_reg(s->freg_counter);
 }
 
 void subtilis_rv_prog_delete(subtilis_rv_prog_t *prog)
 {
+	size_t i;
 
+	if (!prog)
+		return;
+
+	if (prog->sections) {
+		for (i = 0; i < prog->num_sections; i++)
+			subtilis_rv_section_delete(prog->sections[i]);
+		free(prog->sections);
+	}
+	subtilis_constant_pool_delete(prog->constant_pool);
+	subtilis_string_pool_delete(prog->string_pool);
+	free(prog);
 }
-
 
 static subtilis_rv_op_t *prv_append_op(subtilis_rv_section_t *s,
 				       subtilis_error_t *err)
@@ -234,6 +260,47 @@ static subtilis_rv_op_t *prv_append_op(subtilis_rv_section_t *s,
 	else
 		s->op_pool->ops[s->last_op].next = ptr;
 	s->last_op = ptr;
+	s->len++;
+
+	return op;
+}
+
+static subtilis_rv_op_t *prv_insert_op(subtilis_rv_section_t *s,
+				       subtilis_rv_op_t *pos,
+				       subtilis_error_t *err)
+{
+	size_t ptr;
+	size_t old_ptr;
+	subtilis_rv_op_t *op;
+
+	/*
+	 * We need to figure out the pointer before we do the alloc,
+	 * as the alloc may invalidate pos.
+	 */
+
+	if (pos->prev == SIZE_MAX)
+		old_ptr = s->first_op;
+	else
+		old_ptr = s->op_pool->ops[pos->prev].next;
+
+	ptr = subtilis_rv_op_pool_alloc(s->op_pool, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	/*
+	 * pos may have been invalidated by the alloc.
+	 */
+
+	pos = &s->op_pool->ops[old_ptr];
+	op = &s->op_pool->ops[ptr];
+	memset(op, 0, sizeof(*op));
+	op->next = old_ptr;
+	op->prev = pos->prev;
+	s->op_pool->ops[pos->prev].next = ptr;
+	pos->prev = ptr;
+
+	if (old_ptr == s->first_op)
+		s->first_op = ptr;
 	s->len++;
 
 	return op;
@@ -342,7 +409,7 @@ subtilis_rv_section_add_stype(subtilis_rv_section_t *s,
 
 	sb = &instr->operands.sb;
 	sb->rs1 = rs1;
-	sb->rs1 = rs2;
+	sb->rs2 = rs2;
 	sb->imm = imm;
 }
 
@@ -392,7 +459,7 @@ subtilis_rv_section_add_li(subtilis_rv_section_t *s,
 
 	lower = ((uint32_t) imm) & 4095;
 	if (lower)
-		subtilis_rv_section_add_addi(s, rd, 0, lower, err);
+		subtilis_rv_section_add_addi(s, rd, rd, lower, err);
 }
 
 subtilis_rv_reg_t subtilis_rv_ir_to_rv_reg(size_t ir_reg)
@@ -419,6 +486,15 @@ subtilis_rv_reg_t subtilis_rv_ir_to_rv_reg(size_t ir_reg)
 	return rv_reg;
 }
 
+subtilis_rv_reg_t subtilis_rv_ir_to_real_reg(size_t ir_reg)
+{
+	subtilis_rv_reg_t rv_reg;
+
+	rv_reg = ir_reg + SUBTILIS_RV_REAL_VIRT_REG_START;
+
+	return rv_reg;
+}
+
 void subtilis_rv_section_add_label(subtilis_rv_section_t *s, size_t label,
 				    subtilis_error_t *err)
 {
@@ -431,3 +507,18 @@ void subtilis_rv_section_add_label(subtilis_rv_section_t *s, size_t label,
 	op->op.label = label;
 	s->label_counter++;
 }
+
+void subtilis_rv_section_insert_label(subtilis_rv_section_t *s, size_t label,
+				      subtilis_rv_op_t *pos,
+				      subtilis_error_t *err)
+{
+	subtilis_rv_op_t *op;
+
+	op = prv_insert_op(s, pos, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	op->type = SUBTILIS_RV_OP_LABEL;
+	op->op.label = label;
+	s->label_counter++;
+}
+

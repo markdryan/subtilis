@@ -306,18 +306,6 @@ static size_t prv_arm_presplit_real_offset(subtilis_arm_prespilt_offsets_t *off,
 	return 0;
 }
 
-void subtilis_regs_used_virt_init(subtilis_regs_used_virt_t *regs_usedv)
-{
-	subtilis_bitset_init(&regs_usedv->int_regs);
-	subtilis_bitset_init(&regs_usedv->real_regs);
-}
-
-void subtilis_regs_used_virt_free(subtilis_regs_used_virt_t *regs_usedv)
-{
-	subtilis_bitset_free(&regs_usedv->int_regs);
-	subtilis_bitset_free(&regs_usedv->real_regs);
-}
-
 /* clang-format off */
 static subtilis_arm_reg_class_t *prv_new_regs(
 	size_t reg_count, size_t max_regs, size_t reg_start, size_t reg_size,

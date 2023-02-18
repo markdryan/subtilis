@@ -18,15 +18,9 @@
 #define __SUBTILIS_ARM_REG_ALLOC_H
 
 #include "../../common/bitset.h"
+#include "../../common/regs_used_virt.h"
 #include "arm_core.h"
 #include "arm_walker.h"
-
-struct subtilis_dist_data_t_ {
-	size_t reg_num;
-	int last_used;
-};
-
-typedef struct subtilis_dist_data_t_ subtilis_dist_data_t;
 
 struct subtilis_regs_used_t_ {
 	size_t int_regs;
@@ -35,12 +29,6 @@ struct subtilis_regs_used_t_ {
 
 typedef struct subtilis_regs_used_t_ subtilis_regs_used_t;
 
-struct subtilis_regs_used_virt_t_ {
-	subtilis_bitset_t int_regs;
-	subtilis_bitset_t real_regs;
-};
-
-typedef struct subtilis_regs_used_virt_t_ subtilis_regs_used_virt_t;
 
 /* clang-format off */
 typedef void (*subtilis_arm_reg_spill_imm_t)(subtilis_arm_section_t *s,
@@ -116,9 +104,6 @@ struct subtilis_arm_reg_ud_t_ {
 };
 
 typedef struct subtilis_arm_reg_ud_t_ subtilis_arm_reg_ud_t;
-
-void subtilis_regs_used_virt_init(subtilis_regs_used_virt_t *regs_usedv);
-void subtilis_regs_used_virt_free(subtilis_regs_used_virt_t *regs_usedv);
 
 size_t subtilis_arm_reg_alloc(subtilis_arm_section_t *arm_s,
 			      subtilis_error_t *err);
