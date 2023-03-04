@@ -94,7 +94,8 @@ ARM =\
 	arm_heap.c \
 	arm_keywords.c \
 	assembler.c \
-	arm_expression.c
+	arm_expression.c \
+	prespilt_offsets.c
 
 RV =\
 	rv_core.c \
@@ -104,9 +105,11 @@ RV =\
 	rv_gen.c \
 	rv_int_used.c \
 	rv_int_dist.c \
+	rv_reg_alloc.c \
 	bitset.c \
 	regs_used_virt.c \
-	rv_sub_section.c
+	rv_sub_section.c \
+	prespilt_offsets.c
 
 FPA =\
 	fpa_gen.c \
