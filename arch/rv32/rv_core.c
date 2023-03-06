@@ -324,6 +324,25 @@ subtilis_rv_section_add_instr(subtilis_rv_section_t *s,
 	return &op->op.instr;
 }
 
+subtilis_rv_instr_t *
+subtilis_rv_section_insert_instr(subtilis_rv_section_t *s,
+				 subtilis_rv_op_t *pos,
+				 subtilis_rv_instr_type_t itype,
+				 subtilis_rv_instr_encoding_t etype,
+				 subtilis_error_t *err)
+{
+	subtilis_rv_op_t *op;
+
+	op = prv_insert_op(s, pos, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return NULL;
+
+	op->type = SUBTILIS_RV_OP_INSTR;
+	op->op.instr.itype = itype;
+	op->op.instr.etype = etype;
+	return &op->op.instr;
+}
+
 void
 subtilis_rv_section_add_known_jal(subtilis_rv_section_t *s,
 				  subtilis_rv_reg_t rd,
@@ -372,6 +391,29 @@ subtilis_rv_section_add_itype(subtilis_rv_section_t *s,
 }
 
 void
+subtilis_rv_section_insert_itype(subtilis_rv_section_t *s,
+				 subtilis_rv_op_t *pos,
+				 subtilis_rv_instr_type_t itype,
+				 subtilis_rv_reg_t rd,
+				 subtilis_rv_reg_t rs1,
+				 uint32_t imm,  subtilis_error_t *err)
+{
+	subtilis_rv_instr_t *instr;
+	rv_itype_t *i;
+
+	instr = subtilis_rv_section_insert_instr(s, pos, itype,
+						 SUBTILIS_RV_I_TYPE,
+						 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	i = &instr->operands.i;
+	i->rd = rd;
+	i->rs1 = rs1;
+	i->imm = imm;
+}
+
+void
 subtilis_rv_section_add_utype(subtilis_rv_section_t *s,
 			      subtilis_rv_instr_type_t itype,
 			      subtilis_rv_reg_t rd,
@@ -390,6 +432,28 @@ subtilis_rv_section_add_utype(subtilis_rv_section_t *s,
 	uj->imm = imm >> 12;
 	uj->rd = rd;
 }
+
+void
+subtilis_rv_section_insert_utype(subtilis_rv_section_t *s,
+				 subtilis_rv_op_t *pos,
+				 subtilis_rv_instr_type_t itype,
+				 subtilis_rv_reg_t rd,
+				 uint32_t imm,  subtilis_error_t *err)
+{
+	subtilis_rv_instr_t *instr;
+	rv_ujtype_t *uj;
+
+	instr = subtilis_rv_section_insert_instr(s, pos, itype,
+						 SUBTILIS_RV_U_TYPE,
+						 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	uj = &instr->operands.uj;
+	uj->imm = imm >> 12;
+	uj->rd = rd;
+}
+
 
 void
 subtilis_rv_section_add_stype(subtilis_rv_section_t *s,
@@ -414,6 +478,29 @@ subtilis_rv_section_add_stype(subtilis_rv_section_t *s,
 }
 
 void
+subtilis_rv_section_insert_sbtype(subtilis_rv_section_t *s,
+				  subtilis_rv_op_t *pos,
+				  subtilis_rv_instr_type_t itype,
+				  subtilis_rv_reg_t rs1,
+				  subtilis_rv_reg_t rs2,
+				  uint32_t imm, subtilis_error_t *err)
+{
+	subtilis_rv_instr_t *instr;
+	rv_sbtype_t *sb;
+
+	instr = subtilis_rv_section_insert_instr(s, pos, itype,
+						 SUBTILIS_RV_U_TYPE,
+						 err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	sb = &instr->operands.sb;
+	sb->rs1 = rs1;
+	sb->rs2 = rs2;
+	sb->imm = imm;
+}
+
+void
 subtilis_rv_section_add_rtype(subtilis_rv_section_t *s,
 			      subtilis_rv_instr_type_t itype,
 			      subtilis_rv_reg_t rd,
@@ -427,6 +514,30 @@ subtilis_rv_section_add_rtype(subtilis_rv_section_t *s,
 	instr = subtilis_rv_section_add_instr(s, itype,
 					      SUBTILIS_RV_R_TYPE,
 					      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	r = &instr->operands.r;
+	r->rd = rd;
+	r->rs1 = rs1;
+	r->rs2 = rs2;
+}
+
+void
+subtilis_rv_section_insert_rtype(subtilis_rv_section_t *s,
+				 subtilis_rv_op_t *pos,
+				 subtilis_rv_instr_type_t itype,
+				 subtilis_rv_reg_t rd,
+				 subtilis_rv_reg_t rs1,
+				 subtilis_rv_reg_t rs2,
+				 subtilis_error_t *err)
+{
+	subtilis_rv_instr_t *instr;
+	rv_rtype_t *r;
+
+	instr = subtilis_rv_section_insert_instr(s, pos, itype,
+						 SUBTILIS_RV_U_TYPE,
+						 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -462,6 +573,33 @@ subtilis_rv_section_add_li(subtilis_rv_section_t *s,
 		subtilis_rv_section_add_addi(s, rd, rd, lower, err);
 }
 
+void
+subtilis_rv_section_insert_li(subtilis_rv_section_t *s,
+			      subtilis_rv_op_t *pos,
+			      subtilis_rv_reg_t rd,
+			      int32_t imm,  subtilis_error_t *err)
+{
+	uint32_t lower;
+
+	/*
+	 * Then imm will fit in 12 bits.
+	 */
+
+	if ((imm > -2048) && (imm < 2048)) {
+		subtilis_rv_section_insert_addi(s, pos, rd, 0, imm, err);
+		return;
+	}
+
+	subtilis_rv_section_insert_utype(s, pos, SUBTILIS_RV_LUI, rd,
+					 (uint32_t) imm, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	lower = ((uint32_t) imm) & 4095;
+	if (lower)
+		subtilis_rv_section_insert_addi(s, pos, rd, rd, lower, err);
+}
+
 subtilis_rv_reg_t subtilis_rv_ir_to_rv_reg(size_t ir_reg)
 {
 	subtilis_rv_reg_t rv_reg;
@@ -477,9 +615,8 @@ subtilis_rv_reg_t subtilis_rv_ir_to_rv_reg(size_t ir_reg)
 		rv_reg = SUBTILIS_RV_REG_STACK;
 		break;
 	default:
-		ir_reg = ir_reg - SUBTILIS_IR_REG_TEMP_START +
-			 SUBTILIS_RV_INT_VIRT_REG_START;
-		rv_reg = ir_reg;
+		rv_reg = ir_reg - SUBTILIS_IR_REG_TEMP_START +
+			SUBTILIS_RV_REG_MAX_INT_REGS;
 		break;
 	}
 
@@ -490,7 +627,7 @@ subtilis_rv_reg_t subtilis_rv_ir_to_real_reg(size_t ir_reg)
 {
 	subtilis_rv_reg_t rv_reg;
 
-	rv_reg = ir_reg + SUBTILIS_RV_REAL_VIRT_REG_START;
+	rv_reg = ir_reg + SUBTILIS_RV_REG_MAX_REAL_REGS;
 
 	return rv_reg;
 }
@@ -508,6 +645,26 @@ void subtilis_rv_section_add_label(subtilis_rv_section_t *s, size_t label,
 	s->label_counter++;
 }
 
+void subtilis_rv_section_insert_lw(subtilis_rv_section_t *s,
+				   subtilis_rv_op_t *pos,
+				   subtilis_rv_reg_t dest,
+				   subtilis_rv_reg_t base,
+				   int32_t offset, subtilis_error_t *err)
+{
+	subtilis_rv_section_insert_itype(s, pos, SUBTILIS_RV_LW, dest, base,
+					 offset, err);
+}
+
+void subtilis_rv_section_insert_sw(subtilis_rv_section_t *s,
+				   subtilis_rv_op_t *pos,
+				   subtilis_rv_reg_t val,
+				   subtilis_rv_reg_t base,
+				   int32_t offset, subtilis_error_t *err)
+{
+	subtilis_rv_section_insert_sbtype(s, pos, SUBTILIS_RV_SW, val, base, \
+					  offset, err);
+}
+
 void subtilis_rv_section_insert_label(subtilis_rv_section_t *s, size_t label,
 				      subtilis_rv_op_t *pos,
 				      subtilis_error_t *err)
@@ -520,5 +677,53 @@ void subtilis_rv_section_insert_label(subtilis_rv_section_t *s, size_t label,
 	op->type = SUBTILIS_RV_OP_LABEL;
 	op->op.label = label;
 	s->label_counter++;
+}
+
+void subtilis_rv_insert_offset_helper(subtilis_rv_section_t *s,
+				      subtilis_rv_op_t *pos,
+				      subtilis_rv_reg_t base,
+				      subtilis_rv_reg_t tmp,
+				      int32_t offset, subtilis_error_t *err)
+{
+	subtilis_rv_section_insert_li(s, pos, tmp, offset, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_rv_section_insert_add(s, pos, tmp, tmp, base, err);
+}
+
+void subtilis_rv_insert_lw_helper(subtilis_rv_section_t *s,
+				  subtilis_rv_op_t *pos,
+				  subtilis_rv_reg_t dest,
+				  subtilis_rv_reg_t base,
+				  int32_t offset, subtilis_error_t *err)
+{
+	if (offset > SUBTILIS_RV_MAX_OFFSET ||
+	    offset < SUBTILIS_RV_MIN_OFFSET) {
+		subtilis_rv_insert_offset_helper(s, pos, base, dest, offset,
+						 err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		base = dest;
+		offset = 0;
+	}
+	subtilis_rv_section_insert_lw(s, pos, dest, base, offset, err);
+}
+
+void subtilis_rv_insert_sw_helper(subtilis_rv_section_t *s,
+				  subtilis_rv_op_t *pos,
+				  subtilis_rv_reg_t dest,
+				  subtilis_rv_reg_t base,
+				  subtilis_rv_reg_t tmp,
+				  int32_t offset, subtilis_error_t *err)
+{
+	if (offset > SUBTILIS_RV_MAX_OFFSET ||
+	    offset < -SUBTILIS_RV_MIN_OFFSET) {
+		subtilis_rv_insert_offset_helper(s, pos, base, tmp, offset,
+						 err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		offset = 0;
+	}
+	subtilis_rv_section_insert_sw(s, pos, dest, base, offset, err);
 }
 

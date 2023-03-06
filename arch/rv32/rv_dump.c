@@ -157,7 +157,7 @@ static void prv_dump_uj(void *user_data, subtilis_rv_op_t *op,
 			rv_ujtype_t *uj, subtilis_error_t *err)
 {
 	if ((itype == SUBTILIS_RV_JAL) && (uj->rd == 0)) {
-		printf("\tj  %d\n", uj->imm);
+		printf("\tj  label_%d\n", uj->imm);
 		return;
 	}
 	if (itype == SUBTILIS_RV_LUI) {
@@ -166,15 +166,6 @@ static void prv_dump_uj(void *user_data, subtilis_rv_op_t *op,
 		return;
 	}
 	printf("\t%s x%zu, %d\n", instr_desc[itype], uj->rd, uj->imm);
-}
-
-static void prv_dump_label_type(void *user_data, subtilis_rv_op_t *op,
-				subtilis_rv_instr_type_t itype,
-				subtilis_rv_instr_encoding_t etype,
-				rv_labeltype_t *label, subtilis_error_t *err)
-{
-	printf("\t%s x%zu, label_%zu\n", instr_desc[itype], label->rd,
-	       label->label);
 }
 
 void subtilis_rv_section_dump(subtilis_rv_prog_t *p,
@@ -192,7 +183,6 @@ void subtilis_rv_section_dump(subtilis_rv_prog_t *p,
 	walker.i_fn = prv_dump_i;
 	walker.sb_fn = prv_dump_sb;
 	walker.uj_fn = prv_dump_uj;
-	walker.label_type_fn = prv_dump_label_type;
 
 	subtilis_rv_walk(s, &walker, &err);
 /*
@@ -241,10 +231,6 @@ void subtilis_rv_instr_dump(subtilis_rv_instr_t *instr)
 	case SUBTILIS_RV_I_TYPE:
 		prv_dump_i(NULL, NULL, instr->itype, instr->etype,
 			   &instr->operands.i, &err);
-		break;
-	case SUBTILIS_RV_LABEL_TYPE:
-		prv_dump_label_type(NULL, NULL, instr->itype, instr->etype,
-				    &instr->operands.label, &err);
 		break;
 //	SUBTILIS_RV_FENCE_TYPE
 	case SUBTILIS_RV_S_TYPE:

@@ -19,6 +19,7 @@
 #include "rv_bare.h"
 
 #include "../../arch/rv32/rv_gen.h"
+#include "../../arch/rv32/rv_reg_alloc.h"
 #include "../../arch/rv32/rv_sub_section.h"
 
 /*
@@ -509,14 +510,10 @@ static void prv_add_section(subtilis_ir_section_t *s,
 	prv_compute_sss(rv_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-	/*
-	spill_regs = subtilis_arm_reg_alloc(arm_s, err);
+
+	spill_regs = subtilis_rv_reg_alloc(rv_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-
-	*/
-
-	spill_regs = 0;
 
 	stack_space = spill_regs + rv_s->locals;
 

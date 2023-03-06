@@ -74,22 +74,6 @@ static void prv_used_uj(void *user_data, subtilis_rv_op_t *op,
 	ud->last_used++;
 }
 
-static void prv_used_label_type(void *user_data, subtilis_rv_op_t *op,
-				subtilis_rv_instr_type_t itype,
-				subtilis_rv_instr_encoding_t etype,
-				rv_labeltype_t *label, subtilis_error_t *err)
-{
-	subtilis_dist_data_t *ud = user_data;
-
-	if (label->rd == ud->reg_num) {
-		ud->last_used = -1;
-		subtilis_error_set_walker_failed(err);
-		return;
-	}
-
-	ud->last_used++;
-}
-
 static void prv_used_label(void *user_data, subtilis_rv_op_t *op, size_t label,
 			   subtilis_error_t *err)
 {
@@ -110,7 +94,6 @@ void subtilis_rv_init_used_walker(subtilis_rv_walker_t *walker,
 	walker->i_fn = prv_used_i;
 	walker->sb_fn = prv_used_sb;
 	walker->uj_fn = prv_used_uj;
-	walker->label_type_fn = prv_used_label_type;
 }
 
 
@@ -146,7 +129,7 @@ void subtilis_rv_regs_used_before_from_tov(subtilis_rv_section_t *rv_s,
 
 	subtilis_rv_init_used_walker(&walker, &used_data);
 
-	for (i = SUBTILIS_RV_INT_VIRT_REG_START; i < int_args; i++) {
+	for (i = SUBTILIS_RV_REG_MAX_INT_REGS; i < int_args; i++) {
 		if (prv_is_reg_used_before(rv_s, &used_data, i, &walker, from,
 					   op)) {
 			subtilis_bitset_set(&used->int_regs, i, err);
@@ -155,7 +138,7 @@ void subtilis_rv_regs_used_before_from_tov(subtilis_rv_section_t *rv_s,
 		}
 	}
 
-	for (i = SUBTILIS_RV_INT_VIRT_REG_START; i < real_args; i++) {
+	for (i = SUBTILIS_RV_REG_MAX_REAL_REGS; i < real_args; i++) {
 		if (prv_is_reg_used_before(rv_s, &used_data, i, &walker, from,
 					   op)) {
 			subtilis_bitset_set(&used->real_regs, i, err);

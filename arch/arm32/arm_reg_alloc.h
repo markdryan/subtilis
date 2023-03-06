@@ -22,14 +22,6 @@
 #include "arm_core.h"
 #include "arm_walker.h"
 
-struct subtilis_regs_used_t_ {
-	size_t int_regs;
-	size_t real_regs;
-};
-
-typedef struct subtilis_regs_used_t_ subtilis_regs_used_t;
-
-
 /* clang-format off */
 typedef void (*subtilis_arm_reg_spill_imm_t)(subtilis_arm_section_t *s,
 					     subtilis_arm_op_t *current,

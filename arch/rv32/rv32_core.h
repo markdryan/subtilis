@@ -25,6 +25,9 @@
 #define SUBTILIS_RV_REG_STACK 2
 #define SUBTILIS_RV_REG_GLOBAL 3
 #define SUBTILIS_RV_REG_HEAP 4
+#define SUBTILIS_RV_REG_T0 5
+#define SUBTILIS_RV_REG_T1 6
+#define SUBTILIS_RV_REG_T2 7
 #define SUBTILIS_RV_REG_LOCAL 8
 #define SUBTILIS_RV_REG_A0 10
 #define SUBTILIS_RV_REG_A1 11
@@ -35,15 +38,35 @@
 #define SUBTILIS_RV_REG_A6 16
 #define SUBTILIS_RV_REG_A7 17
 
+#define SUBTILIS_RV_REG_T3 28
+#define SUBTILIS_RV_REG_T4 29
+#define SUBTILIS_RV_REG_T5 30
+#define SUBTILIS_RV_REG_T6 31
+#define SUBTILIS_RV_REG_T7 32
+
+#define SUBTILIS_RV_REG_FA0 10
+#define SUBTILIS_RV_REG_FA1 11
+#define SUBTILIS_RV_REG_FA2 12
+#define SUBTILIS_RV_REG_FA3 13
+#define SUBTILIS_RV_REG_FA4 14
+#define SUBTILIS_RV_REG_FA5 15
+#define SUBTILIS_RV_REG_FA6 16
+#define SUBTILIS_RV_REG_FA7 17
+
+#define SUBTILIS_RV_MAX_OFFSET 2047
+#define SUBTILIS_RV_MIN_OFFSET -2048
+
+
 /*
  * Two register namespaces overlap for each register type, int or real.
  * For integers register numbers < 32 are fixed and will not be altered
  * by the register allocator.
  */
 
-#define SUBTILIS_RV_INT_VIRT_REG_START 32
-#define SUBTILIS_RV_REAL_VIRT_REG_START 32
-
+#define SUBTILIS_RV_INT_FIRST_FREE 5
+#define SUBTILIS_RV_REAL_FIRST_FREE 0
+#define SUBTILIS_RV_REG_MAX_INT_REGS 32
+#define SUBTILIS_RV_REG_MAX_REAL_REGS 32
 
 #define RV_MAX_REG_ARGS 8
 
@@ -62,12 +85,6 @@ struct rv_itype_t_ {
 	uint32_t imm;
 };
 typedef struct rv_itype_t_ rv_itype_t;
-
-struct rv_labeltype_t_ {
-	subtilis_rv_reg_t rd;
-	size_t label;
-};
-typedef struct rv_labeltype_t_ rv_labeltype_t;
 
 struct rv_sbtype_t_ {
 	subtilis_rv_reg_t rs1;
@@ -130,7 +147,6 @@ typedef enum {
 typedef enum {
 	SUBTILIS_RV_R_TYPE,
 	SUBTILIS_RV_I_TYPE,
-	SUBTILIS_RV_LABEL_TYPE,
 	SUBTILIS_RV_S_TYPE,
 	SUBTILIS_RV_B_TYPE,
 	SUBTILIS_RV_U_TYPE,
@@ -146,7 +162,6 @@ struct subtilis_rv_instr_t_ {
 		rv_itype_t i;
 		rv_sbtype_t sb;
 		rv_ujtype_t uj;
-		rv_labeltype_t label;
 	} operands;
 };
 
@@ -270,7 +285,6 @@ struct subtilis_rv_prog_t_ {
 
 typedef struct subtilis_rv_prog_t_ subtilis_rv_prog_t;
 
-
 subtilis_rv_op_pool_t *subtilis_rv_op_pool_new(subtilis_error_t *err);
 size_t subtilis_rv_op_pool_alloc(subtilis_rv_op_pool_t *pool,
 				  subtilis_error_t *err);
@@ -316,6 +330,19 @@ void subtilis_rv_section_max_regs(subtilis_rv_section_t *s, size_t *int_regs,
 				   size_t *real_regs);
 void subtilis_rv_prog_delete(subtilis_rv_prog_t *prog);
 
+subtilis_rv_instr_t *
+subtilis_rv_section_add_instr(subtilis_rv_section_t *s,
+			      subtilis_rv_instr_type_t itype,
+			      subtilis_rv_instr_encoding_t etype,
+			      subtilis_error_t *err);
+
+subtilis_rv_instr_t *
+subtilis_rv_section_insert_instr(subtilis_rv_section_t *s,
+				 subtilis_rv_op_t *pos,
+				 subtilis_rv_instr_type_t itype,
+				 subtilis_rv_instr_encoding_t etype,
+				 subtilis_error_t *err);
+
 void
 subtilis_rv_section_add_itype(subtilis_rv_section_t *s,
 			      subtilis_rv_instr_type_t itype,
@@ -324,10 +351,25 @@ subtilis_rv_section_add_itype(subtilis_rv_section_t *s,
 			      uint32_t imm,  subtilis_error_t *err);
 
 void
+subtilis_rv_section_insert_itype(subtilis_rv_section_t *s,
+				 subtilis_rv_op_t *pos,
+				 subtilis_rv_instr_type_t itype,
+				 subtilis_rv_reg_t rd,
+				 subtilis_rv_reg_t rs1,
+				 uint32_t imm,  subtilis_error_t *err);
+
+void
 subtilis_rv_section_add_utype(subtilis_rv_section_t *s,
 			      subtilis_rv_instr_type_t itype,
 			      subtilis_rv_reg_t rd,
 			      uint32_t imm,  subtilis_error_t *err);
+
+void
+subtilis_rv_section_insert_utype(subtilis_rv_section_t *s,
+				 subtilis_rv_op_t *pos,
+				 subtilis_rv_instr_type_t itype,
+				 subtilis_rv_reg_t rd,
+				 uint32_t imm,  subtilis_error_t *err);
 
 void
 subtilis_rv_section_add_stype(subtilis_rv_section_t *s,
@@ -337,6 +379,14 @@ subtilis_rv_section_add_stype(subtilis_rv_section_t *s,
 			      uint32_t imm, subtilis_error_t *err);
 
 void
+subtilis_rv_section_insert_sbtype(subtilis_rv_section_t *s,
+				  subtilis_rv_op_t *pos,
+				  subtilis_rv_instr_type_t itype,
+				  subtilis_rv_reg_t rs1,
+				  subtilis_rv_reg_t rs2,
+				  uint32_t imm, subtilis_error_t *err);
+
+void
 subtilis_rv_section_add_rtype(subtilis_rv_section_t *s,
 			      subtilis_rv_instr_type_t itype,
 			      subtilis_rv_reg_t rd,
@@ -344,11 +394,24 @@ subtilis_rv_section_add_rtype(subtilis_rv_section_t *s,
 			      subtilis_rv_reg_t rs2,
 			      subtilis_error_t *err);
 
+void
+subtilis_rv_section_insert_rtype(subtilis_rv_section_t *s,
+				 subtilis_rv_op_t *pos,
+				 subtilis_rv_instr_type_t itype,
+				 subtilis_rv_reg_t rd,
+				 subtilis_rv_reg_t rs1,
+				 subtilis_rv_reg_t rs2,
+				 subtilis_error_t *err);
 
 void
 subtilis_rv_section_add_li(subtilis_rv_section_t *s,
 			   subtilis_rv_reg_t rd,
 			   int32_t imm,  subtilis_error_t *err);
+void
+subtilis_rv_section_insert_li(subtilis_rv_section_t *s,
+			      subtilis_rv_op_t *pos,
+			      subtilis_rv_reg_t rd,
+			      int32_t imm,  subtilis_error_t *err);
 
 void subtilis_rv_section_add_label(subtilis_rv_section_t *s, size_t label,
 				   subtilis_error_t *err);
@@ -373,6 +436,10 @@ void subtilis_rv_section_insert_label(subtilis_rv_section_t *s, size_t label,
 #define subtilis_rv_section_add_not(s, rd, rs1, err) \
 	subtilis_rv_section_add_itype(s, SUBTILIS_RV_XORI, rd, rs1, -1, err)
 
+#define subtilis_rv_section_insert_addi(s, pos, rd, rs1, imm, err) \
+	subtilis_rv_section_insert_itype(s, pos, SUBTILIS_RV_ADDI, rd, rs1, \
+					 imm, err)
+
 #define subtilis_rv_section_add_add(s, rd, rs1, rs2, err) \
 	subtilis_rv_section_add_rtype(s, SUBTILIS_RV_ADD, rd, rs1, rs2, err)
 #define subtilis_rv_section_add_sub(s, rd, rs1, rs2, err) \
@@ -384,6 +451,9 @@ void subtilis_rv_section_insert_label(subtilis_rv_section_t *s, size_t label,
 #define subtilis_rv_section_add_xor(s, rd, rs1, rs2, err) \
 	subtilis_rv_section_add_rtype(s, SUBTILIS_RV_XOR, rd, rs1, rs2, err)
 
+#define subtilis_rv_section_insert_add(s, pos, rd, rs1, rs2, err) \
+	subtilis_rv_section_insert_itype(s, pos, SUBTILIS_RV_ADD, rd, rs1, \
+					 rs2, err)
 
 #define subtilis_rv_section_add_lb(s, rd, rs1, imm, err) \
 	subtilis_rv_section_add_itype(s, SUBTILIS_RV_LB, rd, rs1, imm, err)
@@ -395,6 +465,17 @@ void subtilis_rv_section_insert_label(subtilis_rv_section_t *s, size_t label,
 	subtilis_rv_section_add_itype(s, SUBTILIS_RV_LBU, rd, rs1, imm, err)
 #define subtilis_rv_section_add_lhu(s, rd, rs1, imm, err) \
 	subtilis_rv_section_add_itype(s, SUBTILIS_RV_LHU, rd, rs1, imm, err)
+
+void subtilis_rv_section_insert_lw(subtilis_rv_section_t *s,
+				   subtilis_rv_op_t *pos,
+				   subtilis_rv_reg_t dest,
+				   subtilis_rv_reg_t base,
+				   int32_t offset, subtilis_error_t *err);
+void subtilis_rv_section_insert_sw(subtilis_rv_section_t *s,
+				   subtilis_rv_op_t *pos,
+				   subtilis_rv_reg_t val,
+				   subtilis_rv_reg_t base,
+				   int32_t offset, subtilis_error_t *err);
 
 #define subtilis_rv_section_add_sb(s, rs1, rs2, imm, err) \
 	subtilis_rv_section_add_stype(s, SUBTILIS_RV_SB, rs1, rs2, imm, err)
@@ -423,5 +504,44 @@ void subtilis_rv_instr_dump(subtilis_rv_instr_t *instr);
 
 subtilis_rv_reg_t subtilis_rv_ir_to_rv_reg(size_t ir_reg);
 subtilis_rv_reg_t subtilis_rv_ir_to_real_reg(size_t ir_reg);
+
+/*
+ * Updates base by inserting instructions at pos that add offset
+ * to base using the tmp register tmp.
+ */
+
+void subtilis_rv_insert_offset_helper(subtilis_rv_section_t *s,
+				      subtilis_rv_op_t *pos,
+				      subtilis_rv_reg_t base,
+				      subtilis_rv_reg_t tmp,
+				      int32_t offset, subtilis_error_t *err);
+
+/*
+ * Inserts an lw statement into the code stream at the location
+ * indicated by current.  If the offset cannot fit in 12 bits
+ * we li the constant into the destination register, add the
+ * base and then do a load from dest to dest with a zero offset.
+ */
+
+void subtilis_rv_insert_lw_helper(subtilis_rv_section_t *rv_s,
+				  subtilis_rv_op_t *pos,
+				  subtilis_rv_reg_t dest,
+				  subtilis_rv_reg_t base,
+				  int32_t offset, subtilis_error_t *err);
+
+/*
+ * Inserts an sw statement into the code stream at the location
+ * indicated by current.  If the offset cannot fit in 12 bits
+ * we li the constant into tmp, add the
+ * base and then do a load from tmp to dest with a zero offset.
+ */
+
+void subtilis_rv_insert_sw_helper(subtilis_rv_section_t *s,
+				  subtilis_rv_op_t *pos,
+				  subtilis_rv_reg_t dest,
+				  subtilis_rv_reg_t base,
+				  subtilis_rv_reg_t tmp,
+				  int32_t offset, subtilis_error_t *err);
+
 
 #endif

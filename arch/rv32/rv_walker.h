@@ -44,11 +44,6 @@ struct subtilis_rv_walker_t_ {
 		      subtilis_rv_instr_type_t itype,
 		      subtilis_rv_instr_encoding_t etype,
 		      rv_ujtype_t *uj, subtilis_error_t *err);
-	void (*label_type_fn)(void *user_data, subtilis_rv_op_t *op,
-			      subtilis_rv_instr_type_t itype,
-			      subtilis_rv_instr_encoding_t etype,
-			      rv_labeltype_t *label, subtilis_error_t *err);
-
 };
 
 typedef struct subtilis_rv_walker_t_ subtilis_rv_walker_t;

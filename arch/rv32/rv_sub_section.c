@@ -213,7 +213,7 @@ static void prv_add_args(subtilis_rv_ss_t *ss, subtilis_rv_section_t *rv_s,
 		link = &ss->links[j];
 		for (i = 0; i < rv_s->stype->int_regs; i++) {
 			subtilis_bitset_set(&link->int_outputs,
-					    SUBTILIS_RV_INT_VIRT_REG_START + i,
+					    SUBTILIS_RV_REG_MAX_INT_REGS + i,
 					    err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;

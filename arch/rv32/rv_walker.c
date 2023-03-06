@@ -45,15 +45,6 @@ static void prv_call_ujtype_fn(subtilis_rv_walker_t *walker, void *user_data,
 		      &instr->operands.uj, err);
 }
 
-static void prv_call_labeltype_fn(subtilis_rv_walker_t *walker, void *user_data,
-				  subtilis_rv_op_t *op, subtilis_error_t *err)
-{
-	subtilis_rv_instr_t *instr = &op->op.instr;
-
-	walker->label_type_fn(walker->user_data, op, instr->itype,
-			      instr->etype, &instr->operands.label, err);
-}
-
 static void prv_call_sbtype_fn(subtilis_rv_walker_t *walker, void *user_data,
 			       subtilis_rv_op_t *op, subtilis_error_t *err)
 {
@@ -78,7 +69,6 @@ typedef void (*subtilis_walker_fn_t)(subtilis_rv_walker_t *walker,
 static const subtilis_walker_fn_t walker_table[] = {
 	prv_call_rtype_fn,
 	prv_call_itype_fn,
-	prv_call_labeltype_fn,
 	prv_call_sbtype_fn,
 	prv_call_sbtype_fn,
 	prv_call_ujtype_fn,
