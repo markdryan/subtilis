@@ -364,8 +364,9 @@ subtilis_rv_section_add_known_jal(subtilis_rv_section_t *s,
 	}
 
 	uj = &instr->operands.uj;
-	uj->rd = 0;
-	uj->imm = offset;
+	uj->rd = rd;
+	uj->op.imm = offset;
+	uj->is_label = false;
 }
 
 void
@@ -387,7 +388,8 @@ subtilis_rv_section_add_itype(subtilis_rv_section_t *s,
 	i = &instr->operands.i;
 	i->rd = rd;
 	i->rs1 = rs1;
-	i->imm = imm;
+	i->op.imm = imm;
+	i->is_label = false;
 }
 
 void
@@ -410,7 +412,8 @@ subtilis_rv_section_insert_itype(subtilis_rv_section_t *s,
 	i = &instr->operands.i;
 	i->rd = rd;
 	i->rs1 = rs1;
-	i->imm = imm;
+	i->op.imm = imm;
+	i->is_label = false;
 }
 
 void
@@ -429,8 +432,9 @@ subtilis_rv_section_add_utype(subtilis_rv_section_t *s,
 		return;
 
 	uj = &instr->operands.uj;
-	uj->imm = imm >> 12;
+	uj->op.imm = imm >> 12;
 	uj->rd = rd;
+	uj->is_label = false;
 }
 
 void
@@ -450,8 +454,9 @@ subtilis_rv_section_insert_utype(subtilis_rv_section_t *s,
 		return;
 
 	uj = &instr->operands.uj;
-	uj->imm = imm >> 12;
+	uj->op.imm = imm >> 12;
 	uj->rd = rd;
+	uj->is_label = false;
 }
 
 
@@ -474,7 +479,8 @@ subtilis_rv_section_add_stype(subtilis_rv_section_t *s,
 	sb = &instr->operands.sb;
 	sb->rs1 = rs1;
 	sb->rs2 = rs2;
-	sb->imm = imm;
+	sb->op.imm = imm;
+	sb->is_label = false;
 }
 
 void
@@ -497,7 +503,8 @@ subtilis_rv_section_insert_sbtype(subtilis_rv_section_t *s,
 	sb = &instr->operands.sb;
 	sb->rs1 = rs1;
 	sb->rs2 = rs2;
-	sb->imm = imm;
+	sb->op.imm = imm;
+	sb->is_label = false;
 }
 
 void

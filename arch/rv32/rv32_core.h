@@ -80,22 +80,34 @@ struct rv_rtype_t_ {
 typedef struct rv_rtype_t_ rv_rtype_t;
 
 struct rv_itype_t_ {
+	bool is_label;
 	subtilis_rv_reg_t rd;
 	subtilis_rv_reg_t rs1;
-	uint32_t imm;
+	union {
+		uint32_t imm;
+		size_t label;
+	} op;
 };
 typedef struct rv_itype_t_ rv_itype_t;
 
 struct rv_sbtype_t_ {
+	bool is_label;
 	subtilis_rv_reg_t rs1;
 	subtilis_rv_reg_t rs2;
-	uint32_t imm;
+	union {
+		uint32_t imm;
+		size_t label;
+	} op;
 };
 typedef struct rv_sbtype_t_ rv_sbtype_t;
 
 struct rv_ujtype_t_ {
+	bool is_label;
 	subtilis_rv_reg_t rd;
-	uint32_t imm; // offset in bytes not words
+	union {
+		uint32_t imm; // offset in bytes not words
+		size_t label;
+	} op;
 };
 typedef struct rv_ujtype_t_ rv_ujtype_t;
 

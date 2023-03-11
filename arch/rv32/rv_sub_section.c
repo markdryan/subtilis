@@ -359,19 +359,25 @@ static bool prv_get_label_if_jump(subtilis_rv_op_t *op, size_t *label)
 		return false;
 
 	if (op->op.instr.etype == SUBTILIS_RV_B_TYPE) {
-		*label = op->op.instr.operands.sb.imm;
+		if (!op->op.instr.operands.sb.is_label)
+			return false;
+		*label = op->op.instr.operands.sb.op.label;
 		return true;
 	}
 
 	if ((op->op.instr.itype == SUBTILIS_RV_JAL) &&
 	    (op->op.instr.operands.uj.rd == 0)) {
-		*label = op->op.instr.operands.uj.imm;
+		if (!op->op.instr.operands.uj.is_label)
+			return false;
+		*label = op->op.instr.operands.uj.op.label;
 		return true;
 	}
 
 	if ((op->op.instr.itype == SUBTILIS_RV_JALR) &&
 	    (op->op.instr.operands.i.rd == 0)) {
-		*label = op->op.instr.operands.i.imm;
+		if (!op->op.instr.operands.i.is_label)
+			return false;
+		*label = op->op.instr.operands.i.op.label;
 		return true;
 	}
 

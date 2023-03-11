@@ -120,11 +120,10 @@ static void prv_dump_i(void *user_data, subtilis_rv_op_t *op,
 		       rv_itype_t *i, subtilis_error_t *err)
 {
 	if ((itype == SUBTILIS_RV_ADDI) && (i->rs1 == 0)) {
-		if (i->rd == 0) {
+		if (i->rd == 0)
 			printf("\tnop\n");
-		} else {
-			printf("\tli x%zu, %d\n", i->rd, i->imm);
-		}
+		else
+			printf("\tli x%zu, %d\n", i->rd, i->op.imm);
 		return;
 	}
 
@@ -133,8 +132,12 @@ static void prv_dump_i(void *user_data, subtilis_rv_op_t *op,
 		return;
 	}
 
-	printf("\t%s x%zu, x%zu, %d\n", instr_desc[itype],
-	       i->rd, i->rs1, i->imm);
+	if (!i->is_label)
+		printf("\t%s x%zu, x%zu, %d\n", instr_desc[itype],
+		       i->rd, i->rs1, i->op.imm);
+	else
+		printf("\t%s x%zu, x%zu, label_%zu\n", instr_desc[itype],
+		       i->rd, i->rs1, i->op.label);
 }
 
 static void prv_dump_sb(void *user_data, subtilis_rv_op_t *op,
@@ -144,11 +147,16 @@ static void prv_dump_sb(void *user_data, subtilis_rv_op_t *op,
 {
 	if (etype == SUBTILIS_RV_S_TYPE) {
 		printf("\t%s x%zu, (%d)x%zu\n", instr_desc[itype],
-		       sb->rs2, sb->imm, sb->rs1);
+		       sb->rs2, sb->op.imm, sb->rs1);
 		return;
 	}
-	printf("\t%s x%zu, x%zu, %d\n", instr_desc[itype],
-	       sb->rs1, sb->rs2, sb->imm);
+
+	if (sb->is_label)
+		printf("\t%s x%zu, x%zu, label_%zu\n", instr_desc[itype],
+		       sb->rs1, sb->rs2, sb->op.label);
+	else
+		printf("\t%s x%zu, x%zu, %d\n", instr_desc[itype],
+		       sb->rs1, sb->rs2, sb->op.imm);
 }
 
 static void prv_dump_uj(void *user_data, subtilis_rv_op_t *op,
@@ -157,15 +165,18 @@ static void prv_dump_uj(void *user_data, subtilis_rv_op_t *op,
 			rv_ujtype_t *uj, subtilis_error_t *err)
 {
 	if ((itype == SUBTILIS_RV_JAL) && (uj->rd == 0)) {
-		printf("\tj  label_%d\n", uj->imm);
+		if (!uj->is_label)
+			printf("\tj  %d\n", (int32_t) uj->op.imm);
+		else
+			printf("\tj  label_%d\n", (int32_t) uj->op.label);
 		return;
 	}
 	if (itype == SUBTILIS_RV_LUI) {
 		printf("\t%s x%zu, %d\n", instr_desc[itype], uj->rd,
-		       uj->imm << 12);
+		       uj->op.imm << 12);
 		return;
 	}
-	printf("\t%s x%zu, %d\n", instr_desc[itype], uj->rd, uj->imm);
+	printf("\t%s x%zu, %d\n", instr_desc[itype], uj->rd, uj->op.imm);
 }
 
 void subtilis_rv_section_dump(subtilis_rv_prog_t *p,
