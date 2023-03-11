@@ -373,13 +373,10 @@ static bool prv_get_label_if_jump(subtilis_rv_op_t *op, size_t *label)
 		return true;
 	}
 
-	if ((op->op.instr.itype == SUBTILIS_RV_JALR) &&
-	    (op->op.instr.operands.i.rd == 0)) {
-		if (!op->op.instr.operands.i.is_label)
-			return false;
-		*label = op->op.instr.operands.i.op.label;
-		return true;
-	}
+	/*
+	 * JALR is an indirect jump so there's no label. Also this
+	 * is treated as a function call.
+	 */
 
 	return false;
 }

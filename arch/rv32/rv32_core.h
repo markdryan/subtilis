@@ -80,13 +80,9 @@ struct rv_rtype_t_ {
 typedef struct rv_rtype_t_ rv_rtype_t;
 
 struct rv_itype_t_ {
-	bool is_label;
 	subtilis_rv_reg_t rd;
 	subtilis_rv_reg_t rs1;
-	union {
-		int32_t imm;
-		size_t label;
-	} op;
+	int32_t imm;
 };
 typedef struct rv_itype_t_ rv_itype_t;
 
@@ -510,6 +506,17 @@ subtilis_rv_section_add_known_jal(subtilis_rv_section_t *s,
 				  subtilis_rv_reg_t rd,
 				  uint32_t offset,
 				  subtilis_error_t *err);
+
+void
+subtilis_rv_section_add_jal(subtilis_rv_section_t *s,
+			    subtilis_rv_reg_t rd,
+			    size_t label,
+			    subtilis_error_t *err);
+
+void
+subtilis_rv_section_add_jalr(subtilis_rv_section_t *s, subtilis_rv_reg_t rd,
+			     subtilis_rv_reg_t rs1, int32_t offset,
+			     subtilis_error_t *err);
 
 void subtilis_rv_prog_dump(subtilis_rv_prog_t *p);
 void subtilis_rv_instr_dump(subtilis_rv_instr_t *instr);

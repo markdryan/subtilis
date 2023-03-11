@@ -519,7 +519,7 @@ static void prv_add_section(subtilis_ir_section_t *s,
 
 	if (stack_space & 4095) {
 		stack_addi = &rv_s->op_pool->ops[addi_instr].op.instr;
-		stack_addi->operands.i.op.imm = stack_space & 4095;
+		stack_addi->operands.i.imm = stack_space & 4095;
 	}
 
 	if (stack_space > 4096) {

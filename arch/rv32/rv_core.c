@@ -370,6 +370,39 @@ subtilis_rv_section_add_known_jal(subtilis_rv_section_t *s,
 }
 
 void
+subtilis_rv_section_add_jal(subtilis_rv_section_t *s, subtilis_rv_reg_t rd,
+			    size_t label, subtilis_error_t *err)
+{
+	subtilis_rv_instr_t *instr;
+	rv_ujtype_t *uj;
+
+	instr = subtilis_rv_section_add_instr(s, SUBTILIS_RV_JAL,
+					      SUBTILIS_RV_J_TYPE,
+					      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	uj = &instr->operands.uj;
+	uj->rd = rd;
+	uj->op.label = label;
+	uj->is_label = true;
+}
+
+void
+subtilis_rv_section_add_jalr(subtilis_rv_section_t *s, subtilis_rv_reg_t rd,
+			     subtilis_rv_reg_t rs1, int32_t offset,
+			     subtilis_error_t *err)
+{
+	if (offset & 1) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	subtilis_rv_section_add_itype(s, SUBTILIS_RV_JALR, rd, rs1, offset,
+				      err);
+}
+
+void
 subtilis_rv_section_add_itype(subtilis_rv_section_t *s,
 			      subtilis_rv_instr_type_t itype,
 			      subtilis_rv_reg_t rd,
@@ -388,8 +421,7 @@ subtilis_rv_section_add_itype(subtilis_rv_section_t *s,
 	i = &instr->operands.i;
 	i->rd = rd;
 	i->rs1 = rs1;
-	i->op.imm = imm;
-	i->is_label = false;
+	i->imm = imm;
 }
 
 void
@@ -412,8 +444,7 @@ subtilis_rv_section_insert_itype(subtilis_rv_section_t *s,
 	i = &instr->operands.i;
 	i->rd = rd;
 	i->rs1 = rs1;
-	i->op.imm = imm;
-	i->is_label = false;
+	i->imm = imm;
 }
 
 void

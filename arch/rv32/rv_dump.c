@@ -123,7 +123,7 @@ static void prv_dump_i(void *user_data, subtilis_rv_op_t *op,
 		if (i->rd == 0)
 			printf("\tnop\n");
 		else
-			printf("\tli x%zu, %d\n", i->rd, i->op.imm);
+			printf("\tli x%zu, %d\n", i->rd, i->imm);
 		return;
 	}
 
@@ -132,12 +132,9 @@ static void prv_dump_i(void *user_data, subtilis_rv_op_t *op,
 		return;
 	}
 
-	if (!i->is_label)
-		printf("\t%s x%zu, x%zu, %d\n", instr_desc[itype],
-		       i->rd, i->rs1, i->op.imm);
-	else
-		printf("\t%s x%zu, x%zu, label_%zu\n", instr_desc[itype],
-		       i->rd, i->rs1, i->op.label);
+
+	printf("\t%s x%zu, x%zu, %d\n", instr_desc[itype],
+	       i->rd, i->rs1, i->imm);
 }
 
 static void prv_dump_sb(void *user_data, subtilis_rv_op_t *op,
