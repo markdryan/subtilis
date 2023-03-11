@@ -84,7 +84,7 @@ struct rv_itype_t_ {
 	subtilis_rv_reg_t rd;
 	subtilis_rv_reg_t rs1;
 	union {
-		uint32_t imm;
+		int32_t imm;
 		size_t label;
 	} op;
 };
@@ -95,7 +95,7 @@ struct rv_sbtype_t_ {
 	subtilis_rv_reg_t rs1;
 	subtilis_rv_reg_t rs2;
 	union {
-		uint32_t imm;
+		int32_t imm;
 		size_t label;
 	} op;
 };
@@ -105,7 +105,7 @@ struct rv_ujtype_t_ {
 	bool is_label;
 	subtilis_rv_reg_t rd;
 	union {
-		uint32_t imm; // offset in bytes not words
+		int32_t imm; // offset in bytes not words
 		size_t label;
 	} op;
 };
@@ -360,7 +360,7 @@ subtilis_rv_section_add_itype(subtilis_rv_section_t *s,
 			      subtilis_rv_instr_type_t itype,
 			      subtilis_rv_reg_t rd,
 			      subtilis_rv_reg_t rs1,
-			      uint32_t imm,  subtilis_error_t *err);
+			      int32_t imm,  subtilis_error_t *err);
 
 void
 subtilis_rv_section_insert_itype(subtilis_rv_section_t *s,
@@ -368,27 +368,27 @@ subtilis_rv_section_insert_itype(subtilis_rv_section_t *s,
 				 subtilis_rv_instr_type_t itype,
 				 subtilis_rv_reg_t rd,
 				 subtilis_rv_reg_t rs1,
-				 uint32_t imm,  subtilis_error_t *err);
+				 int32_t imm,  subtilis_error_t *err);
 
 void
 subtilis_rv_section_add_utype(subtilis_rv_section_t *s,
 			      subtilis_rv_instr_type_t itype,
 			      subtilis_rv_reg_t rd,
-			      uint32_t imm,  subtilis_error_t *err);
+			      int32_t imm,  subtilis_error_t *err);
 
 void
 subtilis_rv_section_insert_utype(subtilis_rv_section_t *s,
 				 subtilis_rv_op_t *pos,
 				 subtilis_rv_instr_type_t itype,
 				 subtilis_rv_reg_t rd,
-				 uint32_t imm,  subtilis_error_t *err);
+				 int32_t imm,  subtilis_error_t *err);
 
 void
 subtilis_rv_section_add_stype(subtilis_rv_section_t *s,
 			      subtilis_rv_instr_type_t itype,
 			      subtilis_rv_reg_t rs1,
 			      subtilis_rv_reg_t rs2,
-			      uint32_t imm, subtilis_error_t *err);
+			      int32_t imm, subtilis_error_t *err);
 
 void
 subtilis_rv_section_insert_sbtype(subtilis_rv_section_t *s,
@@ -396,7 +396,7 @@ subtilis_rv_section_insert_sbtype(subtilis_rv_section_t *s,
 				  subtilis_rv_instr_type_t itype,
 				  subtilis_rv_reg_t rs1,
 				  subtilis_rv_reg_t rs2,
-				  uint32_t imm, subtilis_error_t *err);
+				  int32_t imm, subtilis_error_t *err);
 
 void
 subtilis_rv_section_add_rtype(subtilis_rv_section_t *s,
