@@ -183,7 +183,7 @@ static subtilis_rv_reg_class_t *prv_new_regs(
 
 	for (; i < SUBTILIS_RV_REG_A0 + reg_args; i++) {
 		regs->next[i] = -1;
-		regs->phys_to_virt[i] = i + max_regs;
+		regs->phys_to_virt[i] = (i + max_regs) - SUBTILIS_RV_REG_A0;
 	}
 
 	for (; i < max_regs; i++) {
@@ -323,7 +323,7 @@ static void prv_sub_section_int_links(subtilis_rv_reg_ud_t *ud,
 			offset = 0;
 			base = reg;
 		}
-		subtilis_rv_section_insert_sw(ud->rv_s, op, j, base, offset,
+		subtilis_rv_section_insert_sw(ud->rv_s, op, base, j, offset,
 					      err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
@@ -592,15 +592,16 @@ static void prv_insert_spill_code_store(subtilis_rv_section_t *rv_s,
 			 */
 
 			spill_reg = SUBTILIS_RV_REG_T7;
-			subtilis_rv_section_insert_sw(rv_s, current, spill_reg,
-						      SUBTILIS_RV_REG_STACK, -4,
+			subtilis_rv_section_insert_sw(rv_s, current,
+						      SUBTILIS_RV_REG_STACK,
+						      spill_reg,-4,
 						      err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 		} else {
 			spill_reg = i;
 		}
-		regs->store_far(rv_s, current, reg, SUBTILIS_RV_REG_LOCAL,
+		regs->store_far(rv_s, current, SUBTILIS_RV_REG_LOCAL, reg,
 				spill_reg, offset, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
@@ -613,7 +614,7 @@ static void prv_insert_spill_code_store(subtilis_rv_section_t *rv_s,
 				return;
 		}
 	} else {
-		regs->store_near(rv_s, current, reg, SUBTILIS_RV_REG_LOCAL,
+		regs->store_near(rv_s, current, SUBTILIS_RV_REG_LOCAL, reg,
 				 offset, err);
 	}
 }
@@ -1071,6 +1072,7 @@ static void prv_alloc_i(void *user_data, subtilis_rv_op_t *op,
 	int dist_rs1;
 	size_t vreg_rs1;
 	bool fixed_reg_rs1;
+	subtilis_rv_reg_t ret;
 	subtilis_rv_reg_ud_t *ud = user_data;
 
 	vreg_rs1 = i->rs1;
@@ -1090,6 +1092,25 @@ static void prv_alloc_i(void *user_data, subtilis_rv_op_t *op,
 	prv_rv_reg_alloc_alloc_int_dest(ud, op, &i->rd, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	/*
+	 * We need to make sure that A0 or FA0 are marked as being
+	 * allocated when we return from a function.  Otherwise we
+	 * can get an assertion when we ensure them later in the code.
+	 */
+
+	if (itype == SUBTILIS_RV_JALR) {
+		if (i->link_type == SUBTILIS_RV_JAL_LINK_INT) {
+			ret = SUBTILIS_RV_REG_A0;
+			prv_rv_reg_alloc_alloc_int_dest(ud, op, &ret, err);
+		}
+
+/*	else if (instr->link_type == SUBTILIS_RV_BR_LINK_REAL) {
+	}
+*/
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
 
 	if (!fixed_reg_rs1)
 		ud->int_regs->next[i->rs1] = dist_rs1;
@@ -1151,9 +1172,27 @@ static void prv_alloc_uj(void *user_data, subtilis_rv_op_t *op,
 			 subtilis_rv_instr_encoding_t etype,
 			 rv_ujtype_t *uj, subtilis_error_t *err)
 {
+	subtilis_rv_reg_t ret;
 	subtilis_rv_reg_ud_t *ud = user_data;
 
 	prv_rv_reg_alloc_alloc_int_dest(ud, op, &uj->rd, err);
+
+	/*
+	 * We need to make sure that A0 or FA0 are marked as being
+	 * allocated when we return from a function.  Otherwise we
+	 * can get an assertion when we ensure them later in the code.
+	 */
+
+	if (itype == SUBTILIS_RV_JAL) {
+		if (uj->link_type == SUBTILIS_RV_JAL_LINK_INT) {
+			ret = SUBTILIS_RV_REG_A0;
+			prv_rv_reg_alloc_alloc_int_dest(ud, op, &ret, err);
+		}
+
+/*	else if (instr->link_type == SUBTILIS_RV_BR_LINK_REAL) {
+	}
+*/
+	}
 }
 
 size_t subtilis_rv_reg_alloc(subtilis_rv_section_t *rv_s,

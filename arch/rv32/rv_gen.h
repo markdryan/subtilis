@@ -24,7 +24,6 @@ void subtilis_rv_gen_mov(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_movii32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
-/*
 void subtilis_rv_gen_addii32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_subii32(subtilis_ir_section_t *s, size_t start,
@@ -39,20 +38,22 @@ void subtilis_rv_gen_subi32(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_muli32(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
+void subtilis_rv_gen_divi32(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_rv_gen_divii32(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err);
+void subtilis_rv_gen_modi32(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_storeoi8(subtilis_ir_section_t *s, size_t start,
 			       void *user_data, subtilis_error_t *err);
-*/
 void subtilis_rv_gen_storeoi32(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err);
-/*
 void subtilis_rv_gen_loadoi8(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_loadoi32(subtilis_ir_section_t *s, size_t start,
 			       void *user_data, subtilis_error_t *err);
-*/
 void subtilis_rv_gen_label(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_error_t *err);
-/*
 void subtilis_rv_gen_if_lt_imm(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_if_lte_imm(subtilis_ir_section_t *s, size_t start,
@@ -77,16 +78,19 @@ void subtilis_rv_gen_if_gt(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_if_gte(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
+/*
 void subtilis_rv_gen_if_err(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_if_err_rev(subtilis_ir_section_t *s, size_t start,
 				 void *user_data, subtilis_error_t *err);
+*/
 void subtilis_rv_gen_jump(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_jmpc(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_jmpc_rev(subtilis_ir_section_t *s, size_t start,
 			       void *user_data, subtilis_error_t *err);
+/*
 void subtilis_rv_gen_jmpc_no_label(subtilis_ir_section_t *s, size_t start,
 				    void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_cmovi32_gti32(subtilis_ir_section_t *s, size_t start,
@@ -95,6 +99,7 @@ void subtilis_rv_gen_cmovi32_lti32(subtilis_ir_section_t *s, size_t start,
 				    void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_cmovi32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
+*/
 void subtilis_rv_gen_eori32(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_ori32(subtilis_ir_section_t *s, size_t start,
@@ -134,6 +139,11 @@ void subtilis_rv_gen_eqi32(subtilis_ir_section_t *s, size_t start,
 void subtilis_rv_gen_neqi32(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_call(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
+void subtilis_rv_gen_calli32(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err);
+/*
+void subtilis_rv_gen_call(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 			       void *user_data,
@@ -145,6 +155,7 @@ void subtilis_rv_gen_call_ptr(subtilis_ir_section_t *s, size_t start,
 			       void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_calli32_ptr(subtilis_ir_section_t *s, size_t start,
 				  void *user_data, subtilis_error_t *err);
+*/
 void subtilis_rv_gen_ret(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_reti32(subtilis_ir_section_t *s, size_t start,
@@ -163,6 +174,7 @@ void subtilis_rv_gen_asri32(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_asrii32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
+/*
 void subtilis_rv_gen_pushi32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_popi32(subtilis_ir_section_t *s, size_t start,
@@ -188,4 +200,14 @@ void subtilis_rv_gen_get_proc_addr(subtilis_ir_section_t *s, size_t start,
 				    void *user_data, subtilis_error_t *err);
 
 */
+
+/*
+ * Updates all the stack adjustment statements that occur before REM statements
+ * with the correct immediate value once it is known after register allocation
+ * has completed.
+ */
+void subtilis_rv_restore_stack(subtilis_rv_section_t *rv_s,
+			       size_t stack_space, subtilis_error_t *err);
+
+
 #endif

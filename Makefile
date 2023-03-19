@@ -109,7 +109,8 @@ RV =\
 	bitset.c \
 	regs_used_virt.c \
 	rv_sub_section.c \
-	prespilt_offsets.c
+	prespilt_offsets.c \
+	rv_peephole.c
 
 FPA =\
 	fpa_gen.c \

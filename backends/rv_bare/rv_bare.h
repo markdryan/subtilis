@@ -18,6 +18,7 @@
 #define SUBTILIS_RV_BARE_H
 
 #include "../../arch/rv32/rv32_core.h"
+#include "../../common/backend_caps.h"
 #include "../../common/ir.h"
 
 extern const subtilis_ir_rule_raw_t riscos_rv_bare_rules[];
@@ -48,9 +49,14 @@ subtilis_rv_bare_generate(
 #define SUBTILIS_RV_PROGRAM_START 0x8000
 #define SUBTILIS_RV_PROGRAM_SIZE (640*1024)
 
-#define SUBTILIS_RV_CAPS 0
+#define SUBTILIS_RV_CAPS SUBTILIS_BACKEND_HAVE_DIV
 
 void subtilis_rv_bare_end(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
+
+void subtilis_rv_bare_printstr(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err);
+void subtilis_rv_bare_printnl(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err);
 
 #endif

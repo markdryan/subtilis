@@ -55,6 +55,14 @@ static void prv_dist_i(void *user_data, subtilis_rv_op_t *op,
 		return;
 	}
 
+	if ((itype == SUBTILIS_RV_JALR) &&
+	    (i->link_type == SUBTILIS_RV_JAL_LINK_INT) &&
+	    (ud->reg_num == SUBTILIS_RV_REG_A0)) {
+		ud->last_used = -1;
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
 	ud->last_used++;
 }
 
@@ -81,6 +89,18 @@ static void prv_dist_uj(void *user_data, subtilis_rv_op_t *op,
 	subtilis_dist_data_t *ud = user_data;
 
 	if (uj->rd == ud->reg_num) {
+		ud->last_used = -1;
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
+	/*
+	 * There's an implicit overwrite of A0.
+	 */
+
+	if ((itype == SUBTILIS_RV_JAL) &&
+	    (uj->link_type == SUBTILIS_RV_JAL_LINK_INT) &&
+	    (ud->reg_num == SUBTILIS_RV_REG_A0)) {
 		ud->last_used = -1;
 		subtilis_error_set_walker_failed(err);
 		return;

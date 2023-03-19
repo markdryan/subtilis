@@ -29,7 +29,7 @@
 #include "frontend/parser.h"
 
 #define SUBTILIS_RV_GEN_PROGRAM_START 0
-#define SUBTILIS_RV_GEN_ARM_CAPS 0
+#define SUBTILIS_RV_GEN_ARM_CAPS SUBTILIS_RV_CAPS
 
 static void prv_set_prog_size(uint8_t *code, size_t bytes_written,
 			      subtilis_error_t *err)

@@ -346,22 +346,21 @@ subtilis_rv_section_insert_instr(subtilis_rv_section_t *s,
 void
 subtilis_rv_section_add_known_jal(subtilis_rv_section_t *s,
 				  subtilis_rv_reg_t rd,
-				  uint32_t offset,
-				  subtilis_error_t *err)
+				  int32_t offset, subtilis_error_t *err)
 {
 	subtilis_rv_instr_t *instr;
 	rv_ujtype_t *uj;
+
+	if (offset & 1) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
 
 	instr = subtilis_rv_section_add_instr(s, SUBTILIS_RV_JAL,
 					      SUBTILIS_RV_J_TYPE,
 					      err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-
-	if (offset & 1) {
-		subtilis_error_set_assertion_failed(err);
-		return;
-	}
 
 	uj = &instr->operands.uj;
 	uj->rd = rd;
@@ -371,7 +370,8 @@ subtilis_rv_section_add_known_jal(subtilis_rv_section_t *s,
 
 void
 subtilis_rv_section_add_jal(subtilis_rv_section_t *s, subtilis_rv_reg_t rd,
-			    size_t label, subtilis_error_t *err)
+			    size_t label, subtilis_rv_jal_link_type_t link_type,
+			    subtilis_error_t *err)
 {
 	subtilis_rv_instr_t *instr;
 	rv_ujtype_t *uj;
@@ -386,11 +386,13 @@ subtilis_rv_section_add_jal(subtilis_rv_section_t *s, subtilis_rv_reg_t rd,
 	uj->rd = rd;
 	uj->op.label = label;
 	uj->is_label = true;
+	uj->link_type = link_type;
 }
 
 void
 subtilis_rv_section_add_jalr(subtilis_rv_section_t *s, subtilis_rv_reg_t rd,
 			     subtilis_rv_reg_t rs1, int32_t offset,
+			     subtilis_rv_jal_link_type_t link_type,
 			     subtilis_error_t *err)
 {
 	if (offset & 1) {
@@ -402,12 +404,15 @@ subtilis_rv_section_add_jalr(subtilis_rv_section_t *s, subtilis_rv_reg_t rd,
 				      err);
 }
 
+
 void
-subtilis_rv_section_add_itype(subtilis_rv_section_t *s,
-			      subtilis_rv_instr_type_t itype,
-			      subtilis_rv_reg_t rd,
-			      subtilis_rv_reg_t rs1,
-			      int32_t imm,  subtilis_error_t *err)
+subtilis_rv_section_add_itype_link(subtilis_rv_section_t *s,
+				   subtilis_rv_instr_type_t itype,
+				   subtilis_rv_reg_t rd,
+				   subtilis_rv_reg_t rs1,
+				   int32_t imm,
+				   subtilis_rv_jal_link_type_t link_type,
+				   subtilis_error_t *err)
 {
 	subtilis_rv_instr_t *instr;
 	rv_itype_t *i;
@@ -422,6 +427,18 @@ subtilis_rv_section_add_itype(subtilis_rv_section_t *s,
 	i->rd = rd;
 	i->rs1 = rs1;
 	i->imm = imm;
+	i->link_type = link_type;
+}
+
+void
+subtilis_rv_section_add_itype(subtilis_rv_section_t *s,
+			      subtilis_rv_instr_type_t itype,
+			      subtilis_rv_reg_t rd,
+			      subtilis_rv_reg_t rs1,
+			      int32_t imm,  subtilis_error_t *err)
+{
+	subtilis_rv_section_add_itype_link(s, itype, rd, rs1, imm,
+					   SUBTILIS_RV_JAL_LINK_VOID, err);
 }
 
 void
@@ -445,6 +462,7 @@ subtilis_rv_section_insert_itype(subtilis_rv_section_t *s,
 	i->rd = rd;
 	i->rs1 = rs1;
 	i->imm = imm;
+	i->link_type = SUBTILIS_RV_JAL_LINK_VOID;
 }
 
 void
@@ -466,6 +484,7 @@ subtilis_rv_section_add_utype(subtilis_rv_section_t *s,
 	uj->op.imm = imm >> 12;
 	uj->rd = rd;
 	uj->is_label = false;
+	uj->link_type = SUBTILIS_RV_JAL_LINK_VOID;
 }
 
 void
@@ -488,8 +507,8 @@ subtilis_rv_section_insert_utype(subtilis_rv_section_t *s,
 	uj->op.imm = imm >> 12;
 	uj->rd = rd;
 	uj->is_label = false;
+	uj->link_type = SUBTILIS_RV_JAL_LINK_VOID;
 }
-
 
 void
 subtilis_rv_section_add_stype(subtilis_rv_section_t *s,
@@ -515,18 +534,42 @@ subtilis_rv_section_add_stype(subtilis_rv_section_t *s,
 }
 
 void
-subtilis_rv_section_insert_sbtype(subtilis_rv_section_t *s,
-				  subtilis_rv_op_t *pos,
-				  subtilis_rv_instr_type_t itype,
-				  subtilis_rv_reg_t rs1,
-				  subtilis_rv_reg_t rs2,
-				  int32_t imm, subtilis_error_t *err)
+subtilis_rv_section_add_btype(subtilis_rv_section_t *s,
+			      subtilis_rv_instr_type_t itype,
+			      subtilis_rv_reg_t rs1,
+			      subtilis_rv_reg_t rs2,
+			      size_t label, subtilis_error_t *err)
+{
+	subtilis_rv_instr_t *instr;
+	rv_sbtype_t *sb;
+
+	instr = subtilis_rv_section_add_instr(s, itype,
+					      SUBTILIS_RV_B_TYPE,
+					      err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	sb = &instr->operands.sb;
+	sb->rs1 = rs1;
+	sb->rs2 = rs2;
+	sb->op.label = label;
+	sb->is_label = true;
+}
+
+
+void
+subtilis_rv_section_insert_stype(subtilis_rv_section_t *s,
+				 subtilis_rv_op_t *pos,
+				 subtilis_rv_instr_type_t itype,
+				 subtilis_rv_reg_t rs1,
+				 subtilis_rv_reg_t rs2,
+				 int32_t imm, subtilis_error_t *err)
 {
 	subtilis_rv_instr_t *instr;
 	rv_sbtype_t *sb;
 
 	instr = subtilis_rv_section_insert_instr(s, pos, itype,
-						 SUBTILIS_RV_U_TYPE,
+						 SUBTILIS_RV_S_TYPE,
 						 err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -695,12 +738,12 @@ void subtilis_rv_section_insert_lw(subtilis_rv_section_t *s,
 
 void subtilis_rv_section_insert_sw(subtilis_rv_section_t *s,
 				   subtilis_rv_op_t *pos,
-				   subtilis_rv_reg_t val,
-				   subtilis_rv_reg_t base,
+				   subtilis_rv_reg_t rs1,
+				   subtilis_rv_reg_t rs2,
 				   int32_t offset, subtilis_error_t *err)
 {
-	subtilis_rv_section_insert_sbtype(s, pos, SUBTILIS_RV_SW, val, base, \
-					  offset, err);
+	subtilis_rv_section_insert_stype(s, pos, SUBTILIS_RV_SW, rs1, rs2, \
+					 offset, err);
 }
 
 void subtilis_rv_section_insert_label(subtilis_rv_section_t *s, size_t label,
@@ -749,19 +792,52 @@ void subtilis_rv_insert_lw_helper(subtilis_rv_section_t *s,
 
 void subtilis_rv_insert_sw_helper(subtilis_rv_section_t *s,
 				  subtilis_rv_op_t *pos,
-				  subtilis_rv_reg_t dest,
-				  subtilis_rv_reg_t base,
+				  subtilis_rv_reg_t rs1,
+				  subtilis_rv_reg_t rs2,
 				  subtilis_rv_reg_t tmp,
 				  int32_t offset, subtilis_error_t *err)
 {
 	if (offset > SUBTILIS_RV_MAX_OFFSET ||
 	    offset < -SUBTILIS_RV_MIN_OFFSET) {
-		subtilis_rv_insert_offset_helper(s, pos, base, tmp, offset,
+		subtilis_rv_insert_offset_helper(s, pos, rs1, tmp, offset,
 						 err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		offset = 0;
+		rs1 = tmp;
 	}
-	subtilis_rv_section_insert_sw(s, pos, dest, base, offset, err);
+	subtilis_rv_section_insert_sw(s, pos, rs1, rs2, offset, err);
 }
 
+void subtilis_rv_section_add_ret_site(subtilis_rv_section_t *s, size_t op,
+				      subtilis_error_t *err)
+{
+	subtilis_sizet_vector_append(&s->ret_sites, op, err);
+}
+
+void subtilis_rv_section_nopify_instr(subtilis_rv_instr_t *instr)
+{
+	rv_itype_t *addi;
+
+	addi = &instr->operands.i;
+
+	instr->itype = SUBTILIS_RV_ADDI;
+	instr->etype = SUBTILIS_RV_I_TYPE;
+	addi->rd = addi->rs1 = 0;
+	addi->imm = 0;
+}
+
+bool subtilis_rv_section_is_nop(subtilis_rv_op_t *op)
+{
+	subtilis_rv_instr_t *instr;
+
+	if (op->type != SUBTILIS_RV_OP_INSTR)
+		return false;
+
+	instr = &op->op.instr;
+	if (instr->itype != SUBTILIS_RV_ADDI)
+		return false;
+
+	return ((instr->operands.i.rd == 0) && (instr->operands.i.rs1 == 0) &&
+		(instr->operands.i.imm == 0));
+}

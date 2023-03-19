@@ -431,6 +431,9 @@ void subtilis_rv_subsections_calculate(subtilis_rv_subsections_t *sss,
 				return;
 			if (op->next != SIZE_MAX) {
 				next = &rv_s->op_pool->ops[op->next];
+				if (subtilis_rv_section_is_nop(next) &&
+				    next->next != SIZE_MAX)
+					next = &rv_s->op_pool->ops[next->next];
 				if (next->type != SUBTILIS_RV_OP_LABEL) {
 					subtilis_rv_section_insert_label(
 					    rv_s, rv_s->label_counter, next,

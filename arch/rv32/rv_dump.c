@@ -64,6 +64,14 @@ static const char *const instr_desc[] = {
 	"ecall",    // SUBTILIS_RV_ECALL,
 	"ebreak",   // SUBTILIS_RV_EBREAK,
 	"hint",     // SUBTILIS_RV_HINT,
+	"mul",      // SUBTILIS_RV_MUL,
+	"mulh",     // SUBTILIS_RV_MULH,
+	"mulhsu",   // SUBTILIS_RV_MULHSU,
+	"mulhu",    // SUBTILIS_RV_MULHU,
+	"div",      // SUBTILIS_RV_DIV,
+	"divu",     // SUBTILIS_RV_DIVU,
+	"rem",      // SUBTILIS_RV_REM,
+	"remu",     // SUBTILIS_RV_REMU,
 };
 
 /* clang-format on */
@@ -119,12 +127,17 @@ static void prv_dump_i(void *user_data, subtilis_rv_op_t *op,
 		       subtilis_rv_instr_encoding_t etype,
 		       rv_itype_t *i, subtilis_error_t *err)
 {
-	if ((itype == SUBTILIS_RV_ADDI) && (i->rs1 == 0)) {
-		if (i->rd == 0)
-			printf("\tnop\n");
-		else
-			printf("\tli x%zu, %d\n", i->rd, i->imm);
-		return;
+	if (itype == SUBTILIS_RV_ADDI) {
+		if (i->rs1 == 0) {
+			if (i->rd == 0)
+				printf("\tnop\n");
+			else
+				printf("\tli x%zu, %d\n", i->rd, i->imm);
+			return;
+		} else if (i->imm == 0) {
+			printf("\tmv x%zu, x%zu\n", i->rd, i->rs1);
+			return;
+		}
 	}
 
 	if ((itype == SUBTILIS_RV_ECALL) || (itype == SUBTILIS_RV_EBREAK)) {
@@ -132,6 +145,18 @@ static void prv_dump_i(void *user_data, subtilis_rv_op_t *op,
 		return;
 	}
 
+	switch (itype) {
+	case SUBTILIS_RV_LW:
+	case SUBTILIS_RV_LH:
+	case SUBTILIS_RV_LHU:
+	case SUBTILIS_RV_LB:
+	case SUBTILIS_RV_LBU:
+		printf("\t%s x%zu, %d(x%zu)\n", instr_desc[itype],
+		       i->rd, i->imm, i->rs1);
+		return;
+	default:
+		break;
+	}
 
 	printf("\t%s x%zu, x%zu, %d\n", instr_desc[itype],
 	       i->rd, i->rs1, i->imm);

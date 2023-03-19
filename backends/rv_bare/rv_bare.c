@@ -19,6 +19,7 @@
 #include "rv_bare.h"
 
 #include "../../arch/rv32/rv_gen.h"
+#include "../../arch/rv32/rv_peephole.h"
 #include "../../arch/rv32/rv_reg_alloc.h"
 #include "../../arch/rv32/rv_sub_section.h"
 
@@ -40,55 +41,55 @@
  */
 
 const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
-/*
 	 {"ltii32 r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_arm_gen_if_lt_imm},
+		  subtilis_rv_gen_if_lt_imm},
 	 {"gtii32 r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_arm_gen_if_gt_imm},
+		  subtilis_rv_gen_if_gt_imm},
 	 {"lteii32 r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_arm_gen_if_lte_imm},
+		  subtilis_rv_gen_if_lte_imm},
 	 {"neqii32 r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_arm_gen_if_neq_imm},
+		  subtilis_rv_gen_if_neq_imm},
 	 {"eqii32 r_1, *, *\n"
 	  "jmpc r_1, label_1, *\n"
 	  "label_1",
-		  subtilis_arm_gen_if_eq_imm},
+		  subtilis_rv_gen_if_eq_imm},
 	 {"gteii32 r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_arm_gen_if_gte_imm},
+		  subtilis_rv_gen_if_gte_imm},
 	 {"lti32 r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_arm_gen_if_lt},
+		  subtilis_rv_gen_if_lt},
 	 {"gti32 r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_arm_gen_if_gt},
+		  subtilis_rv_gen_if_gt},
 	 {"ltei32 r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_arm_gen_if_lte},
+		  subtilis_rv_gen_if_lte},
 	 {"eqi32 r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_arm_gen_if_eq},
+		  subtilis_rv_gen_if_eq},
 	 {"neqi32 r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_arm_gen_if_neq},
+		  subtilis_rv_gen_if_neq},
 	 {"gtei32 r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_arm_gen_if_gte},
+		  subtilis_rv_gen_if_gte},
+/*
 	 {"ltir r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
@@ -137,12 +138,14 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
 		  subtilis_fpa_gen_if_gte},
+*/
 	 {"jmpc *, label_1, *\n"
 	  "label_1\n",
-	  subtilis_arm_gen_jmpc},
+	  subtilis_rv_gen_jmpc},
 	 {"jmpc *, *, label_1\n"
 	  "label_1\n",
-	  subtilis_arm_gen_jmpc_rev},
+	  subtilis_rv_gen_jmpc_rev},
+/*
 	 {"jmpc *, *, *\n", subtilis_arm_gen_jmpc_no_label},
 	 {"jmpcnf *, *, *\n", subtilis_arm_gen_jmpc_no_label},
 	 {"gti32 r_1, *, *\n"
@@ -150,15 +153,19 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 {"lti32 r_1, *, *\n"
 	  "cmovi32 *, r_1, *, *\n", subtilis_arm_gen_cmovi32_lti32},
 	 {"cmovi32 *, *, *, *\n", subtilis_arm_gen_cmovi32},
-	 {"call\n", subtilis_arm_gen_call},
-	 {"calli32\n", subtilis_arm_gen_calli32},
+*/
+	 {"call\n", subtilis_rv_gen_call},
+	 {"calli32\n", subtilis_rv_gen_calli32},
+/*
 	 {"callr\n", subtilis_fpa_gen_callr},
 	 {"callptr\n", subtilis_arm_gen_call_ptr},
 	 {"calli32ptr\n", subtilis_arm_gen_calli32_ptr},
 	 {"callrptr\n", subtilis_fpa_gen_callr_ptr},
-	 {"ret\n", subtilis_arm_gen_ret},
-	 {"reti32 *\n", subtilis_arm_gen_reti32},
-	 {"retii32 *\n", subtilis_arm_gen_retii32},
+*/
+	 {"ret\n", subtilis_rv_gen_ret},
+	 {"reti32 *\n", subtilis_rv_gen_reti32},
+	 {"retii32 *\n", subtilis_rv_gen_retii32},
+/*
 	 {"retr *\n", subtilis_fpa_gen_retr},
 	 {"retir *\n", subtilis_fpa_gen_retir},
 	 {"gtii32 *, *, *\n", subtilis_arm_gen_gtii32},
@@ -185,42 +192,42 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 {"gter *, *, *\n", subtilis_fpa_gen_gter},
 	 {"ltei32 *, *, *\n", subtilis_arm_gen_ltei32},
 	 {"lter *, *, *\n", subtilis_fpa_gen_lter},
-	 {"mov *, *", subtilis_arm_gen_mov},
 */
+	 {"mov *, *", subtilis_rv_gen_mov},
 	 {"movii32 *, *", subtilis_rv_gen_movii32},
-	 /*
-	 {"addii32 *, *, *", subtilis_arm_gen_addii32},
-	 {"mulii32 *, *, *", subtilis_arm_gen_mulii32},
-	 {"muli32 *, *, *", subtilis_arm_gen_muli32},
-	 {"subii32 *, *, *", subtilis_arm_gen_subii32},
-	 {"rsubii32 *, *, *", subtilis_arm_gen_rsubii32},
-	 {"addi32 *, *, *", subtilis_arm_gen_addi32},
-	 {"subi32 *, *, *", subtilis_arm_gen_subi32},
-	 {"storeoi8 *, *, *", subtilis_arm_gen_storeoi8},
-	 */
+	 {"addii32 *, *, *", subtilis_rv_gen_addii32},
+	 {"mulii32 *, *, *", subtilis_rv_gen_mulii32},
+	 {"divi32 *, *, *", subtilis_rv_gen_divi32},
+	 {"divii32 *, *, *", subtilis_rv_gen_divii32},
+	 {"modi32 *, *, *", subtilis_rv_gen_modi32},
+	 {"muli32 *, *, *", subtilis_rv_gen_muli32},
+	 {"subii32 *, *, *", subtilis_rv_gen_subii32},
+	 {"rsubii32 *, *, *", subtilis_rv_gen_rsubii32},
+	 {"addi32 *, *, *", subtilis_rv_gen_addi32},
+	 {"subi32 *, *, *", subtilis_rv_gen_subi32},
+	 {"storeoi8 *, *, *", subtilis_rv_gen_storeoi8},
 	 {"storeoi32 *, *, *", subtilis_rv_gen_storeoi32},
-	 /*
-	 {"loadoi8 *, *, *", subtilis_arm_gen_loadoi8},
-	 {"loadoi32 *, *, *", subtilis_arm_gen_loadoi32},
-	 */
+	 {"loadoi8 *, *, *", subtilis_rv_gen_loadoi8},
+	 {"loadoi32 *, *, *", subtilis_rv_gen_loadoi32},
 	 {"label_1", subtilis_rv_gen_label},
-	 /*
-	 {"printstr *, *\n", subtilis_riscos_arm_printstr},
-	 {"printnl\n", subtilis_riscos_arm_printnl},
-	 {"jmp *\n", subtilis_arm_gen_jump},
-	 {"andii32 *, *, *\n", subtilis_arm_gen_andii32},
-	 {"orii32 *, *, *\n", subtilis_arm_gen_orii32},
-	 {"eorii32 *, *, *\n", subtilis_arm_gen_eorii32},
-	 {"noti32 *, *\n", subtilis_arm_gen_mvni32},
-	 {"andi32 *, *, *\n", subtilis_arm_gen_andi32},
-	 {"ori32 *, *, *\n", subtilis_arm_gen_ori32},
-	 {"eori32 *, *, *\n", subtilis_arm_gen_eori32},
-	 {"lsli32 *, *, *\n", subtilis_arm_gen_lsli32},
-	 {"lslii32 *, *, *\n", subtilis_arm_gen_lslii32},
-	 {"lsri32 *, *, *\n", subtilis_arm_gen_lsri32},
-	 {"lsrii32 *, *, *\n", subtilis_arm_gen_lsrii32},
-	 {"asri32 *, *, *\n", subtilis_arm_gen_asri32},
-	 {"asrii32 *, *, *\n", subtilis_arm_gen_asrii32},
+	 {"printstr *, *\n", subtilis_rv_bare_printstr},
+	 {"printnl\n", subtilis_rv_bare_printnl},
+	 {"jmp *\n", subtilis_rv_gen_jump},
+
+	 {"andii32 *, *, *\n", subtilis_rv_gen_andii32},
+	 {"orii32 *, *, *\n", subtilis_rv_gen_orii32},
+	 {"eorii32 *, *, *\n", subtilis_rv_gen_eorii32},
+	 {"noti32 *, *\n", subtilis_rv_gen_mvni32},
+	 {"andi32 *, *, *\n", subtilis_rv_gen_andi32},
+	 {"ori32 *, *, *\n", subtilis_rv_gen_ori32},
+	 {"eori32 *, *, *\n", subtilis_rv_gen_eori32},
+	 {"lsli32 *, *, *\n", subtilis_rv_gen_lsli32},
+	 {"lslii32 *, *, *\n", subtilis_rv_gen_lslii32},
+	 {"lsri32 *, *, *\n", subtilis_rv_gen_lsri32},
+	 {"lsrii32 *, *, *\n", subtilis_rv_gen_lsrii32},
+	 {"asri32 *, *, *\n", subtilis_rv_gen_asri32},
+	 {"asrii32 *, *, *\n", subtilis_rv_gen_asrii32},
+/*
 	 {"movfp *, *\n", subtilis_fpa_gen_movr},
 	 {"movir *, *\n", subtilis_fpa_gen_movir},
 	 {"movfpi32 *, *\n", subtilis_fpa_gen_movri32},
@@ -462,24 +469,31 @@ static void prv_add_section(subtilis_ir_section_t *s,
 {
 	size_t lui_instr;
 	size_t addi_instr;
+	size_t sub_instr;
 	size_t spill_regs;
 	size_t stack_space;
 	subtilis_rv_instr_t *stack_addi;
 	subtilis_rv_instr_t *stack_lui;
+	subtilis_rv_instr_t *stack_sub;
+	subtilis_rv_reg_t tmp;
 
 	/*
-	 * Store required stack space in x5.  At this stage we don't know
-	 * how much stack space we're going to need so we're going to have
-	 * to do an lui + addi and fill the values in later.
+	 * Reserve space on the stack.  At this stage we don't know how
+	 * much space we'll need to reserve.  If it's more than 2047 bytes
+	 * we'll need three instructions, two to load the immediate and one
+	 * to reduce the stack pointer.  If it's less than 2048 we can do it
+	 * in one subi instruction.  Save pointers to all the instructions
+	 * so we can fix them up later.
 	 */
 
-	subtilis_rv_section_add_lui(rv_s, 5, 0, err);
+	tmp = subtilis_rv_ir_to_rv_reg(rv_s->reg_counter++);
+	subtilis_rv_section_add_lui(rv_s, tmp, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	lui_instr = rv_s->last_op;
 
-	subtilis_rv_section_add_addi(rv_s, 5, 5, 0, err);
+	subtilis_rv_section_add_addi(rv_s, tmp, tmp, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -490,9 +504,11 @@ static void prv_add_section(subtilis_ir_section_t *s,
 	 */
 
 	subtilis_rv_section_add_sub(rv_s, SUBTILIS_RV_REG_STACK,
-				    SUBTILIS_RV_REG_STACK, 5, err);
+				    SUBTILIS_RV_REG_STACK, tmp, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+
+	sub_instr = rv_s->last_op;
 
 	/*
 	 * Set up local pointer
@@ -517,86 +533,28 @@ static void prv_add_section(subtilis_ir_section_t *s,
 
 	stack_space = spill_regs + rv_s->locals;
 
-	if (stack_space & 4095) {
-		stack_addi = &rv_s->op_pool->ops[addi_instr].op.instr;
-		stack_addi->operands.i.imm = stack_space & 4095;
-	}
-
-	if (stack_space > 4096) {
-		stack_lui = &rv_s->op_pool->ops[lui_instr].op.instr;
+	stack_lui = &rv_s->op_pool->ops[lui_instr].op.instr;
+	stack_addi = &rv_s->op_pool->ops[addi_instr].op.instr;
+	stack_sub = &rv_s->op_pool->ops[sub_instr].op.instr;
+	if (stack_space <= 2048) {
+		subtilis_rv_section_nopify_instr(stack_addi);
+		subtilis_rv_section_nopify_instr(stack_lui);
+		stack_sub->etype = SUBTILIS_RV_I_TYPE;
+		stack_sub->itype = SUBTILIS_RV_ADDI;
+		stack_sub->operands.i.rd = SUBTILIS_RV_REG_STACK;
+		stack_sub->operands.i.rs1 = SUBTILIS_RV_REG_STACK;
+		stack_sub->operands.i.imm = -stack_space;
+		stack_sub->operands.i.link_type = SUBTILIS_RV_JAL_LINK_VOID;
+	} else {
 		stack_lui->operands.uj.op.imm = stack_space >> 12;
+		stack_addi->operands.i.imm = stack_space & 0xfff;
 	}
 
-
-
-#if 0
-	size_t spill_regs;
-	size_t stack_space;
-	subtilis_arm_instr_t *stack_sub;
-	subtilis_arm_data_instr_t *datai;
-	uint32_t encoded;
-	subtilis_arm_reg_t dest;
-	subtilis_arm_reg_t op2;
-	size_t move_instr;
-
-	stack_sub =
-	    subtilis_arm_section_add_instr(arm_s, SUBTILIS_ARM_INSTR_SUB, err);
+	subtilis_rv_restore_stack(rv_s, stack_space, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	move_instr = arm_s->last_op;
-
-	datai = &stack_sub->operands.data;
-	datai->status = false;
-	datai->ccode = SUBTILIS_ARM_CCODE_AL;
-	datai->dest = 13;
-	datai->op1 = datai->dest;
-	datai->op2.type = SUBTILIS_ARM_OP2_I32;
-	datai->op2.op.integer = 0;
-
-	dest = 11;
-	op2 = 13;
-
-	subtilis_arm_add_mov_reg(arm_s, SUBTILIS_ARM_CCODE_AL, false, dest, op2,
-				 err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_ir_match(s, parsed, rule_count, arm_s, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	prv_compute_sss(arm_s, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	spill_regs = subtilis_arm_reg_alloc(arm_s, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	stack_space = spill_regs + arm_s->locals;
-
-	encoded = subtilis_arm_encode_nearest(stack_space, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/*
-	 * The original datai pointer may have become invalidated by a realloc
-	 * on the ops pool.
-	 */
-
-	stack_sub = &arm_s->op_pool->ops[move_instr].op.instr;
-	datai = &stack_sub->operands.data;
-	datai->op2.op.integer = encoded;
-
-	subtilis_arm_save_regs(arm_s, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-	subtilis_arm_restore_stack(arm_s, encoded, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-//	subtilis_arm_peephole(arm_s, err);
-#endif
+	subtilis_rv_peephole(rv_s, err);
 }
 
 static void prv_add_builtin(subtilis_ir_section_t *s,
@@ -699,3 +657,85 @@ cleanup:
 
 	return NULL;
 }
+
+void subtilis_rv_bare_printstr(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	subtilis_rv_reg_t str;
+	subtilis_rv_reg_t len;
+	subtilis_rv_section_t *rv_s = user_data;
+	subtilis_ir_inst_t *printi = &s->ops[start]->op.instr;
+
+	str = subtilis_rv_ir_to_rv_reg(printi->operands[0].reg);
+	len = subtilis_rv_ir_to_rv_reg(printi->operands[1].reg);
+
+	subtilis_rv_section_add_li(rv_s, SUBTILIS_RV_REG_A0, 1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_mv(rv_s, SUBTILIS_RV_REG_A1, str, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_mv(rv_s, SUBTILIS_RV_REG_A2, len, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_li(rv_s, SUBTILIS_RV_REG_A7, 64, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_ecall(rv_s, err);
+//	subtilis_riscos_handle_graphics_error(arm_s, s, err);
+}
+
+
+void subtilis_rv_bare_printnl(subtilis_ir_section_t *s, size_t start,
+			      void *user_data, subtilis_error_t *err)
+{
+	subtilis_rv_reg_t virt_reg;
+	subtilis_rv_section_t *rv_s = user_data;
+
+	virt_reg = subtilis_rv_ir_to_rv_reg(rv_s->reg_counter++);
+
+	subtilis_rv_section_add_li(rv_s, virt_reg, 10, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_sw(rv_s, SUBTILIS_RV_REG_STACK, virt_reg,
+				   -4, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_addi(rv_s, SUBTILIS_RV_REG_STACK,
+				     SUBTILIS_RV_REG_STACK, -4, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_li(rv_s, SUBTILIS_RV_REG_A0, 1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_mv(rv_s, SUBTILIS_RV_REG_A1,
+				   SUBTILIS_RV_REG_STACK, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_li(rv_s, SUBTILIS_RV_REG_A2, 1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_li (rv_s, SUBTILIS_RV_REG_A7, 64, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_ecall(rv_s, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+//	subtilis_riscos_handle_graphics_error(arm_s, s, err);
+
+	subtilis_rv_section_add_addi(rv_s, SUBTILIS_RV_REG_STACK,
+				     SUBTILIS_RV_REG_STACK, 4, err);
+}
+
