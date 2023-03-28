@@ -110,7 +110,10 @@ RV =\
 	regs_used_virt.c \
 	rv_sub_section.c \
 	prespilt_offsets.c \
-	rv_peephole.c
+	rv_peephole.c \
+	rv_encode.c \
+	rv_link.c \
+	rv_opcodes.c
 
 FPA =\
 	fpa_gen.c \
