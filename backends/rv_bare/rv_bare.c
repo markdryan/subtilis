@@ -403,7 +403,7 @@ static void prv_mmap_heap(subtilis_rv_section_t *rv_s, subtilis_error_t *err)
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_rv_section_add_li(rv_s, SUBTILIS_RV_REG_A6, 222, err);
+	subtilis_rv_section_add_li(rv_s, SUBTILIS_RV_REG_A7, 222, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -419,19 +419,15 @@ static void prv_mmap_heap(subtilis_rv_section_t *rv_s, subtilis_error_t *err)
 				   SUBTILIS_RV_REG_A0, err);
 }
 
-static void prv_add_preamble(subtilis_rv_section_t *rv_s, size_t globals,
+static void prv_add_preamble(subtilis_rv_section_t *rv_s,
 			     subtilis_error_t *err)
 {
 	/*
-	 * These first two instructions will store the address of the data
-	 * section, which we won't know until link time.
+	 * Here we store the address of the BSS section into X3.
+	 * BSS will always be page aligned so just need auipc here.
 	 */
 
 	subtilis_rv_section_add_lui(rv_s, 3, 0, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_rv_section_add_addi(rv_s, 3, 0, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -602,7 +598,7 @@ subtilis_rv_bare_generate(
 					    s->locals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	prv_add_preamble(rv_s, globals, err);
+	prv_add_preamble(rv_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 	prv_add_section(s, rv_s, parsed, rule_count, err);

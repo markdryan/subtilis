@@ -526,6 +526,9 @@ void subtilis_rv_section_insert_sw(subtilis_rv_section_t *s,
 #define subtilis_rv_section_add_lui(s, rd, imm, err) \
 	subtilis_rv_section_add_utype(s, SUBTILIS_RV_LUI, rd, imm, err)
 
+#define subtilis_rv_section_add_auipc(s, rd, imm, err) \
+	subtilis_rv_section_add_utype(s, SUBTILIS_RV_AUIPC, rd, imm, err)
+
 #define subtilis_rv_section_add_nop(s, err) \
 	subtilis_rv_section_add_addi(s, 0, 0, 0, err)
 

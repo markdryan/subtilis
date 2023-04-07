@@ -34,13 +34,15 @@
 
 static const char shstrtab[] = {
 	0, '.', 't', 'e', 'x', 't', 0,
+	'.','b','s','s',0,
 	'.','r','i','s','c','v','.','a','t','t','r','i','b','u','t','e','s', 0,
 	'.','s','h','s','t','r','t','a','b', 0
 };
 static uint32_t align_adjust;
+static uint32_t bss_start;
 
-static void prv_add_elf_header(FILE *fp, size_t bytes_written,
-			       subtilis_error_t *err)
+static void prv_add_elf_header(FILE *fp, uint8_t *code, size_t bytes_written,
+			       size_t globals, subtilis_error_t *err)
 {
 	uint8_t elf_header[] = {
 		0x7f, 'E', 'L', 'F',
@@ -53,16 +55,16 @@ static void prv_add_elf_header(FILE *fp, size_t bytes_written,
 		2, 0, // ETYPE
 		0xf3, 0, // Machine
 		1, 0, 0, 0, // Version
-		0x74, 0x0, 0x1, 0, // Entry Point
+		0x94, 0x0, 0x1, 0, // Entry Point
 		0x34, 0, 0, 0, // Program header table offset
 		0, 0, 0, 0,  // Section header offset
 		0, 0, 0, 0, // flags
 		52, 0, // Size of this header
 		32, 0, // Size of program header entry
-		2, 0, // Number of program header entries
+		3, 0, // Number of program header entries
 		40, 0, // Size of section header entry
-		4, 0, // Number of section heaader table entries
-		3, 0, // Index of section that contains section names
+		5, 0, // Number of section heaader table entries
+		4, 0, // Index of section that contains section names
 	};
 
 	uint8_t rv_prog_header[] = {
@@ -87,12 +89,38 @@ static void prv_add_elf_header(FILE *fp, size_t bytes_written,
 		0, 0x10, 0, 0, // alignment
 	};
 
+	uint8_t bss_prog_header[] = {
+		1, 0, 0, 0, // Type LOAD
+		0, 0, 0, 0, // segment offset
+		0, 0, 0, 0, // virtual address
+		0, 0, 0, 0, // phys address
+		0, 0, 0, 0, // size in file
+		0, 0, 0, 0, // size in mem
+		6, 0, 0, 0, // flags
+		0, 0x10, 0, 0, // alignment
+	};
+
 	uint32_t prog_seg_size = sizeof(elf_header) +
 		sizeof(rv_prog_header) + sizeof(code_prog_header) +
-		bytes_written;
+		sizeof(bss_prog_header) + bytes_written;
+
+	bss_start = prog_seg_size;
+	uint32_t rem = prog_seg_size & 4095;
+	if (rem)
+		bss_start += (4096) - rem;
+	uint32_t bss_virtual = bss_start + 0x10000;
+
+	/*
+	 * Need to write the address of bss_start into the first
+	 * auipc instruction.
+	 */
+
+	uint32_t bss_start_top12 = bss_virtual >> 12;
+	uint32_t *auipc = (uint32_t*) &code[0];
+	*auipc |= bss_start_top12 << 12;
 
 	uint32_t section_headers = prog_seg_size + 0x1f + sizeof(shstrtab);
-	uint32_t rem = section_headers & 3;
+	rem = section_headers & 3;
 	if (rem)
 		section_headers = (section_headers - rem) + 4;
 
@@ -100,6 +128,10 @@ static void prv_add_elf_header(FILE *fp, size_t bytes_written,
 
 	memcpy(&elf_header[32], &section_headers, sizeof(uint32_t));
 
+	memcpy(&bss_prog_header[4], &prog_seg_size, sizeof(uint32_t));
+	memcpy(&bss_prog_header[8], &bss_virtual, sizeof(uint32_t));
+	memcpy(&bss_prog_header[12], &bss_virtual, sizeof(uint32_t));
+	memcpy(&bss_prog_header[20], &globals, sizeof(uint32_t));
 	memcpy(&rv_prog_header[4], &prog_seg_size, sizeof(uint32_t));
 	memcpy(&code_prog_header[16], &prog_seg_size, sizeof(uint32_t));
 	memcpy(&code_prog_header[20], &prog_seg_size, sizeof(uint32_t));
@@ -117,12 +149,18 @@ static void prv_add_elf_header(FILE *fp, size_t bytes_written,
 	}
 
 	if (fwrite(code_prog_header, 1, sizeof(code_prog_header), fp) <
-	    sizeof(code_prog_header))
+	    sizeof(code_prog_header)) {
+		subtilis_error_set_file_write(err);
+		return;
+	}
+
+	if (fwrite(bss_prog_header, 1, sizeof(bss_prog_header), fp) <
+	    sizeof(bss_prog_header))
 		subtilis_error_set_file_write(err);
 }
 
-static void prv_add_elf_tail(FILE *fp, size_t bytes_written,
-			     subtilis_error_t *err)
+static void prv_add_elf_tail(FILE *fp, uint8_t *code, size_t bytes_written,
+			     size_t globals, subtilis_error_t *err)
 {
 	uint8_t padding[] = {0, 0, 0, 0};
 
@@ -141,8 +179,8 @@ static void prv_add_elf_tail(FILE *fp, size_t bytes_written,
 		0, 0, 0, 0,    // Offset to name in shstrtab
 		0, 0, 0, 0,    // PROGBITS
 		0, 0, 0, 0,    // alloc, execute
-		0, 0, 0, 0, // virtual address
-		0, 0, 0, 0, // start of section offset
+		0, 0, 0, 0,    // virtual address
+		0, 0, 0, 0,    // start of section offset
 		0, 0, 0, 0,    // size of section
 		0, 0, 0, 0,    // link
 		0, 0, 0, 0,    // info
@@ -154,8 +192,8 @@ static void prv_add_elf_tail(FILE *fp, size_t bytes_written,
 		1, 0, 0, 0,    // Offset to name in shstrtab
 		1, 0, 0, 0,    // PROGBITS
 		6, 0, 0, 0,    // alloc, execute
-		0x74, 0, 1, 0, // virtual address
-		0x74, 0, 0, 0, // start of section offset
+		0x94, 0, 1, 0, // virtual address
+		0x94, 0, 0, 0, // start of section offset
 		0, 0, 0, 0,    // size of section
 		0, 0, 0, 0,    // link
 		0, 0, 0, 0,    // info
@@ -163,9 +201,22 @@ static void prv_add_elf_tail(FILE *fp, size_t bytes_written,
 		0, 0, 0, 0,    // entsize
 	};
 
+	uint8_t bss_section_header[] = {
+		7, 0, 0, 0,    // Offset to name in shstrtab
+		8, 0, 0, 0,    // NOBITS
+		3, 0, 0, 0,    // alloc, write
+		0, 0, 0, 0,    // virtual address
+		0, 0, 0, 0,    // start of section offset
+		0, 0, 0, 0,    // size of section
+		0, 0, 0, 0,    // link
+		0, 0, 0, 0,    // info
+		8, 0, 0, 0,    // alignment
+		0, 0, 0, 0,    // entsize
+	};
+
 	uint8_t rv_section_header[] = {
-		7, 0, 0, 0,       // Offset to name in shstrtab
-		3, 0, 0, 0x70,  // RISCV_ATTRIBUTE
+		12, 0, 0, 0,       // Offset to name in shstrtab
+		3, 0, 0, 0x70,    // RISCV_ATTRIBUTE
 		0, 0, 0, 0,       // flags
 		0, 0, 0, 0,       // virtual address
 		0, 0, 0, 0,       // start of section offset
@@ -177,7 +228,7 @@ static void prv_add_elf_tail(FILE *fp, size_t bytes_written,
 	};
 
 	uint8_t strtab_section_header[] = {
-		25, 0, 0, 0,      // Offset to name in shstrtab
+		30, 0, 0, 0,      // Offset to name in shstrtab
 		3, 0, 0, 0,       // STRTAB
 		0, 0, 0, 0,       // flags
 		0, 0, 0, 0,       // virtual address
@@ -189,13 +240,20 @@ static void prv_add_elf_tail(FILE *fp, size_t bytes_written,
 		0, 0, 0, 0,       // entsize
 	};
 
-	uint32_t rv_section_header_start = 0x74 + bytes_written;
+	uint32_t bss_virtual = bss_start + 0x10000;
+	uint32_t rv_section_header_start = (3 * 32) + 52 + bytes_written;
 	uint32_t strtab_section_header_start = rv_section_header_start + 0x1f;
 	uint32_t strtab_section_header_size = sizeof(shstrtab);
 
 	memcpy(&text_section_header[20], &bytes_written, sizeof(uint32_t));
 	memcpy(&rv_section_header[16], &rv_section_header_start,
 	       sizeof(uint32_t));
+
+	memcpy(&bss_section_header[12], &bss_virtual, sizeof(uint32_t));
+	memcpy(&bss_section_header[16], &rv_section_header_start,
+	       sizeof(uint32_t));
+	memcpy(&bss_section_header[20], &globals, sizeof(uint32_t));
+
 	memcpy(&strtab_section_header[16], &strtab_section_header_start,
 	       sizeof(uint32_t));
 	memcpy(&strtab_section_header[20], &strtab_section_header_size,
@@ -228,6 +286,12 @@ static void prv_add_elf_tail(FILE *fp, size_t bytes_written,
 
 	if (fwrite(text_section_header, 1, sizeof(text_section_header),fp) <
 	    sizeof(text_section_header)) {
+		subtilis_error_set_file_write(err);
+		return;
+	}
+
+	if (fwrite(bss_section_header, 1, sizeof(bss_section_header),fp) <
+	    sizeof(bss_section_header)) {
 		subtilis_error_set_file_write(err);
 		return;
 	}
@@ -307,8 +371,9 @@ int main(int argc, char *argv[])
 	//	printf("\n\n");
 	//	subtilis_arm_prog_dump(arm_p);
 
-	subtilis_rv_encode(rv_p, "a.out", prv_add_elf_header, prv_add_elf_tail,
-			   &err);
+	subtilis_rv_encode(rv_p, "a.out", p->st->max_allocated,
+			   prv_add_elf_header, prv_add_elf_tail,
+			    &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

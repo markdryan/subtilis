@@ -341,6 +341,9 @@ static subtilis_error_desc_t prv_errors[] = {
 	/* SUBTILIS_ERROR_ASS_LABEL_MISSING_COLON */
 	{"Missing ':' after label %s\n", 1},
 
+	/* SUBTILIS_ERROR_ASS_JUMP_TOO_FAR */
+	{"Jump distance too far %s\n", 1},
+
 	/* SUBTILIS_ERROR_BAD_SLICE */
 	{"Bad slice (%s to %s)\n", 2},
 

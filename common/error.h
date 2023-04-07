@@ -125,6 +125,7 @@ typedef enum {
 	SUBTILIS_ERROR_ASS_BAD_ALIGN,
 	SUBTILIS_ERROR_ASS_BAD_REAL_IMM,
 	SUBTILIS_ERROR_ASS_LABEL_MISSING_COLON,
+	SUBTILIS_ERROR_ASS_JUMP_TOO_FAR,
 	SUBTILIS_ERROR_BAD_SLICE,
 	SUBTILIS_ERROR_SWAP_TYPE_MISMATCH,
 	SUBTILIS_ERROR_LVALUE_EXPECTED,
@@ -421,7 +422,10 @@ void subtilis_error_init(subtilis_error_t *e);
 #define subtilis_error_set_label_missing_colon(e, name, file, line)            \
 	subtilis_error_set1(e, SUBTILIS_ERROR_ASS_LABEL_MISSING_COLON, name,   \
 			    file, line)
-#define subtilis_error_set_bad_slice(e, num1, num2, file, line)                \
+#define subtilis_error_set_ass_jump_top_far(e, num)                            \
+	subtilis_error_set_int(e, SUBTILIS_ERROR_ASS_JUMP_TOO_FAR, num, 0,     \
+			       "", 0, __FILE__, __LINE__)
+#define subtilis_error_set_bad_slice(e, num1, num2, file, line)		\
 	subtilis_error_set_int(e, SUBTILIS_ERROR_BAD_SLICE, num1, num2, file,  \
 			       line, __FILE__, __LINE__)
 #define subtilis_error_set_swap_type_mismatch(e, from, to, file, line)         \

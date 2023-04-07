@@ -126,6 +126,18 @@ static uint32_t *prv_get_word_ptr(uint8_t *buf, size_t index,
 	return (uint32_t *)&buf[index];
 }
 
+void subtilis_rv_link_encode_jal(uint32_t *ptr, int32_t offset)
+{
+	offset >>= 1;
+
+	*ptr |= (offset & 0x3ff) << 21;
+	if (offset & (1 << 10))
+		*ptr |= 1 << 20;
+	*ptr |= (offset & 0x7f800) << 1;
+	if (offset & (1 << 19))
+		*ptr |= 0x80000000;
+}
+
 void subtilis_rv_link_link(subtilis_rv_link_t *link, uint8_t *buf,
 			   size_t buf_size, const size_t *raw_constants,
 			   size_t num_raw_constants, subtilis_error_t *err)
@@ -158,7 +170,6 @@ void subtilis_rv_link_link(subtilis_rv_link_t *link, uint8_t *buf,
 
 		si = *ptr >> 12;
 
-		printf("Linking a call to %d\n", si);
 		if (si >= link->num_sections) {
 			subtilis_error_set_assertion_failed(err);
 			return;
@@ -175,16 +186,7 @@ void subtilis_rv_link_link(subtilis_rv_link_t *link, uint8_t *buf,
 			return;
 		}
 
-		printf("Offset is %d\n", offset);
-
-		offset >>= 1;
-
-		*ptr |= (offset & 0x3ff) << 21;
-		if (offset & (1 << 10))
-			*ptr |= 1 << 20;
-		*ptr |= (offset & 0x7f800) << 1;
-		if (offset & (1 << 19))
-			*ptr |= 0x80000000;
+		subtilis_rv_link_encode_jal(ptr, offset);
 	}
 
 	/*

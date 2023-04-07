@@ -651,37 +651,37 @@ static void prv_cmp_jmp_rev(subtilis_ir_section_t *s, size_t start,
 void subtilis_rv_gen_if_lt_imm(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err)
 {
-	prv_cmp_jmp_imm(s, start, user_data, SUBTILIS_RV_BLT, err);
+	prv_cmp_jmp_imm(s, start, user_data, SUBTILIS_RV_BGE, err);
 }
 
 void subtilis_rv_gen_if_lte_imm(subtilis_ir_section_t *s, size_t start,
 				 void *user_data, subtilis_error_t *err)
 {
-	prv_cmp_jmp_imm_rev(s, start, user_data, SUBTILIS_RV_BGE, err);
+	prv_cmp_jmp_imm_rev(s, start, user_data, SUBTILIS_RV_BLT, err);
 }
 
 void subtilis_rv_gen_if_neq_imm(subtilis_ir_section_t *s, size_t start,
 				 void *user_data, subtilis_error_t *err)
 {
-	prv_cmp_jmp_imm(s, start, user_data, SUBTILIS_RV_BNE, err);
+	prv_cmp_jmp_imm(s, start, user_data, SUBTILIS_RV_BEQ, err);
 }
 
 void subtilis_rv_gen_if_eq_imm(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err)
 {
-	prv_cmp_jmp_imm(s, start, user_data, SUBTILIS_RV_BEQ, err);
+	prv_cmp_jmp_imm(s, start, user_data, SUBTILIS_RV_BNE, err);
 }
 
 void subtilis_rv_gen_if_gt_imm(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err)
 {
-	prv_cmp_jmp_imm_rev(s, start, user_data, SUBTILIS_RV_BLT, err);
+	prv_cmp_jmp_imm_rev(s, start, user_data, SUBTILIS_RV_BGE, err);
 }
 
 void subtilis_rv_gen_if_gte_imm(subtilis_ir_section_t *s, size_t start,
 				 void *user_data, subtilis_error_t *err)
 {
-	prv_cmp_jmp_imm(s, start, user_data, SUBTILIS_RV_BGE, err);
+	prv_cmp_jmp_imm(s, start, user_data, SUBTILIS_RV_BLT, err);
 }
 
 void subtilis_rv_gen_jump(subtilis_ir_section_t *s, size_t start,
@@ -703,7 +703,7 @@ void subtilis_rv_gen_jmpc(subtilis_ir_section_t *s, size_t start,
 
 	op1 = subtilis_rv_ir_to_rv_reg(jmp->operands[0].reg);
 
-	subtilis_rv_section_add_bne(rv_s, op1, 0, jmp->operands[2].label, err);
+	subtilis_rv_section_add_beq(rv_s, op1, 0, jmp->operands[2].label, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -737,37 +737,37 @@ void subtilis_rv_gen_jmpc_rev(subtilis_ir_section_t *s, size_t start,
 void subtilis_rv_gen_if_lt(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_error_t *err)
 {
-	prv_cmp_jmp(s, start, user_data, SUBTILIS_RV_BLT, err);
+	prv_cmp_jmp(s, start, user_data, SUBTILIS_RV_BGE, err);
 }
 
 void subtilis_rv_gen_if_lte(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err)
 {
-	prv_cmp_jmp_rev(s, start, user_data, SUBTILIS_RV_BGE, err);
+	prv_cmp_jmp_rev(s, start, user_data, SUBTILIS_RV_BLT, err);
 }
 
 void subtilis_rv_gen_if_eq(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_error_t *err)
 {
-	prv_cmp_jmp(s, start, user_data, SUBTILIS_RV_BEQ, err);
+	prv_cmp_jmp(s, start, user_data, SUBTILIS_RV_BNE, err);
 }
 
 void subtilis_rv_gen_if_neq(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err)
 {
-	prv_cmp_jmp(s, start, user_data, SUBTILIS_RV_BNE, err);
+	prv_cmp_jmp(s, start, user_data, SUBTILIS_RV_BEQ, err);
 }
 
 void subtilis_rv_gen_if_gt(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_error_t *err)
 {
-	prv_cmp_jmp_rev(s, start, user_data, SUBTILIS_RV_BLT, err);
+	prv_cmp_jmp_rev(s, start, user_data, SUBTILIS_RV_BGE, err);
 }
 
 void subtilis_rv_gen_if_gte(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err)
 {
-	prv_cmp_jmp_rev(s, start, user_data, SUBTILIS_RV_BGE, err);
+	prv_cmp_jmp(s, start, user_data, SUBTILIS_RV_BLT, err);
 }
 
 void subtilis_rv_gen_eori32(subtilis_ir_section_t *s, size_t start,

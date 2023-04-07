@@ -71,6 +71,7 @@ typedef struct subtilis_rv_encode_const_t_ subtilis_rv_encode_const_t;
 
 typedef enum {
 	SUBTILIS_RV_ENCODE_BP_TYPE_BRANCH,
+	SUBTILIS_RV_ENCODE_BP_TYPE_JAL,
 	SUBTILIS_RV_ENCODE_BP_TYPE_ADR,
 } subtilis_rv_encode_bp_type_t;
 
@@ -101,6 +102,7 @@ struct subtilis_rv_encode_ud_t_ {
 	subtilis_rv_link_t *link;
 	size_t ldrc_real;
 	size_t ldrc_int;
+	size_t globals;
 };
 
 typedef struct subtilis_rv_encode_ud_t_ subtilis_rv_encode_ud_t;
@@ -116,6 +118,7 @@ static void prv_free_encode_ud(subtilis_rv_encode_ud_t *ud)
 
 static void prv_init_encode_ud(subtilis_rv_encode_ud_t *ud,
 			       subtilis_rv_prog_t *rv_p,
+			       size_t globals,
 			       subtilis_error_t *err)
 {
 	size_t i;
@@ -160,6 +163,8 @@ static void prv_init_encode_ud(subtilis_rv_encode_ud_t *ud,
 	ud->link = subtilis_rv_link_new(rv_p->num_sections, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto on_error;
+
+	ud->globals = globals;
 
 	return;
 
@@ -237,6 +242,11 @@ static uint32_t *prv_get_word_ptr(subtilis_rv_encode_ud_t *ud, size_t index,
 {
 	if (index & 3) {
 		subtilis_error_set_ass_bad_alignment(err);
+		return NULL;
+	}
+
+	if (index + 4 > ud->bytes_written) {
+		subtilis_error_set_assertion_failed(err);
 		return NULL;
 	}
 
@@ -446,6 +456,95 @@ static int32_t prv_compute_dist(size_t first, size_t second, size_t limit,
 	return (int32_t )diff;
 }
 
+static void prv_reverse_branch(uint32_t *branch, subtilis_error_t *err)
+{
+	uint32_t new_funct3;
+	uint32_t word = *branch & 0x01ff807f;
+	uint32_t funct3 = (*branch >> 12) & 7;
+
+	if (rv_opcodes[SUBTILIS_RV_BEQ].funct3 == funct3) {
+		new_funct3 = rv_opcodes[SUBTILIS_RV_BNE].funct3;
+	} else if (rv_opcodes[SUBTILIS_RV_BNE].funct3 == funct3) {
+		new_funct3 = rv_opcodes[SUBTILIS_RV_BEQ].funct3;
+	} else if (rv_opcodes[SUBTILIS_RV_BLT].funct3 == funct3) {
+		new_funct3 = rv_opcodes[SUBTILIS_RV_BGE].funct3;
+	} else if (rv_opcodes[SUBTILIS_RV_BGE].funct3 == funct3) {
+		new_funct3 = rv_opcodes[SUBTILIS_RV_BLT].funct3;
+	} else if (rv_opcodes[SUBTILIS_RV_BLTU].funct3 == funct3) {
+		new_funct3 = rv_opcodes[SUBTILIS_RV_BGEU].funct3;
+	} else if (rv_opcodes[SUBTILIS_RV_BGEU].funct3 == funct3) {
+		new_funct3 = rv_opcodes[SUBTILIS_RV_BLTU].funct3;
+	} else {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	word |= new_funct3 << 12;
+
+	/*
+	 * skip one instruction.
+	 */
+
+	word |= 4 << 8;
+
+	*branch = word;
+}
+
+static void prv_encode_long_branch(subtilis_rv_encode_ud_t *ud,
+				   size_t code_index, int32_t dist,
+				   subtilis_error_t *err)
+{
+	uint32_t *branch;
+	uint32_t *jump;
+
+	/*
+	 * The dist is going to be -4 as we're encoding it into the instruction
+	 * that follows the branch.
+	 */
+
+	dist -= 4;
+
+	if ((dist < -1048576) || dist >= 1048576) {
+		/*
+		 * TODO: need a proper error for this.
+		 */
+
+		subtilis_error_set_ass_jump_top_far(err, dist);
+		return;
+	}
+
+	/*
+	 * We need to reverse our branch and jump over the next instruction
+	 * which will be a jump.
+	 */
+
+	/*
+	 * There must be at least 3 more instructions in the code stream.
+	 * Our current branch, a nop which we'll turn into a jal and a
+	 * an instruction to execute if the original branch condition is
+	 * not taken.
+	 */
+
+	if (code_index + 12 > ud->bytes_written) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	branch = (uint32_t *)&ud->code[code_index];
+	jump = (uint32_t *)&ud->code[code_index + 4];
+
+	prv_reverse_branch(branch, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * Convert our NOP into a jump.
+	 */
+
+	*jump = rv_opcodes[SUBTILIS_RV_JAL].opcode;
+	subtilis_rv_link_encode_jal(jump, dist);
+}
+
 static void prv_apply_back_patches(subtilis_rv_encode_ud_t *ud,
 				   subtilis_error_t *err)
 {
@@ -462,19 +561,27 @@ static void prv_apply_back_patches(subtilis_rv_encode_ud_t *ud,
 			return;
 		switch (bp->type) {
 		case SUBTILIS_RV_ENCODE_BP_TYPE_BRANCH:
-			dist = prv_compute_dist(ud->label_offsets[bp->label],
-						bp->code_index, 2048, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-/*
- * TODO, need to handle long jumps.
- */
+			dist = ud->label_offsets[bp->label] - bp->code_index;
+			if (dist < -4096 || dist > 4095) {
+				prv_encode_long_branch(ud, bp->code_index, dist,
+						       err);
+				if (err->type != SUBTILIS_ERROR_OK)
+					return;
+				continue;
+			}
 			dist = (dist / 2);
 			dist &= 0xfff;
 			*ptr |= (dist & 0xf) << 8;
 			*ptr |= (dist  & 0x400) >> 3;
 			*ptr |= (dist & 0x3f0) << 21;
 			*ptr |= (dist & 0x800) << 20;
+			break;
+		case SUBTILIS_RV_ENCODE_BP_TYPE_JAL:
+			dist = prv_compute_dist(ud->label_offsets[bp->label],
+						bp->code_index, 4096, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			subtilis_rv_link_encode_jal(ptr, dist);
 			break;
 		default:
 			subtilis_error_set_assertion_failed(err);
@@ -619,18 +726,16 @@ static void prv_write_file(subtilis_rv_encode_ud_t *ud, const char *fname,
 		return;
 	}
 
-	plat_header(fp, ud->bytes_written, err);
+	plat_header(fp, ud->code, ud->bytes_written, ud->globals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto fail;
-
-	printf("Second word %x\n", *((uint32_t*) &ud->code[4]));
 
 	if (fwrite(ud->code, 1, ud->bytes_written, fp) < ud->bytes_written) {
 		subtilis_error_set_file_write(err);
 		goto fail;
 	}
 
-	plat_tail(fp, ud->bytes_written, err);
+	plat_tail(fp, ud->code, ud->bytes_written, ud->globals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto fail;
 
@@ -704,7 +809,7 @@ static void prv_encode_sb(void *user_data, subtilis_rv_op_t *op,
 	} else {
 		/*
 		 * If it's a branch we'll need to fill in the immediate field
-		 * when we link. That's currently how this is done, even for
+		 * when we apply the backpatches. That's currently how this is
 		 * local jumps.
 		 */
 
@@ -737,18 +842,26 @@ static void prv_encode_uj(void *user_data, subtilis_rv_op_t *op,
 	word |= (uj->rd & 0x1f) << 7;
 	if (etype == SUBTILIS_RV_U_TYPE) {
 		word |= uj->op.imm << 12;
-	} else {
+	} else if (uj->rd != 0) {
 		/*
-		 * If it's a jump we'll leave it 0 for now and fill in the
+		 * If it's a call we'll leave it 0 for now and fill in the
 		 * address when we link.
 		 */
-
-		printf("Jumping to function %d\n", uj->op.label);
 
 		subtilis_rv_link_add(ud->link, ud->bytes_written, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		word |= (uj->op.label << 12);
+	} else {
+		/*
+		 * Otherwise it's an unconditional jump.
+		 */
+
+		prv_add_back_patch(ud, SUBTILIS_RV_ENCODE_BP_TYPE_JAL,
+				   uj->op.label, ud->bytes_written, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
 	}
 
 	prv_ensure_code(ud, err);
@@ -933,13 +1046,14 @@ cleanup:
 }
 
 void subtilis_rv_encode(subtilis_rv_prog_t *rv_p, const char *fname,
+			size_t globals,
 			subtilis_rv_encode_plat_t plat_header,
 			subtilis_rv_encode_plat_t plat_tail,
 			subtilis_error_t *err)
 {
 	subtilis_rv_encode_ud_t ud;
 
-	prv_init_encode_ud(&ud, rv_p, err);
+	prv_init_encode_ud(&ud, rv_p, globals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
@@ -955,12 +1069,14 @@ cleanup:
 }
 
 uint8_t *subtilis_rv_encode_buf(subtilis_rv_prog_t *rv_p,
-				size_t *bytes_written, subtilis_error_t *err)
+				size_t *bytes_written,
+				size_t globals,
+				subtilis_error_t *err)
 {
 	subtilis_rv_encode_ud_t ud;
 	uint8_t *retval = NULL;
 
-	prv_init_encode_ud(&ud, rv_p, err);
+	prv_init_encode_ud(&ud, rv_p, globals, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
