@@ -22,12 +22,20 @@
 typedef void (*subtilis_rv_encode_plat_t)(FILE *fp, uint8_t *bytes,
 					  size_t bytes_written,
 					  size_t globals,
+					  void *user_data,
 					  subtilis_error_t *err);
+
+struct subtilis_rv_encode_t_ {
+	subtilis_rv_encode_plat_t header;
+	subtilis_rv_encode_plat_t tail;
+	void *user_data;
+};
+
+typedef struct subtilis_rv_encode_t_ subtilis_rv_encode_t;
 
 void subtilis_rv_encode(subtilis_rv_prog_t *rv_p, const char *fname,
 			size_t globals,
-			subtilis_rv_encode_plat_t plat_header,
-			subtilis_rv_encode_plat_t plat_tail,
+			subtilis_rv_encode_t *plat,
 			subtilis_error_t *err);
 uint8_t *subtilis_rv_encode_buf(subtilis_rv_prog_t *arm_p,
 				size_t *bytes_written, size_t globals,

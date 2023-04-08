@@ -714,8 +714,7 @@ static void prv_add_const(subtilis_rv_encode_ud_t *ud, size_t label,
 }
 
 static void prv_write_file(subtilis_rv_encode_ud_t *ud, const char *fname,
-			   subtilis_rv_encode_plat_t plat_header,
-			   subtilis_rv_encode_plat_t plat_tail,
+			   subtilis_rv_encode_t *plat,
 			   subtilis_error_t *err)
 {
 	FILE *fp;
@@ -726,7 +725,8 @@ static void prv_write_file(subtilis_rv_encode_ud_t *ud, const char *fname,
 		return;
 	}
 
-	plat_header(fp, ud->code, ud->bytes_written, ud->globals, err);
+	plat->header(fp, ud->code, ud->bytes_written, ud->globals,
+		     plat->user_data, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto fail;
 
@@ -735,7 +735,8 @@ static void prv_write_file(subtilis_rv_encode_ud_t *ud, const char *fname,
 		goto fail;
 	}
 
-	plat_tail(fp, ud->code, ud->bytes_written, ud->globals, err);
+	plat->tail(fp, ud->code, ud->bytes_written, ud->globals,
+		   plat->user_data, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto fail;
 
@@ -1046,9 +1047,7 @@ cleanup:
 }
 
 void subtilis_rv_encode(subtilis_rv_prog_t *rv_p, const char *fname,
-			size_t globals,
-			subtilis_rv_encode_plat_t plat_header,
-			subtilis_rv_encode_plat_t plat_tail,
+			size_t globals, subtilis_rv_encode_t *plat,
 			subtilis_error_t *err)
 {
 	subtilis_rv_encode_ud_t ud;
@@ -1061,7 +1060,7 @@ void subtilis_rv_encode(subtilis_rv_prog_t *rv_p, const char *fname,
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	prv_write_file(&ud, fname, plat_header, plat_tail, err);
+	prv_write_file(&ud, fname, plat, err);
 
 cleanup:
 

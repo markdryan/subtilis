@@ -38,12 +38,20 @@ static const char shstrtab[] = {
 	'.','r','i','s','c','v','.','a','t','t','r','i','b','u','t','e','s', 0,
 	'.','s','h','s','t','r','t','a','b', 0
 };
-static uint32_t align_adjust;
-static uint32_t bss_start;
+
+struct subtilis_rv_elf_data_t_ {
+	uint32_t align_adjust;
+	uint32_t bss_start;
+};
+
+typedef struct subtilis_rv_elf_data_t_ subtilis_rv_elf_data_t;
 
 static void prv_add_elf_header(FILE *fp, uint8_t *code, size_t bytes_written,
-			       size_t globals, subtilis_error_t *err)
+			       size_t globals, void *user_data,
+			       subtilis_error_t *err)
 {
+	subtilis_rv_elf_data_t* elf_data = (subtilis_rv_elf_data_t* ) user_data;
+
 	uint8_t elf_header[] = {
 		0x7f, 'E', 'L', 'F',
 		1, // 32 bit
@@ -104,11 +112,11 @@ static void prv_add_elf_header(FILE *fp, uint8_t *code, size_t bytes_written,
 		sizeof(rv_prog_header) + sizeof(code_prog_header) +
 		sizeof(bss_prog_header) + bytes_written;
 
-	bss_start = prog_seg_size;
+	elf_data->bss_start = prog_seg_size;
 	uint32_t rem = prog_seg_size & 4095;
 	if (rem)
-		bss_start += (4096) - rem;
-	uint32_t bss_virtual = bss_start + 0x10000;
+		elf_data->bss_start += (4096) - rem;
+	uint32_t bss_virtual = elf_data->bss_start + 0x10000;
 
 	/*
 	 * Need to write the address of bss_start into the first
@@ -124,7 +132,7 @@ static void prv_add_elf_header(FILE *fp, uint8_t *code, size_t bytes_written,
 	if (rem)
 		section_headers = (section_headers - rem) + 4;
 
-	align_adjust = 4 - rem;
+	elf_data->align_adjust = 4 - rem;
 
 	memcpy(&elf_header[32], &section_headers, sizeof(uint32_t));
 
@@ -160,8 +168,11 @@ static void prv_add_elf_header(FILE *fp, uint8_t *code, size_t bytes_written,
 }
 
 static void prv_add_elf_tail(FILE *fp, uint8_t *code, size_t bytes_written,
-			     size_t globals, subtilis_error_t *err)
+			     size_t globals, void *user_data,
+			     subtilis_error_t *err)
 {
+	subtilis_rv_elf_data_t* elf_data = (subtilis_rv_elf_data_t* ) user_data;
+
 	uint8_t padding[] = {0, 0, 0, 0};
 
 	uint8_t rv_section[] = {
@@ -240,7 +251,7 @@ static void prv_add_elf_tail(FILE *fp, uint8_t *code, size_t bytes_written,
 		0, 0, 0, 0,       // entsize
 	};
 
-	uint32_t bss_virtual = bss_start + 0x10000;
+	uint32_t bss_virtual = elf_data->bss_start + 0x10000;
 	uint32_t rv_section_header_start = (3 * 32) + 52 + bytes_written;
 	uint32_t strtab_section_header_start = rv_section_header_start + 0x1f;
 	uint32_t strtab_section_header_size = sizeof(shstrtab);
@@ -271,8 +282,9 @@ static void prv_add_elf_tail(FILE *fp, uint8_t *code, size_t bytes_written,
 		return;
 	}
 
-	if (align_adjust > 0) {
-		if (fwrite(padding, 1, align_adjust,fp) < align_adjust) {
+	if (elf_data->align_adjust > 0) {
+		if (fwrite(padding, 1, elf_data->align_adjust,fp) <
+		    elf_data->align_adjust) {
 			subtilis_error_set_file_write(err);
 			return;
 		}
@@ -315,6 +327,7 @@ int main(int argc, char *argv[])
 	subtilis_stream_t s;
 	subtilis_settings_t settings;
 	subtilis_backend_t backend;
+	subtilis_rv_elf_data_t elf_data;
 	subtilis_lexer_t *l = NULL;
 	subtilis_parser_t *p = NULL;
 	subtilis_rv_prog_t *rv_p = NULL;
@@ -371,9 +384,15 @@ int main(int argc, char *argv[])
 	//	printf("\n\n");
 	//	subtilis_arm_prog_dump(arm_p);
 
+
+	subtilis_rv_encode_t encode_data = {
+		prv_add_elf_header,
+		prv_add_elf_tail,
+		&elf_data,
+	};
+
 	subtilis_rv_encode(rv_p, "a.out", p->st->max_allocated,
-			   prv_add_elf_header, prv_add_elf_tail,
-			    &err);
+			   &encode_data, &err);
 	if (err.type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
