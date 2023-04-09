@@ -24,7 +24,6 @@
 struct subtilis_rv_link_constant_t_ {
 	size_t index;
 	size_t code_index;
-	size_t constant_offset;
 };
 
 typedef struct subtilis_rv_link_constant_t_ subtilis_rv_link_constant_t;
@@ -50,7 +49,6 @@ subtilis_rv_link_t *subtilis_rv_link_new(size_t sections,
 void subtilis_rv_link_add(subtilis_rv_link_t *link, size_t offset,
 			  subtilis_error_t *err);
 void subtilis_rv_link_constant_add(subtilis_rv_link_t *link, size_t offset,
-				   size_t constant_offset,
 				   size_t constant_index,
 				   subtilis_error_t *err);
 void subtilis_rv_link_extref_add(subtilis_rv_link_t *link, size_t offset,

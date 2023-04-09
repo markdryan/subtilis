@@ -16,6 +16,8 @@
 
 #include <stdlib.h>
 
+#include "rv32_core.h"
+#include "rv_opcodes.h"
 #include "rv_link.h"
 
 subtilis_rv_link_t *subtilis_rv_link_new(size_t sections,
@@ -83,7 +85,7 @@ static void prv_ensure_const_arr(subtilis_rv_link_constant_t **arr,
 }
 
 void subtilis_rv_link_constant_add(subtilis_rv_link_t *link,
-				   size_t code_index, size_t constant_offset,
+				   size_t code_index,
 				   size_t constant_index,
 				   subtilis_error_t *err)
 {
@@ -92,7 +94,6 @@ void subtilis_rv_link_constant_add(subtilis_rv_link_t *link,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	link->constants[link->num_constants].index = constant_index;
-	link->constants[link->num_constants].constant_offset = constant_offset;
 	link->constants[link->num_constants++].code_index = code_index;
 }
 
@@ -105,7 +106,7 @@ void subtilis_rv_link_extref_add(subtilis_rv_link_t *link, size_t code_index,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	link->extrefs[link->num_extrefs].index = section_index;
-	link->extrefs[link->num_extrefs].constant_offset = constant_offset;
+//	link->extrefs[link->num_extrefs].constant_offset = constant_offset;
 	link->extrefs[link->num_extrefs++].code_index = code_index;
 }
 
@@ -146,8 +147,12 @@ void subtilis_rv_link_link(subtilis_rv_link_t *link, uint8_t *buf,
 	size_t si;
 	size_t index;
 	uint32_t *ptr;
+	uint32_t *auipc;
+	uint32_t *addi;
+	int32_t dist;
 	subtilis_rv_link_constant_t *cnst;
 	int32_t offset;
+	const rv_opcode_t *op_code;
 
 	/*
 	 * For direct function calls.
@@ -190,13 +195,18 @@ void subtilis_rv_link_link(subtilis_rv_link_t *link, uint8_t *buf,
 	}
 
 	/*
-	 * For integer and real constants.  Here we're just adjusting the
-	 * offset in the load instruction.
+	 * For real constants and buffers.  Here we're just adjusting the
+	 * offset in the la (auipc and addi) instructions.
 	 */
-#if 0
+
 	for (i = 0; i < link->num_constants; i++) {
 		cnst = &link->constants[i];
-		if (cnst->constant_offset >= buf_size) {
+
+		/*
+		 * We need at least two instructions
+		 */
+
+		if (cnst->code_index + 8 > buf_size) {
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
@@ -204,14 +214,41 @@ void subtilis_rv_link_link(subtilis_rv_link_t *link, uint8_t *buf,
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
-		ptr = prv_get_word_ptr(buf, cnst->constant_offset, err);
+		auipc = prv_get_word_ptr(buf, cnst->code_index, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		*ptr = (raw_constants[cnst->index] - cnst->code_index);
-		/* Adjust for PC relative addressing. */
-		*ptr -= 12;
+
+		addi = prv_get_word_ptr(buf, cnst->code_index + 4, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		/*
+		 * check this is an aupic
+		 */
+
+		op_code = &rv_opcodes[SUBTILIS_RV_AUIPC];
+		if ((*auipc & 0x7f) != op_code->opcode) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+
+		/*
+		 * check this is an addi
+		 */
+
+		op_code = &rv_opcodes[SUBTILIS_RV_ADDI];
+		if (((*addi & 0x7f) != op_code->opcode) ||
+		    ((*addi >> 12) & 0x7) != op_code->funct3) {
+			subtilis_error_set_assertion_failed(err);
+			return;
+		}
+		dist = (raw_constants[cnst->index] - cnst->code_index);
+
+		*auipc |= dist & 0xfffff000;
+		*addi |= (dist & 0xfff) << 20;
 	}
 
+#if 0
 	/*
 	 * For function pointers.
 	 */

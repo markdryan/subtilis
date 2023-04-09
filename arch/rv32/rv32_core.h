@@ -165,6 +165,12 @@ typedef enum {
 	SUBTILIS_RV_DIVU,
 	SUBTILIS_RV_REM,
 	SUBTILIS_RV_REMU,
+
+	/*
+	 * not real instructions
+	 */
+
+	SUBTILIS_RV_LA,
 } subtilis_rv_instr_type_t;
 
 typedef enum {
@@ -451,6 +457,9 @@ subtilis_rv_section_insert_li(subtilis_rv_section_t *s,
 			      subtilis_rv_op_t *pos,
 			      subtilis_rv_reg_t rd,
 			      int32_t imm,  subtilis_error_t *err);
+
+#define subtilis_rv_section_add_la(s, rd, id, err) \
+	subtilis_rv_section_add_utype(s, SUBTILIS_RV_LA, rd, id, err)
 
 void subtilis_rv_section_add_label(subtilis_rv_section_t *s, size_t label,
 				   subtilis_error_t *err);

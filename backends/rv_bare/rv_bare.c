@@ -282,7 +282,9 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 {"getref *, *\n", subtilis_riscos_arm_getref},
 	 {"pushi32 *\n", subtilis_arm_gen_pushi32},
 	 {"popi32 *\n", subtilis_arm_gen_popi32},
-	 {"lca *, *\n", subtilis_arm_gen_lca},
+*/
+	 {"lca *, *\n", subtilis_rv_gen_lca},
+/*
 	 {"at *, *\n", subtilis_riscos_arm_at},
 	 {"pos *\n", subtilis_riscos_arm_pos},
 	 {"vpos *\n", subtilis_riscos_arm_vpos},

@@ -996,3 +996,15 @@ void subtilis_rv_restore_stack(subtilis_rv_section_t *rv_s,
 		addi->imm = ((int32_t) stack_space) & 0xfff;
 	}
 }
+
+void subtilis_rv_gen_lca(subtilis_ir_section_t *s, size_t start,
+			 void *user_data, subtilis_error_t *err)
+{
+	subtilis_rv_section_t *rv_s = user_data;
+	subtilis_ir_inst_t *ir_op = &s->ops[start]->op.instr;
+	int32_t const_id = ir_op->operands[1].integer;
+	subtilis_rv_reg_t dest =
+		subtilis_rv_ir_to_rv_reg(ir_op->operands[0].reg);
+
+	subtilis_rv_section_add_la(rv_s, dest, const_id, err);
+}

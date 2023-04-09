@@ -33,22 +33,17 @@
  */
 
 /*
- * A quick comment on constant encoding.  There are three main types of
+ * A quick comment on constant encoding.  There are two main types of
  * constants that can be inserted into the code stream, outside of an
- * instruction; 32 bit integer, 64 bit floats and buffers.  Integer and
- * floating point constants are placed in constant pools which appear
- * throughout the code.  Buffer constants are placed at the end of the
+ * instruction; 64 bit floats and buffers.
+ * Floating point constants are placed in constant pools which appear
+ * at the end of a function.  Buffer constants are placed at the end of the
  * program and an offset to their location is recorded in a constant pool.
- * If a function is small there's likely to be only one constant pool at
- * the end of the function.  However, if the function is large it's likely
- * to contain multiple constant pools.  The pools appear inline in the
- * function and are skipped with a branch statement during execution.
  *
  * There are two different types of constants.  Constants whose values
  * are known at compile time, and constants whose value are not known
  * until the program is linked (as they're offsets to other locations
- * in the program).  When encodin link time constants we write 0xffff
- * at compile time and then fill the values in a link time.
+ * in the program).
  */
 
 #define SUBTILIS_ENCODER_BACKPATCH_GRAN 128
@@ -618,62 +613,6 @@ static void prv_apply_back_patches(subtilis_rv_encode_ud_t *ud,
 	}
 }
 
-static void prv_check_pool_adj(subtilis_rv_encode_ud_t *ud, size_t adj,
-			       subtilis_error_t *err)
-{
-#if 0
-	uint32_t word = 0;
-	bool pool_needed = false;
-	size_t pool_end = (ud->int_const_count * 4) +
-			  (ud->real_const_count * 8) + ud->bytes_written + adj;
-
-	/* We need to leave one word for the branch statement. */
-
-	pool_needed =
-	    (ud->ldrc_real != SIZE_MAX) && ((pool_end - ud->ldrc_real) >= 1020);
-	if (!pool_needed)
-		pool_needed = (ud->ldrc_int != SIZE_MAX) &&
-			      ((pool_end - ud->ldrc_int) >= 4092);
-
-	if (!pool_needed)
-		return;
-
-	/* We add a B instruction to jump over the pool */
-
-	word |= SUBTILIS_ARM_CCODE_AL << 28;
-	word |= 0x5 << 25;
-	prv_add_back_patch(ud, SUBTILIS_ARM_ENCODE_BP_TYPE_BRANCH,
-			   ud->max_labels, ud->bytes_written, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	prv_ensure_code(ud, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-	prv_add_word(ud, word, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/* Now we write the constants */
-
-	prv_flush_constants(ud, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	/* Finally, we add the label for the branch */
-
-	prv_encode_label(ud, NULL, ud->max_labels, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-	ud->max_labels++;
-#endif
-}
-
-static void prv_check_pool(subtilis_rv_encode_ud_t *ud, subtilis_error_t *err)
-{
-	prv_check_pool_adj(ud, 0, err);
-}
-
 static void prv_reset_encode_ud(subtilis_rv_encode_ud_t *ud,
 				subtilis_rv_section_t *rv_s)
 {
@@ -830,14 +769,68 @@ static void prv_encode_sb(void *user_data, subtilis_rv_op_t *op,
 	prv_add_word(ud, word, err);
 }
 
+static void prv_encode_la(subtilis_rv_encode_ud_t *ud, subtilis_rv_op_t *op,
+			  rv_ujtype_t *uj, subtilis_error_t *err)
+{
+	const rv_opcode_t *op_code;
+	uint32_t word = 0;
+
+	/*
+	 * Encode aupic
+	 */
+
+	word = rv_opcodes[SUBTILIS_RV_AUIPC].opcode;
+	word |= (uj->rd & 0x1f) << 7;
+
+	/*
+	 * We'll fill in the address at link time into the
+	 * auipc and addi instructions.
+	 */
+
+	subtilis_rv_link_constant_add(ud->link, ud->bytes_written,
+				      uj->op.imm, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * Encode the addi
+	 */
+
+	op_code = &rv_opcodes[SUBTILIS_RV_ADDI];
+	word = op_code->opcode | (op_code->funct3 << 12);
+	word |= (uj->rd & 0x1f) << 7;
+	word |= (uj->rd & 0x1f) << 15;
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
 static void prv_encode_uj(void *user_data, subtilis_rv_op_t *op,
 			  subtilis_rv_instr_type_t itype,
 			  subtilis_rv_instr_encoding_t etype,
 			  rv_ujtype_t *uj, subtilis_error_t *err)
 {
 	uint32_t word;
-	const rv_opcode_t *op_code = &rv_opcodes[itype];
+	const rv_opcode_t *op_code;
 	subtilis_rv_encode_ud_t *ud = user_data;
+
+	if (itype == SUBTILIS_RV_LA) {
+		prv_encode_la(ud, op, uj, err);
+		return;
+	}
+
+	op_code = &rv_opcodes[itype];
 
 	word = op_code->opcode;
 	word |= (uj->rd & 0x1f) << 7;
