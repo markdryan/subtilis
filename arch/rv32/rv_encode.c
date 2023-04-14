@@ -769,11 +769,14 @@ static void prv_encode_sb(void *user_data, subtilis_rv_op_t *op,
 	prv_add_word(ud, word, err);
 }
 
-static void prv_encode_la(subtilis_rv_encode_ud_t *ud, subtilis_rv_op_t *op,
-			  rv_ujtype_t *uj, subtilis_error_t *err)
+
+static size_t prv_encode_relative(subtilis_rv_encode_ud_t *ud,
+				  subtilis_rv_op_t *op,
+				  rv_ujtype_t *uj, subtilis_error_t *err)
 {
 	const rv_opcode_t *op_code;
 	uint32_t word = 0;
+	size_t retval = ud->bytes_written;
 
 	/*
 	 * Encode aupic
@@ -782,23 +785,13 @@ static void prv_encode_la(subtilis_rv_encode_ud_t *ud, subtilis_rv_op_t *op,
 	word = rv_opcodes[SUBTILIS_RV_AUIPC].opcode;
 	word |= (uj->rd & 0x1f) << 7;
 
-	/*
-	 * We'll fill in the address at link time into the
-	 * auipc and addi instructions.
-	 */
-
-	subtilis_rv_link_constant_add(ud->link, ud->bytes_written,
-				      uj->op.imm, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
 	prv_ensure_code(ud, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		return SIZE_MAX;
 
 	prv_add_word(ud, word, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		return SIZE_MAX;
 
 	/*
 	 * Encode the addi
@@ -811,9 +804,39 @@ static void prv_encode_la(subtilis_rv_encode_ud_t *ud, subtilis_rv_op_t *op,
 
 	prv_ensure_code(ud, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		return SIZE_MAX;
 
 	prv_add_word(ud, word, err);
+
+	return retval;
+}
+
+static void prv_encode_la(subtilis_rv_encode_ud_t *ud, subtilis_rv_op_t *op,
+			  rv_ujtype_t *uj, subtilis_error_t *err)
+{
+	size_t auipc_pos = prv_encode_relative(ud, op, uj, err);
+
+	/*
+	 * We'll fill in the address at link time into the
+	 * auipc and addi instructions.
+	 */
+
+	subtilis_rv_link_constant_add(ud->link, auipc_pos,
+				      uj->op.imm, err);
+}
+
+static void prv_encode_lp(subtilis_rv_encode_ud_t *ud, subtilis_rv_op_t *op,
+			  rv_ujtype_t *uj, subtilis_error_t *err)
+{
+	size_t auipc_pos = prv_encode_relative(ud, op, uj, err);
+
+	/*
+	 * We'll fill in the address at link time into the
+	 * auipc and addi instructions.
+	 */
+
+	subtilis_rv_link_extref_add(ud->link, auipc_pos,
+				    uj->op.imm, err);
 }
 
 static void prv_encode_uj(void *user_data, subtilis_rv_op_t *op,
@@ -827,6 +850,11 @@ static void prv_encode_uj(void *user_data, subtilis_rv_op_t *op,
 
 	if (itype == SUBTILIS_RV_LA) {
 		prv_encode_la(ud, op, uj, err);
+		return;
+	}
+
+	if (itype == SUBTILIS_RV_LP) {
+		prv_encode_lp(ud, op, uj, err);
 		return;
 	}
 

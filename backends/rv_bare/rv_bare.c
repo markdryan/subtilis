@@ -158,8 +158,10 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 {"calli32\n", subtilis_rv_gen_calli32},
 /*
 	 {"callr\n", subtilis_fpa_gen_callr},
-	 {"callptr\n", subtilis_arm_gen_call_ptr},
-	 {"calli32ptr\n", subtilis_arm_gen_calli32_ptr},
+*/
+	 {"callptr\n", subtilis_rv_gen_call_ptr},
+	 {"calli32ptr\n", subtilis_rv_gen_calli32_ptr},
+/*
 	 {"callrptr\n", subtilis_fpa_gen_callr_ptr},
 */
 	 {"ret\n", subtilis_rv_gen_ret},
@@ -315,7 +317,9 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 {"movi8tofp *, *\n", subtilis_fpa_gen_movi8tofp },
 	 {"movfptoi32i32 *, *, *\n", subtilis_fpa_gen_movfptoi32i32 },
 	 {"oscli *\n", subtilis_riscos_oscli },
-	 {"getprocaddr *, *", subtilis_arm_gen_get_proc_addr},
+*/
+	 {"getprocaddr *, *", subtilis_rv_gen_get_proc_addr},
+/*
 	 {"osargs *\n", subtilis_riscos_osargs },
 */
 };

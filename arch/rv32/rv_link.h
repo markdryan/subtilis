@@ -52,7 +52,7 @@ void subtilis_rv_link_constant_add(subtilis_rv_link_t *link, size_t offset,
 				   size_t constant_index,
 				   subtilis_error_t *err);
 void subtilis_rv_link_extref_add(subtilis_rv_link_t *link, size_t offset,
-				 size_t constant_offset, size_t section_index,
+				 size_t section_index,
 				 subtilis_error_t *err);
 void subtilis_rv_link_section(subtilis_rv_link_t *link, size_t num,
 			      size_t offset);

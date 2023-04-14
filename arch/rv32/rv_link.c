@@ -98,7 +98,7 @@ void subtilis_rv_link_constant_add(subtilis_rv_link_t *link,
 }
 
 void subtilis_rv_link_extref_add(subtilis_rv_link_t *link, size_t code_index,
-				 size_t constant_offset, size_t section_index,
+				 size_t section_index,
 				 subtilis_error_t *err)
 {
 	prv_ensure_const_arr(&link->extrefs, link->num_extrefs,
@@ -106,7 +106,6 @@ void subtilis_rv_link_extref_add(subtilis_rv_link_t *link, size_t code_index,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	link->extrefs[link->num_extrefs].index = section_index;
-//	link->extrefs[link->num_extrefs].constant_offset = constant_offset;
 	link->extrefs[link->num_extrefs++].code_index = code_index;
 }
 
@@ -139,6 +138,55 @@ void subtilis_rv_link_encode_jal(uint32_t *ptr, int32_t offset)
 		*ptr |= 0x80000000;
 }
 
+static void prv_fixup_relative(uint8_t *buf, size_t buf_size,
+			       subtilis_rv_link_constant_t *cnst,
+			       int32_t dist, subtilis_error_t *err)
+{
+	uint32_t *auipc;
+	uint32_t *addi;
+	const rv_opcode_t *op_code;
+
+	/*
+	 * We need at least two instructions
+	 */
+
+	if (cnst->code_index + 8 > buf_size) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	auipc = prv_get_word_ptr(buf, cnst->code_index, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	addi = prv_get_word_ptr(buf, cnst->code_index + 4, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	/*
+	 * check this is an aupic
+	 */
+	op_code = &rv_opcodes[SUBTILIS_RV_AUIPC];
+	if ((*auipc & 0x7f) != op_code->opcode) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	/*
+	 * check this is an addi
+	 */
+
+	op_code = &rv_opcodes[SUBTILIS_RV_ADDI];
+	if (((*addi & 0x7f) != op_code->opcode) ||
+	    ((*addi >> 12) & 0x7) != op_code->funct3) {
+		subtilis_error_set_assertion_failed(err);
+		return;
+	}
+
+	*auipc |= dist & 0xfffff000;
+	*addi |= (dist & 0xfff) << 20;
+}
+
 void subtilis_rv_link_link(subtilis_rv_link_t *link, uint8_t *buf,
 			   size_t buf_size, const size_t *raw_constants,
 			   size_t num_raw_constants, subtilis_error_t *err)
@@ -147,12 +195,9 @@ void subtilis_rv_link_link(subtilis_rv_link_t *link, uint8_t *buf,
 	size_t si;
 	size_t index;
 	uint32_t *ptr;
-	uint32_t *auipc;
-	uint32_t *addi;
 	int32_t dist;
 	subtilis_rv_link_constant_t *cnst;
 	int32_t offset;
-	const rv_opcode_t *op_code;
 
 	/*
 	 * For direct function calls.
@@ -202,73 +247,32 @@ void subtilis_rv_link_link(subtilis_rv_link_t *link, uint8_t *buf,
 	for (i = 0; i < link->num_constants; i++) {
 		cnst = &link->constants[i];
 
-		/*
-		 * We need at least two instructions
-		 */
-
-		if (cnst->code_index + 8 > buf_size) {
-			subtilis_error_set_assertion_failed(err);
-			return;
-		}
 		if (cnst->index >= num_raw_constants) {
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
-		auipc = prv_get_word_ptr(buf, cnst->code_index, err);
+
+		dist = raw_constants[cnst->index] - cnst->code_index;
+		prv_fixup_relative(buf, buf_size, cnst, dist, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-
-		addi = prv_get_word_ptr(buf, cnst->code_index + 4, err);
-		if (err->type != SUBTILIS_ERROR_OK)
-			return;
-
-		/*
-		 * check this is an aupic
-		 */
-
-		op_code = &rv_opcodes[SUBTILIS_RV_AUIPC];
-		if ((*auipc & 0x7f) != op_code->opcode) {
-			subtilis_error_set_assertion_failed(err);
-			return;
-		}
-
-		/*
-		 * check this is an addi
-		 */
-
-		op_code = &rv_opcodes[SUBTILIS_RV_ADDI];
-		if (((*addi & 0x7f) != op_code->opcode) ||
-		    ((*addi >> 12) & 0x7) != op_code->funct3) {
-			subtilis_error_set_assertion_failed(err);
-			return;
-		}
-		dist = (raw_constants[cnst->index] - cnst->code_index);
-
-		*auipc |= dist & 0xfffff000;
-		*addi |= (dist & 0xfff) << 20;
 	}
 
-#if 0
 	/*
 	 * For function pointers.
 	 */
 
 	for (i = 0; i < link->num_extrefs; i++) {
 		cnst = &link->extrefs[i];
-		if (cnst->constant_offset >= buf_size) {
-			subtilis_error_set_assertion_failed(err);
-			return;
-		}
 		if (cnst->index >= link->num_sections) {
 			subtilis_error_set_assertion_failed(err);
 			return;
 		}
-		ptr = prv_get_word_ptr(buf, cnst->constant_offset, err);
+		dist = link->sections[cnst->index] - cnst->code_index;
+		prv_fixup_relative(buf, buf_size, cnst, dist, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		*ptr = ((link->sections[cnst->index] - cnst->code_index) - 12);
 	}
-#endif
 }
 
 void subtilis_rv_link_delete(subtilis_rv_link_t *link)

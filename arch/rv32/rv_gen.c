@@ -482,17 +482,17 @@ void subtilis_rv_gen_call(subtilis_ir_section_t *s, size_t start,
 {
 	subtilis_rv_gen_call_gen(s, start, user_data, false,
 				 SUBTILIS_RV_JAL_LINK_VOID, err);
-
 }
 
-void subtilis_rv_gen_calli32(subtilis_ir_section_t *s, size_t start,
-			     void *user_data, subtilis_error_t *err)
+static void prv_gen_calli32(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, bool indirect,
+			    subtilis_error_t *err)
 {
 	subtilis_rv_reg_t dest;
 	subtilis_rv_section_t *rv_s = user_data;
 	subtilis_ir_call_t *call = &s->ops[start]->op.call;
 
-	subtilis_rv_gen_call_gen(s, start, user_data, false,
+	subtilis_rv_gen_call_gen(s, start, user_data, indirect,
 				 SUBTILIS_RV_JAL_LINK_INT, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
@@ -500,6 +500,25 @@ void subtilis_rv_gen_calli32(subtilis_ir_section_t *s, size_t start,
 	dest = subtilis_rv_ir_to_rv_reg(call->reg);
 
 	subtilis_rv_section_add_mv(rv_s, dest, SUBTILIS_RV_REG_A0, err);
+}
+
+void subtilis_rv_gen_calli32(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	prv_gen_calli32(s, start, user_data, false, err);
+}
+
+void subtilis_rv_gen_call_ptr(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_error_t *err)
+{
+	subtilis_rv_gen_call_gen(s, start, user_data, true,
+				 SUBTILIS_RV_JAL_LINK_VOID, err);
+}
+
+void subtilis_rv_gen_calli32_ptr(subtilis_ir_section_t *s, size_t start,
+				 void *user_data, subtilis_error_t *err)
+{
+	prv_gen_calli32(s, start, user_data, true, err);
 }
 
 static void prv_cmp_jmp_imm(subtilis_ir_section_t *s, size_t start,
@@ -1007,4 +1026,16 @@ void subtilis_rv_gen_lca(subtilis_ir_section_t *s, size_t start,
 		subtilis_rv_ir_to_rv_reg(ir_op->operands[0].reg);
 
 	subtilis_rv_section_add_la(rv_s, dest, const_id, err);
+}
+
+void subtilis_rv_gen_get_proc_addr(subtilis_ir_section_t *s, size_t start,
+				   void *user_data, subtilis_error_t *err)
+{
+	subtilis_rv_section_t *rv_s = user_data;
+	subtilis_ir_inst_t *ir_op = &s->ops[start]->op.instr;
+	int32_t section_id = (int32_t) ir_op->operands[1].label;
+	subtilis_rv_reg_t dest =
+		subtilis_rv_ir_to_rv_reg(ir_op->operands[0].reg);
+
+	subtilis_rv_section_add_lp(rv_s, dest, section_id, err);
 }

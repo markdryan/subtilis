@@ -71,6 +71,7 @@ static const char *const instr_desc[] = {
 	"rem",      // SUBTILIS_RV_REM,
 	"remu",     // SUBTILIS_RV_REMU,
 	"la",       // SUBTILIS_RV_LA,
+	"lp",       // SUBTILIS_RV_LP,
 };
 
 /* clang-format on */

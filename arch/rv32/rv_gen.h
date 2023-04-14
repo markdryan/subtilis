@@ -151,11 +151,11 @@ void subtilis_rv_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 			       bool indirect, subtilis_error_t *err);
 void subtilis_rv_gen_calli32(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
+*/
 void subtilis_rv_gen_call_ptr(subtilis_ir_section_t *s, size_t start,
 			       void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_calli32_ptr(subtilis_ir_section_t *s, size_t start,
 				  void *user_data, subtilis_error_t *err);
-*/
 void subtilis_rv_gen_ret(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_reti32(subtilis_ir_section_t *s, size_t start,
@@ -198,10 +198,10 @@ void subtilis_rv_gen_signx8to32_helper(subtilis_rv_section_t *rv_s,
 					subtilis_rv_reg_t dest,
 					subtilis_rv_reg_t src,
 					subtilis_error_t *err);
-void subtilis_rv_gen_get_proc_addr(subtilis_ir_section_t *s, size_t start,
-				    void *user_data, subtilis_error_t *err);
-
 */
+void subtilis_rv_gen_get_proc_addr(subtilis_ir_section_t *s, size_t start,
+				   void *user_data, subtilis_error_t *err);
+
 
 /*
  * Updates all the stack adjustment statements that occur before REM statements
