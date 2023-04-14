@@ -811,7 +811,7 @@ static size_t prv_encode_relative(subtilis_rv_encode_ud_t *ud,
 	return retval;
 }
 
-static void prv_encode_la(subtilis_rv_encode_ud_t *ud, subtilis_rv_op_t *op,
+static void prv_encode_lc(subtilis_rv_encode_ud_t *ud, subtilis_rv_op_t *op,
 			  rv_ujtype_t *uj, subtilis_error_t *err)
 {
 	size_t auipc_pos = prv_encode_relative(ud, op, uj, err);
@@ -848,8 +848,8 @@ static void prv_encode_uj(void *user_data, subtilis_rv_op_t *op,
 	const rv_opcode_t *op_code;
 	subtilis_rv_encode_ud_t *ud = user_data;
 
-	if (itype == SUBTILIS_RV_LA) {
-		prv_encode_la(ud, op, uj, err);
+	if (itype == SUBTILIS_RV_LC) {
+		prv_encode_lc(ud, op, uj, err);
 		return;
 	}
 

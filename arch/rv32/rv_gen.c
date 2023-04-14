@@ -1025,7 +1025,7 @@ void subtilis_rv_gen_lca(subtilis_ir_section_t *s, size_t start,
 	subtilis_rv_reg_t dest =
 		subtilis_rv_ir_to_rv_reg(ir_op->operands[0].reg);
 
-	subtilis_rv_section_add_la(rv_s, dest, const_id, err);
+	subtilis_rv_section_add_lc(rv_s, dest, const_id, err);
 }
 
 void subtilis_rv_gen_get_proc_addr(subtilis_ir_section_t *s, size_t start,

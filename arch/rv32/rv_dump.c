@@ -70,7 +70,7 @@ static const char *const instr_desc[] = {
 	"divu",     // SUBTILIS_RV_DIVU,
 	"rem",      // SUBTILIS_RV_REM,
 	"remu",     // SUBTILIS_RV_REMU,
-	"la",       // SUBTILIS_RV_LA,
+	"lc",       // SUBTILIS_RV_LC,
 	"lp",       // SUBTILIS_RV_LP,
 };
 
