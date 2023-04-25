@@ -81,7 +81,7 @@ void subtilis_rv_gen_addii32(subtilis_ir_section_t *s, size_t start,
 }
 
 void subtilis_rv_gen_subii32(subtilis_ir_section_t *s, size_t start,
-			      void *user_data, subtilis_error_t *err)
+			     void *user_data, subtilis_error_t *err)
 {
 	subtilis_rv_reg_t dest;
 	subtilis_rv_reg_t rs1;
@@ -363,7 +363,6 @@ static void prv_stack_args(subtilis_rv_section_t *rv_s,
 		int_args_left--;
 	}
 
-/*
 	stack_ops = 0;
 	for (i = call->arg_count; i > 0 && real_args_left > 8; i--) {
 		if (call->args[i - 1].type != SUBTILIS_IR_REG_TYPE_REAL)
@@ -371,15 +370,16 @@ static void prv_stack_args(subtilis_rv_section_t *rv_s,
 		offset += 8;
 		reg_num = call->args[i - 1].reg;
 
-		arm_s->fp_if->store_dbl_fn(
-		    arm_s, subtilis_arm_ir_to_real_reg(arm_s, reg_num), op0,
-		    offset, err);
+		subtilis_rv_section_add_fsd(rv_s,
+					    SUBTILIS_RV_REG_STACK,
+					    subtilis_rv_ir_to_real_reg(reg_num),
+					    -offset, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		real_arg_ops[stack_ops++] = arm_s->last_op;
+		real_arg_ops[stack_ops++] = rv_s->last_op;
 		real_args_left--;
 	}
-*/
+
 	for (i = 0, arg = 0; i < call->arg_count && arg < int_args_left; i++) {
 		if (call->args[i].type != SUBTILIS_IR_REG_TYPE_INTEGER)
 			continue;
@@ -390,18 +390,17 @@ static void prv_stack_args(subtilis_rv_section_t *rv_s,
 			return;
 		arg++;
 	}
-/*
+
 	for (i = 0, arg = 0; i < call->arg_count && arg < real_args_left; i++) {
 		if (call->args[i].type != SUBTILIS_IR_REG_TYPE_REAL)
 			continue;
-		arg_dest = arg;
-		arg_src = subtilis_arm_ir_to_real_reg(arm_s, call->args[i].reg);
-		arm_s->fp_if->mov_reg_fn(arm_s, arg_dest, arg_src, err);
+		arg_dest = arg + SUBTILIS_RV_REG_FA0;;
+		arg_src = subtilis_rv_ir_to_real_reg(call->args[i].reg);
+		subtilis_rv_section_add_fmv_d(rv_s, arg_dest, arg_src, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 		arg++;
 	}
-*/
 }
 
 void subtilis_rv_gen_call_gen(subtilis_ir_section_t *s, size_t start,
@@ -753,6 +752,23 @@ void subtilis_rv_gen_jmpc_rev(subtilis_ir_section_t *s, size_t start,
 	subtilis_rv_section_add_nop(rv_s, err);
 }
 
+void subtilis_rv_gen_jmpc_no_label(subtilis_ir_section_t *s, size_t start,
+				   void *user_data, subtilis_error_t *err)
+{
+	subtilis_rv_section_t *rv_s = user_data;
+	subtilis_ir_inst_t *jmp = &s->ops[start]->op.instr;
+	subtilis_rv_reg_t op1;
+
+	op1 = subtilis_rv_ir_to_rv_reg(jmp->operands[0].reg);
+
+	subtilis_rv_section_add_bne(rv_s, op1, 0, jmp->operands[1].label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_jal(rv_s, 0, jmp->operands[2].label,
+				    SUBTILIS_RV_JAL_LINK_VOID, err);
+}
+
 void subtilis_rv_gen_if_lt(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_error_t *err)
 {
@@ -835,7 +851,7 @@ void subtilis_rv_gen_lsli32(subtilis_ir_section_t *s, size_t start,
 }
 
 void subtilis_rv_gen_lslii32(subtilis_ir_section_t *s, size_t start,
-			      void *user_data, subtilis_error_t *err)
+			     void *user_data, subtilis_error_t *err)
 {
 	prv_itype_gen(s, SUBTILIS_RV_SLLI, SUBTILIS_RV_SLL, start,
 		      user_data, err);
@@ -938,6 +954,203 @@ void subtilis_rv_gen_retii32(subtilis_ir_section_t *s, size_t start,
 		return;
 
 	subtilis_rv_gen_ret(s, start, user_data, err);
+}
+
+void subtilis_rv_gen_eqii32(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err)
+{
+	subtilis_rv_reg_t rd;
+	subtilis_rv_reg_t rs1;
+	int32_t imm;
+	subtilis_rv_section_t *rv_s = user_data;
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+
+	imm = instr->operands[2].integer;
+	rd = subtilis_rv_ir_to_rv_reg(instr->operands[0].reg);
+	if (imm != 0) {
+		subtilis_rv_gen_subii32(s, start, user_data, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		subtilis_rv_section_add_sltiu(rv_s, rd, rd, 1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	} else {
+		rs1 = subtilis_rv_ir_to_rv_reg(instr->operands[1].reg);
+		subtilis_rv_section_add_sltiu(rv_s, rd, rs1, 1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+	subtilis_rv_section_add_sub(rv_s, rd, 0, rd, err);
+}
+
+void subtilis_rv_gen_movr(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	subtilis_rv_reg_t rd;
+	subtilis_rv_reg_t rs1;
+	subtilis_rv_section_t *rv_s = user_data;
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+
+	rd = subtilis_rv_ir_to_real_reg(instr->operands[0].reg);
+	rs1 = subtilis_rv_ir_to_real_reg(instr->operands[1].reg);
+
+	subtilis_rv_section_add_fmv_d(rv_s, rd, rs1, err);
+}
+
+void subtilis_rv_gen_movri32(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_rv_reg_t rd;
+	subtilis_rv_reg_t rs1;
+	subtilis_rv_section_t *rv_s = user_data;
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+
+	rd = subtilis_rv_ir_to_rv_reg(instr->operands[0].reg);
+	rs1 = subtilis_rv_ir_to_real_reg(instr->operands[1].reg);
+
+	subtilis_rv_section_add_fcvt_w_d(rv_s, rd, rs1, SUBTILIS_RV_DEFAULT_FRM,
+					 err);
+}
+
+void subtilis_rv_gen_movi32r(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err)
+{
+	subtilis_rv_reg_t rd;
+	subtilis_rv_reg_t rs1;
+	subtilis_rv_section_t *rv_s = user_data;
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+
+	rd = subtilis_rv_ir_to_real_reg(instr->operands[0].reg);
+	rs1 = subtilis_rv_ir_to_rv_reg(instr->operands[1].reg);
+
+	subtilis_rv_section_add_fcvt_d_w(rv_s, rd, rs1, SUBTILIS_RV_DEFAULT_FRM,
+					 err);
+}
+
+static void prv_rr_simple(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_rv_instr_type_t itype,
+			  subtilis_error_t *err)
+{
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+	subtilis_rv_section_t *rv_s = user_data;
+	subtilis_rv_reg_t rd =
+		subtilis_rv_ir_to_real_reg(instr->operands[0].reg);
+	subtilis_rv_reg_t rs1 =
+		subtilis_rv_ir_to_real_reg(instr->operands[1].reg);
+	subtilis_rv_reg_t rs2 =
+		subtilis_rv_ir_to_real_reg(instr->operands[2].reg);
+
+	subtilis_rv_section_add_rrtype(rv_s, itype, rd, rs1, rs2,
+				       SUBTILIS_RV_DEFAULT_FRM, err);
+}
+
+static void prv_rr_imm(subtilis_ir_section_t *s, size_t start,
+		       void *user_data, subtilis_rv_instr_type_t itype,
+		       subtilis_error_t *err)
+{
+	subtilis_rv_section_t *rv_s = user_data;
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+	subtilis_rv_reg_t rs2 = subtilis_rv_ir_to_real_reg(
+		rv_s->freg_counter++);
+	subtilis_rv_reg_t rd =
+		subtilis_rv_ir_to_real_reg(instr->operands[0].reg);
+	subtilis_rv_reg_t rd2 = subtilis_rv_ir_to_rv_reg(
+		rv_s->reg_counter++);
+	subtilis_rv_reg_t rs1 =
+		subtilis_rv_ir_to_real_reg(instr->operands[1].reg);
+	double imm = instr->operands[2].real;
+
+	subtilis_rv_add_copy_immd(rv_s, rs2, rd2, imm, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_rrtype(rv_s, itype, rd, rs1, rs2,
+				       SUBTILIS_RV_DEFAULT_FRM, err);
+}
+
+static void prv_rr_logical_imm(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_rv_instr_type_t itype,
+			       subtilis_rv_frm_t frm, subtilis_error_t *err)
+{
+	subtilis_rv_section_t *rv_s = user_data;
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+	subtilis_rv_reg_t rs2 = subtilis_rv_ir_to_real_reg(
+		rv_s->freg_counter++);
+	subtilis_rv_reg_t rd =
+		subtilis_rv_ir_to_rv_reg(instr->operands[0].reg);
+	subtilis_rv_reg_t rd2 = subtilis_rv_ir_to_rv_reg(
+		rv_s->reg_counter++);
+	subtilis_rv_reg_t rs1 =
+		subtilis_rv_ir_to_real_reg(instr->operands[1].reg);
+	double imm = instr->operands[2].real;
+
+	subtilis_rv_add_copy_immd(rv_s, rs2, rd2, imm, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	subtilis_rv_section_add_rrtype(rv_s, itype, rd, rs1, rs2, frm, err);
+}
+
+void subtilis_rv_gen_absr(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+	subtilis_rv_section_t *rv_s = user_data;
+	subtilis_rv_reg_t rd =
+		subtilis_rv_ir_to_real_reg(instr->operands[0].reg);
+	subtilis_rv_reg_t rs1 =
+		subtilis_rv_ir_to_real_reg(instr->operands[1].reg);
+
+	subtilis_rv_section_add_fabs_d(rv_s, rd, rs1, err);
+}
+
+void subtilis_rv_gen_addr(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err)
+{
+	prv_rr_simple(s, start, user_data, SUBTILIS_RV_FADD_D, err);
+}
+
+void subtilis_rv_gen_addir(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err)
+{
+	prv_rr_imm(s, start, user_data, SUBTILIS_RV_FADD_D, err);
+}
+
+void subtilis_rv_gen_mulir(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err)
+{
+	prv_rr_imm(s, start, user_data, SUBTILIS_RV_FMUL_D, err);
+}
+
+void subtilis_rv_gen_neqir(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err)
+{
+	subtilis_ir_inst_t *instr = &s->ops[start]->op.instr;
+	subtilis_rv_section_t *rv_s = user_data;
+	subtilis_rv_reg_t rd =
+		subtilis_rv_ir_to_rv_reg(instr->operands[0].reg);
+
+	prv_rr_logical_imm(s, start, user_data, SUBTILIS_RV_FEQ_D,
+			   SUBTILIS_RV_FRM_RDN, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_rv_section_add_sub(rv_s, rd, 0, rd, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+	subtilis_rv_section_add_xori(rv_s, rd, rd, -1, err);
+}
+
+void subtilis_rv_gen_subr(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err)
+{
+	prv_rr_simple(s, start, user_data, SUBTILIS_RV_FSUB_D, err);
+}
+
+void subtilis_rv_gen_subir(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err)
+{
+	prv_rr_imm(s, start, user_data, SUBTILIS_RV_FSUB_D, err);
 }
 
 void subtilis_rv_restore_stack(subtilis_rv_section_t *rv_s,

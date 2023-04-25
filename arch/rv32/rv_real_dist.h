@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef RV_OPCODES_H
-#define RV_OPCODES_H
+#ifndef SUBTILIS_RV_REAL_DIST_H
+#define SUBTILIS_RV_REAL_DIST_H
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "rv32_core.h"
+#include "rv_walker.h"
 
-struct rv_opcode_t_ {
-	uint8_t opcode;
-	uint8_t funct3;
-	uint8_t funct7;
-	bool use_frm;
-};
+#include "../../common/regs_used_virt.h"
 
-typedef struct rv_opcode_t_ rv_opcode_t;
 
-extern const rv_opcode_t rv_opcodes[];
-extern const size_t rv_opcode_len;
+void subtilis_rv_init_real_dist_walker(subtilis_rv_walker_t *walker,
+				       void *user_data);
 
 #endif

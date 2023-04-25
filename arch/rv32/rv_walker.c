@@ -60,6 +60,56 @@ static void prv_call_fencetype_fn(subtilis_rv_walker_t *walker, void *user_data,
 	subtilis_error_set_assertion_failed(err);
 }
 
+static void prv_call_real_rtype_fn(subtilis_rv_walker_t *walker,
+				   void *user_data, subtilis_rv_op_t *op,
+				   subtilis_error_t *err)
+{
+	subtilis_rv_instr_t *instr = &op->op.instr;
+
+	walker->real_r_fn(walker->user_data, op, instr->itype, instr->etype,
+			  &instr->operands.rr, err);
+}
+
+static void prv_call_real_r4type_fn(subtilis_rv_walker_t *walker,
+				   void *user_data, subtilis_rv_op_t *op,
+				   subtilis_error_t *err)
+{
+	subtilis_rv_instr_t *instr = &op->op.instr;
+
+	walker->real_r4_fn(walker->user_data, op, instr->itype, instr->etype,
+			  &instr->operands.r4, err);
+}
+
+static void prv_call_real_itype_fn(subtilis_rv_walker_t *walker,
+				   void *user_data, subtilis_rv_op_t *op,
+				   subtilis_error_t *err)
+{
+	subtilis_rv_instr_t *instr = &op->op.instr;
+
+	walker->real_i_fn(walker->user_data, op, instr->itype, instr->etype,
+			  &instr->operands.i, err);
+}
+
+static void prv_call_real_stype_fn(subtilis_rv_walker_t *walker,
+				   void *user_data, subtilis_rv_op_t *op,
+				   subtilis_error_t *err)
+{
+	subtilis_rv_instr_t *instr = &op->op.instr;
+
+	walker->real_s_fn(walker->user_data, op, instr->itype,
+			  instr->etype, &instr->operands.sb, err);
+}
+
+static void prv_call_real_ldrc_f_fn(subtilis_rv_walker_t *walker,
+				    void *user_data, subtilis_rv_op_t *op,
+				    subtilis_error_t *err)
+{
+	subtilis_rv_instr_t *instr = &op->op.instr;
+
+	walker->real_ldrc_f_fn(walker->user_data, op, instr->itype,
+			       instr->etype, &instr->operands.ldrc, err);
+}
+
 typedef void (*subtilis_walker_fn_t)(subtilis_rv_walker_t *walker,
 				     void *user_data, subtilis_rv_op_t *op,
 				     subtilis_error_t *err);
@@ -73,7 +123,12 @@ static const subtilis_walker_fn_t walker_table[] = {
 	prv_call_sbtype_fn,
 	prv_call_ujtype_fn,
 	prv_call_ujtype_fn,
-	prv_call_fencetype_fn
+	prv_call_fencetype_fn,
+	prv_call_real_rtype_fn,
+	prv_call_real_r4type_fn,
+	prv_call_real_itype_fn,
+	prv_call_real_stype_fn,
+	prv_call_real_ldrc_f_fn,
 };
 
 /* clang-format on */

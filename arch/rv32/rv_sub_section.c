@@ -20,8 +20,7 @@
 #include "../../common/regs_used_virt.h"
 
 #include "rv_sub_section.h"
-#include "rv_int_dist.h"
-#include "rv_int_used.h"
+#include "rv_used.h"
 
 void subtilis_rv_subsections_init(subtilis_rv_subsections_t *sss)
 {
@@ -132,9 +131,12 @@ static void prv_add_link(subtilis_rv_ss_t *ss, subtilis_rv_section_t *rv_s,
 
 	if (ss->num_links == 1) {
 		from = &rv_s->op_pool->ops[ss->start];
-		subtilis_rv_regs_used_before_from_tov(
-		    rv_s, from, to, max_int_regs, max_real_regs, &regs_used,
-		    err);
+		subtilis_rv_int_regs_used_before_from_tov(
+		    rv_s, from, to, max_int_regs, &regs_used, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			goto cleanup;
+		subtilis_rv_real_regs_used_before_from_tov(
+		    rv_s, from, to, max_real_regs, &regs_used, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			goto cleanup;
 		subtilis_bitset_claim(&link->int_outputs, &regs_used.int_regs);
@@ -179,8 +181,13 @@ static void prv_finalize_sub_section(subtilis_rv_ss_t *ss,
 	from = &rv_s->op_pool->ops[ss->start];
 	op = &rv_s->op_pool->ops[ss->end];
 
-	subtilis_rv_regs_used_afterv(rv_s, from, op, max_int_regs,
-				      max_real_regs, count, &regs_used, err);
+	subtilis_rv_int_regs_used_afterv(rv_s, from, op, max_int_regs,
+					 count, &regs_used, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_rv_real_regs_used_afterv(rv_s, from, op, max_real_regs,
+					  count, &regs_used, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 

@@ -15,6 +15,7 @@
  */
 
 #include <inttypes.h>
+#include <string.h>
 
 #include "rv32_core.h"
 #include "rv_walker.h"
@@ -70,8 +71,75 @@ static const char *const instr_desc[] = {
 	"divu",     // SUBTILIS_RV_DIVU,
 	"rem",      // SUBTILIS_RV_REM,
 	"remu",     // SUBTILIS_RV_REMU,
+
+	"flw",      // SUBTILIS_RV_FLW,
+	"fsw",      // SUBTILIS_RV_FSW,
+	"fmadd.s",  // SUBTILIS_RV_FMADD_S,
+	"fmsub.s",  // SUBTILIS_RV_FMSUB_S,
+	"fnmsub.s", // SUBTILIS_RV_FNMSUB_S,
+	"fnmadd.s", // SUBTILIS_RV_FNMADD_S,
+	"fadd.s",   // SUBTILIS_RV_FADD_S,
+	"fsub.s",   // SUBTILIS_RV_FSUB_S,
+	"fmul.s",   // SUBTILIS_RV_FMUL_S,
+	"fdiv.s",   // SUBTILIS_RV_FDIV_S,
+	"fsqrt.s",  // SUBTILIS_RV_FSQRT_S,
+	"fsgnj.s",  // SUBTILIS_RV_FSGNJ_S,
+	"fsgnjn.s", // SUBTILIS_RV_FSGNJN_S,
+	"fsgnjx.s", // SUBTILIS_RV_FSGNJX_S,
+	"fmin.s",   // SUBTILIS_RV_FMIN_S,
+	"fmax.s",   // SUBTILIS_RV_FMAX_S,
+	"fcvt.w.s", // SUBTILIS_RV_FCVT_W_S,
+	"fcvt.wu.s",// SUBTILIS_RV_FCVT_WU_S,
+	"fmw.x.s",  // SUBTILIS_RV_FMV_X_S,
+	"feq.s",    // SUBTILIS_RV_FEQ_S,
+	"flt.s",    // SUBTILIS_RV_FLT_S,
+	"fle.s",    // SUBTILIS_RV_FLE_S,
+	"fclass.s", // SUBTILIS_RV_FCLASS_S,
+	"fcvt.s.w", // SUBTILIS_RV_FCVT_S_W,
+	"fcvt.s.wu",// SUBTILIS_RV_FCVT_S_WU,
+	"fmw.w.x",  // SUBTILIS_RV_FMV_W_X,
+
+	"fld",      // SUBTILIS_RV_FLD,
+	"fsd",      // SUBTILIS_RV_FSD,
+	"fmadd.d",  // SUBTILIS_RV_FMADD_D,
+	"fmsub.d",  // SUBTILIS_RV_FMSUB_D,
+	"fnmsub.d", // SUBTILIS_RV_FNMSUB_D,
+	"fnmadd.d", // SUBTILIS_RV_FNMADD_D,
+	"fadd.d",   // SUBTILIS_RV_FADD_D,
+	"fsub.d",   // SUBTILIS_RV_FSUB_D,
+	"fmul.d",   // SUBTILIS_RV_FMUL_D,
+	"fdiv.d",   // SUBTILIS_RV_FDIV_D,
+	"fsqrt.d",  // SUBTILIS_RV_FSQRT_D,
+	"fsgnj.d",  // SUBTILIS_RV_FSGNJ_D,
+	"fsgnjn.d", // SUBTILIS_RV_FSGNJN_D,
+	"fsgnjx.d", // SUBTILIS_RV_FSGNJX_D,
+	"fmin.d",   // SUBTILIS_RV_FMIN_D,
+	"fax.d",    // SUBTILIS_RV_FMAX_D,
+	"fcvt.s.d", // SUBTILIS_RV_FCVT_S_D,
+	"fcvt.d.s", // SUBTILIS_RV_FCVT_D_S,
+	"feq.d",    // SUBTILIS_RV_FEQ_D,
+	"flt.d",    // SUBTILIS_RV_FLT_D,
+	"fle.d",    // SUBTILIS_RV_FLE_D,
+	"fclass.d", // SUBTILIS_RV_FCLASS_D,
+	"fcvt.w.d", // SUBTILIS_RV_FCVT_W_D,
+	"fcvt.wu.d",// SUBTILIS_RV_FCVT_WU_D,
+	"fcvt.d.w", // SUBTILIS_RV_FCVT_D_W,
+	"fcvt.d.wu",// SUBTILIS_RV_FCVT_D_WU,
+
 	"lc",       // SUBTILIS_RV_LC,
 	"lp",       // SUBTILIS_RV_LP,
+	"ldrcf",    // SUBTILIS_RV_LDRCF,
+};
+
+static const char *const rounding_modes[] = {
+	"rne", // SUBTILIS_RV_FRM_RTE,
+	"rtz", // SUBTILIS_RV_FRM_RTZ,
+	"rdn", // SUBTILIS_RV_FRM_RDN,
+	"rup", // SUBTILIS_RV_FRM_RUP,
+	"rmm", // SUBTILIS_RV_FRM_RMM,
+	"",    // SUBTILIS_RV_FRM_RES1,
+	"",    // SUBTILIS_RV_FRM_RES2,
+	"",    // SUBTILIS_RV_FRM_DYN,
 };
 
 /* clang-format on */
@@ -201,11 +269,127 @@ static void prv_dump_uj(void *user_data, subtilis_rv_op_t *op,
 	printf("\t%s x%zu, %d\n", instr_desc[itype], uj->rd, uj->op.imm);
 }
 
+static void prv_dump_real_r(void *user_data, subtilis_rv_op_t *op,
+			    subtilis_rv_instr_type_t itype,
+			    subtilis_rv_instr_encoding_t etype,
+			    rv_rrtype_t *rr, subtilis_error_t *err)
+{
+	const char *frm = rounding_modes[rr->frm];
+
+	switch (itype) {
+	case SUBTILIS_RV_FCLASS_S:
+	case SUBTILIS_RV_FCLASS_D:
+	case SUBTILIS_RV_FMV_X_W:
+		frm = "";
+	case SUBTILIS_RV_FCVT_W_S:
+	case SUBTILIS_RV_FCVT_WU_S:
+	case SUBTILIS_RV_FCVT_W_D:
+	case SUBTILIS_RV_FCVT_WU_D:
+		printf("\t%s x%zu, f%zu", instr_desc[itype],
+		       rr->rd, rr->rs1);
+		break;
+	case SUBTILIS_RV_FMV_W_X:
+		frm = "";
+	case SUBTILIS_RV_FCVT_S_W:
+	case SUBTILIS_RV_FCVT_S_WU:
+	case SUBTILIS_RV_FCVT_S_D:
+	case SUBTILIS_RV_FCVT_D_S:
+	case SUBTILIS_RV_FCVT_D_W:
+	case SUBTILIS_RV_FCVT_D_WU:
+		printf("\t%s f%zu, x%zu", instr_desc[itype],
+		       rr->rd, rr->rs1);
+		break;
+	case SUBTILIS_RV_FSQRT_S:
+	case SUBTILIS_RV_FSQRT_D:
+		printf("\t%s f%zu, f%zu", instr_desc[itype],
+		       rr->rd, rr->rs1);
+		break;
+	case SUBTILIS_RV_FEQ_S:
+	case SUBTILIS_RV_FLT_S:
+	case SUBTILIS_RV_FLE_S:
+	case SUBTILIS_RV_FEQ_D:
+	case SUBTILIS_RV_FLT_D:
+	case SUBTILIS_RV_FLE_D:
+		frm = "";
+		printf("\t%s x%zu, f%zu, f%zu", instr_desc[itype],
+		       rr->rd, rr->rs1, rr->rs2);
+		break;
+	case SUBTILIS_RV_FSGNJ_S:
+	case SUBTILIS_RV_FSGNJN_S:
+	case SUBTILIS_RV_FSGNJX_S:
+	case SUBTILIS_RV_FMIN_S:
+	case SUBTILIS_RV_FMAX_S:
+	case SUBTILIS_RV_FSGNJ_D:
+	case SUBTILIS_RV_FSGNJN_D:
+	case SUBTILIS_RV_FSGNJX_D:
+	case SUBTILIS_RV_FMIN_D:
+	case SUBTILIS_RV_FMAX_D:
+		frm = "";
+	default:
+		printf("\t%s f%zu, f%zu, f%zu", instr_desc[itype],
+		       rr->rd, rr->rs1, rr->rs2);
+		break;
+	}
+
+	if (strlen(frm) > 0)
+		printf(", %s\n", frm);
+	else
+		printf("\n");
+}
+
+static void prv_dump_real_r4(void *user_data, subtilis_rv_op_t *op,
+			     subtilis_rv_instr_type_t itype,
+			     subtilis_rv_instr_encoding_t etype,
+			     rv_r4type_t *r4, subtilis_error_t *err)
+{
+	const char *frm = rounding_modes[r4->frm];
+
+	printf("\t%s f%zu, f%zu, f%zu, f%zu", instr_desc[itype],
+	       r4->rd, r4->rs1, r4->rs2, r4->rs2);
+	if (strlen(frm) > 0)
+		printf(", %s\n", frm);
+	else
+		printf("\n");
+}
+
+static void prv_dump_real_i(void *user_data, subtilis_rv_op_t *op,
+			    subtilis_rv_instr_type_t itype,
+			    subtilis_rv_instr_encoding_t etype,
+			    rv_itype_t *i, subtilis_error_t *err)
+{
+	if ((itype == SUBTILIS_RV_FLW) || (itype == SUBTILIS_RV_FLD)) {
+		printf("\t%s f%zu, %d(x%zu)\n", instr_desc[itype],
+		       i->rd, i->imm, i->rs1);
+		return;
+	}
+	printf("\t%s f%zu, f%zu, %d\n", instr_desc[itype],
+	       i->rd, i->rs1, i->imm);
+}
+
+static void prv_dump_real_s(void *user_data, subtilis_rv_op_t *op,
+			    subtilis_rv_instr_type_t itype,
+			    subtilis_rv_instr_encoding_t etype,
+			    rv_sbtype_t *sb, subtilis_error_t *err)
+{
+	printf("\t%s f%zu, (%d)x%zu\n", instr_desc[itype],
+	       sb->rs2, sb->op.imm, sb->rs1);
+}
+
+static void prv_dump_ldrc_f(void *user_data, subtilis_rv_op_t *op,
+			    subtilis_rv_instr_type_t itype,
+			    subtilis_rv_instr_encoding_t etype,
+			    rv_ldrctype_t *ldrc, subtilis_error_t *err)
+{
+	printf("\t%s f%zu via x%zu, label_%zu\n", instr_desc[itype], ldrc->rd,
+	       ldrc->rd2, ldrc->label);
+}
+
 void subtilis_rv_section_dump(subtilis_rv_prog_t *p,
 			      subtilis_rv_section_t *s)
 {
 	subtilis_rv_walker_t walker;
 	subtilis_error_t err;
+	size_t i;
 
 	subtilis_error_init(&err);
 
@@ -216,18 +400,17 @@ void subtilis_rv_section_dump(subtilis_rv_prog_t *p,
 	walker.i_fn = prv_dump_i;
 	walker.sb_fn = prv_dump_sb;
 	walker.uj_fn = prv_dump_uj;
+	walker.real_r_fn = prv_dump_real_r;
+	walker.real_i_fn = prv_dump_real_i;
+	walker.real_s_fn = prv_dump_real_s;
+	walker.real_ldrc_f_fn = prv_dump_ldrc_f;
 
 	subtilis_rv_walk(s, &walker, &err);
-/*
+
 	for (i = 0; i < s->constants.real_count; i++) {
 		printf(".label_%zu\n", s->constants.real[i].label);
 		printf("\tEQUFD %f\n", s->constants.real[i].real);
 	}
-	for (i = 0; i < s->constants.ui32_count; i++) {
-		printf(".label_%zu\n", s->constants.ui32[i].label);
-		printf("\tEQUD &%" PRIx32 "\n", s->constants.ui32[i].integer);
-	}
-*/
 }
 
 void subtilis_rv_prog_dump(subtilis_rv_prog_t *p)
@@ -275,6 +458,26 @@ void subtilis_rv_instr_dump(subtilis_rv_instr_t *instr)
 	case SUBTILIS_RV_J_TYPE:
 		prv_dump_uj(NULL, NULL, instr->itype, instr->etype,
 			    &instr->operands.uj, &err);
+		break;
+	case SUBTILIS_RV_REAL_R_TYPE:
+		prv_dump_real_r(NULL, NULL, instr->itype, instr->etype,
+				&instr->operands.rr, &err);
+		break;
+	case SUBTILIS_RV_REAL_R4_TYPE:
+		prv_dump_real_r4(NULL, NULL, instr->itype, instr->etype,
+				&instr->operands.r4, &err);
+		break;
+	case SUBTILIS_RV_REAL_I_TYPE:
+		prv_dump_real_i(NULL, NULL, instr->itype, instr->etype,
+			   &instr->operands.i, &err);
+		break;
+	case SUBTILIS_RV_REAL_S_TYPE:
+		prv_dump_real_s(NULL, NULL, instr->itype, instr->etype,
+				&instr->operands.sb, &err);
+		break;
+	case SUBTILIS_RV_LDRC_F_TYPE:
+		prv_dump_ldrc_f(NULL, NULL, instr->itype, instr->etype,
+				&instr->operands.ldrc, &err);
 		break;
 	default:
 		break;

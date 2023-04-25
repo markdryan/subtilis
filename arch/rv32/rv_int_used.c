@@ -71,6 +71,18 @@ static void prv_used_uj(void *user_data, subtilis_rv_op_t *op,
 		return;
 	}
 
+	/*
+	 * There's an implicit overwrite of A0.
+	 */
+
+	if ((itype == SUBTILIS_RV_JAL) &&
+	    (uj->link_type == SUBTILIS_RV_JAL_LINK_INT) &&
+	    (ud->reg_num == SUBTILIS_RV_REG_A0)) {
+		ud->last_used = -1;
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
 	ud->last_used++;
 }
 
@@ -84,6 +96,86 @@ static void prv_used_directive(void *user_data, subtilis_rv_op_t *op,
 {
 }
 
+static void prv_dist_real_r(void *user_data, subtilis_rv_op_t *op,
+			    subtilis_rv_instr_type_t itype,
+			    subtilis_rv_instr_encoding_t etype,
+			    rv_rrtype_t *rr, subtilis_error_t *err)
+{
+	subtilis_dist_data_t *ud = user_data;
+
+	switch (itype) {
+	case SUBTILIS_RV_FCVT_W_S:
+	case SUBTILIS_RV_FCVT_WU_S:
+	case SUBTILIS_RV_FCVT_W_D:
+	case SUBTILIS_RV_FCVT_WU_D:
+	case SUBTILIS_RV_FMV_X_W:
+	case SUBTILIS_RV_FEQ_S:
+	case SUBTILIS_RV_FLT_S:
+	case SUBTILIS_RV_FLE_S:
+	case SUBTILIS_RV_FCLASS_S:
+	case SUBTILIS_RV_FEQ_D:
+	case SUBTILIS_RV_FLT_D:
+	case SUBTILIS_RV_FLE_D:
+	case SUBTILIS_RV_FCLASS_D:
+		if (ud->reg_num == rr->rd) {
+			ud->last_used = -1;
+			subtilis_error_set_walker_failed(err);
+			return;
+		}
+		break;
+	default:
+		break;
+	}
+
+	ud->last_used++;
+}
+
+static void prv_dist_real_r4(void *user_data, subtilis_rv_op_t *op,
+			    subtilis_rv_instr_type_t itype,
+			    subtilis_rv_instr_encoding_t etype,
+			    rv_r4type_t *r4, subtilis_error_t *err)
+{
+	subtilis_dist_data_t *ud = user_data;
+
+	ud->last_used++;
+}
+
+static void prv_dist_real_i(void *user_data, subtilis_rv_op_t *op,
+			    subtilis_rv_instr_type_t itype,
+			    subtilis_rv_instr_encoding_t etype,
+			    rv_itype_t *i, subtilis_error_t *err)
+{
+	subtilis_dist_data_t *ud = user_data;
+
+	ud->last_used++;
+}
+
+static void prv_dist_real_s(void *user_data, subtilis_rv_op_t *op,
+			    subtilis_rv_instr_type_t itype,
+			    subtilis_rv_instr_encoding_t etype,
+			    rv_sbtype_t *sb, subtilis_error_t *err)
+{
+	subtilis_dist_data_t *ud = user_data;
+
+	ud->last_used++;
+}
+
+static void prv_dist_ldrc_f(void *user_data, subtilis_rv_op_t *op,
+			    subtilis_rv_instr_type_t itype,
+			    subtilis_rv_instr_encoding_t etype,
+			    rv_ldrctype_t *ldrc, subtilis_error_t *err)
+{
+	subtilis_dist_data_t *ud = user_data;
+
+	if (ud->reg_num == ldrc->rd2) {
+		ud->last_used = -1;
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
+	ud->last_used++;
+}
+
 void subtilis_rv_init_used_walker(subtilis_rv_walker_t *walker,
 				  void *user_data)
 {
@@ -94,56 +186,9 @@ void subtilis_rv_init_used_walker(subtilis_rv_walker_t *walker,
 	walker->i_fn = prv_used_i;
 	walker->sb_fn = prv_used_sb;
 	walker->uj_fn = prv_used_uj;
-}
-
-
-static bool prv_is_reg_used_before(subtilis_rv_section_t *rv_s,
-				   subtilis_dist_data_t *used_data,
-				   size_t reg_num,
-				   subtilis_rv_walker_t *used_walker,
-				   subtilis_rv_op_t *from,
-				   subtilis_rv_op_t *to)
-{
-	subtilis_error_t err;
-
-	subtilis_error_init(&err);
-	used_data->reg_num = reg_num;
-	used_data->last_used = 0;
-	subtilis_rv_walk_from_to(rv_s, used_walker, from, to, &err);
-	if ((err.type == SUBTILIS_ERROR_OK) || (used_data->last_used != -1))
-		return false;
-
-	return true;
-}
-
-void subtilis_rv_regs_used_before_from_tov(subtilis_rv_section_t *rv_s,
-					   subtilis_rv_op_t *from,
-					   subtilis_rv_op_t *op,
-					   size_t int_args, size_t real_args,
-					   subtilis_regs_used_virt_t *used,
-					   subtilis_error_t *err)
-{
-	size_t i;
-	subtilis_dist_data_t used_data;
-	subtilis_rv_walker_t walker;
-
-	subtilis_rv_init_used_walker(&walker, &used_data);
-
-	for (i = SUBTILIS_RV_REG_MAX_INT_REGS; i < int_args; i++) {
-		if (prv_is_reg_used_before(rv_s, &used_data, i, &walker, from,
-					   op)) {
-			subtilis_bitset_set(&used->int_regs, i, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-		}
-	}
-
-	for (i = SUBTILIS_RV_REG_MAX_REAL_REGS; i < real_args; i++) {
-		if (prv_is_reg_used_before(rv_s, &used_data, i, &walker, from,
-					   op)) {
-			subtilis_bitset_set(&used->real_regs, i, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-		}
-	}
+	walker->real_r_fn = prv_dist_real_r;
+	walker->real_r4_fn = prv_dist_real_r4;
+	walker->real_i_fn = prv_dist_real_i;
+	walker->real_s_fn = prv_dist_real_s;
+	walker->real_ldrc_f_fn = prv_dist_ldrc_f;
 }

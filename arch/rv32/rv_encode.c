@@ -262,7 +262,6 @@ static void prv_add_word(subtilis_rv_encode_ud_t *ud, uint32_t word,
 static void prv_apply_constants(subtilis_rv_encode_ud_t *ud,
 				subtilis_error_t *err)
 {
-#if 0
 	subtilis_rv_encode_const_t *cnst;
 	size_t i;
 	int32_t dist;
@@ -270,126 +269,61 @@ static void prv_apply_constants(subtilis_rv_encode_ud_t *ud,
 
 	for (i = 0; i < ud->const_count; i++) {
 		cnst = &ud->constants[i];
-		dist = (ud->label_offsets[cnst->label] - cnst->code_index) - 8;
+		dist = (ud->label_offsets[cnst->label] - cnst->code_index);
 		switch (cnst->type) {
-		case SUBTILIS_ARM_ENCODE_BP_LDR:
-		case SUBTILIS_ARM_ENCODE_BP_LDRP:
-			if (dist < 0)
-				dist = -dist;
-			if (dist > 4096) {
-				subtilis_error_set_assertion_failed(err);
-				return;
-			}
+		case SUBTILIS_RV_ENCODE_BP_LDRF:
+			subtilis_rv_link_fixup_relative(
+				ud->code, ud->bytes_written, cnst->code_index,
+				dist, SUBTILIS_RV_FLD, err);
 			break;
-		case SUBTILIS_ARM_ENCODE_BP_LDRF:
-			if (dist < 0)
-				dist = -dist;
-			if (dist > 1024) {
-				subtilis_error_set_assertion_failed(err);
-				return;
-			}
-			dist /= 4;
-			break;
-		}
-		code_ptr = prv_get_word_ptr(ud, cnst->code_index, err);
-		if (err->type != SUBTILIS_ERROR_OK)
+		default:
+			subtilis_error_set_assertion_failed(err);
 			return;
-		*code_ptr |= dist;
+		}
 	}
-#endif
 }
 
 static void prv_flush_constants(subtilis_rv_encode_ud_t *ud,
 				subtilis_error_t *err)
 {
-#if 0
 	size_t i;
 	size_t j;
 	subtilis_rv_encode_const_t *cnst;
-	uint32_t *real_ptr;
+	uint32_t real_ptr[2];
 	int32_t constant_index;
-	subtilis_rv_section_t *arm_s = ud->arm_s;
+	subtilis_rv_section_t *rv_s = ud->rv_s;
 
 	for (i = 0; i < ud->const_count; i++) {
 		cnst = &ud->constants[i];
 		ud->label_offsets[cnst->label] = ud->bytes_written;
 		switch (cnst->type) {
-		case SUBTILIS_ARM_ENCODE_BP_LDR:
-			for (j = 0; j < arm_s->constants.ui32_count; j++)
-				if (arm_s->constants.ui32[j].label ==
+		case SUBTILIS_RV_ENCODE_BP_LDRF:
+			for (j = 0; j < rv_s->constants.real_count; j++)
+				if (rv_s->constants.real[j].label ==
 				    cnst->label)
 					break;
-			if (j == arm_s->constants.ui32_count) {
+			if (j == rv_s->constants.real_count) {
 				subtilis_error_set_assertion_failed(err);
 				return;
 			}
-
+			memcpy(real_ptr, &rv_s->constants.real[j].real,
+			       sizeof(double));
 			prv_ensure_code(ud, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-			if (arm_s->constants.ui32[j].link_time) {
-				constant_index =
-				    arm_s->constants.ui32[j].integer;
-				subtilis_arm_link_constant_add(
-				    ud->link, cnst->code_index,
-				    ud->bytes_written, constant_index, err);
-				prv_add_word(ud, 0xffff, err);
-			} else {
-				prv_add_word(
-				    ud, arm_s->constants.ui32[j].integer, err);
-			}
+			prv_add_word(ud, real_ptr[0], err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-			break;
-		case SUBTILIS_ARM_ENCODE_BP_LDRP:
 			prv_ensure_code(ud, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
-			subtilis_arm_link_extref_add(ud->link, cnst->code_index,
-						     ud->bytes_written,
-						     cnst->section_label, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			prv_add_word(ud, 0, err);
+			prv_add_word(ud, real_ptr[1], err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 			break;
-		case SUBTILIS_ARM_ENCODE_BP_LDRF:
-			for (j = 0; j < arm_s->constants.real_count; j++)
-				if (arm_s->constants.real[j].label ==
-				    cnst->label)
-					break;
-			if (j == arm_s->constants.real_count) {
-				subtilis_error_set_assertion_failed(err);
-				return;
-			}
-			real_ptr =
-			    (uint32_t *)(void *)&arm_s->constants.real[j].real;
-			prv_ensure_code(ud, err);
-			if (err->type != SUBTILIS_ERROR_OK)
-				return;
-			if (ud->reverse_fpa_consts) {
-				prv_add_word(ud, real_ptr[1], err);
-				if (err->type != SUBTILIS_ERROR_OK)
-					return;
-				prv_ensure_code(ud, err);
-				if (err->type != SUBTILIS_ERROR_OK)
-					return;
-				prv_add_word(ud, real_ptr[0], err);
-				if (err->type != SUBTILIS_ERROR_OK)
-					return;
-			} else {
-				prv_add_word(ud, real_ptr[0], err);
-				if (err->type != SUBTILIS_ERROR_OK)
-					return;
-				prv_ensure_code(ud, err);
-				if (err->type != SUBTILIS_ERROR_OK)
-					return;
-				prv_add_word(ud, real_ptr[1], err);
-				if (err->type != SUBTILIS_ERROR_OK)
-					return;
-			}
-			break;
+		default:
+			subtilis_error_set_assertion_failed(err);
+			return;
 		}
 	}
 
@@ -398,7 +332,6 @@ static void prv_flush_constants(subtilis_rv_encode_ud_t *ud,
 		return;
 
 	prv_reset_pool_state(ud);
-#endif
 }
 
 static void prv_add_back_patch(subtilis_rv_encode_ud_t *ud,
@@ -772,7 +705,10 @@ static void prv_encode_sb(void *user_data, subtilis_rv_op_t *op,
 
 static size_t prv_encode_relative(subtilis_rv_encode_ud_t *ud,
 				  subtilis_rv_op_t *op,
-				  rv_ujtype_t *uj, subtilis_error_t *err)
+				  subtilis_rv_reg_t rd,
+				  subtilis_rv_reg_t rd2,
+				  subtilis_rv_instr_type_t itype2,
+				  subtilis_error_t *err)
 {
 	const rv_opcode_t *op_code;
 	uint32_t word = 0;
@@ -783,7 +719,7 @@ static size_t prv_encode_relative(subtilis_rv_encode_ud_t *ud,
 	 */
 
 	word = rv_opcodes[SUBTILIS_RV_AUIPC].opcode;
-	word |= (uj->rd & 0x1f) << 7;
+	word |= (rd2 & 0x1f) << 7;
 
 	prv_ensure_code(ud, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -797,10 +733,10 @@ static size_t prv_encode_relative(subtilis_rv_encode_ud_t *ud,
 	 * Encode the addi
 	 */
 
-	op_code = &rv_opcodes[SUBTILIS_RV_ADDI];
+	op_code = &rv_opcodes[itype2];
 	word = op_code->opcode | (op_code->funct3 << 12);
-	word |= (uj->rd & 0x1f) << 7;
-	word |= (uj->rd & 0x1f) << 15;
+	word |= (rd & 0x1f) << 7;
+	word |= (rd2 & 0x1f) << 15;
 
 	prv_ensure_code(ud, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -814,7 +750,8 @@ static size_t prv_encode_relative(subtilis_rv_encode_ud_t *ud,
 static void prv_encode_lc(subtilis_rv_encode_ud_t *ud, subtilis_rv_op_t *op,
 			  rv_ujtype_t *uj, subtilis_error_t *err)
 {
-	size_t auipc_pos = prv_encode_relative(ud, op, uj, err);
+	size_t auipc_pos = prv_encode_relative(ud, op, uj->rd, uj->rd,
+					       SUBTILIS_RV_ADDI, err);
 
 	/*
 	 * We'll fill in the address at link time into the
@@ -828,7 +765,8 @@ static void prv_encode_lc(subtilis_rv_encode_ud_t *ud, subtilis_rv_op_t *op,
 static void prv_encode_lp(subtilis_rv_encode_ud_t *ud, subtilis_rv_op_t *op,
 			  rv_ujtype_t *uj, subtilis_error_t *err)
 {
-	size_t auipc_pos = prv_encode_relative(ud, op, uj, err);
+	size_t auipc_pos = prv_encode_relative(ud, op, uj->rd, uj->rd,
+					       SUBTILIS_RV_ADDI, err);
 
 	/*
 	 * We'll fill in the address at link time into the
@@ -960,6 +898,130 @@ static void prv_encode_directive(void *user_data, subtilis_rv_op_t *op,
 	}
 }
 
+static void prv_encode_real_r(void *user_data, subtilis_rv_op_t *op,
+			      subtilis_rv_instr_type_t itype,
+			      subtilis_rv_instr_encoding_t etype,
+			      rv_rrtype_t *rr, subtilis_error_t *err)
+{
+	uint32_t rs2;
+	const rv_opcode_t *op_code = &rv_opcodes[itype];
+	subtilis_rv_encode_ud_t *ud = user_data;
+	uint32_t word =op_code->opcode;
+
+	word |= (rr->rd & 0x1f) << 7;
+	word |= (rr->rs1 & 0x1f) << 15;
+
+	if (op_code->use_frm)
+		word |= (rr->frm << 12);
+	else
+		word |= (op_code->funct3 << 12);
+
+	switch (itype) {
+	case SUBTILIS_RV_FSQRT_S:
+	case SUBTILIS_RV_FCVT_W_S:
+	case SUBTILIS_RV_FMV_X_W:
+	case SUBTILIS_RV_FCLASS_S:
+	case SUBTILIS_RV_FCVT_S_W:
+	case SUBTILIS_RV_FMV_W_X:
+	case SUBTILIS_RV_FSQRT_D:
+	case SUBTILIS_RV_FCVT_D_S:
+	case SUBTILIS_RV_FCLASS_D:
+	case SUBTILIS_RV_FCVT_W_D:
+	case SUBTILIS_RV_FCVT_D_W:
+		rs2 = 0;
+		break;
+	case SUBTILIS_RV_FCVT_WU_S:
+	case SUBTILIS_RV_FCVT_S_WU:
+	case SUBTILIS_RV_FCVT_S_D:
+	case SUBTILIS_RV_FCVT_WU_D:
+	case SUBTILIS_RV_FCVT_D_WU:
+		rs2 = 1;
+		break;
+	default:
+		rs2 = rr->rs2;
+		break;
+	}
+
+	word |= (rs2 & 0x1f) << 20;
+	word |= (op_code->funct7 << 25);
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
+static void prv_encode_real_r4(void *user_data, subtilis_rv_op_t *op,
+			       subtilis_rv_instr_type_t itype,
+			       subtilis_rv_instr_encoding_t etype,
+			       rv_r4type_t *r4, subtilis_error_t *err)
+{
+	uint32_t word;
+	const rv_opcode_t *op_code = &rv_opcodes[itype];
+	subtilis_rv_encode_ud_t *ud = user_data;
+
+	word = op_code->opcode;
+	word |= (r4->rd & 0x1f) << 7;
+	word |= (r4->frm << 12);
+	word |= (r4->rs1 & 0x1f) << 15;
+	word |= (r4->rs2 & 0x1f) << 20;
+	word |= (r4->rs3 & 0x1f) << 27;
+
+	switch (itype) {
+	case SUBTILIS_RV_FMADD_D:
+	case SUBTILIS_RV_FMSUB_D:
+	case SUBTILIS_RV_FNMSUB_D:
+	case SUBTILIS_RV_FNMADD_D:
+		word |= 1 << 25;
+		break;
+	default:
+		break;
+	}
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
+static void prv_encode_real_s(void *user_data, subtilis_rv_op_t *op,
+			      subtilis_rv_instr_type_t itype,
+			      subtilis_rv_instr_encoding_t etype,
+			      rv_sbtype_t *sb, subtilis_error_t *err)
+{
+	uint32_t word;
+	const rv_opcode_t *op_code = &rv_opcodes[itype];
+	subtilis_rv_encode_ud_t *ud = user_data;
+
+	word = op_code->opcode | (op_code->funct3 << 12);
+
+	word |= (sb->op.imm & 0x1f) << 7;
+	word |= (sb->op.imm & 0xfe0) << 20;
+	word |= (sb->rs1 & 0x1f) << 15;
+	word |= (sb->rs2 & 0x1f) << 20;
+
+	prv_ensure_code(ud, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_add_word(ud, word, err);
+}
+
+static void prv_encode_ldrc_f(void *user_data, subtilis_rv_op_t *op,
+			      subtilis_rv_instr_type_t itype,
+			      subtilis_rv_instr_encoding_t etype,
+			      rv_ldrctype_t *ldrc, subtilis_error_t *err)
+{
+	subtilis_rv_encode_ud_t *ud = user_data;
+	size_t auipc_pos = prv_encode_relative(ud, op, ldrc->rd, ldrc->rd2,
+					       SUBTILIS_RV_FLD, err);
+
+	prv_add_const(ud, ldrc->label, auipc_pos, SUBTILIS_RV_ENCODE_BP_LDRF,
+		      err);
+}
+
 static void prv_rv_encode(subtilis_rv_section_t *rv_s,
 			  subtilis_rv_encode_ud_t *ud, subtilis_error_t *err)
 {
@@ -973,6 +1035,11 @@ static void prv_rv_encode(subtilis_rv_section_t *rv_s,
 	walker.i_fn = prv_encode_i;
 	walker.sb_fn = prv_encode_sb;
 	walker.uj_fn = prv_encode_uj;
+	walker.real_r_fn = prv_encode_real_r;
+	walker.real_r4_fn = prv_encode_real_r4;
+	walker.real_i_fn = prv_encode_i;
+	walker.real_s_fn = prv_encode_real_s;
+	walker.real_ldrc_f_fn = prv_encode_ldrc_f;
 
 	subtilis_rv_walk(rv_s, &walker, err);
 	if (err->type != SUBTILIS_ERROR_OK)

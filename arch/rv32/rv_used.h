@@ -14,16 +14,27 @@
  * limitations under the License.
  */
 
-#ifndef __SUBTILIS_RV_REG_ALLOC_H
-#define __SUBTILIS_RV_REG_ALLOC_H
+#ifndef __SUBTILIS_RV_USED_H
+#define __SUBTILIS_RV_USED_H
 
 #include "rv32_core.h"
 #include "rv_walker.h"
 
 #include "../../common/regs_used_virt.h"
 
-size_t subtilis_rv_reg_alloc(subtilis_rv_section_t *rv_s,
-			     subtilis_error_t *err);
+void subtilis_rv_int_regs_used_before_from_tov(subtilis_rv_section_t *rv_s,
+					       subtilis_rv_op_t *from,
+					       subtilis_rv_op_t *op,
+					       size_t int_args,
+					       subtilis_regs_used_virt_t *used,
+					       subtilis_error_t *err);
+
+void subtilis_rv_real_regs_used_before_from_tov(subtilis_rv_section_t *rv_s,
+						subtilis_rv_op_t *from,
+						subtilis_rv_op_t *op,
+						size_t real_args,
+						subtilis_regs_used_virt_t *used,
+						subtilis_error_t *err);
 
 void subtilis_rv_int_regs_used_afterv(subtilis_rv_section_t *rv_s,
 				      subtilis_rv_op_t *from,

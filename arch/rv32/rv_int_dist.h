@@ -20,18 +20,7 @@
 #include "rv32_core.h"
 #include "rv_walker.h"
 
-#include "../../common/regs_used_virt.h"
-
-
 void subtilis_rv_init_dist_walker(subtilis_rv_walker_t *walker,
 				  void *user_data);
-
-void subtilis_rv_regs_used_afterv(subtilis_rv_section_t *rv_s,
-				  subtilis_rv_op_t *from,
-				  subtilis_rv_op_t *op,
-				  size_t int_args, size_t real_args,
-				  size_t count,
-				  subtilis_regs_used_virt_t *used,
-				  subtilis_error_t *err);
 
 #endif

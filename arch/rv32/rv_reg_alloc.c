@@ -25,6 +25,8 @@
 
 #include "rv_int_dist.h"
 #include "rv_int_used.h"
+#include "rv_real_dist.h"
+#include "rv_real_used.h"
 #include "rv_sub_section.h"
 #include "rv_walker.h"
 
@@ -253,21 +255,17 @@ static void prv_init_rv_reg_ud(subtilis_rv_reg_ud_t *ud,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	ud->real_regs = NULL;
-
-/*
 	ud->real_regs = prv_new_regs(
 		max_real_regs, SUBTILIS_RV_REG_MAX_REAL_REGS,
-	    sizeof(double), arm_s->stype->fp_regs, arm_s->fp_if->max_offset,
-	    arm_s->fp_if->spill_imm_fn, arm_s->fp_if->stran_imm_fn,
-	    arm_s->fp_if->store_type, arm_s->fp_if->load_type,
-	    arm_s->fp_if->is_fixed_fn, err);
+		SUBTILIS_RV_REAL_FIRST_FREE, sizeof(double),
+		rv_s->stype->fp_regs,
+		subtilis_rv_insert_ld_helper,
+		subtilis_rv_insert_sd_helper, subtilis_rv_section_insert_ld,
+		subtilis_rv_section_insert_sd, err);
 	if (err->type != SUBTILIS_ERROR_OK) {
 		prv_free_regs(ud->int_regs);
 		return;
 	}
-*/
-
 
 	ud->instr_count = 0;
 	ud->rv_s = rv_s;
@@ -277,12 +275,12 @@ static void prv_init_rv_reg_ud(subtilis_rv_reg_ud_t *ud,
 
 	subtilis_rv_init_dist_walker(&ud->int_regs->dist_walker,
 				     &ud->dist_data);
-//	arm_s->fp_if->init_dist_walker_fn(&ud->real_regs->dist_walker,
-//					  &ud->dist_data);
+	subtilis_rv_init_real_dist_walker(&ud->real_regs->dist_walker,
+					  &ud->dist_data);
 	subtilis_rv_init_used_walker(&ud->int_regs->used_walker,
 				     &ud->dist_data);
-//	arm_s->fp_if->init_used_walker_fn(&ud->real_regs->used_walker,
-//					  &ud->dist_data);
+	subtilis_rv_init_real_used_walker(&ud->real_regs->used_walker,
+					  &ud->dist_data);
 }
 
 static void prv_free_rv_reg_ud(subtilis_rv_reg_ud_t *ud)
@@ -330,6 +328,42 @@ static void prv_sub_section_int_links(subtilis_rv_reg_ud_t *ud,
 	}
 }
 
+static void prv_sub_section_real_links(subtilis_rv_reg_ud_t *ud,
+				       subtilis_bitset_t *real_save,
+				       subtilis_prespilt_offsets_t *offsets,
+				       subtilis_rv_op_t *op,
+				       subtilis_error_t *err)
+{
+	int j;
+	int32_t offset;
+	subtilis_rv_reg_t base;
+	subtilis_rv_reg_t reg = SIZE_MAX;
+
+	for (j = 0; j <= real_save->max_value; j++) {
+		if (!subtilis_bitset_isset(real_save, j))
+			continue;
+		offset = subtilis_prespilt_real_offset(offsets, j, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		offset += ud->rv_s->locals;
+		base = SUBTILIS_RV_REG_LOCAL;
+		if (offset > 2047 || offset < -2048) {
+			reg = subtilis_rv_acquire_new_reg(ud->rv_s);
+			subtilis_rv_insert_offset_helper(ud->rv_s, op, base,
+							 reg, offset, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			offset = 0;
+			base = reg;
+		}
+		subtilis_rv_section_insert_sd(ud->rv_s, op, base, j, offset,
+					      err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+}
+
 static void prv_init_two_links(subtilis_rv_reg_ud_t *ud, subtilis_rv_ss_t *ss,
 			       subtilis_prespilt_offsets_t *offsets,
 			       size_t ss_index, subtilis_error_t *err)
@@ -370,6 +404,24 @@ static void prv_init_two_links(subtilis_rv_reg_ud_t *ud, subtilis_rv_ss_t *ss,
 	 * them.
 	 */
 
+	/*
+	 * TODO:
+	 * These are split up because ideally we onlt want to spill
+	 * the live regs for link1 if we take the branch and spill the
+	 * live regs for link2 if we don't.  We always want to spill
+	 * the common regs.  In the ARM backend, we apply the
+	 * conditional code of the branch to the link1_save registers.
+	 * This way we only do the store if we're going to take the branch.
+	 * There are no condition codes in RV so for the time being we do
+	 * the link1 stores, even if we're not taking the branch.
+	 * We could avoid this with a second jump, but not sure
+	 * if it's worth fixing as ultimately we'll switch to a global
+	 * register allocator.  Interesting though.
+	 *
+	 * At least if we take the branch we don't store the registers
+	 * for the link we don't take.
+	 */
+
 	op1 = &ud->rv_s->op_pool->ops[link1->op];
 	prv_sub_section_int_links(ud, &common_save, offsets, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -393,24 +445,22 @@ static void prv_init_two_links(subtilis_rv_reg_ud_t *ud, subtilis_rv_ss_t *ss,
 			      &common_save, &link1_save, &link2_save, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-/*
+
 	op1 = &ud->rv_s->op_pool->ops[link1->op];
-	prv_sub_section_real_links(ud, &common_save, SUBTILIS_ARM_CCODE_AL,
-				   offsets, op1, err);
+	prv_sub_section_real_links(ud, &common_save, offsets, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	op1 = &ud->arm_s->op_pool->ops[link1->op];
-	prv_sub_section_real_links(ud, &link1_save, ccode, offsets, op1, err);
+	op1 = &ud->rv_s->op_pool->ops[link1->op];
+	prv_sub_section_real_links(ud, &link1_save, offsets, op1, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
 
-	op2 = &ud->arm_s->op_pool->ops[link2->op];
-	prv_sub_section_real_links(ud, &link2_save, SUBTILIS_ARM_CCODE_AL,
-				   offsets, op2, err);
+	op2 = &ud->rv_s->op_pool->ops[link2->op];
+	prv_sub_section_real_links(ud, &link2_save, offsets, op2, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-*/
+
 cleanup:
 
 	subtilis_bitset_free(&link2_save);
@@ -438,10 +488,10 @@ static void prv_init_sub_section_links(subtilis_rv_reg_ud_t *ud,
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 
-//		prv_sub_section_real_links(ud, &link->real_save, offsets,
-//					   op, err);
-//		if (err->type != SUBTILIS_ERROR_OK)
-//			return;
+		prv_sub_section_real_links(ud, &link->real_save, offsets,
+					   op, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 
 		return;
 	}
@@ -483,28 +533,20 @@ static void prv_init_sub_section(subtilis_rv_reg_ud_t *ud,
 			return;
 	}
 
-/*
 	for (i = 0; i <= ss->real_inputs.max_value; i++) {
 		if (!subtilis_bitset_isset(&ss->real_inputs, i))
 			continue;
 		offset = subtilis_prespilt_real_offset(offsets, i, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
-		offset += ud->arm_s->locals;
+		offset += ud->rv_s->locals;
 
-		if (offset > ud->arm_s->fp_if->max_offset ||
-		    offset < -(ud->arm_s->fp_if->max_offset + 1))
-			ud->arm_s->fp_if->spill_imm_fn(
-			    ud->arm_s, op, ud->arm_s->fp_if->load_type,
-			    SUBTILIS_ARM_CCODE_AL, i, 11, i, offset, err);
-		else
-			ud->arm_s->fp_if->stran_imm_fn(
-			    ud->arm_s, op, ud->arm_s->fp_if->load_type,
-			    SUBTILIS_ARM_CCODE_AL, i, 11, offset, err);
+		subtilis_rv_insert_ld_helper(ud->rv_s, op, i,
+					     SUBTILIS_RV_REG_LOCAL,
+					     offset, err);
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
-*/
 }
 
 static void prv_link_basic_blocks(subtilis_rv_reg_ud_t *ud,
@@ -994,6 +1036,26 @@ static void prv_rv_reg_alloc_alloc_int_dest(subtilis_rv_reg_ud_t *ud,
 	ud->int_regs->next[*dest] = dist_dest;
 }
 
+static void prv_rv_reg_alloc_alloc_fp_dest(subtilis_rv_reg_ud_t *ud,
+					   subtilis_rv_op_t *op,
+					   subtilis_rv_reg_t *dest,
+					   subtilis_error_t *err)
+{
+	int dist_dest;
+	size_t vreg_dest = *dest;
+
+	prv_rv_reg_alloc_alloc(ud, op, ud->int_regs, ud->real_regs, dest,
+			       err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	dist_dest = prv_rv_reg_alloc_calculate_dist(
+	    ud, vreg_dest, op, &ud->real_regs->dist_walker, ud->real_regs);
+	if (dist_dest == -1)
+		ud->real_regs->phys_to_virt[*dest] = INT_MAX;
+	ud->real_regs->next[*dest] = dist_dest;
+}
+
 static void prv_alloc_label(void *user_data, subtilis_rv_op_t *op, size_t label,
 			    subtilis_error_t *err)
 {
@@ -1104,10 +1166,10 @@ static void prv_alloc_i(void *user_data, subtilis_rv_op_t *op,
 			ret = SUBTILIS_RV_REG_A0;
 			prv_rv_reg_alloc_alloc_int_dest(ud, op, &ret, err);
 		}
-
-/*	else if (instr->link_type == SUBTILIS_RV_BR_LINK_REAL) {
-	}
-*/
+		else if (i->link_type == SUBTILIS_RV_JAL_LINK_REAL) {
+			ret = SUBTILIS_RV_REG_FA0;
+			prv_rv_reg_alloc_alloc_fp_dest(ud, op, &ret, err);
+		}
 		if (err->type != SUBTILIS_ERROR_OK)
 			return;
 	}
@@ -1188,11 +1250,389 @@ static void prv_alloc_uj(void *user_data, subtilis_rv_op_t *op,
 			ret = SUBTILIS_RV_REG_A0;
 			prv_rv_reg_alloc_alloc_int_dest(ud, op, &ret, err);
 		}
+		else if (uj->link_type == SUBTILIS_RV_JAL_LINK_REAL) {
+			ret = SUBTILIS_RV_REG_FA0;
+			prv_rv_reg_alloc_alloc_fp_dest(ud, op, &ret, err);
+		}
+	}
+}
 
-/*	else if (instr->link_type == SUBTILIS_RV_BR_LINK_REAL) {
+static void prv_alloc_real_r(void *user_data, subtilis_rv_op_t *op,
+			     subtilis_rv_instr_type_t itype,
+			     subtilis_rv_instr_encoding_t etype,
+			     rv_rrtype_t *rr, subtilis_error_t *err)
+{
+	int dist_rs1;
+	int dist_rs2;
+	size_t vreg_rs1;
+	bool fixed_reg_rs1;
+	size_t vreg_rs2;
+	bool fixed_reg_rs2;
+
+	subtilis_rv_reg_ud_t *ud = user_data;
+
+	switch (itype) {
+	case SUBTILIS_RV_FCVT_W_S:
+	case SUBTILIS_RV_FCVT_WU_S:
+	case SUBTILIS_RV_FCVT_W_D:
+	case SUBTILIS_RV_FCVT_WU_D:
+	case SUBTILIS_RV_FMV_X_W:
+	case SUBTILIS_RV_FCLASS_S:
+	case SUBTILIS_RV_FCLASS_D:
+		/*
+		 * These all have a floating point rs1 and an integer
+		 * rd.
+		 */
+
+		vreg_rs1 = rr->rs1;
+		fixed_reg_rs1 = prv_rv_reg_alloc_ensure(
+			ud, op, ud->int_regs, ud->real_regs, &rr->rs1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (!fixed_reg_rs1) {
+			dist_rs1 = prv_rv_reg_alloc_calculate_dist(
+				ud, vreg_rs1, op, &ud->real_regs->dist_walker,
+				ud->real_regs);
+			if (dist_rs1 == -1)
+				ud->real_regs->phys_to_virt[rr->rs1] = INT_MAX;
+		}
+
+		prv_rv_reg_alloc_alloc_int_dest(ud, op, &rr->rd, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (!fixed_reg_rs1)
+			ud->real_regs->next[rr->rs1] = dist_rs1;
+		break;
+	case SUBTILIS_RV_FEQ_S:
+	case SUBTILIS_RV_FLT_S:
+	case SUBTILIS_RV_FLE_S:
+	case SUBTILIS_RV_FEQ_D:
+	case SUBTILIS_RV_FLT_D:
+	case SUBTILIS_RV_FLE_D:
+		/*
+		 * These all have two floating point sources, rs1 and rs2
+		 * and an integer rd.
+		 */
+
+		vreg_rs1 = rr->rs1;
+		fixed_reg_rs1 = prv_rv_reg_alloc_ensure(
+			ud, op, ud->int_regs, ud->real_regs, &rr->rs1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		vreg_rs2 = rr->rs2;
+		fixed_reg_rs2 = prv_rv_reg_alloc_ensure(
+			ud, op, ud->int_regs, ud->real_regs, &rr->rs2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (!fixed_reg_rs1) {
+			dist_rs1 = prv_rv_reg_alloc_calculate_dist(
+				ud, vreg_rs1, op, &ud->real_regs->dist_walker,
+				ud->real_regs);
+			if (dist_rs1 == -1)
+				ud->real_regs->phys_to_virt[rr->rs1] = INT_MAX;
+		}
+
+		if (!fixed_reg_rs2) {
+			dist_rs2 = prv_rv_reg_alloc_calculate_dist(
+				ud, vreg_rs2, op, &ud->real_regs->dist_walker,
+				ud->real_regs);
+			if (dist_rs2 == -1)
+				ud->real_regs->phys_to_virt[rr->rs2] = INT_MAX;
+		}
+
+		prv_rv_reg_alloc_alloc_int_dest(ud, op, &rr->rd, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (!fixed_reg_rs1)
+			ud->real_regs->next[rr->rs1] = dist_rs1;
+
+		if (!fixed_reg_rs2)
+			ud->real_regs->next[rr->rs2] = dist_rs2;
+		break;
+	case SUBTILIS_RV_FSQRT_S:
+	case SUBTILIS_RV_FSQRT_D:
+	case SUBTILIS_RV_FCVT_S_D:
+	case SUBTILIS_RV_FCVT_D_S:
+		/*
+		 * These all have rd and rs1 that are float registers.
+		 */
+
+		vreg_rs1 = rr->rs1;
+		fixed_reg_rs1 = prv_rv_reg_alloc_ensure(
+			ud, op, ud->int_regs, ud->real_regs, &rr->rs1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (!fixed_reg_rs1) {
+			dist_rs1 = prv_rv_reg_alloc_calculate_dist(
+				ud, vreg_rs1, op, &ud->real_regs->dist_walker,
+				ud->real_regs);
+			if (dist_rs1 == -1)
+				ud->real_regs->phys_to_virt[rr->rs1] = INT_MAX;
+		}
+
+		prv_rv_reg_alloc_alloc_fp_dest(ud, op, &rr->rd, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (!fixed_reg_rs1)
+			ud->real_regs->next[rr->rs1] = dist_rs1;
+		break;
+	case SUBTILIS_RV_FCVT_S_W:
+	case SUBTILIS_RV_FCVT_S_WU:
+	case SUBTILIS_RV_FCVT_D_W:
+	case SUBTILIS_RV_FCVT_D_WU:
+	case SUBTILIS_RV_FMV_W_X:
+		/*
+		 * rd is a floating point register, rs1 is an int.
+		 */
+
+		vreg_rs1 = rr->rs1;
+		fixed_reg_rs1 = prv_rv_reg_alloc_ensure(
+			ud, op, ud->int_regs, ud->int_regs, &rr->rs1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (!fixed_reg_rs1) {
+			dist_rs1 = prv_rv_reg_alloc_calculate_dist(
+				ud, vreg_rs1, op, &ud->int_regs->dist_walker,
+				ud->int_regs);
+			if (dist_rs1 == -1)
+				ud->int_regs->phys_to_virt[rr->rs1] = INT_MAX;
+		}
+
+		prv_rv_reg_alloc_alloc_fp_dest(ud, op, &rr->rd, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (!fixed_reg_rs1)
+			ud->int_regs->next[rr->rs1] = dist_rs1;
+		break;
+	default:
+		/*
+		 * Everything else has three floating point registers.
+		 */
+
+		vreg_rs1 = rr->rs1;
+		fixed_reg_rs1 = prv_rv_reg_alloc_ensure(
+			ud, op, ud->int_regs, ud->real_regs, &rr->rs1, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		vreg_rs2 = rr->rs2;
+		fixed_reg_rs2 = prv_rv_reg_alloc_ensure(
+			ud, op, ud->int_regs, ud->real_regs, &rr->rs2, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (!fixed_reg_rs1) {
+			dist_rs1 = prv_rv_reg_alloc_calculate_dist(
+				ud, vreg_rs1, op, &ud->real_regs->dist_walker,
+				ud->real_regs);
+			if (dist_rs1 == -1)
+				ud->real_regs->phys_to_virt[rr->rs1] = INT_MAX;
+		}
+
+		if (!fixed_reg_rs2) {
+			dist_rs2 = prv_rv_reg_alloc_calculate_dist(
+				ud, vreg_rs2, op, &ud->real_regs->dist_walker,
+				ud->real_regs);
+			if (dist_rs2 == -1)
+				ud->real_regs->phys_to_virt[rr->rs2] = INT_MAX;
+		}
+
+		prv_rv_reg_alloc_alloc_fp_dest(ud, op, &rr->rd, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+
+		if (!fixed_reg_rs1)
+			ud->real_regs->next[rr->rs1] = dist_rs1;
+
+		if (!fixed_reg_rs2)
+			ud->real_regs->next[rr->rs2] = dist_rs2;
+
+		break;
 	}
-*/
+
+	ud->instr_count++;
+}
+
+static void prv_alloc_real_r4(void *user_data, subtilis_rv_op_t *op,
+			      subtilis_rv_instr_type_t itype,
+			      subtilis_rv_instr_encoding_t etype,
+			      rv_r4type_t *r4, subtilis_error_t *err)
+{
+	int dist_rs1;
+	int dist_rs2;
+	int dist_rs3;
+	size_t vreg_rs1;
+	bool fixed_reg_rs1;
+	size_t vreg_rs2;
+	bool fixed_reg_rs2;
+	size_t vreg_rs3;
+	bool fixed_reg_rs3;
+	subtilis_rv_reg_ud_t *ud = user_data;
+
+	vreg_rs1 = r4->rs1;
+	fixed_reg_rs1 = prv_rv_reg_alloc_ensure(
+	    ud, op, ud->int_regs, ud->real_regs, &r4->rs1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	vreg_rs2 = r4->rs2;
+	fixed_reg_rs2 = prv_rv_reg_alloc_ensure(
+	    ud, op, ud->int_regs, ud->real_regs, &r4->rs2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	vreg_rs3 = r4->rs3;
+	fixed_reg_rs3 = prv_rv_reg_alloc_ensure(
+	    ud, op, ud->int_regs, ud->real_regs, &r4->rs3, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (!fixed_reg_rs1) {
+		dist_rs1 = prv_rv_reg_alloc_calculate_dist(
+			ud, vreg_rs1, op, &ud->real_regs->dist_walker,
+			ud->real_regs);
+		if (dist_rs1 == -1)
+			ud->real_regs->phys_to_virt[r4->rs1] = INT_MAX;
 	}
+
+	if (!fixed_reg_rs2) {
+		dist_rs2 = prv_rv_reg_alloc_calculate_dist(
+			ud, vreg_rs2, op, &ud->real_regs->dist_walker,
+			ud->real_regs);
+		if (dist_rs2 == -1)
+			ud->real_regs->phys_to_virt[r4->rs2] = INT_MAX;
+	}
+
+	if (!fixed_reg_rs3) {
+		dist_rs3 = prv_rv_reg_alloc_calculate_dist(
+			ud, vreg_rs3, op, &ud->real_regs->dist_walker,
+			ud->real_regs);
+		if (dist_rs3 == -1)
+			ud->real_regs->phys_to_virt[r4->rs3] = INT_MAX;
+	}
+
+	prv_rv_reg_alloc_alloc_fp_dest(ud, op, &r4->rd, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (!fixed_reg_rs1)
+		ud->real_regs->next[r4->rs1] = dist_rs1;
+	if (!fixed_reg_rs2)
+		ud->real_regs->next[r4->rs2] = dist_rs2;
+	if (!fixed_reg_rs3)
+		ud->real_regs->next[r4->rs3] = dist_rs3;
+
+	ud->instr_count++;
+}
+
+static void prv_alloc_real_i(void *user_data, subtilis_rv_op_t *op,
+			     subtilis_rv_instr_type_t itype,
+			     subtilis_rv_instr_encoding_t etype,
+			     rv_itype_t *i, subtilis_error_t *err)
+{
+	int dist_rs1;
+	size_t vreg_rs1;
+	bool fixed_reg_rs1;
+	subtilis_rv_reg_ud_t *ud = user_data;
+
+	vreg_rs1 = i->rs1;
+	fixed_reg_rs1 = prv_rv_reg_alloc_ensure(
+		ud, op, ud->int_regs, ud->int_regs, &i->rs1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (!fixed_reg_rs1) {
+		dist_rs1 = prv_rv_reg_alloc_calculate_dist(
+			ud, vreg_rs1, op, &ud->int_regs->dist_walker,
+			ud->int_regs);
+		if (dist_rs1 == -1)
+			ud->int_regs->phys_to_virt[i->rs1] = INT_MAX;
+	}
+
+	prv_rv_reg_alloc_alloc_fp_dest(ud, op, &i->rd, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (!fixed_reg_rs1)
+		ud->int_regs->next[i->rs1] = dist_rs1;
+
+	ud->instr_count++;
+}
+
+static void prv_alloc_real_s(void *user_data, subtilis_rv_op_t *op,
+			     subtilis_rv_instr_type_t itype,
+			     subtilis_rv_instr_encoding_t etype,
+			     rv_sbtype_t *sb, subtilis_error_t *err)
+{
+	int dist_rs1;
+	int dist_rs2;
+	size_t vreg_rs1;
+	bool fixed_reg_rs1;
+	size_t vreg_rs2;
+	bool fixed_reg_rs2;
+	subtilis_rv_reg_ud_t *ud = user_data;
+
+	vreg_rs1 = sb->rs1;
+	fixed_reg_rs1 = prv_rv_reg_alloc_ensure(
+		ud, op, ud->int_regs, ud->int_regs, &sb->rs1, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	vreg_rs2 = sb->rs2;
+	fixed_reg_rs2 = prv_rv_reg_alloc_ensure(
+	    ud, op, ud->int_regs, ud->real_regs, &sb->rs2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	if (!fixed_reg_rs1) {
+		dist_rs1 = prv_rv_reg_alloc_calculate_dist(
+			ud, vreg_rs1, op, &ud->int_regs->dist_walker,
+			ud->int_regs);
+		if (dist_rs1 == -1)
+			ud->int_regs->phys_to_virt[sb->rs1] = INT_MAX;
+	}
+
+	if (!fixed_reg_rs2) {
+		dist_rs2 = prv_rv_reg_alloc_calculate_dist(
+			ud, vreg_rs2, op, &ud->real_regs->dist_walker,
+			ud->real_regs);
+		if (dist_rs2 == -1)
+			ud->real_regs->phys_to_virt[sb->rs2] = INT_MAX;
+	}
+
+	if (!fixed_reg_rs1)
+		ud->int_regs->next[sb->rs1] = dist_rs1;
+	if (!fixed_reg_rs2)
+		ud->real_regs->next[sb->rs2] = dist_rs2;
+
+	ud->instr_count++;
+}
+
+static void prv_alloc_ldrc_f(void *user_data, subtilis_rv_op_t *op,
+			     subtilis_rv_instr_type_t itype,
+			     subtilis_rv_instr_encoding_t etype,
+			     rv_ldrctype_t *ldrc, subtilis_error_t *err)
+{
+	subtilis_rv_reg_ud_t *ud = user_data;
+
+	prv_rv_reg_alloc_alloc_fp_dest(ud, op, &ldrc->rd, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	prv_rv_reg_alloc_alloc_int_dest(ud, op, &ldrc->rd2, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
+	ud->instr_count++;
 }
 
 size_t subtilis_rv_reg_alloc(subtilis_rv_section_t *rv_s,
@@ -1228,6 +1668,11 @@ size_t subtilis_rv_reg_alloc(subtilis_rv_section_t *rv_s,
 	walker.i_fn = prv_alloc_i;
 	walker.sb_fn = prv_alloc_sb;
 	walker.uj_fn = prv_alloc_uj;
+	walker.real_r_fn = prv_alloc_real_r;
+	walker.real_r4_fn = prv_alloc_real_r4;
+	walker.real_i_fn = prv_alloc_real_i;
+	walker.real_s_fn = prv_alloc_real_s;
+	walker.real_ldrc_f_fn = prv_alloc_ldrc_f;
 
 	/*
 	 * Perform the register allocation and record the positions in the
@@ -1266,9 +1711,9 @@ size_t subtilis_rv_reg_alloc(subtilis_rv_section_t *rv_s,
 
 	real_spill_space = 0;
 
-//	real_spill_space =
-//	    (ud.real_regs->spill_max - ud.real_regs->spilt_args) *
-//	    ud.real_regs->reg_size;
+	real_spill_space =
+	    (ud.real_regs->spill_max - ud.real_regs->spilt_args) *
+	    ud.real_regs->reg_size;
 
 	offset = ud.basic_block_spill + rv_s->locals;
 
@@ -1281,8 +1726,6 @@ size_t subtilis_rv_reg_alloc(subtilis_rv_section_t *rv_s,
 	 */
 
 
-	arg_offset = 0;
-	/*
 	adjusted_offset =
 	    offset - (ud.real_regs->spilt_args * ud.real_regs->reg_size);
 	arg_offset = offset + real_spill_space + int_spill_space;
@@ -1290,12 +1733,11 @@ size_t subtilis_rv_reg_alloc(subtilis_rv_section_t *rv_s,
 			      err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-	*/
 
 	offset += real_spill_space;
 	adjusted_offset =
 	    offset - (ud.int_regs->spilt_args * ud.int_regs->reg_size);
-//	arg_offset += ud.real_regs->spilt_args * ud.real_regs->reg_size;
+	arg_offset += ud.real_regs->spilt_args * ud.real_regs->reg_size;
 	prv_insert_spill_code(&ud, ud.int_regs, adjusted_offset, arg_offset,
 			      err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1305,7 +1747,7 @@ size_t subtilis_rv_reg_alloc(subtilis_rv_section_t *rv_s,
 	rv_s->freg_counter = 32;
 
 	retval = (ud.int_regs->spill_max * sizeof(int32_t)) +
-//		 (ud.real_regs->spill_max * sizeof(double)) +
+		 (ud.real_regs->spill_max * sizeof(double)) +
 		 ud.basic_block_spill;
 
 	prv_free_rv_reg_ud(&ud);
@@ -1319,3 +1761,4 @@ cleanup:
 	return 0;
 
 }
+

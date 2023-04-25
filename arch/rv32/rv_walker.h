@@ -44,6 +44,26 @@ struct subtilis_rv_walker_t_ {
 		      subtilis_rv_instr_type_t itype,
 		      subtilis_rv_instr_encoding_t etype,
 		      rv_ujtype_t *uj, subtilis_error_t *err);
+	void (*real_r_fn)(void *user_data, subtilis_rv_op_t *op,
+			  subtilis_rv_instr_type_t itype,
+			  subtilis_rv_instr_encoding_t etype,
+			  rv_rrtype_t *rr, subtilis_error_t *err);
+	void (*real_r4_fn)(void *user_data, subtilis_rv_op_t *op,
+			  subtilis_rv_instr_type_t itype,
+			  subtilis_rv_instr_encoding_t etype,
+			  rv_r4type_t *r4, subtilis_error_t *err);
+	void (*real_i_fn)(void *user_data, subtilis_rv_op_t *op,
+			  subtilis_rv_instr_type_t itype,
+			  subtilis_rv_instr_encoding_t etype,
+			  rv_itype_t *i, subtilis_error_t *err);
+	void (*real_s_fn)(void *user_data, subtilis_rv_op_t *op,
+			  subtilis_rv_instr_type_t itype,
+			  subtilis_rv_instr_encoding_t etype,
+			  rv_sbtype_t *sb, subtilis_error_t *err);
+	void (*real_ldrc_f_fn)(void *user_data, subtilis_rv_op_t *op,
+			       subtilis_rv_instr_type_t itype,
+			       subtilis_rv_instr_encoding_t etype,
+			       rv_ldrctype_t *ldrc, subtilis_error_t *err);
 };
 
 typedef struct subtilis_rv_walker_t_ subtilis_rv_walker_t;

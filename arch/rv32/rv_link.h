@@ -57,6 +57,10 @@ void subtilis_rv_link_extref_add(subtilis_rv_link_t *link, size_t offset,
 void subtilis_rv_link_section(subtilis_rv_link_t *link, size_t num,
 			      size_t offset);
 void subtilis_rv_link_encode_jal(uint32_t *ptr, int32_t offset);
+void subtilis_rv_link_fixup_relative(uint8_t *buf, size_t buf_size,
+				     size_t code_index, int32_t dist,
+				     subtilis_rv_instr_type_t itype2,
+				     subtilis_error_t *err);
 void subtilis_rv_link_link(subtilis_rv_link_t *link, uint8_t *buf,
 			   size_t buf_size, const size_t *raw_constants,
 			   size_t num_raw_constants, subtilis_error_t *err);

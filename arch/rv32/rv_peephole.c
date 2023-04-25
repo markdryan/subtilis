@@ -96,6 +96,13 @@ void subtilis_rv_peephole(subtilis_rv_section_t *rv_s, subtilis_error_t *err)
 				}
 			}
 			break;
+		case SUBTILIS_RV_FSGNJ_D:
+			if ((instr->operands.rr.rd == instr->operands.rr.rs1) &&
+			    (instr->operands.rr.rd == instr->operands.rr.rs2)) {
+				ptr = prv_remove_op(rv_s, ptr, op);
+				prev = SIZE_MAX;
+			}
+			break;
 		default:
 			break;
 		}
