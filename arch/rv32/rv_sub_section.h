@@ -34,6 +34,7 @@ typedef struct subtilis_rv_ss_link_t_ subtilis_rv_ss_link_t;
 struct subtilis_rv_ss_t_ {
 	size_t size;
 	size_t start;
+	size_t load_spill;
 	size_t end;
 	subtilis_bitset_t int_inputs;
 	subtilis_bitset_t real_inputs;

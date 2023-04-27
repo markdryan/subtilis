@@ -36,7 +36,8 @@ void subtilis_rv_subsections_init(subtilis_rv_subsections_t *sss)
 
 static size_t prv_add_new_sub_section(subtilis_rv_subsections_t *sss,
 				      subtilis_rv_section_t *rv_s,
-				      size_t start, subtilis_error_t *err)
+				      size_t start, size_t load_spill,
+				      subtilis_error_t *err)
 {
 	subtilis_rv_ss_t *ss;
 	size_t new_max;
@@ -62,6 +63,7 @@ static size_t prv_add_new_sub_section(subtilis_rv_subsections_t *sss,
 	subtilis_bitset_init(&ss->int_inputs);
 	subtilis_bitset_init(&ss->real_inputs);
 	ss->start = start;
+	ss->load_spill = load_spill;
 	ss->end = 0;
 	ss->num_links = 0;
 
@@ -162,6 +164,24 @@ cleanup:
 	subtilis_regs_used_virt_free(&regs_used);
 }
 
+static bool prv_is_call(subtilis_rv_op_t *op)
+{
+	if (op->type != SUBTILIS_RV_OP_INSTR)
+		return false;
+
+	if (op->op.instr.itype == SUBTILIS_RV_JAL) {
+		if (op->op.instr.operands.uj.rd == 0)
+			return false;
+	} else if (op->op.instr.itype == SUBTILIS_RV_JALR) {
+		if (op->op.instr.operands.i.rd == 0)
+			return false;
+	} else {
+		return false;
+	}
+
+	return true;
+}
+
 static void prv_finalize_sub_section(subtilis_rv_ss_t *ss,
 				     subtilis_rv_section_t *rv_s, size_t end,
 				     size_t count, subtilis_error_t *err)
@@ -203,6 +223,87 @@ static void prv_finalize_sub_section(subtilis_rv_ss_t *ss,
 		if (op->type == SUBTILIS_RV_OP_LABEL)
 			prv_add_link(ss, rv_s, ptr, op->op.label, err);
 	}
+
+cleanup:
+
+	subtilis_regs_used_virt_free(&regs_used);
+}
+
+static void prv_finalize_sub_section_call(subtilis_rv_ss_t *ss,
+					  subtilis_rv_section_t *rv_s,
+					  size_t end, size_t count,
+					  subtilis_error_t *err)
+{
+	subtilis_rv_op_t *from;
+	subtilis_rv_op_t *op;
+	subtilis_regs_used_virt_t regs_used;
+	size_t max_int_regs;
+	size_t max_real_regs;
+	size_t ptr;
+	size_t jump;
+
+	subtilis_rv_section_max_regs(rv_s, &max_int_regs, &max_real_regs);
+	subtilis_regs_used_virt_init(&regs_used);
+
+	/*
+	 * end is the instruction before the jump, which will probably
+	 * be an addi.
+	 */
+
+	ss->end = end;
+	ss->size = count;
+	from = &rv_s->op_pool->ops[ss->start];
+	op = &rv_s->op_pool->ops[ss->end];
+	jump = op->next;
+
+	if (jump == SIZE_MAX) {
+		subtilis_error_set_assertion_failed(err);
+		goto cleanup;
+	}
+
+	subtilis_rv_int_regs_used_afterv(rv_s, from, op, max_int_regs,
+					 count, &regs_used, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_rv_real_regs_used_afterv(rv_s, from, op, max_real_regs,
+					  count, &regs_used, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		goto cleanup;
+
+	subtilis_bitset_claim(&ss->int_inputs, &regs_used.int_regs);
+	subtilis_bitset_claim(&ss->real_inputs, &regs_used.real_regs);
+
+	op = &rv_s->op_pool->ops[jump];
+
+	/*
+	 * Just some sanity checks.
+	 */
+
+	if (op->type != SUBTILIS_RV_OP_INSTR) {
+		subtilis_error_set_assertion_failed(err);
+		goto cleanup;
+	}
+
+	if (((op->op.instr.itype == SUBTILIS_RV_JAL) ||
+	    (op->op.instr.itype == SUBTILIS_RV_JALR)) &&
+	    !prv_is_call(op)) {
+		subtilis_error_set_assertion_failed(err);
+		goto cleanup;
+	}
+
+	ptr = op->next;
+	if (ptr == SIZE_MAX) {
+		subtilis_error_set_assertion_failed(err);
+		goto cleanup;
+	}
+
+	op = &rv_s->op_pool->ops[ptr];
+	if (op->type != SUBTILIS_RV_OP_LABEL) {
+		subtilis_error_set_assertion_failed(err);
+		goto cleanup;
+	}
+	prv_add_link(ss, rv_s, jump, op->op.label, err);
 
 cleanup:
 
@@ -388,9 +489,34 @@ static bool prv_get_label_if_jump(subtilis_rv_op_t *op, size_t *label)
 	return false;
 }
 
+static bool prv_get_label_if_call(subtilis_rv_section_t *rv_s,
+				  subtilis_rv_op_t *op, size_t *label,
+				  subtilis_error_t *err)
+{
+	subtilis_rv_op_t *next;
+
+	if (!prv_is_call(op))
+		return false;
+
+	/*
+	 * The next instruction must be a label, if not something
+	 * is wrong.
+	 */
+
+	next = &rv_s->op_pool->ops[op->next];
+	if (op->type == SUBTILIS_RV_OP_LABEL) {
+		subtilis_error_set_assertion_failed(err);
+		return false;
+	}
+
+	*label = next->op.label;
+
+	return true;
+}
+
 void subtilis_rv_subsections_calculate(subtilis_rv_subsections_t *sss,
-					subtilis_rv_section_t *rv_s,
-					subtilis_error_t *err)
+				       subtilis_rv_section_t *rv_s,
+				       subtilis_error_t *err)
 {
 	size_t ptr;
 	subtilis_rv_ss_t *ss;
@@ -399,6 +525,8 @@ void subtilis_rv_subsections_calculate(subtilis_rv_subsections_t *sss,
 	size_t count;
 	size_t label;
 	size_t ss_ptr;
+	size_t load_spill;
+	size_t i;
 
 	if (rv_s->first_op == rv_s->last_op) {
 		subtilis_error_set_assertion_failed(err);
@@ -406,7 +534,7 @@ void subtilis_rv_subsections_calculate(subtilis_rv_subsections_t *sss,
 	}
 
 	ptr = rv_s->first_op;
-	ss_ptr = prv_add_new_sub_section(sss, rv_s, ptr, err);
+	ss_ptr = prv_add_new_sub_section(sss, rv_s, ptr, ptr, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 	ss = &sss->sub_sections[ss_ptr];
@@ -420,7 +548,8 @@ void subtilis_rv_subsections_calculate(subtilis_rv_subsections_t *sss,
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 			count = 0;
-			ss_ptr = prv_add_new_sub_section(sss, rv_s, ptr, err);
+			ss_ptr = prv_add_new_sub_section(sss, rv_s, ptr, ptr,
+							 err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 			ss = &sss->sub_sections[ss_ptr];
@@ -432,6 +561,40 @@ void subtilis_rv_subsections_calculate(subtilis_rv_subsections_t *sss,
 			prv_sss_link_map_insert(sss, ss_ptr, label, err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
+		} else if (prv_get_label_if_call(rv_s, op, &label, err)) {
+			prv_finalize_sub_section_call(ss, rv_s, op->prev, count,
+						 err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			count = 0;
+
+			/*
+			 * We need to calculate the load spill point, which
+			 * will be 4 operations after the jump, a label, and
+			 * add to restore the stack and two loads.
+			 */
+
+			load_spill = op->next;
+			for (i = 0; i < 3 && load_spill != SIZE_MAX; i++)
+				load_spill =
+					rv_s->op_pool->ops[load_spill].next;
+			if (load_spill == SIZE_MAX) {
+				subtilis_error_set_assertion_failed(err);
+				return;
+			}
+			ss_ptr = prv_add_new_sub_section(sss, rv_s, op->next,
+							 load_spill, err);
+			if (err->type != SUBTILIS_ERROR_OK)
+				return;
+			ss = &sss->sub_sections[ss_ptr];
+			if (label >= rv_s->label_counter) {
+				subtilis_error_set_assertion_failed(err);
+				return;
+			}
+			prv_sss_link_map_insert(sss, ss_ptr, label, err);
+
+			/* Move onto the label. */
+			op = &rv_s->op_pool->ops[op->next];
 		} else if (prv_get_label_if_jump(op, &label)) {
 			prv_add_link(ss, rv_s, ptr, label, err);
 			if (err->type != SUBTILIS_ERROR_OK)
@@ -458,6 +621,8 @@ void subtilis_rv_subsections_calculate(subtilis_rv_subsections_t *sss,
 				}
 			}
 		}
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
 
 		count++;
 		if (ptr == rv_s->last_op)

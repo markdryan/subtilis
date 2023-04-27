@@ -30,18 +30,32 @@ void subtilis_prespilt_free(subtilis_prespilt_offsets_t *off)
 	free(off->real_offsets);
 }
 
-void subtilis_prespilt_calculate(subtilis_prespilt_offsets_t *off,
-				 subtilis_bitset_t *int_save,
-				 subtilis_bitset_t *real_save,
-				 subtilis_error_t *err)
+size_t subtilis_prespilt_calculate(subtilis_prespilt_offsets_t *off,
+				   subtilis_bitset_t *int_save,
+				   subtilis_bitset_t *real_save,
+				   subtilis_error_t *err)
 {
+	size_t space;
+
 	off->int_offsets =
 	    subtilis_bitset_values(int_save, &off->int_count, err);
 	if (err->type != SUBTILIS_ERROR_OK)
-		return;
+		return SIZE_MAX;
 
 	off->real_offsets =
 	    subtilis_bitset_values(real_save, &off->real_count, err);
+
+	space = (off->int_count * sizeof(int32_t)) +
+		(off->real_count * sizeof(double));
+
+	/*
+	 * Make sure that the double section is 8 byte aligned.
+	 */
+
+	if (off->int_count & 1)
+		space += sizeof(int32_t);
+
+	return space;
 }
 
 size_t subtilis_prespilt_int_offset(subtilis_prespilt_offsets_t *off,
@@ -63,6 +77,9 @@ size_t subtilis_prespilt_real_offset(subtilis_prespilt_offsets_t *off,
 {
 	size_t i;
 	size_t offset = off->int_count * sizeof(int32_t);
+
+	if (off->int_count & 1)
+		offset += sizeof(int32_t);
 
 	for (i = 0; i < off->real_count; i++)
 		if (off->real_offsets[i] == reg)

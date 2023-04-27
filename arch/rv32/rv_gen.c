@@ -325,12 +325,12 @@ void subtilis_rv_gen_label(subtilis_ir_section_t *s, size_t start,
 	subtilis_rv_section_add_label(rv_s, label, err);
 }
 
-static void prv_stack_args(subtilis_rv_section_t *rv_s,
-			   subtilis_ir_call_t *call, size_t int_args_left,
-			   size_t real_args_left, size_t *int_arg_ops,
-			   size_t *real_arg_ops, subtilis_error_t *err)
+static int32_t prv_stack_args(subtilis_rv_section_t *rv_s,
+			      subtilis_ir_call_t *call, size_t int_args_left,
+			      size_t real_args_left, size_t *int_arg_ops,
+			      size_t *real_arg_ops, subtilis_error_t *err)
 {
-	size_t offset;
+	int32_t offset;
 	size_t i;
 	size_t reg_num;
 	size_t arg;
@@ -358,10 +358,19 @@ static void prv_stack_args(subtilis_rv_section_t *rv_s,
 					   subtilis_rv_ir_to_rv_reg(reg_num),
 					   -offset, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+			return 0;
 		int_arg_ops[stack_ops++] = rv_s->last_op;
 		int_args_left--;
 	}
+
+	/*
+	 * We expect the stack to be 8 byte aligned when we start pushing
+	 * integer arguments.  If we push an odd number it will no longer be,
+	 * so let's make sure that it still is.
+	 */
+
+	if (offset & 7)
+		offset += sizeof(int32_t);
 
 	stack_ops = 0;
 	for (i = call->arg_count; i > 0 && real_args_left > 8; i--) {
@@ -375,7 +384,7 @@ static void prv_stack_args(subtilis_rv_section_t *rv_s,
 					    subtilis_rv_ir_to_real_reg(reg_num),
 					    -offset, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+			return 0;
 		real_arg_ops[stack_ops++] = rv_s->last_op;
 		real_args_left--;
 	}
@@ -387,7 +396,7 @@ static void prv_stack_args(subtilis_rv_section_t *rv_s,
 		arg_src = subtilis_rv_ir_to_rv_reg(call->args[i].reg);
 		subtilis_rv_section_add_mv(rv_s, arg_dest, arg_src, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+			return 0;
 		arg++;
 	}
 
@@ -398,9 +407,11 @@ static void prv_stack_args(subtilis_rv_section_t *rv_s,
 		arg_src = subtilis_rv_ir_to_real_reg(call->args[i].reg);
 		subtilis_rv_section_add_fmv_d(rv_s, arg_dest, arg_src, err);
 		if (err->type != SUBTILIS_ERROR_OK)
-			return;
+			return 0;
 		arg++;
 	}
+
+	return offset;
 }
 
 void subtilis_rv_gen_call_gen(subtilis_ir_section_t *s, size_t start,
@@ -410,8 +421,12 @@ void subtilis_rv_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 {
 	int i;
 	subtilis_rv_reg_t jump_reg;
+	int32_t offset;
+	int32_t x1_save;
+	int32_t x8_save;
 	subtilis_ir_call_t *call = &s->ops[start]->op.call;
 	subtilis_rv_section_t *rv_s = user_data;
+	size_t label = rv_s->label_counter++;
 	size_t int_args = 0;
 	size_t real_args = 0;
 	size_t int_arg_ops[SUBTILIS_IR_MAX_ARGS_PER_TYPE - 4];
@@ -430,22 +445,24 @@ void subtilis_rv_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 		return;
 	}
 
-	prv_stack_args(rv_s, call, int_args, real_args, int_arg_ops,
-		       real_arg_ops, err);
+	offset = prv_stack_args(rv_s, call, int_args, real_args,
+				int_arg_ops, real_arg_ops, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	x1_save = -(offset + sizeof(int32_t));
 	subtilis_rv_section_add_sw(rv_s, SUBTILIS_RV_REG_STACK,
-				   SUBTILIS_RV_REG_LINK, -4, err);
+				   SUBTILIS_RV_REG_LINK, x1_save, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
+	x8_save = x1_save - sizeof(int32_t);
 	subtilis_rv_section_add_sw(rv_s, SUBTILIS_RV_REG_STACK,
-				   SUBTILIS_RV_REG_LOCAL, -8, err);
+				   SUBTILIS_RV_REG_LOCAL, x8_save, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	subtilis_rv_section_add_addi(rv_s, SUBTILIS_RV_REG_STACK,
-				     SUBTILIS_RV_REG_STACK, -8, err);
+				     SUBTILIS_RV_REG_STACK,x8_save, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
@@ -461,18 +478,23 @@ void subtilis_rv_gen_call_gen(subtilis_ir_section_t *s, size_t start,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	subtilis_rv_section_add_label(rv_s, label, err);
+	if (err->type != SUBTILIS_ERROR_OK)
+		return;
+
 	subtilis_rv_section_add_addi(rv_s, SUBTILIS_RV_REG_STACK,
-				     SUBTILIS_RV_REG_STACK, 8, err);
+				     SUBTILIS_RV_REG_STACK, -x8_save, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
 	subtilis_rv_section_add_lw(rv_s, SUBTILIS_RV_REG_LOCAL,
-				   SUBTILIS_RV_REG_STACK, -8, err);
+				   SUBTILIS_RV_REG_STACK, x8_save, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
+	offset -= sizeof(int32_t);
 	subtilis_rv_section_add_lw(rv_s, SUBTILIS_RV_REG_LINK,
-				   SUBTILIS_RV_REG_STACK, -4, err);
+				   SUBTILIS_RV_REG_STACK, x1_save, err);
 
 }
 

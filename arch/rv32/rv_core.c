@@ -169,10 +169,22 @@ subtilis_rv_prog_section_new(subtilis_rv_prog_t *prog,
 			     size_t locals, subtilis_error_t *err)
 {
 	subtilis_rv_section_t *rv_s;
+	size_t locals_rem;
 
 	if (prog->num_sections == prog->max_sections) {
 		subtilis_error_set_assertion_failed(err);
 		return NULL;
+	}
+
+	/*
+	 * We make sure our local allocation is always a multiple of 8
+	 * so that we can align the real spilt registers correctly.
+	 */
+
+	if (locals > 0 ) {
+		locals_rem = locals & 7;
+		if (locals_rem > 0)
+			locals += 8 - locals_rem;
 	}
 
 	rv_s = subtilis_rv_section_new(

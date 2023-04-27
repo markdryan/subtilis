@@ -34,10 +34,10 @@ typedef struct subtilis_prespilt_offsets_t_ subtilis_prespilt_offsets_t;
 
 void subtilis_prespilt_offsets_init(subtilis_prespilt_offsets_t *off);
 void subtilis_prespilt_free(subtilis_prespilt_offsets_t *off);
-void subtilis_prespilt_calculate(subtilis_prespilt_offsets_t *off,
-				 subtilis_bitset_t *int_save,
-				 subtilis_bitset_t *real_save,
-				 subtilis_error_t *err);
+size_t subtilis_prespilt_calculate(subtilis_prespilt_offsets_t *off,
+				   subtilis_bitset_t *int_save,
+				   subtilis_bitset_t *real_save,
+				   subtilis_error_t *err);
 size_t subtilis_prespilt_int_offset(subtilis_prespilt_offsets_t *off,
 				    size_t reg, subtilis_error_t *err);
 size_t subtilis_prespilt_real_offset(subtilis_prespilt_offsets_t *off,

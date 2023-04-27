@@ -485,7 +485,6 @@ static void prv_add_section(subtilis_ir_section_t *s,
 	size_t lui_instr;
 	size_t addi_instr;
 	size_t sub_instr;
-	size_t spill_regs;
 	size_t stack_space;
 	subtilis_rv_instr_t *stack_addi;
 	subtilis_rv_instr_t *stack_lui;
@@ -542,11 +541,9 @@ static void prv_add_section(subtilis_ir_section_t *s,
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	spill_regs = subtilis_rv_reg_alloc(rv_s, err);
+	stack_space = subtilis_rv_reg_alloc(rv_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
-
-	stack_space = spill_regs + rv_s->locals;
 
 	stack_lui = &rv_s->op_pool->ops[lui_instr].op.instr;
 	stack_addi = &rv_s->op_pool->ops[addi_instr].op.instr;

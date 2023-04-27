@@ -188,6 +188,11 @@
  * | prespilt real    |     basic block.  Each spilt register consumes
  * | reg n            |     8 bytes.
  * |----------------- |     -------------------------------------------
+ *
+ * We may have a dummy 4 bytes here to make sure that the real split
+ * section is 8 byte aligned.  Not needed on ARM but needed on other
+ * platforms.
+ *
  * | prespilt int reg1|     This section is optional and exists if the
  * |----------------- |     register allocator needed to spill any
  * | prespilt int reg2|     virtual int registers at the end of a
@@ -1759,13 +1764,11 @@ static void prv_link_basic_blocks(subtilis_arm_reg_ud_t *ud,
 		goto cleanup;
 	}
 
-	subtilis_prespilt_calculate(&offsets, &sss.int_save, &sss.real_save,
-				   err);
+	ud->basic_block_spill =
+		subtilis_prespilt_calculate(&offsets, &sss.int_save,
+					    &sss.real_save, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-
-	ud->basic_block_spill = (offsets.int_count * sizeof(int32_t)) +
-				(offsets.real_count * sizeof(double));
 
 	prv_init_sub_section_links(ud, &sss.sub_sections[0], &offsets, 0, err);
 	if (err->type != SUBTILIS_ERROR_OK)

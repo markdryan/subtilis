@@ -30,6 +30,75 @@
 #include "rv_sub_section.h"
 #include "rv_walker.h"
 
+/*
+ * The other thing that needs documenting is the layout of the stack.  It should
+ * look something like this.  It needs to be 8 byte aligned on entry to each
+ * function
+ *
+ * |------------------|     ------------------------------------------- *
+ * |   int arg n      |     This section is optional and only exists
+ * |------------------|     if there are more than 4 integer arguments.
+ * |   int arg n-1    |     Arguments are pushed in reverse order.
+ * |----------------- |     Each argument consumes 4 bytes.
+ * |   int arg 4      |
+ *
+ * There's an optional 4 bytes spare here to make sure we're aligned.
+ * This happens if we have an odd number of spilled arguments.
+ *
+ * |------------------|     -------------------------------------------
+ * |   real arg n     |     This section is optional and only exists
+ * |                  |     if there are more than 4 real arguments.
+ * |------------------|     Arguments are pushed in reverse order.
+ * |   real arg n-1   |     Each argument consumes 8 bytes.
+ * |                  |
+ * |----------------- |
+ * |   real arg 4     |
+ * |                  |
+ * |----------------- |     -------------------------------------------*
+ * |   x1             |     Return address of calling function
+ * |------------------|     -------------------------------------------
+ * |   x8             |     Stack frame of current function
+ * |----------------- |     -------------------------------------------
+ *
+ * Stack pointer starts here at entry into callee.  There may be an
+ * unused 4 bytes here, if the size of the split data + local data is
+ * not a multiple of 8.
+ *
+ * |----------------- |     -------------------------------------------
+ * |  spilt int reg 1 |     This section is optional and exists if the
+ * |----------------- |     register allocator needed to spill any
+ * |  spilt int reg n |     virtual integer registers. 4 bytes per reg.
+ * |----------------- |     -------------------------------------------
+ * | spilt real reg 1 |     This section is optional and exists if the
+ * |                  |     register allocator needed to spill any
+ * |----------------- |     virtual real registers.  Each spilt
+ * | spilt real reg n |     register consumes 8 bytes.
+ * |                  |
+ * |----------------- |     -------------------------------------------
+ * | prespilt real    |     This section is optional and exists if the
+ * | reg1             |     register allocator needed to spill any
+ * |----------------- |     virtual real registers at the end of a
+ * | prespilt real    |     basic block.  Each spilt register consumes
+ * | reg n            |     8 bytes.
+ * |----------------- |     -------------------------------------------
+ *
+ * We may have a dummy 4 bytes here to make sure that the real split
+ * section is 8 byte aligned.
+ *
+ * | prespilt int reg1|     This section is optional and exists if the
+ * |----------------- |     register allocator needed to spill any
+ * | prespilt int reg2|     virtual int registers at the end of a
+ * |----------------- |     basic block.  Each spilt register consumes
+ * | prespilt int regn|     4 bytes
+ * |----------------- |     -------------------------------------------
+ * |                  |     Area reserved for storing local data, i.e.,
+ * |                  |     local variables that are too large to fit
+ * |  Local data      |     into a virtual register e.g., a string or
+ * |                  |     an array.  This block is always 8 byte
+ * |                  |     aligned.
+ * |----------------- |     -------------------------------------------
+ *
+ */
 
 /* clang-format off */
 typedef void (*subtilis_rv_reg_spill_imm_t)(subtilis_rv_section_t *s,
@@ -513,7 +582,7 @@ static void prv_init_sub_section(subtilis_rv_reg_ud_t *ud,
 	int32_t offset;
 	subtilis_rv_op_t *op;
 
-	op = &ud->rv_s->op_pool->ops[ss->start];
+	op = &ud->rv_s->op_pool->ops[ss->load_spill];
 	if (op->next == ud->rv_s->last_op)
 		return;
 	op = &ud->rv_s->op_pool->ops[op->next];
@@ -570,13 +639,11 @@ static void prv_link_basic_blocks(subtilis_rv_reg_ud_t *ud,
 		goto cleanup;
 	}
 
-	subtilis_prespilt_calculate(&offsets, &sss.int_save, &sss.real_save,
-				    err);
+	ud->basic_block_spill = 
+		subtilis_prespilt_calculate(&offsets, &sss.int_save,
+					    &sss.real_save, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		goto cleanup;
-
-	ud->basic_block_spill = (offsets.int_count * sizeof(int32_t)) +
-				(offsets.real_count * sizeof(double));
 
 	/*
 	 * We now need to insert instructions to spill the live virtual
@@ -682,7 +749,8 @@ static void prv_insert_spill_code(subtilis_rv_reg_ud_t *ud,
 		basic_offset += sp->offset;
 		if (sp->type == SUBTILIS_RV_SPILL_POINT_LOAD) {
 			regs->load_far(rv_s, current, sp->phys,
-				       SUBTILIS_RV_REG_LOCAL, offset, err);
+				       SUBTILIS_RV_REG_LOCAL, basic_offset,
+				       err);
 		} else {
 			prv_insert_spill_code_store(rv_s, sp->phys, current,
 						    ud->int_regs, regs,
@@ -1640,12 +1708,14 @@ size_t subtilis_rv_reg_alloc(subtilis_rv_section_t *rv_s,
 {
 	subtilis_rv_walker_t walker;
 	subtilis_rv_reg_ud_t ud;
-	size_t retval;
 	int32_t offset;
 	int32_t adjusted_offset;
 	int32_t arg_offset;
 	int32_t int_spill_space;
 	int32_t real_spill_space;
+	int32_t stack_space;
+	int32_t stack_rem;
+	int32_t arg_adjust;
 
 	prv_init_rv_reg_ud(&ud, rv_s, err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1688,7 +1758,7 @@ size_t subtilis_rv_reg_alloc(subtilis_rv_section_t *rv_s,
 	/*
 	 * See the description of the stack layout above to understand
 	 * this code.  The register allocators assume they are sole
-	 * onwers of the stack and that any arguments of their type
+	 * owners of the stack and that any arguments of their type
 	 * are the first offsets spilled.  This assumption is invalid
 	 * if more than one type of argument is passed on the stack or
 	 * virtual registers of any type are actually spilled.  So we
@@ -1706,14 +1776,47 @@ size_t subtilis_rv_reg_alloc(subtilis_rv_section_t *rv_s,
 	 * further up the stack.
 	 */
 
+	/*
+	 * There are two types of spills, spills that occur to preserve live
+	 * registers between basic blocks and spills that occur when we actually
+	 * run out of physical registers.
+	 */
+
+	/*
+	 * We subtract the space for arguments pushed on the stack as they
+	 * are not stored in our spill space but on the stack area of the
+	 * previous function call.
+	 */
+
 	int_spill_space = (ud.int_regs->spill_max - ud.int_regs->spilt_args) *
 			  ud.int_regs->reg_size;
-
-	real_spill_space = 0;
 
 	real_spill_space =
 	    (ud.real_regs->spill_max - ud.real_regs->spilt_args) *
 	    ud.real_regs->reg_size;
+
+	stack_space = int_spill_space + real_spill_space +
+		ud.basic_block_spill + rv_s->locals;
+
+	/*
+	 * The stack is always 8 byte aligned when we enter a procedure.  If
+	 * we spill an odd number of integer arguments, it will no longer be
+	 * 8 byte aligned, so we need an adjustment.
+	 */
+
+	arg_adjust = 0;
+	if (ud.int_regs->spilt_args & 1)
+		arg_adjust += ud.int_regs->reg_size;
+
+	/*
+	 * Let's make sure that the stack is always 8 byte aligned.
+	 */
+
+	stack_rem = stack_space & 7;
+	if (stack_rem > 0) {
+		stack_space -= stack_rem;
+		stack_space += 8;
+	}
 
 	offset = ud.basic_block_spill + rv_s->locals;
 
@@ -1725,10 +1828,14 @@ size_t subtilis_rv_reg_alloc(subtilis_rv_section_t *rv_s,
 	 * arguments to correctly compute the adjusted offset.
 	 */
 
+	/*
+	 * These offsets are relative to x8 after the stack has been reduced,
+	 * i.e., after it's been initialised to x2 - stack_space.
+	 */
 
 	adjusted_offset =
 	    offset - (ud.real_regs->spilt_args * ud.real_regs->reg_size);
-	arg_offset = offset + real_spill_space + int_spill_space;
+	arg_offset = stack_space + 8;
 	prv_insert_spill_code(&ud, ud.real_regs, adjusted_offset, arg_offset,
 			      err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1737,7 +1844,9 @@ size_t subtilis_rv_reg_alloc(subtilis_rv_section_t *rv_s,
 	offset += real_spill_space;
 	adjusted_offset =
 	    offset - (ud.int_regs->spilt_args * ud.int_regs->reg_size);
-	arg_offset += ud.real_regs->spilt_args * ud.real_regs->reg_size;
+	arg_offset += ud.real_regs->spilt_args * ud.real_regs->reg_size +
+		arg_adjust;
+
 	prv_insert_spill_code(&ud, ud.int_regs, adjusted_offset, arg_offset,
 			      err);
 	if (err->type != SUBTILIS_ERROR_OK)
@@ -1746,13 +1855,9 @@ size_t subtilis_rv_reg_alloc(subtilis_rv_section_t *rv_s,
 	rv_s->reg_counter = 32;
 	rv_s->freg_counter = 32;
 
-	retval = (ud.int_regs->spill_max * sizeof(int32_t)) +
-		 (ud.real_regs->spill_max * sizeof(double)) +
-		 ud.basic_block_spill;
-
 	prv_free_rv_reg_ud(&ud);
 
-	return retval;
+	return stack_space;
 
 cleanup:
 
