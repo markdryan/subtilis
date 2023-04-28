@@ -175,7 +175,9 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 {"ltii32 *, *, *\n", subtilis_arm_gen_ltii32},
 	 {"ltir *, *, *\n", subtilis_fpa_gen_ltir},
 	 {"gteii32 *, *, *\n", subtilis_arm_gen_gteii32},
-	 {"gteir *, *, *\n", subtilis_fpa_gen_gteir},
+*/
+	 {"gteir *, *, *\n", subtilis_rv_gen_gteir},
+/*
 	 {"lteii32 *, *, *\n", subtilis_arm_gen_lteii32},
 	 {"lteir *, *, *\n", subtilis_fpa_gen_lteir},
 */
@@ -249,12 +251,12 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 {"subir *, *, *\n", subtilis_rv_gen_subir},
 /*
 	 {"rsubir *, *, *\n", subtilis_fpa_gen_rsubir},
-	 {"mulr *, *, *\n", subtilis_fpa_gen_mulr},
 */
+	 {"mulr *, *, *\n", subtilis_rv_gen_mulr},
 	 {"mulir *, *, *\n", subtilis_rv_gen_mulir},
+	 {"divr *, *, *\n", subtilis_rv_gen_divr},
+	 {"divir *, *, *\n", subtilis_rv_gen_divir},
 /*
-	 {"divr *, *, *\n", subtilis_fpa_gen_divr},
-	 {"divir *, *, *\n", subtilis_fpa_gen_divir},
 	 {"rdivir *, *, *\n", subtilis_fpa_gen_rdivir},
 	 {"storeor *, *, *\n", subtilis_fpa_gen_storeor},
 	 {"loador *, *, *\n", subtilis_fpa_gen_loador},

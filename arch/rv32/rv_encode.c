@@ -293,6 +293,22 @@ static void prv_flush_constants(subtilis_rv_encode_ud_t *ud,
 	int32_t constant_index;
 	subtilis_rv_section_t *rv_s = ud->rv_s;
 
+	/*
+	 * Forcibly align the floating point section to 8 bytes.
+	 * This is weird but the code starts at 0x10094. Need to find
+	 * a better way of doing this.  Can I just 8 byte align the section?
+	 */
+
+	if ((ud->bytes_written & 7) == 0) {
+		prv_ensure_code(ud, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+		prv_add_word(ud, 0, err);
+		if (err->type != SUBTILIS_ERROR_OK)
+			return;
+	}
+
+
 	for (i = 0; i < ud->const_count; i++) {
 		cnst = &ud->constants[i];
 		ud->label_offsets[cnst->label] = ud->bytes_written;
