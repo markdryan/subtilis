@@ -45,6 +45,14 @@ static void prv_used_i(void *user_data, subtilis_rv_op_t *op,
 		return;
 	}
 
+	if ((itype == SUBTILIS_RV_JALR) &&
+	    (i->link_type == SUBTILIS_RV_JAL_LINK_INT) &&
+	    (ud->reg_num == SUBTILIS_RV_REG_A0)) {
+		ud->last_used = -1;
+		subtilis_error_set_walker_failed(err);
+		return;
+	}
+
 	ud->last_used++;
 }
 

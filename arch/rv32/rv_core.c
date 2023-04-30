@@ -516,7 +516,7 @@ subtilis_rv_section_add_utype(subtilis_rv_section_t *s,
 		return;
 
 	uj = &instr->operands.uj;
-	uj->op.imm = imm >> 12;
+	uj->op.imm = imm;
 	uj->rd = rd;
 	uj->is_label = false;
 	uj->link_type = SUBTILIS_RV_JAL_LINK_VOID;
@@ -816,7 +816,8 @@ subtilis_rv_section_add_li(subtilis_rv_section_t *s,
 			   subtilis_rv_reg_t rd,
 			   int32_t imm,  subtilis_error_t *err)
 {
-	uint32_t lower;
+	uint32_t lui_val;
+	uint32_t addi_val;
 
 	/*
 	 * Then imm will fit in 12 bits.
@@ -827,14 +828,17 @@ subtilis_rv_section_add_li(subtilis_rv_section_t *s,
 		return;
 	}
 
-	subtilis_rv_section_add_utype(s, SUBTILIS_RV_LUI, rd, (uint32_t) imm,
-				      err);
+	lui_val = ((uint32_t) imm) >> 12;
+	addi_val = ((uint32_t) imm) & 4095;
+	if (addi_val > 2047)
+		lui_val++;
+
+	subtilis_rv_section_add_utype(s, SUBTILIS_RV_LUI, rd, lui_val, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	lower = ((uint32_t) imm) & 4095;
-	if (lower)
-		subtilis_rv_section_add_addi(s, rd, rd, lower, err);
+	if (addi_val)
+		subtilis_rv_section_add_addi(s, rd, rd, addi_val, err);
 }
 
 void

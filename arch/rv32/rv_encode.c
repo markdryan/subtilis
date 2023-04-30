@@ -674,6 +674,9 @@ static void prv_encode_i(void *user_data, subtilis_rv_op_t *op,
 	word |= (i->rs1 & 0x1f) << 15;
 	word |= (i->imm & 0xfff) << 20;
 
+	if (itype == SUBTILIS_RV_SRAI)
+		word |= op_code->funct7 << 25;
+
 	prv_ensure_code(ud, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;

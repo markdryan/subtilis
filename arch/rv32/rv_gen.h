@@ -144,26 +144,22 @@ void subtilis_rv_gen_call(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_calli32(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
-/*
-void subtilis_rv_gen_call(subtilis_ir_section_t *s, size_t start,
+void subtilis_rv_gen_callr(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err);
-void subtilis_rv_gen_call_gen(subtilis_ir_section_t *s, size_t start,
-			       void *user_data,
-			       subtilis_rv_br_link_type_t link_type,
-			       bool indirect, subtilis_error_t *err);
-void subtilis_rv_gen_calli32(subtilis_ir_section_t *s, size_t start,
-			      void *user_data, subtilis_error_t *err);
-*/
 void subtilis_rv_gen_call_ptr(subtilis_ir_section_t *s, size_t start,
 			       void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_calli32_ptr(subtilis_ir_section_t *s, size_t start,
 				  void *user_data, subtilis_error_t *err);
+void subtilis_rv_gen_callr_ptr(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_ret(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_reti32(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_retii32(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
+void subtilis_rv_gen_retr(subtilis_ir_section_t *s, size_t start,
+			  void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_eqii32(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_error_t *err);
 
@@ -190,6 +186,8 @@ void subtilis_rv_gen_popi32(subtilis_ir_section_t *s, size_t start,
 
 void subtilis_rv_gen_movr(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
+void subtilis_rv_gen_movir(subtilis_ir_section_t *s, size_t start,
+			   void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_movi32r(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_movri32(subtilis_ir_section_t *s, size_t start,

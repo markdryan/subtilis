@@ -156,19 +156,15 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 */
 	 {"call\n", subtilis_rv_gen_call},
 	 {"calli32\n", subtilis_rv_gen_calli32},
-/*
-	 {"callr\n", subtilis_fpa_gen_callr},
-*/
+	 {"callr\n", subtilis_rv_gen_callr},
 	 {"callptr\n", subtilis_rv_gen_call_ptr},
 	 {"calli32ptr\n", subtilis_rv_gen_calli32_ptr},
-/*
-	 {"callrptr\n", subtilis_fpa_gen_callr_ptr},
-*/
+	 {"callrptr\n", subtilis_rv_gen_callr_ptr},
 	 {"ret\n", subtilis_rv_gen_ret},
 	 {"reti32 *\n", subtilis_rv_gen_reti32},
 	 {"retii32 *\n", subtilis_rv_gen_retii32},
+	 {"retr *\n", subtilis_rv_gen_retr},
 /*
-	 {"retr *\n", subtilis_fpa_gen_retr},
 	 {"retir *\n", subtilis_fpa_gen_retir},
 	 {"gtii32 *, *, *\n", subtilis_arm_gen_gtii32},
 	 {"gtir *, *, *\n", subtilis_fpa_gen_gtir},
@@ -237,9 +233,7 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 {"asrii32 *, *, *\n", subtilis_rv_gen_asrii32},
 
 	 {"movfp *, *\n", subtilis_rv_gen_movr},
-/*
-	 {"movir *, *\n", subtilis_fpa_gen_movir},
-*/
+	 {"movir *, *\n", subtilis_rv_gen_movir},
 	 {"movfpi32 *, *\n", subtilis_rv_gen_movri32},
 /*
 	 {"movfprdi32 *, *\n", subtilis_fpa_gen_movrrdi32},
@@ -399,12 +393,7 @@ static void prv_mmap_heap(subtilis_rv_section_t *rv_s, subtilis_error_t *err)
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 
-	subtilis_rv_section_add_lui(rv_s, SUBTILIS_RV_REG_A1, heap_size, err);
-	if (err->type != SUBTILIS_ERROR_OK)
-		return;
-
-	subtilis_rv_section_add_addi(rv_s, SUBTILIS_RV_REG_A1,
-				     SUBTILIS_RV_REG_A1, heap_size, err);
+	subtilis_rv_section_add_li(rv_s, SUBTILIS_RV_REG_A1, heap_size, err);
 	if (err->type != SUBTILIS_ERROR_OK)
 		return;
 

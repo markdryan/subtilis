@@ -240,26 +240,18 @@ static void prv_finalize_sub_section_call(subtilis_rv_ss_t *ss,
 	size_t max_int_regs;
 	size_t max_real_regs;
 	size_t ptr;
-	size_t jump;
 
 	subtilis_rv_section_max_regs(rv_s, &max_int_regs, &max_real_regs);
 	subtilis_regs_used_virt_init(&regs_used);
 
 	/*
-	 * end is the instruction before the jump, which will probably
-	 * be an addi.
+	 * end is the call
 	 */
 
 	ss->end = end;
 	ss->size = count;
 	from = &rv_s->op_pool->ops[ss->start];
 	op = &rv_s->op_pool->ops[ss->end];
-	jump = op->next;
-
-	if (jump == SIZE_MAX) {
-		subtilis_error_set_assertion_failed(err);
-		goto cleanup;
-	}
 
 	subtilis_rv_int_regs_used_afterv(rv_s, from, op, max_int_regs,
 					 count, &regs_used, err);
@@ -273,8 +265,6 @@ static void prv_finalize_sub_section_call(subtilis_rv_ss_t *ss,
 
 	subtilis_bitset_claim(&ss->int_inputs, &regs_used.int_regs);
 	subtilis_bitset_claim(&ss->real_inputs, &regs_used.real_regs);
-
-	op = &rv_s->op_pool->ops[jump];
 
 	/*
 	 * Just some sanity checks.
@@ -303,7 +293,7 @@ static void prv_finalize_sub_section_call(subtilis_rv_ss_t *ss,
 		subtilis_error_set_assertion_failed(err);
 		goto cleanup;
 	}
-	prv_add_link(ss, rv_s, jump, op->op.label, err);
+	prv_add_link(ss, rv_s, end, op->op.label, err);
 
 cleanup:
 
@@ -562,7 +552,7 @@ void subtilis_rv_subsections_calculate(subtilis_rv_subsections_t *sss,
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
 		} else if (prv_get_label_if_call(rv_s, op, &label, err)) {
-			prv_finalize_sub_section_call(ss, rv_s, op->prev, count,
+			prv_finalize_sub_section_call(ss, rv_s, ptr, count,
 						 err);
 			if (err->type != SUBTILIS_ERROR_OK)
 				return;
