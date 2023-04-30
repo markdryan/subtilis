@@ -235,25 +235,21 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 {"movfp *, *\n", subtilis_rv_gen_movr},
 	 {"movir *, *\n", subtilis_rv_gen_movir},
 	 {"movfpi32 *, *\n", subtilis_rv_gen_movri32},
-/*
-	 {"movfprdi32 *, *\n", subtilis_fpa_gen_movrrdi32},
-*/
+	 {"movfprdi32 *, *\n", subtilis_rv_gen_movrrdi32},
 	 {"movi32fp *, *\n", subtilis_rv_gen_movi32r},
 	 {"addr *, *, *\n", subtilis_rv_gen_addr},
 	 {"addir *, *, *\n", subtilis_rv_gen_addir},
 	 {"subr *, *, *\n", subtilis_rv_gen_subr},
 	 {"subir *, *, *\n", subtilis_rv_gen_subir},
-/*
-	 {"rsubir *, *, *\n", subtilis_fpa_gen_rsubir},
-*/
+	 {"rsubir *, *, *\n", subtilis_rv_gen_rsubir},
 	 {"mulr *, *, *\n", subtilis_rv_gen_mulr},
 	 {"mulir *, *, *\n", subtilis_rv_gen_mulir},
 	 {"divr *, *, *\n", subtilis_rv_gen_divr},
 	 {"divir *, *, *\n", subtilis_rv_gen_divir},
+	 {"rdivir *, *, *\n", subtilis_rv_gen_rdivir},
+	 {"storeor *, *, *\n", subtilis_rv_gen_storeor},
+	 {"loador *, *, *\n", subtilis_rv_gen_loador},
 /*
-	 {"rdivir *, *, *\n", subtilis_fpa_gen_rdivir},
-	 {"storeor *, *, *\n", subtilis_fpa_gen_storeor},
-	 {"loador *, *, *\n", subtilis_fpa_gen_loador},
 	 {"modei32 *\n", subtilis_riscos_arm_modei32},
 	 {"plot *, *, *\n", subtilis_riscos_arm_plot},
 	 {"gcol *, *\n", subtilis_riscos_arm_gcol},

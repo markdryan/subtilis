@@ -48,10 +48,14 @@ void subtilis_rv_gen_storeoi8(subtilis_ir_section_t *s, size_t start,
 			       void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_storeoi32(subtilis_ir_section_t *s, size_t start,
 				void *user_data, subtilis_error_t *err);
+void subtilis_rv_gen_storeor(subtilis_ir_section_t *s, size_t start,
+			     void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_loadoi8(subtilis_ir_section_t *s, size_t start,
 			      void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_loadoi32(subtilis_ir_section_t *s, size_t start,
 			       void *user_data, subtilis_error_t *err);
+void subtilis_rv_gen_loador(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_label(subtilis_ir_section_t *s, size_t start,
 			    void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_if_lt_imm(subtilis_ir_section_t *s, size_t start,
@@ -192,6 +196,8 @@ void subtilis_rv_gen_movi32r(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_movri32(subtilis_ir_section_t *s, size_t start,
 			     void *user_data, subtilis_error_t *err);
+void subtilis_rv_gen_movrrdi32(subtilis_ir_section_t *s, size_t start,
+			       void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_absr(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_addr(subtilis_ir_section_t *s, size_t start,
@@ -208,10 +214,14 @@ void subtilis_rv_gen_subr(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_subir(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err);
+void subtilis_rv_gen_rsubir(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_divr(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_divir(subtilis_ir_section_t *s, size_t start,
 			   void *user_data, subtilis_error_t *err);
+void subtilis_rv_gen_rdivir(subtilis_ir_section_t *s, size_t start,
+			    void *user_data, subtilis_error_t *err);
 void subtilis_rv_gen_lca(subtilis_ir_section_t *s, size_t start,
 			  void *user_data, subtilis_error_t *err);
 /*
