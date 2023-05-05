@@ -89,56 +89,54 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
 		  subtilis_rv_gen_if_gte},
-/*
 	 {"ltir r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_fpa_gen_if_lt_imm},
+		  subtilis_rv_real_gen_if_lt_imm},
 	 {"gtir r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_fpa_gen_if_gt_imm},
+		  subtilis_rv_real_gen_if_gt_imm},
 	 {"lteir r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_fpa_gen_if_lte_imm},
+		  subtilis_rv_real_gen_if_lte_imm},
 	 {"neqir r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_fpa_gen_if_neq_imm},
+		  subtilis_rv_real_gen_if_neq_imm},
 	 {"eqir r_1, *, *\n"
 	  "jmpc r_1, label_1, *\n"
 	  "label_1",
-		  subtilis_fpa_gen_if_eq_imm},
+		  subtilis_rv_real_gen_if_eq_imm},
 	 {"gteir r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_fpa_gen_if_gte_imm},
+		  subtilis_rv_real_gen_if_gte_imm},
 	 {"ltr r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_fpa_gen_if_lt},
+		  subtilis_rv_real_gen_if_lt},
 	 {"gtr r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_fpa_gen_if_gt},
+		  subtilis_rv_real_gen_if_gt},
 	 {"lter r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_fpa_gen_if_lte},
+		  subtilis_rv_real_gen_if_lte},
 	 {"eqr r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_fpa_gen_if_eq},
+		  subtilis_rv_real_gen_if_eq},
 	 {"neqr r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_fpa_gen_if_neq},
+		  subtilis_rv_real_gen_if_neq},
 	 {"gter r_1, *, *\n"
 	 "jmpc r_1, label_1, *\n"
 	 "label_1",
-		  subtilis_fpa_gen_if_gte},
-*/
+		  subtilis_rv_real_gen_if_gte},
 	 {"jmpc *, label_1, *\n"
 	  "label_1\n",
 	  subtilis_rv_gen_jmpc},
@@ -166,37 +164,34 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 {"retr *\n", subtilis_rv_gen_retr},
 /*
 	 {"retir *\n", subtilis_fpa_gen_retir},
-	 {"gtii32 *, *, *\n", subtilis_arm_gen_gtii32},
-	 {"gtir *, *, *\n", subtilis_fpa_gen_gtir},
-	 {"ltii32 *, *, *\n", subtilis_arm_gen_ltii32},
-	 {"ltir *, *, *\n", subtilis_fpa_gen_ltir},
-	 {"gteii32 *, *, *\n", subtilis_arm_gen_gteii32},
 */
+	 {"gtii32 *, *, *\n", subtilis_rv_gen_gtii32},
+	 {"gtir *, *, *\n", subtilis_rv_gen_gtir},
+	 {"ltii32 *, *, *\n", subtilis_rv_gen_ltii32},
+	 {"ltir *, *, *\n", subtilis_rv_gen_ltir},
+	 {"gteii32 *, *, *\n", subtilis_rv_gen_gteii32},
 	 {"gteir *, *, *\n", subtilis_rv_gen_gteir},
-/*
-	 {"lteii32 *, *, *\n", subtilis_arm_gen_lteii32},
-	 {"lteir *, *, *\n", subtilis_fpa_gen_lteir},
-*/
+	 {"lteii32 *, *, *\n", subtilis_rv_gen_lteii32},
+	 {"lteir *, *, *\n", subtilis_rv_gen_lteir},
 	 {"eqii32 *, *, *\n", subtilis_rv_gen_eqii32},
-/*
-	 {"eqir *, *, *\n", subtilis_fpa_gen_eqir},
-	 {"neqii32 *, *, *\n", subtilis_arm_gen_neqii32},
-*/
+	 {"eqir *, *, *\n", subtilis_rv_gen_eqir},
+	 {"neqii32 *, *, *\n", subtilis_rv_gen_neqii32},
 	 {"neqir *, *, *\n", subtilis_rv_gen_neqir},
-/*
-	 {"gti32 *, *, *\n", subtilis_arm_gen_gti32},
-	 {"gtr *, *, *\n", subtilis_fpa_gen_gtr},
-	 {"lti32 *, *, *\n", subtilis_arm_gen_lti32},
-	 {"ltr *, *, *\n", subtilis_fpa_gen_ltr},
-	 {"eqi32 *, *, *\n", subtilis_arm_gen_eqi32},
-	 {"eqr *, *, *\n", subtilis_fpa_gen_eqr},
-	 {"neqi32 *, *, *\n", subtilis_arm_gen_neqi32},
-	 {"neqr *, *, *\n", subtilis_fpa_gen_neqr},
-	 {"gtei32 *, *, *\n", subtilis_arm_gen_gtei32},
-	 {"gter *, *, *\n", subtilis_fpa_gen_gter},
-	 {"ltei32 *, *, *\n", subtilis_arm_gen_ltei32},
-	 {"lter *, *, *\n", subtilis_fpa_gen_lter},
-*/
+
+	 {"gti32 *, *, *\n", subtilis_rv_gen_gti32},
+	 {"gtr *, *, *\n", subtilis_rv_gen_gtr},
+	 {"lti32 *, *, *\n", subtilis_rv_gen_lti32},
+	 {"ltr *, *, *\n", subtilis_rv_gen_ltr},
+
+	 {"eqi32 *, *, *\n", subtilis_rv_gen_eqi32},
+	 {"eqr *, *, *\n", subtilis_rv_gen_eqr},
+	 {"neqi32 *, *, *\n", subtilis_rv_gen_neqi32},
+	 {"neqr *, *, *\n", subtilis_rv_gen_neqr},
+	 {"gtei32 *, *, *\n", subtilis_rv_gen_gtei32},
+	 {"gter *, *, *\n", subtilis_rv_gen_gter},
+	 {"ltei32 *, *, *\n", subtilis_rv_gen_ltei32},
+	 {"lter *, *, *\n", subtilis_rv_gen_lter},
+
 	 {"mov *, *", subtilis_rv_gen_mov},
 	 {"movii32 *, *", subtilis_rv_gen_movii32},
 	 {"addii32 *, *, *", subtilis_rv_gen_addii32},
@@ -267,7 +262,9 @@ const subtilis_ir_rule_raw_t riscos_rv_bare_rules[] = {
 	 {"asn *, *\n", subtilis_fpa_gen_asn},
 	 {"acs *, *\n", subtilis_fpa_gen_acs},
 	 {"atn *, *\n", subtilis_fpa_gen_atn},
-	 {"sqr *, *\n", subtilis_fpa_gen_sqr},
+*/
+	 {"sqr *, *\n", subtilis_rv_gen_sqr},
+/*
 	 {"log *, *\n", subtilis_fpa_gen_log},
 	 {"ln *, *\n", subtilis_fpa_gen_ln},
 */

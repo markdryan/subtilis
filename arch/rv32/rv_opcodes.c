@@ -75,7 +75,7 @@ const rv_opcode_t rv_opcodes[] = {
 	{ 0x53, 0x0, 0x4, true},     /* SUBTILIS_RV_FSUB_S */
 	{ 0x53, 0x0, 0x8, true},     /* SUBTILIS_RV_FMUL_S */
 	{ 0x53, 0x0, 0xc, true},     /* SUBTILIS_RV_FDIV_S */
-	{ 0x53, 0x0, 0xc, true},     /* SUBTILIS_RV_FSQRT_S */
+	{ 0x53, 0x0, 0x2c, true},    /* SUBTILIS_RV_FSQRT_S */
 	{ 0x53, 0x0, 0x10, false},   /* SUBTILIS_RV_FSGNJ_S */
 	{ 0x53, 0x1, 0x10, false},   /* SUBTILIS_RV_FSGNJN_S */
 	{ 0x53, 0x2, 0x10, false},   /* SUBTILIS_RV_FSGNJX_S */
@@ -102,7 +102,7 @@ const rv_opcode_t rv_opcodes[] = {
 	{ 0x53, 0x0, 0x5, true},     /* SUBTILIS_RV_FSUB_D */
 	{ 0x53, 0x0, 0x9, true},     /* SUBTILIS_RV_FMUL_D */
 	{ 0x53, 0x0, 0xd, true},     /* SUBTILIS_RV_FDIV_D */
-	{ 0x53, 0x0, 0xd, true},     /* SUBTILIS_RV_FSQRT_D */
+	{ 0x53, 0x0, 0x2d, true},    /* SUBTILIS_RV_FSQRT_D */
 	{ 0x53, 0x0, 0x11, false},   /* SUBTILIS_RV_FSGNJ_D */
 	{ 0x53, 0x1, 0x11, false},   /* SUBTILIS_RV_FSGNJN_D */
 	{ 0x53, 0x2, 0x11, false},   /* SUBTILIS_RV_FSGNJX_D */
